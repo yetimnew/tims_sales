@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Registration Flow</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+        input { padding: 8px; margin: 5px; width: 200px; }
+        .debug { background-color: #f8f9fa; padding: 10px; margin: 10px 0; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <h1>🚛 TIMS Registration Flow Test</h1>
+
+    <div class="test-section info">
+        <h3>📋 Test Instructions</h3>
+        <ol>
+            <li>Open browser DevTools (F12) → Console tab</li>
+            <li>Clear browser cache and cookies</li>
+            <li>Visit <a href="http://127.0.0.1:8000/register" target="_blank">Registration Page</a></li>
+            <li>Fill out the form with test data</li>
+            <li>Submit the form</li>
+            <li>Check console for success/error messages</li>
+            <li>Verify redirect to dashboard</li>
+        </ol>
+    </div>
+
+    <div class="test-section">
+        <h3>🔧 Manual Test Form</h3>
+        <form id="testForm" action="http://127.0.0.1:8000/register" method="POST">
+            <div>
+                <label>Name:</label><br>
+                <input type="text" name="name" value="Test User" required>
+            </div>
+            <div>
+                <label>Email:</label><br>
+                <input type="email" name="email" value="test@example.com" required>
+            </div>
+            <div>
+                <label>Password:</label><br>
+                <input type="password" name="password" value="password123" required>
+            </div>
+            <div>
+                <label>Confirm Password:</label><br>
+                <input type="password" name="password_confirmation" value="password123" required>
+            </div>
+            <button type="submit">Test Registration</button>
+        </form>
+    </div>
+
+    <div class="test-section">
+        <h3>🌐 Quick Links</h3>
+        <button onclick="window.open('http://127.0.0.1:8000/register', '_blank')">Registration Page</button>
+        <button onclick="window.open('http://127.0.0.1:8000/dashboard', '_blank')">Dashboard</button>
+        <button onclick="window.open('http://127.0.0.1:8000/login', '_blank')">Login Page</button>
+    </div>
+
+    <div class="test-section">
+        <h3>📊 Debug Information</h3>
+        <div id="debug" class="debug">
+            <p>Debug information will appear here...</p>
+        </div>
+        <button onclick="testDashboard()">Test Dashboard Access</button>
+        <button onclick="testRegistration()">Test Registration Endpoint</button>
+    </div>
+
+    <script>
+        console.log('🚛 TIMS Registration Test Page Loaded');
+
+        // Test form submission
+        document.getElementById('testForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+            const debugDiv = document.getElementById('debug');
+
+            debugDiv.innerHTML = '<p>🔄 Testing registration...</p>';
+
+            fetch('http://127.0.0.1:8000/register', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json, text/plain, */*',
+                    'X-Inertia': 'true',
+                    'X-Inertia-Version': '1'
+                }
+            })
+            .then(response => {
+                console.log('📡 Registration Response:', response.status, response.statusText);
+                console.log('📡 Response Headers:', [...response.headers.entries()]);
+
+                if (response.redirected) {
+                    console.log('✅ Redirected to:', response.url);
+                    debugDiv.innerHTML = `
+                        <div class="success">
+                            <h4>✅ Registration Successful!</h4>
+                            <p>Redirected to: ${response.url}</p>
+                            <p>Status: ${response.status} ${response.statusText}</p>
+                        </div>
+                    `;
+                } else if (response.ok) {
+                    console.log('✅ Registration completed');
+                    debugDiv.innerHTML = `
+                        <div class="success">
+                            <h4>✅ Registration Completed</h4>
+                            <p>Status: ${response.status} ${response.statusText}</p>
+                            <p>No redirect detected - check Inertia.js handling</p>
+                        </div>
+                    `;
+                } else {
+                    console.log('❌ Registration failed');
+                    debugDiv.innerHTML = `
+                        <div class="error">
+                            <h4>❌ Registration Failed</h4>
+                            <p>Status: ${response.status} ${response.statusText}</p>
+                        </div>
+                    `;
+                }
+
+                return response.text();
+            })
+            .then(text => {
+                console.log('📄 Response Text:', text.substring(0, 200) + '...');
+            })
+            .catch(error => {
+                console.error('❌ Registration Error:', error);
+                debugDiv.innerHTML = `
+                    <div class="error">
+                        <h4>❌ Error</h4>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            });
+        });
+
+        // Test dashboard access
+        function testDashboard() {
+            const debugDiv = document.getElementById('debug');
+            debugDiv.innerHTML = '<p>🔄 Testing dashboard access...</p>';
+
+            fetch('http://127.0.0.1:8000/dashboard')
+                .then(response => {
+                    console.log('📡 Dashboard Response:', response.status, response.statusText);
+
+                    if (response.ok) {
+                        debugDiv.innerHTML = `
+                            <div class="success">
+                                <h4>✅ Dashboard Accessible</h4>
+                                <p>Status: ${response.status} ${response.statusText}</p>
+                                <p>Dashboard is reachable</p>
+                            </div>
+                        `;
+                    } else {
+                        debugDiv.innerHTML = `
+                            <div class="error">
+                                <h4>❌ Dashboard Not Accessible</h4>
+                                <p>Status: ${response.status} ${response.statusText}</p>
+                                <p>May require authentication</p>
+                            </div>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    console.error('❌ Dashboard Error:', error);
+                    debugDiv.innerHTML = `
+                        <div class="error">
+                            <h4>❌ Dashboard Error</h4>
+                            <p>${error.message}</p>
+                        </div>
+                    `;
+                });
+        }
+
+        // Test registration endpoint
+        function testRegistration() {
+            const debugDiv = document.getElementById('debug');
+            debugDiv.innerHTML = '<p>🔄 Testing registration endpoint...</p>';
+
+            fetch('http://127.0.0.1:8000/register')
+                .then(response => {
+                    console.log('📡 Registration Endpoint Response:', response.status, response.statusText);
+
+                    if (response.ok) {
+                        debugDiv.innerHTML = `
+                            <div class="success">
+                                <h4>✅ Registration Endpoint Accessible</h4>
+                                <p>Status: ${response.status} ${response.statusText}</p>
+                                <p>Registration page is reachable</p>
+                            </div>
+                        `;
+                    } else {
+                        debugDiv.innerHTML = `
+                            <div class="error">
+                                <h4>❌ Registration Endpoint Not Accessible</h4>
+                                <p>Status: ${response.status} ${response.statusText}</p>
+                            </div>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    console.error('❌ Registration Endpoint Error:', error);
+                    debugDiv.innerHTML = `
+                        <div class="error">
+                            <h4>❌ Registration Endpoint Error</h4>
+                            <p>${error.message}</p>
+                        </div>
+                    `;
+                });
+        }
+
+        // Auto-test on page load
+        window.addEventListener('load', function() {
+            console.log('🚀 Starting auto-tests...');
+            setTimeout(testRegistration, 1000);
+            setTimeout(testDashboard, 2000);
+        });
+    </script>
+</body>
+</html>
+

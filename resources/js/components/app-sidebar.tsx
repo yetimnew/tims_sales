@@ -13,14 +13,240 @@ import {
 import { dashboard } from '@/routes';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { BookOpen, Folder, LayoutGrid } from 'lucide-react';
+import {
+    BookOpen,
+    Folder,
+    LayoutGrid,
+    Truck,
+    Users,
+    Activity,
+    Building2,
+    MapPin,
+    Settings,
+    FileText,
+    UserCheck,
+    Shield,
+    BarChart3,
+    Globe,
+    Navigation,
+    Map,
+    Target,
+    Calendar,
+    DollarSign,
+    Wrench,
+    Fuel,
+    Package
+} from 'lucide-react';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
     {
         title: 'Dashboard',
-        href: dashboard(),
+        href: dashboard().url,
         icon: LayoutGrid,
+    },
+    {
+        title: 'Fleet Management',
+        icon: Truck,
+        items: [
+            {
+                title: 'Trucks',
+                href: '/trucks',
+                icon: Truck,
+            },
+            {
+                title: 'Drivers',
+                href: '/drivers',
+                icon: Users,
+            },
+            {
+                title: 'Vehicle Types',
+                href: '/vehicletypes',
+                icon: Settings,
+            },
+            {
+                title: 'Maintenance',
+                href: '/maintenance',
+                icon: Wrench,
+            },
+            {
+                title: 'Fuel Records',
+                href: '/fuel',
+                icon: Fuel,
+            },
+            {
+                title: 'Driver Performance',
+                href: '/driver-performance',
+                icon: BarChart3,
+            },
+            {
+                title: 'Driver Safety',
+                href: '/driver-safety',
+                icon: Shield,
+            },
+            {
+                title: 'Cargo Types',
+                href: '/cargo-types',
+                icon: Package,
+            },
+        ],
+    },
+    {
+        title: 'Financial Management',
+        icon: DollarSign,
+        items: [
+            {
+                title: 'Financial Records',
+                href: '/financial',
+                icon: DollarSign,
+            },
+            {
+                title: 'Route Planning',
+                href: '/route-plans',
+                icon: Navigation,
+            },
+        ],
+    },
+    {
+        title: 'Operations',
+        icon: Activity,
+        items: [
+            {
+                title: 'Operations',
+                href: '/operations',
+                icon: Activity,
+            },
+            {
+                title: 'Performances',
+                href: '/performances',
+                icon: BarChart3,
+            },
+            {
+                title: 'Customers',
+                href: '/customers',
+                icon: Building2,
+            },
+        ],
+    },
+    {
+        title: 'Geographic Management',
+        icon: Globe,
+        items: [
+            {
+                title: 'Regions',
+                href: '/regions',
+                icon: Globe,
+            },
+            {
+                title: 'Zones',
+                href: '/zones',
+                icon: Navigation,
+            },
+            {
+                title: 'Woredas',
+                href: '/woredas',
+                icon: Map,
+            },
+            {
+                title: 'Places',
+                href: '/places',
+                icon: MapPin,
+            },
+            {
+                title: 'Distances',
+                href: '/distances',
+                icon: Target,
+            },
+        ],
+    },
+    {
+        title: 'Status Management',
+        icon: Settings,
+        items: [
+            {
+                title: 'Status Types',
+                href: '/statustypes',
+                icon: Settings,
+            },
+            {
+                title: 'Statuses',
+                href: '/statuses',
+                icon: Target,
+            },
+        ],
+    },
+    {
+        title: 'Outsourcing',
+        icon: UserCheck,
+        items: [
+            {
+                title: 'Outsources',
+                href: '/outsources',
+                icon: UserCheck,
+            },
+            {
+                title: 'Outsource Performances',
+                href: '/outsource-performances',
+                icon: Activity,
+            },
+        ],
+    },
+    {
+        title: 'Reports',
+        icon: FileText,
+        items: [
+            {
+                title: 'Truck Reports',
+                href: '/reports/trucks',
+                icon: Truck,
+            },
+            {
+                title: 'Driver Reports',
+                href: '/reports/drivers',
+                icon: Users,
+            },
+            {
+                title: 'Performance Reports',
+                href: '/reports/performances',
+                icon: BarChart3,
+            },
+            {
+                title: 'Operation Reports',
+                href: '/reports/operations',
+                icon: Activity,
+            },
+            {
+                title: 'Financial Reports',
+                href: '/reports/financial',
+                icon: DollarSign,
+            },
+            {
+                title: 'Maintenance Reports',
+                href: '/reports/maintenance',
+                icon: Wrench,
+            },
+        ],
+    },
+    {
+        title: 'User Management',
+        icon: Shield,
+        items: [
+            {
+                title: 'Users',
+                href: '/users',
+                icon: Users,
+            },
+            {
+                title: 'Roles',
+                href: '/roles',
+                icon: Shield,
+            },
+            {
+                title: 'Permissions',
+                href: '/permissions',
+                icon: UserCheck,
+            },
+        ],
     },
 ];
 
@@ -44,7 +270,7 @@ export function AppSidebar() {
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild>
-                            <Link href={dashboard()} prefetch>
+                            <Link href={dashboard().url} prefetch>
                                 <AppLogo />
                             </Link>
                         </SidebarMenuButton>

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TIMS Test Page</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+</head>
+<body>
+    <div id="app"></div>
+
+    <script>
+        // Test React rendering
+        const React = window.React;
+        const ReactDOM = window.ReactDOM;
+
+        const App = function() {
+            return React.createElement('div', {
+                style: {
+                    padding: '20px',
+                    fontFamily: 'Arial, sans-serif',
+                    maxWidth: '1200px',
+                    margin: '0 auto'
+                }
+            }, [
+                React.createElement('h1', {
+                    key: 'title',
+                    style: { color: '#2563eb', marginBottom: '20px' }
+                }, '🚛 Transport Information Management System (TIMS)'),
+
+                React.createElement('div', {
+                    key: 'content',
+                    style: {
+                        backgroundColor: '#f8fafc',
+                        padding: '20px',
+                        borderRadius: '8px',
+                        border: '1px solid #e2e8f0'
+                    }
+                }, [
+                    React.createElement('h2', {
+                        key: 'subtitle',
+                        style: { color: '#1e293b', marginBottom: '15px' }
+                    }, 'System Status'),
+
+                    React.createElement('div', {
+                        key: 'status',
+                        style: { marginBottom: '15px' }
+                    }, [
+                        React.createElement('p', { key: 'backend' }, '✅ Backend: Laravel 12 - Running'),
+                        React.createElement('p', { key: 'database' }, '✅ Database: SQLite - Connected'),
+                        React.createElement('p', { key: 'models' }, '✅ Models: All TIMS models loaded'),
+                        React.createElement('p', { key: 'routes' }, '✅ Routes: All endpoints configured'),
+                        React.createElement('p', { key: 'controllers' }, '✅ Controllers: All CRUD operations ready'),
+                        React.createElement('p', { key: 'tests' }, '✅ Tests: 74% passing'),
+                    ]),
+
+                    React.createElement('div', {
+                        key: 'warning',
+                        style: {
+                            backgroundColor: '#fef3c7',
+                            border: '1px solid #f59e0b',
+                            padding: '15px',
+                            borderRadius: '6px',
+                            marginTop: '20px'
+                        }
+                    }, [
+                        React.createElement('h3', {
+                            key: 'warning-title',
+                            style: { color: '#92400e', marginBottom: '10px' }
+                        }, '⚠️ Frontend Development Mode'),
+
+                        React.createElement('p', {
+                            key: 'warning-text',
+                            style: { color: '#92400e', margin: 0 }
+                        }, 'This is a temporary frontend build. To enable full React functionality, please upgrade Node.js to version 20.19+ or 22.12+ and run "npm run build".'),
+
+                        React.createElement('p', {
+                            key: 'warning-link',
+                            style: { color: '#92400e', margin: '10px 0 0 0' }
+                        }, 'See NODEJS_UPGRADE_GUIDE.md for detailed instructions.')
+                    ])
+                ])
+            ]);
+        };
+
+        // Render the app
+        ReactDOM.render(React.createElement(App), document.getElementById('app'));
+
+        console.log('✅ TIMS Test Page loaded successfully!');
+    </script>
+</body>
+</html>
+

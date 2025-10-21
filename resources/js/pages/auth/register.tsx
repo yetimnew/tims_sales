@@ -1,5 +1,4 @@
 import { login } from '@/routes';
-import { store } from '@/routes/register';
 import { Form, Head } from '@inertiajs/react';
 
 import InputError from '@/components/input-error';
@@ -18,10 +17,21 @@ export default function Register() {
         >
             <Head title="Register" />
             <Form
-                {...store.form()}
+                action="/register"
+                method="post"
                 resetOnSuccess={['password', 'password_confirmation']}
                 disableWhileProcessing
                 className="flex flex-col gap-6"
+                onSuccess={() => {
+                    console.log('✅ Registration successful, redirecting to dashboard...');
+                    // Force redirect if Inertia doesn't handle it automatically
+                    setTimeout(() => {
+                        window.location.href = '/dashboard';
+                    }, 100);
+                }}
+                onError={(errors) => {
+                    console.log('❌ Registration errors:', errors);
+                }}
             >
                 {({ processing, errors }) => (
                     <>
