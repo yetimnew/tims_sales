@@ -9,18 +9,43 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Support\Facades\Log;
 use Exception;
+use Spatie\ActivityLog\Facades\Activity;
 
 class ZoneController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index(): Response
+    public function index(Request $request): Response
     {
-        $zones = Zone::with(['region'])
-            ->withCount('woredas')
-            ->orderBy('name')
-            ->paginate(15);
+        $query = Zone::with(['region'])->withCount('woredas');
+
+        // Handle search
+        if ($request->has('search') && !empty($request->input('search'))) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('code', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%")
+                    ->orWhereHas('region', function ($q) use ($search) {
+                        $q->where('name', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        // Handle sorting
+        $sort = $request->input('sort', 'name');
+        $direction = $request->input('direction', 'asc');
+
+        // Validate sort column to prevent SQL injection
+        $allowedSorts = ['name', 'code', 'woredas_count', 'created_at'];
+        if (!in_array($sort, $allowedSorts)) {
+            $sort = 'name';
+        }
+
+        $query->orderBy($sort, $direction);
+
+        $zones = $query->paginate(15);
 
         return Inertia::render('Zones/Index', [
             'zones' => $zones,
@@ -53,12 +78,9 @@ class ZoneController extends Controller
 
             $zone = Zone::create($validated);
 
-            Log::info('Zone created', [
-                'zone_id' => $zone->id,
-                'name' => $zone->name,
-                'region_id' => $zone->region_id,
-                'user_id' => auth()->id(),
-            ]);
+            Activity::performedOn($zone)
+                ->causedBy(auth()->user())
+                ->log('created');
 
             return redirect()->route('zones.index')
                 ->with('success', 'Zone created successfully.');
@@ -81,8 +103,14 @@ class ZoneController extends Controller
     {
         $zone->load(['region', 'woredas']);
 
+        $activityLogs = Activity::forSubject($zone)
+            ->with('causer')
+            ->orderByDesc('created_at')
+            ->get();
+
         return Inertia::render('Zones/Show', [
             'zone' => $zone,
+            'activityLogs' => $activityLogs,
         ]);
     }
 
@@ -111,14 +139,13 @@ class ZoneController extends Controller
                 'description' => 'nullable|string|max:1000',
             ]);
 
+            $oldData = $zone->toArray();
             $zone->update($validated);
 
-            Log::info('Zone updated', [
-                'zone_id' => $zone->id,
-                'name' => $zone->name,
-                'region_id' => $zone->region_id,
-                'user_id' => auth()->id(),
-            ]);
+            Activity::performedOn($zone)
+                ->causedBy(auth()->user())
+                ->withProperties(['old' => $oldData, 'new' => $zone->toArray()])
+                ->log('updated');
 
             return redirect()->route('zones.index')
                 ->with('success', 'Zone updated successfully.');
@@ -149,11 +176,10 @@ class ZoneController extends Controller
             $zoneData = $zone->toArray();
             $zone->delete();
 
-            Log::info('Zone deleted', [
-                'zone_id' => $zone->id,
-                'name' => $zoneData['name'],
-                'user_id' => auth()->id(),
-            ]);
+            Activity::performedOn($zone)
+                ->causedBy(auth()->user())
+                ->withProperties(['deleted' => $zoneData])
+                ->log('deleted');
 
             return redirect()->route('zones.index')
                 ->with('success', 'Zone deleted successfully.');
@@ -167,6 +193,78 @@ class ZoneController extends Controller
 
             return back()->withErrors(['error' => 'Failed to delete zone. Please try again.']);
         }
+    }
+
+    /**
+     * Export zones to CSV
+     */
+    public function export(Request $request)
+    {
+        $query = Zone::with(['region'])->withCount('woredas');
+
+        // Apply same search and sort as index
+        if ($request->has('search') && !empty($request->input('search'))) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('code', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%")
+                    ->orWhereHas('region', function ($q) use ($search) {
+                        $q->where('name', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        $sort = $request->input('sort', 'name');
+        $direction = $request->input('direction', 'asc');
+
+        $allowedSorts = ['name', 'code', 'woredas_count', 'created_at'];
+        if (!in_array($sort, $allowedSorts)) {
+            $sort = 'name';
+        }
+
+        $query->orderBy($sort, $direction);
+
+        $zones = $query->get();
+
+        // Generate CSV
+        $filename = 'zones-' . date('Y-m-d-H-i-s') . '.csv';
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+
+        $callback = function () use ($zones) {
+            $file = fopen('php://output', 'w');
+
+            // Add BOM for UTF-8
+            fwrite($file, "\xEF\xBB\xBF");
+
+            // Header row
+            fputcsv($file, ['ID', 'Name', 'Code', 'Region', 'Description', 'Woredas Count', 'Created At']);
+
+            // Data rows
+            foreach ($zones as $zone) {
+                fputcsv($file, [
+                    $zone->id,
+                    $zone->name,
+                    $zone->code,
+                    $zone->region?->name ?? 'N/A',
+                    $zone->description,
+                    $zone->woredas_count,
+                    $zone->created_at,
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        // Log export activity
+        Activity::causedBy(auth()->user())
+            ->withProperties(['count' => count($zones)])
+            ->log('exported');
+
+        return response()->stream($callback, 200, $headers);
     }
 }
 

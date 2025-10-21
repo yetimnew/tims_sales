@@ -8,15 +8,41 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Support\Facades\Log;
 use Exception;
+use Spatie\ActivityLog\Facades\Activity;
 
 class CargoTypeController extends Controller
 {
     /**
      * Display a listing of cargo types.
      */
-    public function index(): Response
+    public function index(Request $request): Response
     {
-        $cargoTypes = CargoType::orderBy('name')->paginate(15);
+        $query = CargoType::query();
+
+        // Handle search
+        if ($request->has('search') && !empty($request->input('search'))) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('category', 'like', "%{$search}%")
+                    ->orWhere('handling_requirements', 'like', "%{$search}%")
+                    ->orWhere('safety_requirements', 'like', "%{$search}%");
+            });
+        }
+
+        // Handle sorting
+        $sort = $request->input('sort', 'name');
+        $direction = $request->input('direction', 'asc');
+
+        // Validate sort column to prevent SQL injection
+        $allowedSorts = ['name', 'category', 'weight_per_cubic_meter', 'requires_special_equipment', 'created_at'];
+        if (!in_array($sort, $allowedSorts)) {
+            $sort = 'name';
+        }
+
+        $query->orderBy($sort, $direction);
+
+        $cargoTypes = $query->paginate(15);
 
         return Inertia::render('CargoTypes/Index', [
             'cargoTypes' => $cargoTypes,
@@ -48,12 +74,9 @@ class CargoTypeController extends Controller
 
             $cargoType = CargoType::create($validated);
 
-            Log::info('Cargo type created', [
-                'cargo_type_id' => $cargoType->id,
-                'name' => $cargoType->name,
-                'category' => $cargoType->category,
-                'user_id' => auth()->id(),
-            ]);
+            Activity::performedOn($cargoType)
+                ->causedBy(auth()->user())
+                ->log('created');
 
             return redirect()->route('cargo-types.index')
                 ->with('success', 'Cargo type created successfully.');
@@ -76,8 +99,14 @@ class CargoTypeController extends Controller
     {
         $cargoType->load('performances');
 
+        $activityLogs = Activity::forSubject($cargoType)
+            ->with('causer')
+            ->orderByDesc('created_at')
+            ->get();
+
         return Inertia::render('CargoTypes/Show', [
             'cargoType' => $cargoType,
+            'activityLogs' => $activityLogs,
         ]);
     }
 
@@ -106,14 +135,13 @@ class CargoTypeController extends Controller
                 'requires_special_equipment' => 'boolean',
             ]);
 
+            $oldData = $cargoType->toArray();
             $cargoType->update($validated);
 
-            Log::info('Cargo type updated', [
-                'cargo_type_id' => $cargoType->id,
-                'name' => $cargoType->name,
-                'category' => $cargoType->category,
-                'user_id' => auth()->id(),
-            ]);
+            Activity::performedOn($cargoType)
+                ->causedBy(auth()->user())
+                ->withProperties(['old' => $oldData, 'new' => $cargoType->toArray()])
+                ->log('updated');
 
             return redirect()->route('cargo-types.index')
                 ->with('success', 'Cargo type updated successfully.');
@@ -144,11 +172,10 @@ class CargoTypeController extends Controller
             $cargoTypeData = $cargoType->toArray();
             $cargoType->delete();
 
-            Log::info('Cargo type deleted', [
-                'cargo_type_id' => $cargoType->id,
-                'name' => $cargoTypeData['name'],
-                'user_id' => auth()->id(),
-            ]);
+            Activity::performedOn($cargoType)
+                ->causedBy(auth()->user())
+                ->withProperties(['deleted' => $cargoTypeData])
+                ->log('deleted');
 
             return redirect()->route('cargo-types.index')
                 ->with('success', 'Cargo type deleted successfully.');
@@ -232,6 +259,77 @@ class CargoTypeController extends Controller
                 'message' => 'Failed to retrieve cargo types by category'
             ], 500);
         }
+    }
+
+    /**
+     * Export cargo types to CSV
+     */
+    public function export(Request $request)
+    {
+        $query = CargoType::query();
+
+        // Apply same search and sort as index
+        if ($request->has('search') && !empty($request->input('search'))) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('category', 'like', "%{$search}%")
+                    ->orWhere('handling_requirements', 'like', "%{$search}%")
+                    ->orWhere('safety_requirements', 'like', "%{$search}%");
+            });
+        }
+
+        $sort = $request->input('sort', 'name');
+        $direction = $request->input('direction', 'asc');
+
+        $allowedSorts = ['name', 'category', 'weight_per_cubic_meter', 'requires_special_equipment', 'created_at'];
+        if (!in_array($sort, $allowedSorts)) {
+            $sort = 'name';
+        }
+
+        $query->orderBy($sort, $direction);
+
+        $cargoTypes = $query->get();
+
+        // Generate CSV
+        $filename = 'cargo-types-' . date('Y-m-d-H-i-s') . '.csv';
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+
+        $callback = function () use ($cargoTypes) {
+            $file = fopen('php://output', 'w');
+
+            // Add BOM for UTF-8
+            fwrite($file, "\xEF\xBB\xBF");
+
+            // Header row
+            fputcsv($file, ['ID', 'Name', 'Category', 'Weight per m³', 'Handling Requirements', 'Safety Requirements', 'Special Equipment', 'Created At']);
+
+            // Data rows
+            foreach ($cargoTypes as $cargoType) {
+                fputcsv($file, [
+                    $cargoType->id,
+                    $cargoType->name,
+                    $cargoType->category,
+                    $cargoType->weight_per_cubic_meter,
+                    $cargoType->handling_requirements,
+                    $cargoType->safety_requirements,
+                    $cargoType->requires_special_equipment ? 'Yes' : 'No',
+                    $cargoType->created_at,
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        // Log export activity
+        Activity::causedBy(auth()->user())
+            ->withProperties(['count' => count($cargoTypes)])
+            ->log('exported');
+
+        return response()->stream($callback, 200, $headers);
     }
 }
 

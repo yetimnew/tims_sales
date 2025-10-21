@@ -8,17 +8,40 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Support\Facades\Log;
 use Exception;
+use Spatie\ActivityLog\Facades\Activity;
 
 class RegionController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index(): Response
+    public function index(Request $request): Response
     {
-        $regions = Region::withCount('zones')
-            ->orderBy('name')
-            ->paginate(15);
+        $query = Region::withCount('zones');
+
+        // Handle search
+        if ($request->has('search') && !empty($request->input('search'))) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('code', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%");
+            });
+        }
+
+        // Handle sorting
+        $sort = $request->input('sort', 'name');
+        $direction = $request->input('direction', 'asc');
+
+        // Validate sort column to prevent SQL injection
+        $allowedSorts = ['name', 'code', 'zones_count', 'created_at'];
+        if (!in_array($sort, $allowedSorts)) {
+            $sort = 'name';
+        }
+
+        $query->orderBy($sort, $direction);
+
+        $regions = $query->paginate(15);
 
         return Inertia::render('Regions/Index', [
             'regions' => $regions,
@@ -46,11 +69,9 @@ class RegionController extends Controller
 
             $region = Region::create($validated);
 
-            Log::info('Region created', [
-                'region_id' => $region->id,
-                'name' => $region->name,
-                'user_id' => auth()->id(),
-            ]);
+            Activity::performedOn($region)
+                ->causedBy(auth()->user())
+                ->log('created');
 
             return redirect()->route('regions.index')
                 ->with('success', 'Region created successfully.');
@@ -73,8 +94,14 @@ class RegionController extends Controller
     {
         $region->load(['zones']);
 
+        $activityLogs = Activity::forSubject($region)
+            ->with('causer')
+            ->orderByDesc('created_at')
+            ->get();
+
         return Inertia::render('Regions/Show', [
             'region' => $region,
+            'activityLogs' => $activityLogs,
         ]);
     }
 
@@ -99,13 +126,13 @@ class RegionController extends Controller
                 'description' => 'nullable|string|max:1000',
             ]);
 
+            $oldData = $region->toArray();
             $region->update($validated);
 
-            Log::info('Region updated', [
-                'region_id' => $region->id,
-                'name' => $region->name,
-                'user_id' => auth()->id(),
-            ]);
+            Activity::performedOn($region)
+                ->causedBy(auth()->user())
+                ->withProperties(['old' => $oldData, 'new' => $region->toArray()])
+                ->log('updated');
 
             return redirect()->route('regions.index')
                 ->with('success', 'Region updated successfully.');
@@ -136,11 +163,10 @@ class RegionController extends Controller
             $regionData = $region->toArray();
             $region->delete();
 
-            Log::info('Region deleted', [
-                'region_id' => $region->id,
-                'name' => $regionData['name'],
-                'user_id' => auth()->id(),
-            ]);
+            Activity::performedOn($region)
+                ->causedBy(auth()->user())
+                ->withProperties(['deleted' => $regionData])
+                ->log('deleted');
 
             return redirect()->route('regions.index')
                 ->with('success', 'Region deleted successfully.');
@@ -154,6 +180,74 @@ class RegionController extends Controller
 
             return back()->withErrors(['error' => 'Failed to delete region. Please try again.']);
         }
+    }
+
+    /**
+     * Export regions to CSV
+     */
+    public function export(Request $request)
+    {
+        $query = Region::withCount('zones');
+
+        // Apply same search and sort as index
+        if ($request->has('search') && !empty($request->input('search'))) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('code', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%");
+            });
+        }
+
+        $sort = $request->input('sort', 'name');
+        $direction = $request->input('direction', 'asc');
+
+        $allowedSorts = ['name', 'code', 'zones_count', 'created_at'];
+        if (!in_array($sort, $allowedSorts)) {
+            $sort = 'name';
+        }
+
+        $query->orderBy($sort, $direction);
+
+        $regions = $query->get();
+
+        // Generate CSV
+        $filename = 'regions-' . date('Y-m-d-H-i-s') . '.csv';
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+
+        $callback = function () use ($regions) {
+            $file = fopen('php://output', 'w');
+
+            // Add BOM for UTF-8
+            fwrite($file, "\xEF\xBB\xBF");
+
+            // Header row
+            fputcsv($file, ['ID', 'Name', 'Code', 'Description', 'Zones Count', 'Created At']);
+
+            // Data rows
+            foreach ($regions as $region) {
+                fputcsv($file, [
+                    $region->id,
+                    $region->name,
+                    $region->code,
+                    $region->description,
+                    $region->zones_count,
+                    $region->created_at,
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        // Log export activity
+        Activity::causedBy(auth()->user())
+            ->withProperties(['count' => count($regions)])
+            ->log('exported');
+
+        return response()->stream($callback, 200, $headers);
     }
 }
 
