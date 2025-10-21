@@ -24,3 +24,5 @@ class StatusType extends Model
     }
 }
 
+
+

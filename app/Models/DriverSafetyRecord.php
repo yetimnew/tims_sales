@@ -142,3 +142,5 @@ class DriverSafetyRecord extends Model
     }
 }
 
+
+

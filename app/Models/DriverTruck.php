@@ -82,3 +82,5 @@ class DriverTruck extends Model
     }
 }
 
+
+

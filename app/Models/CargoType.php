@@ -109,3 +109,5 @@ class CargoType extends Model
     }
 }
 
+
+

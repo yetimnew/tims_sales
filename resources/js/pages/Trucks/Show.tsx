@@ -288,3 +288,5 @@ export default function TrucksShow({ truck }: TrucksShowProps) {
     );
 }
 
+
+

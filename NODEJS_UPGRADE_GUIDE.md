@@ -68,3 +68,5 @@ The application is currently working with temporary manifest files. This is a te
 ⏳ Node.js upgrade pending
 ⏳ Proper frontend build pending
 
+
+

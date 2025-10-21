@@ -159,3 +159,5 @@ class VehicleTypeController extends Controller
     }
 }
 
+
+

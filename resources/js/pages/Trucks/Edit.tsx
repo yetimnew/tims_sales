@@ -262,3 +262,5 @@ export default function TrucksEdit({ truck, vehicleTypes }: TrucksEditProps) {
     );
 }
 
+
+

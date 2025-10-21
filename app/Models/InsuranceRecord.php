@@ -125,3 +125,5 @@ class InsuranceRecord extends Model
     }
 }
 
+
+

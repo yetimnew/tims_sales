@@ -123,3 +123,5 @@ class TruckFinancialRecord extends Model
     }
 }
 
+
+

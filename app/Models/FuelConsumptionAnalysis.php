@@ -98,3 +98,5 @@ class FuelConsumptionAnalysis extends Model
     }
 }
 
+
+

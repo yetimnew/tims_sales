@@ -108,3 +108,5 @@ export default function VehicleTypesEdit({ vehicleType }: VehicleTypesEditProps)
     );
 }
 
+
+
