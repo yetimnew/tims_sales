@@ -6,7 +6,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import AppLayout from '@/layouts/app-layout';
 import { Head, useForm } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
-import { FormEventHandler } from 'react';
+import { toast } from '@/hooks/use-toast';
+import { validateTruck, type ValidationErrors } from '@/lib/validation';
+import { AlertCircle } from 'lucide-react';
+import { FormEventHandler, useEffect, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -57,10 +60,56 @@ export default function TrucksEdit({ truck, vehicleTypes }: TrucksEditProps) {
         status: truck.status,
     });
 
+    const [frontendErrors, setFrontendErrors] = useState<ValidationErrors>({});
+
+    // Real-time frontend validation
+    const validateField = (field: string, value: string) => {
+        const allData = { ...data, [field]: value };
+        const fieldErrors = validateTruck(allData);
+        setFrontendErrors(fieldErrors);
+    };
+
+    // Show validation errors as toast
+    useEffect(() => {
+        const errorMessages = Object.entries(errors).map(([field, message]) => {
+            if (typeof message === 'string') return message;
+            return String(message);
+        });
+
+        if (errorMessages.length > 0) {
+            toast({
+                title: '⚠️ Validation Error',
+                description: errorMessages.join(', '),
+                variant: 'destructive',
+            });
+        }
+    }, [errors]);
+
+    const handleFieldChange = (field: string, value: string) => {
+        setData(field as any, value);
+        validateField(field, value);
+    };
+
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
+
+        // Check frontend validation
+        const allErrors = validateTruck(data);
+        if (Object.keys(allErrors).length > 0) {
+            setFrontendErrors(allErrors);
+            toast({
+                title: '⚠️ Validation Error',
+                description: 'Please fix the validation errors before submitting',
+                variant: 'destructive',
+            });
+            return;
+        }
+
         put(`/trucks/${truck.id}`);
     };
+
+    const hasErrors = Object.keys(errors).length > 0 || Object.keys(frontendErrors).length > 0;
+    const getFieldError = (fieldName: string) => errors[fieldName as keyof typeof errors] || frontendErrors[fieldName] || '';
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -73,6 +122,23 @@ export default function TrucksEdit({ truck, vehicleTypes }: TrucksEditProps) {
                         Update the truck information for {truck.plate}
                     </p>
                 </div>
+
+                {/* Error Alert */}
+                {hasErrors && (
+                    <div className="flex gap-3 rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-destructive">
+                        <AlertCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                        <div>
+                            <h3 className="font-semibold mb-1">Please fix the following errors:</h3>
+                            <ul className="list-inside list-disc space-y-1 text-sm">
+                                {Object.entries({ ...errors, ...frontendErrors }).map(([field, message]) => (
+                                    <li key={field}>
+                                        {typeof message === 'string' ? message : String(message)}
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    </div>
+                )}
 
                 {/* Form */}
                 <Card>
@@ -91,12 +157,12 @@ export default function TrucksEdit({ truck, vehicleTypes }: TrucksEditProps) {
                                         id="plate"
                                         type="text"
                                         value={data.plate}
-                                        onChange={(e) => setData('plate', e.target.value.toUpperCase())}
+                                        onChange={(e) => handleFieldChange('plate', e.target.value.toUpperCase())}
                                         placeholder="e.g., AA-1234"
-                                        className={errors.plate ? 'border-red-500' : ''}
+                                        className={getFieldError('plate') ? 'border-red-500 focus:border-red-500' : ''}
                                     />
-                                    {errors.plate && (
-                                        <p className="text-sm text-red-500">{errors.plate}</p>
+                                    {getFieldError('plate') && (
+                                        <p className="text-sm text-red-500">{getFieldError('plate')}</p>
                                     )}
                                 </div>
 
@@ -104,9 +170,9 @@ export default function TrucksEdit({ truck, vehicleTypes }: TrucksEditProps) {
                                     <Label htmlFor="vehicletype_id">Vehicle Type *</Label>
                                     <Select
                                         value={data.vehicletype_id}
-                                        onValueChange={(value) => setData('vehicletype_id', value)}
+                                        onValueChange={(value) => handleFieldChange('vehicletype_id', value)}
                                     >
-                                        <SelectTrigger className={errors.vehicletype_id ? 'border-red-500' : ''}>
+                                        <SelectTrigger className={getFieldError('vehicletype_id') ? 'border-red-500' : ''}>
                                             <SelectValue placeholder="Select vehicle type" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -117,8 +183,8 @@ export default function TrucksEdit({ truck, vehicleTypes }: TrucksEditProps) {
                                             ))}
                                         </SelectContent>
                                     </Select>
-                                    {errors.vehicletype_id && (
-                                        <p className="text-sm text-red-500">{errors.vehicletype_id}</p>
+                                    {getFieldError('vehicletype_id') && (
+                                        <p className="text-sm text-red-500">{getFieldError('vehicletype_id')}</p>
                                     )}
                                 </div>
 
@@ -130,11 +196,7 @@ export default function TrucksEdit({ truck, vehicleTypes }: TrucksEditProps) {
                                         value={data.chasisNumber}
                                         onChange={(e) => setData('chasisNumber', e.target.value)}
                                         placeholder="Chassis number"
-                                        className={errors.chasisNumber ? 'border-red-500' : ''}
                                     />
-                                    {errors.chasisNumber && (
-                                        <p className="text-sm text-red-500">{errors.chasisNumber}</p>
-                                    )}
                                 </div>
 
                                 <div className="space-y-2">
@@ -145,11 +207,7 @@ export default function TrucksEdit({ truck, vehicleTypes }: TrucksEditProps) {
                                         value={data.engineNumber}
                                         onChange={(e) => setData('engineNumber', e.target.value)}
                                         placeholder="Engine number"
-                                        className={errors.engineNumber ? 'border-red-500' : ''}
                                     />
-                                    {errors.engineNumber && (
-                                        <p className="text-sm text-red-500">{errors.engineNumber}</p>
-                                    )}
                                 </div>
 
                                 <div className="space-y-2">
@@ -160,11 +218,7 @@ export default function TrucksEdit({ truck, vehicleTypes }: TrucksEditProps) {
                                         value={data.tyreSyze}
                                         onChange={(e) => setData('tyreSyze', e.target.value)}
                                         placeholder="e.g., 315/80R22.5"
-                                        className={errors.tyreSyze ? 'border-red-500' : ''}
                                     />
-                                    {errors.tyreSyze && (
-                                        <p className="text-sm text-red-500">{errors.tyreSyze}</p>
-                                    )}
                                 </div>
 
                                 <div className="space-y-2">
@@ -173,12 +227,12 @@ export default function TrucksEdit({ truck, vehicleTypes }: TrucksEditProps) {
                                         id="serviceIntervalKM"
                                         type="number"
                                         value={data.serviceIntervalKM}
-                                        onChange={(e) => setData('serviceIntervalKM', e.target.value)}
+                                        onChange={(e) => handleFieldChange('serviceIntervalKM', e.target.value)}
                                         placeholder="e.g., 10000"
-                                        className={errors.serviceIntervalKM ? 'border-red-500' : ''}
+                                        className={getFieldError('serviceIntervalKM') ? 'border-red-500 focus:border-red-500' : ''}
                                     />
-                                    {errors.serviceIntervalKM && (
-                                        <p className="text-sm text-red-500">{errors.serviceIntervalKM}</p>
+                                    {getFieldError('serviceIntervalKM') && (
+                                        <p className="text-sm text-red-500">{getFieldError('serviceIntervalKM')}</p>
                                     )}
                                 </div>
 
@@ -189,12 +243,12 @@ export default function TrucksEdit({ truck, vehicleTypes }: TrucksEditProps) {
                                         type="number"
                                         step="0.01"
                                         value={data.purchasePrice}
-                                        onChange={(e) => setData('purchasePrice', e.target.value)}
+                                        onChange={(e) => handleFieldChange('purchasePrice', e.target.value)}
                                         placeholder="e.g., 2500000.00"
-                                        className={errors.purchasePrice ? 'border-red-500' : ''}
+                                        className={getFieldError('purchasePrice') ? 'border-red-500 focus:border-red-500' : ''}
                                     />
-                                    {errors.purchasePrice && (
-                                        <p className="text-sm text-red-500">{errors.purchasePrice}</p>
+                                    {getFieldError('purchasePrice') && (
+                                        <p className="text-sm text-red-500">{getFieldError('purchasePrice')}</p>
                                     )}
                                 </div>
 
@@ -204,11 +258,11 @@ export default function TrucksEdit({ truck, vehicleTypes }: TrucksEditProps) {
                                         id="productionDate"
                                         type="date"
                                         value={data.productionDate}
-                                        onChange={(e) => setData('productionDate', e.target.value)}
-                                        className={errors.productionDate ? 'border-red-500' : ''}
+                                        onChange={(e) => handleFieldChange('productionDate', e.target.value)}
+                                        className={getFieldError('productionDate') ? 'border-red-500 focus:border-red-500' : ''}
                                     />
-                                    {errors.productionDate && (
-                                        <p className="text-sm text-red-500">{errors.productionDate}</p>
+                                    {getFieldError('productionDate') && (
+                                        <p className="text-sm text-red-500">{getFieldError('productionDate')}</p>
                                     )}
                                 </div>
 
@@ -218,11 +272,11 @@ export default function TrucksEdit({ truck, vehicleTypes }: TrucksEditProps) {
                                         id="serviceStartDate"
                                         type="date"
                                         value={data.serviceStartDate}
-                                        onChange={(e) => setData('serviceStartDate', e.target.value)}
-                                        className={errors.serviceStartDate ? 'border-red-500' : ''}
+                                        onChange={(e) => handleFieldChange('serviceStartDate', e.target.value)}
+                                        className={getFieldError('serviceStartDate') ? 'border-red-500 focus:border-red-500' : ''}
                                     />
-                                    {errors.serviceStartDate && (
-                                        <p className="text-sm text-red-500">{errors.serviceStartDate}</p>
+                                    {getFieldError('serviceStartDate') && (
+                                        <p className="text-sm text-red-500">{getFieldError('serviceStartDate')}</p>
                                     )}
                                 </div>
 
@@ -230,24 +284,25 @@ export default function TrucksEdit({ truck, vehicleTypes }: TrucksEditProps) {
                                     <Label htmlFor="status">Status *</Label>
                                     <Select
                                         value={data.status}
-                                        onValueChange={(value) => setData('status', value)}
+                                        onValueChange={(value) => handleFieldChange('status', value)}
                                     >
-                                        <SelectTrigger className={errors.status ? 'border-red-500' : ''}>
+                                        <SelectTrigger className={getFieldError('status') ? 'border-red-500' : ''}>
                                             <SelectValue placeholder="Select status" />
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="active">Active</SelectItem>
+                                            <SelectItem value="maintenance">Maintenance</SelectItem>
                                             <SelectItem value="inactive">Inactive</SelectItem>
                                         </SelectContent>
                                     </Select>
-                                    {errors.status && (
-                                        <p className="text-sm text-red-500">{errors.status}</p>
+                                    {getFieldError('status') && (
+                                        <p className="text-sm text-red-500">{getFieldError('status')}</p>
                                     )}
                                 </div>
                             </div>
 
                             <div className="flex gap-2">
-                                <Button type="submit" disabled={processing}>
+                                <Button type="submit" disabled={processing || Object.keys(frontendErrors).length > 0}>
                                     {processing ? 'Updating...' : 'Update Truck'}
                                 </Button>
                                 <Button type="button" variant="outline" asChild>

@@ -7,6 +7,8 @@ use App\Models\Truck;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Exception;
+use Spatie\ActivityLog\Facades\Activity;
 
 class DriverController extends Controller
 {
@@ -60,24 +62,34 @@ class DriverController extends Controller
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'driverid' => 'required|string|max:255|unique:drivers',
-            'name' => 'required|string|max:255',
-            'sex' => 'required|string|in:male,female',
-            'birthdate' => 'nullable|date',
-            'zone' => 'nullable|string|max:255',
-            'woreda' => 'nullable|string|max:255',
-            'kebele' => 'nullable|string|max:255',
-            'housenumber' => 'nullable|string|max:255',
-            'mobile' => 'nullable|string|max:255',
-            'hireddate' => 'nullable|date',
-            'status' => 'required|string|in:active,inactive',
-        ]);
+        try {
+            $validated = $request->validate([
+                'driverid' => 'required|string|max:255|unique:drivers',
+                'name' => 'required|string|max:255',
+                'sex' => 'required|string|in:male,female',
+                'birthdate' => 'nullable|date',
+                'zone' => 'nullable|string|max:255',
+                'woreda' => 'nullable|string|max:255',
+                'kebele' => 'nullable|string|max:255',
+                'housenumber' => 'nullable|string|max:255',
+                'mobile' => 'nullable|string|max:255',
+                'hireddate' => 'nullable|date',
+                'status' => 'required|string|in:active,inactive',
+            ]);
 
-        Driver::create($validated);
+            $driver = Driver::create($validated);
 
-        return redirect()->route('drivers.index')
-            ->with('success', 'Driver created successfully.');
+            // Log activity using Spatie Activity Log
+            Activity::performedOn($driver)
+                ->causedBy(auth()->user())
+                ->log('created');
+
+            return redirect()->route('drivers.index')
+                ->with('success', 'Driver created successfully.');
+
+        } catch (Exception $e) {
+            return back()->withErrors(['error' => 'Failed to create driver. Please try again.']);
+        }
     }
 
     /**
@@ -87,8 +99,15 @@ class DriverController extends Controller
     {
         $driver->load(['trucks', 'performances']);
 
+        // Load activity logs for this driver using Spatie Activity Log
+        $activityLogs = Activity::forSubject($driver)
+            ->with('causer')
+            ->orderByDesc('created_at')
+            ->get();
+
         return Inertia::render('Drivers/Show', [
             'driver' => $driver,
+            'activityLogs' => $activityLogs,
         ]);
     }
 
@@ -107,24 +126,37 @@ class DriverController extends Controller
      */
     public function update(Request $request, Driver $driver)
     {
-        $validated = $request->validate([
-            'driverid' => 'required|string|max:255|unique:drivers,driverid,' . $driver->id,
-            'name' => 'required|string|max:255',
-            'sex' => 'required|string|in:male,female',
-            'birthdate' => 'nullable|date',
-            'zone' => 'nullable|string|max:255',
-            'woreda' => 'nullable|string|max:255',
-            'kebele' => 'nullable|string|max:255',
-            'housenumber' => 'nullable|string|max:255',
-            'mobile' => 'nullable|string|max:255',
-            'hireddate' => 'nullable|date',
-            'status' => 'required|string|in:active,inactive',
-        ]);
+        try {
+            $oldData = $driver->toArray();
 
-        $driver->update($validated);
+            $validated = $request->validate([
+                'driverid' => 'required|string|max:255|unique:drivers,driverid,' . $driver->id,
+                'name' => 'required|string|max:255',
+                'sex' => 'required|string|in:male,female',
+                'birthdate' => 'nullable|date',
+                'zone' => 'nullable|string|max:255',
+                'woreda' => 'nullable|string|max:255',
+                'kebele' => 'nullable|string|max:255',
+                'housenumber' => 'nullable|string|max:255',
+                'mobile' => 'nullable|string|max:255',
+                'hireddate' => 'nullable|date',
+                'status' => 'required|string|in:active,inactive',
+            ]);
 
-        return redirect()->route('drivers.index')
-            ->with('success', 'Driver updated successfully.');
+            $driver->update($validated);
+
+            // Log activity using Spatie Activity Log
+            Activity::performedOn($driver)
+                ->causedBy(auth()->user())
+                ->withProperties(['old' => $oldData, 'new' => $driver->toArray()])
+                ->log('updated');
+
+            return redirect()->route('drivers.index')
+                ->with('success', 'Driver updated successfully.');
+
+        } catch (Exception $e) {
+            return back()->withErrors(['error' => 'Failed to update driver. Please try again.']);
+        }
     }
 
     /**
@@ -132,10 +164,23 @@ class DriverController extends Controller
      */
     public function destroy(Driver $driver)
     {
-        $driver->delete();
+        try {
+            $driverData = $driver->toArray();
 
-        return redirect()->route('drivers.index')
-            ->with('success', 'Driver deleted successfully.');
+            // Log activity before deletion
+            Activity::performedOn($driver)
+                ->causedBy(auth()->user())
+                ->withProperties(['deleted' => $driverData])
+                ->log('deleted');
+
+            $driver->delete();
+
+            return redirect()->route('drivers.index')
+                ->with('success', 'Driver deleted successfully.');
+
+        } catch (Exception $e) {
+            return back()->withErrors(['error' => 'Failed to delete driver. Please try again.']);
+        }
     }
 
     /**
@@ -147,6 +192,89 @@ class DriverController extends Controller
 
         return redirect()->route('drivers.index')
             ->with('success', 'Driver deactivated successfully.');
+    }
+
+    /**
+     * Export drivers to CSV
+     */
+    public function export(Request $request)
+    {
+        $query = Driver::with('trucks');
+
+        // Apply same search and sort as index
+        if ($request->has('search') && !empty($request->input('search'))) {
+            $search = $request->input('search');
+            $query = $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('driverid', 'like', "%{$search}%")
+                    ->orWhere('mobile', 'like', "%{$search}%")
+                    ->orWhere('zone', 'like', "%{$search}%");
+            });
+        }
+
+        // Apply sorting
+        if ($request->has('sort')) {
+            $sort = $request->input('sort', 'name');
+            $direction = $request->input('direction', 'asc');
+            $query = $query->orderBy($sort, $direction);
+        }
+
+        $drivers = $query->get();
+
+        // Generate CSV
+        $filename = 'drivers_' . now()->format('Y-m-d_H-i-s') . '.csv';
+        $handle = fopen('php://temp', 'r+');
+
+        // Write header
+        fputcsv($handle, [
+            'ID',
+            'Driver ID',
+            'Name',
+            'Sex',
+            'Birthdate',
+            'Mobile',
+            'Zone',
+            'Woreda',
+            'Kebele',
+            'House Number',
+            'Hired Date',
+            'Status',
+            'Created At',
+            'Updated At'
+        ]);
+
+        // Write data
+        foreach ($drivers as $driver) {
+            fputcsv($handle, [
+                $driver->id,
+                $driver->driverid,
+                $driver->name,
+                $driver->sex,
+                $driver->birthdate,
+                $driver->mobile,
+                $driver->zone,
+                $driver->woreda,
+                $driver->kebele,
+                $driver->housenumber,
+                $driver->hireddate,
+                $driver->status,
+                $driver->created_at,
+                $driver->updated_at
+            ]);
+        }
+
+        rewind($handle);
+        $csv = stream_get_contents($handle);
+        fclose($handle);
+
+        // Log activity using Spatie Activity Log
+        Activity::causedBy(auth()->user())
+            ->withProperties(['count' => count($drivers)])
+            ->log('exported');
+
+        return response($csv, 200)
+            ->header('Content-Type', 'text/csv')
+            ->header('Content-Disposition', "attachment; filename=\"$filename\"");
     }
 }
 

@@ -10,11 +10,6 @@ import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialo
 import { ActivityLogTable } from '@/components/activity-log-table';
 import { useState } from 'react';
 
-interface VehicleType {
-    id: number;
-    name: string;
-}
-
 interface ActivityLog {
     id: number;
     action: 'created' | 'updated' | 'deleted';
@@ -27,45 +22,44 @@ interface ActivityLog {
     new_values?: Record<string, any>;
 }
 
-interface Truck {
+interface Driver {
     id: number;
-    plate: string;
-    vehicletype_id: number;
-    chasisNumber?: string;
-    engineNumber?: string;
-    tyreSyze?: string;
-    serviceIntervalKM?: number;
-    purchasePrice?: number;
-    productionDate?: string;
-    serviceStartDate?: string;
+    driverid: string;
+    name: string;
+    sex: string;
+    birthdate?: string;
+    zone?: string;
+    woreda?: string;
+    kebele?: string;
+    housenumber?: string;
+    mobile?: string;
+    hireddate?: string;
     status: string;
     created_at?: string;
     updated_at?: string;
-    vehicleType?: VehicleType;
-    drivers?: any[];
+    trucks?: any[];
     performances?: any[];
-    activityLogs?: ActivityLog[];
 }
 
-interface TrucksShowProps {
-    truck: Truck;
+interface DriversShowProps {
+    driver: Driver;
     activityLogs?: ActivityLog[];
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
-        title: 'Trucks',
-        href: '/trucks',
+        title: 'Drivers',
+        href: '/drivers',
     },
 ];
 
-export default function TrucksShow({ truck, activityLogs = [] }: TrucksShowProps) {
+export default function DriversShow({ driver, activityLogs = [] }: DriversShowProps) {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
 
     const handleDeleteConfirm = () => {
         setIsDeleting(true);
-        router.delete(`/trucks/${truck.id}`, {
+        router.delete(`/drivers/${driver.id}`, {
             onSuccess: () => {
                 setDeleteDialogOpen(false);
                 setIsDeleting(false);
@@ -74,14 +68,6 @@ export default function TrucksShow({ truck, activityLogs = [] }: TrucksShowProps
                 setIsDeleting(false);
             },
         });
-    };
-
-    const formatCurrency = (value?: number) => {
-        if (!value) return 'N/A';
-        return `$${Number(value).toLocaleString('en-US', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-        })}`;
     };
 
     const formatDate = (date?: string) => {
@@ -97,8 +83,6 @@ export default function TrucksShow({ truck, activityLogs = [] }: TrucksShowProps
         switch (status) {
             case 'active':
                 return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-            case 'maintenance':
-                return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
             case 'inactive':
                 return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
             default:
@@ -106,9 +90,20 @@ export default function TrucksShow({ truck, activityLogs = [] }: TrucksShowProps
         }
     };
 
+    const getSexBadgeColor = (sex: string) => {
+        switch (sex) {
+            case 'male':
+                return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+            case 'female':
+                return 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200';
+            default:
+                return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
+        }
+    };
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={`View Truck - ${truck.plate}`} />
+            <Head title={`View Driver - ${driver.name}`} />
             <div className="flex flex-1 flex-col gap-6">
                 {/* Header with Back Button */}
                 <div className="flex items-center justify-between">
@@ -116,20 +111,20 @@ export default function TrucksShow({ truck, activityLogs = [] }: TrucksShowProps
                         <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => router.get('/trucks')}
+                            onClick={() => router.get('/drivers')}
                             className="flex items-center gap-2"
                         >
                             <ArrowLeft className="h-4 w-4" />
-                            Back to Trucks
+                            Back to Drivers
                         </Button>
                         <div>
-                            <h1 className="text-2xl font-bold">{truck.plate}</h1>
-                            <p className="text-muted-foreground">View truck details and manage information</p>
+                            <h1 className="text-2xl font-bold">{driver.name}</h1>
+                            <p className="text-muted-foreground">View driver details and manage information</p>
                         </div>
                     </div>
                     <div className="flex gap-2">
                         <Button variant="outline" asChild>
-                            <Link href={`/trucks/${truck.id}/edit`}>
+                            <Link href={`/drivers/${driver.id}/edit`}>
                                 <Edit className="mr-2 h-4 w-4" />
                                 Edit
                             </Link>
@@ -151,32 +146,34 @@ export default function TrucksShow({ truck, activityLogs = [] }: TrucksShowProps
                         <Card>
                             <CardHeader>
                                 <CardTitle>Basic Information</CardTitle>
-                                <CardDescription>Core truck details and specifications</CardDescription>
+                                <CardDescription>Personal and professional details</CardDescription>
                             </CardHeader>
                             <CardContent>
                                 <div className="grid gap-4">
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
                                             <p className="text-sm font-medium text-muted-foreground">Status</p>
-                                            <Badge className={`mt-1 ${getStatusBadgeColor(truck.status)}`}>
-                                                {truck.status.charAt(0).toUpperCase() + truck.status.slice(1)}
+                                            <Badge className={`mt-1 ${getStatusBadgeColor(driver.status)}`}>
+                                                {driver.status.charAt(0).toUpperCase() + driver.status.slice(1)}
                                             </Badge>
                                         </div>
                                         <div>
-                                            <p className="text-sm font-medium text-muted-foreground">Vehicle Type</p>
-                                            <p className="mt-1 text-sm font-semibold">{truck.vehicleType?.name || 'Unknown'}</p>
+                                            <p className="text-sm font-medium text-muted-foreground">Gender</p>
+                                            <Badge className={`mt-1 ${getSexBadgeColor(driver.sex)}`}>
+                                                {driver.sex.charAt(0).toUpperCase() + driver.sex.slice(1)}
+                                            </Badge>
                                         </div>
                                     </div>
 
                                     <div className="border-t pt-4">
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
-                                                <p className="text-sm font-medium text-muted-foreground">Chassis Number</p>
-                                                <p className="mt-1 text-sm font-mono">{truck.chasisNumber || 'N/A'}</p>
+                                                <p className="text-sm font-medium text-muted-foreground">Driver ID</p>
+                                                <p className="mt-1 text-sm font-mono">{driver.driverid}</p>
                                             </div>
                                             <div>
-                                                <p className="text-sm font-medium text-muted-foreground">Engine Number</p>
-                                                <p className="mt-1 text-sm font-mono">{truck.engineNumber || 'N/A'}</p>
+                                                <p className="text-sm font-medium text-muted-foreground">Mobile</p>
+                                                <p className="mt-1 text-sm">{driver.mobile || 'N/A'}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -184,12 +181,25 @@ export default function TrucksShow({ truck, activityLogs = [] }: TrucksShowProps
                                     <div className="border-t pt-4">
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
-                                                <p className="text-sm font-medium text-muted-foreground">Tyre Size</p>
-                                                <p className="mt-1 text-sm">{truck.tyreSyze || 'N/A'}</p>
+                                                <p className="text-sm font-medium text-muted-foreground">Zone</p>
+                                                <p className="mt-1 text-sm">{driver.zone || 'N/A'}</p>
                                             </div>
                                             <div>
-                                                <p className="text-sm font-medium text-muted-foreground">Service Interval</p>
-                                                <p className="mt-1 text-sm">{truck.serviceIntervalKM?.toLocaleString()} KM || 'N/A'</p>
+                                                <p className="text-sm font-medium text-muted-foreground">Woreda</p>
+                                                <p className="mt-1 text-sm">{driver.woreda || 'N/A'}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="border-t pt-4">
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <p className="text-sm font-medium text-muted-foreground">Kebele</p>
+                                                <p className="mt-1 text-sm">{driver.kebele || 'N/A'}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-medium text-muted-foreground">House Number</p>
+                                                <p className="mt-1 text-sm">{driver.housenumber || 'N/A'}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -197,25 +207,21 @@ export default function TrucksShow({ truck, activityLogs = [] }: TrucksShowProps
                             </CardContent>
                         </Card>
 
-                        {/* Financial Information */}
+                        {/* Employment Information */}
                         <Card>
                             <CardHeader>
-                                <CardTitle>Financial Information</CardTitle>
-                                <CardDescription>Purchase and pricing details</CardDescription>
+                                <CardTitle>Employment Information</CardTitle>
+                                <CardDescription>Hiring and employment details</CardDescription>
                             </CardHeader>
                             <CardContent>
                                 <div className="grid gap-4">
                                     <div>
-                                        <p className="text-sm font-medium text-muted-foreground">Purchase Price</p>
-                                        <p className="mt-1 text-lg font-semibold">{formatCurrency(truck.purchasePrice)}</p>
+                                        <p className="text-sm font-medium text-muted-foreground">Birthdate</p>
+                                        <p className="mt-1 text-sm">{formatDate(driver.birthdate)}</p>
                                     </div>
                                     <div>
-                                        <p className="text-sm font-medium text-muted-foreground">Purchase/Production Date</p>
-                                        <p className="mt-1 text-sm">{formatDate(truck.productionDate)}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-medium text-muted-foreground">Service Start Date</p>
-                                        <p className="mt-1 text-sm">{formatDate(truck.serviceStartDate)}</p>
+                                        <p className="text-sm font-medium text-muted-foreground">Hired Date</p>
+                                        <p className="mt-1 text-sm">{formatDate(driver.hireddate)}</p>
                                     </div>
                                 </div>
                             </CardContent>
@@ -231,11 +237,11 @@ export default function TrucksShow({ truck, activityLogs = [] }: TrucksShowProps
                                 <div className="grid gap-4 text-sm">
                                     <div>
                                         <p className="font-medium text-muted-foreground">Created</p>
-                                        <p className="mt-1">{formatDate(truck.created_at)}</p>
+                                        <p className="mt-1">{formatDate(driver.created_at)}</p>
                                     </div>
                                     <div>
                                         <p className="font-medium text-muted-foreground">Last Updated</p>
-                                        <p className="mt-1">{formatDate(truck.updated_at)}</p>
+                                        <p className="mt-1">{formatDate(driver.updated_at)}</p>
                                     </div>
                                 </div>
                             </CardContent>
@@ -253,33 +259,33 @@ export default function TrucksShow({ truck, activityLogs = [] }: TrucksShowProps
                                 <div className="space-y-4">
                                     <div className="rounded-lg bg-muted p-4">
                                         <p className="text-sm font-medium text-muted-foreground">Current Status</p>
-                                        <Badge className={`mt-2 ${getStatusBadgeColor(truck.status)}`}>
-                                            {truck.status.charAt(0).toUpperCase() + truck.status.slice(1)}
+                                        <Badge className={`mt-2 ${getStatusBadgeColor(driver.status)}`}>
+                                            {driver.status.charAt(0).toUpperCase() + driver.status.slice(1)}
                                         </Badge>
                                     </div>
                                     <div className="rounded-lg bg-muted p-4">
-                                        <p className="text-sm font-medium text-muted-foreground">Plate Number</p>
-                                        <p className="mt-2 text-lg font-mono font-bold">{truck.plate}</p>
+                                        <p className="text-sm font-medium text-muted-foreground">Driver Name</p>
+                                        <p className="mt-2 text-lg font-mono font-bold">{driver.name}</p>
                                     </div>
                                 </div>
                             </CardContent>
                         </Card>
 
-                        {/* Assigned Drivers */}
-                        {truck.drivers && truck.drivers.length > 0 && (
+                        {/* Assigned Trucks */}
+                        {driver.trucks && driver.trucks.length > 0 && (
                             <Card>
                                 <CardHeader>
-                                    <CardTitle className="text-base">Assigned Drivers</CardTitle>
+                                    <CardTitle className="text-base">Assigned Trucks</CardTitle>
                                 </CardHeader>
                                 <CardContent>
                                     <div className="space-y-2">
-                                        {truck.drivers.map((driver: any) => (
+                                        {driver.trucks.map((truck: any) => (
                                             <Link
-                                                key={driver.id}
-                                                href={`/drivers/${driver.id}`}
+                                                key={truck.id}
+                                                href={`/trucks/${truck.id}`}
                                                 className="block rounded-lg border border-border p-2 text-sm hover:bg-muted"
                                             >
-                                                {driver.name}
+                                                {truck.plate}
                                             </Link>
                                         ))}
                                     </div>
@@ -287,15 +293,15 @@ export default function TrucksShow({ truck, activityLogs = [] }: TrucksShowProps
                             </Card>
                         )}
 
-                        {/* Recent Performances */}
-                        {truck.performances && truck.performances.length > 0 && (
+                        {/* Recent Activities */}
+                        {driver.performances && driver.performances.length > 0 && (
                             <Card>
                                 <CardHeader>
                                     <CardTitle className="text-base">Recent Activities</CardTitle>
                                 </CardHeader>
                                 <CardContent>
                                     <p className="text-sm text-muted-foreground">
-                                        {truck.performances.length} performance record{truck.performances.length !== 1 ? 's' : ''} available
+                                        {driver.performances.length} performance record{driver.performances.length !== 1 ? 's' : ''} available
                                     </p>
                                 </CardContent>
                             </Card>
@@ -313,15 +319,12 @@ export default function TrucksShow({ truck, activityLogs = [] }: TrucksShowProps
             <DeleteConfirmationDialog
                 open={deleteDialogOpen}
                 onOpenChange={setDeleteDialogOpen}
-                title="Delete Truck"
-                description="Are you sure you want to delete this truck? This action cannot be undone and will remove all associated records."
-                itemName={truck.plate}
+                title="Delete Driver"
+                description="Are you sure you want to delete this driver? This action cannot be undone and will remove all associated records."
+                itemName={driver.name}
                 onConfirm={handleDeleteConfirm}
                 isLoading={isDeleting}
             />
         </AppLayout>
     );
 }
-
-
-

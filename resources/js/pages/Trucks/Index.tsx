@@ -11,9 +11,11 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
+import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
+import { usePermissions } from '@/hooks/use-permissions';
 import { Head, Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
-import { Plus, Eye, Edit, Trash2, Search, ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Eye, Edit, Trash2, Search, ArrowUpDown, ChevronLeft, ChevronRight, FileDown } from 'lucide-react';
 import * as React from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -26,95 +28,108 @@ const breadcrumbs: BreadcrumbItem[] = [
 interface TruckData {
     id: number;
     plate: string;
-    chasisNumber?: string;
-    engineNumber?: string;
-    tyreSyze?: string;
-    serviceIntervalKM?: number;
-    purchasePrice?: number;
-    productionDate?: string;
-    serviceStartDate?: string;
-    status: string;
     vehicleType: {
         id: number;
         name: string;
-    };
-    created_at: string;
+    } | null;
+    chasisNumber?: string;
+    engineNumber?: string;
+    serviceIntervalKM?: number;
+    purchasePrice?: number;
+    status: string;
+    created_at?: string;
 }
 
 interface TrucksIndexProps {
     trucks: {
         data: TruckData[];
-        links: any[];
-        meta: any;
+        meta?: {
+            total?: number;
+            per_page?: number;
+            current_page?: number;
+            last_page?: number;
+        };
+        links?: {
+            first?: string;
+            last?: string;
+            prev?: string;
+            next?: string;
+        };
     };
 }
 
 export default function TrucksIndex({ trucks }: TrucksIndexProps) {
+    const { hasPermission } = usePermissions();
     const [searchTerm, setSearchTerm] = React.useState('');
-    const [sortColumn, setSortColumn] = React.useState<string | null>(null);
-    const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>('asc');
+    const [sortBy, setSortBy] = React.useState('plate');
+    const [sortDirection, setSortDirection] = React.useState('asc');
+    const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+    const [selectedTruck, setSelectedTruck] = React.useState<TruckData | null>(null);
+    const [isDeleting, setIsDeleting] = React.useState(false);
 
-    const getStatusBadge = (status: string) => {
-        switch (status) {
-            case 'active':
-                return <Badge variant="default">Active</Badge>;
-            case 'inactive':
-                return <Badge variant="secondary">Inactive</Badge>;
-            case 'maintenance':
-                return <Badge variant="outline">Maintenance</Badge>;
-            default:
-                return <Badge variant="outline">{status}</Badge>;
-        }
-    };
-
-    const truckData = trucks?.data || [];
-    const totalTrucks = trucks?.meta?.total || 0;
-    const currentPage = trucks?.meta?.current_page || 1;
-    const perPage = trucks?.meta?.per_page || 10;
-    const lastPage = trucks?.meta?.last_page || 1;
-
-    // Handle search
     const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
         setSearchTerm(value);
-        router.get('/trucks', { search: value, page: 1 }, { preserveState: true });
+
+        router.get('/trucks',
+            { search: value, sort: sortBy, direction: sortDirection },
+            { preserveState: false }
+        );
     };
 
-    // Handle sorting
     const handleSort = (column: string) => {
-        const newDirection = sortColumn === column && sortDirection === 'asc' ? 'desc' : 'asc';
-        setSortColumn(column);
+        let newDirection = 'asc';
+        if (sortBy === column && sortDirection === 'asc') {
+            newDirection = 'desc';
+        }
+
+        setSortBy(column);
         setSortDirection(newDirection);
-        router.get('/trucks', { sort: column, direction: newDirection, search: searchTerm }, { preserveState: true });
+
+        router.get('/trucks',
+            { search: searchTerm, sort: column, direction: newDirection },
+            { preserveState: false }
+        );
     };
 
-    // Sort icon component
-    const SortIcon = ({ column, isActive }: { column: string; isActive: boolean }) => (
-        <ArrowUpDown
-            className={`ml-2 inline h-4 w-4 ${
-                isActive ? 'text-primary' : 'text-muted-foreground opacity-50'
-            }`}
-        />
-    );
+    const handleDeleteClick = (truck: TruckData) => {
+        setSelectedTruck(truck);
+        setDeleteDialogOpen(true);
+    };
 
-    // Sortable header cell
-    const SortableHead = ({
-        column,
-        children,
-    }: {
-        column: string;
-        children: React.ReactNode;
-    }) => (
-        <TableHead
-            className="cursor-pointer select-none hover:bg-muted/70 transition-colors"
-            onClick={() => handleSort(column)}
-        >
-            <div className="flex items-center">
-                {children}
-                <SortIcon column={column} isActive={sortColumn === column} />
-            </div>
-        </TableHead>
-    );
+    const handleDeleteConfirm = () => {
+        if (!selectedTruck) return;
+
+        setIsDeleting(true);
+        router.delete(`/trucks/${selectedTruck.id}`, {
+            onSuccess: () => {
+                setDeleteDialogOpen(false);
+                setSelectedTruck(null);
+                setIsDeleting(false);
+            },
+            onError: () => {
+                setIsDeleting(false);
+            },
+        });
+    };
+
+    const SortIcon = ({ column }: { column: string }) => {
+        if (sortBy !== column) {
+            return <ArrowUpDown className="ml-2 h-4 w-4 opacity-50" />;
+        }
+        return (
+            <ArrowUpDown
+                className={`ml-2 h-4 w-4 transition-transform ${
+                    sortDirection === 'desc' ? 'rotate-180' : ''
+                }`}
+            />
+        );
+    };
+
+    const truckCount = trucks?.meta?.total || 0;
+    const perPage = trucks?.meta?.per_page || 15;
+    const currentPage = trucks?.meta?.current_page || 1;
+    const totalPages = trucks?.meta?.last_page || 1;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -125,15 +140,32 @@ export default function TrucksIndex({ trucks }: TrucksIndexProps) {
                     <div>
                         <h1 className="text-2xl font-bold">Trucks</h1>
                         <p className="text-muted-foreground">
-                            Manage your fleet of {totalTrucks} trucks
+                            Manage your fleet of {truckCount} truck{truckCount !== 1 ? 's' : ''}
                         </p>
                     </div>
-                    <Button asChild>
-                        <Link href="/trucks/create">
-                            <Plus className="mr-2 h-4 w-4" />
-                            Add Truck
-                        </Link>
-                    </Button>
+                    <div className="flex gap-2">
+                        {hasPermission('trucks.export') && (
+                            <Button variant="outline" onClick={() => {
+                                const params = new URLSearchParams({
+                                    search: searchTerm,
+                                    sort: sortBy,
+                                    direction: sortDirection,
+                                });
+                                window.location.href = `/trucks/export/csv?${params.toString()}`;
+                            }}>
+                                <FileDown className="mr-2 h-4 w-4" />
+                                Export CSV
+                            </Button>
+                        )}
+                        {hasPermission('trucks.create') && (
+                            <Button asChild>
+                                <Link href="/trucks/create">
+                                    <Plus className="mr-2 h-4 w-4" />
+                                    Add Truck
+                                </Link>
+                            </Button>
+                        )}
+                    </div>
                 </div>
 
                 {/* Table Section */}
@@ -141,9 +173,9 @@ export default function TrucksIndex({ trucks }: TrucksIndexProps) {
                     <CardHeader>
                         <div className="flex items-center justify-between">
                             <div>
-                                <CardTitle>Fleet Overview</CardTitle>
+                                <CardTitle>Truck Inventory</CardTitle>
                                 <CardDescription>
-                                    Complete list of all trucks in your fleet
+                                    {truckCount} total truck{truckCount !== 1 ? 's' : ''} in system
                                 </CardDescription>
                             </div>
                             <div className="relative w-64">
@@ -162,46 +194,82 @@ export default function TrucksIndex({ trucks }: TrucksIndexProps) {
                             <Table>
                                 <TableHeader>
                                     <TableRow className="bg-muted/50">
-                                        <SortableHead column="plate">Plate</SortableHead>
-                                        <SortableHead column="vehicleType">Vehicle Type</SortableHead>
-                                        <SortableHead column="chasisNumber">Chassis #</SortableHead>
-                                        <SortableHead column="engineNumber">Engine #</SortableHead>
-                                        <SortableHead column="serviceIntervalKM">Service (KM)</SortableHead>
-                                        <SortableHead column="purchasePrice">Purchase Price</SortableHead>
-                                        <SortableHead column="status">Status</SortableHead>
+                                        <TableHead
+                                            className="cursor-pointer select-none hover:bg-muted/70 transition-colors"
+                                            onClick={() => handleSort('plate')}
+                                        >
+                                            <div className="flex items-center">
+                                                Plate <SortIcon column="plate" />
+                                            </div>
+                                        </TableHead>
+                                        <TableHead
+                                            className="cursor-pointer select-none hover:bg-muted/70 transition-colors"
+                                            onClick={() => handleSort('vehicleType')}
+                                        >
+                                            <div className="flex items-center">
+                                                Vehicle Type <SortIcon column="vehicleType" />
+                                            </div>
+                                        </TableHead>
+                                        <TableHead>Chassis</TableHead>
+                                        <TableHead>Engine</TableHead>
+                                        <TableHead
+                                            className="cursor-pointer select-none hover:bg-muted/70 transition-colors"
+                                            onClick={() => handleSort('serviceIntervalKM')}
+                                        >
+                                            <div className="flex items-center">
+                                                Service (KM) <SortIcon column="serviceIntervalKM" />
+                                            </div>
+                                        </TableHead>
+                                        <TableHead
+                                            className="cursor-pointer select-none hover:bg-muted/70 transition-colors"
+                                            onClick={() => handleSort('purchasePrice')}
+                                        >
+                                            <div className="flex items-center">
+                                                Price <SortIcon column="purchasePrice" />
+                                            </div>
+                                        </TableHead>
+                                        <TableHead
+                                            className="cursor-pointer select-none hover:bg-muted/70 transition-colors"
+                                            onClick={() => handleSort('status')}
+                                        >
+                                            <div className="flex items-center">
+                                                Status <SortIcon column="status" />
+                                            </div>
+                                        </TableHead>
                                         <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {truckData.length > 0 ? (
-                                        truckData.map((truck) => (
+                                    {trucks?.data && trucks.data.length > 0 ? (
+                                        trucks.data.map((truck) => (
                                             <TableRow key={truck.id} className="hover:bg-muted/50">
-                                                <TableCell className="font-medium font-mono">
+                                                <TableCell className="font-medium">
                                                     {truck.plate}
                                                 </TableCell>
-                                                <TableCell>
-                                                    {truck.vehicleType?.name || 'Unknown Type'}
+                                                <TableCell className="text-muted-foreground">
+                                                    {truck.vehicleType?.name || 'N/A'}
+                                                </TableCell>
+                                                <TableCell className="text-muted-foreground text-sm">
+                                                    {truck.chasisNumber || '—'}
+                                                </TableCell>
+                                                <TableCell className="text-muted-foreground text-sm">
+                                                    {truck.engineNumber || '—'}
                                                 </TableCell>
                                                 <TableCell className="text-muted-foreground">
-                                                    {truck.chasisNumber || '-'}
-                                                </TableCell>
-                                                <TableCell className="text-muted-foreground">
-                                                    {truck.engineNumber || '-'}
-                                                </TableCell>
-                                                <TableCell className="text-muted-foreground">
-                                                    {truck.serviceIntervalKM
-                                                        ? `${truck.serviceIntervalKM.toLocaleString()} KM`
-                                                        : '-'
-                                                    }
+                                                    {truck.serviceIntervalKM?.toLocaleString() || '—'} km
                                                 </TableCell>
                                                 <TableCell className="font-medium">
-                                                    {truck.purchasePrice
-                                                        ? `$${truck.purchasePrice.toLocaleString()}`
-                                                        : '-'
-                                                    }
+                                                    ${Number(truck.purchasePrice || 0).toLocaleString('en-US', {
+                                                        minimumFractionDigits: 2,
+                                                        maximumFractionDigits: 2,
+                                                    })}
                                                 </TableCell>
                                                 <TableCell>
-                                                    {getStatusBadge(truck.status)}
+                                                    <Badge
+                                                        variant={truck.status === 'active' ? 'default' : 'secondary'}
+                                                    >
+                                                        {truck.status.charAt(0).toUpperCase() + truck.status.slice(1)}
+                                                    </Badge>
                                                 </TableCell>
                                                 <TableCell className="text-right">
                                                     <div className="flex justify-end gap-2">
@@ -210,18 +278,22 @@ export default function TrucksIndex({ trucks }: TrucksIndexProps) {
                                                                 <Eye className="h-4 w-4" />
                                                             </Link>
                                                         </Button>
-                                                        <Button asChild size="sm" variant="ghost">
-                                                            <Link href={`/trucks/${truck.id}/edit`}>
-                                                                <Edit className="h-4 w-4" />
-                                                            </Link>
-                                                        </Button>
-                                                        <Button
-                                                            size="sm"
-                                                            variant="ghost"
-                                                            className="text-destructive hover:text-destructive"
-                                                        >
-                                                            <Trash2 className="h-4 w-4" />
-                                                        </Button>
+                                                        {hasPermission('trucks.edit') && (
+                                                            <Button asChild size="sm" variant="ghost">
+                                                                <Link href={`/trucks/${truck.id}/edit`}>
+                                                                    <Edit className="h-4 w-4" />
+                                                                </Link>
+                                                            </Button>
+                                                        )}
+                                                        {hasPermission('trucks.destroy') && (
+                                                            <Button
+                                                                size="sm"
+                                                                variant="ghost"
+                                                                onClick={() => handleDeleteClick(truck)}
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
+                                                        )}
                                                     </div>
                                                 </TableCell>
                                             </TableRow>
@@ -230,9 +302,11 @@ export default function TrucksIndex({ trucks }: TrucksIndexProps) {
                                         <TableRow>
                                             <TableCell colSpan={8} className="py-8 text-center text-muted-foreground">
                                                 No trucks found.
-                                                <Link href="/trucks/create" className="ml-1 text-primary underline">
-                                                    Create one
-                                                </Link>
+                                                {hasPermission('trucks.create') && (
+                                                    <Link href="/trucks/create" className="ml-1 text-primary underline">
+                                                        Create one
+                                                    </Link>
+                                                )}
                                             </TableCell>
                                         </TableRow>
                                     )}
@@ -240,61 +314,64 @@ export default function TrucksIndex({ trucks }: TrucksIndexProps) {
                             </Table>
                         </div>
 
-                        {/* Enhanced Pagination */}
-                        {trucks.links && trucks.links.length > 3 && (
+                        {/* Pagination */}
+                        {totalPages > 1 && (
                             <div className="mt-6 flex items-center justify-between">
                                 <div className="text-sm text-muted-foreground">
-                                    Showing {(currentPage - 1) * perPage + 1} to{' '}
-                                    {Math.min(currentPage * perPage, totalTrucks)} of {totalTrucks} trucks
+                                    Showing {Math.min((currentPage - 1) * perPage + 1, truckCount)} to {Math.min(currentPage * perPage, truckCount)} of {truckCount} trucks
                                 </div>
                                 <div className="flex gap-2">
-                                    {/* Previous Button */}
-                                    {currentPage > 1 && (
-                                        <Button asChild variant="outline" size="sm">
-                                            <Link href={trucks.links[0].url || '#'}>
-                                                <ChevronLeft className="mr-1 h-4 w-4" />
-                                                Previous
-                                            </Link>
-                                        </Button>
-                                    )}
-
-                                    {/* Page Numbers */}
-                                    {trucks.links.map((link, index) => {
-                                        // Skip first (prev) and last (next) links
-                                        if (index === 0 || index === trucks.links.length - 1) {
-                                            return null;
-                                        }
-
-                                        return (
-                                            <Button
-                                                key={index}
-                                                asChild
-                                                variant={link.active ? 'default' : 'outline'}
-                                                size="sm"
-                                                disabled={!link.url}
-                                            >
-                                                <Link href={link.url || '#'}>
-                                                    <span dangerouslySetInnerHTML={{ __html: link.label }} />
-                                                </Link>
-                                            </Button>
-                                        );
-                                    })}
-
-                                    {/* Next Button */}
-                                    {currentPage < lastPage && (
-                                        <Button asChild variant="outline" size="sm">
-                                            <Link href={trucks.links[trucks.links.length - 1].url || '#'}>
-                                                Next
-                                                <ChevronRight className="ml-1 h-4 w-4" />
-                                            </Link>
-                                        </Button>
-                                    )}
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        disabled={currentPage === 1}
+                                        onClick={() => {
+                                            const page = currentPage - 1;
+                                            router.get('/trucks', {
+                                                page,
+                                                search: searchTerm,
+                                                sort: sortBy,
+                                                direction: sortDirection,
+                                            });
+                                        }}
+                                    >
+                                        <ChevronLeft className="mr-1 h-4 w-4" />
+                                        Previous
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        disabled={currentPage === totalPages}
+                                        onClick={() => {
+                                            const page = currentPage + 1;
+                                            router.get('/trucks', {
+                                                page,
+                                                search: searchTerm,
+                                                sort: sortBy,
+                                                direction: sortDirection,
+                                            });
+                                        }}
+                                    >
+                                        Next
+                                        <ChevronRight className="ml-1 h-4 w-4" />
+                                    </Button>
                                 </div>
                             </div>
                         )}
                     </CardContent>
                 </Card>
             </div>
+
+            {/* Delete Confirmation Dialog */}
+            <DeleteConfirmationDialog
+                open={deleteDialogOpen}
+                onOpenChange={setDeleteDialogOpen}
+                title="Delete Truck"
+                description="Are you sure you want to delete this truck? This action cannot be undone."
+                itemName={selectedTruck?.plate}
+                onConfirm={handleDeleteConfirm}
+                isLoading={isDeleting}
+            />
         </AppLayout>
     );
 }

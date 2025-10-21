@@ -11,9 +11,10 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
+import { usePermissions } from '@/hooks/use-permissions';
 import { Head, Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
-import { Plus, Eye, Edit, MapPin, Phone, Search, ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Eye, Edit, MapPin, Phone, Search, ArrowUpDown, ChevronLeft, ChevronRight, Trash2, FileDown } from 'lucide-react';
 import * as React from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -48,6 +49,7 @@ interface DriversIndexProps {
 }
 
 export default function DriversIndex({ drivers }: DriversIndexProps) {
+    const { hasPermission } = usePermissions();
     const [searchTerm, setSearchTerm] = React.useState('');
     const [sortColumn, setSortColumn] = React.useState<string | null>(null);
     const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>('asc');
@@ -135,12 +137,29 @@ export default function DriversIndex({ drivers }: DriversIndexProps) {
                             Manage your workforce of {totalDrivers} drivers
                         </p>
                     </div>
-                    <Button asChild>
-                        <Link href="/drivers/create">
-                            <Plus className="mr-2 h-4 w-4" />
-                            Add Driver
-                        </Link>
-                    </Button>
+                    <div className="flex gap-2">
+                        {hasPermission('drivers.export') && (
+                            <Button variant="outline" onClick={() => {
+                                const params = new URLSearchParams({
+                                    search: searchTerm,
+                                    sort: sortColumn || 'name',
+                                    direction: sortDirection,
+                                });
+                                window.location.href = `/drivers/export/csv?${params.toString()}`;
+                            }}>
+                                <FileDown className="mr-2 h-4 w-4" />
+                                Export CSV
+                            </Button>
+                        )}
+                        {hasPermission('drivers.create') && (
+                            <Button asChild>
+                                <Link href="/drivers/create">
+                                    <Plus className="mr-2 h-4 w-4" />
+                                    Add Driver
+                                </Link>
+                            </Button>
+                        )}
+                    </div>
                 </div>
 
                 {/* Table Section */}
@@ -224,11 +243,26 @@ export default function DriversIndex({ drivers }: DriversIndexProps) {
                                                                 <Eye className="h-4 w-4" />
                                                             </Link>
                                                         </Button>
-                                                        <Button asChild size="sm" variant="ghost">
-                                                            <Link href={`/drivers/${driver.id}/edit`}>
-                                                                <Edit className="h-4 w-4" />
-                                                            </Link>
-                                                        </Button>
+                                                        {hasPermission('drivers.edit') && (
+                                                            <Button asChild size="sm" variant="ghost">
+                                                                <Link href={`/drivers/${driver.id}/edit`}>
+                                                                    <Edit className="h-4 w-4" />
+                                                                </Link>
+                                                            </Button>
+                                                        )}
+                                                        {hasPermission('drivers.destroy') && (
+                                                            <Button
+                                                                size="sm"
+                                                                variant="ghost"
+                                                                onClick={() => {
+                                                                    if (confirm('Are you sure you want to delete this driver?')) {
+                                                                        router.delete(`/drivers/${driver.id}`);
+                                                                    }
+                                                                }}
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
+                                                        )}
                                                     </div>
                                                 </TableCell>
                                             </TableRow>
@@ -237,9 +271,11 @@ export default function DriversIndex({ drivers }: DriversIndexProps) {
                                         <TableRow>
                                             <TableCell colSpan={8} className="py-8 text-center text-muted-foreground">
                                                 No drivers found.
-                                                <Link href="/drivers/create" className="ml-1 text-primary underline">
-                                                    Create one
-                                                </Link>
+                                                {hasPermission('drivers.create') && (
+                                                    <Link href="/drivers/create" className="ml-1 text-primary underline">
+                                                        Create one
+                                                    </Link>
+                                                )}
                                             </TableCell>
                                         </TableRow>
                                     )}

@@ -10,8 +10,8 @@ use App\Services\TruckAssignmentService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
-use Illuminate\Support\Facades\Log;
 use Exception;
+use Spatie\ActivityLog\Facades\Activity;
 
 class TruckController extends Controller
 {
@@ -95,26 +95,15 @@ class TruckController extends Controller
         try {
             $truck = Truck::create($request->validated());
 
-            Log::info('Truck created', [
-                'truck_id' => $truck->id,
-                'plate' => $truck->plate,
-                'vehecletype_id' => $truck->vehecletype_id,
-                'user_id' => auth()->id(),
-                'ip_address' => $request->ip(),
-                'user_agent' => $request->userAgent(),
-            ]);
+            // Log activity using Spatie Activity Log
+            Activity::performedOn($truck)
+                ->causedBy(auth()->user())
+                ->log('created');
 
             return redirect()->route('trucks.index')
                 ->with('success', 'Truck created successfully.');
 
         } catch (Exception $e) {
-            Log::error('Truck creation failed', [
-                'error' => $e->getMessage(),
-                'data' => $request->validated(),
-                'user_id' => auth()->id(),
-                'ip_address' => $request->ip(),
-            ]);
-
             return back()->withErrors(['error' => 'Failed to create truck. Please try again.']);
         }
     }
@@ -124,10 +113,17 @@ class TruckController extends Controller
      */
     public function show(Truck $truck): Response
     {
-        $truck->load(['vehecletype', 'drivers', 'performances']);
+        $truck->load(['vehicleType', 'drivers', 'performances']);
+
+        // Load activity logs for this truck using Spatie Activity Log
+        $activityLogs = Activity::forSubject($truck)
+            ->with('causer')
+            ->orderByDesc('created_at')
+            ->get();
 
         return Inertia::render('Trucks/Show', [
             'truck' => $truck,
+            'activityLogs' => $activityLogs,
         ]);
     }
 
@@ -153,27 +149,16 @@ class TruckController extends Controller
             $oldData = $truck->toArray();
             $truck->update($request->validated());
 
-            Log::info('Truck updated', [
-                'truck_id' => $truck->id,
-                'plate' => $truck->plate,
-                'old_data' => $oldData,
-                'new_data' => $truck->toArray(),
-                'user_id' => auth()->id(),
-                'ip_address' => $request->ip(),
-            ]);
+            // Log activity using Spatie Activity Log
+            Activity::performedOn($truck)
+                ->causedBy(auth()->user())
+                ->withProperties(['old' => $oldData, 'new' => $truck->toArray()])
+                ->log('updated');
 
             return redirect()->route('trucks.index')
                 ->with('success', 'Truck updated successfully.');
 
         } catch (Exception $e) {
-            Log::error('Truck update failed', [
-                'truck_id' => $truck->id,
-                'error' => $e->getMessage(),
-                'data' => $request->validated(),
-                'user_id' => auth()->id(),
-                'ip_address' => $request->ip(),
-            ]);
-
             return back()->withErrors(['error' => 'Failed to update truck. Please try again.']);
         }
     }
@@ -185,24 +170,19 @@ class TruckController extends Controller
     {
         try {
             $truckData = $truck->toArray();
-            $truck->delete();
 
-            Log::info('Truck deleted', [
-                'truck_id' => $truck->id,
-                'plate' => $truckData['plate'],
-                'user_id' => auth()->id(),
-            ]);
+            // Log activity before deletion
+            Activity::performedOn($truck)
+                ->causedBy(auth()->user())
+                ->withProperties(['deleted' => $truckData])
+                ->log('deleted');
+
+            $truck->delete();
 
             return redirect()->route('trucks.index')
                 ->with('success', 'Truck deleted successfully.');
 
         } catch (Exception $e) {
-            Log::error('Truck deletion failed', [
-                'truck_id' => $truck->id,
-                'error' => $e->getMessage(),
-                'user_id' => auth()->id(),
-            ]);
-
             return back()->withErrors(['error' => 'Failed to delete truck. Please try again.']);
         }
     }
@@ -234,15 +214,98 @@ class TruckController extends Controller
             ]);
 
         } catch (Exception $e) {
-            Log::error('Failed to get free trucks', [
-                'error' => $e->getMessage(),
-                'user_id' => auth()->id(),
-            ]);
-
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to retrieve free trucks'
             ], 500);
         }
+    }
+
+    /**
+     * Export trucks to CSV
+     */
+    public function export(Request $request)
+    {
+        $query = Truck::with('vehicleType');
+
+        // Apply same search and sort as index
+        if ($request->has('search') && !empty($request->input('search'))) {
+            $search = $request->input('search');
+            $query = $query->where(function ($q) use ($search) {
+                $q->where('plate', 'like', "%{$search}%")
+                    ->orWhere('chasisNumber', 'like', "%{$search}%")
+                    ->orWhere('engineNumber', 'like', "%{$search}%");
+            });
+
+            $vehicleTypeIds = VehicleType::where('name', 'like', "%{$search}%")
+                ->pluck('id')
+                ->toArray();
+
+            if (!empty($vehicleTypeIds)) {
+                $query = $query->orWhereIn('vehecletype_id', $vehicleTypeIds);
+            }
+        }
+
+        // Apply sorting
+        if ($request->has('sort')) {
+            $sort = $request->input('sort', 'plate');
+            $direction = $request->input('direction', 'asc');
+            $query = $query->orderBy($sort, $direction);
+        }
+
+        $trucks = $query->get();
+
+        // Generate CSV
+        $filename = 'trucks_' . now()->format('Y-m-d_H-i-s') . '.csv';
+        $handle = fopen('php://temp', 'r+');
+
+        // Write header
+        fputcsv($handle, [
+            'ID',
+            'Plate',
+            'Vehicle Type',
+            'Chassis Number',
+            'Engine Number',
+            'Tyre Size',
+            'Service Interval (KM)',
+            'Purchase Price',
+            'Production Date',
+            'Service Start Date',
+            'Status',
+            'Created At',
+            'Updated At'
+        ]);
+
+        // Write data
+        foreach ($trucks as $truck) {
+            fputcsv($handle, [
+                $truck->id,
+                $truck->plate,
+                $truck->vehicleType?->name ?? 'N/A',
+                $truck->chasisNumber ?? 'N/A',
+                $truck->engineNumber ?? 'N/A',
+                $truck->tyreSyze ?? 'N/A',
+                $truck->serviceIntervalKM ?? 'N/A',
+                $truck->purchasePrice ?? 'N/A',
+                $truck->productionDate ?? 'N/A',
+                $truck->serviceStartDate ?? 'N/A',
+                $truck->status,
+                $truck->created_at,
+                $truck->updated_at
+            ]);
+        }
+
+        rewind($handle);
+        $csv = stream_get_contents($handle);
+        fclose($handle);
+
+        // Log activity using Spatie Activity Log
+        Activity::causedBy(auth()->user())
+            ->withProperties(['count' => count($trucks)])
+            ->log('exported');
+
+        return response($csv, 200)
+            ->header('Content-Type', 'text/csv')
+            ->header('Content-Disposition', "attachment; filename=\"$filename\"");
     }
 }

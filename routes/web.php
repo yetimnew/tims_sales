@@ -18,16 +18,91 @@ Route::middleware(['auth'])->group(function () {
     // Dashboard
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    // Trucks with rate limiting
+    // Trucks with rate limiting and permission middleware
     Route::middleware(['throttle:60,1'])->group(function () {
-        Route::resource('trucks', TruckController::class);
-        Route::post('trucks/{truck}/deactivate', [TruckController::class, 'deactivate'])->name('trucks.deactivate');
-        Route::get('trucks/free/list', [TruckController::class, 'freeTrucks'])->name('trucks.free');
+        // Export route - highest priority
+        Route::get('trucks/export/csv', [TruckController::class, 'export'])
+            ->middleware('can:trucks.export')
+            ->name('trucks.export');
+
+        // All other truck routes with individual permission checks
+        Route::get('trucks', [TruckController::class, 'index'])
+            ->middleware('can:trucks.view')
+            ->name('trucks.index');
+
+        Route::get('trucks/create', [TruckController::class, 'create'])
+            ->middleware('can:trucks.create')
+            ->name('trucks.create');
+
+        Route::post('trucks', [TruckController::class, 'store'])
+            ->middleware('can:trucks.store')
+            ->name('trucks.store');
+
+        Route::get('trucks/{truck}', [TruckController::class, 'show'])
+            ->middleware('can:trucks.show')
+            ->name('trucks.show');
+
+        Route::get('trucks/{truck}/edit', [TruckController::class, 'edit'])
+            ->middleware('can:trucks.edit')
+            ->name('trucks.edit');
+
+        Route::put('trucks/{truck}', [TruckController::class, 'update'])
+            ->middleware('can:trucks.update')
+            ->name('trucks.update');
+
+        Route::delete('trucks/{truck}', [TruckController::class, 'destroy'])
+            ->middleware('can:trucks.destroy')
+            ->name('trucks.destroy');
+
+        Route::post('trucks/{truck}/deactivate', [TruckController::class, 'deactivate'])
+            ->middleware('can:trucks.deactivate')
+            ->name('trucks.deactivate');
+
+        Route::get('trucks/free/list', [TruckController::class, 'freeTrucks'])
+            ->middleware('can:trucks.free')
+            ->name('trucks.free');
     });
 
-    // Drivers
-    Route::resource('drivers', DriverController::class);
-    Route::post('drivers/{driver}/deactivate', [DriverController::class, 'deactivate'])->name('drivers.deactivate');
+    // Drivers with rate limiting and permission middleware
+    Route::middleware(['throttle:60,1'])->group(function () {
+        // Export route - highest priority
+        Route::get('drivers/export/csv', [DriverController::class, 'export'])
+            ->middleware('can:drivers.export')
+            ->name('drivers.export');
+
+        // All other driver routes with individual permission checks
+        Route::get('drivers', [DriverController::class, 'index'])
+            ->middleware('can:drivers.view')
+            ->name('drivers.index');
+
+        Route::get('drivers/create', [DriverController::class, 'create'])
+            ->middleware('can:drivers.create')
+            ->name('drivers.create');
+
+        Route::post('drivers', [DriverController::class, 'store'])
+            ->middleware('can:drivers.store')
+            ->name('drivers.store');
+
+        Route::get('drivers/{driver}', [DriverController::class, 'show'])
+            ->middleware('can:drivers.show')
+            ->name('drivers.show');
+
+        Route::get('drivers/{driver}/edit', [DriverController::class, 'edit'])
+            ->middleware('can:drivers.edit')
+            ->name('drivers.edit');
+
+        Route::put('drivers/{driver}', [DriverController::class, 'update'])
+            ->middleware('can:drivers.update')
+            ->name('drivers.update');
+
+        Route::delete('drivers/{driver}', [DriverController::class, 'destroy'])
+            ->middleware('can:drivers.destroy')
+            ->name('drivers.destroy');
+
+        Route::post('drivers/{driver}/deactivate', [DriverController::class, 'deactivate'])
+            ->middleware('can:drivers.update')
+            ->name('drivers.deactivate');
+    });
 
     // Performances
     Route::resource('performances', PerformanceController::class);
