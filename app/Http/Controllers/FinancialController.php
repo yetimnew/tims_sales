@@ -8,21 +8,42 @@ use App\Models\InsuranceRecord;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Exception;
+use Spatie\ActivityLog\Facades\Activity;
 
 class FinancialController extends Controller
 {
     /**
      * Display a listing of financial records.
      */
-    public function index(): Response
+    public function index(Request $request): Response
     {
-        $financialRecords = TruckFinancialRecord::with(['truck'])
-            ->orderBy('record_date', 'desc')
-            ->paginate(15);
+        $query = TruckFinancialRecord::with(['truck']);
 
+        // Handle search
+        if ($request->has('search') && !empty($request->input('search'))) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('truck', function ($q) use ($search) {
+                    $q->where('plate', 'like', "%{$search}%");
+                });
+            });
+        }
+
+        // Handle sorting
+        $sort = $request->input('sort', 'record_date');
+        $direction = $request->input('direction', 'desc');
+
+        // Validate sort column to prevent SQL injection
+        $allowedSorts = ['record_date', 'revenue', 'net_profit', 'period_type', 'created_at'];
+        if (!in_array($sort, $allowedSorts)) {
+            $sort = 'record_date';
+        }
+
+        $query->orderBy($sort, $direction);
+
+        $financialRecords = $query->paginate(15);
         $statistics = $this->getFinancialStatistics();
 
         return Inertia::render('Financial/Index', [
@@ -41,6 +62,62 @@ class FinancialController extends Controller
         return Inertia::render('Financial/Create', [
             'trucks' => $trucks,
         ]);
+    }
+
+    /**
+     * Export financial records to CSV.
+     */
+    public function export(Request $request)
+    {
+        $query = TruckFinancialRecord::with(['truck']);
+
+        // Apply search filter if provided
+        if ($request->has('search') && !empty($request->input('search'))) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('truck', function ($q) use ($search) {
+                    $q->where('plate', 'like', "%{$search}%");
+                });
+            });
+        }
+
+        // Apply sorting if provided
+        $sort = $request->input('sort', 'record_date');
+        $direction = $request->input('direction', 'desc');
+        $allowedSorts = ['record_date', 'revenue', 'net_profit', 'period_type', 'created_at'];
+        if (in_array($sort, $allowedSorts)) {
+            $query->orderBy($sort, $direction);
+        }
+
+        $financialRecords = $query->get();
+
+        // Generate CSV
+        $csvData = "Truck,Record Date,Period Type,Revenue,Fuel Cost,Maintenance Cost,Driver Salary,Insurance Cost,Depreciation,Other Costs,Net Profit\n";
+        foreach ($financialRecords as $record) {
+            $csvData .= sprintf(
+                '"%s","%s","%s","%.2f","%.2f","%.2f","%.2f","%.2f","%.2f","%.2f","%.2f"' . "\n",
+                $record->truck->plate ?? 'N/A',
+                $record->record_date,
+                $record->period_type,
+                $record->revenue,
+                $record->fuel_cost,
+                $record->maintenance_cost,
+                $record->driver_salary,
+                $record->insurance_cost,
+                $record->depreciation,
+                $record->other_costs,
+                $record->net_profit
+            );
+        }
+
+        // Log the export
+        Activity::causedBy(auth()->user())
+            ->withProperties(['count' => count($financialRecords)])
+            ->log('exported');
+
+        return response($csvData)
+            ->header('Content-Type', 'text/csv')
+            ->header('Content-Disposition', 'attachment; filename="financial-records.csv"');
     }
 
     /**
@@ -69,24 +146,14 @@ class FinancialController extends Controller
 
             $financialRecord = TruckFinancialRecord::create($validated);
 
-            Log::info('Financial record created', [
-                'financial_record_id' => $financialRecord->id,
-                'truck_id' => $financialRecord->truck_id,
-                'revenue' => $financialRecord->revenue,
-                'net_profit' => $financialRecord->net_profit,
-                'user_id' => auth()->id(),
-            ]);
+            Activity::performedOn($financialRecord)
+                ->causedBy(auth()->user())
+                ->log('created');
 
             return redirect()->route('financial.index')
                 ->with('success', 'Financial record created successfully.');
 
         } catch (Exception $e) {
-            Log::error('Financial record creation failed', [
-                'error' => $e->getMessage(),
-                'data' => $request->all(),
-                'user_id' => auth()->id(),
-            ]);
-
             return back()->withErrors(['error' => 'Failed to create financial record. Please try again.']);
         }
     }
@@ -98,8 +165,15 @@ class FinancialController extends Controller
     {
         $financial->load(['truck']);
 
+        // Load activity logs for this financial record using Spatie Activity Log
+        $activityLogs = Activity::forSubject($financial)
+            ->with('causer')
+            ->orderByDesc('created_at')
+            ->get();
+
         return Inertia::render('Financial/Show', [
             'financial' => $financial,
+            'activityLogs' => $activityLogs,
         ]);
     }
 
@@ -140,27 +214,18 @@ class FinancialController extends Controller
                  $validated['driver_salary'] + $validated['insurance_cost'] +
                  $validated['depreciation'] + $validated['other_costs']);
 
+            $oldData = $financial->toArray();
             $financial->update($validated);
 
-            Log::info('Financial record updated', [
-                'financial_record_id' => $financial->id,
-                'truck_id' => $financial->truck_id,
-                'revenue' => $financial->revenue,
-                'net_profit' => $financial->net_profit,
-                'user_id' => auth()->id(),
-            ]);
+            Activity::performedOn($financial)
+                ->causedBy(auth()->user())
+                ->withProperties(['old' => $oldData, 'new' => $financial->toArray()])
+                ->log('updated');
 
             return redirect()->route('financial.index')
                 ->with('success', 'Financial record updated successfully.');
 
         } catch (Exception $e) {
-            Log::error('Financial record update failed', [
-                'financial_record_id' => $financial->id,
-                'error' => $e->getMessage(),
-                'data' => $request->all(),
-                'user_id' => auth()->id(),
-            ]);
-
             return back()->withErrors(['error' => 'Failed to update financial record. Please try again.']);
         }
     }
@@ -174,22 +239,15 @@ class FinancialController extends Controller
             $financialData = $financial->toArray();
             $financial->delete();
 
-            Log::info('Financial record deleted', [
-                'financial_record_id' => $financial->id,
-                'truck_id' => $financialData['truck_id'],
-                'user_id' => auth()->id(),
-            ]);
+            Activity::performedOn($financial)
+                ->causedBy(auth()->user())
+                ->withProperties(['deleted' => $financialData])
+                ->log('deleted');
 
             return redirect()->route('financial.index')
                 ->with('success', 'Financial record deleted successfully.');
 
         } catch (Exception $e) {
-            Log::error('Financial record deletion failed', [
-                'financial_record_id' => $financial->id,
-                'error' => $e->getMessage(),
-                'user_id' => auth()->id(),
-            ]);
-
             return back()->withErrors(['error' => 'Failed to delete financial record. Please try again.']);
         }
     }
@@ -222,11 +280,6 @@ class FinancialController extends Controller
             ]);
 
         } catch (Exception $e) {
-            Log::error('Failed to get financial analytics', [
-                'error' => $e->getMessage(),
-                'user_id' => auth()->id(),
-            ]);
-
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to retrieve financial analytics'
@@ -262,11 +315,6 @@ class FinancialController extends Controller
             ]);
 
         } catch (Exception $e) {
-            Log::error('Failed to get profit and loss statement', [
-                'error' => $e->getMessage(),
-                'user_id' => auth()->id(),
-            ]);
-
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to retrieve profit and loss statement'

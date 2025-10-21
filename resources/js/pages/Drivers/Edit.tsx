@@ -18,24 +18,43 @@ const breadcrumbs: BreadcrumbItem[] = [
         href: '/drivers',
     },
     {
-        title: 'Create',
-        href: '/drivers/create',
+        title: 'Edit',
+        href: '#',
     },
 ];
 
-export default function DriversCreate() {
-    const { data, setData, post, processing, errors } = useForm({
-        driverid: '',
-        name: '',
-        sex: '',
-        birthdate: '',
-        zone: '',
-        woreda: '',
-        kebele: '',
-        housenumber: '',
-        mobile: '',
-        hireddate: '',
-        status: 'active',
+interface Driver {
+    id: number;
+    driverid: string;
+    name: string;
+    sex: string;
+    birthdate?: string;
+    zone?: string;
+    woreda?: string;
+    kebele?: string;
+    housenumber?: string;
+    mobile?: string;
+    hireddate?: string;
+    status: string;
+}
+
+interface DriversEditProps {
+    driver: Driver;
+}
+
+export default function DriversEdit({ driver }: DriversEditProps) {
+    const { data, setData, put, processing, errors } = useForm({
+        driverid: driver.driverid,
+        name: driver.name,
+        sex: driver.sex,
+        birthdate: driver.birthdate || '',
+        zone: driver.zone || '',
+        woreda: driver.woreda || '',
+        kebele: driver.kebele || '',
+        housenumber: driver.housenumber || '',
+        mobile: driver.mobile || '',
+        hireddate: driver.hireddate || '',
+        status: driver.status,
     });
 
     const { toast } = useToast();
@@ -102,7 +121,7 @@ export default function DriversCreate() {
             return;
         }
 
-        post('/drivers');
+        put(`/drivers/${driver.id}`);
     };
 
     const hasErrors = Object.keys(errors).length > 0 || Object.keys(frontendErrors).length > 0;
@@ -110,13 +129,13 @@ export default function DriversCreate() {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Create Driver" />
+            <Head title={`Edit ${driver.name}`} />
             <div className="flex h-full flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4">
                 {/* Header */}
                 <div>
-                    <h1 className="text-2xl font-bold">Create Driver</h1>
+                    <h1 className="text-2xl font-bold">Edit Driver</h1>
                     <p className="text-muted-foreground">
-                        Add a new driver to your workforce
+                        Update the driver information
                     </p>
                 </div>
 
@@ -134,7 +153,7 @@ export default function DriversCreate() {
                     <CardHeader>
                         <CardTitle>Driver Information</CardTitle>
                         <CardDescription>
-                            Enter the information for the new driver
+                            Update the information for {driver.name}
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -314,7 +333,7 @@ export default function DriversCreate() {
 
                             <div className="flex gap-2">
                                 <Button type="submit" disabled={processing || hasErrors}>
-                                    {processing ? 'Creating...' : 'Create Driver'}
+                                    {processing ? 'Updating...' : 'Update Driver'}
                                 </Button>
                                 <Button type="button" variant="outline" asChild>
                                     <a href="/drivers">Cancel</a>
@@ -327,6 +346,3 @@ export default function DriversCreate() {
         </AppLayout>
     );
 }
-
-
-

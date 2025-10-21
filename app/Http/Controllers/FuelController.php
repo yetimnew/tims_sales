@@ -9,21 +9,47 @@ use App\Models\FuelConsumptionAnalysis;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Exception;
+use Spatie\ActivityLog\Facades\Activity;
 
 class FuelController extends Controller
 {
     /**
      * Display a listing of fuel records.
      */
-    public function index(): Response
+    public function index(Request $request): Response
     {
-        $fuelRecords = FuelRecord::with(['truck', 'driver', 'user'])
-            ->orderBy('fuel_date', 'desc')
-            ->paginate(15);
+        $query = FuelRecord::with(['truck', 'driver', 'user']);
 
+        // Handle search
+        if ($request->has('search') && !empty($request->input('search'))) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('receipt_number', 'like', "%{$search}%")
+                    ->orWhere('notes', 'like', "%{$search}%")
+                    ->orWhereHas('truck', function ($q) use ($search) {
+                        $q->where('plate', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('driver', function ($q) use ($search) {
+                        $q->where('name', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        // Handle sorting
+        $sort = $request->input('sort', 'fuel_date');
+        $direction = $request->input('direction', 'desc');
+
+        // Validate sort column to prevent SQL injection
+        $allowedSorts = ['fuel_date', 'fuel_quantity_liters', 'total_cost', 'fuel_type', 'created_at'];
+        if (!in_array($sort, $allowedSorts)) {
+            $sort = 'fuel_date';
+        }
+
+        $query->orderBy($sort, $direction);
+
+        $fuelRecords = $query->paginate(15);
         $statistics = $this->getFuelStatistics();
 
         return Inertia::render('Fuel/Index', [
@@ -44,6 +70,65 @@ class FuelController extends Controller
             'trucks' => $trucks,
             'drivers' => $drivers,
         ]);
+    }
+
+    /**
+     * Export fuel records to CSV.
+     */
+    public function export(Request $request)
+    {
+        $query = FuelRecord::with(['truck', 'driver']);
+
+        // Apply search filter if provided
+        if ($request->has('search') && !empty($request->input('search'))) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('receipt_number', 'like', "%{$search}%")
+                    ->orWhere('notes', 'like', "%{$search}%")
+                    ->orWhereHas('truck', function ($q) use ($search) {
+                        $q->where('plate', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('driver', function ($q) use ($search) {
+                        $q->where('name', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        // Apply sorting if provided
+        $sort = $request->input('sort', 'fuel_date');
+        $direction = $request->input('direction', 'desc');
+        $allowedSorts = ['fuel_date', 'fuel_quantity_liters', 'total_cost', 'fuel_type', 'created_at'];
+        if (in_array($sort, $allowedSorts)) {
+            $query->orderBy($sort, $direction);
+        }
+
+        $fuelRecords = $query->get();
+
+        // Generate CSV
+        $csvData = "Truck,Driver,Fuel Date,Fuel Type,Quantity Liters,Price Per Liter,Total Cost,Odometer,Receipt Number\n";
+        foreach ($fuelRecords as $record) {
+            $csvData .= sprintf(
+                '"%s","%s","%s","%s","%.2f","%.2f","%.2f","%s","%s"' . "\n",
+                $record->truck->plate ?? 'N/A',
+                $record->driver->name ?? 'N/A',
+                $record->fuel_date,
+                $record->fuel_type,
+                $record->fuel_quantity_liters,
+                $record->fuel_price_per_liter,
+                $record->total_cost,
+                $record->odometer_reading ?? 'N/A',
+                str_replace('"', '""', $record->receipt_number ?? '')
+            );
+        }
+
+        // Log the export
+        Activity::causedBy(auth()->user())
+            ->withProperties(['count' => count($fuelRecords)])
+            ->log('exported');
+
+        return response($csvData)
+            ->header('Content-Type', 'text/csv')
+            ->header('Content-Disposition', 'attachment; filename="fuel-records.csv"');
     }
 
     /**
@@ -70,25 +155,14 @@ class FuelController extends Controller
 
             $fuelRecord = FuelRecord::create($validated);
 
-            Log::info('Fuel record created', [
-                'fuel_record_id' => $fuelRecord->id,
-                'truck_id' => $fuelRecord->truck_id,
-                'driver_id' => $fuelRecord->driver_id,
-                'fuel_quantity' => $fuelRecord->fuel_quantity_liters,
-                'total_cost' => $fuelRecord->total_cost,
-                'user_id' => auth()->id(),
-            ]);
+            Activity::performedOn($fuelRecord)
+                ->causedBy(auth()->user())
+                ->log('created');
 
             return redirect()->route('fuel.index')
                 ->with('success', 'Fuel record created successfully.');
 
         } catch (Exception $e) {
-            Log::error('Fuel record creation failed', [
-                'error' => $e->getMessage(),
-                'data' => $request->all(),
-                'user_id' => auth()->id(),
-            ]);
-
             return back()->withErrors(['error' => 'Failed to create fuel record. Please try again.']);
         }
     }
@@ -100,8 +174,15 @@ class FuelController extends Controller
     {
         $fuel->load(['truck', 'driver', 'user']);
 
+        // Load activity logs for this fuel record using Spatie Activity Log
+        $activityLogs = Activity::forSubject($fuel)
+            ->with('causer')
+            ->orderByDesc('created_at')
+            ->get();
+
         return Inertia::render('Fuel/Show', [
             'fuel' => $fuel,
+            'activityLogs' => $activityLogs,
         ]);
     }
 
@@ -141,28 +222,18 @@ class FuelController extends Controller
 
             $validated['total_cost'] = $validated['fuel_quantity_liters'] * $validated['fuel_price_per_liter'];
 
+            $oldData = $fuel->toArray();
             $fuel->update($validated);
 
-            Log::info('Fuel record updated', [
-                'fuel_record_id' => $fuel->id,
-                'truck_id' => $fuel->truck_id,
-                'driver_id' => $fuel->driver_id,
-                'fuel_quantity' => $fuel->fuel_quantity_liters,
-                'total_cost' => $fuel->total_cost,
-                'user_id' => auth()->id(),
-            ]);
+            Activity::performedOn($fuel)
+                ->causedBy(auth()->user())
+                ->withProperties(['old' => $oldData, 'new' => $fuel->toArray()])
+                ->log('updated');
 
             return redirect()->route('fuel.index')
                 ->with('success', 'Fuel record updated successfully.');
 
         } catch (Exception $e) {
-            Log::error('Fuel record update failed', [
-                'fuel_record_id' => $fuel->id,
-                'error' => $e->getMessage(),
-                'data' => $request->all(),
-                'user_id' => auth()->id(),
-            ]);
-
             return back()->withErrors(['error' => 'Failed to update fuel record. Please try again.']);
         }
     }
@@ -176,23 +247,15 @@ class FuelController extends Controller
             $fuelData = $fuel->toArray();
             $fuel->delete();
 
-            Log::info('Fuel record deleted', [
-                'fuel_record_id' => $fuel->id,
-                'truck_id' => $fuelData['truck_id'],
-                'driver_id' => $fuelData['driver_id'],
-                'user_id' => auth()->id(),
-            ]);
+            Activity::performedOn($fuel)
+                ->causedBy(auth()->user())
+                ->withProperties(['deleted' => $fuelData])
+                ->log('deleted');
 
             return redirect()->route('fuel.index')
                 ->with('success', 'Fuel record deleted successfully.');
 
         } catch (Exception $e) {
-            Log::error('Fuel record deletion failed', [
-                'fuel_record_id' => $fuel->id,
-                'error' => $e->getMessage(),
-                'user_id' => auth()->id(),
-            ]);
-
             return back()->withErrors(['error' => 'Failed to delete fuel record. Please try again.']);
         }
     }
@@ -225,11 +288,6 @@ class FuelController extends Controller
             ]);
 
         } catch (Exception $e) {
-            Log::error('Failed to get fuel consumption analysis', [
-                'error' => $e->getMessage(),
-                'user_id' => auth()->id(),
-            ]);
-
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to retrieve fuel consumption analysis'
@@ -256,11 +314,6 @@ class FuelController extends Controller
             ]);
 
         } catch (Exception $e) {
-            Log::error('Failed to generate fuel consumption analysis', [
-                'error' => $e->getMessage(),
-                'user_id' => auth()->id(),
-            ]);
-
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to generate fuel consumption analysis'

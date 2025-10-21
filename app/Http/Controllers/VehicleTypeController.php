@@ -6,23 +6,92 @@ use App\Models\VehicleType;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
-use Illuminate\Support\Facades\Log;
 use Exception;
+use Spatie\ActivityLog\Facades\Activity;
 
 class VehicleTypeController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index(): Response
+    public function index(Request $request): Response
     {
-        $vehicleTypes = VehicleType::withCount('trucks')
-            ->orderBy('name')
-            ->paginate(15);
+        $query = VehicleType::withCount('trucks');
+
+        // Handle search
+        if ($request->has('search') && !empty($request->input('search'))) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%");
+            });
+        }
+
+        // Handle sorting
+        $sort = $request->input('sort', 'name');
+        $direction = $request->input('direction', 'asc');
+
+        // Validate sort column to prevent SQL injection
+        $allowedSorts = ['name', 'trucks_count', 'created_at'];
+        if (!in_array($sort, $allowedSorts)) {
+            $sort = 'name';
+        }
+
+        $query->orderBy($sort, $direction);
+
+        $vehicleTypes = $query->paginate(15);
 
         return Inertia::render('VehicleTypes/Index', [
             'vehicleTypes' => $vehicleTypes,
         ]);
+    }
+
+    /**
+     * Export vehicle types to CSV.
+     */
+    public function export(Request $request)
+    {
+        $query = VehicleType::withCount('trucks');
+
+        // Apply search filter if provided
+        if ($request->has('search') && !empty($request->input('search'))) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%");
+            });
+        }
+
+        // Apply sorting if provided
+        $sort = $request->input('sort', 'name');
+        $direction = $request->input('direction', 'asc');
+        $allowedSorts = ['name', 'trucks_count', 'created_at'];
+        if (in_array($sort, $allowedSorts)) {
+            $query->orderBy($sort, $direction);
+        }
+
+        $vehicleTypes = $query->get();
+
+        // Generate CSV
+        $csvData = "Name,Description,Trucks Count,Created Date\n";
+        foreach ($vehicleTypes as $type) {
+            $csvData .= sprintf(
+                '"%s","%s","%s","%s"' . "\n",
+                $type->name,
+                str_replace('"', '""', $type->description ?? ''),
+                $type->trucks_count,
+                $type->created_at
+            );
+        }
+
+        // Log the export
+        Activity::causedBy(auth()->user())
+            ->withProperties(['count' => count($vehicleTypes)])
+            ->log('exported');
+
+        return response($csvData)
+            ->header('Content-Type', 'text/csv')
+            ->header('Content-Disposition', 'attachment; filename="vehicle-types.csv"');
     }
 
     /**
@@ -46,22 +115,14 @@ class VehicleTypeController extends Controller
 
             $vehicleType = VehicleType::create($validated);
 
-            Log::info('Vehicle type created', [
-                'vehicle_type_id' => $vehicleType->id,
-                'name' => $vehicleType->name,
-                'user_id' => auth()->id(),
-            ]);
+            Activity::performedOn($vehicleType)
+                ->causedBy(auth()->user())
+                ->log('created');
 
             return redirect()->route('vehicletypes.index')
                 ->with('success', 'Vehicle type created successfully.');
 
         } catch (Exception $e) {
-            Log::error('Vehicle type creation failed', [
-                'error' => $e->getMessage(),
-                'data' => $request->all(),
-                'user_id' => auth()->id(),
-            ]);
-
             return back()->withErrors(['error' => 'Failed to create vehicle type. Please try again.']);
         }
     }
@@ -75,8 +136,15 @@ class VehicleTypeController extends Controller
             $query->with('drivers')->paginate(10);
         }]);
 
+        // Load activity logs for this vehicle type using Spatie Activity Log
+        $activityLogs = Activity::forSubject($vehicleType)
+            ->with('causer')
+            ->orderByDesc('created_at')
+            ->get();
+
         return Inertia::render('VehicleTypes/Show', [
             'vehicleType' => $vehicleType,
+            'activityLogs' => $activityLogs,
         ]);
     }
 
@@ -101,25 +169,18 @@ class VehicleTypeController extends Controller
                 'description' => 'nullable|string|max:1000',
             ]);
 
+            $oldData = $vehicleType->toArray();
             $vehicleType->update($validated);
 
-            Log::info('Vehicle type updated', [
-                'vehicle_type_id' => $vehicleType->id,
-                'name' => $vehicleType->name,
-                'user_id' => auth()->id(),
-            ]);
+            Activity::performedOn($vehicleType)
+                ->causedBy(auth()->user())
+                ->withProperties(['old' => $oldData, 'new' => $vehicleType->toArray()])
+                ->log('updated');
 
             return redirect()->route('vehicletypes.index')
                 ->with('success', 'Vehicle type updated successfully.');
 
         } catch (Exception $e) {
-            Log::error('Vehicle type update failed', [
-                'vehicle_type_id' => $vehicleType->id,
-                'error' => $e->getMessage(),
-                'data' => $request->all(),
-                'user_id' => auth()->id(),
-            ]);
-
             return back()->withErrors(['error' => 'Failed to update vehicle type. Please try again.']);
         }
     }
@@ -130,30 +191,18 @@ class VehicleTypeController extends Controller
     public function destroy(VehicleType $vehicleType)
     {
         try {
-            // Check if vehicle type is being used by trucks
-            if ($vehicleType->trucks()->count() > 0) {
-                return back()->withErrors(['error' => 'Cannot delete vehicle type that is being used by trucks.']);
-            }
-
             $vehicleTypeData = $vehicleType->toArray();
             $vehicleType->delete();
 
-            Log::info('Vehicle type deleted', [
-                'vehicle_type_id' => $vehicleType->id,
-                'name' => $vehicleTypeData['name'],
-                'user_id' => auth()->id(),
-            ]);
+            Activity::performedOn($vehicleType)
+                ->causedBy(auth()->user())
+                ->withProperties(['deleted' => $vehicleTypeData])
+                ->log('deleted');
 
             return redirect()->route('vehicletypes.index')
                 ->with('success', 'Vehicle type deleted successfully.');
 
         } catch (Exception $e) {
-            Log::error('Vehicle type deletion failed', [
-                'vehicle_type_id' => $vehicleType->id,
-                'error' => $e->getMessage(),
-                'user_id' => auth()->id(),
-            ]);
-
             return back()->withErrors(['error' => 'Failed to delete vehicle type. Please try again.']);
         }
     }

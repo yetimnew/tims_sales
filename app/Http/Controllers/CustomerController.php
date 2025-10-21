@@ -8,6 +8,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Support\Facades\Log;
 use Exception;
+use Spatie\ActivityLog\Facades\Activity;
 
 class CustomerController extends Controller
 {
@@ -50,11 +51,9 @@ class CustomerController extends Controller
 
             $customer = Customer::create($validated);
 
-            Log::info('Customer created', [
-                'customer_id' => $customer->id,
-                'name' => $customer->name,
-                'user_id' => auth()->id(),
-            ]);
+            Activity::performedOn($customer)
+                ->causedBy(auth()->user())
+                ->log('created');
 
             return redirect()->route('customers.index')
                 ->with('success', 'Customer created successfully.');
@@ -79,8 +78,14 @@ class CustomerController extends Controller
             $query->with('performances')->paginate(10);
         }]);
 
+        $activityLogs = Activity::forSubject($customer)
+            ->with('causer')
+            ->orderByDesc('created_at')
+            ->get();
+
         return Inertia::render('Customers/Show', [
             'customer' => $customer,
+            'activityLogs' => $activityLogs,
         ]);
     }
 
@@ -109,13 +114,13 @@ class CustomerController extends Controller
                 'status' => 'required|string|in:active,inactive',
             ]);
 
+            $oldData = $customer->toArray();
             $customer->update($validated);
 
-            Log::info('Customer updated', [
-                'customer_id' => $customer->id,
-                'name' => $customer->name,
-                'user_id' => auth()->id(),
-            ]);
+            Activity::performedOn($customer)
+                ->causedBy(auth()->user())
+                ->withProperties(['old' => $oldData, 'new' => $customer->toArray()])
+                ->log('updated');
 
             return redirect()->route('customers.index')
                 ->with('success', 'Customer updated successfully.');
@@ -146,11 +151,10 @@ class CustomerController extends Controller
             $customerData = $customer->toArray();
             $customer->delete();
 
-            Log::info('Customer deleted', [
-                'customer_id' => $customer->id,
-                'name' => $customerData['name'],
-                'user_id' => auth()->id(),
-            ]);
+            Activity::performedOn($customer)
+                ->causedBy(auth()->user())
+                ->withProperties(['deleted' => $customerData])
+                ->log('deleted');
 
             return redirect()->route('customers.index')
                 ->with('success', 'Customer deleted successfully.');

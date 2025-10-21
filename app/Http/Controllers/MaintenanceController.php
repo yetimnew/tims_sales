@@ -9,8 +9,8 @@ use App\Services\MaintenanceService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
-use Illuminate\Support\Facades\Log;
 use Exception;
+use Spatie\ActivityLog\Facades\Activity;
 
 class MaintenanceController extends Controller
 {
@@ -24,18 +24,99 @@ class MaintenanceController extends Controller
     /**
      * Display a listing of maintenance records.
      */
-    public function index(): Response
+    public function index(Request $request): Response
     {
-        $maintenanceRecords = VehicleMaintenanceRecord::with(['truck', 'maintenanceType', 'assignedMechanic'])
-            ->orderBy('scheduled_date', 'desc')
-            ->paginate(15);
+        $query = VehicleMaintenanceRecord::with(['truck', 'maintenanceType', 'assignedMechanic']);
 
+        // Handle search
+        if ($request->has('search') && !empty($request->input('search'))) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('description', 'like', "%{$search}%")
+                    ->orWhereHas('truck', function ($q) use ($search) {
+                        $q->where('plate', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('maintenanceType', function ($q) use ($search) {
+                        $q->where('name', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        // Handle sorting
+        $sort = $request->input('sort', 'scheduled_date');
+        $direction = $request->input('direction', 'desc');
+
+        // Validate sort column to prevent SQL injection
+        $allowedSorts = ['scheduled_date', 'completed_date', 'cost', 'status', 'created_at'];
+        if (!in_array($sort, $allowedSorts)) {
+            $sort = 'scheduled_date';
+        }
+
+        $query->orderBy($sort, $direction);
+
+        $maintenanceRecords = $query->paginate(15);
         $statistics = $this->maintenanceService->getMaintenanceStatistics();
 
         return Inertia::render('Maintenance/Index', [
             'maintenanceRecords' => $maintenanceRecords,
             'statistics' => $statistics,
         ]);
+    }
+
+    /**
+     * Export maintenance records to CSV.
+     */
+    public function export(Request $request)
+    {
+        $query = VehicleMaintenanceRecord::with(['truck', 'maintenanceType']);
+
+        // Apply search filter if provided
+        if ($request->has('search') && !empty($request->input('search'))) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('description', 'like', "%{$search}%")
+                    ->orWhereHas('truck', function ($q) use ($search) {
+                        $q->where('plate', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('maintenanceType', function ($q) use ($search) {
+                        $q->where('name', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        // Apply sorting if provided
+        $sort = $request->input('sort', 'scheduled_date');
+        $direction = $request->input('direction', 'desc');
+        $allowedSorts = ['scheduled_date', 'completed_date', 'cost', 'status', 'created_at'];
+        if (in_array($sort, $allowedSorts)) {
+            $query->orderBy($sort, $direction);
+        }
+
+        $maintenanceRecords = $query->get();
+
+        // Generate CSV
+        $csvData = "Truck Plate,Maintenance Type,Scheduled Date,Completed Date,Status,Cost,Description\n";
+        foreach ($maintenanceRecords as $record) {
+            $csvData .= sprintf(
+                '"%s","%s","%s","%s","%s","%.2f","%s"' . "\n",
+                $record->truck->plate ?? 'N/A',
+                $record->maintenanceType->name ?? 'N/A',
+                $record->scheduled_date,
+                $record->completed_date ?? 'N/A',
+                $record->status,
+                $record->cost ?? 0,
+                str_replace('"', '""', $record->description ?? '')
+            );
+        }
+
+        // Log the export
+        Activity::causedBy(auth()->user())
+            ->withProperties(['count' => count($maintenanceRecords)])
+            ->log('exported');
+
+        return response($csvData)
+            ->header('Content-Type', 'text/csv')
+            ->header('Content-Disposition', 'attachment; filename="maintenance-records.csv"');
     }
 
     /**
@@ -47,6 +128,40 @@ class MaintenanceController extends Controller
         $maintenanceTypes = MaintenanceType::where('is_active', true)->get();
 
         return Inertia::render('Maintenance/Create', [
+            'trucks' => $trucks,
+            'maintenanceTypes' => $maintenanceTypes,
+        ]);
+    }
+
+    /**
+     * Display the specified maintenance record.
+     */
+    public function show(VehicleMaintenanceRecord $maintenance): Response
+    {
+        $maintenance->load(['truck', 'maintenanceType', 'assignedMechanic', 'user']);
+
+        // Load activity logs for this maintenance record using Spatie Activity Log
+        $activityLogs = Activity::forSubject($maintenance)
+            ->with('causer')
+            ->orderByDesc('created_at')
+            ->get();
+
+        return Inertia::render('Maintenance/Show', [
+            'maintenance' => $maintenance,
+            'activityLogs' => $activityLogs,
+        ]);
+    }
+
+    /**
+     * Show the form for editing the specified maintenance record.
+     */
+    public function edit(VehicleMaintenanceRecord $maintenance): Response
+    {
+        $trucks = Truck::where('status', 'active')->get();
+        $maintenanceTypes = MaintenanceType::where('is_active', true)->get();
+
+        return Inertia::render('Maintenance/Edit', [
+            'maintenance' => $maintenance,
             'trucks' => $trucks,
             'maintenanceTypes' => $maintenanceTypes,
         ]);
@@ -72,45 +187,16 @@ class MaintenanceController extends Controller
                 $validated
             );
 
+            Activity::performedOn($maintenance)
+                ->causedBy(auth()->user())
+                ->log('created');
+
             return redirect()->route('maintenance.index')
                 ->with('success', 'Maintenance scheduled successfully.');
 
         } catch (Exception $e) {
-            Log::error('Maintenance scheduling failed', [
-                'error' => $e->getMessage(),
-                'data' => $request->all(),
-                'user_id' => auth()->id(),
-            ]);
-
             return back()->withErrors(['error' => 'Failed to schedule maintenance. Please try again.']);
         }
-    }
-
-    /**
-     * Display the specified maintenance record.
-     */
-    public function show(VehicleMaintenanceRecord $maintenance): Response
-    {
-        $maintenance->load(['truck', 'maintenanceType', 'assignedMechanic', 'user']);
-
-        return Inertia::render('Maintenance/Show', [
-            'maintenance' => $maintenance,
-        ]);
-    }
-
-    /**
-     * Show the form for editing the specified maintenance record.
-     */
-    public function edit(VehicleMaintenanceRecord $maintenance): Response
-    {
-        $trucks = Truck::where('status', 'active')->get();
-        $maintenanceTypes = MaintenanceType::where('is_active', true)->get();
-
-        return Inertia::render('Maintenance/Edit', [
-            'maintenance' => $maintenance,
-            'trucks' => $trucks,
-            'maintenanceTypes' => $maintenanceTypes,
-        ]);
     }
 
     /**
@@ -134,26 +220,18 @@ class MaintenanceController extends Controller
                 'assigned_mechanic_id' => 'nullable|exists:users,id',
             ]);
 
+            $oldData = $maintenance->toArray();
             $maintenance->update($validated);
 
-            Log::info('Maintenance record updated', [
-                'maintenance_id' => $maintenance->id,
-                'truck_id' => $maintenance->truck_id,
-                'status' => $maintenance->status,
-                'user_id' => auth()->id(),
-            ]);
+            Activity::performedOn($maintenance)
+                ->causedBy(auth()->user())
+                ->withProperties(['old' => $oldData, 'new' => $maintenance->toArray()])
+                ->log('updated');
 
             return redirect()->route('maintenance.index')
                 ->with('success', 'Maintenance record updated successfully.');
 
         } catch (Exception $e) {
-            Log::error('Maintenance update failed', [
-                'maintenance_id' => $maintenance->id,
-                'error' => $e->getMessage(),
-                'data' => $request->all(),
-                'user_id' => auth()->id(),
-            ]);
-
             return back()->withErrors(['error' => 'Failed to update maintenance record. Please try again.']);
         }
     }
@@ -179,13 +257,6 @@ class MaintenanceController extends Controller
                 ->with('success', 'Maintenance completed successfully.');
 
         } catch (Exception $e) {
-            Log::error('Maintenance completion failed', [
-                'maintenance_id' => $maintenance->id,
-                'error' => $e->getMessage(),
-                'data' => $request->all(),
-                'user_id' => auth()->id(),
-            ]);
-
             return back()->withErrors(['error' => 'Failed to complete maintenance. Please try again.']);
         }
     }
@@ -199,22 +270,15 @@ class MaintenanceController extends Controller
             $maintenanceData = $maintenance->toArray();
             $maintenance->delete();
 
-            Log::info('Maintenance record deleted', [
-                'maintenance_id' => $maintenance->id,
-                'truck_id' => $maintenanceData['truck_id'],
-                'user_id' => auth()->id(),
-            ]);
+            Activity::performedOn($maintenance)
+                ->causedBy(auth()->user())
+                ->withProperties(['deleted' => $maintenanceData])
+                ->log('deleted');
 
             return redirect()->route('maintenance.index')
                 ->with('success', 'Maintenance record deleted successfully.');
 
         } catch (Exception $e) {
-            Log::error('Maintenance deletion failed', [
-                'maintenance_id' => $maintenance->id,
-                'error' => $e->getMessage(),
-                'user_id' => auth()->id(),
-            ]);
-
             return back()->withErrors(['error' => 'Failed to delete maintenance record. Please try again.']);
         }
     }
@@ -234,11 +298,6 @@ class MaintenanceController extends Controller
             ]);
 
         } catch (Exception $e) {
-            Log::error('Failed to get overdue maintenance', [
-                'error' => $e->getMessage(),
-                'user_id' => auth()->id(),
-            ]);
-
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to retrieve overdue maintenance'
@@ -262,11 +321,6 @@ class MaintenanceController extends Controller
             ]);
 
         } catch (Exception $e) {
-            Log::error('Failed to get upcoming maintenance', [
-                'error' => $e->getMessage(),
-                'user_id' => auth()->id(),
-            ]);
-
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to retrieve upcoming maintenance'

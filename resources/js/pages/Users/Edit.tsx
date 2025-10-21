@@ -1,0 +1,195 @@
+import { useState, useEffect } from 'react'
+import { useForm } from '@inertiajs/react'
+import { Link } from '@inertiajs/react'
+import { ArrowLeft } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { useToast } from '@/hooks/use-toast'
+import AppLayout from '@/layouts/app-layout'
+import { CircleAlert } from 'lucide-react'
+
+interface User {
+  id: number
+  name: string
+  email: string
+}
+
+interface UserFormData {
+  name: string
+  email: string
+  password?: string
+  password_confirmation?: string
+}
+
+interface UserEditProps {
+  user: User
+}
+
+export default function UsersEdit({ user }: UserEditProps) {
+  const { toast } = useToast()
+  const [frontendErrors, setFrontendErrors] = useState<Record<string, string>>({})
+  const { data, setData, put, processing, errors } = useForm<UserFormData>({
+    name: user.name,
+    email: user.email,
+    password: '',
+    password_confirmation: '',
+  })
+
+  useEffect(() => {
+    if (Object.keys(errors).length > 0) {
+      toast({ title: 'Validation Error', description: 'Please fix the errors', variant: 'destructive' })
+    }
+  }, [errors])
+
+  const handleFieldChange = (field: string, value: string) => {
+    setData(field as keyof UserFormData, value)
+    if (frontendErrors[field]) {
+      setFrontendErrors(prev => {
+        const updated = { ...prev }
+        delete updated[field]
+        return updated
+      })
+    }
+  }
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+
+    // Basic validation
+    const validationErrors: Record<string, string> = {}
+
+    if (!data.name.trim()) {
+      validationErrors.name = 'Name is required'
+    }
+
+    if (!data.email.trim()) {
+      validationErrors.email = 'Email is required'
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+      validationErrors.email = 'Invalid email format'
+    }
+
+    if (data.password && data.password.length < 8) {
+      validationErrors.password = 'Password must be at least 8 characters'
+    }
+
+    if (data.password && data.password !== data.password_confirmation) {
+      validationErrors.password_confirmation = 'Passwords do not match'
+    }
+
+    if (Object.keys(validationErrors).length > 0) {
+      setFrontendErrors(validationErrors)
+      toast({ title: 'Validation Error', description: 'Please fix all errors', variant: 'destructive' })
+      return
+    }
+
+    put(route('users.update', user.id))
+  }
+
+  const hasErrors = Object.keys(frontendErrors).length > 0 || Object.keys(errors).length > 0
+
+  return (
+    <div className="flex h-full flex-1 flex-col gap-6 overflow-auto p-4">
+      <div className="flex items-center gap-4">
+        <Link href={route('users.index')}>
+          <Button variant="outline" size="icon">
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+        </Link>
+        <h1 className="text-2xl font-bold">Edit User</h1>
+      </div>
+
+      <Card className="max-w-2xl">
+        <CardHeader className="border-b">
+          <h2 className="text-lg font-semibold">Update User Details</h2>
+        </CardHeader>
+        <CardContent className="pt-6">
+          {hasErrors && (
+            <Alert variant="destructive" className="mb-6">
+              <CircleAlert className="h-4 w-4" />
+              <AlertDescription>Please fix all errors in the form below</AlertDescription>
+            </Alert>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="name">Name *</Label>
+              <Input
+                id="name"
+                type="text"
+                value={data.name}
+                onChange={e => handleFieldChange('name', e.target.value)}
+                placeholder="Enter user name"
+                className={frontendErrors.name || errors.name ? 'border-red-500' : ''}
+              />
+              {(frontendErrors.name || errors.name) && (
+                <p className="text-sm text-red-500">{frontendErrors.name || errors.name}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="email">Email *</Label>
+              <Input
+                id="email"
+                type="email"
+                value={data.email}
+                onChange={e => handleFieldChange('email', e.target.value)}
+                placeholder="Enter email address"
+                className={frontendErrors.email || errors.email ? 'border-red-500' : ''}
+              />
+              {(frontendErrors.email || errors.email) && (
+                <p className="text-sm text-red-500">{frontendErrors.email || errors.email}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password">New Password (leave blank to keep current)</Label>
+              <Input
+                id="password"
+                type="password"
+                value={data.password}
+                onChange={e => handleFieldChange('password', e.target.value)}
+                placeholder="Enter new password"
+                className={frontendErrors.password || errors.password ? 'border-red-500' : ''}
+              />
+              {(frontendErrors.password || errors.password) && (
+                <p className="text-sm text-red-500">{frontendErrors.password || errors.password}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password_confirmation">Confirm New Password</Label>
+              <Input
+                id="password_confirmation"
+                type="password"
+                value={data.password_confirmation}
+                onChange={e => handleFieldChange('password_confirmation', e.target.value)}
+                placeholder="Confirm new password"
+                className={frontendErrors.password_confirmation || errors.password_confirmation ? 'border-red-500' : ''}
+              />
+              {(frontendErrors.password_confirmation || errors.password_confirmation) && (
+                <p className="text-sm text-red-500">{frontendErrors.password_confirmation || errors.password_confirmation}</p>
+              )}
+            </div>
+
+            <div className="flex gap-2 pt-4">
+              <Button type="submit" disabled={processing || hasErrors} className="flex-1">
+                Update User
+              </Button>
+              <Link href={route('users.index')}>
+                <Button type="button" variant="outline" className="flex-1">
+                  Cancel
+                </Button>
+              </Link>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+UsersEdit.layout = (page: React.ReactNode) => <AppLayout children={page} />
+

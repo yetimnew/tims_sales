@@ -257,18 +257,18 @@ const getMainNavItems = (): NavItem[] => {
     }
 };
 
-const footerNavItems: NavItem[] = [
-    {
-        title: 'Repository',
-        href: 'https://github.com/laravel/react-starter-kit',
-        icon: Folder,
-    },
-    {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits#react',
-        icon: BookOpen,
-    },
-];
+// const footerNavItems: NavItem[] = [
+//     {
+//         title: 'Repository',
+//         href: 'https://github.com/laravel/react-starter-kit',
+//         icon: Folder,
+//     },
+//     {
+//         title: 'Documentation',
+//         href: 'https://laravel.com/docs/starter-kits#react',
+//         icon: BookOpen,
+//     },
+// ];
 
 interface AppSidebarProps {
     className?: string;
@@ -294,10 +294,10 @@ export function AppSidebar({ className }: AppSidebarProps) {
                     <NavMain items={getMainNavItems()} />
                 </SidebarContent>
 
-                <SidebarFooter>
+                {/* <SidebarFooter>
                     <NavFooter items={footerNavItems} className="mt-auto" />
                     <NavUser />
-                </SidebarFooter>
+                </SidebarFooter> */}
             </Sidebar>
         );
     } catch (error) {
