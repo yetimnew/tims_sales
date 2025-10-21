@@ -13,10 +13,34 @@ class DriverController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(): Response
+    public function index(Request $request): Response
     {
-        $drivers = Driver::with('trucks')
-            ->paginate(15);
+        $query = Driver::with('trucks');
+
+        // Handle search
+        if ($request->has('search') && !empty($request->input('search'))) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('driverid', 'like', "%{$search}%")
+                    ->orWhere('mobile', 'like', "%{$search}%")
+                    ->orWhere('zone', 'like', "%{$search}%");
+            });
+        }
+
+        // Handle sorting
+        $sort = $request->input('sort', 'name');
+        $direction = $request->input('direction', 'asc');
+
+        // Validate sort column to prevent SQL injection
+        $allowedSorts = ['name', 'driverid', 'sex', 'mobile', 'hireddate', 'status', 'zone', 'created_at'];
+        if (!in_array($sort, $allowedSorts)) {
+            $sort = 'name';
+        }
+
+        $query->orderBy($sort, $direction);
+
+        $drivers = $query->paginate(15);
 
         return Inertia::render('Drivers/Index', [
             'drivers' => $drivers,

@@ -20,7 +20,7 @@ import {
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Dashboard',
-        href: dashboard().url,
+        href: '/dashboard',
     },
 ];
 
@@ -88,13 +88,10 @@ export default function Dashboard({
     statusBreakdown,
     recentPerformances
 }: DashboardProps) {
-    console.log('🔍 Dashboard - recentPerformances:', recentPerformances);
-    console.log('🔍 Dashboard - first performance:', recentPerformances?.[0]);
-
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Dashboard" />
-            <div className="flex flex-col gap-6 p-4 w-full">
+            <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-4 w-full">
                 {/* Key Metrics */}
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                     <Card>

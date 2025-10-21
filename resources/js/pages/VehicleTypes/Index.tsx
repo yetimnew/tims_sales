@@ -37,6 +37,10 @@ interface VehicleTypesIndexProps {
 }
 
 export default function VehicleTypesIndex({ vehicleTypes }: VehicleTypesIndexProps) {
+    // Safety checks for undefined data
+    const vehicleTypeData = vehicleTypes?.data || [];
+    const totalVehicleTypes = vehicleTypes?.meta?.total || 0;
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Vehicle Types" />
@@ -62,12 +66,12 @@ export default function VehicleTypesIndex({ vehicleTypes }: VehicleTypesIndexPro
                     <CardHeader>
                         <CardTitle>Vehicle Types</CardTitle>
                         <CardDescription>
-                            {vehicleTypes.meta.total} vehicle types registered
+                            {totalVehicleTypes} vehicle types registered
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-4">
-                            {vehicleTypes.data.map((vehicleType) => (
+                            {vehicleTypeData.map((vehicleType) => (
                                 <div key={vehicleType.id} className="flex items-center justify-between p-4 border rounded-lg">
                                     <div className="space-y-1">
                                         <div className="font-medium">{vehicleType.name}</div>

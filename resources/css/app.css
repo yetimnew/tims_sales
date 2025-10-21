@@ -133,11 +133,19 @@
 }
 
 @layer base {
+    html, body {
+        @apply h-full;
+    }
+
     * {
         @apply border-border;
     }
 
     body {
         @apply bg-background text-foreground;
+    }
+
+    #app {
+        @apply h-full;
     }
 }

@@ -37,7 +37,7 @@ class Truck extends Model
      */
     public function vehicleType(): BelongsTo
     {
-        return $this->belongsTo(VehicleType::class);
+        return $this->belongsTo(VehicleType::class, 'vehecletype_id');
     }
 
     /**

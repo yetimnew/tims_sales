@@ -36,13 +36,20 @@ import { BookOpen, Folder, LayoutGrid, Menu, Search } from 'lucide-react';
 import AppLogo from './app-logo';
 import AppLogoIcon from './app-logo-icon';
 
-const mainNavItems: NavItem[] = [
-    {
-        title: 'Dashboard',
-        href: dashboard().url,
-        icon: LayoutGrid,
-    },
-];
+const getMainNavItems = (): NavItem[] => {
+    try {
+        return [
+            {
+                title: 'Dashboard',
+                href: '/dashboard',
+                icon: LayoutGrid,
+            },
+        ];
+    } catch (error) {
+        console.error('Error loading main nav items:', error);
+        return [];
+    }
+};
 
 const rightNavItems: NavItem[] = [
     {
@@ -68,6 +75,10 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
     const page = usePage<SharedData>();
     const { auth } = page.props;
     const getInitials = useInitials();
+
+    // Safety check - page.component should always exist in Inertia.js
+    const currentUrl = page.url || '/';
+
     return (
         <>
             <div className="border-b border-sidebar-border/80">
@@ -97,7 +108,7 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
                                 <div className="flex h-full flex-1 flex-col space-y-4 p-4">
                                     <div className="flex h-full flex-col justify-between text-sm">
                                         <div className="flex flex-col space-y-4">
-                                            {mainNavItems.map((item) => (
+                                            {getMainNavItems().map((item) => (
                                                 <Link
                                                     key={item.title}
                                                     href={item.href}
@@ -140,7 +151,7 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
                     </div>
 
                     <Link
-                        href={dashboard().url}
+                        href="/dashboard"
                         prefetch
                         className="flex items-center space-x-2"
                     >
@@ -151,7 +162,7 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
                     <div className="ml-6 hidden h-full items-center space-x-6 lg:flex">
                         <NavigationMenu className="flex h-full items-stretch">
                             <NavigationMenuList className="flex h-full items-stretch space-x-2">
-                                {mainNavItems.map((item, index) => (
+                                {getMainNavItems().map((item, index) => (
                                     <NavigationMenuItem
                                         key={index}
                                         className="relative flex h-full items-center"
@@ -161,7 +172,7 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
                                             className={cn(
                                                 navigationMenuTriggerStyle(),
                                                 isSameUrl(
-                                                    page.url,
+                                                    currentUrl,
                                                     item.href,
                                                 ) && activeItemStyles,
                                                 'h-9 cursor-pointer px-3',
@@ -175,7 +186,7 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
                                             )}
                                             {item.title}
                                         </Link>
-                                        {isSameUrl(page.url, item.href) && (
+                                        {isSameUrl(currentUrl, item.href) && (
                                             <div className="absolute bottom-0 left-0 h-0.5 w-full translate-y-px bg-black dark:bg-white"></div>
                                         )}
                                     </NavigationMenuItem>

@@ -1,19 +1,20 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import AppLayout from '@/layouts/app-layout';
-import { Head, Link } from '@inertiajs/react';
-import { type BreadcrumbItem } from '@/types';
+import { Input } from '@/components/ui/input';
 import {
-    Users,
-    Plus,
-    Eye,
-    Edit,
-    Trash2,
-    Calendar,
-    MapPin,
-    Phone
-} from 'lucide-react';
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
+import AppLayout from '@/layouts/app-layout';
+import { Head, Link, router } from '@inertiajs/react';
+import { type BreadcrumbItem } from '@/types';
+import { Plus, Eye, Edit, MapPin, Phone, Search, ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import * as React from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -47,6 +48,10 @@ interface DriversIndexProps {
 }
 
 export default function DriversIndex({ drivers }: DriversIndexProps) {
+    const [searchTerm, setSearchTerm] = React.useState('');
+    const [sortColumn, setSortColumn] = React.useState<string | null>(null);
+    const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>('asc');
+
     const getStatusBadge = (status: string) => {
         switch (status) {
             case 'active':
@@ -61,108 +66,237 @@ export default function DriversIndex({ drivers }: DriversIndexProps) {
     const getSexBadge = (sex: string) => {
         switch (sex) {
             case 'male':
-                return <Badge variant="outline">Male</Badge>;
+                return <Badge variant="outline">👨 Male</Badge>;
             case 'female':
-                return <Badge variant="outline">Female</Badge>;
+                return <Badge variant="outline">👩 Female</Badge>;
             default:
                 return <Badge variant="outline">{sex}</Badge>;
         }
     };
 
+    const driverData = drivers?.data || [];
+    const totalDrivers = drivers?.meta?.total || 0;
+    const currentPage = drivers?.meta?.current_page || 1;
+    const perPage = drivers?.meta?.per_page || 10;
+    const lastPage = drivers?.meta?.last_page || 1;
+
+    // Handle search
+    const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setSearchTerm(value);
+        router.get('/drivers', { search: value, page: 1 }, { preserveState: true });
+    };
+
+    // Handle sorting
+    const handleSort = (column: string) => {
+        const newDirection = sortColumn === column && sortDirection === 'asc' ? 'desc' : 'asc';
+        setSortColumn(column);
+        setSortDirection(newDirection);
+        router.get('/drivers', { sort: column, direction: newDirection, search: searchTerm }, { preserveState: true });
+    };
+
+    // Sort icon component
+    const SortIcon = ({ column, isActive }: { column: string; isActive: boolean }) => (
+        <ArrowUpDown
+            className={`ml-2 inline h-4 w-4 ${
+                isActive ? 'text-primary' : 'text-muted-foreground opacity-50'
+            }`}
+        />
+    );
+
+    // Sortable header cell
+    const SortableHead = ({
+        column,
+        children,
+    }: {
+        column: string;
+        children: React.ReactNode;
+    }) => (
+        <TableHead
+            className="cursor-pointer select-none hover:bg-muted/70 transition-colors"
+            onClick={() => handleSort(column)}
+        >
+            <div className="flex items-center">
+                {children}
+                <SortIcon column={column} isActive={sortColumn === column} />
+            </div>
+        </TableHead>
+    );
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Drivers" />
-            <div className="flex h-full flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4">
-                {/* Header */}
+            <div className="flex h-full flex-1 flex-col gap-6 overflow-hidden rounded-xl p-4">
+                {/* Header Section */}
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-2xl font-bold">Drivers</h1>
                         <p className="text-muted-foreground">
-                            Manage your driver workforce
+                            Manage your workforce of {totalDrivers} drivers
                         </p>
                     </div>
                     <Button asChild>
                         <Link href="/drivers/create">
-                            <Plus className="h-4 w-4 mr-2" />
+                            <Plus className="mr-2 h-4 w-4" />
                             Add Driver
                         </Link>
                     </Button>
                 </div>
 
-                {/* Drivers List */}
-                <Card>
+                {/* Table Section */}
+                <Card className="flex flex-1 flex-col overflow-hidden">
                     <CardHeader>
-                        <CardTitle>Driver Directory</CardTitle>
-                        <CardDescription>
-                            {drivers.meta.total} drivers in your workforce
-                        </CardDescription>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <CardTitle>Driver Directory</CardTitle>
+                                <CardDescription>
+                                    Complete list of all drivers in your workforce
+                                </CardDescription>
+                            </div>
+                            <div className="relative w-64">
+                                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                    placeholder="Search drivers..."
+                                    value={searchTerm}
+                                    onChange={handleSearch}
+                                    className="pl-10"
+                                />
+                            </div>
+                        </div>
                     </CardHeader>
-                    <CardContent>
-                        <div className="space-y-4">
-                            {drivers.data.map((driver) => (
-                                <div key={driver.id} className="flex items-center justify-between p-4 border rounded-lg">
-                                    <div className="space-y-1">
-                                        <div className="font-medium">{driver.name}</div>
-                                        <div className="text-sm text-muted-foreground">
-                                            ID: {driver.driverid}
-                                        </div>
-                                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                                            {getSexBadge(driver.sex)}
-                                            {driver.zone && (
-                                                <span className="flex items-center gap-1">
-                                                    <MapPin className="h-3 w-3" />
-                                                    {driver.zone}
-                                                </span>
-                                            )}
-                                            {driver.mobile && (
-                                                <span className="flex items-center gap-1">
-                                                    <Phone className="h-3 w-3" />
-                                                    {driver.mobile}
-                                                </span>
-                                            )}
-                                        </div>
-                                        {driver.hireddate && (
-                                            <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                                                <Calendar className="h-3 w-3" />
-                                                Hired: {new Date(driver.hireddate).toLocaleDateString()}
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="text-right space-y-2">
-                                        {getStatusBadge(driver.status)}
-                                        <div className="flex gap-2">
-                                            <Button asChild size="sm" variant="outline">
-                                                <Link href={`/drivers/${driver.id}`}>
-                                                    <Eye className="h-4 w-4" />
+                    <CardContent className="flex-1 overflow-auto">
+                        <div className="rounded-lg border">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow className="bg-muted/50">
+                                        <SortableHead column="name">Name</SortableHead>
+                                        <SortableHead column="driverid">Driver ID</SortableHead>
+                                        <SortableHead column="sex">Gender</SortableHead>
+                                        <SortableHead column="zone">Location</SortableHead>
+                                        <SortableHead column="mobile">Phone</SortableHead>
+                                        <SortableHead column="hireddate">Hired Date</SortableHead>
+                                        <SortableHead column="status">Status</SortableHead>
+                                        <TableHead className="text-right">Actions</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {driverData.length > 0 ? (
+                                        driverData.map((driver) => (
+                                            <TableRow key={driver.id} className="hover:bg-muted/50">
+                                                <TableCell className="font-medium">
+                                                    {driver.name}
+                                                </TableCell>
+                                                <TableCell className="font-mono text-muted-foreground">
+                                                    {driver.driverid}
+                                                </TableCell>
+                                                <TableCell>
+                                                    {getSexBadge(driver.sex)}
+                                                </TableCell>
+                                                <TableCell className="text-muted-foreground">
+                                                    <div className="flex items-center gap-1">
+                                                        <MapPin className="h-3 w-3" />
+                                                        {driver.zone || '-'}
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell className="text-muted-foreground">
+                                                    {driver.mobile ? (
+                                                        <div className="flex items-center gap-1">
+                                                            <Phone className="h-3 w-3" />
+                                                            {driver.mobile}
+                                                        </div>
+                                                    ) : (
+                                                        '-'
+                                                    )}
+                                                </TableCell>
+                                                <TableCell className="text-muted-foreground">
+                                                    {driver.hireddate
+                                                        ? new Date(driver.hireddate).toLocaleDateString()
+                                                        : '-'
+                                                    }
+                                                </TableCell>
+                                                <TableCell>
+                                                    {getStatusBadge(driver.status)}
+                                                </TableCell>
+                                                <TableCell className="text-right">
+                                                    <div className="flex justify-end gap-2">
+                                                        <Button asChild size="sm" variant="ghost">
+                                                            <Link href={`/drivers/${driver.id}`}>
+                                                                <Eye className="h-4 w-4" />
+                                                            </Link>
+                                                        </Button>
+                                                        <Button asChild size="sm" variant="ghost">
+                                                            <Link href={`/drivers/${driver.id}/edit`}>
+                                                                <Edit className="h-4 w-4" />
+                                                            </Link>
+                                                        </Button>
+                                                    </div>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
+                                    ) : (
+                                        <TableRow>
+                                            <TableCell colSpan={8} className="py-8 text-center text-muted-foreground">
+                                                No drivers found.
+                                                <Link href="/drivers/create" className="ml-1 text-primary underline">
+                                                    Create one
                                                 </Link>
-                                            </Button>
-                                            <Button asChild size="sm" variant="outline">
-                                                <Link href={`/drivers/${driver.id}/edit`}>
-                                                    <Edit className="h-4 w-4" />
-                                                </Link>
-                                            </Button>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
                         </div>
 
-                        {/* Pagination */}
+                        {/* Enhanced Pagination */}
                         {drivers.links && drivers.links.length > 3 && (
-                            <div className="flex items-center justify-center space-x-2 mt-6">
-                                {drivers.links.map((link, index) => (
-                                    <Button
-                                        key={index}
-                                        asChild
-                                        variant={link.active ? "default" : "outline"}
-                                        size="sm"
-                                        disabled={!link.url}
-                                    >
-                                        <Link href={link.url || '#'}>
-                                            <span dangerouslySetInnerHTML={{ __html: link.label }} />
-                                        </Link>
-                                    </Button>
-                                ))}
+                            <div className="mt-6 flex items-center justify-between">
+                                <div className="text-sm text-muted-foreground">
+                                    Showing {(currentPage - 1) * perPage + 1} to{' '}
+                                    {Math.min(currentPage * perPage, totalDrivers)} of {totalDrivers} drivers
+                                </div>
+                                <div className="flex gap-2">
+                                    {/* Previous Button */}
+                                    {currentPage > 1 && (
+                                        <Button asChild variant="outline" size="sm">
+                                            <Link href={drivers.links[0].url || '#'}>
+                                                <ChevronLeft className="mr-1 h-4 w-4" />
+                                                Previous
+                                            </Link>
+                                        </Button>
+                                    )}
+
+                                    {/* Page Numbers */}
+                                    {drivers.links.map((link, index) => {
+                                        // Skip first (prev) and last (next) links
+                                        if (index === 0 || index === drivers.links.length - 1) {
+                                            return null;
+                                        }
+
+                                        return (
+                                            <Button
+                                                key={index}
+                                                asChild
+                                                variant={link.active ? 'default' : 'outline'}
+                                                size="sm"
+                                                disabled={!link.url}
+                                            >
+                                                <Link href={link.url || '#'}>
+                                                    <span dangerouslySetInnerHTML={{ __html: link.label }} />
+                                                </Link>
+                                            </Button>
+                                        );
+                                    })}
+
+                                    {/* Next Button */}
+                                    {currentPage < lastPage && (
+                                        <Button asChild variant="outline" size="sm">
+                                            <Link href={drivers.links[drivers.links.length - 1].url || '#'}>
+                                                Next
+                                                <ChevronRight className="ml-1 h-4 w-4" />
+                                            </Link>
+                                        </Button>
+                                    )}
+                                </div>
                             </div>
                         )}
                     </CardContent>
