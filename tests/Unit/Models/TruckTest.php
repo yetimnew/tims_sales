@@ -1,0 +1,183 @@
+<?php
+
+namespace Tests\Unit\Models;
+
+use App\Models\Truck;
+use App\Models\Driver;
+use App\Models\VehicleType;
+use App\Models\VehicleMaintenanceRecord;
+use App\Models\FuelRecord;
+use App\Models\Performance;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class TruckTest extends TestCase
+{
+    use RefreshDatabase;
+
+    /** @test */
+    public function it_can_create_a_truck()
+    {
+        $truck = Truck::factory()->create([
+            'plate' => 'ABC-123',
+            'status' => 'active'
+        ]);
+
+        $this->assertInstanceOf(Truck::class, $truck);
+        $this->assertEquals('ABC-123', $truck->plate);
+        $this->assertEquals('active', $truck->status);
+    }
+
+    /** @test */
+    public function it_can_soft_delete_a_truck()
+    {
+        $truck = Truck::factory()->create();
+        $truckId = $truck->id;
+
+        $truck->delete();
+
+        $this->assertSoftDeleted('trucks', ['id' => $truckId]);
+        $this->assertDatabaseHas('trucks', ['id' => $truckId]);
+    }
+
+    /** @test */
+    public function it_belongs_to_a_vehicle_type()
+    {
+        $vehicleType = VehicleType::factory()->create();
+        $truck = Truck::factory()->create(['vehicletype_id' => $vehicleType->id]);
+
+        $this->assertInstanceOf(VehicleType::class, $truck->vehicleType);
+        $this->assertEquals($vehicleType->id, $truck->vehicleType->id);
+    }
+
+    /** @test */
+    public function it_can_have_many_drivers()
+    {
+        $truck = Truck::factory()->create();
+        $driver1 = Driver::factory()->create();
+        $driver2 = Driver::factory()->create();
+
+        $truck->drivers()->attach($driver1->id, [
+            'assigned_date' => now(),
+            'status' => 'active'
+        ]);
+        $truck->drivers()->attach($driver2->id, [
+            'assigned_date' => now(),
+            'status' => 'active'
+        ]);
+
+        $this->assertCount(2, $truck->drivers);
+        $this->assertTrue($truck->drivers->contains($driver1));
+        $this->assertTrue($truck->drivers->contains($driver2));
+    }
+
+    /** @test */
+    public function it_has_many_maintenance_records()
+    {
+        $truck = Truck::factory()->create();
+        VehicleMaintenanceRecord::factory()->count(3)->create(['truck_id' => $truck->id]);
+
+        $this->assertCount(3, $truck->maintenanceRecords);
+        $this->assertInstanceOf(VehicleMaintenanceRecord::class, $truck->maintenanceRecords->first());
+    }
+
+    /** @test */
+    public function it_has_many_fuel_records()
+    {
+        $truck = Truck::factory()->create();
+        FuelRecord::factory()->count(5)->create(['truck_id' => $truck->id]);
+
+        $this->assertCount(5, $truck->fuelRecords);
+        $this->assertInstanceOf(FuelRecord::class, $truck->fuelRecords->first());
+    }
+
+    /** @test */
+    public function it_casts_dates_correctly()
+    {
+        $truck = Truck::factory()->create([
+            'productionDate' => '2023-01-15',
+            'serviceStartDate' => '2023-02-01'
+        ]);
+
+        $this->assertInstanceOf(\Carbon\Carbon::class, $truck->productionDate);
+        $this->assertInstanceOf(\Carbon\Carbon::class, $truck->serviceStartDate);
+    }
+
+    /** @test */
+    public function it_casts_purchase_price_as_decimal()
+    {
+        $truck = Truck::factory()->create(['purchasePrice' => 150000.50]);
+
+        $this->assertIsFloat($truck->purchasePrice);
+        $this->assertEquals(150000.50, $truck->purchasePrice);
+    }
+
+    /** @test */
+    public function it_has_fillable_attributes()
+    {
+        $fillable = [
+            'plate',
+            'vehicletype_id',
+            'chasisNumber',
+            'engineNumber',
+            'tyreSyze',
+            'serviceIntervalKM',
+            'purchasePrice',
+            'productionDate',
+            'serviceStartDate',
+            'status',
+        ];
+
+        $truck = new Truck();
+        $this->assertEquals($fillable, $truck->getFillable());
+    }
+
+    /** @test */
+    public function it_can_scope_active_trucks()
+    {
+        Truck::factory()->create(['status' => 'active']);
+        Truck::factory()->create(['status' => 'inactive']);
+        Truck::factory()->create(['status' => 'maintenance']);
+
+        $activeTrucks = Truck::where('status', 'active')->get();
+
+        $this->assertCount(1, $activeTrucks);
+        $this->assertEquals('active', $activeTrucks->first()->status);
+    }
+
+    /** @test */
+    public function it_can_get_total_maintenance_cost()
+    {
+        $truck = Truck::factory()->create();
+        VehicleMaintenanceRecord::factory()->create([
+            'truck_id' => $truck->id,
+            'cost' => 1000.00
+        ]);
+        VehicleMaintenanceRecord::factory()->create([
+            'truck_id' => $truck->id,
+            'cost' => 500.00
+        ]);
+
+        $totalCost = $truck->maintenanceRecords->sum('cost');
+
+        $this->assertEquals(1500.00, $totalCost);
+    }
+
+    /** @test */
+    public function it_can_get_total_fuel_cost()
+    {
+        $truck = Truck::factory()->create();
+        FuelRecord::factory()->create([
+            'truck_id' => $truck->id,
+            'total_cost' => 200.00
+        ]);
+        FuelRecord::factory()->create([
+            'truck_id' => $truck->id,
+            'total_cost' => 300.00
+        ]);
+
+        $totalCost = $truck->fuelRecords->sum('total_cost');
+
+        $this->assertEquals(500.00, $totalCost);
+    }
+}

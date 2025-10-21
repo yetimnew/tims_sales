@@ -114,7 +114,7 @@ class TimsSystemTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertInertia(fn ($page) =>
-            $page->component('dashboard')
+            $page->component('Dashboard')
         );
     }
 

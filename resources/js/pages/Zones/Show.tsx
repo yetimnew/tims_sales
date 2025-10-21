@@ -25,11 +25,14 @@ interface Zone {
 
 interface ActivityLog {
   id: number
-  event: string
-  description?: string
+  log_name: string
+  description: string
+  subject_type: string
+  subject_id: number
+  causer_type: string
+  causer_id: number
+  properties: Record<string, any>
   created_at: string
-  causer?: { name: string }
-  properties?: Record<string, any>
 }
 
 interface ZoneShowProps {
@@ -133,7 +136,7 @@ export default function ZonesShow({ zone, activityLogs }: ZoneShowProps) {
                 <h2 className="text-lg font-semibold">Activity Log</h2>
               </CardHeader>
               <CardContent className="pt-6">
-                <ActivityLogTable logs={activityLogs} />
+                <ActivityLogTable activityLogs={activityLogs} />
               </CardContent>
             </Card>
           </div>
