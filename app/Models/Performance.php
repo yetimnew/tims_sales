@@ -6,10 +6,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
 
 class Performance extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, LogsActivity;
 
     protected $fillable = [
         'trip',
@@ -191,5 +193,17 @@ class Performance extends Model
     public function getDateDispatchAttribute()
     {
         return $this->DateDispach;
+    }
+
+    /**
+     * Configure the activity log options.
+     */
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly(['trip', 'LoadType', 'FOnumber', 'operation_id', 'driver_truck_id', 'DateDispach', 'orgion_id', 'destination_id', 'DistanceWCargo', 'tonkm', 'DistanceWOCargo', 'CargoVolumMT', 'fuelInLitter', 'fuelInBirr', 'perdiem', 'workOnGoing', 'other', 'comment', 'satus', 'is_returned', 'cargo_type_id', 'cargo_weight_kg', 'cargo_volume_cubic_meters'])
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs()
+            ->useLogName('performances');
     }
 }

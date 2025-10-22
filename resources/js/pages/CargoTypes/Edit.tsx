@@ -1,223 +1,294 @@
-import { useState, useEffect } from 'react'
-import { useForm } from '@inertiajs/react'
-import { Link } from '@inertiajs/react'
-import { ArrowLeft } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Textarea } from '@/components/ui/textarea'
-import { useToast } from '@/hooks/use-toast'
-import { validateCargoType } from '@/lib/validation'
-import AppLayout from '@/layouts/app-layout'
-import { CircleAlert } from 'lucide-react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import AppLayout from '@/layouts/app-layout';
+import { Head, Link, router } from '@inertiajs/react';
+import { type BreadcrumbItem } from '@/types';
+import { ArrowLeft } from 'lucide-react';
+import * as React from 'react';
+
+const breadcrumbs: BreadcrumbItem[] = [
+    {
+        title: 'Cargo Types',
+        href: '/cargo-types',
+    },
+    {
+        title: 'Edit',
+        href: '#',
+    },
+];
 
 interface CargoType {
-  id: number
-  name: string
-  category: string
-  weight_per_cubic_meter: number | null
-  handling_requirements?: string
-  safety_requirements?: string
+    id: number;
+    name: string;
+    category: string;
+    weight_per_cubic_meter?: number;
+    handling_requirements?: string;
+    safety_requirements?: string;
+    requires_special_equipment: boolean;
 }
 
-interface CargoTypeEditProps {
-  cargoType: CargoType
+interface FormData {
+    name: string;
+    category: string;
+    weight_per_cubic_meter: string;
+    handling_requirements: string;
+    safety_requirements: string;
+    requires_special_equipment: boolean;
 }
 
-interface CargoTypeFormData {
-  name: string
-  category: string
-  weight_per_cubic_meter?: string
-  handling_requirements?: string
-  safety_requirements?: string
+interface CargoTypesEditProps {
+    cargoType: CargoType;
 }
 
-export default function CargoTypesEdit({ cargoType }: CargoTypeEditProps) {
-  const { toast } = useToast()
-  const [frontendErrors, setFrontendErrors] = useState<Record<string, string>>({})
+export default function CargoTypesEdit({ cargoType }: CargoTypesEditProps) {
+    const [formData, setFormData] = React.useState<FormData>({
+        name: cargoType.name,
+        category: cargoType.category,
+        weight_per_cubic_meter: cargoType.weight_per_cubic_meter?.toString() || '',
+        handling_requirements: cargoType.handling_requirements || '',
+        safety_requirements: cargoType.safety_requirements || '',
+        requires_special_equipment: cargoType.requires_special_equipment,
+    });
 
-  const { data, setData, put, processing, errors } = useForm<CargoTypeFormData>({
-    name: cargoType.name,
-    category: cargoType.category,
-    weight_per_cubic_meter: cargoType.weight_per_cubic_meter?.toString() || '',
-    handling_requirements: cargoType.handling_requirements || '',
-    safety_requirements: cargoType.safety_requirements || '',
-  })
+    const [errors, setErrors] = React.useState<Record<string, string>>({});
+    const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-  useEffect(() => {
-    if (Object.keys(errors).length > 0) {
-      toast({
-        title: 'Validation Error',
-        description: 'Please fix the errors in the form',
-        variant: 'destructive',
-      })
-    }
-  }, [errors])
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const { name, value } = e.target;
+        setFormData((prev) => ({
+            ...prev,
+            [name]: value,
+        }));
+        if (errors[name]) {
+            setErrors((prev) => {
+                const newErrors = { ...prev };
+                delete newErrors[name];
+                return newErrors;
+            });
+        }
+    };
 
-  const validateField = (field: string, value: string) => {
-    const validateObj = { ...data, [field]: value }
-    const errors = validateCargoType(validateObj)
-    return errors[field] || ''
-  }
+    const handleSelectChange = (name: string, value: string) => {
+        setFormData((prev) => ({
+            ...prev,
+            [name]: value,
+        }));
+        if (errors[name]) {
+            setErrors((prev) => {
+                const newErrors = { ...prev };
+                delete newErrors[name];
+                return newErrors;
+            });
+        }
+    };
 
-  const handleFieldChange = (field: string, value: string) => {
-    setData(field as keyof CargoTypeFormData, value)
-    if (frontendErrors[field]) {
-      const error = validateField(field, value)
-      if (error) {
-        setFrontendErrors(prev => ({ ...prev, [field]: error }))
-      } else {
-        setFrontendErrors(prev => {
-          const updated = { ...prev }
-          delete updated[field]
-          return updated
-        })
-      }
-    }
-  }
+    const handleCheckChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setFormData((prev) => ({
+            ...prev,
+            requires_special_equipment: e.target.checked,
+        }));
+    };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsSubmitting(true);
 
-    const validationErrors = validateCargoType(data)
-    if (Object.keys(validationErrors).length > 0) {
-      setFrontendErrors(validationErrors)
-      toast({
-        title: 'Validation Error',
-        description: 'Please fix all errors before submitting',
-        variant: 'destructive',
-      })
-      return
-    }
+        router.put(`/cargo-types/${cargoType.id}`, formData, {
+            onError: (errors) => {
+                setErrors(errors);
+                setIsSubmitting(false);
+            },
+            onSuccess: () => {
+                setIsSubmitting(false);
+            },
+        });
+    };
 
-    put(route('cargo-types.update', cargoType.id))
-  }
+    return (
+        <AppLayout breadcrumbs={breadcrumbs}>
+            <Head title={`Edit Cargo Type: ${cargoType.name}`} />
 
-  const hasErrors = Object.keys(frontendErrors).length > 0 || Object.keys(errors).length > 0
+            <div className="space-y-6">
+                <div className="flex items-center gap-4">
+                    <Link href="/cargo-types" className="text-gray-600 hover:text-gray-900">
+                        <ArrowLeft size={20} />
+                    </Link>
+                    <div>
+                        <h1 className="text-3xl font-bold">Edit Cargo Type</h1>
+                        <p className="text-gray-600 mt-1">{cargoType.name}</p>
+                    </div>
+                </div>
 
-  return (
-    <div className="flex h-full flex-1 flex-col gap-6 overflow-auto p-4">
-      <div className="flex items-center gap-4">
-        <Link href={route('cargo-types.index')}>
-          <Button variant="outline" size="icon">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-        </Link>
-        <h1 className="text-2xl font-bold">Edit Cargo Type</h1>
-      </div>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Cargo Type Details</CardTitle>
+                        <CardDescription>
+                            Update the cargo type information
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <form onSubmit={handleSubmit} className="space-y-6">
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Name *
+                                </label>
+                                <Input
+                                    type="text"
+                                    name="name"
+                                    placeholder="e.g., Cement, Steel, Gravel"
+                                    value={formData.name}
+                                    onChange={handleInputChange}
+                                    className={errors.name ? 'border-red-500' : ''}
+                                />
+                                {errors.name && (
+                                    <p className="text-red-500 text-sm mt-1">{errors.name}</p>
+                                )}
+                            </div>
 
-      <Card className="max-w-2xl">
-        <CardHeader className="border-b">
-          <h2 className="text-lg font-semibold">Update Cargo Type Details</h2>
-        </CardHeader>
-        <CardContent className="pt-6">
-          {hasErrors && (
-            <Alert variant="destructive" className="mb-6">
-              <CircleAlert className="h-4 w-4" />
-              <AlertDescription>
-                Please fix all errors in the form below
-              </AlertDescription>
-            </Alert>
-          )}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium mb-2">
+                                        Category *
+                                    </label>
+                                    <Select
+                                        value={formData.category}
+                                        onValueChange={(value) =>
+                                            handleSelectChange('category', value)
+                                        }
+                                    >
+                                        <SelectTrigger
+                                            className={errors.category ? 'border-red-500' : ''}
+                                        >
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="Construction">
+                                                Construction
+                                            </SelectItem>
+                                            <SelectItem value="Agricultural">
+                                                Agricultural
+                                            </SelectItem>
+                                            <SelectItem value="Industrial">
+                                                Industrial
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    {errors.category && (
+                                        <p className="text-red-500 text-sm mt-1">
+                                            {errors.category}
+                                        </p>
+                                    )}
+                                </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Name */}
-            <div className="space-y-2">
-              <Label htmlFor="name">Name *</Label>
-              <Input
-                id="name"
-                type="text"
-                value={data.name}
-                onChange={e => handleFieldChange('name', e.target.value)}
-                placeholder="Enter cargo type name"
-                className={frontendErrors.name || errors.name ? 'border-red-500' : ''}
-              />
-              {(frontendErrors.name || errors.name) && (
-                <p className="text-sm text-red-500">{frontendErrors.name || errors.name}</p>
-              )}
+                                <div>
+                                    <label className="block text-sm font-medium mb-2">
+                                        Weight per m³ (kg)
+                                    </label>
+                                    <Input
+                                        type="number"
+                                        step="0.01"
+                                        name="weight_per_cubic_meter"
+                                        placeholder="0.00"
+                                        value={formData.weight_per_cubic_meter}
+                                        onChange={handleInputChange}
+                                        className={
+                                            errors.weight_per_cubic_meter ? 'border-red-500' : ''
+                                        }
+                                    />
+                                    {errors.weight_per_cubic_meter && (
+                                        <p className="text-red-500 text-sm mt-1">
+                                            {errors.weight_per_cubic_meter}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Handling Requirements
+                                </label>
+                                <Textarea
+                                    name="handling_requirements"
+                                    placeholder="Describe special handling requirements..."
+                                    value={formData.handling_requirements}
+                                    onChange={handleInputChange}
+                                    rows={3}
+                                    className={
+                                        errors.handling_requirements ? 'border-red-500' : ''
+                                    }
+                                />
+                                {errors.handling_requirements && (
+                                    <p className="text-red-500 text-sm mt-1">
+                                        {errors.handling_requirements}
+                                    </p>
+                                )}
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Safety Requirements
+                                </label>
+                                <Textarea
+                                    name="safety_requirements"
+                                    placeholder="Describe safety requirements..."
+                                    value={formData.safety_requirements}
+                                    onChange={handleInputChange}
+                                    rows={3}
+                                    className={
+                                        errors.safety_requirements ? 'border-red-500' : ''
+                                    }
+                                />
+                                {errors.safety_requirements && (
+                                    <p className="text-red-500 text-sm mt-1">
+                                        {errors.safety_requirements}
+                                    </p>
+                                )}
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                                <input
+                                    type="checkbox"
+                                    id="requires_special_equipment"
+                                    name="requires_special_equipment"
+                                    checked={formData.requires_special_equipment}
+                                    onChange={handleCheckChange}
+                                    className="rounded"
+                                />
+                                <label
+                                    htmlFor="requires_special_equipment"
+                                    className="text-sm font-medium cursor-pointer"
+                                >
+                                    Requires Special Equipment
+                                </label>
+                            </div>
+
+                            <div className="flex gap-4 pt-4">
+                                <Button
+                                    type="submit"
+                                    disabled={isSubmitting}
+                                    className="px-6"
+                                >
+                                    {isSubmitting ? 'Updating...' : 'Update Cargo Type'}
+                                </Button>
+                                <Link href="/cargo-types">
+                                    <Button type="button" variant="outline">
+                                        Cancel
+                                    </Button>
+                                </Link>
+                            </div>
+                        </form>
+                    </CardContent>
+                </Card>
             </div>
-
-            {/* Category */}
-            <div className="space-y-2">
-              <Label htmlFor="category">Category *</Label>
-              <Select value={data.category} onValueChange={value => handleFieldChange('category', value)}>
-                <SelectTrigger
-                  id="category"
-                  className={frontendErrors.category || errors.category ? 'border-red-500' : ''}
-                >
-                  <SelectValue placeholder="Select a category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Construction">Construction</SelectItem>
-                  <SelectItem value="Agricultural">Agricultural</SelectItem>
-                  <SelectItem value="Industrial">Industrial</SelectItem>
-                </SelectContent>
-              </Select>
-              {(frontendErrors.category || errors.category) && (
-                <p className="text-sm text-red-500">{frontendErrors.category || errors.category}</p>
-              )}
-            </div>
-
-            {/* Weight per Cubic Meter */}
-            <div className="space-y-2">
-              <Label htmlFor="weight">Weight per Cubic Meter</Label>
-              <Input
-                id="weight"
-                type="number"
-                step="0.01"
-                value={data.weight_per_cubic_meter}
-                onChange={e => handleFieldChange('weight_per_cubic_meter', e.target.value)}
-                placeholder="e.g., 1500.50"
-                className={frontendErrors.weight_per_cubic_meter ? 'border-red-500' : ''}
-              />
-              {frontendErrors.weight_per_cubic_meter && (
-                <p className="text-sm text-red-500">{frontendErrors.weight_per_cubic_meter}</p>
-              )}
-            </div>
-
-            {/* Handling Requirements */}
-            <div className="space-y-2">
-              <Label htmlFor="handling">Handling Requirements</Label>
-              <Textarea
-                id="handling"
-                value={data.handling_requirements}
-                onChange={e => setData('handling_requirements', e.target.value)}
-                placeholder="Enter any special handling requirements"
-                className="min-h-20"
-              />
-            </div>
-
-            {/* Safety Requirements */}
-            <div className="space-y-2">
-              <Label htmlFor="safety">Safety Requirements</Label>
-              <Textarea
-                id="safety"
-                value={data.safety_requirements}
-                onChange={e => setData('safety_requirements', e.target.value)}
-                placeholder="Enter any safety requirements"
-                className="min-h-20"
-              />
-            </div>
-
-            {/* Submit Button */}
-            <div className="flex gap-2 pt-4">
-              <Button type="submit" disabled={processing || hasErrors} className="flex-1">
-                Update Cargo Type
-              </Button>
-              <Link href={route('cargo-types.index')}>
-                <Button type="button" variant="outline" className="flex-1">
-                  Cancel
-                </Button>
-              </Link>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
-  )
+        </AppLayout>
+    );
 }
-
-CargoTypesEdit.layout = (page: React.ReactNode) => <AppLayout children={page} />

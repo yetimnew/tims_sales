@@ -104,10 +104,48 @@ Route::middleware(['auth'])->group(function () {
             ->name('drivers.deactivate');
     });
 
-    // Performances
-    Route::resource('performances', PerformanceController::class);
-    Route::get('performances/status/list', [PerformanceController::class, 'statusList'])->name('performances.status.list');
-    Route::post('performances/calculate-distance', [PerformanceController::class, 'ajaxRequestPost'])->name('performances.calculate.distance');
+    // Performances with rate limiting and permission middleware
+    Route::middleware(['throttle:60,1'])->group(function () {
+        // Export route - highest priority
+        Route::get('performances/export/csv', [PerformanceController::class, 'export'])
+            ->middleware('can:performances.export')
+            ->name('performances.export');
+
+        // All other performance routes with individual permission checks
+        Route::get('performances', [PerformanceController::class, 'index'])
+            ->middleware('can:performances.view')
+            ->name('performances.index');
+
+        Route::get('performances/create', [PerformanceController::class, 'create'])
+            ->middleware('can:performances.create')
+            ->name('performances.create');
+
+        Route::post('performances', [PerformanceController::class, 'store'])
+            ->middleware('can:performances.store')
+            ->name('performances.store');
+
+        Route::get('performances/{performance}', [PerformanceController::class, 'show'])
+            ->middleware('can:performances.show')
+            ->name('performances.show');
+
+        Route::get('performances/{performance}/edit', [PerformanceController::class, 'edit'])
+            ->middleware('can:performances.edit')
+            ->name('performances.edit');
+
+        Route::put('performances/{performance}', [PerformanceController::class, 'update'])
+            ->middleware('can:performances.update')
+            ->name('performances.update');
+
+        Route::delete('performances/{performance}', [PerformanceController::class, 'destroy'])
+            ->middleware('can:performances.destroy')
+            ->name('performances.destroy');
+
+        // Additional performance routes
+        Route::get('performances/status/list', [PerformanceController::class, 'statusList'])
+            ->name('performances.status.list');
+        Route::post('performances/calculate-distance', [PerformanceController::class, 'ajaxRequestPost'])
+            ->name('performances.calculate.distance');
+    });
 
     // Maintenance Management
     Route::middleware(['throttle:60,1'])->group(function () {
@@ -262,8 +300,42 @@ Route::middleware(['auth'])->group(function () {
     Route::post('route-plans/optimize', [\App\Http\Controllers\RoutePlanController::class, 'optimizeRoute'])->name('route-plans.optimize');
     Route::get('route-plans/analytics', [\App\Http\Controllers\RoutePlanController::class, 'analytics'])->name('route-plans.analytics');
 
-    // Operations
-    Route::resource('operations', \App\Http\Controllers\OperationController::class);
+    // Operations with rate limiting and permission middleware
+    Route::middleware(['throttle:60,1'])->group(function () {
+        // Export route - highest priority
+        Route::get('operations/export/csv', [\App\Http\Controllers\OperationController::class, 'export'])
+            ->middleware('can:operations.export')
+            ->name('operations.export');
+
+        // All other operation routes with individual permission checks
+        Route::get('operations', [\App\Http\Controllers\OperationController::class, 'index'])
+            ->middleware('can:operations.view')
+            ->name('operations.index');
+
+        Route::get('operations/create', [\App\Http\Controllers\OperationController::class, 'create'])
+            ->middleware('can:operations.create')
+            ->name('operations.create');
+
+        Route::post('operations', [\App\Http\Controllers\OperationController::class, 'store'])
+            ->middleware('can:operations.store')
+            ->name('operations.store');
+
+        Route::get('operations/{operation}', [\App\Http\Controllers\OperationController::class, 'show'])
+            ->middleware('can:operations.show')
+            ->name('operations.show');
+
+        Route::get('operations/{operation}/edit', [\App\Http\Controllers\OperationController::class, 'edit'])
+            ->middleware('can:operations.edit')
+            ->name('operations.edit');
+
+        Route::put('operations/{operation}', [\App\Http\Controllers\OperationController::class, 'update'])
+            ->middleware('can:operations.update')
+            ->name('operations.update');
+
+        Route::delete('operations/{operation}', [\App\Http\Controllers\OperationController::class, 'destroy'])
+            ->middleware('can:operations.destroy')
+            ->name('operations.destroy');
+    });
 
     // Customers
     Route::middleware(['throttle:60,1'])->group(function () {

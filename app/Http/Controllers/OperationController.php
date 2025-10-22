@@ -8,6 +8,8 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
+use Spatie\Activitylog\Models\Activity;
 use Exception;
 
 class OperationController extends Controller
@@ -15,14 +17,39 @@ class OperationController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(): Response
+    public function index(Request $request): Response
     {
-        $operations = Operation::with(['customer'])
-            ->orderBy('created_at', 'desc')
-            ->paginate(15);
+        $query = Operation::with(['customer']);
+
+        // Handle search
+        if ($request->has('search') && !empty($request->input('search'))) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('operationid', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%")
+                    ->orWhereHas('customer', function ($q) use ($search) {
+                        $q->where('name', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        // Handle sorting
+        $sort = $request->input('sort', 'operationid');
+        $direction = $request->input('direction', 'asc');
+
+        // Validate sort column to prevent SQL injection
+        $allowedSorts = ['operationid', 'status', 'startdate', 'enddate', 'volume', 'km', 'tariff', 'closed', 'created_at'];
+        if (!in_array($sort, $allowedSorts)) {
+            $sort = 'operationid';
+        }
+
+        $query->orderBy($sort, $direction);
+
+        $operations = $query->paginate(15);
 
         return Inertia::render('Operations/Index', [
             'operations' => $operations,
+            'totalCount' => $operations->total(),
         ]);
     }
 
@@ -79,10 +106,17 @@ class OperationController extends Controller
      */
     public function show(Operation $operation): Response
     {
-        $operation->load(['customer', 'performances']);
+        $operation->load(['customer', 'performances', 'region', 'user']);
+
+        // Load activity logs for this operation using Spatie Activity Log
+        $activityLogs = Activity::forSubject($operation)
+            ->with('causer')
+            ->orderByDesc('created_at')
+            ->get();
 
         return Inertia::render('Operations/Show', [
             'operation' => $operation,
+            'activityLogs' => $activityLogs,
         ]);
     }
 
@@ -168,6 +202,90 @@ class OperationController extends Controller
 
             return back()->withErrors(['error' => 'Failed to delete operation. Please try again.']);
         }
+    }
+
+    /**
+     * Export operations to CSV.
+     */
+    public function export(Request $request)
+    {
+        $query = Operation::with(['customer']);
+
+        // Apply same search and sort as index
+        if ($request->has('search') && !empty($request->input('search'))) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('operationid', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%")
+                    ->orWhereHas('customer', function ($q) use ($search) {
+                        $q->where('name', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        // Apply sorting
+        if ($request->has('sort')) {
+            $sort = $request->input('sort', 'operationid');
+            $direction = $request->input('direction', 'asc');
+            $query->orderBy($sort, $direction);
+        }
+
+        $operations = $query->get();
+
+        // Generate CSV
+        $filename = 'operations_' . now()->format('Y-m-d_H-i-s') . '.csv';
+        $handle = fopen('php://temp', 'r+');
+
+        // Write header
+        fputcsv($handle, [
+            'ID',
+            'Operation ID',
+            'Customer',
+            'Description',
+            'Status',
+            'Start Date',
+            'End Date',
+            'Volume (MT)',
+            'Distance (KM)',
+            'Tariff',
+            'Closed',
+            'Created At',
+        ]);
+
+        // Write data
+        foreach ($operations as $operation) {
+            fputcsv($handle, [
+                $operation->id,
+                $operation->operationid,
+                $operation->customer?->name ?? 'N/A',
+                $operation->description ?? 'N/A',
+                $operation->status,
+                $operation->startdate,
+                $operation->enddate ?? 'N/A',
+                $operation->volume ?? 'N/A',
+                $operation->km ?? 'N/A',
+                $operation->tariff ?? 'N/A',
+                $operation->closed ? 'Yes' : 'No',
+                $operation->created_at,
+            ]);
+        }
+
+        rewind($handle);
+        $csv = stream_get_contents($handle);
+        fclose($handle);
+
+        // Log activity using Spatie Activity Log
+        if (Auth::check()) {
+            activity()
+                ->causedBy(Auth::user())
+                ->withProperties(['count' => count($operations)])
+                ->log('exported operations to CSV');
+        }
+
+        return response($csv, 200, [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
     }
 }
 

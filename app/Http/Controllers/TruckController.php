@@ -8,10 +8,11 @@ use App\Http\Requests\StoreTruckRequest;
 use App\Http\Requests\UpdateTruckRequest;
 use App\Services\TruckAssignmentService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
 use Exception;
-use Spatie\ActivityLog\Facades\Activity;
+use Spatie\Activitylog\Models\Activity;
 
 class TruckController extends Controller
 {
@@ -96,11 +97,6 @@ class TruckController extends Controller
         try {
             $truck = Truck::create($request->validated());
 
-        // Log activity using Spatie Activity Log
-        Activity::performedOn($truck)
-            ->causedBy(auth()->user())
-            ->log('created');
-
             return redirect()->route('trucks.index')
                 ->with('success', 'Truck created successfully.');
 
@@ -147,14 +143,7 @@ class TruckController extends Controller
     public function update(UpdateTruckRequest $request, Truck $truck)
     {
         try {
-            $oldData = $truck->toArray();
             $truck->update($request->validated());
-
-        // Log activity using Spatie Activity Log
-        Activity::performedOn($truck)
-            ->causedBy(auth()->user())
-            ->withProperties(['old' => $oldData, 'new' => $truck->toArray()])
-            ->log('updated');
 
             return redirect()->route('trucks.index')
                 ->with('success', 'Truck updated successfully.');
@@ -170,14 +159,6 @@ class TruckController extends Controller
     public function destroy(Truck $truck)
     {
         try {
-            $truckData = $truck->toArray();
-
-            // Log activity before deletion
-            Activity::performedOn($truck)
-                ->causedBy(auth()->user())
-                ->withProperties(['deleted' => $truckData])
-                ->log('deleted');
-
             $truck->delete();
 
             return redirect()->route('trucks.index')
@@ -301,9 +282,12 @@ class TruckController extends Controller
         fclose($handle);
 
         // Log activity using Spatie Activity Log
-        Activity::causedBy(auth()->user())
-            ->withProperties(['count' => count($trucks)])
-            ->log('exported');
+        if (Auth::check()) {
+            activity()
+                ->causedBy(Auth::user())
+                ->withProperties(['count' => count($trucks)])
+                ->log('exported trucks to CSV');
+        }
 
         return response($csv, 200)
             ->header('Content-Type', 'text/csv')

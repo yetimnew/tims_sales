@@ -3,23 +3,46 @@
 namespace App\Http\Controllers;
 
 use App\Models\Customer;
+use App\Http\Requests\StoreCustomerRequest;
+use App\Http\Requests\UpdateCustomerRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
-use Illuminate\Support\Facades\Log;
 use Exception;
-use Spatie\ActivityLog\Facades\Activity;
+use Spatie\Activitylog\Models\Activity;
 
 class CustomerController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index(): Response
+    public function index(Request $request): Response
     {
-        $customers = Customer::withCount('operations')
-            ->orderBy('name')
-            ->paginate(15);
+        $query = Customer::withCount('operations');
+
+        // Handle search
+        if ($request->has('search') && !empty($request->input('search'))) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('contact_person', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        // Handle sorting
+        $sort = $request->input('sort', 'name');
+        $direction = $request->input('direction', 'asc');
+
+        $allowedSorts = ['name', 'contact_person', 'phone', 'email', 'status', 'created_at'];
+        if (!in_array($sort, $allowedSorts)) {
+            $sort = 'name';
+        }
+
+        $query->orderBy($sort, $direction);
+        $customers = $query->paginate(15);
 
         return Inertia::render('Customers/Index', [
             'customers' => $customers,
@@ -37,34 +60,16 @@ class CustomerController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(StoreCustomerRequest $request)
     {
         try {
-            $validated = $request->validate([
-                'name' => 'required|string|max:255',
-                'contact_person' => 'nullable|string|max:255',
-                'phone' => 'nullable|string|max:20',
-                'email' => 'nullable|email|max:255',
-                'address' => 'nullable|string|max:500',
-                'status' => 'required|string|in:active,inactive',
-            ]);
-
+            $validated = $request->validated();
             $customer = Customer::create($validated);
-
-            Activity::performedOn($customer)
-                ->causedBy(auth()->user())
-                ->log('created');
 
             return redirect()->route('customers.index')
                 ->with('success', 'Customer created successfully.');
 
         } catch (Exception $e) {
-            Log::error('Customer creation failed', [
-                'error' => $e->getMessage(),
-                'data' => $request->all(),
-                'user_id' => auth()->id(),
-            ]);
-
             return back()->withErrors(['error' => 'Failed to create customer. Please try again.']);
         }
     }
@@ -102,37 +107,16 @@ class CustomerController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Customer $customer)
+    public function update(UpdateCustomerRequest $request, Customer $customer)
     {
         try {
-            $validated = $request->validate([
-                'name' => 'required|string|max:255',
-                'contact_person' => 'nullable|string|max:255',
-                'phone' => 'nullable|string|max:20',
-                'email' => 'nullable|email|max:255',
-                'address' => 'nullable|string|max:500',
-                'status' => 'required|string|in:active,inactive',
-            ]);
-
-            $oldData = $customer->toArray();
+            $validated = $request->validated();
             $customer->update($validated);
-
-            Activity::performedOn($customer)
-                ->causedBy(auth()->user())
-                ->withProperties(['old' => $oldData, 'new' => $customer->toArray()])
-                ->log('updated');
 
             return redirect()->route('customers.index')
                 ->with('success', 'Customer updated successfully.');
 
         } catch (Exception $e) {
-            Log::error('Customer update failed', [
-                'customer_id' => $customer->id,
-                'error' => $e->getMessage(),
-                'data' => $request->all(),
-                'user_id' => auth()->id(),
-            ]);
-
             return back()->withErrors(['error' => 'Failed to update customer. Please try again.']);
         }
     }
@@ -148,24 +132,12 @@ class CustomerController extends Controller
                 return back()->withErrors(['error' => 'Cannot delete customer that has operations.']);
             }
 
-            $customerData = $customer->toArray();
             $customer->delete();
-
-            Activity::performedOn($customer)
-                ->causedBy(auth()->user())
-                ->withProperties(['deleted' => $customerData])
-                ->log('deleted');
 
             return redirect()->route('customers.index')
                 ->with('success', 'Customer deleted successfully.');
 
         } catch (Exception $e) {
-            Log::error('Customer deletion failed', [
-                'customer_id' => $customer->id,
-                'error' => $e->getMessage(),
-                'user_id' => auth()->id(),
-            ]);
-
             return back()->withErrors(['error' => 'Failed to delete customer. Please try again.']);
         }
     }

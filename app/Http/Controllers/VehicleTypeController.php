@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\VehicleType;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
 use Exception;
+use Spatie\Activitylog\Models\Activity;
 
 class VehicleTypeController extends Controller
 {
@@ -84,9 +86,12 @@ class VehicleTypeController extends Controller
         }
 
         // Log the export
-        Activity::causedBy(auth()->user())
-            ->withProperties(['count' => count($vehicleTypes)])
-            ->log('exported');
+        if (Auth::check()) {
+            activity()
+                ->causedBy(Auth::user())
+                ->withProperties(['count' => count($vehicleTypes)])
+                ->log('exported vehicle types to CSV');
+        }
 
         return response($csvData)
             ->header('Content-Type', 'text/csv')
@@ -127,20 +132,15 @@ class VehicleTypeController extends Controller
      */
     public function show(VehicleType $vehicletype): Response
     {
-        // Temporarily comment out trucks loading due to foreign key issue
-        // $vehicleType->load(['trucks' => function ($query) {
-        //     $query->with('drivers')->paginate(10);
-        // }]);
-
-        // Temporarily comment out activity logs due to Activity Log not configured
-        // $activityLogs = Activity::forSubject($vehicleType)
-        //     ->with('causer')
-        //     ->orderByDesc('created_at')
-        //     ->get();
+        // Load activity logs for this vehicle type using Spatie Activity Log
+        $activityLogs = Activity::forSubject($vehicletype)
+            ->with('causer')
+            ->orderByDesc('created_at')
+            ->get();
 
         return Inertia::render('VehicleTypes/Show', [
             'vehicleType' => $vehicletype,
-            'activityLogs' => [], // Empty array for now
+            'activityLogs' => $activityLogs,
         ]);
     }
 

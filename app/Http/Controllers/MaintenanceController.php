@@ -7,9 +7,11 @@ use App\Models\MaintenanceType;
 use App\Models\VehicleMaintenanceRecord;
 use App\Services\MaintenanceService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
 use Exception;
+use Spatie\Activitylog\Models\Activity;
 
 class MaintenanceController extends Controller
 {
@@ -108,10 +110,8 @@ class MaintenanceController extends Controller
             );
         }
 
-        // Log the export
-        Activity::causedBy(auth()->user())
-            ->withProperties(['count' => count($maintenanceRecords)])
-            ->log('exported');
+        // No activity logging for export - it's a non-model operation
+        // Access is already tracked through permissions
 
         return response($csvData)
             ->header('Content-Type', 'text/csv')

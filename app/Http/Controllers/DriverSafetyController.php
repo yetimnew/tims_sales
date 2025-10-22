@@ -4,23 +4,51 @@ namespace App\Http\Controllers;
 
 use App\Models\Driver;
 use App\Models\DriverSafetyRecord;
+use App\Http\Requests\StoreDriverSafetyRequest;
+use App\Http\Requests\UpdateDriverSafetyRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Support\Facades\Log;
 use Exception;
+use Spatie\Activitylog\Models\Activity;
 
 class DriverSafetyController extends Controller
 {
     /**
      * Display a listing of driver safety records.
      */
-    public function index(): Response
+    public function index(Request $request): Response
     {
-        $safetyRecords = DriverSafetyRecord::with(['driver', 'reportedBy'])
-            ->orderBy('incident_date', 'desc')
-            ->paginate(15);
+        $query = DriverSafetyRecord::with(['driver', 'reportedBy']);
 
+        // Handle search
+        if ($request->has('search') && !empty($request->input('search'))) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('description', 'like', "%{$search}%")
+                    ->orWhere('location', 'like', "%{$search}%")
+                    ->orWhere('incident_type', 'like', "%{$search}%")
+                    ->orWhereHas('driver', function ($q) use ($search) {
+                        $q->where('name', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        // Handle sorting
+        $sort = $request->input('sort', 'incident_date');
+        $direction = $request->input('direction', 'desc');
+
+        // Validate sort column to prevent SQL injection
+        $allowedSorts = ['incident_date', 'severity', 'incident_type', 'damage_cost', 'created_at'];
+        if (!in_array($sort, $allowedSorts)) {
+            $sort = 'incident_date';
+        }
+
+        $query->orderBy($sort, $direction);
+
+        $safetyRecords = $query->paginate(15);
         $statistics = $this->getSafetyStatistics();
 
         return Inertia::render('DriverSafety/Index', [
@@ -44,42 +72,18 @@ class DriverSafetyController extends Controller
     /**
      * Store a newly created safety record.
      */
-    public function store(Request $request)
+    public function store(StoreDriverSafetyRequest $request)
     {
         try {
-            $validated = $request->validate([
-                'driver_id' => 'required|exists:drivers,id',
-                'incident_date' => 'required|date|before_or_equal:today',
-                'incident_type' => 'required|string|in:accident,violation,warning',
-                'description' => 'required|string|max:2000',
-                'severity' => 'required|string|in:minor,major,critical',
-                'damage_cost' => 'nullable|numeric|min:0',
-                'location' => 'nullable|string|max:255',
-                'resolution' => 'nullable|string|max:2000',
-            ]);
-
-            $validated['reported_by'] = auth()->id();
+            $validated = $request->validated();
+            $validated['reported_by'] = Auth::id();
 
             $safetyRecord = DriverSafetyRecord::create($validated);
-
-            Log::info('Driver safety record created', [
-                'safety_record_id' => $safetyRecord->id,
-                'driver_id' => $safetyRecord->driver_id,
-                'incident_type' => $safetyRecord->incident_type,
-                'severity' => $safetyRecord->severity,
-                'reported_by' => auth()->id(),
-            ]);
 
             return redirect()->route('driver-safety.index')
                 ->with('success', 'Safety record created successfully.');
 
         } catch (Exception $e) {
-            Log::error('Driver safety record creation failed', [
-                'error' => $e->getMessage(),
-                'data' => $request->all(),
-                'user_id' => auth()->id(),
-            ]);
-
             return back()->withErrors(['error' => 'Failed to create safety record. Please try again.']);
         }
     }
@@ -91,8 +95,15 @@ class DriverSafetyController extends Controller
     {
         $driverSafety->load(['driver', 'reportedBy']);
 
+        // Load activity logs for this safety record using Spatie Activity Log
+        $activityLogs = Activity::forSubject($driverSafety)
+            ->with('causer')
+            ->orderByDesc('created_at')
+            ->get();
+
         return Inertia::render('DriverSafety/Show', [
             'driverSafety' => $driverSafety,
+            'activityLogs' => $activityLogs,
         ]);
     }
 
@@ -112,41 +123,16 @@ class DriverSafetyController extends Controller
     /**
      * Update the specified safety record.
      */
-    public function update(Request $request, DriverSafetyRecord $driverSafety)
+    public function update(UpdateDriverSafetyRequest $request, DriverSafetyRecord $driverSafety)
     {
         try {
-            $validated = $request->validate([
-                'driver_id' => 'required|exists:drivers,id',
-                'incident_date' => 'required|date|before_or_equal:today',
-                'incident_type' => 'required|string|in:accident,violation,warning',
-                'description' => 'required|string|max:2000',
-                'severity' => 'required|string|in:minor,major,critical',
-                'damage_cost' => 'nullable|numeric|min:0',
-                'location' => 'nullable|string|max:255',
-                'resolution' => 'nullable|string|max:2000',
-            ]);
-
+            $validated = $request->validated();
             $driverSafety->update($validated);
-
-            Log::info('Driver safety record updated', [
-                'safety_record_id' => $driverSafety->id,
-                'driver_id' => $driverSafety->driver_id,
-                'incident_type' => $driverSafety->incident_type,
-                'severity' => $driverSafety->severity,
-                'user_id' => auth()->id(),
-            ]);
 
             return redirect()->route('driver-safety.index')
                 ->with('success', 'Safety record updated successfully.');
 
         } catch (Exception $e) {
-            Log::error('Driver safety record update failed', [
-                'safety_record_id' => $driverSafety->id,
-                'error' => $e->getMessage(),
-                'data' => $request->all(),
-                'user_id' => auth()->id(),
-            ]);
-
             return back()->withErrors(['error' => 'Failed to update safety record. Please try again.']);
         }
     }
@@ -157,25 +143,12 @@ class DriverSafetyController extends Controller
     public function destroy(DriverSafetyRecord $driverSafety)
     {
         try {
-            $safetyData = $driverSafety->toArray();
             $driverSafety->delete();
-
-            Log::info('Driver safety record deleted', [
-                'safety_record_id' => $driverSafety->id,
-                'driver_id' => $safetyData['driver_id'],
-                'user_id' => auth()->id(),
-            ]);
 
             return redirect()->route('driver-safety.index')
                 ->with('success', 'Safety record deleted successfully.');
 
         } catch (Exception $e) {
-            Log::error('Driver safety record deletion failed', [
-                'safety_record_id' => $driverSafety->id,
-                'error' => $e->getMessage(),
-                'user_id' => auth()->id(),
-            ]);
-
             return back()->withErrors(['error' => 'Failed to delete safety record. Please try again.']);
         }
     }
@@ -218,7 +191,7 @@ class DriverSafetyController extends Controller
         } catch (Exception $e) {
             Log::error('Failed to get safety analytics', [
                 'error' => $e->getMessage(),
-                'user_id' => auth()->id(),
+                'user_id' => Auth::id(),
             ]);
 
             return response()->json([
@@ -265,7 +238,7 @@ class DriverSafetyController extends Controller
         } catch (Exception $e) {
             Log::error('Failed to get drivers with safety issues', [
                 'error' => $e->getMessage(),
-                'user_id' => auth()->id(),
+                'user_id' => Auth::id(),
             ]);
 
             return response()->json([

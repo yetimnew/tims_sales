@@ -100,6 +100,12 @@ class CheckPermissionSeeder extends Seeder
             'customers.edit', 'customers.update', 'customers.destroy', 'customers.export',
         ];
 
+        // ==================== PERFORMANCE PERMISSIONS ====================
+        $performancePermissions = [
+            'performances.view', 'performances.show', 'performances.create', 'performances.store',
+            'performances.edit', 'performances.update', 'performances.destroy', 'performances.export',
+        ];
+
         // ==================== DRIVER PERFORMANCE PERMISSIONS ====================
         $driverPerformancePermissions = [
             'driver-performance.view', 'driver-performance.show', 'driver-performance.create', 'driver-performance.store',
@@ -159,6 +165,7 @@ class CheckPermissionSeeder extends Seeder
             $statusPermissions,
             $operationPermissions,
             $customerPermissions,
+            $performancePermissions,
             $driverPerformancePermissions,
             $driverSafetyPermissions,
             $routePlanPermissions,

@@ -5,10 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\Driver;
 use App\Models\Truck;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
 use Exception;
-use Spatie\ActivityLog\Facades\Activity;
+use Spatie\Activitylog\Models\Activity;
 
 class DriverController extends Controller
 {
@@ -79,11 +80,6 @@ class DriverController extends Controller
 
             $driver = Driver::create($validated);
 
-            // Log activity using Spatie Activity Log
-            Activity::performedOn($driver)
-                ->causedBy(auth()->user())
-                ->log('created');
-
             return redirect()->route('drivers.index')
                 ->with('success', 'Driver created successfully.');
 
@@ -127,8 +123,6 @@ class DriverController extends Controller
     public function update(Request $request, Driver $driver)
     {
         try {
-            $oldData = $driver->toArray();
-
             $validated = $request->validate([
                 'driverid' => 'required|string|max:255|unique:drivers,driverid,' . $driver->id,
                 'name' => 'required|string|max:255',
@@ -145,12 +139,6 @@ class DriverController extends Controller
 
             $driver->update($validated);
 
-            // Log activity using Spatie Activity Log
-            Activity::performedOn($driver)
-                ->causedBy(auth()->user())
-                ->withProperties(['old' => $oldData, 'new' => $driver->toArray()])
-                ->log('updated');
-
             return redirect()->route('drivers.index')
                 ->with('success', 'Driver updated successfully.');
 
@@ -165,14 +153,6 @@ class DriverController extends Controller
     public function destroy(Driver $driver)
     {
         try {
-            $driverData = $driver->toArray();
-
-            // Log activity before deletion
-            Activity::performedOn($driver)
-                ->causedBy(auth()->user())
-                ->withProperties(['deleted' => $driverData])
-                ->log('deleted');
-
             $driver->delete();
 
             return redirect()->route('drivers.index')
@@ -268,9 +248,12 @@ class DriverController extends Controller
         fclose($handle);
 
         // Log activity using Spatie Activity Log
-        Activity::causedBy(auth()->user())
-            ->withProperties(['count' => count($drivers)])
-            ->log('exported');
+        if (Auth::check()) {
+            activity()
+                ->causedBy(Auth::user())
+                ->withProperties(['count' => count($drivers)])
+                ->log('exported drivers to CSV');
+        }
 
         return response($csv, 200)
             ->header('Content-Type', 'text/csv')

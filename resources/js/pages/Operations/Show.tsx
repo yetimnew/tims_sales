@@ -4,28 +4,35 @@ import { Badge } from '@/components/ui/badge';
 import AppLayout from '@/layouts/app-layout';
 import { Head, Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
-import { ArrowLeft, Edit, Trash2, Phone, Mail, MapPin } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2 } from 'lucide-react';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useState } from 'react';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Customers', href: '/customers' },
+    { title: 'Operations', href: '/operations' },
 ];
 
 interface User { id: number; name: string; }
 interface ActivityLog { id: number; description: string; event: string; created_at: string; causer?: User; }
-interface Customer { id: number; name: string; contact_person?: string; phone?: string; email?: string; address?: string; status: string; created_at: string; }
-interface CustomersShowProps { customer: Customer; activityLogs?: ActivityLog[]; }
+interface Operation {
+    id: number; operationid: string; description?: string; status: string;
+    startdate?: string; enddate?: string; volume?: number; km?: number; tariff?: number;
+    closed?: boolean; created_at: string;
+    customer?: { id: number; name: string };
+    region?: { id: number; name: string };
+    user?: { id: number; name: string };
+}
+interface OperationsShowProps { operation: Operation; activityLogs?: ActivityLog[]; }
 
-export default function CustomersShow({ customer, activityLogs = [] }: CustomersShowProps) {
+export default function OperationsShow({ operation, activityLogs = [] }: OperationsShowProps) {
     const { hasPermission } = usePermissions();
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
 
     const handleDelete = () => {
         setIsDeleting(true);
-        router.delete(`/customers/${customer.id}`, {
+        router.delete(`/operations/${operation.id}`, {
             onSuccess: () => { setDeleteDialogOpen(false); setIsDeleting(false); },
             onError: () => { setIsDeleting(false); },
         });
@@ -39,7 +46,7 @@ export default function CustomersShow({ customer, activityLogs = [] }: Customers
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={`Customer: ${customer.name}`} />
+            <Head title={`Operation: ${operation.operationid}`} />
             <div className="flex flex-1 flex-col gap-6">
                 {/* Header with Back Button */}
                 <div className="flex items-center justify-between">
@@ -47,28 +54,28 @@ export default function CustomersShow({ customer, activityLogs = [] }: Customers
                         <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => router.get('/customers')}
+                            onClick={() => router.get('/operations')}
                             className="flex items-center gap-2"
                         >
                             <ArrowLeft className="h-4 w-4" />
-                            Back to Customers
+                            Back to Operations
                         </Button>
                         <div>
-                            <h1 className="text-2xl font-bold">{customer.name}</h1>
-                            <p className="text-muted-foreground">View customer details and manage information</p>
+                            <h1 className="text-2xl font-bold">{operation.operationid}</h1>
+                            <p className="text-muted-foreground">View operation details and manage information</p>
                         </div>
                     </div>
-                    {(hasPermission('customers.edit') || hasPermission('customers.destroy')) && (
+                    {(hasPermission('operations.edit') || hasPermission('operations.destroy')) && (
                         <div className="flex gap-2">
-                            {hasPermission('customers.edit') && (
+                            {hasPermission('operations.edit') && (
                                 <Button variant="outline" asChild>
-                                    <Link href={`/customers/${customer.id}/edit`}>
+                                    <Link href={`/operations/${operation.id}/edit`}>
                                         <Edit className="mr-2 h-4 w-4" />
                                         Edit
                                     </Link>
                                 </Button>
                             )}
-                            {hasPermission('customers.destroy') && (
+                            {hasPermission('operations.destroy') && (
                                 <Button variant="destructive" onClick={() => setDeleteDialogOpen(true)}>
                                     <Trash2 className="mr-2 h-4 w-4" />
                                     Delete
@@ -81,23 +88,23 @@ export default function CustomersShow({ customer, activityLogs = [] }: Customers
                 <div className="grid gap-6 lg:grid-cols-3">
                     {/* Main Details */}
                     <div className="lg:col-span-2 space-y-6">
-                        {/* Customer Information */}
+                        {/* Operation Information */}
                         <Card>
                             <CardHeader>
-                                <CardTitle>Customer Information</CardTitle>
-                                <CardDescription>Core customer details and contact information</CardDescription>
+                                <CardTitle>Operation Information</CardTitle>
+                                <CardDescription>Core operation details</CardDescription>
                             </CardHeader>
                             <CardContent>
                                 <div className="grid gap-4">
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <p className="text-sm font-medium text-muted-foreground">Customer Name</p>
-                                            <p className="mt-1 font-semibold">{customer.name}</p>
+                                            <p className="text-sm font-medium text-muted-foreground">Operation ID</p>
+                                            <p className="mt-1 font-semibold">{operation.operationid}</p>
                                         </div>
                                         <div>
                                             <p className="text-sm font-medium text-muted-foreground">Status</p>
-                                            <Badge className={`mt-1 ${getStatusColor(customer.status)}`}>
-                                                {customer.status.charAt(0).toUpperCase() + customer.status.slice(1)}
+                                            <Badge className={`mt-1 ${getStatusColor(operation.status)}`}>
+                                                {operation.status.charAt(0).toUpperCase() + operation.status.slice(1)}
                                             </Badge>
                                         </div>
                                     </div>
@@ -105,27 +112,25 @@ export default function CustomersShow({ customer, activityLogs = [] }: Customers
                                     <div className="border-t pt-4">
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
-                                                <p className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                                                    <Phone className="h-4 w-4" />
-                                                    Phone
-                                                </p>
-                                                <p className="mt-1 text-sm font-mono">{customer.phone || 'N/A'}</p>
+                                                <p className="text-sm font-medium text-muted-foreground">Customer</p>
+                                                <p className="mt-1 text-sm">{operation.customer?.name || 'N/A'}</p>
                                             </div>
                                             <div>
-                                                <p className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                                                    <Mail className="h-4 w-4" />
-                                                    Email
-                                                </p>
-                                                <p className="mt-1 text-sm">{customer.email || 'N/A'}</p>
+                                                <p className="text-sm font-medium text-muted-foreground">Region</p>
+                                                <p className="mt-1 text-sm">{operation.region?.name || 'N/A'}</p>
                                             </div>
                                         </div>
                                     </div>
 
                                     <div className="border-t pt-4">
-                                        <div className="grid grid-cols-1 gap-4">
+                                        <div className="grid grid-cols-2 gap-4">
                                             <div>
-                                                <p className="text-sm font-medium text-muted-foreground">Contact Person</p>
-                                                <p className="mt-1 text-sm">{customer.contact_person || 'N/A'}</p>
+                                                <p className="text-sm font-medium text-muted-foreground">Start Date</p>
+                                                <p className="mt-1 text-sm">{operation.startdate ? new Date(operation.startdate).toLocaleDateString() : 'N/A'}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-medium text-muted-foreground">End Date</p>
+                                                <p className="mt-1 text-sm">{operation.enddate ? new Date(operation.enddate).toLocaleDateString() : 'N/A'}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -133,18 +138,40 @@ export default function CustomersShow({ customer, activityLogs = [] }: Customers
                             </CardContent>
                         </Card>
 
-                        {/* Address Information */}
-                        {customer.address && (
+                        {/* Operation Metrics */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Metrics</CardTitle>
+                                <CardDescription>Volume, distance, and tariff information</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="grid gap-4">
+                                    <div className="grid grid-cols-3 gap-4">
+                                        <div>
+                                            <p className="text-sm font-medium text-muted-foreground">Volume (MT)</p>
+                                            <p className="mt-1 text-lg font-semibold">{operation.volume?.toFixed(2) || 'N/A'}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-medium text-muted-foreground">Distance (KM)</p>
+                                            <p className="mt-1 text-lg font-semibold">{operation.km?.toFixed(2) || 'N/A'}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-medium text-muted-foreground">Tariff</p>
+                                            <p className="mt-1 text-lg font-semibold">{operation.tariff?.toFixed(2) || 'N/A'}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Description */}
+                        {operation.description && (
                             <Card>
                                 <CardHeader>
-                                    <CardTitle>Address</CardTitle>
-                                    <CardDescription>Customer location details</CardDescription>
+                                    <CardTitle>Description</CardTitle>
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="flex items-start gap-3">
-                                        <MapPin className="h-5 w-5 text-muted-foreground mt-1 flex-shrink-0" />
-                                        <p className="text-sm whitespace-pre-wrap">{customer.address}</p>
-                                    </div>
+                                    <p className="text-sm whitespace-pre-wrap">{operation.description}</p>
                                 </CardContent>
                             </Card>
                         )}
@@ -154,7 +181,7 @@ export default function CustomersShow({ customer, activityLogs = [] }: Customers
                             <Card>
                                 <CardHeader>
                                     <CardTitle>Activity Log</CardTitle>
-                                    <CardDescription>Track all changes made to this customer</CardDescription>
+                                    <CardDescription>Track all changes made to this operation</CardDescription>
                                 </CardHeader>
                                 <CardContent>
                                     <div className="space-y-4">
@@ -186,37 +213,27 @@ export default function CustomersShow({ customer, activityLogs = [] }: Customers
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div>
-                                    <p className="text-sm font-medium text-muted-foreground">Customer ID</p>
-                                    <p className="mt-1 font-semibold">{customer.id}</p>
+                                    <p className="text-sm font-medium text-muted-foreground">Operation ID</p>
+                                    <p className="mt-1 font-semibold">{operation.id}</p>
                                 </div>
                                 <div className="border-t pt-4">
                                     <p className="text-sm font-medium text-muted-foreground">Status</p>
-                                    <Badge className={`mt-2 ${getStatusColor(customer.status)}`}>
-                                        {customer.status.charAt(0).toUpperCase() + customer.status.slice(1)}
+                                    <Badge className={`mt-2 ${getStatusColor(operation.status)}`}>
+                                        {operation.status.charAt(0).toUpperCase() + operation.status.slice(1)}
                                     </Badge>
                                 </div>
                                 <div className="border-t pt-4">
-                                    <p className="text-sm font-medium text-muted-foreground">Created</p>
-                                    <p className="mt-1 text-xs">{new Date(customer.created_at).toLocaleDateString()}</p>
+                                    <p className="text-sm font-medium text-muted-foreground">Customer</p>
+                                    <p className="mt-1 text-xs">{operation.customer?.name || 'N/A'}</p>
                                 </div>
-                                {customer.phone && (
-                                    <div className="border-t pt-4">
-                                        <p className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                                            <Phone className="h-4 w-4" />
-                                            Phone
-                                        </p>
-                                        <p className="mt-1 text-xs font-mono">{customer.phone}</p>
-                                    </div>
-                                )}
-                                {customer.email && (
-                                    <div className="border-t pt-4">
-                                        <p className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                                            <Mail className="h-4 w-4" />
-                                            Email
-                                        </p>
-                                        <p className="mt-1 text-xs">{customer.email}</p>
-                                    </div>
-                                )}
+                                <div className="border-t pt-4">
+                                    <p className="text-sm font-medium text-muted-foreground">Created</p>
+                                    <p className="mt-1 text-xs">{new Date(operation.created_at).toLocaleDateString()}</p>
+                                </div>
+                                <div className="border-t pt-4">
+                                    <p className="text-sm font-medium text-muted-foreground">Closed</p>
+                                    <p className="mt-1 text-xs">{operation.closed ? 'Yes' : 'No'}</p>
+                                </div>
                             </CardContent>
                         </Card>
                     </div>
@@ -226,12 +243,11 @@ export default function CustomersShow({ customer, activityLogs = [] }: Customers
             <DeleteConfirmationDialog
                 open={deleteDialogOpen}
                 onOpenChange={setDeleteDialogOpen}
-                title="Delete Customer"
-                description={`Are you sure you want to delete ${customer.name}? This action cannot be undone.`}
+                title="Delete Operation"
+                description={`Are you sure you want to delete operation ${operation.operationid}? This action cannot be undone.`}
                 onConfirm={handleDelete}
                 isLoading={isDeleting}
             />
         </AppLayout>
     );
 }
-

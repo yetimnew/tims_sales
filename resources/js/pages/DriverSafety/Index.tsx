@@ -20,23 +20,31 @@ import * as React from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
-        title: 'Cargo Types',
-        href: '/cargo-types',
+        title: 'Driver Safety',
+        href: '/driver-safety',
     },
 ];
 
-interface CargoType {
+interface Driver {
     id: number;
     name: string;
-    category: string;
-    weight_per_cubic_meter?: number;
-    requires_special_equipment: boolean;
+}
+
+interface SafetyRecord {
+    id: number;
+    driver_id: number;
+    driver?: Driver;
+    incident_date: string;
+    incident_type: 'accident' | 'violation' | 'warning';
+    severity: 'minor' | 'major' | 'critical';
+    description: string;
+    damage_cost?: number;
     created_at?: string;
 }
 
-interface CargoTypesIndexProps {
-    cargoTypes: {
-        data: CargoType[];
+interface DriverSafetyIndexProps {
+    safetyRecords: {
+        data: SafetyRecord[];
         current_page: number;
         last_page: number;
         per_page: number;
@@ -50,22 +58,32 @@ interface CargoTypesIndexProps {
             next?: string;
         };
     };
+    statistics?: {
+        total_records: number;
+        accidents: number;
+        violations: number;
+        warnings: number;
+        critical_incidents: number;
+        major_incidents: number;
+        minor_incidents: number;
+        total_damage_cost: number;
+    };
 }
 
-export default function CargoTypesIndex({ cargoTypes }: CargoTypesIndexProps) {
+export default function DriverSafetyIndex({ safetyRecords, statistics }: DriverSafetyIndexProps) {
     const { hasPermission } = usePermissions();
     const [searchTerm, setSearchTerm] = React.useState('');
-    const [sortBy, setSortBy] = React.useState('name');
-    const [sortDirection, setSortDirection] = React.useState('asc');
+    const [sortBy, setSortBy] = React.useState('incident_date');
+    const [sortDirection, setSortDirection] = React.useState('desc');
     const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
-    const [selectedType, setSelectedType] = React.useState<CargoType | null>(null);
+    const [selectedRecord, setSelectedRecord] = React.useState<SafetyRecord | null>(null);
     const [isDeleting, setIsDeleting] = React.useState(false);
 
     const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
         setSearchTerm(value);
 
-        router.get('/cargo-types',
+        router.get('/driver-safety',
             { search: value, sort: sortBy, direction: sortDirection },
             { preserveState: false }
         );
@@ -80,25 +98,25 @@ export default function CargoTypesIndex({ cargoTypes }: CargoTypesIndexProps) {
         setSortBy(column);
         setSortDirection(newDirection);
 
-        router.get('/cargo-types',
+        router.get('/driver-safety',
             { search: searchTerm, sort: column, direction: newDirection },
             { preserveState: false }
         );
     };
 
-    const handleDeleteClick = (type: CargoType) => {
-        setSelectedType(type);
+    const handleDeleteClick = (record: SafetyRecord) => {
+        setSelectedRecord(record);
         setDeleteDialogOpen(true);
     };
 
     const handleConfirmDelete = async () => {
-        if (!selectedType) return;
+        if (!selectedRecord) return;
 
         setIsDeleting(true);
-        router.delete(`/cargo-types/${selectedType.id}`, {
+        router.delete(`/driver-safety/${selectedRecord.id}`, {
             onSuccess: () => {
                 setDeleteDialogOpen(false);
-                setSelectedType(null);
+                setSelectedRecord(null);
                 setIsDeleting(false);
             },
             onError: () => {
@@ -107,14 +125,27 @@ export default function CargoTypesIndex({ cargoTypes }: CargoTypesIndexProps) {
         });
     };
 
-    const getCategoryColor = (category: string) => {
-        switch (category) {
-            case 'Construction':
-                return 'bg-blue-100 text-blue-800';
-            case 'Agricultural':
-                return 'bg-green-100 text-green-800';
-            case 'Industrial':
+    const getSeverityColor = (severity: string) => {
+        switch (severity) {
+            case 'critical':
+                return 'bg-red-100 text-red-800';
+            case 'major':
                 return 'bg-orange-100 text-orange-800';
+            case 'minor':
+                return 'bg-yellow-100 text-yellow-800';
+            default:
+                return 'bg-gray-100 text-gray-800';
+        }
+    };
+
+    const getIncidentTypeColor = (type: string) => {
+        switch (type) {
+            case 'accident':
+                return 'bg-red-100 text-red-800';
+            case 'violation':
+                return 'bg-orange-100 text-orange-800';
+            case 'warning':
+                return 'bg-blue-100 text-blue-800';
             default:
                 return 'bg-gray-100 text-gray-800';
         }
@@ -122,23 +153,64 @@ export default function CargoTypesIndex({ cargoTypes }: CargoTypesIndexProps) {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Cargo Types" />
+            <Head title="Driver Safety Records" />
 
             <div className="space-y-6">
+                {/* Statistics Cards */}
+                {statistics && (
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">Total Records</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">{statistics.total_records}</div>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">Critical Incidents</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold text-red-600">{statistics.critical_incidents}</div>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">Accidents</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold text-orange-600">{statistics.accidents}</div>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">Total Damage Cost</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">
+                                    ${statistics.total_damage_cost?.toFixed(2) || '0.00'}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                )}
+
+                {/* Main Card */}
                 <Card>
                     <CardHeader>
                         <div className="flex items-center justify-between">
                             <div>
-                                <CardTitle>Cargo Types</CardTitle>
+                                <CardTitle>Driver Safety Records</CardTitle>
                                 <CardDescription>
-                                    Manage and track different cargo types used in your fleet
+                                    Manage and track driver safety incidents and violations
                                 </CardDescription>
                             </div>
-                            {hasPermission('cargo-types.create') && (
-                                <Link href="/cargo-types/create">
+                            {hasPermission('driver-safety.create') && (
+                                <Link href="/driver-safety/create">
                                     <Button className="gap-2">
                                         <Plus size={16} />
-                                        New Cargo Type
+                                        New Record
                                     </Button>
                                 </Link>
                             )}
@@ -150,7 +222,7 @@ export default function CargoTypesIndex({ cargoTypes }: CargoTypesIndexProps) {
                             <div className="relative flex-1">
                                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                                 <Input
-                                    placeholder="Search by name, category, or requirements..."
+                                    placeholder="Search by driver, description, or location..."
                                     value={searchTerm}
                                     onChange={handleSearch}
                                     className="pl-10"
@@ -165,76 +237,96 @@ export default function CargoTypesIndex({ cargoTypes }: CargoTypesIndexProps) {
                                     <TableRow>
                                         <TableHead
                                             className="cursor-pointer"
-                                            onClick={() => handleSort('name')}
+                                            onClick={() => handleSort('incident_date')}
                                         >
                                             <div className="flex items-center gap-2">
-                                                Name
+                                                Date
+                                                <ArrowUpDown size={14} />
+                                            </div>
+                                        </TableHead>
+                                        <TableHead>Driver</TableHead>
+                                        <TableHead
+                                            className="cursor-pointer"
+                                            onClick={() => handleSort('incident_type')}
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                Type
                                                 <ArrowUpDown size={14} />
                                             </div>
                                         </TableHead>
                                         <TableHead
                                             className="cursor-pointer"
-                                            onClick={() => handleSort('category')}
+                                            onClick={() => handleSort('severity')}
                                         >
                                             <div className="flex items-center gap-2">
-                                                Category
+                                                Severity
                                                 <ArrowUpDown size={14} />
                                             </div>
                                         </TableHead>
-                                        <TableHead>Weight/m³</TableHead>
-                                        <TableHead>Special Equipment</TableHead>
+                                        <TableHead>Description</TableHead>
+                                        <TableHead
+                                            className="cursor-pointer"
+                                            onClick={() => handleSort('damage_cost')}
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                Damage Cost
+                                                <ArrowUpDown size={14} />
+                                            </div>
+                                        </TableHead>
                                         <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {cargoTypes.data.length === 0 ? (
+                                    {safetyRecords.data.length === 0 ? (
                                         <TableRow>
-                                            <TableCell colSpan={5} className="text-center py-8">
-                                                No cargo types found.
+                                            <TableCell colSpan={7} className="text-center py-8">
+                                                No safety records found.
                                             </TableCell>
                                         </TableRow>
                                     ) : (
-                                        cargoTypes.data.map((type) => (
-                                            <TableRow key={type.id}>
+                                        safetyRecords.data.map((record) => (
+                                            <TableRow key={record.id}>
                                                 <TableCell className="font-medium">
-                                                    {type.name}
+                                                    {new Date(record.incident_date).toLocaleDateString()}
                                                 </TableCell>
+                                                <TableCell>{record.driver?.name || 'N/A'}</TableCell>
                                                 <TableCell>
-                                                    <Badge className={getCategoryColor(type.category)}>
-                                                        {type.category}
+                                                    <Badge className={getIncidentTypeColor(record.incident_type)}>
+                                                        {record.incident_type}
                                                     </Badge>
                                                 </TableCell>
                                                 <TableCell>
-                                                    {type.weight_per_cubic_meter ? `${type.weight_per_cubic_meter} kg` : '-'}
+                                                    <Badge className={getSeverityColor(record.severity)}>
+                                                        {record.severity}
+                                                    </Badge>
+                                                </TableCell>
+                                                <TableCell className="max-w-xs truncate">
+                                                    {record.description}
                                                 </TableCell>
                                                 <TableCell>
-                                                    {type.requires_special_equipment ? (
-                                                        <Badge variant="secondary">Yes</Badge>
-                                                    ) : (
-                                                        <span className="text-gray-500">No</span>
-                                                    )}
+                                                    ${record.damage_cost?.toFixed(2) || '0.00'}
                                                 </TableCell>
                                                 <TableCell className="text-right">
                                                     <div className="flex justify-end gap-2">
-                                                        {hasPermission('cargo-types.show') && (
+                                                        {hasPermission('driver-safety.show') && (
                                                             <Link
-                                                                href={`/cargo-types/${type.id}`}
+                                                                href={`/driver-safety/${record.id}`}
                                                                 className="p-2 hover:bg-gray-100 rounded"
                                                             >
                                                                 <Eye size={16} />
                                                             </Link>
                                                         )}
-                                                        {hasPermission('cargo-types.edit') && (
+                                                        {hasPermission('driver-safety.edit') && (
                                                             <Link
-                                                                href={`/cargo-types/${type.id}/edit`}
+                                                                href={`/driver-safety/${record.id}/edit`}
                                                                 className="p-2 hover:bg-gray-100 rounded"
                                                             >
                                                                 <Edit size={16} />
                                                             </Link>
                                                         )}
-                                                        {hasPermission('cargo-types.destroy') && (
+                                                        {hasPermission('driver-safety.destroy') && (
                                                             <button
-                                                                onClick={() => handleDeleteClick(type)}
+                                                                onClick={() => handleDeleteClick(record)}
                                                                 className="p-2 hover:bg-red-100 text-red-600 rounded"
                                                             >
                                                                 <Trash2 size={16} />
@@ -252,23 +344,23 @@ export default function CargoTypesIndex({ cargoTypes }: CargoTypesIndexProps) {
                         {/* Pagination */}
                         <div className="flex items-center justify-between mt-6">
                             <div className="text-sm text-gray-600">
-                                Showing {cargoTypes.from} to {cargoTypes.to} of {cargoTypes.total} types
+                                Showing {safetyRecords.from} to {safetyRecords.to} of {safetyRecords.total} records
                             </div>
                             <div className="flex gap-2">
-                                {cargoTypes.current_page > 1 && (
+                                {safetyRecords.current_page > 1 && (
                                     <Link
-                                        href={cargoTypes.links?.prev || '/cargo-types'}
+                                        href={safetyRecords.links?.prev || '/driver-safety'}
                                         className="p-2 hover:bg-gray-100 rounded"
                                     >
                                         <ChevronLeft size={16} />
                                     </Link>
                                 )}
                                 <span className="px-4 py-2 text-sm">
-                                    Page {cargoTypes.current_page} of {cargoTypes.last_page}
+                                    Page {safetyRecords.current_page} of {safetyRecords.last_page}
                                 </span>
-                                {cargoTypes.current_page < cargoTypes.last_page && (
+                                {safetyRecords.current_page < safetyRecords.last_page && (
                                     <Link
-                                        href={cargoTypes.links?.next || '/cargo-types'}
+                                        href={safetyRecords.links?.next || '/driver-safety'}
                                         className="p-2 hover:bg-gray-100 rounded"
                                     >
                                         <ChevronRight size={16} />
@@ -283,11 +375,12 @@ export default function CargoTypesIndex({ cargoTypes }: CargoTypesIndexProps) {
             <DeleteConfirmationDialog
                 open={deleteDialogOpen}
                 onOpenChange={setDeleteDialogOpen}
-                title="Delete Cargo Type"
-                description={`Are you sure you want to delete the cargo type "${selectedType?.name}"? This action cannot be undone.`}
+                title="Delete Safety Record"
+                description={`Are you sure you want to delete this safety record for ${selectedRecord?.driver?.name}? This action cannot be undone.`}
                 onConfirm={handleConfirmDelete}
                 isLoading={isDeleting}
             />
         </AppLayout>
     );
 }
+

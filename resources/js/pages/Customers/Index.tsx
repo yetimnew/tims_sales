@@ -1,232 +1,334 @@
-import { useState, useMemo } from 'react'
-import { useForm } from '@inertiajs/react'
-import { Link, router } from '@inertiajs/react'
-import { Eye, Trash2, SquarePen, Plus, Search } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog'
-import { useToast } from '@/hooks/use-toast'
-import { usePermissions } from '@/hooks/use-permissions'
-import AppLayout from '@/layouts/app-layout'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
+import AppLayout from '@/layouts/app-layout';
+import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
+import { usePermissions } from '@/hooks/use-permissions';
+import { Head, Link, router } from '@inertiajs/react';
+import { type BreadcrumbItem } from '@/types';
+import { Plus, Eye, Edit, Trash2, Search, ArrowUpDown, ChevronLeft, ChevronRight, FileDown } from 'lucide-react';
+import * as React from 'react';
 
-interface Customer {
-  id: number
-  name: string
-  email?: string
-  phone?: string
-  created_at: string
-}
+const breadcrumbs: BreadcrumbItem[] = [
+    {
+        title: 'Customers',
+        href: '/customers',
+    },
+];
 
-interface PaginationMeta {
-  total: number
-  per_page: number
-  current_page: number
-  last_page: number
+interface CustomerData {
+    id: number;
+    name: string;
+    contact_person?: string;
+    phone?: string;
+    email?: string;
+    address?: string;
+    status: string;
+    created_at?: string;
 }
 
 interface CustomersIndexProps {
   customers: {
-    data: Customer[]
-    meta: PaginationMeta
-  }
+        data: CustomerData[];
+        current_page: number;
+        last_page: number;
+        per_page: number;
+        total: number;
+        from: number;
+        to: number;
+    };
+    totalCount?: number;
 }
 
-export default function CustomersIndex({ customers }: CustomersIndexProps) {
-  const { toast } = useToast()
-  const { hasPermission } = usePermissions()
-  const [search, setSearch] = useState('')
-  const [sortColumn, setSortColumn] = useState('name')
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
-  const [deleteConfirmation, setDeleteConfirmation] = useState<{ id: number; name: string } | null>(null)
+export default function CustomersIndex({ customers, totalCount }: CustomersIndexProps) {
+    const { hasPermission } = usePermissions();
+    const [searchTerm, setSearchTerm] = React.useState('');
+    const [sortBy, setSortBy] = React.useState('name');
+    const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>('asc');
+    const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+    const [selectedCustomer, setSelectedCustomer] = React.useState<CustomerData | null>(null);
+    const [isDeleting, setIsDeleting] = React.useState(false);
 
-  const filtered = useMemo(() => {
-    let items = customers?.data || []
+    const customerCount = totalCount ?? customers.total;
+    const currentPage = customers.current_page;
+    const totalPages = customers.last_page;
 
-    if (search.trim()) {
-      const query = search.toLowerCase()
-      items = items.filter(
-        item =>
-          item.name.toLowerCase().includes(query) ||
-          item.email?.toLowerCase().includes(query) ||
-          item.phone?.toLowerCase().includes(query)
-      )
-    }
-
-    items.sort((a, b) => {
-      let aVal: any = a[sortColumn as keyof Customer]
-      let bVal: any = b[sortColumn as keyof Customer]
-
-      if (sortColumn === 'name' || sortColumn === 'email') {
-        aVal = aVal?.toLowerCase()
-        bVal = bVal?.toLowerCase()
-      }
-
-      return sortOrder === 'asc' ? (aVal > bVal ? 1 : -1) : aVal < bVal ? 1 : -1
-    })
-
-    return items
-  }, [search, sortColumn, sortOrder, customers])
+    const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setSearchTerm(value);
+        router.get(
+            '/customers',
+            { search: value, sort: sortBy, direction: sortDirection },
+            { preserveState: false }
+        );
+    };
 
   const handleSort = (column: string) => {
-    if (sortColumn === column) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
-    } else {
-      setSortColumn(column)
-      setSortOrder('asc')
-    }
-  }
+        let newDirection: 'asc' | 'desc' = 'asc';
+        if (sortBy === column && sortDirection === 'asc') {
+            newDirection = 'desc';
+        }
+        setSortBy(column);
+        setSortDirection(newDirection);
+        router.get(
+            '/customers',
+            { search: searchTerm, sort: column, direction: newDirection },
+            { preserveState: false }
+        );
+    };
 
-  const handleDelete = (customer: Customer) => {
-    setDeleteConfirmation({ id: customer.id, name: customer.name })
-  }
+    const SortIcon = ({ column }: { column: string }) => {
+        if (sortBy !== column) {
+            return <ArrowUpDown className="ml-2 h-4 w-4 text-muted-foreground" />;
+        }
+        return (
+            <ArrowUpDown
+                className={`ml-2 h-4 w-4 ${sortDirection === 'asc' ? 'rotate-180' : ''}`}
+            />
+        );
+    };
 
-  const confirmDelete = () => {
-    if (!deleteConfirmation) return
-    router.delete(route('customers.destroy', deleteConfirmation.id), {
+    const handleDeleteClick = (customer: CustomerData) => {
+        setSelectedCustomer(customer);
+        setDeleteDialogOpen(true);
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (!selectedCustomer) return;
+
+        setIsDeleting(true);
+        router.delete(`/customers/${selectedCustomer.id}`, {
       onSuccess: () => {
-        toast({
-          title: 'Success',
-          description: 'Customer deleted successfully',
-          variant: 'success',
-        })
-        setDeleteConfirmation(null)
+                setDeleteDialogOpen(false);
+                setSelectedCustomer(null);
+                setIsDeleting(false);
       },
       onError: () => {
-        toast({
-          title: 'Error',
-          description: 'Failed to delete customer',
-          variant: 'destructive',
-        })
-      },
-    })
-  }
+                setIsDeleting(false);
+            },
+        });
+    };
 
   return (
-    <>
+        <AppLayout breadcrumbs={breadcrumbs}>
+            <Head title="Customers" />
       <div className="flex h-full flex-1 flex-col gap-6 overflow-hidden rounded-xl p-4">
+                {/* Header Section */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">Customers</h1>
-            <p className="text-muted-foreground">Manage your customers</p>
+                        <p className="text-muted-foreground">
+                            Manage your fleet of {customerCount} customer{customerCount !== 1 ? 's' : ''}
+                        </p>
           </div>
+                    <div className="flex gap-2">
+                        {hasPermission('customers.export') && (
+                            <Button variant="outline" onClick={() => {
+                                const params = new URLSearchParams({
+                                    search: searchTerm,
+                                    sort: sortBy,
+                                    direction: sortDirection,
+                                });
+                                window.location.href = `/customers/export/csv?${params.toString()}`;
+                            }}>
+                                <FileDown className="mr-2 h-4 w-4" />
+                                Export CSV
+                            </Button>
+                        )}
           {hasPermission('customers.create') && (
-            <Link href={route('customers.create')}>
-              <Button className="flex items-center gap-2">
-                <Plus className="h-4 w-4" />
+                            <Button asChild>
+                                <Link href="/customers/create">
+                                    <Plus className="mr-2 h-4 w-4" />
                 Add Customer
+                                </Link>
               </Button>
-            </Link>
           )}
+                    </div>
         </div>
 
+                {/* Table Section */}
         <Card className="flex flex-1 flex-col overflow-hidden">
-          <CardHeader className="flex flex-row items-center justify-between border-b pb-4">
+                    <CardHeader>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <CardTitle>Customer Inventory</CardTitle>
+                                <CardDescription>
+                                    {customerCount} total customer{customerCount !== 1 ? 's' : ''} in system
+                                </CardDescription>
+                            </div>
             <div className="relative w-64">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search customers..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
+                                    value={searchTerm}
+                                    onChange={handleSearch}
                 className="pl-10"
               />
+                            </div>
             </div>
           </CardHeader>
-
-          <CardContent className="flex flex-1 flex-col overflow-auto">
-            {filtered.length > 0 ? (
+                    <CardContent className="flex-1 overflow-auto">
               <div className="rounded-lg border">
                 <Table>
-                  <TableHeader className="bg-muted/50">
-                    <TableRow>
+                                <TableHeader>
+                                    <TableRow className="bg-muted/50">
                       <TableHead
+                                            className="cursor-pointer select-none hover:bg-muted/70 transition-colors"
                         onClick={() => handleSort('name')}
-                        className="cursor-pointer select-none hover:bg-muted/70 transition-colors flex items-center"
                       >
-                        Name
+                                            <div className="flex items-center">
+                                                Name <SortIcon column="name" />
+                                            </div>
                       </TableHead>
-                      <TableHead
-                        onClick={() => handleSort('email')}
-                        className="cursor-pointer select-none hover:bg-muted/70 transition-colors flex items-center"
-                      >
-                        Email
-                      </TableHead>
+                                        <TableHead>Contact Person</TableHead>
                       <TableHead>Phone</TableHead>
+                                        <TableHead>Email</TableHead>
                       <TableHead
-                        onClick={() => handleSort('created_at')}
-                        className="cursor-pointer select-none hover:bg-muted/70 transition-colors flex items-center"
+                                            className="cursor-pointer select-none hover:bg-muted/70 transition-colors"
+                                            onClick={() => handleSort('status')}
                       >
-                        Created
+                                            <div className="flex items-center">
+                                                Status <SortIcon column="status" />
+                                            </div>
                       </TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filtered.map(customer => (
-                      <TableRow key={customer.id}>
-                        <TableCell className="font-medium">{customer.name}</TableCell>
-                        <TableCell>{customer.email || '-'}</TableCell>
-                        <TableCell>{customer.phone || '-'}</TableCell>
+                                    {customers?.data && customers.data.length > 0 ? (
+                                        customers.data.map((customer) => (
+                                            <TableRow key={customer.id} className="hover:bg-muted/50">
+                                                <TableCell className="font-medium">
+                                                    {customer.name}
+                                                </TableCell>
                         <TableCell className="text-muted-foreground">
-                          {new Date(customer.created_at).toLocaleDateString()}
+                                                    {customer.contact_person || 'N/A'}
+                                                </TableCell>
+                                                <TableCell className="text-muted-foreground text-sm">
+                                                    {customer.phone || '—'}
+                                                </TableCell>
+                                                <TableCell className="text-muted-foreground text-sm">
+                                                    {customer.email || '—'}
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Badge
+                                                        variant={customer.status === 'active' ? 'default' : 'secondary'}
+                                                    >
+                                                        {customer.status}
+                                                    </Badge>
                         </TableCell>
-                        <TableCell className="text-right space-x-2">
+                                                <TableCell className="text-right">
+                                                    <div className="flex justify-end gap-1">
                           {hasPermission('customers.show') && (
-                            <Link href={route('customers.show', customer.id)}>
-                              <Button variant="ghost" size="icon">
+                                                            <Link href={`/customers/${customer.id}`}>
+                                                                <Button size="sm" variant="ghost">
                                 <Eye className="h-4 w-4" />
                               </Button>
                             </Link>
                           )}
                           {hasPermission('customers.edit') && (
-                            <Link href={route('customers.edit', customer.id)}>
-                              <Button variant="ghost" size="icon">
-                                <SquarePen className="h-4 w-4" />
+                                                            <Link href={`/customers/${customer.id}/edit`}>
+                                                                <Button size="sm" variant="ghost">
+                                                                    <Edit className="h-4 w-4" />
                               </Button>
                             </Link>
                           )}
                           {hasPermission('customers.destroy') && (
                             <Button
+                                                                size="sm"
                               variant="ghost"
-                              size="icon"
-                              onClick={() => handleDelete(customer)}
+                                                                onClick={() => handleDeleteClick(customer)}
                             >
-                              <Trash2 className="h-4 w-4 text-destructive" />
+                                                                <Trash2 className="h-4 w-4" />
                             </Button>
                           )}
+                                                    </div>
                         </TableCell>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            ) : (
-              <div className="flex items-center justify-center py-12">
-                <p className="text-muted-foreground">
-                  No customers found.{' '}
+                                        ))
+                                    ) : (
+                                        <TableRow>
+                                            <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
+                                                No customers found.
                   {hasPermission('customers.create') && (
-                    <Link href={route('customers.create')} className="text-primary hover:underline">
+                                                    <Link href="/customers/create" className="ml-1 text-primary underline">
                       Create one
                     </Link>
                   )}
-                </p>
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </div>
+
+                        {/* Pagination */}
+                        {totalPages > 1 && (
+                            <div className="mt-6 flex items-center justify-between">
+                                <div className="text-sm text-muted-foreground">
+                                    Showing {customers?.from || 1} to {customers?.to || customerCount} of {customerCount} customers
+                                </div>
+                                <div className="flex gap-2">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        disabled={currentPage === 1}
+                                        onClick={() => {
+                                            const page = currentPage - 1;
+                                            router.get('/customers', {
+                                                page,
+                                                search: searchTerm,
+                                                sort: sortBy,
+                                                direction: sortDirection,
+                                            });
+                                        }}
+                                    >
+                                        <ChevronLeft className="mr-1 h-4 w-4" />
+                                        Previous
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        disabled={currentPage === totalPages}
+                                        onClick={() => {
+                                            const page = currentPage + 1;
+                                            router.get('/customers', {
+                                                page,
+                                                search: searchTerm,
+                                                sort: sortBy,
+                                                direction: sortDirection,
+                                            });
+                                        }}
+                                    >
+                                        Next
+                                        <ChevronRight className="ml-1 h-4 w-4" />
+                                    </Button>
+                                </div>
               </div>
             )}
           </CardContent>
         </Card>
       </div>
 
+            {/* Delete Confirmation Dialog */}
       <DeleteConfirmationDialog
-        open={!!deleteConfirmation}
+                open={deleteDialogOpen}
+                onOpenChange={setDeleteDialogOpen}
         title="Delete Customer"
         description="Are you sure you want to delete this customer? This action cannot be undone."
-        itemName={deleteConfirmation?.name}
-        onConfirm={confirmDelete}
-        onCancel={() => setDeleteConfirmation(null)}
-      />
-    </>
-  )
+                itemName={selectedCustomer?.name}
+                onConfirm={handleDeleteConfirm}
+                isLoading={isDeleting}
+            />
+        </AppLayout>
+    );
 }
-
-CustomersIndex.layout = (page: React.ReactNode) => <AppLayout children={page} />

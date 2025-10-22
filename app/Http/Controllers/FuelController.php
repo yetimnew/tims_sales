@@ -6,12 +6,15 @@ use App\Models\Truck;
 use App\Models\Driver;
 use App\Models\FuelRecord;
 use App\Models\FuelConsumptionAnalysis;
+use App\Http\Requests\StoreFuelRequest;
+use App\Http\Requests\UpdateFuelRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Support\Facades\DB;
 use Exception;
-use Spatie\ActivityLog\Facades\Activity;
+use Spatie\Activitylog\Models\Activity;
 
 class FuelController extends Controller
 {
@@ -121,10 +124,8 @@ class FuelController extends Controller
             );
         }
 
-        // Log the export
-        Activity::causedBy(auth()->user())
-            ->withProperties(['count' => count($fuelRecords)])
-            ->log('exported');
+        // No activity logging for export - it's a non-model operation
+        // Access is already tracked through permissions
 
         return response($csvData)
             ->header('Content-Type', 'text/csv')
@@ -134,30 +135,15 @@ class FuelController extends Controller
     /**
      * Store a newly created fuel record.
      */
-    public function store(Request $request)
+    public function store(StoreFuelRequest $request)
     {
         try {
-            $validated = $request->validate([
-                'truck_id' => 'required|exists:trucks,id',
-                'driver_id' => 'required|exists:drivers,id',
-                'fuel_date' => 'required|date|before_or_equal:today',
-                'fuel_quantity_liters' => 'required|numeric|min:0.01|max:9999.99',
-                'fuel_price_per_liter' => 'required|numeric|min:0.01|max:999.99',
-                'fuel_station' => 'nullable|string|max:255',
-                'fuel_type' => 'required|string|in:diesel,petrol,gas',
-                'odometer_reading' => 'nullable|integer|min:0',
-                'receipt_number' => 'nullable|string|max:255',
-                'notes' => 'nullable|string|max:1000',
-            ]);
+            $validated = $request->validated();
 
             $validated['total_cost'] = $validated['fuel_quantity_liters'] * $validated['fuel_price_per_liter'];
-            $validated['user_id'] = auth()->id();
+            $validated['user_id'] = Auth::id();
 
             $fuelRecord = FuelRecord::create($validated);
-
-            Activity::performedOn($fuelRecord)
-                ->causedBy(auth()->user())
-                ->log('created');
 
             return redirect()->route('fuel.index')
                 ->with('success', 'Fuel record created successfully.');
@@ -204,31 +190,14 @@ class FuelController extends Controller
     /**
      * Update the specified fuel record.
      */
-    public function update(Request $request, FuelRecord $fuel)
+    public function update(UpdateFuelRequest $request, FuelRecord $fuel)
     {
         try {
-            $validated = $request->validate([
-                'truck_id' => 'required|exists:trucks,id',
-                'driver_id' => 'required|exists:drivers,id',
-                'fuel_date' => 'required|date|before_or_equal:today',
-                'fuel_quantity_liters' => 'required|numeric|min:0.01|max:9999.99',
-                'fuel_price_per_liter' => 'required|numeric|min:0.01|max:999.99',
-                'fuel_station' => 'nullable|string|max:255',
-                'fuel_type' => 'required|string|in:diesel,petrol,gas',
-                'odometer_reading' => 'nullable|integer|min:0',
-                'receipt_number' => 'nullable|string|max:255',
-                'notes' => 'nullable|string|max:1000',
-            ]);
+            $validated = $request->validated();
 
             $validated['total_cost'] = $validated['fuel_quantity_liters'] * $validated['fuel_price_per_liter'];
 
-            $oldData = $fuel->toArray();
             $fuel->update($validated);
-
-            Activity::performedOn($fuel)
-                ->causedBy(auth()->user())
-                ->withProperties(['old' => $oldData, 'new' => $fuel->toArray()])
-                ->log('updated');
 
             return redirect()->route('fuel.index')
                 ->with('success', 'Fuel record updated successfully.');
@@ -244,13 +213,7 @@ class FuelController extends Controller
     public function destroy(FuelRecord $fuel)
     {
         try {
-            $fuelData = $fuel->toArray();
             $fuel->delete();
-
-            Activity::performedOn($fuel)
-                ->causedBy(auth()->user())
-                ->withProperties(['deleted' => $fuelData])
-                ->log('deleted');
 
             return redirect()->route('fuel.index')
                 ->with('success', 'Fuel record deleted successfully.');

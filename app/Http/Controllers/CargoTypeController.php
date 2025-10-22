@@ -3,12 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Models\CargoType;
+use App\Http\Requests\StoreCargoTypeRequest;
+use App\Http\Requests\UpdateCargoTypeRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Support\Facades\Log;
 use Exception;
-use Spatie\ActivityLog\Facades\Activity;
+use Spatie\Activitylog\Models\Activity;
 
 class CargoTypeController extends Controller
 {
@@ -60,34 +63,17 @@ class CargoTypeController extends Controller
     /**
      * Store a newly created cargo type.
      */
-    public function store(Request $request)
+    public function store(StoreCargoTypeRequest $request)
     {
         try {
-            $validated = $request->validate([
-                'name' => 'required|string|max:255|unique:cargo_types',
-                'category' => 'required|string|in:Construction,Agricultural,Industrial',
-                'weight_per_cubic_meter' => 'nullable|numeric|min:0|max:9999.99',
-                'handling_requirements' => 'nullable|string|max:2000',
-                'safety_requirements' => 'nullable|string|max:2000',
-                'requires_special_equipment' => 'boolean',
-            ]);
+            $validated = $request->validated();
 
             $cargoType = CargoType::create($validated);
-
-            Activity::performedOn($cargoType)
-                ->causedBy(auth()->user())
-                ->log('created');
 
             return redirect()->route('cargo-types.index')
                 ->with('success', 'Cargo type created successfully.');
 
         } catch (Exception $e) {
-            Log::error('Cargo type creation failed', [
-                'error' => $e->getMessage(),
-                'data' => $request->all(),
-                'user_id' => auth()->id(),
-            ]);
-
             return back()->withErrors(['error' => 'Failed to create cargo type. Please try again.']);
         }
     }
@@ -123,37 +109,16 @@ class CargoTypeController extends Controller
     /**
      * Update the specified cargo type.
      */
-    public function update(Request $request, CargoType $cargoType)
+    public function update(UpdateCargoTypeRequest $request, CargoType $cargoType)
     {
         try {
-            $validated = $request->validate([
-                'name' => 'required|string|max:255|unique:cargo_types,name,' . $cargoType->id,
-                'category' => 'required|string|in:Construction,Agricultural,Industrial',
-                'weight_per_cubic_meter' => 'nullable|numeric|min:0|max:9999.99',
-                'handling_requirements' => 'nullable|string|max:2000',
-                'safety_requirements' => 'nullable|string|max:2000',
-                'requires_special_equipment' => 'boolean',
-            ]);
-
-            $oldData = $cargoType->toArray();
+            $validated = $request->validated();
             $cargoType->update($validated);
-
-            Activity::performedOn($cargoType)
-                ->causedBy(auth()->user())
-                ->withProperties(['old' => $oldData, 'new' => $cargoType->toArray()])
-                ->log('updated');
 
             return redirect()->route('cargo-types.index')
                 ->with('success', 'Cargo type updated successfully.');
 
         } catch (Exception $e) {
-            Log::error('Cargo type update failed', [
-                'cargo_type_id' => $cargoType->id,
-                'error' => $e->getMessage(),
-                'data' => $request->all(),
-                'user_id' => auth()->id(),
-            ]);
-
             return back()->withErrors(['error' => 'Failed to update cargo type. Please try again.']);
         }
     }
@@ -169,24 +134,12 @@ class CargoTypeController extends Controller
                 return back()->withErrors(['error' => 'Cannot delete cargo type that is being used in performances.']);
             }
 
-            $cargoTypeData = $cargoType->toArray();
             $cargoType->delete();
-
-            Activity::performedOn($cargoType)
-                ->causedBy(auth()->user())
-                ->withProperties(['deleted' => $cargoTypeData])
-                ->log('deleted');
 
             return redirect()->route('cargo-types.index')
                 ->with('success', 'Cargo type deleted successfully.');
 
         } catch (Exception $e) {
-            Log::error('Cargo type deletion failed', [
-                'cargo_type_id' => $cargoType->id,
-                'error' => $e->getMessage(),
-                'user_id' => auth()->id(),
-            ]);
-
             return back()->withErrors(['error' => 'Failed to delete cargo type. Please try again.']);
         }
     }
@@ -216,7 +169,7 @@ class CargoTypeController extends Controller
         } catch (Exception $e) {
             Log::error('Failed to get cargo type statistics', [
                 'error' => $e->getMessage(),
-                'user_id' => auth()->id(),
+                'user_id' => Auth::id(),
             ]);
 
             return response()->json([
@@ -251,7 +204,7 @@ class CargoTypeController extends Controller
         } catch (Exception $e) {
             Log::error('Failed to get cargo types by category', [
                 'error' => $e->getMessage(),
-                'user_id' => auth()->id(),
+                'user_id' => Auth::id(),
             ]);
 
             return response()->json([
@@ -324,10 +277,8 @@ class CargoTypeController extends Controller
             fclose($file);
         };
 
-        // Log export activity
-        Activity::causedBy(auth()->user())
-            ->withProperties(['count' => count($cargoTypes)])
-            ->log('exported');
+        // No activity logging for export - it's a non-model operation
+        // Access is already tracked through permissions
 
         return response()->stream($callback, 200, $headers);
     }
