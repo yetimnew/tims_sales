@@ -43,8 +43,17 @@ interface DriverData {
 interface DriversIndexProps {
     drivers: {
         data: DriverData[];
-        links: any[];
-        meta: any;
+        current_page: number;
+        last_page: number;
+        per_page: number;
+        total: number;
+        from: number;
+        to: number;
+        links: Array<{
+            url: string | null;
+            label: string;
+            active: boolean;
+        }>;
     };
 }
 
@@ -77,10 +86,10 @@ export default function DriversIndex({ drivers }: DriversIndexProps) {
     };
 
     const driverData = drivers?.data || [];
-    const totalDrivers = drivers?.meta?.total || 0;
-    const currentPage = drivers?.meta?.current_page || 1;
-    const perPage = drivers?.meta?.per_page || 10;
-    const lastPage = drivers?.meta?.last_page || 1;
+    const totalDrivers = drivers?.total || 0;
+    const currentPage = drivers?.current_page || 1;
+    const perPage = drivers?.per_page || 10;
+    const lastPage = drivers?.last_page || 1;
 
     // Handle search
     const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -284,11 +293,10 @@ export default function DriversIndex({ drivers }: DriversIndexProps) {
                         </div>
 
                         {/* Enhanced Pagination */}
-                        {drivers.links && drivers.links.length > 3 && (
+                        {drivers.last_page > 1 && (
                             <div className="mt-6 flex items-center justify-between">
                                 <div className="text-sm text-muted-foreground">
-                                    Showing {(currentPage - 1) * perPage + 1} to{' '}
-                                    {Math.min(currentPage * perPage, totalDrivers)} of {totalDrivers} drivers
+                                    Showing {drivers.from || 1} to {drivers.to || totalDrivers} of {totalDrivers} drivers
                                 </div>
                                 <div className="flex gap-2">
                                     {/* Previous Button */}

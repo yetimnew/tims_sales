@@ -28,7 +28,18 @@ interface Status {
 interface StatusesIndexProps {
   statuses: {
     data: Status[]
-    meta: { total: number; per_page: number; current_page: number; last_page: number }
+    current_page: number
+    last_page: number
+    per_page: number
+    total: number
+    from: number
+    to: number
+    links?: {
+      first?: string
+      last?: string
+      prev?: string
+      next?: string
+    }
   }
 }
 
@@ -226,18 +237,18 @@ export default function StatusesIndex({ statuses }: StatusesIndexProps) {
         </Card>
 
         {/* Pagination */}
-        {statuses.meta && statuses.meta.last_page > 1 && (
+        {statuses.last_page > 1 && (
           <div className="flex items-center justify-between px-4 py-3 sm:px-6">
             <div className="flex flex-1 justify-between sm:hidden">
               <Link
-                href={statuses.meta.current_page > 1 ? route('statuses.index', { page: statuses.meta.current_page - 1, search, sort: sortColumn, direction: sortOrder }) : '#'}
-                className={`relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 ${statuses.meta.current_page === 1 ? 'pointer-events-none opacity-50' : ''}`}
+                href={statuses.current_page > 1 ? route('statuses.index', { page: statuses.current_page - 1, search, sort: sortColumn, direction: sortOrder }) : '#'}
+                className={`relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 ${statuses.current_page === 1 ? 'pointer-events-none opacity-50' : ''}`}
               >
                 Previous
               </Link>
               <Link
-                href={statuses.meta.current_page < statuses.meta.last_page ? route('statuses.index', { page: statuses.meta.current_page + 1, search, sort: sortColumn, direction: sortOrder }) : '#'}
-                className={`relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 ${statuses.meta.current_page === statuses.meta.last_page ? 'pointer-events-none opacity-50' : ''}`}
+                href={statuses.current_page < statuses.last_page ? route('statuses.index', { page: statuses.current_page + 1, search, sort: sortColumn, direction: sortOrder }) : '#'}
+                className={`relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 ${statuses.current_page === statuses.last_page ? 'pointer-events-none opacity-50' : ''}`}
               >
                 Next
               </Link>
@@ -245,20 +256,20 @@ export default function StatusesIndex({ statuses }: StatusesIndexProps) {
             <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm text-gray-700">
-                  Showing <span className="font-medium">{(statuses.meta.current_page - 1) * statuses.meta.per_page + 1}</span> to{' '}
-                  <span className="font-medium">{Math.min(statuses.meta.current_page * statuses.meta.per_page, statuses.meta.total)}</span> of{' '}
-                  <span className="font-medium">{statuses.meta.total}</span> results
+                  Showing <span className="font-medium">{statuses.from || 1}</span> to{' '}
+                  <span className="font-medium">{statuses.to || statuses.total}</span> of{' '}
+                  <span className="font-medium">{statuses.total}</span> results
                 </p>
               </div>
               <div>
                 <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
-                  {Array.from({ length: statuses.meta.last_page }, (_, i) => (
+                  {Array.from({ length: statuses.last_page }, (_, i) => (
                     <Link
                       key={i + 1}
                       href={route('statuses.index', { page: i + 1, search, sort: sortColumn, direction: sortOrder })}
-                      aria-current={statuses.meta.current_page === i + 1 ? 'page' : undefined}
+                      aria-current={statuses.current_page === i + 1 ? 'page' : undefined}
                       className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
-                        statuses.meta.current_page === i + 1
+                        statuses.current_page === i + 1
                           ? 'z-10 bg-primary text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary'
                           : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:outline-offset-0'
                       }`}

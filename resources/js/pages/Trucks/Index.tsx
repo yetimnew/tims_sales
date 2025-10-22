@@ -43,12 +43,12 @@ interface TruckData {
 interface TrucksIndexProps {
     trucks: {
         data: TruckData[];
-        meta?: {
-            total?: number;
-            per_page?: number;
-            current_page?: number;
-            last_page?: number;
-        };
+        current_page: number;
+        last_page: number;
+        per_page: number;
+        total: number;
+        from: number;
+        to: number;
         links?: {
             first?: string;
             last?: string;
@@ -56,9 +56,10 @@ interface TrucksIndexProps {
             next?: string;
         };
     };
+    totalCount?: number;
 }
 
-export default function TrucksIndex({ trucks }: TrucksIndexProps) {
+export default function TrucksIndex({ trucks, totalCount }: TrucksIndexProps) {
     const { hasPermission } = usePermissions();
     const [searchTerm, setSearchTerm] = React.useState('');
     const [sortBy, setSortBy] = React.useState('plate');
@@ -126,10 +127,11 @@ export default function TrucksIndex({ trucks }: TrucksIndexProps) {
         );
     };
 
-    const truckCount = trucks?.meta?.total || 0;
-    const perPage = trucks?.meta?.per_page || 15;
-    const currentPage = trucks?.meta?.current_page || 1;
-    const totalPages = trucks?.meta?.last_page || 1;
+    const truckCount = totalCount || trucks?.total || 0;
+
+    const perPage = trucks?.per_page || 15;
+    const currentPage = trucks?.current_page || 1;
+    const totalPages = trucks?.last_page || 1;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -318,7 +320,7 @@ export default function TrucksIndex({ trucks }: TrucksIndexProps) {
                         {totalPages > 1 && (
                             <div className="mt-6 flex items-center justify-between">
                                 <div className="text-sm text-muted-foreground">
-                                    Showing {Math.min((currentPage - 1) * perPage + 1, truckCount)} to {Math.min(currentPage * perPage, truckCount)} of {truckCount} trucks
+                                    Showing {trucks?.from || 1} to {trucks?.to || truckCount} of {truckCount} trucks
                                 </div>
                                 <div className="flex gap-2">
                                     <Button

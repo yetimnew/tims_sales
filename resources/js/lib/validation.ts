@@ -736,3 +736,55 @@ export function validateOutsource(data: any): ValidationErrors {
   Object.keys(errors).forEach(key => { if (!errors[key]) delete errors[key] })
   return errors
 }
+
+// ==================== ROLE VALIDATION ====================
+export const roleValidation = {
+  name: (value: string) => {
+    if (!value) return 'Role name is required'
+    if (value.length < 2) return 'Name must be at least 2 characters'
+    if (value.length > 255) return 'Name cannot exceed 255 characters'
+    return ''
+  },
+}
+
+export function validateRole(data: any): ValidationErrors {
+  const errors: ValidationErrors = {}
+  errors.name = roleValidation.name(data.name)
+  Object.keys(errors).forEach(key => { if (!errors[key]) delete errors[key] })
+  return errors
+}
+
+// ==================== USER VALIDATION ====================
+export const userValidation = {
+  name: (name: string) => {
+    if (!name) return 'Name is required'
+    if (name.length < 2) return 'Name must be at least 2 characters'
+    return ''
+  },
+  email: (email: string) => {
+    if (!email) return 'Email is required'
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) return 'Please enter a valid email address'
+    return ''
+  },
+  password: (password: string) => {
+    if (!password) return 'Password is required'
+    if (password.length < 8) return 'Password must be at least 8 characters'
+    return ''
+  },
+  password_confirmation: (password: string, confirmation: string) => {
+    if (!confirmation) return 'Password confirmation is required'
+    if (password !== confirmation) return 'Passwords do not match'
+    return ''
+  },
+}
+
+export function validateUser(data: any): ValidationErrors {
+  const errors: ValidationErrors = {}
+  errors.name = userValidation.name(data.name)
+  errors.email = userValidation.email(data.email)
+  if (data.password) errors.password = userValidation.password(data.password)
+  if (data.password_confirmation) errors.password_confirmation = userValidation.password_confirmation(data.password, data.password_confirmation)
+  Object.keys(errors).forEach(key => { if (!errors[key]) delete errors[key] })
+  return errors
+}

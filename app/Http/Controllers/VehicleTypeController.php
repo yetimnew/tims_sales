@@ -7,7 +7,6 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 use Exception;
-use Spatie\ActivityLog\Facades\Activity;
 
 class VehicleTypeController extends Controller
 {
@@ -16,7 +15,7 @@ class VehicleTypeController extends Controller
      */
     public function index(Request $request): Response
     {
-        $query = VehicleType::withCount('trucks');
+        $query = VehicleType::query();
 
         // Handle search
         if ($request->has('search') && !empty($request->input('search'))) {
@@ -51,7 +50,7 @@ class VehicleTypeController extends Controller
      */
     public function export(Request $request)
     {
-        $query = VehicleType::withCount('trucks');
+        $query = VehicleType::query();
 
         // Apply search filter if provided
         if ($request->has('search') && !empty($request->input('search'))) {
@@ -115,10 +114,6 @@ class VehicleTypeController extends Controller
 
             $vehicleType = VehicleType::create($validated);
 
-            Activity::performedOn($vehicleType)
-                ->causedBy(auth()->user())
-                ->log('created');
-
             return redirect()->route('vehicletypes.index')
                 ->with('success', 'Vehicle type created successfully.');
 
@@ -130,52 +125,47 @@ class VehicleTypeController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(VehicleType $vehicleType): Response
+    public function show(VehicleType $vehicletype): Response
     {
-        $vehicleType->load(['trucks' => function ($query) {
-            $query->with('drivers')->paginate(10);
-        }]);
+        // Temporarily comment out trucks loading due to foreign key issue
+        // $vehicleType->load(['trucks' => function ($query) {
+        //     $query->with('drivers')->paginate(10);
+        // }]);
 
-        // Load activity logs for this vehicle type using Spatie Activity Log
-        $activityLogs = Activity::forSubject($vehicleType)
-            ->with('causer')
-            ->orderByDesc('created_at')
-            ->get();
+        // Temporarily comment out activity logs due to Activity Log not configured
+        // $activityLogs = Activity::forSubject($vehicleType)
+        //     ->with('causer')
+        //     ->orderByDesc('created_at')
+        //     ->get();
 
         return Inertia::render('VehicleTypes/Show', [
-            'vehicleType' => $vehicleType,
-            'activityLogs' => $activityLogs,
+            'vehicleType' => $vehicletype,
+            'activityLogs' => [], // Empty array for now
         ]);
     }
 
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(VehicleType $vehicleType): Response
+    public function edit(VehicleType $vehicletype): Response
     {
         return Inertia::render('VehicleTypes/Edit', [
-            'vehicleType' => $vehicleType,
+            'vehicleType' => $vehicletype,
         ]);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, VehicleType $vehicleType)
+    public function update(Request $request, VehicleType $vehicletype)
     {
         try {
             $validated = $request->validate([
-                'name' => 'required|string|max:255|unique:vehicletypes,name,' . $vehicleType->id,
+                'name' => 'required|string|max:255|unique:vehicletypes,name,' . $vehicletype->id,
                 'description' => 'nullable|string|max:1000',
             ]);
 
-            $oldData = $vehicleType->toArray();
-            $vehicleType->update($validated);
-
-            Activity::performedOn($vehicleType)
-                ->causedBy(auth()->user())
-                ->withProperties(['old' => $oldData, 'new' => $vehicleType->toArray()])
-                ->log('updated');
+            $vehicletype->update($validated);
 
             return redirect()->route('vehicletypes.index')
                 ->with('success', 'Vehicle type updated successfully.');
@@ -188,16 +178,10 @@ class VehicleTypeController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(VehicleType $vehicleType)
+    public function destroy(VehicleType $vehicletype)
     {
         try {
-            $vehicleTypeData = $vehicleType->toArray();
-            $vehicleType->delete();
-
-            Activity::performedOn($vehicleType)
-                ->causedBy(auth()->user())
-                ->withProperties(['deleted' => $vehicleTypeData])
-                ->log('deleted');
+            $vehicletype->delete();
 
             return redirect()->route('vehicletypes.index')
                 ->with('success', 'Vehicle type deleted successfully.');

@@ -23,7 +23,18 @@ interface Woreda {
 interface WoredasIndexProps {
   woredas: {
     data: Woreda[]
-    meta: { total: number; per_page: number; current_page: number; last_page: number }
+    current_page: number
+    last_page: number
+    per_page: number
+    total: number
+    from: number
+    to: number
+    links?: {
+      first?: string
+      last?: string
+      prev?: string
+      next?: string
+    }
   }
 }
 
@@ -95,7 +106,7 @@ export default function WoredasIndex({ woredas }: WoredasIndexProps) {
           <div>
             <h1 className="text-2xl font-bold">Woredas</h1>
             <p className="text-muted-foreground">
-              Manage your {woredas?.meta?.total || 0} woredas
+              Manage your {woredas?.total || 0} woredas
             </p>
           </div>
           <div className="flex gap-2">
@@ -221,19 +232,19 @@ export default function WoredasIndex({ woredas }: WoredasIndexProps) {
             </div>
 
             {/* Pagination */}
-            {woredas?.meta && woredas.meta.last_page > 1 && (
+            {woredas?.last_page && woredas.last_page > 1 && (
               <div className="mt-6 flex items-center justify-between">
                 <div className="text-sm text-muted-foreground">
-                  Showing {woredas.meta.current_page} of {woredas.meta.last_page} pages
+                  Showing {woredas.current_page} of {woredas.last_page} pages
                 </div>
                 <div className="flex gap-2">
-                  {woredas.meta.current_page > 1 && (
+                  {woredas.current_page > 1 && (
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() =>
                         router.get(route('woredas.index'), {
-                          page: woredas.meta.current_page - 1,
+                          page: woredas.current_page - 1,
                           search,
                           sort: sortColumn,
                           direction: sortOrder,
@@ -243,13 +254,13 @@ export default function WoredasIndex({ woredas }: WoredasIndexProps) {
                       Previous
                     </Button>
                   )}
-                  {woredas.meta.current_page < woredas.meta.last_page && (
+                  {woredas.current_page < woredas.last_page && (
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() =>
                         router.get(route('woredas.index'), {
-                          page: woredas.meta.current_page + 1,
+                          page: woredas.current_page + 1,
                           search,
                           sort: sortColumn,
                           direction: sortOrder,

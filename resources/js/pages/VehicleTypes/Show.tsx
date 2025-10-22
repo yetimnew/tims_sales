@@ -41,7 +41,7 @@ interface VehicleType {
     description?: string;
     created_at: string;
     updated_at: string;
-    trucks: {
+    trucks?: {
         data: TruckData[];
     };
 }
@@ -197,7 +197,7 @@ export default function VehicleTypesShow({ vehicleType, activityLogs = [] }: Veh
                                     </div>
                                     <div className="rounded-lg bg-muted p-4">
                                         <p className="text-sm font-medium text-muted-foreground">Associated Trucks</p>
-                                        <p className="mt-2 text-lg font-bold">{vehicleType.trucks.data.length}</p>
+                                        <p className="mt-2 text-lg font-bold">{vehicleType.trucks?.data?.length || 0}</p>
                                     </div>
                                 </div>
                             </CardContent>
@@ -210,14 +210,14 @@ export default function VehicleTypesShow({ vehicleType, activityLogs = [] }: Veh
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <Truck className="h-5 w-5" />
-                            Associated Trucks ({vehicleType.trucks.data.length})
+                            Associated Trucks ({vehicleType.trucks?.data?.length || 0})
                         </CardTitle>
                         <CardDescription>Trucks using this vehicle type</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        {vehicleType.trucks.data.length > 0 ? (
+                        {(vehicleType.trucks?.data?.length || 0) > 0 ? (
                             <div className="space-y-4">
-                                {vehicleType.trucks.data.map((truck) => (
+                                {vehicleType.trucks?.data?.map((truck) => (
                                     <div key={truck.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
                                         <div className="space-y-1">
                                             <Link href={`/trucks/${truck.id}`} className="font-medium text-blue-600 hover:underline dark:text-blue-400">

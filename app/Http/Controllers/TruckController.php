@@ -72,6 +72,7 @@ class TruckController extends Controller
 
         return Inertia::render('Trucks/Index', [
             'trucks' => $trucks,
+            'totalCount' => $trucks->total(),
         ]);
     }
 
@@ -95,10 +96,10 @@ class TruckController extends Controller
         try {
             $truck = Truck::create($request->validated());
 
-            // Log activity using Spatie Activity Log
-            Activity::performedOn($truck)
-                ->causedBy(auth()->user())
-                ->log('created');
+        // Log activity using Spatie Activity Log
+        Activity::performedOn($truck)
+            ->causedBy(auth()->user())
+            ->log('created');
 
             return redirect()->route('trucks.index')
                 ->with('success', 'Truck created successfully.');
@@ -149,11 +150,11 @@ class TruckController extends Controller
             $oldData = $truck->toArray();
             $truck->update($request->validated());
 
-            // Log activity using Spatie Activity Log
-            Activity::performedOn($truck)
-                ->causedBy(auth()->user())
-                ->withProperties(['old' => $oldData, 'new' => $truck->toArray()])
-                ->log('updated');
+        // Log activity using Spatie Activity Log
+        Activity::performedOn($truck)
+            ->causedBy(auth()->user())
+            ->withProperties(['old' => $oldData, 'new' => $truck->toArray()])
+            ->log('updated');
 
             return redirect()->route('trucks.index')
                 ->with('success', 'Truck updated successfully.');

@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useToast } from '@/hooks/use-toast'
 import AppLayout from '@/layouts/app-layout'
 import { CircleAlert } from 'lucide-react'
+import { validateUser, type ValidationErrors } from '@/lib/validation'
 
 interface User {
   id: number
@@ -44,40 +45,27 @@ export default function UsersEdit({ user }: UserEditProps) {
     }
   }, [errors])
 
+  const validateField = (field: string, value: string) => {
+    const validationData = { ...data, [field]: value }
+    const fieldErrors = validateUser(validationData)
+    const error = fieldErrors[field as keyof ValidationErrors] || ''
+
+    setFrontendErrors(prev => ({
+      ...prev,
+      [field]: error
+    }))
+  }
+
   const handleFieldChange = (field: string, value: string) => {
     setData(field as keyof UserFormData, value)
-    if (frontendErrors[field]) {
-      setFrontendErrors(prev => {
-        const updated = { ...prev }
-        delete updated[field]
-        return updated
-      })
-    }
+    validateField(field, value)
   }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
-    // Basic validation
-    const validationErrors: Record<string, string> = {}
-
-    if (!data.name.trim()) {
-      validationErrors.name = 'Name is required'
-    }
-
-    if (!data.email.trim()) {
-      validationErrors.email = 'Email is required'
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
-      validationErrors.email = 'Invalid email format'
-    }
-
-    if (data.password && data.password.length < 8) {
-      validationErrors.password = 'Password must be at least 8 characters'
-    }
-
-    if (data.password && data.password !== data.password_confirmation) {
-      validationErrors.password_confirmation = 'Passwords do not match'
-    }
+    // Frontend validation
+    const validationErrors = validateUser(data)
 
     if (Object.keys(validationErrors).length > 0) {
       setFrontendErrors(validationErrors)

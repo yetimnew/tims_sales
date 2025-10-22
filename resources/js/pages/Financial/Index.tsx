@@ -31,7 +31,18 @@ interface FinancialRecord {
 interface FinancialIndexProps {
   financialRecords: {
     data: FinancialRecord[]
-    meta: { total: number; per_page: number; current_page: number; last_page: number }
+    current_page: number
+    last_page: number
+    per_page: number
+    total: number
+    from: number
+    to: number
+    links?: {
+      first?: string
+      last?: string
+      prev?: string
+      next?: string
+    }
   }
 }
 
@@ -122,7 +133,7 @@ export default function FinancialIndex({ financialRecords }: FinancialIndexProps
           <div>
             <h1 className="text-2xl font-bold">Financial Records</h1>
             <p className="text-muted-foreground">
-              Manage your {financialRecords?.meta?.total || 0} financial records
+              Manage your {financialRecords?.total || 0} financial records
             </p>
           </div>
           <div className="flex gap-2">
@@ -253,19 +264,19 @@ export default function FinancialIndex({ financialRecords }: FinancialIndexProps
               </Table>
             </div>
 
-            {financialRecords?.meta && financialRecords.meta.last_page > 1 && (
+            {financialRecords?.last_page && financialRecords.last_page > 1 && (
               <div className="mt-6 flex items-center justify-between">
                 <div className="text-sm text-muted-foreground">
-                  Showing {financialRecords.meta.current_page} of {financialRecords.meta.last_page} pages
+                  Showing {financialRecords.current_page} of {financialRecords.last_page} pages
                 </div>
                 <div className="flex gap-2">
-                  {financialRecords.meta.current_page > 1 && (
+                  {financialRecords.current_page > 1 && (
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() =>
                         router.get(route('financial.index'), {
-                          page: financialRecords.meta.current_page - 1,
+                          page: financialRecords.current_page - 1,
                           search,
                           sort: sortColumn,
                           direction: sortOrder,
@@ -275,13 +286,13 @@ export default function FinancialIndex({ financialRecords }: FinancialIndexProps
                       Previous
                     </Button>
                   )}
-                  {financialRecords.meta.current_page < financialRecords.meta.last_page && (
+                  {financialRecords.current_page < financialRecords.last_page && (
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() =>
                         router.get(route('financial.index'), {
-                          page: financialRecords.meta.current_page + 1,
+                          page: financialRecords.current_page + 1,
                           search,
                           sort: sortColumn,
                           direction: sortOrder,

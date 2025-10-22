@@ -10,7 +10,6 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 use Exception;
-use Spatie\ActivityLog\Facades\Activity;
 
 class MaintenanceController extends Controller
 {
@@ -187,10 +186,6 @@ class MaintenanceController extends Controller
                 $validated
             );
 
-            Activity::performedOn($maintenance)
-                ->causedBy(auth()->user())
-                ->log('created');
-
             return redirect()->route('maintenance.index')
                 ->with('success', 'Maintenance scheduled successfully.');
 
@@ -220,13 +215,7 @@ class MaintenanceController extends Controller
                 'assigned_mechanic_id' => 'nullable|exists:users,id',
             ]);
 
-            $oldData = $maintenance->toArray();
             $maintenance->update($validated);
-
-            Activity::performedOn($maintenance)
-                ->causedBy(auth()->user())
-                ->withProperties(['old' => $oldData, 'new' => $maintenance->toArray()])
-                ->log('updated');
 
             return redirect()->route('maintenance.index')
                 ->with('success', 'Maintenance record updated successfully.');
@@ -267,13 +256,7 @@ class MaintenanceController extends Controller
     public function destroy(VehicleMaintenanceRecord $maintenance)
     {
         try {
-            $maintenanceData = $maintenance->toArray();
             $maintenance->delete();
-
-            Activity::performedOn($maintenance)
-                ->causedBy(auth()->user())
-                ->withProperties(['deleted' => $maintenanceData])
-                ->log('deleted');
 
             return redirect()->route('maintenance.index')
                 ->with('success', 'Maintenance record deleted successfully.');

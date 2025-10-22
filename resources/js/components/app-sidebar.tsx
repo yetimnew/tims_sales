@@ -41,6 +41,9 @@ import AppLogo from './app-logo';
 
 const getMainNavItems = (): NavItem[] => {
     try {
+        // Get current URL for active state detection
+        const currentUrl = window.location.pathname;
+
         return [
             {
                 title: 'Dashboard',
@@ -50,6 +53,7 @@ const getMainNavItems = (): NavItem[] => {
             {
                 title: 'Fleet Management',
                 icon: Truck,
+                isActive: currentUrl.startsWith('/trucks') || currentUrl.startsWith('/drivers') || currentUrl.startsWith('/vehicletypes') || currentUrl.startsWith('/maintenance') || currentUrl.startsWith('/fuel') || currentUrl.startsWith('/driver-performance') || currentUrl.startsWith('/driver-safety') || currentUrl.startsWith('/cargo-types'),
                 items: [
                     {
                         title: 'Trucks',
@@ -96,6 +100,7 @@ const getMainNavItems = (): NavItem[] => {
             {
                 title: 'Financial Management',
                 icon: DollarSign,
+                isActive: currentUrl.startsWith('/financial') || currentUrl.startsWith('/route-plans'),
                 items: [
                     {
                         title: 'Financial Records',
@@ -112,6 +117,7 @@ const getMainNavItems = (): NavItem[] => {
             {
                 title: 'Operations',
                 icon: Activity,
+                isActive: currentUrl.startsWith('/operations') || currentUrl.startsWith('/performances') || currentUrl.startsWith('/customers'),
                 items: [
                     {
                         title: 'Operations',
@@ -133,6 +139,7 @@ const getMainNavItems = (): NavItem[] => {
             {
                 title: 'Geographic Management',
                 icon: Globe,
+                isActive: currentUrl.startsWith('/regions') || currentUrl.startsWith('/zones') || currentUrl.startsWith('/woredas') || currentUrl.startsWith('/places') || currentUrl.startsWith('/distances'),
                 items: [
                     {
                         title: 'Regions',
@@ -164,6 +171,7 @@ const getMainNavItems = (): NavItem[] => {
             {
                 title: 'Status Management',
                 icon: Settings,
+                isActive: currentUrl.startsWith('/statustypes') || currentUrl.startsWith('/statuses'),
                 items: [
                     {
                         title: 'Status Types',
@@ -180,6 +188,7 @@ const getMainNavItems = (): NavItem[] => {
             {
                 title: 'Outsourcing',
                 icon: UserCheck,
+                isActive: currentUrl.startsWith('/outsources') || currentUrl.startsWith('/outsource-performances'),
                 items: [
                     {
                         title: 'Outsources',
@@ -196,6 +205,7 @@ const getMainNavItems = (): NavItem[] => {
             {
                 title: 'Reports',
                 icon: FileText,
+                isActive: currentUrl.startsWith('/reports'),
                 items: [
                     {
                         title: 'Truck Reports',
@@ -232,6 +242,7 @@ const getMainNavItems = (): NavItem[] => {
             {
                 title: 'User Management',
                 icon: Shield,
+                isActive: currentUrl.startsWith('/users') || currentUrl.startsWith('/roles') || currentUrl.startsWith('/permissions'),
                 items: [
                     {
                         title: 'Users',
@@ -294,10 +305,9 @@ export function AppSidebar({ className }: AppSidebarProps) {
                     <NavMain items={getMainNavItems()} />
                 </SidebarContent>
 
-                {/* <SidebarFooter>
-                    <NavFooter items={footerNavItems} className="mt-auto" />
+                <SidebarFooter>
                     <NavUser />
-                </SidebarFooter> */}
+                </SidebarFooter>
             </Sidebar>
         );
     } catch (error) {

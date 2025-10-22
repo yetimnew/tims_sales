@@ -20,7 +20,18 @@ interface StatusType {
 interface StatusTypesIndexProps {
   statusTypes: {
     data: StatusType[]
-    meta: { total: number; per_page: number; current_page: number; last_page: number }
+    current_page: number
+    last_page: number
+    per_page: number
+    total: number
+    from: number
+    to: number
+    links?: {
+      first?: string
+      last?: string
+      prev?: string
+      next?: string
+    }
   }
 }
 
@@ -182,18 +193,18 @@ export default function StatusTypesIndex({ statusTypes }: StatusTypesIndexProps)
         </Card>
 
         {/* Pagination */}
-        {statusTypes.meta && statusTypes.meta.last_page > 1 && (
+        {statusTypes.last_page > 1 && (
           <div className="flex items-center justify-between px-4 py-3 sm:px-6">
             <div className="flex flex-1 justify-between sm:hidden">
               <Link
-                href={statusTypes.meta.current_page > 1 ? route('status-types.index', { page: statusTypes.meta.current_page - 1, search, sort: sortColumn, direction: sortOrder }) : '#'}
-                className={`relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 ${statusTypes.meta.current_page === 1 ? 'pointer-events-none opacity-50' : ''}`}
+                href={statusTypes.current_page > 1 ? route('status-types.index', { page: statusTypes.current_page - 1, search, sort: sortColumn, direction: sortOrder }) : '#'}
+                className={`relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 ${statusTypes.current_page === 1 ? 'pointer-events-none opacity-50' : ''}`}
               >
                 Previous
               </Link>
               <Link
-                href={statusTypes.meta.current_page < statusTypes.meta.last_page ? route('status-types.index', { page: statusTypes.meta.current_page + 1, search, sort: sortColumn, direction: sortOrder }) : '#'}
-                className={`relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 ${statusTypes.meta.current_page === statusTypes.meta.last_page ? 'pointer-events-none opacity-50' : ''}`}
+                href={statusTypes.current_page < statusTypes.last_page ? route('status-types.index', { page: statusTypes.current_page + 1, search, sort: sortColumn, direction: sortOrder }) : '#'}
+                className={`relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 ${statusTypes.current_page === statusTypes.last_page ? 'pointer-events-none opacity-50' : ''}`}
               >
                 Next
               </Link>
@@ -201,20 +212,20 @@ export default function StatusTypesIndex({ statusTypes }: StatusTypesIndexProps)
             <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm text-gray-700">
-                  Showing <span className="font-medium">{(statusTypes.meta.current_page - 1) * statusTypes.meta.per_page + 1}</span> to{' '}
-                  <span className="font-medium">{Math.min(statusTypes.meta.current_page * statusTypes.meta.per_page, statusTypes.meta.total)}</span> of{' '}
-                  <span className="font-medium">{statusTypes.meta.total}</span> results
+                  Showing <span className="font-medium">{statusTypes.from || 1}</span> to{' '}
+                  <span className="font-medium">{statusTypes.to || statusTypes.total}</span> of{' '}
+                  <span className="font-medium">{statusTypes.total}</span> results
                 </p>
               </div>
               <div>
                 <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
-                  {Array.from({ length: statusTypes.meta.last_page }, (_, i) => (
+                  {Array.from({ length: statusTypes.last_page }, (_, i) => (
                     <Link
                       key={i + 1}
                       href={route('status-types.index', { page: i + 1, search, sort: sortColumn, direction: sortOrder })}
-                      aria-current={statusTypes.meta.current_page === i + 1 ? 'page' : undefined}
+                      aria-current={statusTypes.current_page === i + 1 ? 'page' : undefined}
                       className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
-                        statusTypes.meta.current_page === i + 1
+                        statusTypes.current_page === i + 1
                           ? 'z-10 bg-primary text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary'
                           : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:outline-offset-0'
                       }`}

@@ -29,7 +29,18 @@ interface FuelRecord {
 interface FuelIndexProps {
   fuelRecords: {
     data: FuelRecord[]
-    meta: { total: number; per_page: number; current_page: number; last_page: number }
+    current_page: number
+    last_page: number
+    per_page: number
+    total: number
+    from: number
+    to: number
+    links?: {
+      first?: string
+      last?: string
+      prev?: string
+      next?: string
+    }
   }
 }
 
@@ -114,7 +125,7 @@ export default function FuelIndex({ fuelRecords }: FuelIndexProps) {
           <div>
             <h1 className="text-2xl font-bold">Fuel Records</h1>
             <p className="text-muted-foreground">
-              Manage your {fuelRecords?.meta?.total || 0} fuel records
+              Manage your {fuelRecords?.total || 0} fuel records
             </p>
           </div>
           <div className="flex gap-2">
@@ -238,19 +249,19 @@ export default function FuelIndex({ fuelRecords }: FuelIndexProps) {
               </Table>
             </div>
 
-            {fuelRecords?.meta && fuelRecords.meta.last_page > 1 && (
+            {fuelRecords?.last_page && fuelRecords.last_page > 1 && (
               <div className="mt-6 flex items-center justify-between">
                 <div className="text-sm text-muted-foreground">
-                  Showing {fuelRecords.meta.current_page} of {fuelRecords.meta.last_page} pages
+                  Showing {fuelRecords.current_page} of {fuelRecords.last_page} pages
                 </div>
                 <div className="flex gap-2">
-                  {fuelRecords.meta.current_page > 1 && (
+                  {fuelRecords.current_page > 1 && (
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() =>
                         router.get(route('fuel.index'), {
-                          page: fuelRecords.meta.current_page - 1,
+                          page: fuelRecords.current_page - 1,
                           search,
                           sort: sortColumn,
                           direction: sortOrder,
@@ -260,13 +271,13 @@ export default function FuelIndex({ fuelRecords }: FuelIndexProps) {
                       Previous
                     </Button>
                   )}
-                  {fuelRecords.meta.current_page < fuelRecords.meta.last_page && (
+                  {fuelRecords.current_page < fuelRecords.last_page && (
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() =>
                         router.get(route('fuel.index'), {
-                          page: fuelRecords.meta.current_page + 1,
+                          page: fuelRecords.current_page + 1,
                           search,
                           sort: sortColumn,
                           direction: sortOrder,

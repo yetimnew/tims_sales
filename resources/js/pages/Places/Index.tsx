@@ -24,7 +24,18 @@ interface Place {
 interface PlacesIndexProps {
   places: {
     data: Place[]
-    meta: { total: number; per_page: number; current_page: number; last_page: number }
+    current_page: number
+    last_page: number
+    per_page: number
+    total: number
+    from: number
+    to: number
+    links?: {
+      first?: string
+      last?: string
+      prev?: string
+      next?: string
+    }
   }
 }
 
@@ -92,7 +103,7 @@ export default function PlacesIndex({ places }: PlacesIndexProps) {
           <div>
             <h1 className="text-2xl font-bold">Places</h1>
             <p className="text-muted-foreground">
-              Manage your {places?.meta?.total || 0} places
+              Manage your {places?.total || 0} places
             </p>
           </div>
           <div className="flex gap-2">
@@ -214,19 +225,19 @@ export default function PlacesIndex({ places }: PlacesIndexProps) {
               </Table>
             </div>
 
-            {places?.meta && places.meta.last_page > 1 && (
+            {places?.last_page && places.last_page > 1 && (
               <div className="mt-6 flex items-center justify-between">
                 <div className="text-sm text-muted-foreground">
-                  Showing {places.meta.current_page} of {places.meta.last_page} pages
+                  Showing {places.current_page} of {places.last_page} pages
                 </div>
                 <div className="flex gap-2">
-                  {places.meta.current_page > 1 && (
+                  {places.current_page > 1 && (
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() =>
                         router.get(route('places.index'), {
-                          page: places.meta.current_page - 1,
+                          page: places.current_page - 1,
                           search,
                           sort: sortColumn,
                           direction: sortOrder,
@@ -236,13 +247,13 @@ export default function PlacesIndex({ places }: PlacesIndexProps) {
                       Previous
                     </Button>
                   )}
-                  {places.meta.current_page < places.meta.last_page && (
+                  {places.current_page < places.last_page && (
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() =>
                         router.get(route('places.index'), {
-                          page: places.meta.current_page + 1,
+                          page: places.current_page + 1,
                           search,
                           sort: sortColumn,
                           direction: sortOrder,

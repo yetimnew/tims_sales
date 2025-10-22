@@ -26,7 +26,18 @@ interface RegionOption {
 interface ZonesIndexProps {
   zones: {
     data: Zone[]
-    meta: { total: number; per_page: number; current_page: number; last_page: number }
+    current_page: number
+    last_page: number
+    per_page: number
+    total: number
+    from: number
+    to: number
+    links?: {
+      first?: string
+      last?: string
+      prev?: string
+      next?: string
+    }
   }
   regions: RegionOption[]
 }
