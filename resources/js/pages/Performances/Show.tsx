@@ -162,11 +162,11 @@ export default function PerformancesShow({ performance, activityLogs = [] }: Per
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
                                             <p className="text-sm font-medium text-muted-foreground">Distance with Cargo (km)</p>
-                                            <p className="mt-1 text-sm">{performance.DistanceWCargo?.toFixed(2) || 'N/A'}</p>
+                                            <p className="mt-1 text-sm">{performance.DistanceWCargo ? Number(performance.DistanceWCargo).toFixed(2) : 'N/A'}</p>
                                         </div>
                                         <div>
                                             <p className="text-sm font-medium text-muted-foreground">Distance without Cargo (km)</p>
-                                            <p className="mt-1 text-sm">{performance.DistanceWOCargo?.toFixed(2) || 'N/A'}</p>
+                                            <p className="mt-1 text-sm">{performance.DistanceWOCargo ? Number(performance.DistanceWOCargo).toFixed(2) : 'N/A'}</p>
                                         </div>
                                     </div>
 
@@ -174,11 +174,11 @@ export default function PerformancesShow({ performance, activityLogs = [] }: Per
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
                                                 <p className="text-sm font-medium text-muted-foreground">Cargo Volume (MT)</p>
-                                                <p className="mt-1 text-sm">{performance.CargoVolumMT?.toFixed(2) || 'N/A'}</p>
+                                                <p className="mt-1 text-sm">{performance.CargoVolumMT ? Number(performance.CargoVolumMT).toFixed(2) : 'N/A'}</p>
                                             </div>
                                             <div>
                                                 <p className="text-sm font-medium text-muted-foreground">Ton-KM</p>
-                                                <p className="mt-1 text-sm">{performance.tonkm?.toFixed(2) || 'N/A'}</p>
+                                                <p className="mt-1 text-sm">{performance.tonkm ? Number(performance.tonkm).toFixed(2) : 'N/A'}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -197,11 +197,11 @@ export default function PerformancesShow({ performance, activityLogs = [] }: Per
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
                                             <p className="text-sm font-medium text-muted-foreground">Fuel (Liters)</p>
-                                            <p className="mt-1 text-sm">{performance.fuelInLitter?.toFixed(2) || 'N/A'}</p>
+                                            <p className="mt-1 text-sm">{performance.fuelInLitter ? Number(performance.fuelInLitter).toFixed(2) : 'N/A'}</p>
                                         </div>
                                         <div>
                                             <p className="text-sm font-medium text-muted-foreground">Fuel Cost (Birr)</p>
-                                            <p className="mt-1 text-sm font-semibold">{performance.fuelInBirr?.toFixed(2) || 'N/A'}</p>
+                                            <p className="mt-1 text-sm font-semibold">{performance.fuelInBirr ? Number(performance.fuelInBirr).toFixed(2) : 'N/A'}</p>
                                         </div>
                                     </div>
 
@@ -209,11 +209,11 @@ export default function PerformancesShow({ performance, activityLogs = [] }: Per
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
                                                 <p className="text-sm font-medium text-muted-foreground">Per Diem (Birr)</p>
-                                                <p className="mt-1 text-sm">{performance.perdiem?.toFixed(2) || 'N/A'}</p>
+                                                <p className="mt-1 text-sm">{performance.perdiem ? Number(performance.perdiem).toFixed(2) : 'N/A'}</p>
                                             </div>
                                             <div>
                                                 <p className="text-sm font-medium text-muted-foreground">Other Costs (Birr)</p>
-                                                <p className="mt-1 text-sm">{performance.other?.toFixed(2) || 'N/A'}</p>
+                                                <p className="mt-1 text-sm">{performance.other ? Number(performance.other).toFixed(2) : 'N/A'}</p>
                                             </div>
                                         </div>
                                     </div>

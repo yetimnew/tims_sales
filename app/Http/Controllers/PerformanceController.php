@@ -11,6 +11,8 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 use Spatie\Activitylog\Models\Activity;
+use Exception;
+use Illuminate\Support\Facades\Auth;
 
 class PerformanceController extends Controller
 {
@@ -327,6 +329,47 @@ class PerformanceController extends Controller
             'Content-Type' => 'text/csv',
             'Content-Disposition' => 'attachment; filename="' . $filename . '"',
         ]);
+    }
+
+    /**
+     * Deactivate the specified performance.
+     */
+    public function deactivate(Performance $performance)
+    {
+        try {
+            $performance->update(['satus' => 'inactive']);
+
+            return redirect()->route('performances.index')
+                ->with('success', 'Performance deactivated successfully.');
+
+        } catch (Exception $e) {
+            return back()->withErrors(['error' => 'Failed to deactivate performance. Please try again.']);
+        }
+    }
+
+    /**
+     * Get active performances.
+     */
+    public function activePerformances()
+    {
+        try {
+            $activePerformances = Performance::where('satus', 'active')
+                ->with(['operation.customer', 'driverTruck.driver', 'driverTruck.truck', 'origin', 'destination'])
+                ->orderBy('trip')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $activePerformances,
+                'count' => $activePerformances->count()
+            ]);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve active performances'
+            ], 500);
+        }
     }
 }
 

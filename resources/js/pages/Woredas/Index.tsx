@@ -1,293 +1,346 @@
-import { useState, useMemo } from 'react'
-import { Link, router } from '@inertiajs/react'
-import { Eye, Trash2, SquarePen, Plus, Search, Download } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog'
-import { useToast } from '@/hooks/use-toast'
-import { usePermissions } from '@/hooks/use-permissions'
-import AppLayout from '@/layouts/app-layout'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
+import AppLayout from '@/layouts/app-layout';
+import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
+import { usePermissions } from '@/hooks/use-permissions';
+import { Head, Link, router } from '@inertiajs/react';
+import { type BreadcrumbItem } from '@/types';
+import { Plus, Eye, Edit, Trash2, Search, ArrowUpDown, ChevronLeft, ChevronRight, FileDown } from 'lucide-react';
+import * as React from 'react';
 
-interface Woreda {
-  id: number
-  name: string
-  code?: string
-  zone_id: number
-  zone?: { name: string }
-  places_count?: number
-  created_at: string
+const breadcrumbs: BreadcrumbItem[] = [
+    {
+        title: 'Woredas',
+        href: '/woredas',
+    },
+];
+
+interface WoredaData {
+    id: number;
+    name: string;
+    zone?: {
+        name: string;
+        region?: {
+            name: string;
+        };
+    };
+    created_at?: string;
 }
 
 interface WoredasIndexProps {
-  woredas: {
-    data: Woreda[]
-    current_page: number
-    last_page: number
-    per_page: number
-    total: number
-    from: number
-    to: number
-    links?: {
-      first?: string
-      last?: string
-      prev?: string
-      next?: string
-    }
-  }
+    woredas: {
+        data: WoredaData[];
+        current_page: number;
+        last_page: number;
+        per_page: number;
+        total: number;
+        from: number;
+        to: number;
+        links?: {
+            first?: string;
+            last?: string;
+            prev?: string;
+            next?: string;
+        };
+    };
+    totalCount?: number;
 }
 
-export default function WoredasIndex({ woredas }: WoredasIndexProps) {
-  const { toast } = useToast()
-  const { hasPermission } = usePermissions()
-  const [search, setSearch] = useState('')
-  const [sortColumn, setSortColumn] = useState('name')
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
-  const [deleteConfirmation, setDeleteConfirmation] = useState<{ id: number; name: string } | null>(null)
+export default function WoredasIndex({ woredas, totalCount }: WoredasIndexProps) {
+    const { hasPermission } = usePermissions();
+    const [searchTerm, setSearchTerm] = React.useState('');
+    const [sortBy, setSortBy] = React.useState('name');
+    const [sortDirection, setSortDirection] = React.useState('asc');
+    const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+    const [selectedWoreda, setSelectedWoreda] = React.useState<WoredaData | null>(null);
+    const [isDeleting, setIsDeleting] = React.useState(false);
 
-  const handleSort = (column: string) => {
-    if (sortColumn === column) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
-    } else {
-      setSortColumn(column)
-      setSortOrder('asc')
-    }
+    const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setSearchTerm(value);
 
-    router.get(
-      route('woredas.index'),
-      { search, sort: column, direction: sortColumn === column ? (sortOrder === 'asc' ? 'desc' : 'asc') : 'asc' },
-      { preserveState: true, preserveScroll: true }
-    )
-  }
+        router.get('/woredas',
+            { search: value, sort: sortBy, direction: sortDirection },
+            { preserveState: false }
+        );
+    };
 
-  const handleSearch = (value: string) => {
-    setSearch(value)
-    router.get(
-      route('woredas.index'),
-      { search: value, sort: sortColumn, direction: sortOrder },
-      { preserveState: true, preserveScroll: true }
-    )
-  }
+    const handleSort = (column: string) => {
+        let newDirection = 'asc';
+        if (sortBy === column && sortDirection === 'asc') {
+            newDirection = 'desc';
+        }
 
-  const handleExport = () => {
-    window.location.href = route('woredas.export', { search, sort: sortColumn, direction: sortOrder })
-  }
+        setSortBy(column);
+        setSortDirection(newDirection);
 
-  const handleDelete = (woreda: Woreda) => {
-    setDeleteConfirmation({ id: woreda.id, name: woreda.name })
-  }
+        router.get('/woredas',
+            { search: searchTerm, sort: column, direction: newDirection },
+            { preserveState: false }
+        );
+    };
 
-  const confirmDelete = () => {
-    if (!deleteConfirmation) return
-    router.delete(route('woredas.destroy', deleteConfirmation.id), {
-      onSuccess: () => {
-        toast({ title: 'Success', description: 'Woreda deleted successfully', variant: 'success' })
-        setDeleteConfirmation(null)
-      },
-      onError: () => {
-        toast({ title: 'Error', description: 'Failed to delete woreda', variant: 'destructive' })
-      },
-    })
-  }
+    const handleDeleteClick = (woreda: WoredaData) => {
+        setSelectedWoreda(woreda);
+        setDeleteDialogOpen(true);
+    };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    })
-  }
+    const handleDeleteConfirm = () => {
+        if (!selectedWoreda) return;
 
-  return (
-    <>
-      <div className="flex h-full flex-1 flex-col gap-6 overflow-hidden rounded-xl p-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Woredas</h1>
-            <p className="text-muted-foreground">
-              Manage your {woredas?.total || 0} woredas
-            </p>
-          </div>
-          <div className="flex gap-2">
-            {hasPermission('woredas.export') && (
-              <Button onClick={handleExport} variant="outline">
-                <Download className="mr-2 h-4 w-4" />
-                Export CSV
-              </Button>
-            )}
-            {hasPermission('woredas.create') && (
-              <Button asChild>
-                <Link href={route('woredas.create')}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Woreda
-                </Link>
-              </Button>
-            )}
-          </div>
-        </div>
+        setIsDeleting(true);
+        router.delete(`/woredas/${selectedWoreda.id}`, {
+            onSuccess: () => {
+                setDeleteDialogOpen(false);
+                setSelectedWoreda(null);
+                setIsDeleting(false);
+            },
+            onError: () => {
+                setIsDeleting(false);
+            },
+        });
+    };
 
-        <Card className="flex flex-1 flex-col overflow-hidden">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-            <div className="relative w-64">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search woredas..."
-                className="pl-9"
-                value={search}
-                onChange={(e) => handleSearch(e.target.value)}
-              />
-            </div>
-          </CardHeader>
+    const SortIcon = ({ column }: { column: string }) => {
+        if (sortBy !== column) {
+            return <ArrowUpDown className="ml-2 h-4 w-4 opacity-50" />;
+        }
+        return (
+            <ArrowUpDown
+                className={`ml-2 h-4 w-4 transition-transform ${
+                    sortDirection === 'desc' ? 'rotate-180' : ''
+                }`}
+            />
+        );
+    };
 
-          <CardContent className="flex-1 overflow-auto">
-            <div className="rounded-lg border">
-              <Table>
-                <TableHeader className="bg-muted/50">
-                  <TableRow>
-                    <TableHead
-                      onClick={() => handleSort('name')}
-                      className="cursor-pointer select-none hover:bg-muted/70 transition-colors"
-                    >
-                      <div className="flex items-center">
-                        Name {sortColumn === 'name' && (sortOrder === 'asc' ? '↑' : '↓')}
-                      </div>
-                    </TableHead>
-                    <TableHead
-                      onClick={() => handleSort('code')}
-                      className="cursor-pointer select-none hover:bg-muted/70 transition-colors"
-                    >
-                      <div className="flex items-center">
-                        Code {sortColumn === 'code' && (sortOrder === 'asc' ? '↑' : '↓')}
-                      </div>
-                    </TableHead>
-                    <TableHead>Zone</TableHead>
-                    <TableHead
-                      onClick={() => handleSort('places_count')}
-                      className="cursor-pointer select-none hover:bg-muted/70 transition-colors"
-                    >
-                      <div className="flex items-center">
-                        Places {sortColumn === 'places_count' && (sortOrder === 'asc' ? '↑' : '↓')}
-                      </div>
-                    </TableHead>
-                    <TableHead
-                      onClick={() => handleSort('created_at')}
-                      className="cursor-pointer select-none hover:bg-muted/70 transition-colors"
-                    >
-                      <div className="flex items-center">
-                        Created {sortColumn === 'created_at' && (sortOrder === 'asc' ? '↑' : '↓')}
-                      </div>
-                    </TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {woredas?.data && woredas.data.length > 0 ? (
-                    woredas.data.map((woreda) => (
-                      <TableRow key={woreda.id}>
-                        <TableCell className="font-medium">{woreda.name}</TableCell>
-                        <TableCell className="text-muted-foreground">{woreda.code || 'N/A'}</TableCell>
-                        <TableCell className="text-muted-foreground">{woreda.zone?.name || 'N/A'}</TableCell>
-                        <TableCell className="text-muted-foreground">{woreda.places_count || 0}</TableCell>
-                        <TableCell className="text-muted-foreground">{formatDate(woreda.created_at)}</TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            {hasPermission('woredas.show') && (
-                              <Button variant="ghost" size="icon" asChild>
-                                <Link href={route('woredas.show', woreda.id)}>
-                                  <Eye className="h-4 w-4" />
-                                </Link>
-                              </Button>
-                            )}
-                            {hasPermission('woredas.edit') && (
-                              <Button variant="ghost" size="icon" asChild>
-                                <Link href={route('woredas.edit', woreda.id)}>
-                                  <SquarePen className="h-4 w-4" />
-                                </Link>
-                              </Button>
-                            )}
-                            {hasPermission('woredas.destroy') && (
-                              <Button variant="ghost" size="icon" onClick={() => handleDelete(woreda)}>
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={6} className="h-24 text-center">
-                        No woredas found.{' '}
-                        {hasPermission('woredas.create') && (
-                          <Link href={route('woredas.create')} className="text-primary hover:underline">
-                            Create one
-                          </Link>
+    const woredaCount = totalCount || woredas?.total || 0;
+    const perPage = woredas?.per_page || 15;
+    const currentPage = woredas?.current_page || 1;
+    const totalPages = woredas?.last_page || 1;
+
+    return (
+        <AppLayout breadcrumbs={breadcrumbs}>
+            <Head title="Woredas" />
+            <div className="flex h-full flex-1 flex-col gap-6 overflow-hidden rounded-xl p-4">
+                {/* Header Section */}
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-2xl font-bold">Woredas</h1>
+                        <p className="text-muted-foreground">
+                            Manage your {woredaCount} woreda{woredaCount !== 1 ? 's' : ''}
+                        </p>
+                    </div>
+                    <div className="flex gap-2">
+                        {hasPermission('woredas.export') && (
+                            <Button
+                                variant="outline"
+                                onClick={() => router.get('/woredas/export', { search: searchTerm, sort: sortBy, direction: sortDirection })}
+                            >
+                                <FileDown className="mr-2 h-4 w-4" />
+                                Export CSV
+                            </Button>
                         )}
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
+                        {hasPermission('woredas.create') && (
+                            <Link href="/woredas/create">
+                                <Button>
+                                    <Plus className="mr-2 h-4 w-4" />
+                                    Add Woreda
+                                </Button>
+                            </Link>
+                        )}
+                    </div>
+                </div>
+
+                {/* Table Section */}
+                <Card className="flex flex-1 flex-col overflow-hidden">
+                    <CardHeader>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <CardTitle>Woreda Inventory</CardTitle>
+                                <CardDescription>
+                                    {woredaCount} total woreda{woredaCount !== 1 ? 's' : ''} in system
+                                </CardDescription>
+                            </div>
+                            <div className="relative w-64">
+                                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                    placeholder="Search woredas..."
+                                    value={searchTerm}
+                                    onChange={handleSearch}
+                                    className="pl-10"
+                                />
+                            </div>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="flex-1 overflow-auto">
+                        <div className="rounded-lg border">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow className="bg-muted/50">
+                                        <TableHead
+                                            className="cursor-pointer select-none hover:bg-muted/70 transition-colors"
+                                            onClick={() => handleSort('id')}
+                                        >
+                                            <div className="flex items-center">
+                                                ID <SortIcon column="id" />
+                                            </div>
+                                        </TableHead>
+                                        <TableHead
+                                            className="cursor-pointer select-none hover:bg-muted/70 transition-colors"
+                                            onClick={() => handleSort('name')}
+                                        >
+                                            <div className="flex items-center">
+                                                Name <SortIcon column="name" />
+                                            </div>
+                                        </TableHead>
+                                        <TableHead
+                                            className="cursor-pointer select-none hover:bg-muted/70 transition-colors"
+                                            onClick={() => handleSort('zone_id')}
+                                        >
+                                            <div className="flex items-center">
+                                                Zone <SortIcon column="zone_id" />
+                                            </div>
+                                        </TableHead>
+                                        <TableHead>Actions</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {woredas.data.length > 0 ? (
+                                        woredas.data.map((woreda) => (
+                                            <TableRow key={woreda.id}>
+                                                <TableCell className="font-medium">{woreda.id}</TableCell>
+                                                <TableCell className="font-medium">{woreda.name}</TableCell>
+                                                <TableCell>
+                                                    <div>
+                                                        <div className="font-medium">{woreda.zone?.name || 'N/A'}</div>
+                                                        {woreda.zone?.region && (
+                                                            <div className="text-sm text-muted-foreground">
+                                                                {woreda.zone.region.name}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <div className="flex items-center space-x-2">
+                                                        {hasPermission('woredas.show') && (
+                                                            <Link href={`/woredas/${woreda.id}`}>
+                                                                <Button size="sm" variant="ghost">
+                                                                    <Eye className="h-4 w-4" />
+                                                                </Button>
+                                                            </Link>
+                                                        )}
+                                                        {hasPermission('woredas.edit') && (
+                                                            <Link href={`/woredas/${woreda.id}/edit`}>
+                                                                <Button size="sm" variant="ghost">
+                                                                    <Edit className="h-4 w-4" />
+                                                                </Button>
+                                                            </Link>
+                                                        )}
+                                                        {hasPermission('woredas.destroy') && (
+                                                            <Button
+                                                                size="sm"
+                                                                variant="ghost"
+                                                                onClick={() => handleDeleteClick(woreda)}
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
+                                                        )}
+                                                    </div>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
+                                    ) : (
+                                        <TableRow>
+                                            <TableCell colSpan={4} className="py-8 text-center text-muted-foreground">
+                                                No woredas found.
+                                                {hasPermission('woredas.create') && (
+                                                    <Link href="/woredas/create" className="ml-1 text-primary underline">
+                                                        Create one
+                                                    </Link>
+                                                )}
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </div>
+
+                        {/* Enhanced Pagination */}
+                        {woredas.last_page > 1 && (
+                            <div className="mt-6 flex items-center justify-between">
+                                <div className="text-sm text-muted-foreground">
+                                    Showing {woredas.from || 1} to {woredas.to || woredaCount} of {woredaCount} woredas
+                                </div>
+                                <div className="flex gap-2">
+                                    {/* Previous Button */}
+                                    {currentPage > 1 && (
+                                        <Button asChild variant="outline" size="sm">
+                                            <Link href={woredas.links[0].url || '#'}>
+                                                <ChevronLeft className="mr-1 h-4 w-4" />
+                                                Previous
+                                            </Link>
+                                        </Button>
+                                    )}
+
+                                    {/* Page Numbers */}
+                                    {woredas.links.map((link, index) => {
+                                        // Skip first (prev) and last (next) links
+                                        if (index === 0 || index === woredas.links.length - 1) {
+                                            return null;
+                                        }
+
+                                        return (
+                                            <Button
+                                                key={index}
+                                                asChild
+                                                variant={link.active ? 'default' : 'outline'}
+                                                size="sm"
+                                                disabled={!link.url}
+                                            >
+                                                <Link href={link.url || '#'}>
+                                                    <span dangerouslySetInnerHTML={{ __html: link.label }} />
+                                                </Link>
+                                            </Button>
+                                        );
+                                    })}
+
+                                    {/* Next Button */}
+                                    {currentPage < totalPages && (
+                                        <Button asChild variant="outline" size="sm">
+                                            <Link href={woredas.links[woredas.links.length - 1].url || '#'}>
+                                                Next
+                                                <ChevronRight className="ml-1 h-4 w-4" />
+                                            </Link>
+                                        </Button>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
             </div>
 
-            {/* Pagination */}
-            {woredas?.last_page && woredas.last_page > 1 && (
-              <div className="mt-6 flex items-center justify-between">
-                <div className="text-sm text-muted-foreground">
-                  Showing {woredas.current_page} of {woredas.last_page} pages
-                </div>
-                <div className="flex gap-2">
-                  {woredas.current_page > 1 && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        router.get(route('woredas.index'), {
-                          page: woredas.current_page - 1,
-                          search,
-                          sort: sortColumn,
-                          direction: sortOrder,
-                        })
-                      }
-                    >
-                      Previous
-                    </Button>
-                  )}
-                  {woredas.current_page < woredas.last_page && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        router.get(route('woredas.index'), {
-                          page: woredas.current_page + 1,
-                          search,
-                          sort: sortColumn,
-                          direction: sortOrder,
-                        })
-                      }
-                    >
-                      Next
-                    </Button>
-                  )}
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      <DeleteConfirmationDialog
-        open={!!deleteConfirmation}
-        onClose={() => setDeleteConfirmation(null)}
-        onConfirm={confirmDelete}
-        itemName={deleteConfirmation?.name || ''}
-        title="Delete Woreda"
-        description="Are you sure you want to delete this woreda? This action cannot be undone."
-      />
-    </>
-  )
+            {/* Delete Confirmation Dialog */}
+            <DeleteConfirmationDialog
+                open={deleteDialogOpen}
+                onOpenChange={setDeleteDialogOpen}
+                title="Delete Woreda"
+                description="Are you sure you want to delete this woreda? This action cannot be undone."
+                itemName={selectedWoreda?.name}
+                onConfirm={handleDeleteConfirm}
+                isLoading={isDeleting}
+            />
+        </AppLayout>
+    );
 }
-
-WoredasIndex.layout = (page: React.ReactNode) => <AppLayout children={page} />
-

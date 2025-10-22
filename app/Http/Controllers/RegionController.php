@@ -249,6 +249,46 @@ class RegionController extends Controller
 
         return response()->stream($callback, 200, $headers);
     }
+
+    /**
+     * Deactivate the specified region.
+     */
+    public function deactivate(Region $region)
+    {
+        try {
+            $region->update(['status' => 'inactive']);
+
+            return redirect()->route('regions.index')
+                ->with('success', 'Region deactivated successfully.');
+
+        } catch (Exception $e) {
+            return back()->withErrors(['error' => 'Failed to deactivate region. Please try again.']);
+        }
+    }
+
+    /**
+     * Get active regions.
+     */
+    public function activeRegions()
+    {
+        try {
+            $activeRegions = Region::where('status', 'active')
+                ->orderBy('name')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $activeRegions,
+                'count' => $activeRegions->count()
+            ]);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve active regions'
+            ], 500);
+        }
+    }
 }
 
 

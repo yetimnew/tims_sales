@@ -15,7 +15,7 @@ import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialo
 import { usePermissions } from '@/hooks/use-permissions';
 import { Head, Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
-import { Plus, Eye, Edit, Trash2, Search, ArrowUpDown, ChevronLeft, ChevronRight, FileDown } from 'lucide-react';
+import { Plus, Eye, Edit, Trash2, Search, ArrowUpDown, ChevronLeft, ChevronRight, FileDown, Square } from 'lucide-react';
 import * as React from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -85,6 +85,16 @@ export default function PerformancesIndex({ performances, totalCount }: Performa
         setDeleteDialogOpen(true);
     };
 
+    const handleDeactivateClick = (perf: Performance) => {
+        if (confirm(`Are you sure you want to deactivate performance ${perf.trip}?`)) {
+            router.post(`/performances/${perf.id}/deactivate`, {}, {
+                onSuccess: () => {
+                    // Success handled by toast notification
+                },
+            });
+        }
+    };
+
     const handleDeleteConfirm = () => {
         if (!selectedPerf) return;
         setIsDeleting(true);
@@ -118,23 +128,6 @@ export default function PerformancesIndex({ performances, totalCount }: Performa
     const currentPage = performances?.current_page || 1;
     const totalPages = performances?.last_page || 1;
 
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'completed': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-            case 'ongoing': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
-            case 'cancelled': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
-            default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
-        }
-    };
-
-    const getLoadTypeColor = (type: string) => {
-        switch (type) {
-            case 'main': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
-            case 'return': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
-            case 'empty': return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
-            default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
-        }
-    };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -238,41 +231,50 @@ export default function PerformancesIndex({ performances, totalCount }: Performa
                                                 <TableCell>{perf.FOnumber}</TableCell>
                                                 <TableCell>{new Date(perf.DateDispach).toLocaleDateString()}</TableCell>
                                                 <TableCell>
-                                                    <Badge className={getLoadTypeColor(perf.LoadType)}>
+                                                    <Badge variant={perf.LoadType === 'main' ? 'default' : 'secondary'}>
                                                         {perf.LoadType.charAt(0).toUpperCase() + perf.LoadType.slice(1)}
                                                     </Badge>
                                                 </TableCell>
                                                 <TableCell>
-                                                    <Badge className={getStatusColor(perf.satus)}>
+                                                    <Badge variant={perf.satus === 'completed' ? 'default' : 'secondary'}>
                                                         {perf.satus.charAt(0).toUpperCase() + perf.satus.slice(1)}
                                                     </Badge>
                                                 </TableCell>
-                                                <TableCell>{perf.DistanceWCargo?.toFixed(2) || '-'}</TableCell>
-                                                <TableCell>{perf.fuelInBirr?.toFixed(2) || '-'}</TableCell>
-                                                <TableCell className="text-right space-x-2">
-                                                    {hasPermission('performances.show') && (
-                                                        <Link href={`/performances/${perf.id}`}>
-                                                            <Button variant="ghost" size="icon">
+                                                <TableCell>{perf.DistanceWCargo ? Number(perf.DistanceWCargo).toFixed(2) : '-'}</TableCell>
+                                                <TableCell>{perf.fuelInBirr ? Number(perf.fuelInBirr).toFixed(2) : '-'}</TableCell>
+                                                <TableCell className="text-right">
+                                                    <div className="flex justify-end gap-2">
+                                                        <Button asChild size="sm" variant="ghost">
+                                                            <Link href={`/performances/${perf.id}`}>
                                                                 <Eye className="h-4 w-4" />
-                                                            </Button>
-                                                        </Link>
-                                                    )}
-                                                    {hasPermission('performances.edit') && (
-                                                        <Link href={`/performances/${perf.id}/edit`}>
-                                                            <Button variant="ghost" size="icon">
-                                                                <Edit className="h-4 w-4" />
-                                                            </Button>
-                                                        </Link>
-                                                    )}
-                                                    {hasPermission('performances.destroy') && (
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            onClick={() => handleDeleteClick(perf)}
-                                                        >
-                                                            <Trash2 className="h-4 w-4 text-destructive" />
+                                                            </Link>
                                                         </Button>
-                                                    )}
+                                                        {hasPermission('performances.edit') && (
+                                                            <Button asChild size="sm" variant="ghost">
+                                                                <Link href={`/performances/${perf.id}/edit`}>
+                                                                    <Edit className="h-4 w-4" />
+                                                                </Link>
+                                                            </Button>
+                                                        )}
+                                                        {hasPermission('performances.deactivate') && perf.satus === 'active' && (
+                                                            <Button
+                                                                size="sm"
+                                                                variant="ghost"
+                                                                onClick={() => handleDeactivateClick(perf)}
+                                                            >
+                                                                <Square className="h-4 w-4" />
+                                                            </Button>
+                                                        )}
+                                                        {hasPermission('performances.destroy') && (
+                                                            <Button
+                                                                size="sm"
+                                                                variant="ghost"
+                                                                onClick={() => handleDeleteClick(perf)}
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
+                                                        )}
+                                                    </div>
                                                 </TableCell>
                                             </TableRow>
                                         ))

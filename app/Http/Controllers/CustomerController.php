@@ -141,6 +141,125 @@ class CustomerController extends Controller
             return back()->withErrors(['error' => 'Failed to delete customer. Please try again.']);
         }
     }
+
+    /**
+     * Export customers to CSV
+     */
+    public function export(Request $request)
+    {
+        $query = Customer::withCount('operations');
+
+        // Apply same search and sort as index
+        if ($request->has('search') && !empty($request->input('search'))) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('contact_person', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        // Apply sorting
+        if ($request->has('sort')) {
+            $sort = $request->input('sort', 'name');
+            $direction = $request->input('direction', 'asc');
+            $query = $query->orderBy($sort, $direction);
+        }
+
+        $customers = $query->get();
+
+        // Generate CSV
+        $filename = 'customers_' . now()->format('Y-m-d_H-i-s') . '.csv';
+        $handle = fopen('php://temp', 'r+');
+
+        // Write header
+        fputcsv($handle, [
+            'ID',
+            'Name',
+            'Contact Person',
+            'Phone',
+            'Email',
+            'Address',
+            'Status',
+            'Operations Count',
+            'Created At',
+            'Updated At'
+        ]);
+
+        // Write data
+        foreach ($customers as $customer) {
+            fputcsv($handle, [
+                $customer->id,
+                $customer->name,
+                $customer->contact_person,
+                $customer->phone,
+                $customer->email,
+                $customer->address,
+                $customer->status,
+                $customer->operations_count,
+                $customer->created_at,
+                $customer->updated_at
+            ]);
+        }
+
+        rewind($handle);
+        $csv = stream_get_contents($handle);
+        fclose($handle);
+
+        // Log the export activity
+        if (Auth::check()) {
+            activity()
+                ->causedBy(Auth::user())
+                ->withProperties(['count' => count($customers)])
+                ->log('exported customers to CSV');
+        }
+
+        return response($csv, 200, [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
+    }
+
+    /**
+     * Deactivate the specified customer.
+     */
+    public function deactivate(Customer $customer)
+    {
+        try {
+            $customer->update(['status' => 'inactive']);
+
+            return redirect()->route('customers.index')
+                ->with('success', 'Customer deactivated successfully.');
+
+        } catch (Exception $e) {
+            return back()->withErrors(['error' => 'Failed to deactivate customer. Please try again.']);
+        }
+    }
+
+    /**
+     * Get active customers.
+     */
+    public function activeCustomers()
+    {
+        try {
+            $activeCustomers = Customer::where('status', 'active')
+                ->orderBy('name')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $activeCustomers,
+                'count' => $activeCustomers->count()
+            ]);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve active customers'
+            ], 500);
+        }
+    }
 }
 
 

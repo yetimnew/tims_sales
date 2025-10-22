@@ -15,7 +15,7 @@ import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialo
 import { usePermissions } from '@/hooks/use-permissions';
 import { Head, Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
-import { Plus, Eye, Edit, Trash2, Search, ArrowUpDown, ChevronLeft, ChevronRight, FileDown } from 'lucide-react';
+import { Plus, Eye, Edit, Trash2, Search, ArrowUpDown, ChevronLeft, ChevronRight, FileDown, Square } from 'lucide-react';
 import * as React from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -100,6 +100,16 @@ export default function CustomersIndex({ customers, totalCount }: CustomersIndex
     const handleDeleteClick = (customer: CustomerData) => {
         setSelectedCustomer(customer);
         setDeleteDialogOpen(true);
+    };
+
+    const handleDeactivateClick = (customer: CustomerData) => {
+        if (confirm(`Are you sure you want to deactivate customer ${customer.name}?`)) {
+            router.post(`/customers/${customer.id}/deactivate`, {}, {
+                onSuccess: () => {
+                    // Success handled by toast notification
+                },
+            });
+        }
     };
 
     const handleDeleteConfirm = async () => {
@@ -241,6 +251,15 @@ export default function CustomersIndex({ customers, totalCount }: CustomersIndex
                                                                     <Edit className="h-4 w-4" />
                               </Button>
                             </Link>
+                          )}
+                          {hasPermission('customers.deactivate') && customer.status === 'active' && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleDeactivateClick(customer)}
+                            >
+                              <Square className="h-4 w-4" />
+                            </Button>
                           )}
                           {hasPermission('customers.destroy') && (
                             <Button

@@ -15,7 +15,7 @@ import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialo
 import { usePermissions } from '@/hooks/use-permissions';
 import { Head, Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
-import { Plus, Eye, Edit, Trash2, Search, ArrowUpDown, ChevronLeft, ChevronRight, FileDown } from 'lucide-react';
+import { Plus, Eye, Edit, Trash2, Search, ArrowUpDown, ChevronLeft, ChevronRight, FileDown, Square } from 'lucide-react';
 import * as React from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -100,6 +100,16 @@ export default function OperationsIndex({ operations, totalCount }: OperationsIn
         });
     };
 
+    const handleDeactivateClick = (op: Operation) => {
+        if (confirm(`Are you sure you want to deactivate operation ${op.operationid}?`)) {
+            router.post(`/operations/${op.id}/deactivate`, {}, {
+                onSuccess: () => {
+                    // Success handled by toast notification
+                },
+            });
+        }
+    };
+
     const SortIcon = ({ column }: { column: string }) => {
         if (sortBy !== column) {
             return <ArrowUpDown className="ml-2 h-4 w-4 opacity-50" />;
@@ -117,13 +127,6 @@ export default function OperationsIndex({ operations, totalCount }: OperationsIn
     const currentPage = operations?.current_page || 1;
     const totalPages = operations?.last_page || 1;
 
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'active': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-            case 'inactive': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
-            default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
-        }
-    };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -218,37 +221,48 @@ export default function OperationsIndex({ operations, totalCount }: OperationsIn
                                                 <TableCell className="font-medium">{op.operationid}</TableCell>
                                                 <TableCell>{op.customer?.name || '-'}</TableCell>
                                                 <TableCell>
-                                                    <Badge className={getStatusColor(op.status)}>
+                                                    <Badge
+                                                        variant={op.status === 'active' ? 'default' : 'secondary'}
+                                                    >
                                                         {op.status.charAt(0).toUpperCase() + op.status.slice(1)}
                                                     </Badge>
                                                 </TableCell>
                                                 <TableCell>{op.startdate ? new Date(op.startdate).toLocaleDateString() : '-'}</TableCell>
-                                                <TableCell>{op.volume?.toFixed(2) || '-'}</TableCell>
-                                                <TableCell>{op.km?.toFixed(2) || '-'}</TableCell>
-                                                <TableCell className="text-right space-x-2">
-                                                    {hasPermission('operations.show') && (
-                                                        <Link href={`/operations/${op.id}`}>
-                                                            <Button variant="ghost" size="icon">
+                                                <TableCell>{op.volume ? Number(op.volume).toFixed(2) : '-'}</TableCell>
+                                                <TableCell>{op.km ? Number(op.km).toFixed(2) : '-'}</TableCell>
+                                                <TableCell className="text-right">
+                                                    <div className="flex justify-end gap-2">
+                                                        <Button asChild size="sm" variant="ghost">
+                                                            <Link href={`/operations/${op.id}`}>
                                                                 <Eye className="h-4 w-4" />
-                                                            </Button>
-                                                        </Link>
-                                                    )}
-                                                    {hasPermission('operations.edit') && (
-                                                        <Link href={`/operations/${op.id}/edit`}>
-                                                            <Button variant="ghost" size="icon">
-                                                                <Edit className="h-4 w-4" />
-                                                            </Button>
-                                                        </Link>
-                                                    )}
-                                                    {hasPermission('operations.destroy') && (
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            onClick={() => handleDeleteClick(op)}
-                                                        >
-                                                            <Trash2 className="h-4 w-4 text-destructive" />
+                                                            </Link>
                                                         </Button>
-                                                    )}
+                                                        {hasPermission('operations.edit') && (
+                                                            <Button asChild size="sm" variant="ghost">
+                                                                <Link href={`/operations/${op.id}/edit`}>
+                                                                    <Edit className="h-4 w-4" />
+                                                                </Link>
+                                                            </Button>
+                                                        )}
+                                                        {hasPermission('operations.deactivate') && op.status === 'active' && (
+                                                            <Button
+                                                                size="sm"
+                                                                variant="ghost"
+                                                                onClick={() => handleDeactivateClick(op)}
+                                                            >
+                                                                <Square className="h-4 w-4" />
+                                                            </Button>
+                                                        )}
+                                                        {hasPermission('operations.destroy') && (
+                                                            <Button
+                                                                size="sm"
+                                                                variant="ghost"
+                                                                onClick={() => handleDeleteClick(op)}
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
+                                                        )}
+                                                    </div>
                                                 </TableCell>
                                             </TableRow>
                                         ))

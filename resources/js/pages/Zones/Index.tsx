@@ -1,224 +1,336 @@
-import { useState, useMemo } from 'react'
-import { Link, router } from '@inertiajs/react'
-import { Eye, Trash2, SquarePen, Plus, Search } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog'
-import { useToast } from '@/hooks/use-toast'
-import { usePermissions } from '@/hooks/use-permissions'
-import AppLayout from '@/layouts/app-layout'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
+import AppLayout from '@/layouts/app-layout';
+import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
+import { usePermissions } from '@/hooks/use-permissions';
+import { Head, Link, router } from '@inertiajs/react';
+import { type BreadcrumbItem } from '@/types';
+import { Plus, Eye, Edit, Trash2, Search, ArrowUpDown, ChevronLeft, ChevronRight, FileDown } from 'lucide-react';
+import * as React from 'react';
 
-interface Zone {
-  id: number
-  name: string
-  region_id: number
-  region?: { name: string }
-  created_at: string
-}
+const breadcrumbs: BreadcrumbItem[] = [
+    {
+        title: 'Zones',
+        href: '/zones',
+    },
+];
 
-interface RegionOption {
-  id: number
-  name: string
+interface ZoneData {
+    id: number;
+    name: string;
+    region?: {
+        name: string;
+    };
+    created_at?: string;
 }
 
 interface ZonesIndexProps {
-  zones: {
-    data: Zone[]
-    current_page: number
-    last_page: number
-    per_page: number
-    total: number
-    from: number
-    to: number
-    links?: {
-      first?: string
-      last?: string
-      prev?: string
-      next?: string
-    }
-  }
-  regions: RegionOption[]
+    zones: {
+        data: ZoneData[];
+        current_page: number;
+        last_page: number;
+        per_page: number;
+        total: number;
+        from: number;
+        to: number;
+        links?: {
+            first?: string;
+            last?: string;
+            prev?: string;
+            next?: string;
+        };
+    };
+    totalCount?: number;
 }
 
-export default function ZonesIndex({ zones, regions }: ZonesIndexProps) {
-  const { toast } = useToast()
-  const { hasPermission } = usePermissions()
-  const [search, setSearch] = useState('')
-  const [sortColumn, setSortColumn] = useState('name')
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
-  const [deleteConfirmation, setDeleteConfirmation] = useState<{ id: number; name: string } | null>(null)
+export default function ZonesIndex({ zones, totalCount }: ZonesIndexProps) {
+    const { hasPermission } = usePermissions();
+    const [searchTerm, setSearchTerm] = React.useState('');
+    const [sortBy, setSortBy] = React.useState('name');
+    const [sortDirection, setSortDirection] = React.useState('asc');
+    const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+    const [selectedZone, setSelectedZone] = React.useState<ZoneData | null>(null);
+    const [isDeleting, setIsDeleting] = React.useState(false);
 
-  const filtered = useMemo(() => {
-    let items = zones?.data || []
+    const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setSearchTerm(value);
 
-    if (search.trim()) {
-      const query = search.toLowerCase()
-      items = items.filter(
-        item =>
-          item.name.toLowerCase().includes(query) ||
-          item.region?.name.toLowerCase().includes(query)
-      )
-    }
+        router.get('/zones',
+            { search: value, sort: sortBy, direction: sortDirection },
+            { preserveState: false }
+        );
+    };
 
-    items.sort((a, b) => {
-      let aVal: any = sortColumn === 'region' ? a.region?.name : a[sortColumn as keyof Zone]
-      let bVal: any = sortColumn === 'region' ? b.region?.name : b[sortColumn as keyof Zone]
-      if (typeof aVal === 'string') {
-        aVal = aVal?.toLowerCase()
-        bVal = bVal?.toLowerCase()
-      }
-      return sortOrder === 'asc' ? (aVal > bVal ? 1 : -1) : aVal < bVal ? 1 : -1
-    })
+    const handleSort = (column: string) => {
+        let newDirection = 'asc';
+        if (sortBy === column && sortDirection === 'asc') {
+            newDirection = 'desc';
+        }
 
-    return items
-  }, [search, sortColumn, sortOrder, zones])
+        setSortBy(column);
+        setSortDirection(newDirection);
 
-  const handleSort = (column: string) => {
-    if (sortColumn === column) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
-    } else {
-      setSortColumn(column)
-      setSortOrder('asc')
-    }
-  }
+        router.get('/zones',
+            { search: searchTerm, sort: column, direction: newDirection },
+            { preserveState: false }
+        );
+    };
 
-  const handleDelete = (zone: Zone) => {
-    setDeleteConfirmation({ id: zone.id, name: zone.name })
-  }
+    const handleDeleteClick = (zone: ZoneData) => {
+        setSelectedZone(zone);
+        setDeleteDialogOpen(true);
+    };
 
-  const confirmDelete = () => {
-    if (!deleteConfirmation) return
-    router.delete(route('zones.destroy', deleteConfirmation.id), {
-      onSuccess: () => {
-        toast({ title: 'Success', description: 'Zone deleted successfully', variant: 'success' })
-        setDeleteConfirmation(null)
-      },
-      onError: () => {
-        toast({ title: 'Error', description: 'Failed to delete zone', variant: 'destructive' })
-      },
-    })
-  }
+    const handleDeleteConfirm = () => {
+        if (!selectedZone) return;
 
-  return (
-    <>
-      <div className="flex h-full flex-1 flex-col gap-6 overflow-hidden rounded-xl p-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Zones</h1>
-            <p className="text-muted-foreground">Manage your zones</p>
-          </div>
-          {hasPermission('zones.create') && (
-            <Link href={route('zones.create')}>
-              <Button className="flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                Add Zone
-              </Button>
-            </Link>
-          )}
-        </div>
+        setIsDeleting(true);
+        router.delete(`/zones/${selectedZone.id}`, {
+            onSuccess: () => {
+                setDeleteDialogOpen(false);
+                setSelectedZone(null);
+                setIsDeleting(false);
+            },
+            onError: () => {
+                setIsDeleting(false);
+            },
+        });
+    };
 
-        <Card className="flex flex-1 flex-col overflow-hidden">
-          <CardHeader className="flex flex-row items-center justify-between border-b pb-4">
-            <div className="relative w-64">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search zones..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </CardHeader>
+    const SortIcon = ({ column }: { column: string }) => {
+        if (sortBy !== column) {
+            return <ArrowUpDown className="ml-2 h-4 w-4 opacity-50" />;
+        }
+        return (
+            <ArrowUpDown
+                className={`ml-2 h-4 w-4 transition-transform ${
+                    sortDirection === 'desc' ? 'rotate-180' : ''
+                }`}
+            />
+        );
+    };
 
-          <CardContent className="flex flex-1 flex-col overflow-auto">
-            {filtered.length > 0 ? (
-              <div className="rounded-lg border">
-                <Table>
-                  <TableHeader className="bg-muted/50">
-                    <TableRow>
-                      <TableHead
-                        onClick={() => handleSort('name')}
-                        className="cursor-pointer select-none hover:bg-muted/70 transition-colors"
-                      >
-                        Name
-                      </TableHead>
-                      <TableHead
-                        onClick={() => handleSort('region')}
-                        className="cursor-pointer select-none hover:bg-muted/70 transition-colors"
-                      >
-                        Region
-                      </TableHead>
-                      <TableHead
-                        onClick={() => handleSort('created_at')}
-                        className="cursor-pointer select-none hover:bg-muted/70 transition-colors"
-                      >
-                        Created
-                      </TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filtered.map(zone => (
-                      <TableRow key={zone.id}>
-                        <TableCell className="font-medium">{zone.name}</TableCell>
-                        <TableCell className="text-muted-foreground">{zone.region?.name || '-'}</TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {new Date(zone.created_at).toLocaleDateString()}
-                        </TableCell>
-                        <TableCell className="text-right space-x-2">
-                          {hasPermission('zones.show') && (
-                            <Link href={route('zones.show', zone.id)}>
-                              <Button variant="ghost" size="icon">
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                            </Link>
-                          )}
-                          {hasPermission('zones.edit') && (
-                            <Link href={route('zones.edit', zone.id)}>
-                              <Button variant="ghost" size="icon">
-                                <SquarePen className="h-4 w-4" />
-                              </Button>
-                            </Link>
-                          )}
-                          {hasPermission('zones.destroy') && (
-                            <Button variant="ghost" size="icon" onClick={() => handleDelete(zone)}>
-                              <Trash2 className="h-4 w-4 text-destructive" />
+    const zoneCount = totalCount || zones?.total || 0;
+    const perPage = zones?.per_page || 15;
+    const currentPage = zones?.current_page || 1;
+    const totalPages = zones?.last_page || 1;
+
+    return (
+        <AppLayout breadcrumbs={breadcrumbs}>
+            <Head title="Zones" />
+            <div className="flex h-full flex-1 flex-col gap-6 overflow-hidden rounded-xl p-4">
+                {/* Header Section */}
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-2xl font-bold">Zones</h1>
+                        <p className="text-muted-foreground">
+                            Manage your {zoneCount} zone{zoneCount !== 1 ? 's' : ''}
+                        </p>
+                    </div>
+                    <div className="flex gap-2">
+                        {hasPermission('zones.export') && (
+                            <Button
+                                variant="outline"
+                                onClick={() => router.get('/zones/export', { search: searchTerm, sort: sortBy, direction: sortDirection })}
+                            >
+                                <FileDown className="mr-2 h-4 w-4" />
+                                Export CSV
                             </Button>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            ) : (
-              <div className="flex items-center justify-center py-12">
-                <p className="text-muted-foreground">
-                  No zones found.{' '}
-                  {hasPermission('zones.create') && (
-                    <Link href={route('zones.create')} className="text-primary hover:underline">
-                      Create one
-                    </Link>
-                  )}
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+                        )}
+                        {hasPermission('zones.create') && (
+                            <Link href="/zones/create">
+                                <Button>
+                                    <Plus className="mr-2 h-4 w-4" />
+                                    Add Zone
+                                </Button>
+                            </Link>
+                        )}
+                    </div>
+                </div>
 
-      <DeleteConfirmationDialog
-        open={!!deleteConfirmation}
-        title="Delete Zone"
-        description="Are you sure you want to delete this zone? This action cannot be undone."
-        itemName={deleteConfirmation?.name}
-        onConfirm={confirmDelete}
-        onCancel={() => setDeleteConfirmation(null)}
-      />
-    </>
-  )
+                {/* Table Section */}
+                <Card className="flex flex-1 flex-col overflow-hidden">
+                    <CardHeader>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <CardTitle>Zone Inventory</CardTitle>
+                                <CardDescription>
+                                    {zoneCount} total zone{zoneCount !== 1 ? 's' : ''} in system
+                                </CardDescription>
+                            </div>
+                            <div className="relative w-64">
+                                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                    placeholder="Search zones..."
+                                    value={searchTerm}
+                                    onChange={handleSearch}
+                                    className="pl-10"
+                                />
+                            </div>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="flex-1 overflow-auto">
+                        <div className="rounded-lg border">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow className="bg-muted/50">
+                                        <TableHead
+                                            className="cursor-pointer select-none hover:bg-muted/70 transition-colors"
+                                            onClick={() => handleSort('id')}
+                                        >
+                                            <div className="flex items-center">
+                                                ID <SortIcon column="id" />
+                                            </div>
+                                        </TableHead>
+                                        <TableHead
+                                            className="cursor-pointer select-none hover:bg-muted/70 transition-colors"
+                                            onClick={() => handleSort('name')}
+                                        >
+                                            <div className="flex items-center">
+                                                Name <SortIcon column="name" />
+                                            </div>
+                                        </TableHead>
+                                        <TableHead
+                                            className="cursor-pointer select-none hover:bg-muted/70 transition-colors"
+                                            onClick={() => handleSort('region_id')}
+                                        >
+                                            <div className="flex items-center">
+                                                Region <SortIcon column="region_id" />
+                                            </div>
+                                        </TableHead>
+                                        <TableHead>Actions</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {zones.data.length > 0 ? (
+                                        zones.data.map((zone) => (
+                                            <TableRow key={zone.id}>
+                                                <TableCell className="font-medium">{zone.id}</TableCell>
+                                                <TableCell className="font-medium">{zone.name}</TableCell>
+                                                <TableCell>
+                                                    {zone.region?.name || 'N/A'}
+                                                </TableCell>
+                                                <TableCell>
+                                                    <div className="flex items-center space-x-2">
+                                                        {hasPermission('zones.show') && (
+                                                            <Link href={`/zones/${zone.id}`}>
+                                                                <Button size="sm" variant="ghost">
+                                                                    <Eye className="h-4 w-4" />
+                                                                </Button>
+                                                            </Link>
+                                                        )}
+                                                        {hasPermission('zones.edit') && (
+                                                            <Link href={`/zones/${zone.id}/edit`}>
+                                                                <Button size="sm" variant="ghost">
+                                                                    <Edit className="h-4 w-4" />
+                                                                </Button>
+                                                            </Link>
+                                                        )}
+                                                        {hasPermission('zones.destroy') && (
+                                                            <Button
+                                                                size="sm"
+                                                                variant="ghost"
+                                                                onClick={() => handleDeleteClick(zone)}
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
+                                                        )}
+                                                    </div>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
+                                    ) : (
+                                        <TableRow>
+                                            <TableCell colSpan={4} className="py-8 text-center text-muted-foreground">
+                                                No zones found.
+                                                {hasPermission('zones.create') && (
+                                                    <Link href="/zones/create" className="ml-1 text-primary underline">
+                                                        Create one
+                                                    </Link>
+                                                )}
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </div>
+
+                        {/* Enhanced Pagination */}
+                        {zones.last_page > 1 && (
+                            <div className="mt-6 flex items-center justify-between">
+                                <div className="text-sm text-muted-foreground">
+                                    Showing {zones.from || 1} to {zones.to || zoneCount} of {zoneCount} zones
+                                </div>
+                                <div className="flex gap-2">
+                                    {/* Previous Button */}
+                                    {currentPage > 1 && (
+                                        <Button asChild variant="outline" size="sm">
+                                            <Link href={zones.links[0].url || '#'}>
+                                                <ChevronLeft className="mr-1 h-4 w-4" />
+                                                Previous
+                                            </Link>
+                                        </Button>
+                                    )}
+
+                                    {/* Page Numbers */}
+                                    {zones.links.map((link, index) => {
+                                        // Skip first (prev) and last (next) links
+                                        if (index === 0 || index === zones.links.length - 1) {
+                                            return null;
+                                        }
+
+                                        return (
+                                            <Button
+                                                key={index}
+                                                asChild
+                                                variant={link.active ? 'default' : 'outline'}
+                                                size="sm"
+                                                disabled={!link.url}
+                                            >
+                                                <Link href={link.url || '#'}>
+                                                    <span dangerouslySetInnerHTML={{ __html: link.label }} />
+                                                </Link>
+                                            </Button>
+                                        );
+                                    })}
+
+                                    {/* Next Button */}
+                                    {currentPage < totalPages && (
+                                        <Button asChild variant="outline" size="sm">
+                                            <Link href={zones.links[zones.links.length - 1].url || '#'}>
+                                                Next
+                                                <ChevronRight className="ml-1 h-4 w-4" />
+                                            </Link>
+                                        </Button>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            </div>
+
+            {/* Delete Confirmation Dialog */}
+            <DeleteConfirmationDialog
+                open={deleteDialogOpen}
+                onOpenChange={setDeleteDialogOpen}
+                title="Delete Zone"
+                description="Are you sure you want to delete this zone? This action cannot be undone."
+                itemName={selectedZone?.name}
+                onConfirm={handleDeleteConfirm}
+                isLoading={isDeleting}
+            />
+        </AppLayout>
+    );
 }
-
-ZonesIndex.layout = (page: React.ReactNode) => <AppLayout children={page} />

@@ -15,7 +15,7 @@ import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialo
 import { usePermissions } from '@/hooks/use-permissions';
 import { Head, Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
-import { Plus, Eye, Edit, Trash2, Search, ArrowUpDown, ChevronLeft, ChevronRight, FileDown } from 'lucide-react';
+import { Plus, Eye, Edit, Trash2, Search, ArrowUpDown, ChevronLeft, ChevronRight, FileDown, Truck, CheckCircle, Wrench, XCircle, DollarSign, Activity } from 'lucide-react';
 import * as React from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -133,6 +133,12 @@ export default function TrucksIndex({ trucks, totalCount }: TrucksIndexProps) {
     const currentPage = trucks?.current_page || 1;
     const totalPages = trucks?.last_page || 1;
 
+    // Calculate stats for dashboard cards
+    const activeCount = trucks?.data?.filter(truck => truck.status === 'active').length || 0;
+    const maintenanceCount = trucks?.data?.filter(truck => truck.status === 'maintenance').length || 0;
+    const inactiveCount = trucks?.data?.filter(truck => truck.status === 'inactive').length || 0;
+    const totalValue = trucks?.data?.reduce((sum, truck) => sum + (truck.purchasePrice || 0), 0) || 0;
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Trucks" />
@@ -168,6 +174,57 @@ export default function TrucksIndex({ trucks, totalCount }: TrucksIndexProps) {
                             </Button>
                         )}
                     </div>
+                </div>
+
+                {/* Stats Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <Card>
+                        <CardContent className="p-6">
+                            <div className="flex items-center">
+                                <Truck className="h-8 w-8 text-blue-600" />
+                                <div className="ml-4">
+                                    <p className="text-sm font-medium text-muted-foreground">Total Trucks</p>
+                                    <p className="text-2xl font-bold">{truckCount}</p>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                    
+                    <Card>
+                        <CardContent className="p-6">
+                            <div className="flex items-center">
+                                <CheckCircle className="h-8 w-8 text-green-600" />
+                                <div className="ml-4">
+                                    <p className="text-sm font-medium text-muted-foreground">Active</p>
+                                    <p className="text-2xl font-bold">{activeCount}</p>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                    
+                    <Card>
+                        <CardContent className="p-6">
+                            <div className="flex items-center">
+                                <Wrench className="h-8 w-8 text-yellow-600" />
+                                <div className="ml-4">
+                                    <p className="text-sm font-medium text-muted-foreground">Maintenance</p>
+                                    <p className="text-2xl font-bold">{maintenanceCount}</p>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                    
+                    <Card>
+                        <CardContent className="p-6">
+                            <div className="flex items-center">
+                                <DollarSign className="h-8 w-8 text-purple-600" />
+                                <div className="ml-4">
+                                    <p className="text-sm font-medium text-muted-foreground">Total Value</p>
+                                    <p className="text-2xl font-bold">${totalValue.toLocaleString()}</p>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
                 </div>
 
                 {/* Table Section */}
@@ -268,8 +325,17 @@ export default function TrucksIndex({ trucks, totalCount }: TrucksIndexProps) {
                                                 </TableCell>
                                                 <TableCell>
                                                     <Badge
-                                                        variant={truck.status === 'active' ? 'default' : 'secondary'}
+                                                        className={`flex items-center gap-1 w-fit ${
+                                                            truck.status === 'active' 
+                                                                ? 'bg-green-100 text-green-800 border-green-200 hover:bg-green-200' 
+                                                                : truck.status === 'maintenance'
+                                                                ? 'bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200'
+                                                                : 'bg-red-100 text-red-800 border-red-200 hover:bg-red-200'
+                                                        }`}
                                                     >
+                                                        {truck.status === 'active' && <CheckCircle className="h-3 w-3" />}
+                                                        {truck.status === 'maintenance' && <Wrench className="h-3 w-3" />}
+                                                        {truck.status === 'inactive' && <XCircle className="h-3 w-3" />}
                                                         {truck.status.charAt(0).toUpperCase() + truck.status.slice(1)}
                                                     </Badge>
                                                 </TableCell>
@@ -302,13 +368,22 @@ export default function TrucksIndex({ trucks, totalCount }: TrucksIndexProps) {
                                         ))
                                     ) : (
                                         <TableRow>
-                                            <TableCell colSpan={8} className="py-8 text-center text-muted-foreground">
-                                                No trucks found.
-                                                {hasPermission('trucks.create') && (
-                                                    <Link href="/trucks/create" className="ml-1 text-primary underline">
-                                                        Create one
-                                                    </Link>
-                                                )}
+                                            <TableCell colSpan={8} className="py-12">
+                                                <div className="flex flex-col items-center justify-center">
+                                                    <Truck className="h-12 w-12 text-muted-foreground mb-4" />
+                                                    <h3 className="text-lg font-semibold mb-2">No trucks found</h3>
+                                                    <p className="text-muted-foreground text-center mb-4">
+                                                        Get started by adding your first truck to the fleet
+                                                    </p>
+                                                    {hasPermission('trucks.create') && (
+                                                        <Button asChild>
+                                                            <Link href="/trucks/create">
+                                                                <Plus className="mr-2 h-4 w-4" />
+                                                                Add First Truck
+                                                            </Link>
+                                                        </Button>
+                                                    )}
+                                                </div>
                                             </TableCell>
                                         </TableRow>
                                     )}

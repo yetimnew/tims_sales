@@ -149,15 +149,15 @@ export default function OperationsShow({ operation, activityLogs = [] }: Operati
                                     <div className="grid grid-cols-3 gap-4">
                                         <div>
                                             <p className="text-sm font-medium text-muted-foreground">Volume (MT)</p>
-                                            <p className="mt-1 text-lg font-semibold">{operation.volume?.toFixed(2) || 'N/A'}</p>
+                                            <p className="mt-1 text-lg font-semibold">{operation.volume ? Number(operation.volume).toFixed(2) : 'N/A'}</p>
                                         </div>
                                         <div>
                                             <p className="text-sm font-medium text-muted-foreground">Distance (KM)</p>
-                                            <p className="mt-1 text-lg font-semibold">{operation.km?.toFixed(2) || 'N/A'}</p>
+                                            <p className="mt-1 text-lg font-semibold">{operation.km ? Number(operation.km).toFixed(2) : 'N/A'}</p>
                                         </div>
                                         <div>
                                             <p className="text-sm font-medium text-muted-foreground">Tariff</p>
-                                            <p className="mt-1 text-lg font-semibold">{operation.tariff?.toFixed(2) || 'N/A'}</p>
+                                            <p className="mt-1 text-lg font-semibold">{operation.tariff ? Number(operation.tariff).toFixed(2) : 'N/A'}</p>
                                         </div>
                                     </div>
                                 </div>

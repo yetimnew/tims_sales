@@ -266,6 +266,47 @@ class WoredaController extends Controller
 
         return response()->stream($callback, 200, $headers);
     }
+
+    /**
+     * Deactivate the specified woreda.
+     */
+    public function deactivate(Woreda $woreda)
+    {
+        try {
+            $woreda->update(['status' => 'inactive']);
+
+            return redirect()->route('woredas.index')
+                ->with('success', 'Woreda deactivated successfully.');
+
+        } catch (Exception $e) {
+            return back()->withErrors(['error' => 'Failed to deactivate woreda. Please try again.']);
+        }
+    }
+
+    /**
+     * Get active woredas.
+     */
+    public function activeWoredas()
+    {
+        try {
+            $activeWoredas = Woreda::where('status', 'active')
+                ->with(['zone.region'])
+                ->orderBy('name')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $activeWoredas,
+                'count' => $activeWoredas->count()
+            ]);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve active woredas'
+            ], 500);
+        }
+    }
 }
 
 

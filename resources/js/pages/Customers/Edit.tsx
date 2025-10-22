@@ -23,7 +23,7 @@ interface Customer {
 }
 
 export default function CustomersEdit({ customer }: { customer: Customer }) {
-    const { data, setData, patch, processing, errors } = useForm({
+    const { data, setData, put, processing, errors } = useForm({
         name: customer.name,
         contact_person: customer.contact_person || '',
         phone: customer.phone || '',
@@ -34,7 +34,7 @@ export default function CustomersEdit({ customer }: { customer: Customer }) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        patch(`/customers/${customer.id}`);
+        put(`/customers/${customer.id}`);
     };
 
     return (

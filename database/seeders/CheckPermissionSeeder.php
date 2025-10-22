@@ -92,18 +92,56 @@ class CheckPermissionSeeder extends Seeder
         $operationPermissions = [
             'operations.view', 'operations.show', 'operations.create', 'operations.store',
             'operations.edit', 'operations.update', 'operations.destroy', 'operations.export',
+            'operations.deactivate', 'operations.available',
         ];
 
         // ==================== CUSTOMER PERMISSIONS ====================
         $customerPermissions = [
             'customers.view', 'customers.show', 'customers.create', 'customers.store',
             'customers.edit', 'customers.update', 'customers.destroy', 'customers.export',
+            'customers.deactivate', 'customers.active',
+        ];
+
+        // ==================== REGION PERMISSIONS ====================
+        $regionPermissions = [
+            'regions.view', 'regions.show', 'regions.create', 'regions.store',
+            'regions.edit', 'regions.update', 'regions.destroy', 'regions.export',
+            'regions.deactivate', 'regions.active',
+        ];
+
+        // ==================== ZONE PERMISSIONS ====================
+        $zonePermissions = [
+            'zones.view', 'zones.show', 'zones.create', 'zones.store',
+            'zones.edit', 'zones.update', 'zones.destroy', 'zones.export',
+            'zones.deactivate', 'zones.active',
+        ];
+
+        // ==================== WOREDA PERMISSIONS ====================
+        $woredaPermissions = [
+            'woredas.view', 'woredas.show', 'woredas.create', 'woredas.store',
+            'woredas.edit', 'woredas.update', 'woredas.destroy', 'woredas.export',
+            'woredas.deactivate', 'woredas.active',
+        ];
+
+        // ==================== PLACE PERMISSIONS ====================
+        $placePermissions = [
+            'places.view', 'places.show', 'places.create', 'places.store',
+            'places.edit', 'places.update', 'places.destroy', 'places.export',
+            'places.deactivate', 'places.active',
+        ];
+
+        // ==================== DISTANCE PERMISSIONS ====================
+        $distancePermissions = [
+            'distances.view', 'distances.show', 'distances.create', 'distances.store',
+            'distances.edit', 'distances.update', 'distances.destroy', 'distances.export',
+            'distances.deactivate', 'distances.active',
         ];
 
         // ==================== PERFORMANCE PERMISSIONS ====================
         $performancePermissions = [
             'performances.view', 'performances.show', 'performances.create', 'performances.store',
             'performances.edit', 'performances.update', 'performances.destroy', 'performances.export',
+            'performances.deactivate', 'performances.active',
         ];
 
         // ==================== DRIVER PERFORMANCE PERMISSIONS ====================
@@ -165,6 +203,7 @@ class CheckPermissionSeeder extends Seeder
             $statusPermissions,
             $operationPermissions,
             $customerPermissions,
+            $distancePermissions,
             $performancePermissions,
             $driverPerformancePermissions,
             $driverSafetyPermissions,

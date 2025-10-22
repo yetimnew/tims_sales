@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 use Exception;
 
 class PlaceController extends Controller
@@ -168,6 +169,123 @@ class PlaceController extends Controller
             ]);
 
             return back()->withErrors(['error' => 'Failed to delete place. Please try again.']);
+        }
+    }
+
+    /**
+     * Export places to CSV.
+     */
+    public function export(Request $request)
+    {
+        $query = Place::with(['woreda.zone.region']);
+
+        // Apply search if provided
+        if ($request->has('search') && !empty($request->input('search'))) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('code', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%");
+            });
+        }
+
+        // Apply sorting
+        if ($request->has('sort')) {
+            $sort = $request->input('sort', 'name');
+            $direction = $request->input('direction', 'asc');
+            $query = $query->orderBy($sort, $direction);
+        }
+
+        $places = $query->get();
+
+        // Generate CSV
+        $filename = 'places_' . now()->format('Y-m-d_H-i-s') . '.csv';
+        $handle = fopen('php://temp', 'r+');
+
+        // Write header
+        fputcsv($handle, [
+            'ID',
+            'Name',
+            'Code',
+            'Woreda',
+            'Zone',
+            'Region',
+            'Description',
+            'Created At',
+            'Updated At'
+        ]);
+
+        // Write data
+        foreach ($places as $place) {
+            fputcsv($handle, [
+                $place->id,
+                $place->name,
+                $place->code,
+                $place->woreda?->name ?? 'N/A',
+                $place->woreda?->zone?->name ?? 'N/A',
+                $place->woreda?->zone?->region?->name ?? 'N/A',
+                $place->description,
+                $place->created_at,
+                $place->updated_at
+            ]);
+        }
+
+        rewind($handle);
+        $csv = stream_get_contents($handle);
+        fclose($handle);
+
+        // Log the export activity
+        if (Auth::check()) {
+            activity()
+                ->causedBy(Auth::user())
+                ->withProperties(['count' => count($places)])
+                ->log('exported places to CSV');
+        }
+
+        return response($csv, 200, [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
+    }
+
+    /**
+     * Deactivate the specified place.
+     */
+    public function deactivate(Place $place)
+    {
+        try {
+            $place->update(['status' => 'inactive']);
+
+            return redirect()->route('places.index')
+                ->with('success', 'Place deactivated successfully.');
+
+        } catch (Exception $e) {
+            return back()->withErrors(['error' => 'Failed to deactivate place. Please try again.']);
+        }
+    }
+
+    /**
+     * Get active places.
+     */
+    public function activePlaces()
+    {
+        try {
+            $activePlaces = Place::where('status', 'active')
+                ->with(['woreda.zone.region'])
+                ->orderBy('name')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $activePlaces,
+                'count' => $activePlaces->count()
+            ]);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve active places'
+            ], 500);
         }
     }
 }

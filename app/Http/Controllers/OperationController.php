@@ -26,7 +26,7 @@ class OperationController extends Controller
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
                 $q->where('operationid', 'like', "%{$search}%")
-                    ->orWhere('description', 'like', "%{$search}%")
+                    ->orWhere('remark', 'like', "%{$search}%")
                     ->orWhereHas('customer', function ($q) use ($search) {
                         $q->where('name', 'like', "%{$search}%");
                     });
@@ -59,9 +59,11 @@ class OperationController extends Controller
     public function create(): Response
     {
         $customers = Customer::where('status', 'active')->get();
+        $regions = \App\Models\Region::all();
 
         return Inertia::render('Operations/Create', [
             'customers' => $customers,
+            'regions' => $regions,
         ]);
     }
 
@@ -74,9 +76,18 @@ class OperationController extends Controller
             $validated = $request->validate([
                 'operationid' => 'required|string|max:255|unique:operations',
                 'customer_id' => 'required|exists:customers,id',
-                'description' => 'nullable|string|max:1000',
+                'region_id' => 'required|exists:regions,id',
+                'startdate' => 'required|date',
+                'volume' => 'required|numeric|min:0',
+                'cargotype' => 'required|string|max:255',
+                'km' => 'required|numeric|min:0',
+                'tariff' => 'required|numeric|min:0',
+                'remark' => 'nullable|string|max:1000',
                 'status' => 'required|string|in:active,inactive',
             ]);
+
+            // Add user_id to the validated data
+            $validated['user_id'] = auth()->id();
 
             $operation = Operation::create($validated);
 
@@ -126,10 +137,12 @@ class OperationController extends Controller
     public function edit(Operation $operation): Response
     {
         $customers = Customer::where('status', 'active')->get();
+        $regions = \App\Models\Region::all();
 
         return Inertia::render('Operations/Edit', [
             'operation' => $operation,
             'customers' => $customers,
+            'regions' => $regions,
         ]);
     }
 
@@ -142,7 +155,13 @@ class OperationController extends Controller
             $validated = $request->validate([
                 'operationid' => 'required|string|max:255|unique:operations,operationid,' . $operation->id,
                 'customer_id' => 'required|exists:customers,id',
-                'description' => 'nullable|string|max:1000',
+                'region_id' => 'required|exists:regions,id',
+                'startdate' => 'required|date',
+                'volume' => 'required|numeric|min:0',
+                'cargotype' => 'required|string|max:255',
+                'km' => 'required|numeric|min:0',
+                'tariff' => 'required|numeric|min:0',
+                'remark' => 'nullable|string|max:1000',
                 'status' => 'required|string|in:active,inactive',
             ]);
 
@@ -216,7 +235,7 @@ class OperationController extends Controller
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
                 $q->where('operationid', 'like', "%{$search}%")
-                    ->orWhere('description', 'like', "%{$search}%")
+                    ->orWhere('remark', 'like', "%{$search}%")
                     ->orWhereHas('customer', function ($q) use ($search) {
                         $q->where('name', 'like', "%{$search}%");
                     });
@@ -286,6 +305,65 @@ class OperationController extends Controller
             'Content-Type' => 'text/csv',
             'Content-Disposition' => 'attachment; filename="' . $filename . '"',
         ]);
+    }
+
+    /**
+     * Deactivate the specified operation.
+     */
+    public function deactivate(Operation $operation)
+    {
+        try {
+            $operation->update(['status' => 'inactive']);
+
+            Log::info('Operation deactivated', [
+                'operation_id' => $operation->id,
+                'operationid' => $operation->operationid,
+                'user_id' => auth()->id(),
+            ]);
+
+            return redirect()->route('operations.index')
+                ->with('success', 'Operation deactivated successfully.');
+
+        } catch (Exception $e) {
+            Log::error('Operation deactivation failed', [
+                'operation_id' => $operation->id,
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id(),
+            ]);
+
+            return back()->withErrors(['error' => 'Failed to deactivate operation. Please try again.']);
+        }
+    }
+
+    /**
+     * Get available operations (not closed/completed).
+     */
+    public function availableOperations()
+    {
+        try {
+            $availableOperations = Operation::where('status', 'active')
+                ->where('closed', false)
+                ->with(['customer', 'region'])
+                ->orderBy('operationid')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $availableOperations,
+                'count' => $availableOperations->count()
+            ]);
+
+        } catch (Exception $e) {
+            Log::error('Failed to retrieve available operations', [
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve available operations'
+            ], 500);
+        }
     }
 }
 

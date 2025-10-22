@@ -140,6 +140,14 @@ Route::middleware(['auth'])->group(function () {
             ->middleware('can:performances.destroy')
             ->name('performances.destroy');
 
+        Route::post('performances/{performance}/deactivate', [PerformanceController::class, 'deactivate'])
+            ->middleware('can:performances.deactivate')
+            ->name('performances.deactivate');
+
+        Route::get('performances/active/list', [PerformanceController::class, 'activePerformances'])
+            ->middleware('can:performances.active')
+            ->name('performances.active');
+
         // Additional performance routes
         Route::get('performances/status/list', [PerformanceController::class, 'statusList'])
             ->name('performances.status.list');
@@ -335,6 +343,14 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('operations/{operation}', [\App\Http\Controllers\OperationController::class, 'destroy'])
             ->middleware('can:operations.destroy')
             ->name('operations.destroy');
+
+        Route::post('operations/{operation}/deactivate', [\App\Http\Controllers\OperationController::class, 'deactivate'])
+            ->middleware('can:operations.deactivate')
+            ->name('operations.deactivate');
+
+        Route::get('operations/available/list', [\App\Http\Controllers\OperationController::class, 'availableOperations'])
+            ->middleware('can:operations.available')
+            ->name('operations.available');
     });
 
     // Customers
@@ -370,14 +386,56 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('customers/{customer}', [\App\Http\Controllers\CustomerController::class, 'destroy'])
             ->middleware('can:customers.destroy')
             ->name('customers.destroy');
+
+        Route::post('customers/{customer}/deactivate', [\App\Http\Controllers\CustomerController::class, 'deactivate'])
+            ->middleware('can:customers.deactivate')
+            ->name('customers.deactivate');
+
+        Route::get('customers/active/list', [\App\Http\Controllers\CustomerController::class, 'activeCustomers'])
+            ->middleware('can:customers.active')
+            ->name('customers.active');
     });
 
     // Geographic Management
     Route::resource('regions', \App\Http\Controllers\RegionController::class);
+    Route::post('regions/{region}/deactivate', [\App\Http\Controllers\RegionController::class, 'deactivate'])
+        ->middleware('can:regions.deactivate')
+        ->name('regions.deactivate');
+    Route::get('regions/active/list', [\App\Http\Controllers\RegionController::class, 'activeRegions'])
+        ->middleware('can:regions.active')
+        ->name('regions.active');
+
     Route::resource('zones', \App\Http\Controllers\ZoneController::class);
+    Route::post('zones/{zone}/deactivate', [\App\Http\Controllers\ZoneController::class, 'deactivate'])
+        ->middleware('can:zones.deactivate')
+        ->name('zones.deactivate');
+    Route::get('zones/active/list', [\App\Http\Controllers\ZoneController::class, 'activeZones'])
+        ->middleware('can:zones.active')
+        ->name('zones.active');
+
     Route::resource('woredas', \App\Http\Controllers\WoredaController::class);
+    Route::post('woredas/{woreda}/deactivate', [\App\Http\Controllers\WoredaController::class, 'deactivate'])
+        ->middleware('can:woredas.deactivate')
+        ->name('woredas.deactivate');
+    Route::get('woredas/active/list', [\App\Http\Controllers\WoredaController::class, 'activeWoredas'])
+        ->middleware('can:woredas.active')
+        ->name('woredas.active');
+
     Route::resource('places', \App\Http\Controllers\PlaceController::class);
+    Route::post('places/{place}/deactivate', [\App\Http\Controllers\PlaceController::class, 'deactivate'])
+        ->middleware('can:places.deactivate')
+        ->name('places.deactivate');
+    Route::get('places/active/list', [\App\Http\Controllers\PlaceController::class, 'activePlaces'])
+        ->middleware('can:places.active')
+        ->name('places.active');
+
     Route::resource('distances', \App\Http\Controllers\DistanceController::class);
+    Route::post('distances/{distance}/deactivate', [\App\Http\Controllers\DistanceController::class, 'deactivate'])
+        ->middleware('can:distances.deactivate')
+        ->name('distances.deactivate');
+    Route::get('distances/active/list', [\App\Http\Controllers\DistanceController::class, 'activeDistances'])
+        ->middleware('can:distances.active')
+        ->name('distances.active');
 
     // Vehicle Types
     Route::middleware(['throttle:60,1'])->group(function () {

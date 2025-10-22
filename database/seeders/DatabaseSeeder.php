@@ -15,6 +15,13 @@ class DatabaseSeeder extends Seeder
     {
         $this->call(CheckPermissionSeeder::class);
 
+        // Seed Ethiopia's geographic structure
+        $this->call(EthiopiaRegionsSeeder::class);
+        $this->call(EthiopiaZonesSeeder::class);
+        $this->call(EthiopiaWoredasSeeder::class);
+        $this->call(EthiopiaPlacesSeeder::class);
+        $this->call(EthiopiaDistancesSeeder::class);
+
         // Create a test user if none exist
         if (User::count() === 0) {
             $user = User::factory()->create([

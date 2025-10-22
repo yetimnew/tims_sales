@@ -16,11 +16,22 @@ class Distance extends Model
         'distance_km',
         'estimated_time_hours',
         'route_description',
+        'route_type',
+        'estimated_travel_time_minutes',
+        'road_condition_factor',
+        'toll_road',
+        'toll_cost',
+        'restricted_for_heavy_vehicles',
+        'route_notes',
     ];
 
     protected $casts = [
         'distance_km' => 'decimal:2',
         'estimated_time_hours' => 'decimal:2',
+        'road_condition_factor' => 'decimal:2',
+        'toll_cost' => 'decimal:2',
+        'toll_road' => 'boolean',
+        'restricted_for_heavy_vehicles' => 'boolean',
     ];
 
     /**
@@ -37,6 +48,65 @@ class Distance extends Model
     public function toPlace(): BelongsTo
     {
         return $this->belongsTo(Place::class, 'to_place_id');
+    }
+
+    /**
+     * Calculate distance between two coordinates using Haversine formula
+     */
+    public function calculateDistance(float $lat1, float $lon1, float $lat2, float $lon2): float
+    {
+        $earthRadius = 6371; // Earth's radius in kilometers
+
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLon = deg2rad($lon2 - $lon1);
+
+        $a = sin($dLat/2) * sin($dLat/2) +
+             cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
+             sin($dLon/2) * sin($dLon/2);
+
+        $c = 2 * atan2(sqrt($a), sqrt(1-$a));
+
+        return $earthRadius * $c;
+    }
+
+    /**
+     * Get average speed based on route type
+     */
+    public function getAverageSpeed(): float
+    {
+        return match($this->route_type) {
+            'primary' => 80.0,
+            'secondary' => 50.0,
+            'alternative' => 40.0,
+            default => 50.0
+        };
+    }
+
+    /**
+     * Calculate estimated time based on distance and route conditions
+     */
+    public function calculateEstimatedTime(): float
+    {
+        if ($this->distance_km <= 0) return 0;
+
+        $baseTime = $this->distance_km / $this->getAverageSpeed();
+        return $baseTime * $this->road_condition_factor;
+    }
+
+    /**
+     * Check if route is suitable for heavy vehicles
+     */
+    public function isSuitableForHeavyVehicles(): bool
+    {
+        return !$this->restricted_for_heavy_vehicles;
+    }
+
+    /**
+     * Get total cost including tolls
+     */
+    public function getTotalCost(): float
+    {
+        return $this->toll_road ? $this->toll_cost : 0;
     }
 }
 

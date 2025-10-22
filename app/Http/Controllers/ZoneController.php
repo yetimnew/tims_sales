@@ -266,6 +266,47 @@ class ZoneController extends Controller
 
         return response()->stream($callback, 200, $headers);
     }
+
+    /**
+     * Deactivate the specified zone.
+     */
+    public function deactivate(Zone $zone)
+    {
+        try {
+            $zone->update(['status' => 'inactive']);
+
+            return redirect()->route('zones.index')
+                ->with('success', 'Zone deactivated successfully.');
+
+        } catch (Exception $e) {
+            return back()->withErrors(['error' => 'Failed to deactivate zone. Please try again.']);
+        }
+    }
+
+    /**
+     * Get active zones.
+     */
+    public function activeZones()
+    {
+        try {
+            $activeZones = Zone::where('status', 'active')
+                ->with('region')
+                ->orderBy('name')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $activeZones,
+                'count' => $activeZones->count()
+            ]);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve active zones'
+            ], 500);
+        }
+    }
 }
 
 

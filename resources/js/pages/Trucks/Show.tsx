@@ -1,7 +1,8 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { AlertCircle } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { AlertCircle, Wrench, BarChart3, History, CheckCircle, XCircle, DollarSign, Calendar, Clock } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { Head, Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
@@ -144,169 +145,268 @@ export default function TrucksShow({ truck, activityLogs = [] }: TrucksShowProps
                     </div>
                 </div>
 
-                <div className="grid gap-6 lg:grid-cols-3">
-                    {/* Main Details */}
-                    <div className="lg:col-span-2 space-y-6">
-                        {/* Basic Information */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Basic Information</CardTitle>
-                                <CardDescription>Core truck details and specifications</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="grid gap-4">
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <p className="text-sm font-medium text-muted-foreground">Status</p>
-                                            <Badge className={`mt-1 ${getStatusBadgeColor(truck.status)}`}>
-                                                {truck.status.charAt(0).toUpperCase() + truck.status.slice(1)}
-                                            </Badge>
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-medium text-muted-foreground">Vehicle Type</p>
-                                            <p className="mt-1 text-sm font-semibold">{truck.vehicleType?.name || 'Unknown'}</p>
-                                        </div>
-                                    </div>
+                <Tabs defaultValue="overview" className="space-y-6">
+                    <TabsList className="grid w-full grid-cols-4">
+                        <TabsTrigger value="overview" className="flex items-center gap-2">
+                            <CheckCircle className="h-4 w-4" />
+                            Overview
+                        </TabsTrigger>
+                        <TabsTrigger value="maintenance" className="flex items-center gap-2">
+                            <Wrench className="h-4 w-4" />
+                            Maintenance
+                        </TabsTrigger>
+                        <TabsTrigger value="performance" className="flex items-center gap-2">
+                            <BarChart3 className="h-4 w-4" />
+                            Performance
+                        </TabsTrigger>
+                        <TabsTrigger value="history" className="flex items-center gap-2">
+                            <History className="h-4 w-4" />
+                            History
+                        </TabsTrigger>
+                    </TabsList>
 
-                                    <div className="border-t pt-4">
-                                        <div className="grid grid-cols-2 gap-4">
+                    <TabsContent value="overview" className="space-y-6">
+                        <div className="grid gap-6 lg:grid-cols-3">
+                            {/* Main Details */}
+                            <div className="lg:col-span-2 space-y-6">
+                                {/* Basic Information */}
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Basic Information</CardTitle>
+                                        <CardDescription>Core truck details and specifications</CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="grid gap-4">
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <p className="text-sm font-medium text-muted-foreground">Status</p>
+                                                    <Badge className={`mt-1 flex items-center gap-1 w-fit ${getStatusBadgeColor(truck.status)}`}>
+                                                        {truck.status === 'active' && <CheckCircle className="h-3 w-3" />}
+                                                        {truck.status === 'maintenance' && <Wrench className="h-3 w-3" />}
+                                                        {truck.status === 'inactive' && <XCircle className="h-3 w-3" />}
+                                                        {truck.status.charAt(0).toUpperCase() + truck.status.slice(1)}
+                                                    </Badge>
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-medium text-muted-foreground">Vehicle Type</p>
+                                                    <p className="mt-1 text-sm font-semibold">{truck.vehicleType?.name || 'Unknown'}</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="border-t pt-4">
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div>
+                                                        <p className="text-sm font-medium text-muted-foreground">Chassis Number</p>
+                                                        <p className="mt-1 text-sm font-mono">{truck.chasisNumber || 'N/A'}</p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm font-medium text-muted-foreground">Engine Number</p>
+                                                        <p className="mt-1 text-sm font-mono">{truck.engineNumber || 'N/A'}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="border-t pt-4">
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div>
+                                                        <p className="text-sm font-medium text-muted-foreground">Tyre Size</p>
+                                                        <p className="mt-1 text-sm">{truck.tyreSyze || 'N/A'}</p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm font-medium text-muted-foreground">Service Interval</p>
+                                                        <p className="mt-1 text-sm">{truck.serviceIntervalKM?.toLocaleString()} KM || 'N/A'</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+
+                                {/* Financial Information */}
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Financial Information</CardTitle>
+                                        <CardDescription>Purchase and pricing details</CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="grid gap-4">
                                             <div>
-                                                <p className="text-sm font-medium text-muted-foreground">Chassis Number</p>
-                                                <p className="mt-1 text-sm font-mono">{truck.chasisNumber || 'N/A'}</p>
+                                                <p className="text-sm font-medium text-muted-foreground">Purchase Price</p>
+                                                <p className="mt-1 text-lg font-semibold">{formatCurrency(truck.purchasePrice)}</p>
                                             </div>
                                             <div>
-                                                <p className="text-sm font-medium text-muted-foreground">Engine Number</p>
-                                                <p className="mt-1 text-sm font-mono">{truck.engineNumber || 'N/A'}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="border-t pt-4">
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div>
-                                                <p className="text-sm font-medium text-muted-foreground">Tyre Size</p>
-                                                <p className="mt-1 text-sm">{truck.tyreSyze || 'N/A'}</p>
+                                                <p className="text-sm font-medium text-muted-foreground">Purchase/Production Date</p>
+                                                <p className="mt-1 text-sm">{formatDate(truck.productionDate)}</p>
                                             </div>
                                             <div>
-                                                <p className="text-sm font-medium text-muted-foreground">Service Interval</p>
-                                                <p className="mt-1 text-sm">{truck.serviceIntervalKM?.toLocaleString()} KM || 'N/A'</p>
+                                                <p className="text-sm font-medium text-muted-foreground">Service Start Date</p>
+                                                <p className="mt-1 text-sm">{formatDate(truck.serviceStartDate)}</p>
                                             </div>
                                         </div>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
+                                    </CardContent>
+                                </Card>
 
-                        {/* Financial Information */}
+                                {/* Timestamps */}
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Record Information</CardTitle>
+                                        <CardDescription>System-generated metadata</CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="grid gap-4 text-sm">
+                                            <div>
+                                                <p className="font-medium text-muted-foreground">Created</p>
+                                                <p className="mt-1">{formatDate(truck.created_at)}</p>
+                                            </div>
+                                            <div>
+                                                <p className="font-medium text-muted-foreground">Last Updated</p>
+                                                <p className="mt-1">{formatDate(truck.updated_at)}</p>
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </div>
+
+                            {/* Sidebar - Quick Stats */}
+                            <div className="space-y-6">
+                                {/* Status Card */}
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className="text-base">Quick Status</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="space-y-4">
+                                            <div className="rounded-lg bg-muted p-4">
+                                                <p className="text-sm font-medium text-muted-foreground">Current Status</p>
+                                                <Badge className={`mt-2 flex items-center gap-1 w-fit ${getStatusBadgeColor(truck.status)}`}>
+                                                    {truck.status === 'active' && <CheckCircle className="h-3 w-3" />}
+                                                    {truck.status === 'maintenance' && <Wrench className="h-3 w-3" />}
+                                                    {truck.status === 'inactive' && <XCircle className="h-3 w-3" />}
+                                                    {truck.status.charAt(0).toUpperCase() + truck.status.slice(1)}
+                                                </Badge>
+                                            </div>
+                                            <div className="rounded-lg bg-muted p-4">
+                                                <p className="text-sm font-medium text-muted-foreground">Plate Number</p>
+                                                <p className="mt-2 text-lg font-mono font-bold">{truck.plate}</p>
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+
+                                {/* Assigned Drivers */}
+                                {truck.drivers && truck.drivers.length > 0 && (
+                                    <Card>
+                                        <CardHeader>
+                                            <CardTitle className="text-base">Assigned Drivers</CardTitle>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <div className="space-y-2">
+                                                {truck.drivers.map((driver: any) => (
+                                                    <Link
+                                                        key={driver.id}
+                                                        href={`/drivers/${driver.id}`}
+                                                        className="block rounded-lg border border-border p-2 text-sm hover:bg-muted"
+                                                    >
+                                                        {driver.name}
+                                                    </Link>
+                                                ))}
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                )}
+
+                                {/* Recent Performances */}
+                                {truck.performances && truck.performances.length > 0 && (
+                                    <Card>
+                                        <CardHeader>
+                                            <CardTitle className="text-base">Recent Activities</CardTitle>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <p className="text-sm text-muted-foreground">
+                                                {truck.performances.length} performance record{truck.performances.length !== 1 ? 's' : ''} available
+                                            </p>
+                                        </CardContent>
+                                    </Card>
+                                )}
+                            </div>
+                        </div>
+                    </TabsContent>
+
+                    <TabsContent value="maintenance" className="space-y-6">
                         <Card>
                             <CardHeader>
-                                <CardTitle>Financial Information</CardTitle>
-                                <CardDescription>Purchase and pricing details</CardDescription>
+                                <CardTitle className="flex items-center gap-2">
+                                    <Wrench className="h-5 w-5" />
+                                    Maintenance Records
+                                </CardTitle>
+                                <CardDescription>Track maintenance history and upcoming services</CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <div className="grid gap-4">
-                                    <div>
-                                        <p className="text-sm font-medium text-muted-foreground">Purchase Price</p>
-                                        <p className="mt-1 text-lg font-semibold">{formatCurrency(truck.purchasePrice)}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-medium text-muted-foreground">Purchase/Production Date</p>
-                                        <p className="mt-1 text-sm">{formatDate(truck.productionDate)}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-medium text-muted-foreground">Service Start Date</p>
-                                        <p className="mt-1 text-sm">{formatDate(truck.serviceStartDate)}</p>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Timestamps */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Record Information</CardTitle>
-                                <CardDescription>System-generated metadata</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="grid gap-4 text-sm">
-                                    <div>
-                                        <p className="font-medium text-muted-foreground">Created</p>
-                                        <p className="mt-1">{formatDate(truck.created_at)}</p>
-                                    </div>
-                                    <div>
-                                        <p className="font-medium text-muted-foreground">Last Updated</p>
-                                        <p className="mt-1">{formatDate(truck.updated_at)}</p>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </div>
-
-                    {/* Sidebar - Quick Stats */}
-                    <div className="space-y-6">
-                        {/* Status Card */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-base">Quick Status</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="space-y-4">
-                                    <div className="rounded-lg bg-muted p-4">
-                                        <p className="text-sm font-medium text-muted-foreground">Current Status</p>
-                                        <Badge className={`mt-2 ${getStatusBadgeColor(truck.status)}`}>
-                                            {truck.status.charAt(0).toUpperCase() + truck.status.slice(1)}
-                                        </Badge>
-                                    </div>
-                                    <div className="rounded-lg bg-muted p-4">
-                                        <p className="text-sm font-medium text-muted-foreground">Plate Number</p>
-                                        <p className="mt-2 text-lg font-mono font-bold">{truck.plate}</p>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Assigned Drivers */}
-                        {truck.drivers && truck.drivers.length > 0 && (
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle className="text-base">Assigned Drivers</CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="space-y-2">
-                                        {truck.drivers.map((driver: any) => (
-                                            <Link
-                                                key={driver.id}
-                                                href={`/drivers/${driver.id}`}
-                                                className="block rounded-lg border border-border p-2 text-sm hover:bg-muted"
-                                            >
-                                                {driver.name}
-                                            </Link>
-                                        ))}
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        )}
-
-                        {/* Recent Performances */}
-                        {truck.performances && truck.performances.length > 0 && (
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle className="text-base">Recent Activities</CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <p className="text-sm text-muted-foreground">
-                                        {truck.performances.length} performance record{truck.performances.length !== 1 ? 's' : ''} available
+                                <div className="text-center py-8">
+                                    <Wrench className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                                    <h3 className="text-lg font-semibold mb-2">No maintenance records</h3>
+                                    <p className="text-muted-foreground mb-4">
+                                        Maintenance records will appear here when they are created
                                     </p>
-                                </CardContent>
-                            </Card>
-                        )}
-                    </div>
-                </div>
+                                    <Button>
+                                        <Wrench className="mr-2 h-4 w-4" />
+                                        Schedule Maintenance
+                                    </Button>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
 
-                {/* Activity Log */}
-                {activityLogs && activityLogs.length > 0 && (
-                    <ActivityLogTable logs={activityLogs} />
-                )}
+                    <TabsContent value="performance" className="space-y-6">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <BarChart3 className="h-5 w-5" />
+                                    Performance Metrics
+                                </CardTitle>
+                                <CardDescription>View performance data and analytics</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-center py-8">
+                                    <BarChart3 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                                    <h3 className="text-lg font-semibold mb-2">No performance data</h3>
+                                    <p className="text-muted-foreground mb-4">
+                                        Performance metrics will be displayed here when available
+                                    </p>
+                                    <Button variant="outline">
+                                        <BarChart3 className="mr-2 h-4 w-4" />
+                                        View All Performance
+                                    </Button>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+
+                    <TabsContent value="history" className="space-y-6">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <History className="h-5 w-5" />
+                                    Activity History
+                                </CardTitle>
+                                <CardDescription>Complete audit trail of all truck activities</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                {activityLogs && activityLogs.length > 0 ? (
+                                    <ActivityLogTable logs={activityLogs} />
+                                ) : (
+                                    <div className="text-center py-8">
+                                        <History className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                                        <h3 className="text-lg font-semibold mb-2">No activity history</h3>
+                                        <p className="text-muted-foreground">
+                                            Activity logs will appear here as changes are made
+                                        </p>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+                </Tabs>
             </div>
 
             {/* Delete Confirmation Dialog */}
