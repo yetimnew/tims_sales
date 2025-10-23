@@ -110,56 +110,57 @@ export default function TrucksShow({ truck, activityLogs = [] }: TrucksShowProps
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`View Truck - ${truck.plate}`} />
-            <div className="flex flex-1 flex-col gap-6">
-                {/* Header with Back Button */}
+            <div className="flex h-full flex-1 flex-col gap-6 overflow-hidden rounded-xl p-4">
+                {/* Enhanced Header with Back Button */}
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <Button
                             variant="outline"
                             size="sm"
                             onClick={() => router.get('/trucks')}
-                            className="flex items-center gap-2"
+                            className="flex items-center gap-2 hover:bg-muted/50"
                         >
                             <ArrowLeft className="h-4 w-4" />
                             Back to Trucks
                         </Button>
                         <div>
-                            <h1 className="text-2xl font-bold">{truck.plate}</h1>
-                            <p className="text-muted-foreground">View truck details and manage information</p>
+                            <h1 className="text-3xl font-bold text-foreground">{truck.plate}</h1>
+                            <p className="text-muted-foreground mt-1">View comprehensive truck details and manage information</p>
                         </div>
                     </div>
-                    <div className="flex gap-2">
-                        <Button variant="outline" asChild>
+                    <div className="flex gap-3">
+                        <Button variant="outline" asChild className="hover:bg-blue-50 hover:border-blue-300">
                             <Link href={`/trucks/${truck.id}/edit`}>
                                 <Edit className="mr-2 h-4 w-4" />
-                                Edit
+                                Edit Truck
                             </Link>
                         </Button>
                         <Button
-                            variant="destructive"
+                            variant="outline"
                             onClick={() => setDeleteDialogOpen(true)}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300"
                         >
                             <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
+                            Delete Truck
                         </Button>
                     </div>
                 </div>
 
                 <Tabs defaultValue="overview" className="space-y-6">
-                    <TabsList className="grid w-full grid-cols-4">
-                        <TabsTrigger value="overview" className="flex items-center gap-2">
+                    <TabsList className="grid w-full grid-cols-4 bg-muted/50 p-1 rounded-lg">
+                        <TabsTrigger value="overview" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
                             <CheckCircle className="h-4 w-4" />
                             Overview
                         </TabsTrigger>
-                        <TabsTrigger value="maintenance" className="flex items-center gap-2">
+                        <TabsTrigger value="maintenance" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
                             <Wrench className="h-4 w-4" />
                             Maintenance
                         </TabsTrigger>
-                        <TabsTrigger value="performance" className="flex items-center gap-2">
+                        <TabsTrigger value="performance" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
                             <BarChart3 className="h-4 w-4" />
                             Performance
                         </TabsTrigger>
-                        <TabsTrigger value="history" className="flex items-center gap-2">
+                        <TabsTrigger value="history" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
                             <History className="h-4 w-4" />
                             History
                         </TabsTrigger>
@@ -169,11 +170,16 @@ export default function TrucksShow({ truck, activityLogs = [] }: TrucksShowProps
                         <div className="grid gap-6 lg:grid-cols-3">
                             {/* Main Details */}
                             <div className="lg:col-span-2 space-y-6">
-                                {/* Basic Information */}
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle>Basic Information</CardTitle>
-                                        <CardDescription>Core truck details and specifications</CardDescription>
+                                {/* Enhanced Basic Information */}
+                                <Card className="shadow-lg border-0 bg-gradient-to-br from-background to-muted/20">
+                                    <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-b">
+                                        <CardTitle className="flex items-center gap-2 text-xl">
+                                            <CheckCircle className="h-5 w-5 text-blue-600" />
+                                            Basic Information
+                                        </CardTitle>
+                                        <CardDescription className="text-base">
+                                            Core truck details and specifications
+                                        </CardDescription>
                                     </CardHeader>
                                     <CardContent>
                                         <div className="grid gap-4">

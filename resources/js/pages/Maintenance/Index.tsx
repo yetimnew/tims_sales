@@ -114,6 +114,22 @@ export default function MaintenanceIndex({
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Maintenance Management" />
             <div className="flex h-full flex-1 flex-col gap-6 overflow-hidden rounded-xl p-4">
+                {/* Header Section */}
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-3xl font-bold">Maintenance</h1>
+                        <p className="text-muted-foreground mt-2">
+                            Manage maintenance records and schedules
+                        </p>
+                    </div>
+                    <Button asChild>
+                        <Link href="/maintenance/create">
+                            <Plus className="mr-2 h-4 w-4" />
+                            Schedule Maintenance
+                        </Link>
+                    </Button>
+                </div>
+
                 {/* Statistics Cards */}
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
                     <Card>

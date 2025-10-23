@@ -131,8 +131,8 @@ export default function FinancialIndex({ financialRecords }: FinancialIndexProps
       <div className="flex h-full flex-1 flex-col gap-6 overflow-hidden rounded-xl p-4">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">Financial Records</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-3xl font-bold">Financial Records</h1>
+            <p className="text-muted-foreground mt-2">
               Manage your {financialRecords?.total || 0} financial records
             </p>
           </div>

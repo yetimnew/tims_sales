@@ -124,160 +124,156 @@ export default function CargoTypesIndex({ cargoTypes }: CargoTypesIndexProps) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Cargo Types" />
 
-            <div className="space-y-6">
-                <Card>
-                    <CardHeader>
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <CardTitle>Cargo Types</CardTitle>
-                                <CardDescription>
-                                    Manage and track different cargo types used in your fleet
-                                </CardDescription>
-                            </div>
-                            {hasPermission('cargo-types.create') && (
-                                <Link href="/cargo-types/create">
-                                    <Button className="gap-2">
-                                        <Plus size={16} />
-                                        New Cargo Type
-                                    </Button>
-                                </Link>
-                            )}
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                        {/* Search Bar */}
-                        <div className="mb-6 flex gap-2">
-                            <div className="relative flex-1">
-                                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                                <Input
-                                    placeholder="Search by name, category, or requirements..."
-                                    value={searchTerm}
-                                    onChange={handleSearch}
-                                    className="pl-10"
-                                />
-                            </div>
-                        </div>
+            <div className="flex h-full flex-1 flex-col gap-6 overflow-hidden rounded-xl p-4">
+                {/* Header Section */}
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-3xl font-bold">Cargo Types</h1>
+                        <p className="text-muted-foreground mt-2">
+                            Manage and track different cargo types used in your fleet
+                        </p>
+                    </div>
+                    {hasPermission('cargo-types.create') && (
+                        <Link href="/cargo-types/create">
+                            <Button className="gap-2">
+                                <Plus size={16} />
+                                New Cargo Type
+                            </Button>
+                        </Link>
+                    )}
+                </div>
 
-                        {/* Table */}
-                        <div className="overflow-x-auto">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead
-                                            className="cursor-pointer"
-                                            onClick={() => handleSort('name')}
-                                        >
-                                            <div className="flex items-center gap-2">
-                                                Name
-                                                <ArrowUpDown size={14} />
+                {/* Search Bar */}
+                <div className="mb-6 flex gap-2">
+                    <div className="relative flex-1">
+                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                        <Input
+                            placeholder="Search by name, category, or requirements..."
+                            value={searchTerm}
+                            onChange={handleSearch}
+                            className="pl-10"
+                        />
+                    </div>
+                </div>
+
+                {/* Table */}
+                <div className="overflow-x-auto">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead
+                                    className="cursor-pointer"
+                                    onClick={() => handleSort('name')}
+                                >
+                                    <div className="flex items-center gap-2">
+                                        Name
+                                        <ArrowUpDown size={14} />
+                                    </div>
+                                </TableHead>
+                                <TableHead
+                                    className="cursor-pointer"
+                                    onClick={() => handleSort('category')}
+                                >
+                                    <div className="flex items-center gap-2">
+                                        Category
+                                        <ArrowUpDown size={14} />
+                                    </div>
+                                </TableHead>
+                                <TableHead>Weight/m³</TableHead>
+                                <TableHead>Special Equipment</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {cargoTypes.data.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={5} className="text-center py-8">
+                                        No cargo types found.
+                                    </TableCell>
+                                </TableRow>
+                            ) : (
+                                cargoTypes.data.map((type) => (
+                                    <TableRow key={type.id}>
+                                        <TableCell className="font-medium">
+                                            {type.name}
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge className={getCategoryColor(type.category)}>
+                                                {type.category}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell>
+                                            {type.weight_per_cubic_meter ? `${type.weight_per_cubic_meter} kg` : '-'}
+                                        </TableCell>
+                                        <TableCell>
+                                            {type.requires_special_equipment ? (
+                                                <Badge variant="secondary">Yes</Badge>
+                                            ) : (
+                                                <span className="text-gray-500">No</span>
+                                            )}
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <div className="flex justify-end gap-2">
+                                                {hasPermission('cargo-types.show') && (
+                                                    <Link
+                                                        href={`/cargo-types/${type.id}`}
+                                                        className="p-2 hover:bg-gray-100 rounded"
+                                                    >
+                                                        <Eye size={16} />
+                                                    </Link>
+                                                )}
+                                                {hasPermission('cargo-types.edit') && (
+                                                    <Link
+                                                        href={`/cargo-types/${type.id}/edit`}
+                                                        className="p-2 hover:bg-gray-100 rounded"
+                                                    >
+                                                        <Edit size={16} />
+                                                    </Link>
+                                                )}
+                                                {hasPermission('cargo-types.destroy') && (
+                                                    <button
+                                                        onClick={() => handleDeleteClick(type)}
+                                                        className="p-2 hover:bg-red-100 text-red-600 rounded"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                )}
                                             </div>
-                                        </TableHead>
-                                        <TableHead
-                                            className="cursor-pointer"
-                                            onClick={() => handleSort('category')}
-                                        >
-                                            <div className="flex items-center gap-2">
-                                                Category
-                                                <ArrowUpDown size={14} />
-                                            </div>
-                                        </TableHead>
-                                        <TableHead>Weight/m³</TableHead>
-                                        <TableHead>Special Equipment</TableHead>
-                                        <TableHead className="text-right">Actions</TableHead>
+                                        </TableCell>
                                     </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {cargoTypes.data.length === 0 ? (
-                                        <TableRow>
-                                            <TableCell colSpan={5} className="text-center py-8">
-                                                No cargo types found.
-                                            </TableCell>
-                                        </TableRow>
-                                    ) : (
-                                        cargoTypes.data.map((type) => (
-                                            <TableRow key={type.id}>
-                                                <TableCell className="font-medium">
-                                                    {type.name}
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Badge className={getCategoryColor(type.category)}>
-                                                        {type.category}
-                                                    </Badge>
-                                                </TableCell>
-                                                <TableCell>
-                                                    {type.weight_per_cubic_meter ? `${type.weight_per_cubic_meter} kg` : '-'}
-                                                </TableCell>
-                                                <TableCell>
-                                                    {type.requires_special_equipment ? (
-                                                        <Badge variant="secondary">Yes</Badge>
-                                                    ) : (
-                                                        <span className="text-gray-500">No</span>
-                                                    )}
-                                                </TableCell>
-                                                <TableCell className="text-right">
-                                                    <div className="flex justify-end gap-2">
-                                                        {hasPermission('cargo-types.show') && (
-                                                            <Link
-                                                                href={`/cargo-types/${type.id}`}
-                                                                className="p-2 hover:bg-gray-100 rounded"
-                                                            >
-                                                                <Eye size={16} />
-                                                            </Link>
-                                                        )}
-                                                        {hasPermission('cargo-types.edit') && (
-                                                            <Link
-                                                                href={`/cargo-types/${type.id}/edit`}
-                                                                className="p-2 hover:bg-gray-100 rounded"
-                                                            >
-                                                                <Edit size={16} />
-                                                            </Link>
-                                                        )}
-                                                        {hasPermission('cargo-types.destroy') && (
-                                                            <button
-                                                                onClick={() => handleDeleteClick(type)}
-                                                                className="p-2 hover:bg-red-100 text-red-600 rounded"
-                                                            >
-                                                                <Trash2 size={16} />
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))
-                                    )}
-                                </TableBody>
-                            </Table>
-                        </div>
+                                ))
+                            )}
+                        </TableBody>
+                    </Table>
+                </div>
 
-                        {/* Pagination */}
-                        <div className="flex items-center justify-between mt-6">
-                            <div className="text-sm text-gray-600">
-                                Showing {cargoTypes.from} to {cargoTypes.to} of {cargoTypes.total} types
-                            </div>
-                            <div className="flex gap-2">
-                                {cargoTypes.current_page > 1 && (
-                                    <Link
-                                        href={cargoTypes.links?.prev || '/cargo-types'}
-                                        className="p-2 hover:bg-gray-100 rounded"
-                                    >
-                                        <ChevronLeft size={16} />
-                                    </Link>
-                                )}
-                                <span className="px-4 py-2 text-sm">
-                                    Page {cargoTypes.current_page} of {cargoTypes.last_page}
-                                </span>
-                                {cargoTypes.current_page < cargoTypes.last_page && (
-                                    <Link
-                                        href={cargoTypes.links?.next || '/cargo-types'}
-                                        className="p-2 hover:bg-gray-100 rounded"
-                                    >
-                                        <ChevronRight size={16} />
-                                    </Link>
-                                )}
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                {/* Pagination */}
+                <div className="flex items-center justify-between mt-6">
+                    <div className="text-sm text-gray-600">
+                        Showing {cargoTypes.from} to {cargoTypes.to} of {cargoTypes.total} types
+                    </div>
+                    <div className="flex gap-2">
+                        {cargoTypes.current_page > 1 && (
+                            <Link
+                                href={cargoTypes.links?.prev || '/cargo-types'}
+                                className="p-2 hover:bg-gray-100 rounded"
+                            >
+                                <ChevronLeft size={16} />
+                            </Link>
+                        )}
+                        <span className="px-4 py-2 text-sm">
+                            Page {cargoTypes.current_page} of {cargoTypes.last_page}
+                        </span>
+                        {cargoTypes.current_page < cargoTypes.last_page && (
+                            <Link
+                                href={cargoTypes.links?.next || '/cargo-types'}
+                                className="p-2 hover:bg-gray-100 rounded"
+                            >
+                                <ChevronRight size={16} />
+                            </Link>
+                        )}
+                    </div>
+                </div>
             </div>
 
             <DeleteConfirmationDialog

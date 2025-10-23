@@ -49,12 +49,11 @@ interface TrucksIndexProps {
         total: number;
         from: number;
         to: number;
-        links?: {
-            first?: string;
-            last?: string;
-            prev?: string;
-            next?: string;
-        };
+        links: Array<{
+            url: string | null;
+            label: string;
+            active: boolean;
+        }>;
     };
     totalCount?: number;
 }
@@ -74,7 +73,7 @@ export default function TrucksIndex({ trucks, totalCount }: TrucksIndexProps) {
 
         router.get('/trucks',
             { search: value, sort: sortBy, direction: sortDirection },
-            { preserveState: false }
+            { preserveState: true, replace: false }
         );
     };
 
@@ -89,7 +88,7 @@ export default function TrucksIndex({ trucks, totalCount }: TrucksIndexProps) {
 
         router.get('/trucks',
             { search: searchTerm, sort: column, direction: newDirection },
-            { preserveState: false }
+            { preserveState: true, replace: false }
         );
     };
 
@@ -133,11 +132,26 @@ export default function TrucksIndex({ trucks, totalCount }: TrucksIndexProps) {
     const currentPage = trucks?.current_page || 1;
     const totalPages = trucks?.last_page || 1;
 
+    // Debug pagination data
+    console.log('Pagination Debug:', {
+        totalPages,
+        currentPage,
+        truckCount,
+        trucksData: trucks,
+        hasData: trucks?.data?.length,
+        lastPage: trucks?.last_page,
+        currentPageFromData: trucks?.current_page,
+        shouldShowPagination: (totalPages > 1 || truckCount > 15)
+    });
+
     // Calculate stats for dashboard cards
     const activeCount = trucks?.data?.filter(truck => truck.status === 'active').length || 0;
     const maintenanceCount = trucks?.data?.filter(truck => truck.status === 'maintenance').length || 0;
     const inactiveCount = trucks?.data?.filter(truck => truck.status === 'inactive').length || 0;
-    const totalValue = trucks?.data?.reduce((sum, truck) => sum + (truck.purchasePrice || 0), 0) || 0;
+    const totalValue = trucks?.data?.reduce((sum, truck) => {
+        const price = parseFloat(truck.purchasePrice) || 0;
+        return sum + price;
+    }, 0) || 0;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -146,8 +160,8 @@ export default function TrucksIndex({ trucks, totalCount }: TrucksIndexProps) {
                 {/* Header Section */}
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold">Trucks</h1>
-                        <p className="text-muted-foreground">
+                        <h1 className="text-3xl font-bold">Trucks</h1>
+                        <p className="text-muted-foreground mt-2">
                             Manage your fleet of {truckCount} truck{truckCount !== 1 ? 's' : ''}
                         </p>
                     </div>
@@ -176,51 +190,63 @@ export default function TrucksIndex({ trucks, totalCount }: TrucksIndexProps) {
                     </div>
                 </div>
 
-                {/* Stats Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <Card>
-                        <CardContent className="p-6">
-                            <div className="flex items-center">
-                                <Truck className="h-8 w-8 text-blue-600" />
-                                <div className="ml-4">
-                                    <p className="text-sm font-medium text-muted-foreground">Total Trucks</p>
-                                    <p className="text-2xl font-bold">{truckCount}</p>
+                {/* Enhanced Stats Cards */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <Card className="border-l-4 border-l-blue-500 hover:shadow-md transition-all duration-200">
+                        <CardContent className="p-4">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-xs font-medium text-muted-foreground mb-1">Total Trucks</p>
+                                    <p className="text-2xl font-bold text-blue-600">{truckCount}</p>
+                                    <p className="text-xs text-muted-foreground">All vehicles</p>
+                                </div>
+                                <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                    <Truck className="h-5 w-5 text-blue-600" />
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
-                    
-                    <Card>
-                        <CardContent className="p-6">
-                            <div className="flex items-center">
-                                <CheckCircle className="h-8 w-8 text-green-600" />
-                                <div className="ml-4">
-                                    <p className="text-sm font-medium text-muted-foreground">Active</p>
-                                    <p className="text-2xl font-bold">{activeCount}</p>
+
+                    <Card className="border-l-4 border-l-green-500 hover:shadow-md transition-all duration-200">
+                        <CardContent className="p-4">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-xs font-medium text-muted-foreground mb-1">Active</p>
+                                    <p className="text-2xl font-bold text-green-600">{activeCount}</p>
+                                    <p className="text-xs text-muted-foreground">Operational</p>
+                                </div>
+                                <div className="h-10 w-10 bg-green-100 rounded-full flex items-center justify-center">
+                                    <CheckCircle className="h-5 w-5 text-green-600" />
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
-                    
-                    <Card>
-                        <CardContent className="p-6">
-                            <div className="flex items-center">
-                                <Wrench className="h-8 w-8 text-yellow-600" />
-                                <div className="ml-4">
-                                    <p className="text-sm font-medium text-muted-foreground">Maintenance</p>
-                                    <p className="text-2xl font-bold">{maintenanceCount}</p>
+
+                    <Card className="border-l-4 border-l-yellow-500 hover:shadow-md transition-all duration-200">
+                        <CardContent className="p-4">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-xs font-medium text-muted-foreground mb-1">Maintenance</p>
+                                    <p className="text-2xl font-bold text-yellow-600">{maintenanceCount}</p>
+                                    <p className="text-xs text-muted-foreground">Under repair</p>
+                                </div>
+                                <div className="h-10 w-10 bg-yellow-100 rounded-full flex items-center justify-center">
+                                    <Wrench className="h-5 w-5 text-yellow-600" />
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
-                    
-                    <Card>
-                        <CardContent className="p-6">
-                            <div className="flex items-center">
-                                <DollarSign className="h-8 w-8 text-purple-600" />
-                                <div className="ml-4">
-                                    <p className="text-sm font-medium text-muted-foreground">Total Value</p>
-                                    <p className="text-2xl font-bold">${totalValue.toLocaleString()}</p>
+
+                    <Card className="border-l-4 border-l-purple-500 hover:shadow-md transition-all duration-200">
+                        <CardContent className="p-4">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-xs font-medium text-muted-foreground mb-1">Total Value</p>
+                                    <p className="text-2xl font-bold text-purple-600">${(totalValue / 1000000).toFixed(1)}M</p>
+                                    <p className="text-xs text-muted-foreground">Fleet value</p>
+                                </div>
+                                <div className="h-10 w-10 bg-purple-100 rounded-full flex items-center justify-center">
+                                    <DollarSign className="h-5 w-5 text-purple-600" />
                                 </div>
                             </div>
                         </CardContent>
@@ -237,24 +263,40 @@ export default function TrucksIndex({ trucks, totalCount }: TrucksIndexProps) {
                                     {truckCount} total truck{truckCount !== 1 ? 's' : ''} in system
                                 </CardDescription>
                             </div>
-                            <div className="relative w-64">
-                                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                <Input
-                                    placeholder="Search trucks..."
-                                    value={searchTerm}
-                                    onChange={handleSearch}
-                                    className="pl-10"
-                                />
+                            <div className="flex items-center gap-4">
+                                <div className="relative w-80">
+                                    <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                    <Input
+                                        placeholder="Search by plate, chassis, or engine..."
+                                        value={searchTerm}
+                                        onChange={handleSearch}
+                                        className="pl-10 focus:ring-2 focus:ring-blue-500"
+                                    />
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-sm text-muted-foreground">Status:</span>
+                                    <select
+                                        className="px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 bg-background"
+                                        onChange={(e) => {
+                                            // Add status filter logic here
+                                        }}
+                                    >
+                                        <option value="">All Status</option>
+                                        <option value="active">Active</option>
+                                        <option value="maintenance">Maintenance</option>
+                                        <option value="inactive">Inactive</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                     </CardHeader>
-                    <CardContent className="flex-1 overflow-auto">
-                        <div className="rounded-lg border">
+                    <CardContent className="flex-1 p-0 flex flex-col overflow-hidden">
+                        <div className="rounded-lg border overflow-auto max-h-[55vh] relative flex-1">
                             <Table>
                                 <TableHeader>
-                                    <TableRow className="bg-muted/50">
+                                    <TableRow className="sticky top-0 z-50 bg-background border-b">
                                         <TableHead
-                                            className="cursor-pointer select-none hover:bg-muted/70 transition-colors"
+                                            className="cursor-pointer select-none hover:bg-muted/70 transition-colors bg-background"
                                             onClick={() => handleSort('plate')}
                                         >
                                             <div className="flex items-center">
@@ -262,17 +304,17 @@ export default function TrucksIndex({ trucks, totalCount }: TrucksIndexProps) {
                                             </div>
                                         </TableHead>
                                         <TableHead
-                                            className="cursor-pointer select-none hover:bg-muted/70 transition-colors"
+                                            className="cursor-pointer select-none hover:bg-muted/70 transition-colors bg-background"
                                             onClick={() => handleSort('vehicleType')}
                                         >
                                             <div className="flex items-center">
                                                 Vehicle Type <SortIcon column="vehicleType" />
                                             </div>
                                         </TableHead>
-                                        <TableHead>Chassis</TableHead>
-                                        <TableHead>Engine</TableHead>
+                                        <TableHead className="bg-background">Chassis</TableHead>
+                                        <TableHead className="bg-background">Engine</TableHead>
                                         <TableHead
-                                            className="cursor-pointer select-none hover:bg-muted/70 transition-colors"
+                                            className="cursor-pointer select-none hover:bg-muted/70 transition-colors bg-background"
                                             onClick={() => handleSort('serviceIntervalKM')}
                                         >
                                             <div className="flex items-center">
@@ -280,7 +322,7 @@ export default function TrucksIndex({ trucks, totalCount }: TrucksIndexProps) {
                                             </div>
                                         </TableHead>
                                         <TableHead
-                                            className="cursor-pointer select-none hover:bg-muted/70 transition-colors"
+                                            className="cursor-pointer select-none hover:bg-muted/70 transition-colors bg-background"
                                             onClick={() => handleSort('purchasePrice')}
                                         >
                                             <div className="flex items-center">
@@ -288,14 +330,14 @@ export default function TrucksIndex({ trucks, totalCount }: TrucksIndexProps) {
                                             </div>
                                         </TableHead>
                                         <TableHead
-                                            className="cursor-pointer select-none hover:bg-muted/70 transition-colors"
+                                            className="cursor-pointer select-none hover:bg-muted/70 transition-colors bg-background"
                                             onClick={() => handleSort('status')}
                                         >
                                             <div className="flex items-center">
                                                 Status <SortIcon column="status" />
                                             </div>
                                         </TableHead>
-                                        <TableHead className="text-right">Actions</TableHead>
+                                        <TableHead className="text-center bg-background">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -326,8 +368,8 @@ export default function TrucksIndex({ trucks, totalCount }: TrucksIndexProps) {
                                                 <TableCell>
                                                     <Badge
                                                         className={`flex items-center gap-1 w-fit ${
-                                                            truck.status === 'active' 
-                                                                ? 'bg-green-100 text-green-800 border-green-200 hover:bg-green-200' 
+                                                            truck.status === 'active'
+                                                                ? 'bg-green-100 text-green-800 border-green-200 hover:bg-green-200'
                                                                 : truck.status === 'maintenance'
                                                                 ? 'bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200'
                                                                 : 'bg-red-100 text-red-800 border-red-200 hover:bg-red-200'
@@ -339,8 +381,8 @@ export default function TrucksIndex({ trucks, totalCount }: TrucksIndexProps) {
                                                         {truck.status.charAt(0).toUpperCase() + truck.status.slice(1)}
                                                     </Badge>
                                                 </TableCell>
-                                                <TableCell className="text-right">
-                                                    <div className="flex justify-end gap-2">
+                                                <TableCell className="text-center">
+                                                    <div className="flex justify-center gap-2">
                                                         <Button asChild size="sm" variant="ghost">
                                                             <Link href={`/trucks/${truck.id}`}>
                                                                 <Eye className="h-4 w-4" />
@@ -358,6 +400,7 @@ export default function TrucksIndex({ trucks, totalCount }: TrucksIndexProps) {
                                                                 size="sm"
                                                                 variant="ghost"
                                                                 onClick={() => handleDeleteClick(truck)}
+                                                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
                                                             >
                                                                 <Trash2 className="h-4 w-4" />
                                                             </Button>
@@ -368,18 +411,23 @@ export default function TrucksIndex({ trucks, totalCount }: TrucksIndexProps) {
                                         ))
                                     ) : (
                                         <TableRow>
-                                            <TableCell colSpan={8} className="py-12">
-                                                <div className="flex flex-col items-center justify-center">
-                                                    <Truck className="h-12 w-12 text-muted-foreground mb-4" />
-                                                    <h3 className="text-lg font-semibold mb-2">No trucks found</h3>
-                                                    <p className="text-muted-foreground text-center mb-4">
-                                                        Get started by adding your first truck to the fleet
+                                            <TableCell colSpan={8} className="py-16">
+                                                <div className="flex flex-col items-center justify-center text-center">
+                                                    <div className="h-20 w-20 bg-muted/50 rounded-full flex items-center justify-center mb-6">
+                                                        <Truck className="h-10 w-10 text-muted-foreground" />
+                                                    </div>
+                                                    <h3 className="text-xl font-semibold mb-2">No trucks found</h3>
+                                                    <p className="text-muted-foreground mb-6 max-w-md">
+                                                        {searchTerm
+                                                            ? `No trucks match "${searchTerm}". Try adjusting your search terms.`
+                                                            : "Get started by adding your first truck to the fleet. Build a comprehensive fleet management system."
+                                                        }
                                                     </p>
                                                     {hasPermission('trucks.create') && (
-                                                        <Button asChild>
+                                                        <Button asChild size="lg" className="shadow-lg">
                                                             <Link href="/trucks/create">
                                                                 <Plus className="mr-2 h-4 w-4" />
-                                                                Add First Truck
+                                                                {searchTerm ? 'Clear Search & Add Truck' : 'Add First Truck'}
                                                             </Link>
                                                         </Button>
                                                     )}
@@ -391,47 +439,57 @@ export default function TrucksIndex({ trucks, totalCount }: TrucksIndexProps) {
                             </Table>
                         </div>
 
-                        {/* Pagination */}
-                        {totalPages > 1 && (
-                            <div className="mt-6 flex items-center justify-between">
+                        {/* Enhanced Pagination */}
+                        {trucks?.last_page > 1 && (
+                            <div className="mt-0 p-4 border-t flex items-center justify-between bg-muted/30 flex-shrink-0">
                                 <div className="text-sm text-muted-foreground">
-                                    Showing {trucks?.from || 1} to {trucks?.to || truckCount} of {truckCount} trucks
+                                    Showing <span className="font-semibold text-foreground">{trucks?.from || 1}</span> to <span className="font-semibold text-foreground">{trucks?.to || truckCount}</span> of <span className="font-semibold text-foreground">{truckCount}</span> trucks
+                                    <span className="ml-2 text-xs text-muted-foreground">
+                                        (Page {currentPage} of {totalPages})
+                                    </span>
                                 </div>
                                 <div className="flex gap-2">
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        disabled={currentPage === 1}
-                                        onClick={() => {
-                                            const page = currentPage - 1;
-                                            router.get('/trucks', {
-                                                page,
-                                                search: searchTerm,
-                                                sort: sortBy,
-                                                direction: sortDirection,
-                                            });
-                                        }}
-                                    >
-                                        <ChevronLeft className="mr-1 h-4 w-4" />
-                                        Previous
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        disabled={currentPage === totalPages}
-                                        onClick={() => {
-                                            const page = currentPage + 1;
-                                            router.get('/trucks', {
-                                                page,
-                                                search: searchTerm,
-                                                sort: sortBy,
-                                                direction: sortDirection,
-                                            });
-                                        }}
-                                    >
-                                        Next
-                                        <ChevronRight className="ml-1 h-4 w-4" />
-                                    </Button>
+                                    {/* Previous Button */}
+                                    {currentPage > 1 && (
+                                        <Button asChild variant="outline" size="sm">
+                                            <Link href={trucks?.links?.[0]?.url || '#'}>
+                                                <ChevronLeft className="mr-1 h-4 w-4" />
+                                                Previous
+                                            </Link>
+                                        </Button>
+                                    )}
+
+                                    {/* Page Numbers */}
+                                    {trucks?.links?.map((link, index) => {
+                                        // Skip first (prev) and last (next) links
+                                        if (index === 0 || index === (trucks?.links?.length || 0) - 1) {
+                                            return null;
+                                        }
+
+                                        return (
+                                            <Button
+                                                key={index}
+                                                asChild
+                                                variant={link.active ? 'default' : 'outline'}
+                                                size="sm"
+                                                disabled={!link.url}
+                                            >
+                                                <Link href={link.url || '#'}>
+                                                    <span dangerouslySetInnerHTML={{ __html: link.label }} />
+                                                </Link>
+                                            </Button>
+                                        );
+                                    })}
+
+                                    {/* Next Button */}
+                                    {currentPage < totalPages && (
+                                        <Button asChild variant="outline" size="sm">
+                                            <Link href={trucks?.links?.[(trucks?.links?.length || 0) - 1]?.url || '#'}>
+                                                Next
+                                                <ChevronRight className="ml-1 h-4 w-4" />
+                                            </Link>
+                                        </Button>
+                                    )}
                                 </div>
                             </div>
                         )}

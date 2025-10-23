@@ -104,12 +104,12 @@ export default function VehicleTypesIndex({ vehicleTypes }: VehicleTypesIndexPro
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Vehicle Types" />
-            <div className="flex h-full flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4">
+            <div className="flex h-full flex-1 flex-col gap-6 overflow-hidden rounded-xl p-4">
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold">Vehicle Types</h1>
-                        <p className="text-muted-foreground">
+                        <h1 className="text-3xl font-bold">Vehicle Types</h1>
+                        <p className="text-muted-foreground mt-2">
                             Manage vehicle types and categories
                         </p>
                     </div>

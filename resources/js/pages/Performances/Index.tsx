@@ -136,10 +136,9 @@ export default function PerformancesIndex({ performances, totalCount }: Performa
                 {/* Header Section */}
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold">Performances</h1>
-                        <p className="text-muted-foreground">
-                            Manage your fleet of {perfCount} performance{perfCount !== 1 ? 's' : ''}
-                        </p>
+                        <h1 className="text-3xl font-bold">Performances</h1>
+                        <p className="text-muted-foreground mt-2">
+                            Track performance metrics</p>
                     </div>
                     <div className="flex gap-2">
                         {hasPermission('performances.export') && (

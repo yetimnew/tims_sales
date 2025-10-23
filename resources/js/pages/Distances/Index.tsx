@@ -200,8 +200,8 @@ export default function DistancesIndex({ distances, totalCount }: DistancesIndex
                 {/* Header Section */}
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold">Distances</h1>
-                        <p className="text-muted-foreground">
+                        <h1 className="text-3xl font-bold">Distances</h1>
+                        <p className="text-muted-foreground mt-2">
                             Manage your {distanceCount} distance record{distanceCount !== 1 ? 's' : ''} between places
                         </p>
                     </div>

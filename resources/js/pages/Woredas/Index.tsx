@@ -136,8 +136,8 @@ export default function WoredasIndex({ woredas, totalCount }: WoredasIndexProps)
                 {/* Header Section */}
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold">Woredas</h1>
-                        <p className="text-muted-foreground">
+                        <h1 className="text-3xl font-bold">Woredas</h1>
+                        <p className="text-muted-foreground mt-2">
                             Manage your {woredaCount} woreda{woredaCount !== 1 ? 's' : ''}
                         </p>
                     </div>

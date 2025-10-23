@@ -24,56 +24,40 @@ class TruckController extends Controller
         $query = Truck::with('vehicleType');
 
         // Handle search
-        $vehicles = $query;
-
         if ($request->has('search') && !empty($request->input('search'))) {
             $search = $request->input('search');
-
-            // Search in truck fields
-            $vehicles = $vehicles->where(function ($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('plate', 'like', "%{$search}%")
                     ->orWhere('chasisNumber', 'like', "%{$search}%")
                     ->orWhere('engineNumber', 'like', "%{$search}%");
             });
 
-            // Also search in related vehicle type by filtering after retrieval
+            // Also search in related vehicle type
             $vehicleTypeIds = VehicleType::where('name', 'like', "%{$search}%")
                 ->pluck('id')
                 ->toArray();
 
             if (!empty($vehicleTypeIds)) {
-                $vehicles = $vehicles->orWhereIn('vehecletype_id', $vehicleTypeIds);
+                $query->orWhereIn('vehecletype_id', $vehicleTypeIds);
             }
         }
-
-        $query = $vehicles;
 
         // Handle sorting
         $sort = $request->input('sort', 'plate');
         $direction = $request->input('direction', 'asc');
 
         // Validate sort column to prevent SQL injection
-        $allowedSorts = ['plate', 'chasisNumber', 'engineNumber', 'serviceIntervalKM', 'purchasePrice', 'status', 'created_at', 'vehicleType'];
+        $allowedSorts = ['plate', 'chasisNumber', 'engineNumber', 'serviceIntervalKM', 'purchasePrice', 'status', 'created_at'];
         if (!in_array($sort, $allowedSorts)) {
             $sort = 'plate';
         }
 
-        // Handle sorting by vehicle type
-        if ($sort === 'vehicleType') {
-            // Use leftJoin to avoid filtering out trucks without vehicle types
-            $query->leftJoin('vehicle_types', 'trucks.vehecletype_id', '=', 'vehicle_types.id')
-                ->select('trucks.*')
-                ->orderBy('vehicle_types.name', $direction)
-                ->distinct();
-        } else {
-            $query->orderBy($sort, $direction);
-        }
+        $query->orderBy($sort, $direction);
 
         $trucks = $query->paginate(15);
 
         return Inertia::render('Trucks/Index', [
             'trucks' => $trucks,
-            'totalCount' => $trucks->total(),
         ]);
     }
 

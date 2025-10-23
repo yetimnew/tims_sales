@@ -135,10 +135,9 @@ export default function OperationsIndex({ operations, totalCount }: OperationsIn
                 {/* Header Section */}
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold">Operations</h1>
-                        <p className="text-muted-foreground">
-                            Manage your fleet of {opCount} operation{opCount !== 1 ? 's' : ''}
-                        </p>
+                        <h1 className="text-3xl font-bold">Operations</h1>
+                        <p className="text-muted-foreground mt-2">
+                            Manage operations</p>
                     </div>
                     <div className="flex gap-2">
                         {hasPermission('operations.export') && (

@@ -133,8 +133,8 @@ export default function ZonesIndex({ zones, totalCount }: ZonesIndexProps) {
                 {/* Header Section */}
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold">Zones</h1>
-                        <p className="text-muted-foreground">
+                        <h1 className="text-3xl font-bold">Zones</h1>
+                        <p className="text-muted-foreground mt-2">
                             Manage your {zoneCount} zone{zoneCount !== 1 ? 's' : ''}
                         </p>
                     </div>

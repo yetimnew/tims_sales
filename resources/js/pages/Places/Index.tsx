@@ -141,8 +141,8 @@ export default function PlacesIndex({ places, totalCount }: PlacesIndexProps) {
                 {/* Header Section */}
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold">Places</h1>
-                        <p className="text-muted-foreground">
+                        <h1 className="text-3xl font-bold">Places</h1>
+                        <p className="text-muted-foreground mt-2">
                             Manage your {placeCount} place{placeCount !== 1 ? 's' : ''}
                         </p>
                     </div>

@@ -155,7 +155,17 @@ export default function DriverSafetyIndex({ safetyRecords, statistics }: DriverS
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Driver Safety Records" />
 
-            <div className="space-y-6">
+            <div className="flex h-full flex-1 flex-col gap-6 overflow-hidden rounded-xl p-4">
+                {/* Header Section */}
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-3xl font-bold">Driver Safety Records</h1>
+                        <p className="text-muted-foreground mt-2">
+                            Track and manage driver safety incidents
+                        </p>
+                    </div>
+                </div>
+
                 {/* Statistics Cards */}
                 {statistics && (
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

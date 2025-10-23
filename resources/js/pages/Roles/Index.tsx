@@ -108,8 +108,8 @@ export default function RolesIndex({ roles }: RolesIndexProps) {
       <div className="flex h-full flex-1 flex-col gap-6 overflow-hidden rounded-xl p-4">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">Roles</h1>
-            <p className="text-muted-foreground">Manage system roles and permissions</p>
+            <h1 className="text-3xl font-bold">Roles</h1>
+            <p className="text-muted-foreground mt-2">Manage system roles and permissions</p>
           </div>
           {hasPermission('roles.create') && (
             <Link href={route('roles.create')}>
