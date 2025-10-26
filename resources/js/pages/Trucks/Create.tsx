@@ -9,7 +9,7 @@ import { Head, useForm } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import { toast } from '@/hooks/use-toast';
 import { validateTruck, type ValidationErrors } from '@/lib/validation';
-import { AlertCircle, Info, Wrench, DollarSign, CheckCircle } from 'lucide-react';
+import { AlertCircle, Info, Wrench, DollarSign, CheckCircle, HelpCircle, Save, Truck, Calendar, Hash } from 'lucide-react';
 import { FormEventHandler, useEffect, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -47,6 +47,8 @@ export default function TrucksCreate({ vehicleTypes }: TrucksCreateProps) {
     });
 
     const [frontendErrors, setFrontendErrors] = useState<ValidationErrors>({});
+    const [activeTab, setActiveTab] = useState('basic');
+    const [isDirty, setIsDirty] = useState(false);
 
     // Real-time frontend validation
     const validateField = (field: string, value: string) => {
@@ -74,6 +76,7 @@ export default function TrucksCreate({ vehicleTypes }: TrucksCreateProps) {
     const handleFieldChange = (field: string, value: string) => {
         setData(field as any, value);
         validateField(field, value);
+        setIsDirty(true);
     };
 
     const submit: FormEventHandler = (e) => {
@@ -101,77 +104,102 @@ export default function TrucksCreate({ vehicleTypes }: TrucksCreateProps) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Create Truck" />
             <div className="flex h-full flex-1 flex-col gap-6 overflow-hidden rounded-xl p-4">
-                {/* Enhanced Header */}
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-3xl font-bold text-foreground">Create New Truck</h1>
-                        <p className="text-muted-foreground mt-1">
-                            Add a new truck to your fleet with comprehensive details
-                        </p>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <CheckCircle className="h-4 w-4 text-green-600" />
-                        <span>Fleet Management</span>
-                    </div>
-                </div>
-
-                {/* Enhanced Progress Indicator */}
-                <div className="bg-muted/30 rounded-lg p-4 mb-6">
+                {/* Enhanced Professional Header */}
+                <div className="bg-gradient-to-r from-slate-50 to-blue-50 dark:from-slate-900 dark:to-blue-950/20 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
                     <div className="flex items-center justify-between mb-3">
-                        <h3 className="font-semibold text-foreground">Setup Progress</h3>
-                        <span className="text-sm text-muted-foreground">Step 1 of 3</span>
+                        <div className="flex items-center gap-4">
+                            <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                                <Truck className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                            </div>
+                            <div>
+                                <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Create New Truck</h1>
+                                <p className="text-sm text-slate-600 dark:text-slate-400">Add a new truck to your fleet with comprehensive details</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            {isDirty && (
+                                <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-full text-sm font-medium">
+                                    <Save className="h-3 w-3" />
+                                    Unsaved Changes
+                                </div>
+                            )}
+                            <div className="flex items-center gap-2 px-3 py-1.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full text-sm font-medium">
+                                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                Fleet Management
+                            </div>
+                        </div>
                     </div>
-                    <div className="flex-1 bg-muted rounded-full h-3">
-                        <div className="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all duration-500" style={{width: '33%'}}></div>
-                    </div>
-                    <div className="flex justify-between mt-2 text-xs text-muted-foreground">
-                        <span>Basic Information</span>
-                        <span>Technical Details</span>
-                        <span>Financial Information</span>
+
+                    {/* Progress Indicator */}
+                    <div className="space-y-2">
+                        <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
+                            <span>Form Progress</span>
+                            <span>{activeTab === 'basic' ? '1/3' : activeTab === 'technical' ? '2/3' : '3/3'}</span>
+                        </div>
+                        <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
+                            <div
+                                className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full transition-all duration-500"
+                                style={{width: activeTab === 'basic' ? '33%' : activeTab === 'technical' ? '66%' : '100%'}}
+                            ></div>
+                        </div>
                     </div>
                 </div>
 
-                {/* Enhanced Form */}
-                <Card className="shadow-lg border-0 bg-gradient-to-br from-background to-muted/20">
-                    <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-b">
-                        <CardTitle className="flex items-center gap-2 text-xl">
-                            <Info className="h-5 w-5 text-blue-600" />
+                {/* Professional Form */}
+                <Card className="flex-1 shadow-xl border-0 bg-white dark:bg-slate-900/50 backdrop-blur-sm">
+                    <CardHeader className="p-6 border-b border-slate-200 dark:border-slate-700 bg-gradient-to-r from-slate-50 to-blue-50 dark:from-slate-800 dark:to-blue-950/20">
+                        <CardTitle className="flex items-center gap-3 text-lg font-semibold text-slate-900 dark:text-slate-100">
+                            <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                                <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                            </div>
                             Truck Details
                         </CardTitle>
-                        <CardDescription className="text-base">
+                        <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-1">
                             Enter comprehensive information for the new truck
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="p-6">
-                        <form onSubmit={submit} className="space-y-6">
-                            <Tabs defaultValue="basic" className="space-y-6">
-                                <TabsList className="grid w-full grid-cols-3 bg-muted/50 p-1 rounded-lg">
-                                    <TabsTrigger value="basic" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                        <form onSubmit={submit} className="space-y-4">
+                            <Tabs defaultValue="basic" className="space-y-4" onValueChange={setActiveTab}>
+                                <TabsList className="grid w-full grid-cols-3 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
+                                    <TabsTrigger value="basic" className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:border data-[state=active]:border-slate-200 dark:data-[state=active]:bg-slate-700 dark:data-[state=active]:border-slate-600 rounded-lg transition-all duration-200">
                                         <Info className="h-4 w-4" />
-                                        Basic Info
+                                        <span className="font-medium">Basic Info</span>
                                     </TabsTrigger>
-                                    <TabsTrigger value="technical" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                                    <TabsTrigger value="technical" className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:border data-[state=active]:border-slate-200 dark:data-[state=active]:bg-slate-700 dark:data-[state=active]:border-slate-600 rounded-lg transition-all duration-200">
                                         <Wrench className="h-4 w-4" />
-                                        Technical
+                                        <span className="font-medium">Technical</span>
                                     </TabsTrigger>
-                                    <TabsTrigger value="financial" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                                    <TabsTrigger value="financial" className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:border data-[state=active]:border-slate-200 dark:data-[state=active]:bg-slate-700 dark:data-[state=active]:border-slate-600 rounded-lg transition-all duration-200">
                                         <DollarSign className="h-4 w-4" />
-                                        Financial
+                                        <span className="font-medium">Financial</span>
                                     </TabsTrigger>
                                 </TabsList>
 
-                                <TabsContent value="basic" className="space-y-6">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <TabsContent value="basic" className="space-y-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div className="space-y-2">
-                                            <Label htmlFor="plate" className="text-sm font-semibold text-foreground">Plate Number <span className="text-red-500">*</span></Label>
-                                            <Input
-                                                id="plate"
-                                                type="text"
-                                                value={data.plate}
-                                                onChange={(e) => handleFieldChange('plate', e.target.value.toUpperCase())}
-                                                placeholder="e.g., AA-1234"
-                                                className={`transition-all duration-200 ${getFieldError('plate') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : 'focus:ring-blue-500/20 focus:border-blue-500'}`}
-                                            />
+                                            <div className="flex items-center gap-2">
+                                                <Label htmlFor="plate" className="text-sm font-semibold text-slate-700 dark:text-slate-300">Plate Number <span className="text-red-500">*</span></Label>
+                                                <div className="group relative">
+                                                    <HelpCircle className="h-4 w-4 text-slate-400 hover:text-slate-600 cursor-help" />
+                                                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-slate-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
+                                                        Official license plate number
+                                                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-slate-900"></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="relative">
+                                                <Hash className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                                <Input
+                                                    id="plate"
+                                                    type="text"
+                                                    value={data.plate}
+                                                    onChange={(e) => handleFieldChange('plate', e.target.value.toUpperCase())}
+                                                    placeholder="e.g., AA-1234"
+                                                    className={`pl-10 transition-all duration-200 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 ${getFieldError('plate') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : 'focus:ring-blue-500/20 focus:border-blue-500 hover:border-slate-400 dark:hover:border-slate-500'}`}
+                                                />
+                                            </div>
                                             {getFieldError('plate') && (
                                                 <p className="text-sm text-red-500 flex items-center gap-1">
                                                     <AlertCircle className="h-3 w-3" />
@@ -181,51 +209,65 @@ export default function TrucksCreate({ vehicleTypes }: TrucksCreateProps) {
                                         </div>
 
                                         <div className="space-y-2">
-                                            <Label htmlFor="vehicletype_id"><span className="text-red-500">*</span> Vehicle Type</Label>
+                                            <Label htmlFor="vehicletype_id" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                                <span className="text-red-500">*</span> Vehicle Type
+                                            </Label>
                                             <Select
                                                 value={data.vehicletype_id}
                                                 onValueChange={(value) => handleFieldChange('vehicletype_id', value)}
                                             >
-                                                <SelectTrigger className={getFieldError('vehicletype_id') ? 'border-red-500' : ''}>
+                                                <SelectTrigger className={`bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 ${getFieldError('vehicletype_id') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}>
                                                     <SelectValue placeholder="Select vehicle type" />
                                                 </SelectTrigger>
-                                                <SelectContent>
+                                                <SelectContent className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-lg z-50">
                                                     {vehicleTypes.map((type) => (
-                                                        <SelectItem key={type.id} value={type.id.toString()}>
+                                                        <SelectItem
+                                                            key={type.id}
+                                                            value={type.id.toString()}
+                                                            className="hover:bg-slate-100 dark:hover:bg-slate-700 focus:bg-slate-100 dark:focus:bg-slate-700"
+                                                        >
                                                             {type.name}
                                                         </SelectItem>
                                                     ))}
                                                 </SelectContent>
                                             </Select>
                                             {getFieldError('vehicletype_id') && (
-                                                <p className="text-sm text-red-500">{getFieldError('vehicletype_id')}</p>
+                                                <p className="text-sm text-red-500 flex items-center gap-1">
+                                                    <AlertCircle className="h-3 w-3" />
+                                                    {getFieldError('vehicletype_id')}
+                                                </p>
                                             )}
                                         </div>
 
                                         <div className="space-y-2">
-                                            <Label htmlFor="status"><span className="text-red-500">*</span> Status</Label>
+                                            <Label htmlFor="status" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                                <span className="text-red-500">*</span> Status
+                                            </Label>
                                             <Select
                                                 value={data.status}
                                                 onValueChange={(value) => handleFieldChange('status', value)}
                                             >
-                                                <SelectTrigger className={getFieldError('status') ? 'border-red-500' : ''}>
+                                                <SelectTrigger className={`bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 ${getFieldError('status') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}>
                                                     <SelectValue placeholder="Select status" />
                                                 </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="active">Active</SelectItem>
-                                                    <SelectItem value="maintenance">Maintenance</SelectItem>
-                                                    <SelectItem value="inactive">Inactive</SelectItem>
+                                                <SelectContent className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-lg z-50">
+                                                    <SelectItem value="active" className="hover:bg-slate-100 dark:hover:bg-slate-700 focus:bg-slate-100 dark:focus:bg-slate-700">Active</SelectItem>
+                                                    <SelectItem value="maintenance" className="hover:bg-slate-100 dark:hover:bg-slate-700 focus:bg-slate-100 dark:focus:bg-slate-700">Maintenance</SelectItem>
+                                                    <SelectItem value="inactive" className="hover:bg-slate-100 dark:hover:bg-slate-700 focus:bg-slate-100 dark:focus:bg-slate-700">Inactive</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                             {getFieldError('status') && (
-                                                <p className="text-sm text-red-500">{getFieldError('status')}</p>
+                                                <p className="text-sm text-red-500 flex items-center gap-1">
+                                                    <AlertCircle className="h-3 w-3" />
+                                                    {getFieldError('status')}
+                                                </p>
                                             )}
                                         </div>
                                     </div>
                                 </TabsContent>
 
-                                <TabsContent value="technical" className="space-y-6">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <TabsContent value="technical" className="space-y-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div className="space-y-2">
                                             <Label htmlFor="chasisNumber">Chassis Number</Label>
                                             <Input
@@ -279,8 +321,8 @@ export default function TrucksCreate({ vehicleTypes }: TrucksCreateProps) {
                                     </div>
                                 </TabsContent>
 
-                                <TabsContent value="financial" className="space-y-6">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <TabsContent value="financial" className="space-y-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div className="space-y-2">
                                             <Label htmlFor="purchasePrice">Purchase Price</Label>
                                             <Input
@@ -328,23 +370,32 @@ export default function TrucksCreate({ vehicleTypes }: TrucksCreateProps) {
                                 </TabsContent>
                             </Tabs>
 
-                            <div className="flex items-center justify-between pt-6 border-t bg-muted/30 -mx-6 px-6 -mb-6">
-                                <div className="text-sm text-muted-foreground">
-                                    All required fields must be completed
+                            <div className="flex items-center justify-between pt-6 border-t border-slate-200 dark:border-slate-700 bg-gradient-to-r from-slate-50 to-blue-50 dark:from-slate-800 dark:to-blue-950/20 -mx-6 px-6 -mb-6 rounded-b-lg">
+                                <div className="flex items-center gap-4">
+                                    <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                        <span>All required fields must be completed</span>
+                                    </div>
+                                    {isDirty && (
+                                        <div className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400">
+                                            <Save className="h-3 w-3" />
+                                            <span>You have unsaved changes</span>
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="flex gap-3">
-                                    <Button type="button" variant="outline" asChild className="hover:bg-muted">
+                                    <Button type="button" variant="outline" asChild className="hover:bg-slate-100 dark:hover:bg-slate-700 border-slate-300 dark:border-slate-600">
                                         <a href="/trucks">Cancel</a>
                                     </Button>
                                     <Button
                                         type="submit"
                                         disabled={processing || Object.keys(frontendErrors).length > 0}
-                                        className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+                                        className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all duration-200 px-6 min-w-[140px]"
                                     >
                                         {processing ? (
                                             <>
                                                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                                Creating Truck...
+                                                Creating...
                                             </>
                                         ) : (
                                             <>

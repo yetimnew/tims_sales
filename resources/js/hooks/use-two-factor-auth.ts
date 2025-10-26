@@ -1,104 +1,159 @@
-import { qrCode, recoveryCodes, secretKey } from '@/routes/two-factor';
-import { useCallback, useMemo, useState } from 'react';
+import { useState, useCallback } from 'react';
+import { router } from '@inertiajs/react';
+import { useToast } from '@/hooks/use-toast';
 
-interface TwoFactorSetupData {
-    svg: string;
-    url: string;
+interface TwoFactorAuthState {
+    enabled: boolean;
+    recoveryCodes: string[];
+    qrCodeUrl?: string;
+    secretKey?: string;
 }
 
-interface TwoFactorSecretKey {
-    secretKey: string;
+interface UseTwoFactorAuthReturn {
+    state: TwoFactorAuthState;
+    isLoading: boolean;
+    enable: () => void;
+    disable: () => void;
+    regenerateCodes: () => void;
+    verifyCode: (code: string) => Promise<boolean>;
+    setupComplete: (code: string) => Promise<boolean>;
 }
 
-export const OTP_MAX_LENGTH = 6;
+export function useTwoFactorAuth(initialState: TwoFactorAuthState): UseTwoFactorAuthReturn {
+    const { toast } = useToast();
+    const [state, setState] = useState<TwoFactorAuthState>(initialState);
+    const [isLoading, setIsLoading] = useState(false);
 
-const fetchJson = async <T>(url: string): Promise<T> => {
-    const response = await fetch(url, {
-        headers: { Accept: 'application/json' },
-    });
+    const enable = useCallback(() => {
+        setIsLoading(true);
+        router.post('/settings/two-factor', {}, {
+            onSuccess: (page) => {
+                setState(prev => ({
+                    ...prev,
+                    enabled: true,
+                    recoveryCodes: page.props.recoveryCodes || [],
+                }));
+                toast({
+                    title: 'Two-factor authentication enabled',
+                    description: 'Your account is now protected with two-factor authentication.',
+                });
+            },
+            onError: (errors) => {
+                toast({
+                    title: 'Error',
+                    description: 'Failed to enable two-factor authentication.',
+                    variant: 'destructive',
+                });
+            },
+            onFinish: () => setIsLoading(false),
+        });
+    }, [toast]);
 
-    if (!response.ok) {
-        throw new Error(`Failed to fetch: ${response.status}`);
-    }
+    const disable = useCallback(() => {
+        setIsLoading(true);
+        router.delete('/settings/two-factor', {
+            onSuccess: () => {
+                setState(prev => ({
+                    ...prev,
+                    enabled: false,
+                    recoveryCodes: [],
+                }));
+                toast({
+                    title: 'Two-factor authentication disabled',
+                    description: 'Your account is no longer protected with two-factor authentication.',
+                });
+            },
+            onError: (errors) => {
+                toast({
+                    title: 'Error',
+                    description: 'Failed to disable two-factor authentication.',
+                    variant: 'destructive',
+                });
+            },
+            onFinish: () => setIsLoading(false),
+        });
+    }, [toast]);
 
-    return response.json();
-};
+    const regenerateCodes = useCallback(() => {
+        setIsLoading(true);
+        router.put('/settings/two-factor', {}, {
+            onSuccess: (page) => {
+                setState(prev => ({
+                    ...prev,
+                    recoveryCodes: page.props.recoveryCodes || [],
+                }));
+                toast({
+                    title: 'Recovery codes regenerated',
+                    description: 'New recovery codes have been generated.',
+                });
+            },
+            onError: (errors) => {
+                toast({
+                    title: 'Error',
+                    description: 'Failed to regenerate recovery codes.',
+                    variant: 'destructive',
+                });
+            },
+            onFinish: () => setIsLoading(false),
+        });
+    }, [toast]);
 
-export const useTwoFactorAuth = () => {
-    const [qrCodeSvg, setQrCodeSvg] = useState<string | null>(null);
-    const [manualSetupKey, setManualSetupKey] = useState<string | null>(null);
-    const [recoveryCodesList, setRecoveryCodesList] = useState<string[]>([]);
-    const [errors, setErrors] = useState<string[]>([]);
+    const verifyCode = useCallback(async (code: string): Promise<boolean> => {
+        return new Promise((resolve) => {
+            router.post('/two-factor-challenge', { code }, {
+                onSuccess: () => {
+                    toast({
+                        title: 'Authentication successful',
+                        description: 'You have been logged in successfully.',
+                    });
+                    resolve(true);
+                },
+                onError: (errors) => {
+                    toast({
+                        title: 'Authentication failed',
+                        description: errors.code || 'Invalid authentication code.',
+                        variant: 'destructive',
+                    });
+                    resolve(false);
+                },
+            });
+        });
+    }, [toast]);
 
-    const hasSetupData = useMemo<boolean>(
-        () => qrCodeSvg !== null && manualSetupKey !== null,
-        [qrCodeSvg, manualSetupKey],
-    );
-
-    const fetchQrCode = useCallback(async (): Promise<void> => {
-        try {
-            const { svg } = await fetchJson<TwoFactorSetupData>(qrCode.url());
-            setQrCodeSvg(svg);
-        } catch {
-            setErrors((prev) => [...prev, 'Failed to fetch QR code']);
-            setQrCodeSvg(null);
-        }
-    }, []);
-
-    const fetchSetupKey = useCallback(async (): Promise<void> => {
-        try {
-            const { secretKey: key } = await fetchJson<TwoFactorSecretKey>(
-                secretKey.url(),
-            );
-            setManualSetupKey(key);
-        } catch {
-            setErrors((prev) => [...prev, 'Failed to fetch a setup key']);
-            setManualSetupKey(null);
-        }
-    }, []);
-
-    const clearErrors = useCallback((): void => {
-        setErrors([]);
-    }, []);
-
-    const clearSetupData = useCallback((): void => {
-        setManualSetupKey(null);
-        setQrCodeSvg(null);
-        clearErrors();
-    }, [clearErrors]);
-
-    const fetchRecoveryCodes = useCallback(async (): Promise<void> => {
-        try {
-            clearErrors();
-            const codes = await fetchJson<string[]>(recoveryCodes.url());
-            setRecoveryCodesList(codes);
-        } catch {
-            setErrors((prev) => [...prev, 'Failed to fetch recovery codes']);
-            setRecoveryCodesList([]);
-        }
-    }, [clearErrors]);
-
-    const fetchSetupData = useCallback(async (): Promise<void> => {
-        try {
-            clearErrors();
-            await Promise.all([fetchQrCode(), fetchSetupKey()]);
-        } catch {
-            setQrCodeSvg(null);
-            setManualSetupKey(null);
-        }
-    }, [clearErrors, fetchQrCode, fetchSetupKey]);
+    const setupComplete = useCallback(async (code: string): Promise<boolean> => {
+        return new Promise((resolve) => {
+            router.post('/two-factor-challenge', { code }, {
+                onSuccess: () => {
+                    setState(prev => ({
+                        ...prev,
+                        enabled: true,
+                    }));
+                    toast({
+                        title: 'Two-factor authentication enabled',
+                        description: 'Your account is now protected with two-factor authentication.',
+                    });
+                    resolve(true);
+                },
+                onError: (errors) => {
+                    toast({
+                        title: 'Verification failed',
+                        description: errors.code || 'Invalid authentication code.',
+                        variant: 'destructive',
+                    });
+                    resolve(false);
+                },
+            });
+        });
+    }, [toast]);
 
     return {
-        qrCodeSvg,
-        manualSetupKey,
-        recoveryCodesList,
-        hasSetupData,
-        errors,
-        clearErrors,
-        clearSetupData,
-        fetchQrCode,
-        fetchSetupKey,
-        fetchSetupData,
-        fetchRecoveryCodes,
+        state,
+        isLoading,
+        enable,
+        disable,
+        regenerateCodes,
+        verifyCode,
+        setupComplete,
     };
-};
+}
+

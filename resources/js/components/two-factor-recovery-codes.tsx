@@ -1,164 +1,98 @@
 import { Button } from '@/components/ui/button';
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
-import { regenerateRecoveryCodes } from '@/routes/two-factor';
-import { Form } from '@inertiajs/react';
-import { Eye, EyeOff, LockKeyhole, RefreshCw } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import AlertError from './alert-error';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useToast } from '@/hooks/use-toast';
+import { Shield } from 'lucide-react';
 
 interface TwoFactorRecoveryCodesProps {
-    recoveryCodesList: string[];
-    fetchRecoveryCodes: () => Promise<void>;
-    errors: string[];
+    recoveryCodes: string[];
+    onRegenerate?: () => void;
+    isRegenerating?: boolean;
 }
 
 export default function TwoFactorRecoveryCodes({
-    recoveryCodesList,
-    fetchRecoveryCodes,
-    errors,
+    recoveryCodes,
+    onRegenerate,
+    isRegenerating = false,
 }: TwoFactorRecoveryCodesProps) {
-    const [codesAreVisible, setCodesAreVisible] = useState<boolean>(false);
-    const codesSectionRef = useRef<HTMLDivElement | null>(null);
-    const canRegenerateCodes = recoveryCodesList.length > 0 && codesAreVisible;
+    const { toast } = useToast();
 
-    const toggleCodesVisibility = useCallback(async () => {
-        if (!codesAreVisible && !recoveryCodesList.length) {
-            await fetchRecoveryCodes();
-        }
+    const copyToClipboard = () => {
+        const codesText = recoveryCodes.join('\n');
+        navigator.clipboard.writeText(codesText);
+        toast({
+            title: 'Copied',
+            description: 'Recovery codes copied to clipboard.',
+        });
+    };
 
-        setCodesAreVisible(!codesAreVisible);
+    const downloadCodes = () => {
+        const codesText = recoveryCodes.join('\n');
+        const blob = new Blob([codesText], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'recovery-codes.txt';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
 
-        if (!codesAreVisible) {
-            setTimeout(() => {
-                codesSectionRef.current?.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'nearest',
-                });
-            });
-        }
-    }, [codesAreVisible, recoveryCodesList.length, fetchRecoveryCodes]);
-
-    useEffect(() => {
-        if (!recoveryCodesList.length) {
-            fetchRecoveryCodes();
-        }
-    }, [recoveryCodesList.length, fetchRecoveryCodes]);
-
-    const RecoveryCodeIconComponent = codesAreVisible ? EyeOff : Eye;
+        toast({
+            title: 'Downloaded',
+            description: 'Recovery codes saved to your device.',
+        });
+    };
 
     return (
         <Card>
             <CardHeader>
-                <CardTitle className="flex gap-3">
-                    <LockKeyhole className="size-4" aria-hidden="true" />
-                    2FA Recovery Codes
+                <CardTitle className="flex items-center gap-2">
+                    <Shield className="h-5 w-5" />
+                    Recovery Codes
                 </CardTitle>
                 <CardDescription>
-                    Recovery codes let you regain access if you lose your 2FA
-                    device. Store them in a secure password manager.
+                    Save these recovery codes in a safe place. You can use them to access your account if you lose your authenticator device.
                 </CardDescription>
             </CardHeader>
-            <CardContent>
-                <div className="flex flex-col gap-3 select-none sm:flex-row sm:items-center sm:justify-between">
-                    <Button
-                        onClick={toggleCodesVisibility}
-                        className="w-fit"
-                        aria-expanded={codesAreVisible}
-                        aria-controls="recovery-codes-section"
-                    >
-                        <RecoveryCodeIconComponent
-                            className="size-4"
-                            aria-hidden="true"
-                        />
-                        {codesAreVisible ? 'Hide' : 'View'} Recovery Codes
-                    </Button>
+            <CardContent className="space-y-4">
+                <div className="bg-muted p-4 rounded-md">
+                    <div className="grid grid-cols-2 gap-2 text-sm font-mono">
+                        {recoveryCodes.map((code, index) => (
+                            <div key={index} className="p-2 bg-background rounded text-center">
+                                {code}
+                            </div>
+                        ))}
+                    </div>
+                </div>
 
-                    {canRegenerateCodes && (
-                        <Form
-                            {...regenerateRecoveryCodes.form()}
-                            options={{ preserveScroll: true }}
-                            onSuccess={fetchRecoveryCodes}
+                <div className="flex gap-2">
+                    <Button variant="outline" onClick={copyToClipboard}>
+                        Copy Codes
+                    </Button>
+                    <Button variant="outline" onClick={downloadCodes}>
+                        Download
+                    </Button>
+                    {onRegenerate && (
+                        <Button
+                            variant="outline"
+                            onClick={onRegenerate}
+                            disabled={isRegenerating}
                         >
-                            {({ processing }) => (
-                                <Button
-                                    variant="secondary"
-                                    type="submit"
-                                    disabled={processing}
-                                    aria-describedby="regenerate-warning"
-                                >
-                                    <RefreshCw /> Regenerate Codes
-                                </Button>
-                            )}
-                        </Form>
+                            {isRegenerating ? 'Regenerating...' : 'Regenerate Codes'}
+                        </Button>
                     )}
                 </div>
-                <div
-                    id="recovery-codes-section"
-                    className={`relative overflow-hidden transition-all duration-300 ${codesAreVisible ? 'h-auto opacity-100' : 'h-0 opacity-0'}`}
-                    aria-hidden={!codesAreVisible}
-                >
-                    <div className="mt-3 space-y-3">
-                        {errors?.length ? (
-                            <AlertError errors={errors} />
-                        ) : (
-                            <>
-                                <div
-                                    ref={codesSectionRef}
-                                    className="grid gap-1 rounded-lg bg-muted p-4 font-mono text-sm"
-                                    role="list"
-                                    aria-label="Recovery codes"
-                                >
-                                    {recoveryCodesList.length ? (
-                                        recoveryCodesList.map((code, index) => (
-                                            <div
-                                                key={index}
-                                                role="listitem"
-                                                className="select-text"
-                                            >
-                                                {code}
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <div
-                                            className="space-y-2"
-                                            aria-label="Loading recovery codes"
-                                        >
-                                            {Array.from(
-                                                { length: 8 },
-                                                (_, index) => (
-                                                    <div
-                                                        key={index}
-                                                        className="h-4 animate-pulse rounded bg-muted-foreground/20"
-                                                        aria-hidden="true"
-                                                    />
-                                                ),
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
 
-                                <div className="text-xs text-muted-foreground select-none">
-                                    <p id="regenerate-warning">
-                                        Each recovery code can be used once to
-                                        access your account and will be removed
-                                        after use. If you need more, click{' '}
-                                        <span className="font-bold">
-                                            Regenerate Codes
-                                        </span>{' '}
-                                        above.
-                                    </p>
-                                </div>
-                            </>
-                        )}
-                    </div>
+                <div className="text-sm text-muted-foreground">
+                    <p className="font-medium mb-1">Important:</p>
+                    <ul className="list-disc list-inside space-y-1">
+                        <li>Each recovery code can only be used once</li>
+                        <li>Store these codes in a secure location</li>
+                        <li>If you lose your authenticator device, these codes are your only way to access your account</li>
+                    </ul>
                 </div>
             </CardContent>
         </Card>
     );
 }
+

@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useForm } from '@inertiajs/react'
 import { Link, router } from '@inertiajs/react'
-import { Eye, Trash2, SquarePen, Plus, Search } from 'lucide-react'
+import { Eye, Trash2, SquarePen, Plus, Search, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
@@ -122,14 +122,24 @@ export default function UsersIndex({ users }: UsersIndexProps) {
             <h1 className="text-3xl font-bold">Users</h1>
             <p className="text-muted-foreground mt-2">Manage system users and roles</p>
           </div>
-          {hasPermission('users.create') && (
-            <Link href={route('users.create')}>
-              <Button className="flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                Add User
-              </Button>
-            </Link>
-          )}
+          <div className="flex gap-2">
+            {hasPermission('users.export') && (
+              <Link href={route('users.export')}>
+                <Button variant="outline" className="flex items-center gap-2">
+                  <Download className="h-4 w-4" />
+                  Export CSV
+                </Button>
+              </Link>
+            )}
+            {hasPermission('users.create') && (
+              <Link href={route('users.create')}>
+                <Button className="flex items-center gap-2">
+                  <Plus className="h-4 w-4" />
+                  Add User
+                </Button>
+              </Link>
+            )}
+          </div>
         </div>
 
         <Card className="flex flex-1 flex-col overflow-hidden">

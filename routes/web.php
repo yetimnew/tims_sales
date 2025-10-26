@@ -10,7 +10,7 @@ use Laravel\Fortify\Features;
 
 Route::get('/', function () {
     return Inertia::render('welcome', [
-        'canRegister' => Features::enabled(Features::registration()),
+        'canRegister' => false, // Registration disabled - only admin can create users
     ]);
 })->name('home');
 
@@ -490,6 +490,7 @@ Route::middleware(['auth'])->group(function () {
 
     // User Management
     Route::middleware(['throttle:60,1'])->group(function () {
+        // Export route - highest priority
         Route::get('users/export/csv', [\App\Http\Controllers\UserController::class, 'export'])
             ->middleware('can:users.export')
             ->name('users.export');

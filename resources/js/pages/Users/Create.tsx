@@ -7,19 +7,30 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
 import AppLayout from '@/layouts/app-layout'
 import { CircleAlert } from 'lucide-react'
 import { validateUser, type ValidationErrors } from '@/lib/validation'
+
+interface Role {
+  id: number
+  name: string
+}
 
 interface UserFormData {
   name: string
   email: string
   password: string
   password_confirmation: string
+  role: string
 }
 
-export default function UsersCreate() {
+interface UsersCreateProps {
+  roles: Role[]
+}
+
+export default function UsersCreate({ roles }: UsersCreateProps) {
   const { toast } = useToast()
   const [frontendErrors, setFrontendErrors] = useState<Record<string, string>>({})
   const { data, setData, post, processing, errors } = useForm<UserFormData>({
@@ -27,6 +38,7 @@ export default function UsersCreate() {
     email: '',
     password: '',
     password_confirmation: '',
+    role: '',
   })
 
   useEffect(() => {
@@ -149,6 +161,25 @@ export default function UsersCreate() {
               />
               {(frontendErrors.password_confirmation || errors.password_confirmation) && (
                 <p className="text-sm text-red-500">{frontendErrors.password_confirmation || errors.password_confirmation}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="role">Role *</Label>
+              <Select value={data.role} onValueChange={value => handleFieldChange('role', value)}>
+                <SelectTrigger className={frontendErrors.role || errors.role ? 'border-red-500' : ''}>
+                  <SelectValue placeholder="Select a role" />
+                </SelectTrigger>
+                <SelectContent>
+                  {roles.map(role => (
+                    <SelectItem key={role.id} value={role.name}>
+                      {role.name.charAt(0).toUpperCase() + role.name.slice(1)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {(frontendErrors.role || errors.role) && (
+                <p className="text-sm text-red-500">{frontendErrors.role || errors.role}</p>
               )}
             </div>
 

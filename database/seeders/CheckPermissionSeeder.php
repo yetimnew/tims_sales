@@ -171,7 +171,7 @@ class CheckPermissionSeeder extends Seeder
         // ==================== USER MANAGEMENT PERMISSIONS ====================
         $userPermissions = [
             'users.view', 'users.show', 'users.create', 'users.store',
-            'users.edit', 'users.update', 'users.destroy',
+            'users.edit', 'users.update', 'users.destroy', 'users.export',
         ];
 
         // ==================== ROLE MANAGEMENT PERMISSIONS ====================
@@ -184,6 +184,11 @@ class CheckPermissionSeeder extends Seeder
         $permissionPermissions = [
             'permissions.view', 'permissions.show', 'permissions.create', 'permissions.store',
             'permissions.edit', 'permissions.update', 'permissions.destroy',
+        ];
+
+        // ==================== TELESCOPE PERMISSIONS ====================
+        $telescopePermissions = [
+            'view telescope',
         ];
 
         // ==================== COMBINE ALL PERMISSIONS ====================
@@ -211,7 +216,8 @@ class CheckPermissionSeeder extends Seeder
             $outsourcePermissions,
             $userPermissions,
             $rolePermissions,
-            $permissionPermissions
+            $permissionPermissions,
+            $telescopePermissions
         );
 
         // Create all permissions
