@@ -66,7 +66,7 @@ class PerformanceController extends Controller
     public function create(): Response
     {
         $operations = Operation::with('customer')->get();
-        $driverTrucks = DriverTruck::with(['driver', 'truck'])->where('status', 'active')->get();
+        $driverTrucks = DriverTruck::with(['driver', 'truck'])->active()->isAttached()->get();
         $places = Place::all();
 
         return Inertia::render('Performances/Create', [
@@ -105,7 +105,7 @@ class PerformanceController extends Controller
             'returned_date' => 'nullable|date',
         ]);
 
-        $validated['user_id'] = auth()->id();
+        $validated['user_id'] = auth('sanctum')->id();
 
         Performance::create($validated);
 
@@ -145,7 +145,7 @@ class PerformanceController extends Controller
     public function edit(Performance $performance): Response
     {
         $operations = Operation::with('customer')->get();
-        $driverTrucks = DriverTruck::with(['driver', 'truck'])->where('status', 'active')->get();
+        $driverTrucks = DriverTruck::with(['driver', 'truck'])->active()->isAttached()->get();
         $places = Place::all();
 
         return Inertia::render('Performances/Edit', [

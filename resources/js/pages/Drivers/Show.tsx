@@ -22,6 +22,20 @@ interface ActivityLog {
     new_values?: Record<string, any>;
 }
 
+interface DriverTruck {
+    id: number;
+    truck_id: number;
+    plate: string;
+    date_recived: string;
+    date_detach?: string;
+    is_attached: number;
+    status: number;
+    truck: {
+        id: number;
+        plate: string;
+    };
+}
+
 interface Driver {
     id: number;
     driverid: string;
@@ -39,6 +53,7 @@ interface Driver {
     updated_at?: string;
     trucks?: any[];
     performances?: any[];
+    driverTrucks?: DriverTruck[];
 }
 
 interface DriversShowProps {
@@ -103,7 +118,7 @@ export default function DriversShow({ driver, activityLogs = [] }: DriversShowPr
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={`View Driver - ${driver.name}`} />
+            <Head title={`View Driver - ${driver?.name || 'Unknown'}`} />
             <div className="flex flex-1 flex-col gap-6">
                 {/* Header with Back Button */}
                 <div className="flex items-center justify-between">
@@ -118,13 +133,13 @@ export default function DriversShow({ driver, activityLogs = [] }: DriversShowPr
                             Back to Drivers
                         </Button>
                         <div>
-                            <h1 className="text-2xl font-bold">{driver.name}</h1>
+                            <h1 className="text-2xl font-bold">{driver?.name || 'Unknown Driver'}</h1>
                             <p className="text-muted-foreground">View driver details and manage information</p>
                         </div>
                     </div>
                     <div className="flex gap-2">
                         <Button variant="outline" asChild>
-                            <Link href={`/drivers/${driver.id}/edit`}>
+                            <Link href={`/drivers/${driver?.id}/edit`}>
                                 <Edit className="mr-2 h-4 w-4" />
                                 Edit
                             </Link>
@@ -153,14 +168,14 @@ export default function DriversShow({ driver, activityLogs = [] }: DriversShowPr
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
                                             <p className="text-sm font-medium text-muted-foreground">Status</p>
-                                            <Badge className={`mt-1 ${getStatusBadgeColor(driver.status)}`}>
-                                                {driver.status.charAt(0).toUpperCase() + driver.status.slice(1)}
+                                            <Badge className={`mt-1 ${getStatusBadgeColor(driver?.status || 'inactive')}`}>
+                                                {(driver?.status || 'inactive').charAt(0).toUpperCase() + (driver?.status || 'inactive').slice(1)}
                                             </Badge>
                                         </div>
                                         <div>
                                             <p className="text-sm font-medium text-muted-foreground">Gender</p>
-                                            <Badge className={`mt-1 ${getSexBadgeColor(driver.sex)}`}>
-                                                {driver.sex.charAt(0).toUpperCase() + driver.sex.slice(1)}
+                                            <Badge className={`mt-1 ${getSexBadgeColor(driver?.sex || 'male')}`}>
+                                                {(driver?.sex || 'male').charAt(0).toUpperCase() + (driver?.sex || 'male').slice(1)}
                                             </Badge>
                                         </div>
                                     </div>
@@ -169,11 +184,11 @@ export default function DriversShow({ driver, activityLogs = [] }: DriversShowPr
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
                                                 <p className="text-sm font-medium text-muted-foreground">Driver ID</p>
-                                                <p className="mt-1 text-sm font-mono">{driver.driverid}</p>
+                                                <p className="mt-1 text-sm font-mono">{driver?.driverid || 'N/A'}</p>
                                             </div>
                                             <div>
                                                 <p className="text-sm font-medium text-muted-foreground">Mobile</p>
-                                                <p className="mt-1 text-sm">{driver.mobile || 'N/A'}</p>
+                                                <p className="mt-1 text-sm">{driver?.mobile || 'N/A'}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -182,11 +197,11 @@ export default function DriversShow({ driver, activityLogs = [] }: DriversShowPr
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
                                                 <p className="text-sm font-medium text-muted-foreground">Zone</p>
-                                                <p className="mt-1 text-sm">{driver.zone || 'N/A'}</p>
+                                                <p className="mt-1 text-sm">{driver?.zone || 'N/A'}</p>
                                             </div>
                                             <div>
                                                 <p className="text-sm font-medium text-muted-foreground">Woreda</p>
-                                                <p className="mt-1 text-sm">{driver.woreda || 'N/A'}</p>
+                                                <p className="mt-1 text-sm">{driver?.woreda || 'N/A'}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -271,22 +286,34 @@ export default function DriversShow({ driver, activityLogs = [] }: DriversShowPr
                             </CardContent>
                         </Card>
 
-                        {/* Assigned Trucks */}
-                        {driver.trucks && driver.trucks.length > 0 && (
+                        {/* Driver Truck Assignments */}
+                        {driver?.driverTrucks && driver.driverTrucks.length > 0 && (
                             <Card>
                                 <CardHeader>
-                                    <CardTitle className="text-base">Assigned Trucks</CardTitle>
+                                    <CardTitle className="text-base">Truck Assignments</CardTitle>
+                                    <CardDescription>Current and past truck assignments</CardDescription>
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="space-y-2">
-                                        {driver.trucks.map((truck: any) => (
-                                            <Link
-                                                key={truck.id}
-                                                href={`/trucks/${truck.id}`}
-                                                className="block rounded-lg border border-border p-2 text-sm hover:bg-muted"
+                                    <div className="space-y-3">
+                                        {driver?.driverTrucks?.map((assignment: any) => (
+                                            <div
+                                                key={assignment.id}
+                                                className="rounded-lg border border-border p-3 hover:bg-muted/50"
                                             >
-                                                {truck.plate}
-                                            </Link>
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-3">
+                                                        <div>
+                                                            <p className="font-medium text-sm">{assignment.plate || 'N/A'}</p>
+                                                            <p className="text-xs text-muted-foreground">
+                                                                Status: {assignment.status}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <Badge variant="default">
+                                                        {assignment.is_attached ? 'Active' : 'Detached'}
+                                                    </Badge>
+                                                </div>
+                                            </div>
                                         ))}
                                     </div>
                                 </CardContent>

@@ -14,7 +14,7 @@ import AppLayout from '@/layouts/app-layout';
 import { usePermissions } from '@/hooks/use-permissions';
 import { Head, Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
-import { Plus, Eye, SquarePen, MapPin, Phone, Search, ArrowUpDown, ChevronLeft, ChevronRight, Trash2, FileDown } from 'lucide-react';
+import { Plus, Eye, SquarePen, MapPin, Phone, Search, ArrowUpDown, ChevronLeft, ChevronRight, Trash2, FileDown, Users, UserCheck, UserX, Users2, User } from 'lucide-react';
 import { InertiaPagination } from '@/components/ui/pagination';
 import * as React from 'react';
 
@@ -56,9 +56,16 @@ interface DriversIndexProps {
             active: boolean;
         }>;
     };
+    statistics: {
+        total: number;
+        active: number;
+        inactive: number;
+        male: number;
+        female: number;
+    };
 }
 
-export default function DriversIndex({ drivers }: DriversIndexProps) {
+export default function DriversIndex({ drivers, statistics }: DriversIndexProps) {
     const { hasPermission } = usePermissions();
     const [searchTerm, setSearchTerm] = React.useState('');
     const [sortColumn, setSortColumn] = React.useState<string | null>(null);
@@ -170,6 +177,74 @@ export default function DriversIndex({ drivers }: DriversIndexProps) {
                             </Button>
                         )}
                     </div>
+                </div>
+
+                {/* Statistics Dashboard */}
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Total Drivers</CardTitle>
+                            <Users className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{statistics?.total || 0}</div>
+                            <p className="text-xs text-muted-foreground">
+                                Workforce size
+                            </p>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Active</CardTitle>
+                            <UserCheck className="h-4 w-4 text-green-600" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold text-green-600">{statistics?.active || 0}</div>
+                            <p className="text-xs text-muted-foreground">
+                                Currently active
+                            </p>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Inactive</CardTitle>
+                            <UserX className="h-4 w-4 text-red-600" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold text-red-600">{statistics?.inactive || 0}</div>
+                            <p className="text-xs text-muted-foreground">
+                                Currently inactive
+                            </p>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Male</CardTitle>
+                            <User className="h-4 w-4 text-blue-600" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold text-blue-600">{statistics?.male || 0}</div>
+                            <p className="text-xs text-muted-foreground">
+                                👨 Male drivers
+                            </p>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Female</CardTitle>
+                            <User className="h-4 w-4 text-pink-600" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold text-pink-600">{statistics?.female || 0}</div>
+                            <p className="text-xs text-muted-foreground">
+                                👩 Female drivers
+                            </p>
+                        </CardContent>
+                    </Card>
                 </div>
 
                 {/* Table Section */}

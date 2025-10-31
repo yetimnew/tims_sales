@@ -8,25 +8,41 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
+use DateTime;
 
 class DriverTruck extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, LogsActivity;
 
     protected $table = 'driver_truck';
 
+    protected $dates = ['deleted_at', 'date_recived', 'date_detach'];
+
     protected $fillable = [
+        'id',
         'driver_id',
+        'driverid',
         'truck_id',
-        'assigned_date',
-        'unassigned_date',
+        'plate',
+        'date_recived',
+        'date_detach',
+        'reason',
+        'is_attached',
         'status',
+        'user_id',
     ];
 
     protected $casts = [
         'assigned_date' => 'date',
         'unassigned_date' => 'date',
+        'date_recived' => 'date',
+        'date_detach' => 'date',
+        'is_attached' => 'boolean',
     ];
+
+    protected $dates = ['deleted_at', 'assigned_date', 'unassigned_date', 'date_recived', 'date_detach'];
 
     /**
      * Get the driver that owns the assignment.
@@ -53,23 +69,6 @@ class DriverTruck extends Model
     }
 
     /**
-     * Scope a query to only include active assignments.
-     */
-    public function scopeActive($query)
-    {
-        return $query->where('status', 'active');
-    }
-
-    /**
-     * Scope a query to only include attached assignments.
-     */
-    public function scopeIsAttached($query)
-    {
-        return $query->where('status', 'active')
-            ->whereNull('unassigned_date');
-    }
-
-    /**
      * Get the date difference attribute.
      */
     public function getDateDifferenceAttribute()
@@ -79,6 +78,60 @@ class DriverTruck extends Model
         }
 
         return $this->assigned_date->diffInDays(now());
+    }
+
+    /**
+     * Scope a query to only include active assignments.
+     */
+    public function scopeActive($query)
+    {
+        return $query->where("status", "=", "active");
+    }
+
+    /**
+     * Scope a query to only include attached assignments.
+     */
+    public function scopeIsAttached($query)
+    {
+        return $query->where("is_attached", "=", 1);
+    }
+
+    /**
+     * Get the date difference in formatted string.
+     */
+    public function getFormattedDateDifferenceAttribute()
+    {
+        if (!$this->date_recived) {
+            return 'N/A';
+        }
+
+        $date_recived = new DateTime($this->date_recived);
+        $date_detach = $this->date_detach ? new DateTime($this->date_detach) : new DateTime();
+
+        $diff = $date_detach->diff($date_recived);
+        return $diff->d . ' days ' . $diff->h . ' hours ' . $diff->i . ' minutes';
+    }
+
+    /**
+     * Configure activity logging.
+     */
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly([
+                'driver_id',
+                'truck_id',
+                'plate',
+                'driverid',
+                'date_recived',
+                'date_detach',
+                'reason',
+                'is_attached',
+                'status'
+            ])
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs()
+            ->useLogName('driver_trucks');
     }
 }
 

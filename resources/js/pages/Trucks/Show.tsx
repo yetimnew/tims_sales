@@ -28,6 +28,21 @@ interface ActivityLog {
     new_values?: Record<string, any>;
 }
 
+interface DriverTruck {
+    id: number;
+    driver_id: number;
+    driverid: string;
+    date_recived: string;
+    date_detach?: string;
+    is_attached: number;
+    status: number;
+    driver: {
+        id: number;
+        name: string;
+        driverid: string;
+    };
+}
+
 interface Truck {
     id: number;
     plate: string;
@@ -45,6 +60,7 @@ interface Truck {
     vehicleType?: VehicleType;
     drivers?: any[];
     performances?: any[];
+    driverTrucks?: DriverTruck[];
     activityLogs?: ActivityLog[];
 }
 
@@ -396,31 +412,55 @@ export default function TrucksShow({ truck, activityLogs = [] }: TrucksShowProps
                                     </CardContent>
                                 </Card>
 
-                                {/* Assigned Drivers */}
-                                {truck.drivers && truck.drivers.length > 0 && (
+                                {/* Driver Assignments */}
+                                {truck.driverTrucks && truck.driverTrucks.length > 0 && (
                                     <Card className="shadow-lg border-0 bg-gradient-to-br from-background to-muted/20">
-                                        <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border-b">
+                                        <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-b">
                                             <CardTitle className="flex items-center gap-2 text-lg">
-                                                <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                                                    <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+                                                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                                                    <CheckCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                                                 </div>
-                                                Assigned Drivers
+                                                Driver Assignments
                                             </CardTitle>
+                                            <CardDescription>Current and past driver assignments for this truck</CardDescription>
                                         </CardHeader>
                                         <CardContent className="p-4">
-                                            <div className="space-y-2">
-                                                {truck.drivers.map((driver: any) => (
-                                                    <Link
-                                                        key={driver.id}
-                                                        href={`/drivers/${driver.id}`}
-                                                        className="block rounded-lg border border-green-200 dark:border-green-800 p-3 text-sm hover:bg-green-50 dark:hover:bg-green-950/20 transition-colors duration-200"
+                                            <div className="space-y-3">
+                                                {truck.driverTrucks.map((assignment: DriverTruck) => (
+                                                    <div
+                                                        key={assignment.id}
+                                                        className="rounded-lg border border-blue-200 dark:border-blue-800 p-3 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-colors duration-200"
                                                     >
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                                                            <span className="font-medium text-green-800 dark:text-green-200">{driver.name}</span>
+                                                        <div className="flex items-center justify-between">
+                                                            <div className="flex items-center gap-3">
+                                                                <div>
+                                                                    <p className="font-medium text-sm text-blue-800 dark:text-blue-200">{assignment.driver.name}</p>
+                                                                    <p className="text-xs text-muted-foreground">
+                                                                        ID: {assignment.driver.driverid}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                            <Badge variant={assignment.is_attached ? "default" : "secondary"}>
+                                                                {assignment.is_attached ? 'Active' : 'Detached'}
+                                                            </Badge>
                                                         </div>
-                                                    </Link>
+                                                        <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                                                            <div>
+                                                                <span className="font-medium">Assigned:</span> {new Date(assignment.date_recived).toLocaleDateString()}
+                                                            </div>
+                                                            {assignment.date_detach && (
+                                                                <div>
+                                                                    <span className="font-medium">Detached:</span> {new Date(assignment.date_detach).toLocaleDateString()}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
                                                 ))}
+                                            </div>
+                                            <div className="mt-4 pt-3 border-t border-blue-200 dark:border-blue-800">
+                                                <Link href="/driver-trucks" className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 hover:underline">
+                                                    View all assignments →
+                                                </Link>
                                             </div>
                                         </CardContent>
                                     </Card>

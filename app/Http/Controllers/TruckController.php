@@ -125,7 +125,14 @@ class TruckController extends Controller
      */
     public function show(Truck $truck): Response
     {
-        $truck->load(['vehicleType', 'drivers', 'performances']);
+        $truck->load([
+            'vehicleType',
+            'drivers',
+            'performances',
+            'driverTrucks' => function($query) {
+                $query->with('driver')->orderBy('date_recived', 'desc');
+            }
+        ]);
 
         // Load activity logs for this truck using Spatie Activity Log
         $activityLogs = Activity::forSubject($truck)

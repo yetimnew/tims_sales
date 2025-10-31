@@ -6,6 +6,9 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { initializeTheme } from './hooks/use-appearance';
 
+// Import routes to set up global Ziggy routes
+import './routes';
+
 // Global error handler
 window.addEventListener('error', (event) => {
     console.error('🚨 Global Error:', {

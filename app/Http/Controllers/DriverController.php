@@ -45,8 +45,22 @@ class DriverController extends Controller
 
         $drivers = $query->paginate(15);
 
+        // Calculate statistics
+        $totalDrivers = Driver::count();
+        $activeDrivers = Driver::where('status', 'active')->count();
+        $inactiveDrivers = Driver::where('status', 'inactive')->count();
+        $maleDrivers = Driver::where('sex', 'male')->count();
+        $femaleDrivers = Driver::where('sex', 'female')->count();
+
         return Inertia::render('Drivers/Index', [
             'drivers' => $drivers,
+            'statistics' => [
+                'total' => $totalDrivers,
+                'active' => $activeDrivers,
+                'inactive' => $inactiveDrivers,
+                'male' => $maleDrivers,
+                'female' => $femaleDrivers,
+            ],
         ]);
     }
 
@@ -93,7 +107,13 @@ class DriverController extends Controller
      */
     public function show(Driver $driver): Response
     {
-        $driver->load(['trucks', 'performances']);
+        $driver->load([
+            'trucks',
+            'performances',
+            'driverTrucks' => function($query) {
+                $query->with('truck')->orderBy('date_recived', 'desc');
+            }
+        ]);
 
         // Load activity logs for this driver using Spatie Activity Log
         $activityLogs = Activity::forSubject($driver)

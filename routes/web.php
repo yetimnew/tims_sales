@@ -35,7 +35,7 @@ Route::middleware(['auth'])->group(function () {
             ->name('trucks.create');
 
         Route::post('trucks', [TruckController::class, 'store'])
-            ->middleware('can:trucks.store')
+            ->middleware(['can:trucks.store', 'throttle:10,1'])
             ->name('trucks.store');
 
         Route::get('trucks/{truck}', [TruckController::class, 'show'])
@@ -67,6 +67,45 @@ Route::middleware(['auth'])->group(function () {
     Route::get('trucks/{truck}/status-history', [\App\Http\Controllers\TruckController::class, 'statusHistory'])
         ->name('trucks.status-history');
 
+    // Driver Truck Assignments with rate limiting and permission middleware
+    Route::middleware(['throttle:60,1'])->group(function () {
+        Route::get('driver-trucks', [\App\Http\Controllers\DriverTruckController::class, 'index'])
+            ->middleware('can:driver-trucks.view')
+            ->name('driver-trucks.index');
+
+        Route::get('driver-trucks/create', [\App\Http\Controllers\DriverTruckController::class, 'create'])
+            ->middleware('can:driver-trucks.create')
+            ->name('driver-trucks.create');
+
+        Route::post('driver-trucks', [\App\Http\Controllers\DriverTruckController::class, 'store'])
+            ->middleware(['can:driver-trucks.create', 'throttle:5,1'])
+            ->name('driver-trucks.store');
+
+        Route::get('driver-trucks/{driverTruck}', [\App\Http\Controllers\DriverTruckController::class, 'show'])
+            ->middleware('can:driver-trucks.view')
+            ->name('driver-trucks.show');
+
+        Route::get('driver-trucks/{driverTruck}/edit', [\App\Http\Controllers\DriverTruckController::class, 'edit'])
+            ->middleware('can:driver-trucks.edit')
+            ->name('driver-trucks.edit');
+
+        Route::put('driver-trucks/{driverTruck}', [\App\Http\Controllers\DriverTruckController::class, 'update'])
+            ->middleware('can:driver-trucks.edit')
+            ->name('driver-trucks.update');
+
+        Route::delete('driver-trucks/{driverTruck}', [\App\Http\Controllers\DriverTruckController::class, 'destroy'])
+            ->middleware('can:driver-trucks.destroy')
+            ->name('driver-trucks.destroy');
+
+        Route::get('driver-trucks/{driverTruck}/detach', [\App\Http\Controllers\DriverTruckController::class, 'detach'])
+            ->middleware('can:driver-trucks.detach')
+            ->name('driver-trucks.detach');
+
+        Route::post('driver-trucks/{driverTruck}/detach', [\App\Http\Controllers\DriverTruckController::class, 'updateDetach'])
+            ->middleware('can:driver-trucks.detach')
+            ->name('driver-trucks.update-detach');
+    });
+
     // Status per-day view
     Route::get('statuses/{status}/daily', [\App\Http\Controllers\StatusController::class, 'daily'])
         ->name('statuses.daily');
@@ -88,7 +127,7 @@ Route::middleware(['auth'])->group(function () {
             ->name('drivers.create');
 
         Route::post('drivers', [DriverController::class, 'store'])
-            ->middleware('can:drivers.store')
+            ->middleware(['can:drivers.store', 'throttle:10,1'])
             ->name('drivers.store');
 
         Route::get('drivers/{driver}', [DriverController::class, 'show'])
@@ -129,7 +168,7 @@ Route::middleware(['auth'])->group(function () {
             ->name('performances.create');
 
         Route::post('performances', [PerformanceController::class, 'store'])
-            ->middleware('can:performances.store')
+            ->middleware(['can:performances.store', 'throttle:15,1'])
             ->name('performances.store');
 
         Route::get('performances/{performance}', [PerformanceController::class, 'show'])

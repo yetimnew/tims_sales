@@ -52,7 +52,7 @@ const getMainNavItems = (): NavItem[] => {
             {
                 title: 'Fleet Management',
                 icon: Truck,
-                isActive: currentUrl.startsWith('/trucks') || currentUrl.startsWith('/drivers') || currentUrl.startsWith('/vehicletypes') || currentUrl.startsWith('/maintenance') || currentUrl.startsWith('/fuel') || currentUrl.startsWith('/driver-performance') || currentUrl.startsWith('/driver-safety') || currentUrl.startsWith('/cargo-types') || currentUrl.startsWith('/truck-status-board'),
+                isActive: currentUrl.startsWith('/trucks') || currentUrl.startsWith('/drivers') || currentUrl.startsWith('/driver-trucks') || currentUrl.startsWith('/vehicletypes') || currentUrl.startsWith('/maintenance') || currentUrl.startsWith('/fuel') || currentUrl.startsWith('/driver-performance') || currentUrl.startsWith('/driver-safety') || currentUrl.startsWith('/cargo-types') || currentUrl.startsWith('/truck-status-board'),
                 items: [
                     {
                         title: 'Trucks',
@@ -63,6 +63,11 @@ const getMainNavItems = (): NavItem[] => {
                         title: 'Drivers',
                         href: '/drivers',
                         icon: Users,
+                    },
+                    {
+                        title: 'Driver-Truck Assignments',
+                        href: '/driver-trucks',
+                        icon: UserCheck,
                     },
                     {
                         title: 'Vehicle Types',

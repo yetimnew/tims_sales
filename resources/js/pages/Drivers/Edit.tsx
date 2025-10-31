@@ -3,14 +3,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AppLayout from '@/layouts/app-layout';
 import { Head, useForm } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import { FormEventHandler, useEffect, useState } from 'react';
 import { validateDriver, type ValidationErrors } from '@/lib/validation';
-import { useToast } from '@/hooks/use-toast';
-import { CircleAlert } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
+import { AlertCircle, Info, User, MapPin, Calendar, CheckCircle, HelpCircle, Save, User as UserIcon, Hash } from 'lucide-react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {

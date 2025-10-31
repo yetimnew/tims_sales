@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
@@ -53,11 +54,19 @@ class Truck extends Model
     }
 
     /**
-     * Get the performances for the truck.
+     * Get the driver truck assignments for the truck.
      */
-    public function performances(): HasMany
+    public function driverTrucks(): HasMany
     {
-        return $this->hasMany(Performance::class, 'driver_truck_id');
+        return $this->hasMany(DriverTruck::class);
+    }
+
+    /**
+     * Get the performances for the truck through driver truck assignments.
+     */
+    public function performances(): HasManyThrough
+    {
+        return $this->hasManyThrough(Performance::class, DriverTruck::class, 'truck_id', 'driver_truck_id');
     }
 
     /**

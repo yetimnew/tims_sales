@@ -16,6 +16,12 @@ class CheckPermissionSeeder extends Seeder
             'trucks.update', 'trucks.deactivate', 'trucks.destroy', 'trucks.export', 'trucks.free',
         ];
 
+        // ==================== DRIVER TRUCK ASSIGNMENTS PERMISSIONS ====================
+        $driverTruckPermissions = [
+            'driver-trucks.view', 'driver-trucks.show', 'driver-trucks.create', 'driver-trucks.store',
+            'driver-trucks.edit', 'driver-trucks.update', 'driver-trucks.destroy', 'driver-trucks.detach',
+        ];
+
         // ==================== DRIVERS PERMISSIONS ====================
         $driverPermissions = [
             'drivers.view', 'drivers.show', 'drivers.create', 'drivers.store', 'drivers.edit',
@@ -198,6 +204,7 @@ class CheckPermissionSeeder extends Seeder
         // ==================== COMBINE ALL PERMISSIONS ====================
         $allPermissions = array_merge(
             $truckPermissions,
+            $driverTruckPermissions,
             $driverPermissions,
             $maintenancePermissions,
             $vehicleTypePermissions,

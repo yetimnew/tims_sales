@@ -117,10 +117,10 @@ class TruckAssignmentService
      */
     public function getAvailableDrivers()
     {
-        return Driver::where('status', 'active')
+        return Driver::where('drivers.status', 'active')
             ->whereDoesntHave('trucks', function ($query) {
-                $query->where('status', 'active')
-                    ->whereNull('unassigned_date');
+                $query->where('driver_truck.status', 'active')
+                    ->whereNull('driver_truck.unassigned_date');
             })
             ->get();
     }
@@ -130,10 +130,10 @@ class TruckAssignmentService
      */
     public function getAvailableTrucks()
     {
-        return Truck::where('status', 'active')
+        return Truck::where('trucks.status', 'active')
             ->whereDoesntHave('drivers', function ($query) {
-                $query->where('status', 'active')
-                    ->whereNull('unassigned_date');
+                $query->where('driver_truck.status', 'active')
+                    ->whereNull('driver_truck.unassigned_date');
             })
             ->get();
     }
