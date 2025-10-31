@@ -2,315 +2,182 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
-use App\Models\Role;
-use App\Models\Permission;
 use App\Models\Truck;
-use App\Models\Driver;
+use App\Models\User;
+use Database\Seeders\CheckPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class PermissionTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** @test */
-    public function it_can_create_permissions()
+    protected function setUp(): void
     {
-        $permission = Permission::create([
-            'name' => 'trucks.create',
-            'guard_name' => 'web'
-        ]);
-
-        $this->assertInstanceOf(Permission::class, $permission);
-        $this->assertEquals('trucks.create', $permission->name);
-        $this->assertEquals('web', $permission->guard_name);
+        parent::setUp();
+        $this->seed(CheckPermissionSeeder::class);
     }
 
     /** @test */
-    public function it_can_create_roles()
+    public function it_seeds_default_roles_and_core_permissions()
     {
-        $role = Role::create([
-            'name' => 'admin',
-            'guard_name' => 'web'
-        ]);
+        $this->assertNotNull(Role::where('name', 'admin')->first());
+        $this->assertNotNull(Role::where('name', 'manager')->first());
+        $this->assertNotNull(Role::where('name', 'user')->first());
 
-        $this->assertInstanceOf(Role::class, $role);
-        $this->assertEquals('admin', $role->name);
-        $this->assertEquals('web', $role->guard_name);
+        $this->assertTrue(Permission::where('name', 'users.view')->exists());
+        $this->assertTrue(Permission::where('name', 'roles.view')->exists());
+        $this->assertTrue(Permission::where('name', 'permissions.view')->exists());
+        $this->assertTrue(Permission::where('name', 'trucks.show')->exists());
     }
 
     /** @test */
-    public function it_can_assign_permissions_to_roles()
+    public function admin_role_has_all_permissions()
     {
-        $role = Role::create(['name' => 'admin', 'guard_name' => 'web']);
-        $permission = Permission::create(['name' => 'trucks.create', 'guard_name' => 'web']);
+        $admin = Role::where('name', 'admin')->firstOrFail();
+        $allPermissionNames = Permission::pluck('name');
 
-        $role->givePermissionTo($permission);
-
-        $this->assertTrue($role->hasPermissionTo('trucks.create'));
-        $this->assertCount(1, $role->permissions);
+        foreach ($allPermissionNames as $name) {
+            $this->assertTrue($admin->hasPermissionTo($name), "Admin missing permission: {$name}");
+        }
     }
 
     /** @test */
-    public function it_can_assign_roles_to_users()
+    public function manager_role_has_all_except_destroy()
     {
-        $user = User::factory()->create();
-        $role = Role::create(['name' => 'admin', 'guard_name' => 'web']);
+        $manager = Role::where('name', 'manager')->firstOrFail();
+        $allPermissionNames = Permission::pluck('name');
 
-        $user->assignRole($role);
-
-        $this->assertTrue($user->hasRole('admin'));
-        $this->assertCount(1, $user->roles);
+        foreach ($allPermissionNames as $name) {
+            if (str_contains($name, '.destroy')) {
+                $this->assertFalse($manager->hasPermissionTo($name), "Manager should not have destroy permission: {$name}");
+            } else {
+                $this->assertTrue($manager->hasPermissionTo($name), "Manager missing non-destroy permission: {$name}");
+            }
+        }
     }
 
     /** @test */
-    public function it_can_check_user_permissions()
+    public function user_role_is_view_show_export_only()
     {
-        $user = User::factory()->create();
-        $role = Role::create(['name' => 'admin', 'guard_name' => 'web']);
-        $permission = Permission::create(['name' => 'trucks.create', 'guard_name' => 'web']);
+        $userRole = Role::where('name', 'user')->firstOrFail();
 
-        $role->givePermissionTo($permission);
-        $user->assignRole($role);
-
-        $this->assertTrue($user->hasPermissionTo('trucks.create'));
-        $this->assertTrue($user->can('trucks.create'));
+        $viewLike = ['view', 'show', 'export'];
+        foreach (Permission::all() as $permission) {
+            $action = explode('.', $permission->name)[1] ?? '';
+            if (in_array($action, $viewLike, true)) {
+                $this->assertTrue($userRole->hasPermissionTo($permission->name), "User role should have {$permission->name}");
+            } else {
+                $this->assertFalse($userRole->hasPermissionTo($permission->name), "User role should not have {$permission->name}");
+            }
+        }
     }
 
     /** @test */
-    public function it_denies_access_without_permission()
+    public function it_can_assign_and_revoke_permissions_via_role()
     {
-        $user = User::factory()->create();
-        $truck = Truck::factory()->create();
+        $role = Role::create(['name' => 'custom', 'guard_name' => 'web']);
+        $permCreate = Permission::firstOrCreate(['name' => 'trucks.create', 'guard_name' => 'web']);
 
-        $response = $this->actingAs($user)
-            ->get(route('trucks.show', $truck));
-
-        $response->assertStatus(403);
-    }
-
-    /** @test */
-    public function it_allows_access_with_permission()
-    {
-        $user = User::factory()->create();
-        $role = Role::create(['name' => 'admin', 'guard_name' => 'web']);
-        $permission = Permission::create(['name' => 'trucks.show', 'guard_name' => 'web']);
-
-        $role->givePermissionTo($permission);
-        $user->assignRole($role);
-
-        $truck = Truck::factory()->create();
-
-        $response = $this->actingAs($user)
-            ->get(route('trucks.show', $truck));
-
-        $response->assertStatus(200);
-    }
-
-    /** @test */
-    public function it_can_check_multiple_permissions()
-    {
-        $user = User::factory()->create();
-        $role = Role::create(['name' => 'admin', 'guard_name' => 'web']);
-
-        $permissions = [
-            Permission::create(['name' => 'trucks.view', 'guard_name' => 'web']),
-            Permission::create(['name' => 'trucks.create', 'guard_name' => 'web']),
-            Permission::create(['name' => 'trucks.edit', 'guard_name' => 'web']),
-        ];
-
-        $role->givePermissionTo($permissions);
-        $user->assignRole($role);
-
-        $this->assertTrue($user->hasAllPermissions(['trucks.view', 'trucks.create']));
-        $this->assertTrue($user->hasAnyPermission(['trucks.view', 'trucks.delete']));
-        $this->assertFalse($user->hasAllPermissions(['trucks.view', 'trucks.delete']));
-    }
-
-    /** @test */
-    public function it_can_revoke_permissions_from_roles()
-    {
-        $role = Role::create(['name' => 'admin', 'guard_name' => 'web']);
-        $permission = Permission::create(['name' => 'trucks.create', 'guard_name' => 'web']);
-
-        $role->givePermissionTo($permission);
+        $role->givePermissionTo($permCreate);
         $this->assertTrue($role->hasPermissionTo('trucks.create'));
 
-        $role->revokePermissionTo($permission);
+        $role->revokePermissionTo($permCreate);
         $this->assertFalse($role->hasPermissionTo('trucks.create'));
     }
 
     /** @test */
-    public function it_can_remove_roles_from_users()
+    public function a_users_effective_permissions_come_from_roles()
     {
         $user = User::factory()->create();
-        $role = Role::create(['name' => 'admin', 'guard_name' => 'web']);
+        $role = Role::create(['name' => 'custom-role', 'guard_name' => 'web']);
+        $permA = Permission::firstOrCreate(['name' => 'trucks.view', 'guard_name' => 'web']);
+        $permB = Permission::firstOrCreate(['name' => 'trucks.edit', 'guard_name' => 'web']);
 
+        $role->syncPermissions([$permA, $permB]);
         $user->assignRole($role);
-        $this->assertTrue($user->hasRole('admin'));
 
-        $user->removeRole($role);
-        $this->assertFalse($user->hasRole('admin'));
+        $this->assertTrue($user->can('trucks.view'));
+        $this->assertTrue($user->can('trucks.edit'));
+        $this->assertFalse($user->can('trucks.destroy'));
+
+        $this->assertFalse($user->hasDirectPermission('trucks.view'));
+
+        $user->refresh();
+        $names = $user->getAllPermissions()->pluck('name')->toArray();
+        $this->assertContains('trucks.view', $names);
+        $this->assertContains('trucks.edit', $names);
+        $this->assertNotContains('trucks.destroy', $names);
     }
 
     /** @test */
-    public function it_can_sync_permissions_to_role()
+    public function unauthenticated_user_is_redirected_to_login_for_protected_pages()
     {
-        $role = Role::create(['name' => 'admin', 'guard_name' => 'web']);
-
-        $permissions = [
-            Permission::create(['name' => 'trucks.view', 'guard_name' => 'web']),
-            Permission::create(['name' => 'trucks.create', 'guard_name' => 'web']),
-            Permission::create(['name' => 'trucks.edit', 'guard_name' => 'web']),
-        ];
-
-        $role->syncPermissions($permissions);
-
-        $this->assertCount(3, $role->permissions);
-        $this->assertTrue($role->hasPermissionTo('trucks.view'));
-        $this->assertTrue($role->hasPermissionTo('trucks.create'));
-        $this->assertTrue($role->hasPermissionTo('trucks.edit'));
+        $response = $this->get(route('users.index'));
+        $response->assertRedirect();
+        $response->assertRedirectContains('login');
     }
 
     /** @test */
-    public function it_can_sync_roles_to_user()
-    {
-        $user = User::factory()->create();
-
-        $roles = [
-            Role::create(['name' => 'admin', 'guard_name' => 'web']),
-            Role::create(['name' => 'manager', 'guard_name' => 'web']),
-        ];
-
-        $user->syncRoles($roles);
-
-        $this->assertCount(2, $user->roles);
-        $this->assertTrue($user->hasRole('admin'));
-        $this->assertTrue($user->hasRole('manager'));
-    }
-
-    /** @test */
-    public function it_can_check_permission_via_middleware()
+    public function user_without_permission_gets_403_on_truck_show()
     {
         $user = User::factory()->create();
         $truck = Truck::factory()->create();
 
-        // Without permission
-        $response = $this->actingAs($user)
-            ->get(route('trucks.show', $truck));
-
+        $response = $this->actingAs($user)->get(route('trucks.show', $truck));
         $response->assertStatus(403);
+    }
 
-        // With permission
-        $role = Role::create(['name' => 'admin', 'guard_name' => 'web']);
-        $permission = Permission::create(['name' => 'trucks.show', 'guard_name' => 'web']);
-
-        $role->givePermissionTo($permission);
+    /** @test */
+    public function user_with_permission_can_access_truck_show()
+    {
+        $user = User::factory()->create();
+        $role = Role::where('name', 'admin')->firstOrFail();
         $user->assignRole($role);
 
-        $response = $this->actingAs($user)
-            ->get(route('trucks.show', $truck));
-
-        $response->assertStatus(200);
+        $truck = Truck::factory()->create();
+        $response = $this->actingAs($user)->get(route('trucks.show', $truck));
+        $response->assertOk();
     }
 
     /** @test */
-    public function it_can_get_all_permissions_for_user()
+    public function manager_cannot_destroy_users_but_admin_can()
     {
-        $user = User::factory()->create();
-        $role = Role::create(['name' => 'admin', 'guard_name' => 'web']);
+        $target = User::factory()->create();
 
-        $permissions = [
-            Permission::create(['name' => 'trucks.view', 'guard_name' => 'web']),
-            Permission::create(['name' => 'trucks.create', 'guard_name' => 'web']),
-            Permission::create(['name' => 'drivers.view', 'guard_name' => 'web']),
-        ];
+        // Manager cannot destroy
+        $managerUser = User::factory()->create();
+        $managerUser->assignRole('manager');
+        $respManager = $this->actingAs($managerUser)->delete(route('users.destroy', $target));
+        $respManager->assertStatus(403);
 
-        $role->givePermissionTo($permissions);
-        $user->assignRole($role);
-
-        $userPermissions = $user->getAllPermissions();
-
-        $this->assertCount(3, $userPermissions);
-        $this->assertTrue($userPermissions->contains('name', 'trucks.view'));
-        $this->assertTrue($userPermissions->contains('name', 'trucks.create'));
-        $this->assertTrue($userPermissions->contains('name', 'drivers.view'));
+        // Admin can destroy (may redirect on success)
+        $adminUser = User::factory()->create();
+        $adminUser->assignRole('admin');
+        $respAdmin = $this->actingAs($adminUser)->delete(route('users.destroy', $target));
+        $this->assertTrue(in_array($respAdmin->getStatusCode(), [200, 302, 204], true));
     }
 
     /** @test */
-    public function it_can_get_permission_names_for_user()
+    public function basic_users_can_only_view_users_index_and_show()
     {
-        $user = User::factory()->create();
-        $role = Role::create(['name' => 'admin', 'guard_name' => 'web']);
+        $basic = User::factory()->create();
+        $basic->assignRole('user');
 
-        $permissions = [
-            Permission::create(['name' => 'trucks.view', 'guard_name' => 'web']),
-            Permission::create(['name' => 'trucks.create', 'guard_name' => 'web']),
-        ];
+        // Can view index
+        $this->actingAs($basic)->get(route('users.index'))->assertOk();
 
-        $role->givePermissionTo($permissions);
-        $user->assignRole($role);
+        // Can view show
+        $other = User::factory()->create();
+        $this->actingAs($basic)->get(route('users.show', $other))->assertOk();
 
-        $permissionNames = $user->getPermissionNames();
-
-        $this->assertCount(2, $permissionNames);
-        $this->assertContains('trucks.view', $permissionNames);
-        $this->assertContains('trucks.create', $permissionNames);
-    }
-
-    /** @test */
-    public function it_can_check_direct_permission_assignment()
-    {
-        $user = User::factory()->create();
-        $permission = Permission::create(['name' => 'trucks.create', 'guard_name' => 'web']);
-
-        $user->givePermissionTo($permission);
-
-        $this->assertTrue($user->hasPermissionTo('trucks.create'));
-        $this->assertTrue($user->hasDirectPermission('trucks.create'));
-    }
-
-    /** @test */
-    public function it_can_revoke_direct_permission()
-    {
-        $user = User::factory()->create();
-        $permission = Permission::create(['name' => 'trucks.create', 'guard_name' => 'web']);
-
-        $user->givePermissionTo($permission);
-        $this->assertTrue($user->hasPermissionTo('trucks.create'));
-
-        $user->revokePermissionTo($permission);
-        $this->assertFalse($user->hasPermissionTo('trucks.create'));
-    }
-
-    /** @test */
-    public function it_can_check_permission_via_role()
-    {
-        $user = User::factory()->create();
-        $role = Role::create(['name' => 'admin', 'guard_name' => 'web']);
-        $permission = Permission::create(['name' => 'trucks.create', 'guard_name' => 'web']);
-
-        $role->givePermissionTo($permission);
-        $user->assignRole($role);
-
-        $this->assertTrue($user->hasPermissionTo('trucks.create'));
-        $this->assertTrue($user->hasPermissionViaRole('trucks.create'));
-    }
-
-    /** @test */
-    public function it_can_get_roles_and_permissions_for_user()
-    {
-        $user = User::factory()->create();
-        $role = Role::create(['name' => 'admin', 'guard_name' => 'web']);
-        $permission = Permission::create(['name' => 'trucks.create', 'guard_name' => 'web']);
-
-        $role->givePermissionTo($permission);
-        $user->assignRole($role);
-
-        $this->assertCount(1, $user->roles);
-        $this->assertCount(1, $user->permissions);
-        $this->assertEquals('admin', $user->roles->first()->name);
-        $this->assertEquals('trucks.create', $user->permissions->first()->name);
+        // Cannot access create/store/edit/update/destroy
+        $this->actingAs($basic)->get(route('users.create'))->assertStatus(403);
+        $this->actingAs($basic)->post(route('users.store'), [])->assertStatus(403);
+        $this->actingAs($basic)->get(route('users.edit', $other))->assertStatus(403);
+        $this->actingAs($basic)->put(route('users.update', $other), [])->assertStatus(403);
+        $this->actingAs($basic)->delete(route('users.destroy', $other))->assertStatus(403);
     }
 }

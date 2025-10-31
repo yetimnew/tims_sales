@@ -17,6 +17,7 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { Head, Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import { Plus, Eye, Edit, Trash2, Search, ArrowUpDown, ChevronLeft, ChevronRight, FileDown, Filter, X } from 'lucide-react';
+import { InertiaPagination } from '@/components/ui/pagination';
 import * as React from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -518,57 +519,15 @@ export default function DistancesIndex({ distances, totalCount }: DistancesIndex
                             </Table>
                         </div>
 
-                        {/* Enhanced Pagination */}
-                        {distances.last_page > 1 && (
-                            <div className="mt-6 flex items-center justify-between">
-                                <div className="text-sm text-muted-foreground">
-                                    Showing {distances.from || 1} to {distances.to || distanceCount} of {distanceCount} distances
-                                </div>
-                                <div className="flex gap-2">
-                                    {/* Previous Button */}
-                                    {currentPage > 1 && (
-                                        <Button asChild variant="outline" size="sm">
-                                            <Link href={distances.links[0].url || '#'}>
-                                                <ChevronLeft className="mr-1 h-4 w-4" />
-                                                Previous
-                                            </Link>
-                                        </Button>
-                                    )}
-
-                                    {/* Page Numbers */}
-                                    {distances.links.map((link, index) => {
-                                        // Skip first (prev) and last (next) links
-                                        if (index === 0 || index === distances.links.length - 1) {
-                                            return null;
-                                        }
-
-                                        return (
-                                            <Button
-                                                key={index}
-                                                asChild
-                                                variant={link.active ? 'default' : 'outline'}
-                                                size="sm"
-                                                disabled={!link.url}
-                                            >
-                                                <Link href={link.url || '#'}>
-                                                    <span dangerouslySetInnerHTML={{ __html: link.label }} />
-                                                </Link>
-                                            </Button>
-                                        );
-                                    })}
-
-                                    {/* Next Button */}
-                                    {currentPage < totalPages && (
-                                        <Button asChild variant="outline" size="sm">
-                                            <Link href={distances.links[distances.links.length - 1].url || '#'}>
-                                                Next
-                                                <ChevronRight className="ml-1 h-4 w-4" />
-                                            </Link>
-                                        </Button>
-                                    )}
-                                </div>
-                            </div>
-                        )}
+                        {/* Pagination */}
+                        <InertiaPagination
+                          from={distances.from}
+                          to={distances.to}
+                          total={distanceCount}
+                          links={(distances as any).links as any}
+                          currentPage={currentPage}
+                          lastPage={totalPages}
+                        />
                     </CardContent>
                 </Card>
             </div>

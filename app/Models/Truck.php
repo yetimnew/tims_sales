@@ -109,6 +109,14 @@ class Truck extends Model
     }
 
     /**
+     * Get the daily statuses for the truck.
+     */
+    public function dailyStatuses(): HasMany
+    {
+        return $this->hasMany(DailyTruckStatus::class);
+    }
+
+    /**
      * Scope a query to only include active trucks.
      */
     public function scopeActive($query)

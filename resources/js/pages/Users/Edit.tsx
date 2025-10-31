@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useForm } from '@inertiajs/react'
-import { Link } from '@inertiajs/react'
+import { Link, Head } from '@inertiajs/react'
 import { ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -12,6 +12,18 @@ import { useToast } from '@/hooks/use-toast'
 import AppLayout from '@/layouts/app-layout'
 import { CircleAlert } from 'lucide-react'
 import { validateUser, type ValidationErrors } from '@/lib/validation'
+import { type BreadcrumbItem } from '@/types'
+
+const breadcrumbs: BreadcrumbItem[] = [
+    {
+        title: 'Users',
+        href: '/users',
+    },
+    {
+        title: 'Edit',
+        href: '/users/edit',
+    },
+];
 
 interface Role {
   id: number
@@ -57,7 +69,7 @@ export default function UsersEdit({ user, roles }: UserEditProps) {
 
   const validateField = (field: string, value: string) => {
     const validationData = { ...data, [field]: value }
-    const fieldErrors = validateUser(validationData)
+    const fieldErrors = validateUser(validationData, true)
     const error = fieldErrors[field as keyof ValidationErrors] || ''
 
     setFrontendErrors(prev => ({
@@ -74,8 +86,8 @@ export default function UsersEdit({ user, roles }: UserEditProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
-    // Frontend validation
-    const validationErrors = validateUser(data)
+    // Frontend validation - pass isEdit=true to skip password validation if not provided
+    const validationErrors = validateUser(data, true)
 
     if (Object.keys(validationErrors).length > 0) {
       setFrontendErrors(validationErrors)
@@ -83,15 +95,39 @@ export default function UsersEdit({ user, roles }: UserEditProps) {
       return
     }
 
-    put(route('users.update', user.id))
+    // Create payload - only include password if provided
+    const payload: UserFormData = {
+      name: data.name,
+      email: data.email,
+      role: data.role,
+    }
+
+    if (data.password && data.password.trim() !== '') {
+      payload.password = data.password
+      payload.password_confirmation = data.password_confirmation
+    }
+
+    // Use transform to filter out empty password fields
+    put(`/users/${user.id}`, {
+      transformRequest: [(data: any) => {
+        const transformed = { ...data }
+        if (!transformed.password || transformed.password.trim() === '') {
+          delete transformed.password
+          delete transformed.password_confirmation
+        }
+        return transformed
+      }]
+    })
   }
 
   const hasErrors = Object.keys(frontendErrors).length > 0 || Object.keys(errors).length > 0
 
   return (
-    <div className="flex h-full flex-1 flex-col gap-6 overflow-auto p-4">
+    <AppLayout breadcrumbs={breadcrumbs}>
+      <Head title="Edit User" />
+      <div className="flex h-full flex-1 flex-col gap-6 overflow-auto p-4">
       <div className="flex items-center gap-4">
-        <Link href={route('users.index')}>
+        <Link href="/users">
           <Button variant="outline" size="icon">
             <ArrowLeft className="h-4 w-4" />
           </Button>
@@ -192,10 +228,10 @@ export default function UsersEdit({ user, roles }: UserEditProps) {
             </div>
 
             <div className="flex gap-2 pt-4">
-              <Button type="submit" disabled={processing || hasErrors} className="flex-1">
+              <Button type="submit" disabled={processing} className="flex-1">
                 Update User
               </Button>
-              <Link href={route('users.index')}>
+              <Link href="/users">
                 <Button type="button" variant="outline" className="flex-1">
                   Cancel
                 </Button>
@@ -204,9 +240,8 @@ export default function UsersEdit({ user, roles }: UserEditProps) {
           </form>
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </AppLayout>
   )
 }
-
-UsersEdit.layout = (page: React.ReactNode) => <AppLayout children={page} />
 

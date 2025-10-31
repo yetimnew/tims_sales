@@ -19,11 +19,32 @@ class UserController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(): Response
+    public function index(Request $request): Response
     {
-        $users = User::with('roles')
-            ->orderBy('name')
-            ->paginate(15);
+        $query = User::with('roles');
+
+        // Handle search
+        if ($request->has('search') && !empty($request->input('search'))) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        // Handle sorting
+        $sort = $request->input('sort', 'name');
+        $direction = $request->input('direction', 'asc');
+
+        // Validate sort column to prevent SQL injection
+        $allowedSorts = ['name', 'email', 'created_at', 'email_verified_at'];
+        if (!in_array($sort, $allowedSorts)) {
+            $sort = 'name';
+        }
+
+        $query->orderBy($sort, $direction);
+
+        $users = $query->paginate(15);
 
         return Inertia::render('Users/Index', [
             'users' => $users,
@@ -97,8 +118,17 @@ class UserController extends Controller
      */
     public function show(User $user): Response
     {
+        $user->load('roles');
+
+        // Load activity logs for this user using Spatie Activity Log
+        $activityLogs = \Spatie\Activitylog\Models\Activity::forSubject($user)
+            ->with('causer')
+            ->orderByDesc('created_at')
+            ->get();
+
         return Inertia::render('Users/Show', [
             'user' => $user,
+            'activityLogs' => $activityLogs,
         ]);
     }
 
@@ -229,64 +259,72 @@ class UserController extends Controller
     /**
      * Export users to CSV.
      */
-    public function export()
+    public function export(Request $request)
     {
         try {
-            $users = User::with('roles')->get();
+            $query = User::with('roles');
 
-            $filename = 'users_export_' . now()->format('Y-m-d_H-i-s') . '.csv';
+            // Apply same search and sort as index
+            if ($request->has('search') && !empty($request->input('search'))) {
+                $search = $request->input('search');
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%");
+                });
+            }
 
-            $headers = [
-                'Content-Type' => 'text/csv',
-                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
-            ];
+            // Apply sorting
+            if ($request->has('sort')) {
+                $sort = $request->input('sort', 'name');
+                $direction = $request->input('direction', 'asc');
+                $query->orderBy($sort, $direction);
+            }
 
-            $callback = function() use ($users) {
-                $file = fopen('php://output', 'w');
+            $users = $query->get();
 
-                // CSV headers
-                fputcsv($file, [
-                    'ID',
-                    'Name',
-                    'Email',
-                    'Roles',
-                    'Email Verified',
-                    'Created At',
-                    'Updated At'
-                ]);
+            // Generate CSV
+            $filename = 'users_' . now()->format('Y-m-d_H-i-s') . '.csv';
+            $handle = fopen('php://temp', 'r+');
 
-                // CSV data
-                foreach ($users as $user) {
-                    fputcsv($file, [
-                        $user->id,
-                        $user->name,
-                        $user->email,
-                        $user->roles->pluck('name')->join(', '),
-                        $user->email_verified_at ? 'Yes' : 'No',
-                        $user->created_at->format('Y-m-d H:i:s'),
-                        $user->updated_at->format('Y-m-d H:i:s'),
-                    ]);
-                }
-
-                fclose($file);
-            };
-
-            // Log export activity
-            activity()
-                ->causedBy(Auth::user())
-                ->withProperties([
-                    'export_type' => 'users',
-                    'total_records' => $users->count(),
-                ])
-                ->log('Users exported to CSV');
-
-            Log::info('Users exported', [
-                'total_records' => $users->count(),
-                'exported_by' => Auth::id(),
+            // Write header
+            fputcsv($handle, [
+                'ID',
+                'Name',
+                'Email',
+                'Roles',
+                'Email Verified',
+                'Created At',
+                'Updated At'
             ]);
 
-            return response()->stream($callback, 200, $headers);
+            // Write data
+            foreach ($users as $user) {
+                fputcsv($handle, [
+                    $user->id,
+                    $user->name,
+                    $user->email,
+                    $user->roles->pluck('name')->join(', '),
+                    $user->email_verified_at ? 'Yes' : 'No',
+                    $user->created_at,
+                    $user->updated_at
+                ]);
+            }
 
+            rewind($handle);
+            $csv = stream_get_contents($handle);
+            fclose($handle);
+
+            // Log activity using Spatie Activity Log
+            if (Auth::check()) {
+                activity()
+                    ->causedBy(Auth::user())
+                    ->withProperties(['count' => count($users)])
+                    ->log('exported users to CSV');
+            }
+
+            return response($csv, 200)
+                ->header('Content-Type', 'text/csv')
+                ->header('Content-Disposition', "attachment; filename=\"$filename\"");
         } catch (Exception $e) {
             Log::error('User export failed', [
                 'error' => $e->getMessage(),

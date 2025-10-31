@@ -1,4 +1,4 @@
-import { Link } from '@inertiajs/react'
+import { Link, Head } from '@inertiajs/react'
 import { ArrowLeft, SquarePen, Trash2, User, Shield, ScrollText, Mail, Phone, Calendar } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -11,6 +11,18 @@ import { usePermissions } from '@/hooks/use-permissions'
 import AppLayout from '@/layouts/app-layout'
 import { useState } from 'react'
 import { router } from '@inertiajs/react'
+import { type BreadcrumbItem } from '@/types'
+
+const breadcrumbs: BreadcrumbItem[] = [
+    {
+        title: 'Users',
+        href: '/users',
+    },
+    {
+        title: 'Show',
+        href: '#',
+    },
+];
 
 interface Role {
   id: number
@@ -55,7 +67,7 @@ export default function UsersShow({ user, activityLogs }: UsersShowProps) {
 
   const confirmDelete = () => {
     if (!deleteConfirmation) return
-    router.delete(route('users.destroy', deleteConfirmation.id), {
+    router.delete(`/users/${deleteConfirmation.id}`, {
       onSuccess: () => {
         toast({ title: 'Success', description: 'User deleted successfully', variant: 'success' })
         setDeleteConfirmation(null)
@@ -88,10 +100,12 @@ export default function UsersShow({ user, activityLogs }: UsersShowProps) {
   }
 
   return (
-    <div className="flex h-full flex-1 flex-col gap-6 overflow-auto p-4">
+    <AppLayout breadcrumbs={breadcrumbs}>
+      <Head title={`User: ${user.name}`} />
+      <div className="flex h-full flex-1 flex-col gap-6 overflow-auto p-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link href={route('users.index')}>
+            <Link href="/users">
             <Button variant="outline" size="icon">
               <ArrowLeft className="h-4 w-4" />
             </Button>
@@ -100,7 +114,7 @@ export default function UsersShow({ user, activityLogs }: UsersShowProps) {
         </div>
         <div className="flex gap-2">
           {hasPermission('users.edit') && (
-            <Link href={route('users.edit', user.id)}>
+            <Link href={`/users/${user.id}/edit`}>
               <Button variant="outline">
                 <SquarePen className="mr-2 h-4 w-4" /> Edit User
               </Button>
@@ -190,7 +204,7 @@ export default function UsersShow({ user, activityLogs }: UsersShowProps) {
             {user.roles.length > 0 ? (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
                 {user.roles.map(role => (
-                  <Link key={role.id} href={route('roles.show', role.id)} className="block">
+                  <Link key={role.id} href={`/roles/${role.id}`} className="block">
                     <Card className="hover:shadow-md transition-shadow">
                       <CardContent className="flex items-center gap-3 p-4">
                         <Shield className="h-5 w-5 text-muted-foreground" />
@@ -210,7 +224,7 @@ export default function UsersShow({ user, activityLogs }: UsersShowProps) {
                 <Shield className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <p className="text-muted-foreground">No roles assigned to this user</p>
                 {hasPermission('users.edit') && (
-                  <Link href={route('users.edit', user.id)}>
+                  <Link href={`/users/${user.id}/edit`}>
                     <Button variant="outline" className="mt-4">
                       Assign Roles
                     </Button>
@@ -252,15 +266,16 @@ export default function UsersShow({ user, activityLogs }: UsersShowProps) {
           </CardContent>
         </Card>
       </div>
+      </div>
 
       <DeleteConfirmationDialog
-        isOpen={!!deleteConfirmation}
-        onClose={() => setDeleteConfirmation(null)}
-        onConfirm={confirmDelete}
+        open={!!deleteConfirmation}
+        onOpenChange={(open) => !open && setDeleteConfirmation(null)}
+        title="Delete User"
+        description="Are you sure you want to delete this user? This action cannot be undone."
         itemName={deleteConfirmation?.name}
+        onConfirm={confirmDelete}
       />
-    </div>
+    </AppLayout>
   )
 }
-
-UsersShow.layout = (page: React.ReactNode) => <AppLayout children={page} />

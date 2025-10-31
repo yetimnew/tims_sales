@@ -1,14 +1,23 @@
-import { useState, useMemo } from 'react'
-import { Link, router } from '@inertiajs/react'
-import { Eye, Search, Shield } from 'lucide-react'
+import { useState } from 'react'
+import { Link, router, Head } from '@inertiajs/react'
+import { Eye, Search, Shield, FileDown, ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { InertiaPagination } from '@/components/ui/pagination'
 import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useToast } from '@/hooks/use-toast'
 import { usePermissions } from '@/hooks/use-permissions'
 import AppLayout from '@/layouts/app-layout'
 import { Badge } from '@/components/ui/badge'
+import { type BreadcrumbItem } from '@/types'
+
+const breadcrumbs: BreadcrumbItem[] = [
+    {
+        title: 'Permissions',
+        href: '/permissions',
+    },
+];
 
 interface Permission {
   id: number
@@ -26,55 +35,63 @@ interface PermissionsIndexProps {
     total: number
     from: number
     to: number
-    links?: {
-      first?: string
-      last?: string
-      prev?: string
-      next?: string
-    }
+    links: Array<{
+      url: string | null
+      label: string
+      active: boolean
+    }>
   }
 }
 
 export default function PermissionsIndex({ permissions }: PermissionsIndexProps) {
   const { toast } = useToast()
   const { hasPermission } = usePermissions()
-  const [search, setSearch] = useState('')
-  const [sortColumn, setSortColumn] = useState('name')
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
+  const [searchTerm, setSearchTerm] = useState('')
+  const [sortBy, setSortBy] = useState('name')
+  const [sortDirection, setSortDirection] = useState('asc')
 
-  const filtered = useMemo(() => {
-    let items = permissions?.data || []
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setSearchTerm(value)
 
-    if (search.trim()) {
-      const query = search.toLowerCase()
-      items = items.filter(
-        item =>
-          item.name.toLowerCase().includes(query) ||
-          item.guard_name.toLowerCase().includes(query)
-      )
-    }
-
-    items.sort((a, b) => {
-      let aVal: any = a[sortColumn as keyof Permission]
-      let bVal: any = b[sortColumn as keyof Permission]
-      if (typeof aVal === 'string') {
-        aVal = aVal?.toLowerCase()
-        bVal = bVal?.toLowerCase()
-      }
-      return sortOrder === 'asc' ? (aVal > bVal ? 1 : -1) : aVal < bVal ? 1 : -1
-    })
-
-    return items
-  }, [search, sortColumn, sortOrder, permissions])
+    router.get('/permissions',
+      { search: value, sort: sortBy, direction: sortDirection },
+      { preserveState: true, replace: false }
+    )
+  }
 
   const handleSort = (column: string) => {
-    if (sortColumn === column) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
-    } else {
-      setSortColumn(column)
-      setSortOrder('asc')
+    let newDirection = 'asc'
+    if (sortBy === column && sortDirection === 'asc') {
+      newDirection = 'desc'
     }
+
+    setSortBy(column)
+    setSortDirection(newDirection)
+
+    router.get('/permissions',
+      { search: searchTerm, sort: column, direction: newDirection },
+      { preserveState: true, replace: false }
+    )
   }
+
+  const SortIcon = ({ column }: { column: string }) => {
+    if (sortBy !== column) {
+      return <ArrowUpDown className="ml-2 h-4 w-4 opacity-50" />
+    }
+    return (
+      <ArrowUpDown
+        className={`ml-2 h-4 w-4 transition-transform ${
+          sortDirection === 'desc' ? 'rotate-180' : ''
+        }`}
+      />
+    )
+  }
+
+  const permissionCount = permissions?.total || 0
+  const perPage = permissions?.per_page || 20
+  const currentPage = permissions?.current_page || 1
+  const totalPages = permissions?.last_page || 1
 
   const getModuleBadgeColor = (module: string) => {
     switch (module.toLowerCase()) {
@@ -120,20 +137,26 @@ export default function PermissionsIndex({ permissions }: PermissionsIndexProps)
   }
 
   return (
-    <div className="flex h-full flex-1 flex-col gap-6 overflow-hidden rounded-xl p-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Permissions</h1>
-          <p className="text-muted-foreground">Manage system permissions</p>
+    <AppLayout breadcrumbs={breadcrumbs}>
+      <Head title="Permissions" />
+      <div className="flex h-full flex-1 flex-col gap-6 overflow-hidden rounded-xl p-4">
+        {/* Header Section */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Permission Management</h1>
+            <p className="text-muted-foreground mt-2">Manage system permissions and access control</p>
+          </div>
+          <div className="flex gap-2">
+            {hasPermission('permissions.export') && (
+              <Button variant="outline" onClick={() => {
+                window.location.href = '/permissions/export/csv';
+              }}>
+                <FileDown className="mr-2 h-4 w-4" />
+                Export CSV
+              </Button>
+            )}
+          </div>
         </div>
-        <div className="flex gap-2">
-          {hasPermission('permissions.export') && (
-            <Button variant="outline" onClick={() => router.get(route('permissions.export'))}>
-              Export CSV
-            </Button>
-          )}
-        </div>
-      </div>
 
       <Card className="flex flex-1 flex-col overflow-hidden">
         <CardHeader className="relative border-b py-4">
@@ -142,8 +165,8 @@ export default function PermissionsIndex({ permissions }: PermissionsIndexProps)
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search permissions..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
+                value={searchTerm}
+                onChange={handleSearch}
                 className="pl-9 pr-3"
               />
             </div>
@@ -156,12 +179,12 @@ export default function PermissionsIndex({ permissions }: PermissionsIndexProps)
                 <TableRow>
                   <TableHead onClick={() => handleSort('name')} className="cursor-pointer select-none hover:bg-muted/70 transition-colors">
                     <div className="flex items-center">
-                      Permission {sortColumn === 'name' && (sortOrder === 'asc' ? '↑' : '↓')}
+                      Permission <SortIcon column="name" />
                     </div>
                   </TableHead>
                   <TableHead onClick={() => handleSort('guard_name')} className="cursor-pointer select-none hover:bg-muted/70 transition-colors">
                     <div className="flex items-center">
-                      Guard {sortColumn === 'guard_name' && (sortOrder === 'asc' ? '↑' : '↓')}
+                      Guard <SortIcon column="guard_name" />
                     </div>
                   </TableHead>
                   <TableHead>Module</TableHead>
@@ -170,8 +193,8 @@ export default function PermissionsIndex({ permissions }: PermissionsIndexProps)
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.length > 0 ? (
-                  filtered.map(permission => {
+                {permissions?.data && permissions.data.length > 0 ? (
+                  permissions.data.map(permission => {
                     const [module, action] = permission.name.split('.')
                     return (
                       <TableRow key={permission.id}>
@@ -191,7 +214,7 @@ export default function PermissionsIndex({ permissions }: PermissionsIndexProps)
                         </TableCell>
                         <TableCell className="flex justify-end space-x-2">
                           {hasPermission('permissions.show') && (
-                            <Link href={route('permissions.show', permission.id)}>
+                            <Link href={`/permissions/${permission.id}`}>
                               <Button variant="ghost" size="icon">
                                 <Eye className="h-4 w-4" />
                               </Button>
@@ -203,65 +226,39 @@ export default function PermissionsIndex({ permissions }: PermissionsIndexProps)
                   })
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center">
-                      No permissions found.
+                    <TableCell colSpan={5} className="py-16">
+                      <div className="flex flex-col items-center justify-center text-center">
+                        <div className="h-20 w-20 bg-muted/50 rounded-full flex items-center justify-center mb-6">
+                          <Shield className="h-10 w-10 text-muted-foreground" />
+                        </div>
+                        <h3 className="text-xl font-semibold mb-2">No permissions found</h3>
+                        <p className="text-muted-foreground">
+                          {searchTerm
+                            ? `No permissions match "${searchTerm}". Try adjusting your search terms.`
+                            : "Permissions are managed automatically. Use roles to assign permissions to users."
+                          }
+                        </p>
+                      </div>
                     </TableCell>
                   </TableRow>
                 )}
               </TableBody>
             </Table>
           </div>
+
+          {/* Pagination */}
+          <InertiaPagination
+            from={permissions?.from}
+            to={permissions?.to}
+            total={permissionCount}
+            links={permissions?.links}
+            currentPage={currentPage}
+            lastPage={totalPages}
+            className="mt-0 p-4 border-t bg-muted/30 flex-shrink-0"
+          />
         </CardContent>
       </Card>
-
-      {/* Pagination */}
-      {permissions.last_page > 1 && (
-        <div className="flex items-center justify-between px-4 py-3 sm:px-6">
-          <div className="flex flex-1 justify-between sm:hidden">
-            <Link
-              href={permissions.current_page > 1 ? route('permissions.index', { page: permissions.current_page - 1, search, sort: sortColumn, direction: sortOrder }) : '#'}
-              className={`relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 ${permissions.current_page === 1 ? 'pointer-events-none opacity-50' : ''}`}
-            >
-              Previous
-            </Link>
-            <Link
-              href={permissions.current_page < permissions.last_page ? route('permissions.index', { page: permissions.current_page + 1, search, sort: sortColumn, direction: sortOrder }) : '#'}
-              className={`relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 ${permissions.current_page === permissions.last_page ? 'pointer-events-none opacity-50' : ''}`}
-            >
-              Next
-            </Link>
-          </div>
-          <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm text-gray-700">
-                Showing <span className="font-medium">{permissions.from || 1}</span> to{' '}
-                <span className="font-medium">{permissions.to || permissions.total}</span> of{' '}
-                <span className="font-medium">{permissions.total}</span> results
-              </p>
-            </div>
-            <div>
-              <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
-                {Array.from({ length: permissions.last_page }, (_, i) => (
-                  <Link
-                    key={i + 1}
-                    href={route('permissions.index', { page: i + 1, search, sort: sortColumn, direction: sortOrder })}
-                    aria-current={permissions.current_page === i + 1 ? 'page' : undefined}
-                    className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
-                      permissions.current_page === i + 1
-                        ? 'z-10 bg-primary text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary'
-                        : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:outline-offset-0'
-                    }`}
-                  >
-                    {i + 1}
-                  </Link>
-                ))}
-              </nav>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+      </div>
+    </AppLayout>
   )
 }
-
-PermissionsIndex.layout = (page: React.ReactNode) => <AppLayout children={page} />

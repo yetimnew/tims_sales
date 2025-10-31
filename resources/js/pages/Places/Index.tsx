@@ -16,6 +16,7 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { Head, Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import { Plus, Eye, Edit, Trash2, Search, ArrowUpDown, ChevronLeft, ChevronRight, FileDown } from 'lucide-react';
+import { InertiaPagination } from '@/components/ui/pagination';
 import * as React from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -299,57 +300,15 @@ export default function PlacesIndex({ places, totalCount }: PlacesIndexProps) {
                             </Table>
                         </div>
 
-                        {/* Enhanced Pagination */}
-                        {places.last_page > 1 && (
-                            <div className="mt-6 flex items-center justify-between">
-                                <div className="text-sm text-muted-foreground">
-                                    Showing {places.from || 1} to {places.to || placeCount} of {placeCount} places
-                                </div>
-                                <div className="flex gap-2">
-                                    {/* Previous Button */}
-                                    {currentPage > 1 && (
-                                        <Button asChild variant="outline" size="sm">
-                                            <Link href={places.links[0].url || '#'}>
-                                                <ChevronLeft className="mr-1 h-4 w-4" />
-                                                Previous
-                                            </Link>
-                                        </Button>
-                                    )}
-
-                                    {/* Page Numbers */}
-                                    {places.links.map((link, index) => {
-                                        // Skip first (prev) and last (next) links
-                                        if (index === 0 || index === places.links.length - 1) {
-                                            return null;
-                                        }
-
-                                        return (
-                                            <Button
-                                                key={index}
-                                                asChild
-                                                variant={link.active ? 'default' : 'outline'}
-                                                size="sm"
-                                                disabled={!link.url}
-                                            >
-                                                <Link href={link.url || '#'}>
-                                                    <span dangerouslySetInnerHTML={{ __html: link.label }} />
-                                                </Link>
-                                            </Button>
-                                        );
-                                    })}
-
-                                    {/* Next Button */}
-                                    {currentPage < totalPages && (
-                                        <Button asChild variant="outline" size="sm">
-                                            <Link href={places.links[places.links.length - 1].url || '#'}>
-                                                Next
-                                                <ChevronRight className="ml-1 h-4 w-4" />
-                                            </Link>
-                                        </Button>
-                                    )}
-                                </div>
-                            </div>
-                        )}
+                        {/* Pagination */}
+                        <InertiaPagination
+                          from={places.from}
+                          to={places.to}
+                          total={placeCount}
+                          links={(places as any).links as any}
+                          currentPage={currentPage}
+                          lastPage={totalPages}
+                        />
                     </CardContent>
                 </Card>
             </div>

@@ -10,7 +10,6 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { dashboard } from '@/routes';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
 import {
@@ -53,7 +52,7 @@ const getMainNavItems = (): NavItem[] => {
             {
                 title: 'Fleet Management',
                 icon: Truck,
-                isActive: currentUrl.startsWith('/trucks') || currentUrl.startsWith('/drivers') || currentUrl.startsWith('/vehicletypes') || currentUrl.startsWith('/maintenance') || currentUrl.startsWith('/fuel') || currentUrl.startsWith('/driver-performance') || currentUrl.startsWith('/driver-safety') || currentUrl.startsWith('/cargo-types'),
+                isActive: currentUrl.startsWith('/trucks') || currentUrl.startsWith('/drivers') || currentUrl.startsWith('/vehicletypes') || currentUrl.startsWith('/maintenance') || currentUrl.startsWith('/fuel') || currentUrl.startsWith('/driver-performance') || currentUrl.startsWith('/driver-safety') || currentUrl.startsWith('/cargo-types') || currentUrl.startsWith('/truck-status-board'),
                 items: [
                     {
                         title: 'Trucks',
@@ -171,17 +170,17 @@ const getMainNavItems = (): NavItem[] => {
             {
                 title: 'Status Management',
                 icon: Settings,
-                isActive: currentUrl.startsWith('/statustypes') || currentUrl.startsWith('/statuses'),
+                isActive: currentUrl.startsWith('/statustypes') || currentUrl.startsWith('/truck-status-board'),
                 items: [
                     {
-                        title: 'Status Types',
+                        title: 'Status Type Registration',
                         href: '/statustypes',
                         icon: Settings,
                     },
                     {
-                        title: 'Statuses',
-                        href: '/statuses',
-                        icon: Target,
+                        title: 'Daily Truck Status Registration',
+                        href: '/truck-status-board',
+                        icon: Activity,
                     },
                 ],
             },
@@ -236,6 +235,71 @@ const getMainNavItems = (): NavItem[] => {
                         title: 'Maintenance Reports',
                         href: '/reports/maintenance',
                         icon: Wrench,
+                    },
+                    {
+                        title: 'Fuel Efficiency & Cost',
+                        href: '/reports/fuel-efficiency',
+                        icon: Fuel,
+                    },
+                    {
+                        title: 'Customer Profitability',
+                        href: '/reports/customer-profitability',
+                        icon: DollarSign,
+                    },
+                    {
+                        title: 'Route & Distance Efficiency',
+                        href: '/reports/route-efficiency',
+                        icon: Navigation,
+                    },
+                    {
+                        title: 'Outsource Performance',
+                        href: '/reports/outsource-performance',
+                        icon: Activity,
+                    },
+                    {
+                        title: 'Operation Profitability',
+                        href: '/reports/operation-profitability',
+                        icon: DollarSign,
+                    },
+                    {
+                        title: 'Capacity & Load Factor',
+                        href: '/reports/capacity-load',
+                        icon: Package,
+                    },
+                    {
+                        title: 'Geographic Heatmaps',
+                        href: '/reports/geography-heatmaps',
+                        icon: Globe,
+                    },
+                    {
+                        title: 'Performance (All)',
+                        href: '/reports/performance-all',
+                        icon: Activity,
+                    },
+                    {
+                        title: 'Performance by Driver',
+                        href: '/reports/performance-by-driver',
+                        icon: Users,
+                    },
+                    {
+                        title: 'Performance by Truck',
+                        href: '/reports/performance-by-truck',
+                        icon: Truck,
+                    },
+                    {
+                        title: 'Performance by Model',
+                        href: '/reports/performance-by-model',
+                        icon: Package,
+                    },
+                    {
+                        title: 'Performance by Status',
+                        href: '/reports/performance-by-status',
+                        icon: Activity,
+                    },
+                    {
+                        title: 'Attach / Detach History',
+                        href: '/reports/driver-truck-attach-detach',
+                        icon: Users,
                     },
                 ],
             },

@@ -779,12 +779,17 @@ export const userValidation = {
   },
 }
 
-export function validateUser(data: any): ValidationErrors {
+export function validateUser(data: any, isEdit: boolean = false): ValidationErrors {
   const errors: ValidationErrors = {}
   errors.name = userValidation.name(data.name)
   errors.email = userValidation.email(data.email)
-  if (data.password) errors.password = userValidation.password(data.password)
-  if (data.password_confirmation) errors.password_confirmation = userValidation.password_confirmation(data.password, data.password_confirmation)
+
+  // Only validate password if it's provided or it's a create action
+  if (!isEdit || data.password) {
+    if (data.password) errors.password = userValidation.password(data.password)
+    if (data.password_confirmation) errors.password_confirmation = userValidation.password_confirmation(data.password, data.password_confirmation)
+  }
+
   Object.keys(errors).forEach(key => { if (!errors[key]) delete errors[key] })
   return errors
 }

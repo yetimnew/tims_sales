@@ -9,6 +9,7 @@ import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialo
 import { useToast } from '@/hooks/use-toast'
 import { usePermissions } from '@/hooks/use-permissions'
 import AppLayout from '@/layouts/app-layout'
+import { InertiaPagination } from '@/components/ui/pagination'
 
 interface StatusType {
   id: number
@@ -193,51 +194,15 @@ export default function StatusTypesIndex({ statusTypes }: StatusTypesIndexProps)
         </Card>
 
         {/* Pagination */}
-        {statusTypes.last_page > 1 && (
-          <div className="flex items-center justify-between px-4 py-3 sm:px-6">
-            <div className="flex flex-1 justify-between sm:hidden">
-              <Link
-                href={statusTypes.current_page > 1 ? route('status-types.index', { page: statusTypes.current_page - 1, search, sort: sortColumn, direction: sortOrder }) : '#'}
-                className={`relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 ${statusTypes.current_page === 1 ? 'pointer-events-none opacity-50' : ''}`}
-              >
-                Previous
-              </Link>
-              <Link
-                href={statusTypes.current_page < statusTypes.last_page ? route('status-types.index', { page: statusTypes.current_page + 1, search, sort: sortColumn, direction: sortOrder }) : '#'}
-                className={`relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 ${statusTypes.current_page === statusTypes.last_page ? 'pointer-events-none opacity-50' : ''}`}
-              >
-                Next
-              </Link>
-            </div>
-            <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm text-gray-700">
-                  Showing <span className="font-medium">{statusTypes.from || 1}</span> to{' '}
-                  <span className="font-medium">{statusTypes.to || statusTypes.total}</span> of{' '}
-                  <span className="font-medium">{statusTypes.total}</span> results
-                </p>
-              </div>
-              <div>
-                <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
-                  {Array.from({ length: statusTypes.last_page }, (_, i) => (
-                    <Link
-                      key={i + 1}
-                      href={route('status-types.index', { page: i + 1, search, sort: sortColumn, direction: sortOrder })}
-                      aria-current={statusTypes.current_page === i + 1 ? 'page' : undefined}
-                      className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
-                        statusTypes.current_page === i + 1
-                          ? 'z-10 bg-primary text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary'
-                          : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:outline-offset-0'
-                      }`}
-                    >
-                      {i + 1}
-                    </Link>
-                  ))}
-                </nav>
-              </div>
-            </div>
-          </div>
-        )}
+        <InertiaPagination
+          from={statusTypes.from}
+          to={statusTypes.to}
+          total={statusTypes.total}
+          currentPage={statusTypes.current_page}
+          lastPage={statusTypes.last_page}
+          buildHref={(page) => route('status-types.index', { page, search, sort: sortColumn, direction: sortOrder })}
+          className="px-4 py-3 sm:px-6"
+        />
       </div>
 
       <DeleteConfirmationDialog

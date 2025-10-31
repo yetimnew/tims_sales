@@ -10,6 +10,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
+import { InertiaPagination } from '@/components/ui/pagination';
 import { Head, Link } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import {
@@ -287,23 +288,7 @@ export default function MaintenanceIndex({
                         </div>
 
                         {/* Pagination */}
-                        {maintenanceRecords.links && maintenanceRecords.links.length > 3 && (
-                            <div className="mt-6 flex justify-center gap-2">
-                                {maintenanceRecords.links.map((link, index) => (
-                                    <Button
-                                        key={index}
-                                        asChild
-                                        variant={link.active ? 'default' : 'outline'}
-                                        size="sm"
-                                        disabled={!link.url}
-                                    >
-                                        <Link href={link.url || '#'}>
-                                            <span dangerouslySetInnerHTML={{ __html: link.label }} />
-                                        </Link>
-                                    </Button>
-                                ))}
-                            </div>
-                        )}
+                        <InertiaPagination links={maintenanceRecords.links as any} />
                     </CardContent>
                 </Card>
             </div>

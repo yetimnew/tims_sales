@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useForm } from '@inertiajs/react'
-import { Link } from '@inertiajs/react'
-import { ArrowLeft } from 'lucide-react'
+import { Link, Head } from '@inertiajs/react'
+import { ArrowLeft, CheckSquare, Square, CircleAlert } from 'lucide-react'
+import AppLayout from '@/layouts/app-layout'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -11,8 +12,6 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useToast } from '@/hooks/use-toast'
 import { validateRole } from '@/lib/validation'
-import AppLayout from '@/layouts/app-layout'
-import { CircleAlert } from 'lucide-react'
 
 interface Permission {
   id: number
@@ -27,7 +26,7 @@ interface RoleFormData {
 }
 
 interface RoleCreateProps {
-  permissions: Permission[]
+  permissions: Record<string, Permission[]>
 }
 
 export default function RolesCreate({ permissions }: RoleCreateProps) {
@@ -74,6 +73,22 @@ export default function RolesCreate({ permissions }: RoleCreateProps) {
     setData('permissions', newPermissions)
   }
 
+  const handleSelectAllModule = (module: string, modulePermissions: Permission[]) => {
+    const modulePermissionIds = modulePermissions.map(p => p.id)
+    const allSelected = modulePermissionIds.every(id => selectedPermissions.includes(id))
+
+    let newPermissions: number[]
+    if (allSelected) {
+      // Deselect all permissions in this module
+      newPermissions = selectedPermissions.filter(id => !modulePermissionIds.includes(id))
+    } else {
+      // Select all permissions in this module
+      newPermissions = [...new Set([...selectedPermissions, ...modulePermissionIds])]
+    }
+    setSelectedPermissions(newPermissions)
+    setData('permissions', newPermissions)
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     const validationErrors = validateRole({ ...data, permissions: selectedPermissions })
@@ -82,25 +97,20 @@ export default function RolesCreate({ permissions }: RoleCreateProps) {
       toast({ title: 'Validation Error', description: 'Please fix all errors', variant: 'destructive' })
       return
     }
-    post(route('roles.store'))
+    post('/roles')
   }
 
   const hasErrors = Object.keys(frontendErrors).length > 0 || Object.keys(errors).length > 0
 
-  // Group permissions by module
-  const groupedPermissions = permissions.reduce((acc, permission) => {
-    const module = permission.name.split('.')[0]
-    if (!acc[module]) {
-      acc[module] = []
-    }
-    acc[module].push(permission)
-    return acc
-  }, {} as Record<string, Permission[]>)
+  // Permissions are already grouped by the backend
+  const groupedPermissions = permissions || {}
 
   return (
-    <div className="flex h-full flex-1 flex-col gap-6 overflow-auto p-4">
+    <AppLayout breadcrumbs={[]}>
+      <Head title="Create Role" />
+      <div className="flex h-full flex-1 flex-col gap-6 overflow-auto p-4">
       <div className="flex items-center gap-4">
-        <Link href={route('roles.index')}>
+        <Link href="/roles">
           <Button variant="outline" size="icon">
             <ArrowLeft className="h-4 w-4" />
           </Button>
@@ -156,25 +166,51 @@ export default function RolesCreate({ permissions }: RoleCreateProps) {
             <div className="space-y-4">
               <Label>Permissions *</Label>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {Object.entries(groupedPermissions).map(([module, modulePermissions]) => (
-                  <Card key={module} className="p-4">
-                    <h4 className="font-medium mb-3 capitalize">{module}</h4>
-                    <div className="space-y-2">
-                      {modulePermissions.map(permission => (
-                        <div key={permission.id} className="flex items-center space-x-2">
-                          <Checkbox
-                            id={`permission-${permission.id}`}
-                            checked={selectedPermissions.includes(permission.id)}
-                            onCheckedChange={checked => handlePermissionChange(permission.id, checked as boolean)}
-                          />
-                          <Label htmlFor={`permission-${permission.id}`} className="text-sm">
-                            {permission.name.replace(`${module}.`, '')}
-                          </Label>
-                        </div>
-                      ))}
-                    </div>
-                  </Card>
-                ))}
+                {Object.entries(groupedPermissions).map(([module, modulePermissions]) => {
+                  const modulePermissionIds = modulePermissions.map(p => p.id)
+                  const allSelected = modulePermissionIds.every(id => selectedPermissions.includes(id))
+
+                  return (
+                    <Card key={module} className="p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-medium capitalize">{module}</h4>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleSelectAllModule(module, modulePermissions)}
+                          className="h-8 text-xs"
+                        >
+                          {allSelected ? (
+                            <>
+                              <CheckSquare className="h-3 w-3 mr-1" />
+                              Deselect All
+                            </>
+                          ) : (
+                            <>
+                              <Square className="h-3 w-3 mr-1" />
+                              Select All
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                      <div className="space-y-2">
+                        {modulePermissions.map(permission => (
+                          <div key={permission.id} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`permission-${permission.id}`}
+                              checked={selectedPermissions.includes(permission.id)}
+                              onCheckedChange={checked => handlePermissionChange(permission.id, checked as boolean)}
+                            />
+                            <Label htmlFor={`permission-${permission.id}`} className="text-sm">
+                              {permission.name.replace(`${module}.`, '')}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    </Card>
+                  )
+                })}
               </div>
               {(frontendErrors.permissions || errors.permissions) && (
                 <p className="text-sm text-red-500">{frontendErrors.permissions || errors.permissions}</p>
@@ -185,7 +221,7 @@ export default function RolesCreate({ permissions }: RoleCreateProps) {
               <Button type="submit" disabled={processing || hasErrors} className="flex-1">
                 Create Role
               </Button>
-              <Link href={route('roles.index')}>
+              <Link href="/roles">
                 <Button type="button" variant="outline" className="flex-1">
                   Cancel
                 </Button>
@@ -194,8 +230,7 @@ export default function RolesCreate({ permissions }: RoleCreateProps) {
           </form>
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </AppLayout>
   )
 }
-
-RolesCreate.layout = (page: React.ReactNode) => <AppLayout children={page} />

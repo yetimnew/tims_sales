@@ -16,6 +16,7 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { Head, Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import { Plus, Eye, Edit, Trash2, Search, ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { InertiaPagination } from '@/components/ui/pagination';
 import * as React from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -248,32 +249,22 @@ export default function CargoTypesIndex({ cargoTypes }: CargoTypesIndexProps) {
                 </div>
 
                 {/* Pagination */}
-                <div className="flex items-center justify-between mt-6">
-                    <div className="text-sm text-gray-600">
-                        Showing {cargoTypes.from} to {cargoTypes.to} of {cargoTypes.total} types
-                    </div>
-                    <div className="flex gap-2">
-                        {cargoTypes.current_page > 1 && (
-                            <Link
-                                href={cargoTypes.links?.prev || '/cargo-types'}
-                                className="p-2 hover:bg-gray-100 rounded"
-                            >
-                                <ChevronLeft size={16} />
-                            </Link>
-                        )}
-                        <span className="px-4 py-2 text-sm">
-                            Page {cargoTypes.current_page} of {cargoTypes.last_page}
-                        </span>
-                        {cargoTypes.current_page < cargoTypes.last_page && (
-                            <Link
-                                href={cargoTypes.links?.next || '/cargo-types'}
-                                className="p-2 hover:bg-gray-100 rounded"
-                            >
-                                <ChevronRight size={16} />
-                            </Link>
-                        )}
-                    </div>
-                </div>
+                <InertiaPagination
+                  from={cargoTypes.from}
+                  to={cargoTypes.to}
+                  total={cargoTypes.total}
+                  currentPage={cargoTypes.current_page}
+                  lastPage={cargoTypes.last_page}
+                  buildHref={(page) => {
+                    const params = new URLSearchParams({
+                      page: String(page),
+                      search: searchTerm,
+                      sort: sortBy,
+                      direction: sortDirection,
+                    })
+                    return `/cargo-types?${params.toString()}`
+                  }}
+                />
             </div>
 
             <DeleteConfirmationDialog

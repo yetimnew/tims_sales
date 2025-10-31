@@ -16,6 +16,7 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { Head, Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import { Plus, Eye, Edit, Trash2, Search, ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { InertiaPagination } from '@/components/ui/pagination';
 import * as React from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -352,32 +353,22 @@ export default function DriverSafetyIndex({ safetyRecords, statistics }: DriverS
                         </div>
 
                         {/* Pagination */}
-                        <div className="flex items-center justify-between mt-6">
-                            <div className="text-sm text-gray-600">
-                                Showing {safetyRecords.from} to {safetyRecords.to} of {safetyRecords.total} records
-                            </div>
-                            <div className="flex gap-2">
-                                {safetyRecords.current_page > 1 && (
-                                    <Link
-                                        href={safetyRecords.links?.prev || '/driver-safety'}
-                                        className="p-2 hover:bg-gray-100 rounded"
-                                    >
-                                        <ChevronLeft size={16} />
-                                    </Link>
-                                )}
-                                <span className="px-4 py-2 text-sm">
-                                    Page {safetyRecords.current_page} of {safetyRecords.last_page}
-                                </span>
-                                {safetyRecords.current_page < safetyRecords.last_page && (
-                                    <Link
-                                        href={safetyRecords.links?.next || '/driver-safety'}
-                                        className="p-2 hover:bg-gray-100 rounded"
-                                    >
-                                        <ChevronRight size={16} />
-                                    </Link>
-                                )}
-                            </div>
-                        </div>
+                        <InertiaPagination
+                          from={safetyRecords.from}
+                          to={safetyRecords.to}
+                          total={safetyRecords.total}
+                          currentPage={safetyRecords.current_page}
+                          lastPage={safetyRecords.last_page}
+                          buildHref={(page) => {
+                            const params = new URLSearchParams({
+                              page: String(page),
+                              search: searchTerm,
+                              sort: sortBy,
+                              direction: sortDirection,
+                            })
+                            return `/driver-safety?${params.toString()}`
+                          }}
+                        />
                     </CardContent>
                 </Card>
             </div>

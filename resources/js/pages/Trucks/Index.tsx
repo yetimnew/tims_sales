@@ -16,6 +16,7 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { Head, Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import { Plus, Eye, Edit, Trash2, Search, ArrowUpDown, ChevronLeft, ChevronRight, FileDown, Truck, CheckCircle, Wrench, XCircle, DollarSign, Activity } from 'lucide-react';
+import { InertiaPagination } from '@/components/ui/pagination';
 import * as React from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -439,60 +440,16 @@ export default function TrucksIndex({ trucks, totalCount }: TrucksIndexProps) {
                             </Table>
                         </div>
 
-                        {/* Enhanced Pagination */}
-                        {trucks?.last_page > 1 && (
-                            <div className="mt-0 p-4 border-t flex items-center justify-between bg-muted/30 flex-shrink-0">
-                                <div className="text-sm text-muted-foreground">
-                                    Showing <span className="font-semibold text-foreground">{trucks?.from || 1}</span> to <span className="font-semibold text-foreground">{trucks?.to || truckCount}</span> of <span className="font-semibold text-foreground">{truckCount}</span> trucks
-                                    <span className="ml-2 text-xs text-muted-foreground">
-                                        (Page {currentPage} of {totalPages})
-                                    </span>
-                                </div>
-                                <div className="flex gap-2">
-                                    {/* Previous Button */}
-                                    {currentPage > 1 && (
-                                        <Button asChild variant="outline" size="sm">
-                                            <Link href={trucks?.links?.[0]?.url || '#'}>
-                                                <ChevronLeft className="mr-1 h-4 w-4" />
-                                                Previous
-                                            </Link>
-                                        </Button>
-                                    )}
-
-                                    {/* Page Numbers */}
-                                    {trucks?.links?.map((link, index) => {
-                                        // Skip first (prev) and last (next) links
-                                        if (index === 0 || index === (trucks?.links?.length || 0) - 1) {
-                                            return null;
-                                        }
-
-                                        return (
-                                            <Button
-                                                key={index}
-                                                asChild
-                                                variant={link.active ? 'default' : 'outline'}
-                                                size="sm"
-                                                disabled={!link.url}
-                                            >
-                                                <Link href={link.url || '#'}>
-                                                    <span dangerouslySetInnerHTML={{ __html: link.label }} />
-                                                </Link>
-                                            </Button>
-                                        );
-                                    })}
-
-                                    {/* Next Button */}
-                                    {currentPage < totalPages && (
-                                        <Button asChild variant="outline" size="sm">
-                                            <Link href={trucks?.links?.[(trucks?.links?.length || 0) - 1]?.url || '#'}>
-                                                Next
-                                                <ChevronRight className="ml-1 h-4 w-4" />
-                                            </Link>
-                                        </Button>
-                                    )}
-                                </div>
-                            </div>
-                        )}
+                        {/* Pagination */}
+                        <InertiaPagination
+                          from={trucks?.from}
+                          to={trucks?.to}
+                          total={truckCount}
+                          links={trucks?.links}
+                          currentPage={currentPage}
+                          lastPage={totalPages}
+                          className="mt-0 p-4 border-t bg-muted/30 flex-shrink-0"
+                        />
                     </CardContent>
                 </Card>
             </div>

@@ -3,19 +3,50 @@
 namespace App\Http\Controllers;
 
 use App\Models\Truck;
+use App\Models\DailyTruckStatus;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Inertia\Response;
 use App\Models\VehicleType;
 use App\Http\Requests\StoreTruckRequest;
 use App\Http\Requests\UpdateTruckRequest;
 use App\Services\TruckAssignmentService;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Inertia\Inertia;
-use Inertia\Response;
 use Exception;
 use Spatie\Activitylog\Models\Activity;
 
 class TruckController extends Controller
 {
+    /**
+     * Show per-truck status history (timeline).
+     */
+    public function statusHistory(Request $request, Truck $truck): Response
+    {
+        $query = DailyTruckStatus::with(['status', 'changedBy'])
+            ->where('truck_id', $truck->id)
+            ->orderByDesc('status_date')
+            ->orderByDesc('created_at');
+
+        if ($request->filled('from')) {
+            $query->where('status_date', '>=', $request->input('from'));
+        }
+        if ($request->filled('to')) {
+            $query->where('status_date', '<=', $request->input('to'));
+        }
+
+        $history = $query->paginate(20)->withQueryString();
+
+        return Inertia::render('Status/StatusHistory', [
+            'truck' => $truck->only(['id', 'plate']) + [
+                'vehicleType' => $truck->relationLoaded('vehicleType') ? $truck->vehicleType : $truck->vehicleType()->first(['id','name'])
+            ],
+            'history' => $history,
+            'filters' => [
+                'from' => $request->input('from'),
+                'to' => $request->input('to'),
+            ],
+        ]);
+    }
     /**
      * Display a listing of the resource.
      */
@@ -54,7 +85,7 @@ class TruckController extends Controller
 
         $query->orderBy($sort, $direction);
 
-        $trucks = $query->paginate(15);
+        $trucks = $query->paginate(5);
 
         return Inertia::render('Trucks/Index', [
             'trucks' => $trucks,

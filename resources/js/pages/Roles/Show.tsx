@@ -1,4 +1,4 @@
-import { Link } from '@inertiajs/react'
+import { Link, Head } from '@inertiajs/react'
 import { ArrowLeft, SquarePen, Trash2, Shield, Users, ScrollText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -11,6 +11,18 @@ import { usePermissions } from '@/hooks/use-permissions'
 import AppLayout from '@/layouts/app-layout'
 import { useState } from 'react'
 import { router } from '@inertiajs/react'
+import { type BreadcrumbItem } from '@/types'
+
+const breadcrumbs: BreadcrumbItem[] = [
+    {
+        title: 'Roles',
+        href: '/roles',
+    },
+    {
+        title: 'Show',
+        href: '#',
+    },
+];
 
 interface Permission {
   id: number
@@ -28,8 +40,8 @@ interface Role {
   id: number
   name: string
   description: string
-  permissions: Permission[]
-  users: User[]
+  permissions?: Permission[]
+  users?: User[]
   created_at: string
   updated_at: string
 }
@@ -62,7 +74,7 @@ export default function RolesShow({ role, activityLogs }: RolesShowProps) {
 
   const confirmDelete = () => {
     if (!deleteConfirmation) return
-    router.delete(route('roles.destroy', deleteConfirmation.id), {
+    router.delete(`/roles/${deleteConfirmation.id}`, {
       onSuccess: () => {
         toast({ title: 'Success', description: 'Role deleted successfully', variant: 'success' })
         setDeleteConfirmation(null)
@@ -94,7 +106,7 @@ export default function RolesShow({ role, activityLogs }: RolesShowProps) {
   }
 
   // Group permissions by module
-  const groupedPermissions = role.permissions.reduce((acc, permission) => {
+  const groupedPermissions = (role.permissions || []).reduce((acc, permission) => {
     const module = permission.name.split('.')[0]
     if (!acc[module]) {
       acc[module] = []
@@ -104,10 +116,12 @@ export default function RolesShow({ role, activityLogs }: RolesShowProps) {
   }, {} as Record<string, Permission[]>)
 
   return (
-    <div className="flex h-full flex-1 flex-col gap-6 overflow-auto p-4">
+    <AppLayout breadcrumbs={breadcrumbs}>
+      <Head title={`Role: ${role.name}`} />
+      <div className="flex h-full flex-1 flex-col gap-6 overflow-auto p-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link href={route('roles.index')}>
+          <Link href="/roles">
             <Button variant="outline" size="icon">
               <ArrowLeft className="h-4 w-4" />
             </Button>
@@ -116,7 +130,7 @@ export default function RolesShow({ role, activityLogs }: RolesShowProps) {
         </div>
         <div className="flex gap-2">
           {hasPermission('roles.edit') && (
-            <Link href={route('roles.edit', role.id)}>
+            <Link href={`/roles/${role.id}/edit`}>
               <Button variant="outline">
                 <SquarePen className="mr-2 h-4 w-4" /> Edit Role
               </Button>
@@ -168,11 +182,11 @@ export default function RolesShow({ role, activityLogs }: RolesShowProps) {
             </div>
             <div className="space-y-1">
               <p className="text-sm font-medium text-muted-foreground">Permissions Count</p>
-              <Badge variant="outline">{role.permissions.length}</Badge>
+              <Badge variant="outline">{role.permissions?.length || 0}</Badge>
             </div>
             <div className="space-y-1">
               <p className="text-sm font-medium text-muted-foreground">Users Count</p>
-              <Badge variant="outline">{role.users.length}</Badge>
+              <Badge variant="outline">{role.users?.length || 0}</Badge>
             </div>
           </CardContent>
         </Card>
@@ -207,7 +221,7 @@ export default function RolesShow({ role, activityLogs }: RolesShowProps) {
                 <Shield className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <p className="text-muted-foreground">No permissions assigned to this role</p>
                 {hasPermission('roles.edit') && (
-                  <Link href={route('roles.edit', role.id)}>
+                  <Link href={`/roles/${role.id}/edit`}>
                     <Button variant="outline" className="mt-4">
                       Assign Permissions
                     </Button>
@@ -226,10 +240,10 @@ export default function RolesShow({ role, activityLogs }: RolesShowProps) {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6">
-            {role.users.length > 0 ? (
+            {(role.users?.length || 0) > 0 ? (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
-                {role.users.map(user => (
-                  <Link key={user.id} href={route('users.show', user.id)} className="block">
+                {(role.users || []).map(user => (
+                  <Link key={user.id} href={`/users/${user.id}`} className="block">
                     <Card className="hover:shadow-md transition-shadow">
                       <CardContent className="flex items-center gap-3 p-4">
                         <Users className="h-5 w-5 text-muted-foreground" />
@@ -282,15 +296,16 @@ export default function RolesShow({ role, activityLogs }: RolesShowProps) {
           </CardContent>
         </Card>
       </div>
+      </div>
 
       <DeleteConfirmationDialog
-        isOpen={!!deleteConfirmation}
-        onClose={() => setDeleteConfirmation(null)}
-        onConfirm={confirmDelete}
+        open={!!deleteConfirmation}
+        onOpenChange={(open) => !open && setDeleteConfirmation(null)}
+        title="Delete Role"
+        description="Are you sure you want to delete this role? This action cannot be undone."
         itemName={deleteConfirmation?.name}
+        onConfirm={confirmDelete}
       />
-    </div>
+    </AppLayout>
   )
 }
-
-RolesShow.layout = (page: React.ReactNode) => <AppLayout children={page} />

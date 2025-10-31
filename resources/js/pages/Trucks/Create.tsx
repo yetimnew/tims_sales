@@ -8,7 +8,7 @@ import AppLayout from '@/layouts/app-layout';
 import { Head, useForm } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import { toast } from '@/hooks/use-toast';
-import { validateTruck, type ValidationErrors } from '@/lib/validation';
+import { validateTruck, type ValidationErrors, truckValidation } from '@/lib/validation';
 import { AlertCircle, Info, Wrench, DollarSign, CheckCircle, HelpCircle, Save, Truck, Calendar, Hash } from 'lucide-react';
 import { FormEventHandler, useEffect, useState } from 'react';
 
@@ -50,10 +50,62 @@ export default function TrucksCreate({ vehicleTypes }: TrucksCreateProps) {
     const [activeTab, setActiveTab] = useState('basic');
     const [isDirty, setIsDirty] = useState(false);
 
-    // Real-time frontend validation
+    // Real-time frontend validation - only validate the specific field
     const validateField = (field: string, value: string) => {
-        const allData = { ...data, [field]: value };
-        const fieldErrors = validateTruck(allData);
+        const fieldErrors = { ...frontendErrors };
+
+        // Only validate the specific field being changed
+        if (field === 'plate') {
+            const error = truckValidation.plate(value);
+            if (error) {
+                fieldErrors.plate = error;
+            } else {
+                delete fieldErrors.plate;
+            }
+        } else if (field === 'vehicletype_id') {
+            const error = truckValidation.vehicletype_id(value);
+            if (error) {
+                fieldErrors.vehicletype_id = error;
+            } else {
+                delete fieldErrors.vehicletype_id;
+            }
+        } else if (field === 'status') {
+            const error = truckValidation.status(value);
+            if (error) {
+                fieldErrors.status = error;
+            } else {
+                delete fieldErrors.status;
+            }
+        } else if (field === 'serviceIntervalKM') {
+            const error = truckValidation.serviceIntervalKM(value);
+            if (error) {
+                fieldErrors.serviceIntervalKM = error;
+            } else {
+                delete fieldErrors.serviceIntervalKM;
+            }
+        } else if (field === 'purchasePrice') {
+            const error = truckValidation.purchasePrice(value);
+            if (error) {
+                fieldErrors.purchasePrice = error;
+            } else {
+                delete fieldErrors.purchasePrice;
+            }
+        } else if (field === 'productionDate') {
+            const error = truckValidation.productionDate(value);
+            if (error) {
+                fieldErrors.productionDate = error;
+            } else {
+                delete fieldErrors.productionDate;
+            }
+        } else if (field === 'serviceStartDate') {
+            const error = truckValidation.serviceStartDate(value);
+            if (error) {
+                fieldErrors.serviceStartDate = error;
+            } else {
+                delete fieldErrors.serviceStartDate;
+            }
+        }
+
         setFrontendErrors(fieldErrors);
     };
 
@@ -340,28 +392,48 @@ export default function TrucksCreate({ vehicleTypes }: TrucksCreateProps) {
                                         </div>
 
                                         <div className="space-y-2">
-                                            <Label htmlFor="productionDate">Production Date</Label>
-                                            <Input
-                                                id="productionDate"
-                                                type="date"
-                                                value={data.productionDate}
-                                                onChange={(e) => handleFieldChange('productionDate', e.target.value)}
-                                                className={getFieldError('productionDate') ? 'border-red-500 focus:border-red-500' : ''}
-                                            />
+                                            <Label htmlFor="productionDate" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                                <span className="text-red-500">*</span> Production Date
+                                            </Label>
+                                            <div className="relative group">
+                                                <Input
+                                                    id="productionDate"
+                                                    type="date"
+                                                    value={data.productionDate}
+                                                    onChange={(e) => handleFieldChange('productionDate', e.target.value)}
+                                                    className={`pl-4 pr-10 py-2.5 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-3 [&::-webkit-calendar-picker-indicator]:w-4 [&::-webkit-calendar-picker-indicator]:h-4 [&::-webkit-calendar-picker-indicator]:cursor-pointer ${getFieldError('productionDate') ? 'border-red-500 focus:border-red-500' : ''}`}
+                                                />
+                                                <div
+                                                    className="absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer z-20"
+                                                    onClick={() => document.getElementById('productionDate')?.showPicker()}
+                                                >
+                                                    <Calendar className="h-4 w-4 text-slate-500 dark:text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors duration-200" />
+                                                </div>
+                                            </div>
                                             {getFieldError('productionDate') && (
                                                 <p className="text-sm text-red-500">{getFieldError('productionDate')}</p>
                                             )}
                                         </div>
 
                                         <div className="space-y-2">
-                                            <Label htmlFor="serviceStartDate">Service Start Date</Label>
-                                            <Input
-                                                id="serviceStartDate"
-                                                type="date"
-                                                value={data.serviceStartDate}
-                                                onChange={(e) => handleFieldChange('serviceStartDate', e.target.value)}
-                                                className={getFieldError('serviceStartDate') ? 'border-red-500 focus:border-red-500' : ''}
-                                            />
+                                            <Label htmlFor="serviceStartDate" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                                <span className="text-red-500">*</span> Service Start Date
+                                            </Label>
+                                            <div className="relative group">
+                                                <Input
+                                                    id="serviceStartDate"
+                                                    type="date"
+                                                    value={data.serviceStartDate}
+                                                    onChange={(e) => handleFieldChange('serviceStartDate', e.target.value)}
+                                                    className={`pl-4 pr-10 py-2.5 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-3 [&::-webkit-calendar-picker-indicator]:w-4 [&::-webkit-calendar-picker-indicator]:h-4 [&::-webkit-calendar-picker-indicator]:cursor-pointer ${getFieldError('serviceStartDate') ? 'border-red-500 focus:border-red-500' : ''}`}
+                                                />
+                                                <div
+                                                    className="absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer z-20"
+                                                    onClick={() => document.getElementById('serviceStartDate')?.showPicker()}
+                                                >
+                                                    <Calendar className="h-4 w-4 text-slate-500 dark:text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors duration-200" />
+                                                </div>
+                                            </div>
                                             {getFieldError('serviceStartDate') && (
                                                 <p className="text-sm text-red-500">{getFieldError('serviceStartDate')}</p>
                                             )}

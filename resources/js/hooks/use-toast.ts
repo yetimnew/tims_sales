@@ -45,9 +45,9 @@ export const actionTypes = {
   REMOVE_TOAST: "REMOVE_TOAST",
 } as const
 
-let listeners: Array<(state: ToasterToast[]) => void> = []
+const listeners: Array<(state: ToasterToast[]) => void> = []
 let memoryState: ToasterToast[] = []
-let timeoutIds: Record<string, NodeJS.Timeout> = {}
+const timeoutIds: Record<string, NodeJS.Timeout> = {}
 
 function dispatch(action: ToastActionType) {
   switch (action.type) {

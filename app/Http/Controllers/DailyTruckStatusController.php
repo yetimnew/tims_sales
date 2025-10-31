@@ -1,0 +1,123 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Http\Requests\StoreDailyTruckStatusRequest;
+use App\Models\DailyTruckStatus;
+use App\Models\Status;
+use App\Models\StatusType;
+use App\Models\Truck;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Inertia\Inertia;
+use Inertia\Response;
+use Exception;
+
+class DailyTruckStatusController extends Controller
+{
+    /**
+     * Display the truck status board.
+     */
+    public function index(Request $request): Response
+    {
+        // Get date from request or use today
+        $date = $request->input('date', now()->format('Y-m-d'));
+
+        // Get all trucks
+        $trucks = Truck::with(['vehicleType', 'drivers'])->get();
+
+        // Get operational status type
+        $operationalStatusType = StatusType::where('name', 'Operational Status')->first();
+
+        // Get all operational statuses
+        $statuses = Status::where('statustype_id', $operationalStatusType->id)
+            ->orderBy('name')
+            ->get();
+
+        // Get status assignments for the date
+        $dailyStatuses = DailyTruckStatus::with(['truck', 'status', 'changedBy'])
+            ->where('status_date', $date)
+            ->get()
+            ->keyBy('truck_id');
+
+        // Group trucks by status
+        $trucksByStatus = [];
+        foreach ($statuses as $status) {
+            $trucksByStatus[$status->id] = [
+                'status' => $status,
+                'trucks' => [],
+            ];
+        }
+
+        // Assign trucks to their status
+        foreach ($trucks as $truck) {
+            $dailyStatus = $dailyStatuses->get($truck->id);
+
+            if ($dailyStatus) {
+                $statusId = $dailyStatus->status_id;
+                $trucksByStatus[$statusId]['trucks'][] = [
+                    'id' => $truck->id,
+                    'plate' => $truck->plate,
+                    'vehicleType' => $truck->vehicleType ? $truck->vehicleType->name : 'N/A',
+                    'equipmentType' => $truck->vehicleType ? $truck->vehicleType->name : 'N/A',
+                    'driver' => $truck->drivers->where('pivot.status', 'active')->first(),
+                    'status_id' => $statusId,
+                    'notes' => $dailyStatus->notes,
+                    'changed_at' => $dailyStatus->created_at,
+                    'changed_by' => $dailyStatus->changedBy ? $dailyStatus->changedBy->name : 'Unknown',
+                ];
+            } else {
+                // Trucks without status go to "Available" or first status
+                $firstStatusId = $statuses->first()->id;
+                $trucksByStatus[$firstStatusId]['trucks'][] = [
+                    'id' => $truck->id,
+                    'plate' => $truck->plate,
+                    'vehicleType' => $truck->vehicleType ? $truck->vehicleType->name : 'N/A',
+                    'equipmentType' => $truck->vehicleType ? $truck->vehicleType->name : 'N/A',
+                    'driver' => $truck->drivers->where('pivot.status', 'active')->first(),
+                    'status_id' => null,
+                    'notes' => null,
+                    'changed_at' => null,
+                    'changed_by' => null,
+                ];
+            }
+        }
+
+        return Inertia::render('Status/Index', [
+            'trucksByStatus' => $trucksByStatus,
+            'statuses' => $statuses,
+            'selectedDate' => $date,
+        ]);
+    }
+
+    /**
+     * Store or update truck status.
+     */
+    public function store(StoreDailyTruckStatusRequest $request)
+    {
+        try {
+            DB::beginTransaction();
+
+            $data = $request->validated();
+            $data['changed_by'] = Auth::id();
+
+            // Update or create the status
+            DailyTruckStatus::updateOrCreate(
+                [
+                    'truck_id' => $data['truck_id'],
+                    'status_date' => $data['status_date'],
+                ],
+                $data
+            );
+
+            DB::commit();
+
+            return redirect()->back()->with('success', 'Truck status updated successfully.');
+
+        } catch (Exception $e) {
+            DB::rollBack();
+            return back()->withErrors(['error' => 'Failed to update truck status.']);
+        }
+    }
+}

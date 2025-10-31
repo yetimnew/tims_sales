@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, router } from '@inertiajs/react'
 import { Eye, Trash2, SquarePen, Plus, Search, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { InertiaPagination } from '@/components/ui/pagination'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
@@ -35,12 +36,7 @@ interface FuelIndexProps {
     total: number
     from: number
     to: number
-    links?: {
-      first?: string
-      last?: string
-      prev?: string
-      next?: string
-    }
+    links?: Array<{ url: string | null; label: string; active?: boolean }>
   }
 }
 
@@ -249,47 +245,14 @@ export default function FuelIndex({ fuelRecords }: FuelIndexProps) {
               </Table>
             </div>
 
-            {fuelRecords?.last_page && fuelRecords.last_page > 1 && (
-              <div className="mt-6 flex items-center justify-between">
-                <div className="text-sm text-muted-foreground">
-                  Showing {fuelRecords.current_page} of {fuelRecords.last_page} pages
-                </div>
-                <div className="flex gap-2">
-                  {fuelRecords.current_page > 1 && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        router.get(route('fuel.index'), {
-                          page: fuelRecords.current_page - 1,
-                          search,
-                          sort: sortColumn,
-                          direction: sortOrder,
-                        })
-                      }
-                    >
-                      Previous
-                    </Button>
-                  )}
-                  {fuelRecords.current_page < fuelRecords.last_page && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        router.get(route('fuel.index'), {
-                          page: fuelRecords.current_page + 1,
-                          search,
-                          sort: sortColumn,
-                          direction: sortOrder,
-                        })
-                      }
-                    >
-                      Next
-                    </Button>
-                  )}
-                </div>
-              </div>
-            )}
+            <InertiaPagination
+              from={fuelRecords.from}
+              to={fuelRecords.to}
+              total={fuelRecords.total}
+              links={fuelRecords.links}
+              currentPage={fuelRecords.current_page}
+              lastPage={fuelRecords.last_page}
+            />
           </CardContent>
         </Card>
       </div>

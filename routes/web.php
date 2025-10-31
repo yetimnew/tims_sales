@@ -63,6 +63,14 @@ Route::middleware(['auth'])->group(function () {
             ->name('trucks.free');
     });
 
+    // Truck Status History (per-truck timeline)
+    Route::get('trucks/{truck}/status-history', [\App\Http\Controllers\TruckController::class, 'statusHistory'])
+        ->name('trucks.status-history');
+
+    // Status per-day view
+    Route::get('statuses/{status}/daily', [\App\Http\Controllers\StatusController::class, 'daily'])
+        ->name('statuses.daily');
+
     // Drivers with rate limiting and permission middleware
     Route::middleware(['throttle:60,1'])->group(function () {
         // Export route - highest priority
@@ -476,6 +484,17 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('statustypes', \App\Http\Controllers\StatusTypeController::class);
     Route::resource('statuses', \App\Http\Controllers\StatusController::class);
 
+    // Truck Status Board
+    Route::middleware(['throttle:60,1'])->group(function () {
+        Route::get('truck-status-board', [\App\Http\Controllers\DailyTruckStatusController::class, 'index'])
+            ->middleware('can:truck-status-board.view')
+            ->name('truck-status-board.index');
+
+        Route::post('truck-status-board', [\App\Http\Controllers\DailyTruckStatusController::class, 'store'])
+            ->middleware('can:truck-status-board.update')
+            ->name('truck-status-board.store');
+    });
+
     // Outsourcing
     Route::resource('outsources', \App\Http\Controllers\OutsourceController::class);
     Route::resource('outsource-performances', \App\Http\Controllers\OutsourcePerformanceController::class);
@@ -487,6 +506,19 @@ Route::middleware(['auth'])->group(function () {
     Route::get('reports/operations', [\App\Http\Controllers\ReportController::class, 'operations'])->name('reports.operations');
     Route::get('reports/financial', [\App\Http\Controllers\ReportController::class, 'financial'])->name('reports.financial');
     Route::get('reports/maintenance', [\App\Http\Controllers\ReportController::class, 'maintenance'])->name('reports.maintenance');
+    Route::get('reports/fuel-efficiency', [\App\Http\Controllers\ReportController::class, 'fuelEfficiency'])->name('reports.fuel-efficiency');
+    Route::get('reports/customer-profitability', [\App\Http\Controllers\ReportController::class, 'customerProfitability'])->name('reports.customer-profitability');
+    Route::get('reports/route-efficiency', [\App\Http\Controllers\ReportController::class, 'routeEfficiency'])->name('reports.route-efficiency');
+    Route::get('reports/outsource-performance', [\App\Http\Controllers\ReportController::class, 'outsourcePerformanceReport'])->name('reports.outsource-performance');
+    Route::get('reports/operation-profitability', [\App\Http\Controllers\ReportController::class, 'operationProfitability'])->name('reports.operation-profitability');
+    Route::get('reports/capacity-load', [\App\Http\Controllers\ReportController::class, 'capacityLoadFactor'])->name('reports.capacity-load');
+    Route::get('reports/geography-heatmaps', [\App\Http\Controllers\ReportController::class, 'geographyHeatmaps'])->name('reports.geography-heatmaps');
+    Route::get('reports/performance-all', [\App\Http\Controllers\ReportController::class, 'performanceAll'])->name('reports.performance-all');
+    Route::get('reports/performance-by-driver', [\App\Http\Controllers\ReportController::class, 'performanceByDriver'])->name('reports.performance-by-driver');
+    Route::get('reports/performance-by-truck', [\App\Http\Controllers\ReportController::class, 'performanceByTruck'])->name('reports.performance-by-truck');
+    Route::get('reports/performance-by-model', [\App\Http\Controllers\ReportController::class, 'performanceByModel'])->name('reports.performance-by-model');
+    Route::get('reports/performance-by-status', [\App\Http\Controllers\ReportController::class, 'performanceByStatus'])->name('reports.performance-by-status');
+    Route::get('reports/driver-truck-attach-detach', [\App\Http\Controllers\ReportController::class, 'driverTruckAttachDetach'])->name('reports.attach-detach');
 
     // User Management
     Route::middleware(['throttle:60,1'])->group(function () {
@@ -523,6 +555,11 @@ Route::middleware(['auth'])->group(function () {
             ->middleware('can:users.destroy')
             ->name('users.destroy');
 
+        // Export route - highest priority
+        Route::get('roles/export/csv', [\App\Http\Controllers\RoleController::class, 'export'])
+            ->middleware('can:roles.export')
+            ->name('roles.export');
+
         Route::get('roles', [\App\Http\Controllers\RoleController::class, 'index'])
             ->middleware('can:roles.view')
             ->name('roles.index');
@@ -551,9 +588,18 @@ Route::middleware(['auth'])->group(function () {
             ->middleware('can:roles.destroy')
             ->name('roles.destroy');
 
+        // Export route - highest priority
+        Route::get('permissions/export/csv', [\App\Http\Controllers\PermissionController::class, 'export'])
+            ->middleware('can:permissions.export')
+            ->name('permissions.export');
+
         Route::get('permissions', [\App\Http\Controllers\PermissionController::class, 'index'])
             ->middleware('can:permissions.view')
             ->name('permissions.index');
+
+        Route::get('permissions/{permission}', [\App\Http\Controllers\PermissionController::class, 'show'])
+            ->middleware('can:permissions.show')
+            ->name('permissions.show');
     });
 });
 

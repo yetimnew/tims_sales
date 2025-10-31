@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, router } from '@inertiajs/react'
 import { Eye, Trash2, SquarePen, Plus, Search, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { InertiaPagination } from '@/components/ui/pagination'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
@@ -37,12 +38,7 @@ interface FinancialIndexProps {
     total: number
     from: number
     to: number
-    links?: {
-      first?: string
-      last?: string
-      prev?: string
-      next?: string
-    }
+    links?: Array<{ url: string | null; label: string; active?: boolean }>
   }
 }
 
@@ -264,47 +260,14 @@ export default function FinancialIndex({ financialRecords }: FinancialIndexProps
               </Table>
             </div>
 
-            {financialRecords?.last_page && financialRecords.last_page > 1 && (
-              <div className="mt-6 flex items-center justify-between">
-                <div className="text-sm text-muted-foreground">
-                  Showing {financialRecords.current_page} of {financialRecords.last_page} pages
-                </div>
-                <div className="flex gap-2">
-                  {financialRecords.current_page > 1 && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        router.get(route('financial.index'), {
-                          page: financialRecords.current_page - 1,
-                          search,
-                          sort: sortColumn,
-                          direction: sortOrder,
-                        })
-                      }
-                    >
-                      Previous
-                    </Button>
-                  )}
-                  {financialRecords.current_page < financialRecords.last_page && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        router.get(route('financial.index'), {
-                          page: financialRecords.current_page + 1,
-                          search,
-                          sort: sortColumn,
-                          direction: sortOrder,
-                        })
-                      }
-                    >
-                      Next
-                    </Button>
-                  )}
-                </div>
-              </div>
-            )}
+            <InertiaPagination
+              from={financialRecords.from}
+              to={financialRecords.to}
+              total={financialRecords.total}
+              links={financialRecords.links}
+              currentPage={financialRecords.current_page}
+              lastPage={financialRecords.last_page}
+            />
           </CardContent>
         </Card>
       </div>

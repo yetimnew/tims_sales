@@ -412,7 +412,7 @@ export default function PerformancesEdit({ performance, operations, driverTrucks
                                                                     setOriginSearch(place.name);
                                                                     handleFieldChange('orgion_id', place.id.toString());
                                                                 }}
-                                                                className="px-4 py-2.5 hover:bg-blue-50 cursor-pointer border-b last:border-b-0 transition-colors"
+                                                                className="px-4 py-2.5 hover:bg-purple-50 cursor-pointer border-b last:border-b-0 transition-colors"
                                                             >
                                                                 {place.name}
                                 </div>
@@ -451,7 +451,7 @@ export default function PerformancesEdit({ performance, operations, driverTrucks
                                                                     setDestinationSearch(place.name);
                                                                     handleFieldChange('destination_id', place.id.toString());
                                                                 }}
-                                                                className="px-4 py-2.5 hover:bg-blue-50 cursor-pointer border-b last:border-b-0 transition-colors"
+                                                                className="px-4 py-2.5 hover:bg-purple-50 cursor-pointer border-b last:border-b-0 transition-colors"
                                                             >
                                                                 {place.name}
                                 </div>
@@ -510,26 +510,26 @@ export default function PerformancesEdit({ performance, operations, driverTrucks
                                 </div>
                                 </div>
 
-                                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
                                         <div className="flex items-center justify-between">
                                 <div>
                                                 <p className="text-sm font-medium text-muted-foreground">Total Distance</p>
-                                                <p className="text-2xl font-bold text-blue-600">{calculatedFields.totalKm.toFixed(2)} KM</p>
+                                                <p className="text-2xl font-bold text-purple-600">{calculatedFields.totalKm.toFixed(2)} KM</p>
                                 </div>
-                                            <TrendingUp className="h-8 w-8 text-blue-500" />
+                                            <TrendingUp className="h-8 w-8 text-purple-500" />
                                 </div>
                             </div>
 
-                                    <div className="bg-cyan-50 border border-cyan-200 rounded-lg p-4">
+                                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
                                         <div className="flex items-center justify-between">
                                             <div>
                                                 <p className="text-sm font-medium text-muted-foreground">Efficiency Metric (Ton-KM)</p>
-                                                <p className="text-2xl font-bold text-cyan-600">{calculatedFields.tonKm.toFixed(2)} ton-km</p>
+                                                <p className="text-2xl font-bold text-purple-600">{calculatedFields.tonKm.toFixed(2)} ton-km</p>
                                                 <p className="text-xs text-muted-foreground mt-1">
                                                     {parseFloat(data.CargoVolumMT || '0').toFixed(2)} MT × {parseFloat(data.DistanceWCargo || '0').toFixed(2)} KM
                                                 </p>
                                             </div>
-                                            <Zap className="h-8 w-8 text-cyan-500" />
+                                            <Zap className="h-8 w-8 text-purple-500" />
                                         </div>
                                     </div>
                                     </div>
@@ -626,16 +626,16 @@ export default function PerformancesEdit({ performance, operations, driverTrucks
                                         )}
                                     </div>
 
-                                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
                                         <div className="flex items-center justify-between">
                                             <div>
                                                 <p className="text-sm font-medium text-muted-foreground">Total Trip Cost</p>
-                                                <p className="text-2xl font-bold text-green-600">{calculatedFields.totalCost.toFixed(2)} Birr</p>
+                                                <p className="text-2xl font-bold text-purple-600">{calculatedFields.totalCost.toFixed(2)} Birr</p>
                                                 <p className="text-xs text-muted-foreground mt-1">
                                                     Fuel ({parseFloat(data.fuelInBirr || '0').toFixed(2)}) + Perdiem ({parseFloat(data.perdiem || '0').toFixed(2)}) + Other ({parseFloat(data.other || '0').toFixed(2)})
                                                 </p>
                                             </div>
-                                            <DollarSign className="h-8 w-8 text-green-500" />
+                                            <DollarSign className="h-8 w-8 text-purple-500" />
                                         </div>
                                     </div>
                                 </TabsContent>

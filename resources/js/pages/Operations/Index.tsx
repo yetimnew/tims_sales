@@ -16,6 +16,7 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { Head, Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import { Plus, Eye, Edit, Trash2, Search, ArrowUpDown, ChevronLeft, ChevronRight, FileDown, Square } from 'lucide-react';
+import { InertiaPagination } from '@/components/ui/pagination';
 import * as React from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -282,49 +283,22 @@ export default function OperationsIndex({ operations, totalCount }: OperationsIn
                         </div>
 
                         {/* Pagination */}
-                        {totalPages > 1 && (
-                            <div className="mt-6 flex items-center justify-between">
-                                <div className="text-sm text-muted-foreground">
-                                    Showing {operations?.from || 1} to {operations?.to || opCount} of {opCount} operations
-                                </div>
-                                <div className="flex gap-2">
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        disabled={currentPage === 1}
-                                        onClick={() => {
-                                            const page = currentPage - 1;
-                                            router.get('/operations', {
-                                                page,
-                                                search: searchTerm,
-                                                sort: sortBy,
-                                                direction: sortDirection,
-                                            });
-                                        }}
-                                    >
-                                        <ChevronLeft className="mr-1 h-4 w-4" />
-                                        Previous
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        disabled={currentPage === totalPages}
-                                        onClick={() => {
-                                            const page = currentPage + 1;
-                                            router.get('/operations', {
-                                                page,
-                                                search: searchTerm,
-                                                sort: sortBy,
-                                                direction: sortDirection,
-                                            });
-                                        }}
-                                    >
-                                        Next
-                                        <ChevronRight className="ml-1 h-4 w-4" />
-                                    </Button>
-                                </div>
-                            </div>
-                        )}
+                        <InertiaPagination
+                          from={operations?.from}
+                          to={operations?.to}
+                          total={opCount}
+                          currentPage={currentPage}
+                          lastPage={totalPages}
+                          buildHref={(page) => {
+                            const params = new URLSearchParams({
+                              page: String(page),
+                              search: searchTerm,
+                              sort: sortBy,
+                              direction: sortDirection,
+                            })
+                            return `/operations?${params.toString()}`
+                          }}
+                        />
                     </CardContent>
                 </Card>
             </div>

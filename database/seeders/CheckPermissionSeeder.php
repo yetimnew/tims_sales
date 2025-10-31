@@ -88,6 +88,11 @@ class CheckPermissionSeeder extends Seeder
             'statuses.edit', 'statuses.update', 'statuses.destroy', 'statuses.export',
         ];
 
+        // ==================== TRUCK STATUS BOARD PERMISSIONS ====================
+        $truckStatusBoardPermissions = [
+            'truck-status-board.view', 'truck-status-board.update',
+        ];
+
         // ==================== OPERATION PERMISSIONS ====================
         $operationPermissions = [
             'operations.view', 'operations.show', 'operations.create', 'operations.store',
@@ -177,13 +182,12 @@ class CheckPermissionSeeder extends Seeder
         // ==================== ROLE MANAGEMENT PERMISSIONS ====================
         $rolePermissions = [
             'roles.view', 'roles.show', 'roles.create', 'roles.store',
-            'roles.edit', 'roles.update', 'roles.destroy',
+            'roles.edit', 'roles.update', 'roles.destroy', 'roles.export',
         ];
 
         // ==================== PERMISSION MANAGEMENT PERMISSIONS ====================
         $permissionPermissions = [
-            'permissions.view', 'permissions.show', 'permissions.create', 'permissions.store',
-            'permissions.edit', 'permissions.update', 'permissions.destroy',
+            'permissions.view', 'permissions.show', 'permissions.export',
         ];
 
         // ==================== TELESCOPE PERMISSIONS ====================
@@ -206,6 +210,7 @@ class CheckPermissionSeeder extends Seeder
             $placePermissions,
             $statusTypePermissions,
             $statusPermissions,
+            $truckStatusBoardPermissions,
             $operationPermissions,
             $customerPermissions,
             $distancePermissions,

@@ -14,7 +14,8 @@ import AppLayout from '@/layouts/app-layout';
 import { usePermissions } from '@/hooks/use-permissions';
 import { Head, Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
-import { Plus, Eye, Edit, MapPin, Phone, Search, ArrowUpDown, ChevronLeft, ChevronRight, Trash2, FileDown } from 'lucide-react';
+import { Plus, Eye, SquarePen, MapPin, Phone, Search, ArrowUpDown, ChevronLeft, ChevronRight, Trash2, FileDown } from 'lucide-react';
+import { InertiaPagination } from '@/components/ui/pagination';
 import * as React from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -292,57 +293,15 @@ export default function DriversIndex({ drivers }: DriversIndexProps) {
                             </Table>
                         </div>
 
-                        {/* Enhanced Pagination */}
-                        {drivers.last_page > 1 && (
-                            <div className="mt-6 flex items-center justify-between">
-                                <div className="text-sm text-muted-foreground">
-                                    Showing {drivers.from || 1} to {drivers.to || totalDrivers} of {totalDrivers} drivers
-                                </div>
-                                <div className="flex gap-2">
-                                    {/* Previous Button */}
-                                    {currentPage > 1 && (
-                                        <Button asChild variant="outline" size="sm">
-                                            <Link href={drivers.links[0].url || '#'}>
-                                                <ChevronLeft className="mr-1 h-4 w-4" />
-                                                Previous
-                                            </Link>
-                                        </Button>
-                                    )}
-
-                                    {/* Page Numbers */}
-                                    {drivers.links.map((link, index) => {
-                                        // Skip first (prev) and last (next) links
-                                        if (index === 0 || index === drivers.links.length - 1) {
-                                            return null;
-                                        }
-
-                                        return (
-                                            <Button
-                                                key={index}
-                                                asChild
-                                                variant={link.active ? 'default' : 'outline'}
-                                                size="sm"
-                                                disabled={!link.url}
-                                            >
-                                                <Link href={link.url || '#'}>
-                                                    <span dangerouslySetInnerHTML={{ __html: link.label }} />
-                                                </Link>
-                                            </Button>
-                                        );
-                                    })}
-
-                                    {/* Next Button */}
-                                    {currentPage < lastPage && (
-                                        <Button asChild variant="outline" size="sm">
-                                            <Link href={drivers.links[drivers.links.length - 1].url || '#'}>
-                                                Next
-                                                <ChevronRight className="ml-1 h-4 w-4" />
-                                            </Link>
-                                        </Button>
-                                    )}
-                                </div>
-                            </div>
-                        )}
+                        {/* Pagination */}
+                        <InertiaPagination
+                          from={drivers.from}
+                          to={drivers.to}
+                          total={totalDrivers}
+                          links={drivers.links}
+                          currentPage={currentPage}
+                          lastPage={lastPage}
+                        />
                     </CardContent>
                 </Card>
             </div>

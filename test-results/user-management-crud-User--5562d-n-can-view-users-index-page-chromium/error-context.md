@@ -1,0 +1,321 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - generic [ref=e7]:
+      - list [ref=e9]:
+        - listitem [ref=e10]:
+          - link "Laravel Starter Kit" [ref=e11] [cursor=pointer]:
+            - /url: /dashboard
+            - img [ref=e13]
+            - generic [ref=e16]: Laravel Starter Kit
+      - generic [ref=e18]:
+        - generic [ref=e19]: Platform
+        - list [ref=e20]:
+          - listitem [ref=e21]:
+            - link "Dashboard" [ref=e22] [cursor=pointer]:
+              - /url: /dashboard
+              - img [ref=e23]
+              - generic [ref=e28]: Dashboard
+          - listitem [ref=e29]:
+            - button "Fleet Management" [ref=e30]:
+              - img [ref=e31]
+              - generic [ref=e36]: Fleet Management
+              - img [ref=e37]
+          - listitem [ref=e39]:
+            - button "Financial Management" [ref=e40]:
+              - img [ref=e41]
+              - generic [ref=e43]: Financial Management
+              - img [ref=e44]
+          - listitem [ref=e46]:
+            - button "Operations" [ref=e47]:
+              - img [ref=e48]
+              - generic [ref=e50]: Operations
+              - img [ref=e51]
+          - listitem [ref=e53]:
+            - button "Geographic Management" [ref=e54]:
+              - img [ref=e55]
+              - generic [ref=e58]: Geographic Management
+              - img [ref=e59]
+          - listitem [ref=e61]:
+            - button "Status Management" [ref=e62]:
+              - img [ref=e63]
+              - generic [ref=e66]: Status Management
+              - img [ref=e67]
+          - listitem [ref=e69]:
+            - button "Outsourcing" [ref=e70]:
+              - img [ref=e71]
+              - generic [ref=e75]: Outsourcing
+              - img [ref=e76]
+          - listitem [ref=e78]:
+            - button "Reports" [ref=e79]:
+              - img [ref=e80]
+              - generic [ref=e83]: Reports
+              - img [ref=e84]
+          - listitem [ref=e86]:
+            - button "User Management" [expanded] [ref=e87]:
+              - img [ref=e88]
+              - generic [ref=e90]: User Management
+              - img [ref=e91]
+            - list [ref=e94]:
+              - listitem [ref=e95]:
+                - link "Users" [ref=e96] [cursor=pointer]:
+                  - /url: /users
+                  - img [ref=e97]
+                  - generic [ref=e102]: Users
+              - listitem [ref=e103]:
+                - link "Roles" [ref=e104] [cursor=pointer]:
+                  - /url: /roles
+                  - img [ref=e105]
+                  - generic [ref=e107]: Roles
+              - listitem [ref=e108]:
+                - link "Permissions" [ref=e109] [cursor=pointer]:
+                  - /url: /permissions
+                  - img [ref=e110]
+                  - generic [ref=e114]: Permissions
+      - list [ref=e116]:
+        - listitem [ref=e117]:
+          - button "TU Test Admin User" [ref=e118]:
+            - generic [ref=e120]: TU
+            - generic [ref=e122]: Test Admin User
+            - img [ref=e123]
+    - main [ref=e126]:
+      - generic [ref=e128]:
+        - button "Toggle Sidebar" [ref=e129]:
+          - img
+          - generic [ref=e130]: Toggle Sidebar
+        - navigation "breadcrumb" [ref=e131]:
+          - list [ref=e132]:
+            - listitem [ref=e133]:
+              - link "Users" [disabled] [ref=e134]
+      - generic [ref=e135]:
+        - generic [ref=e136]:
+          - generic [ref=e137]:
+            - heading "User Management" [level=1] [ref=e138]
+            - paragraph [ref=e139]: Manage 7 system users
+          - generic [ref=e140]:
+            - button "Export CSV" [ref=e141]:
+              - img
+              - text: Export CSV
+            - link "Add User" [ref=e142] [cursor=pointer]:
+              - /url: /users/create
+              - img
+              - text: Add User
+        - generic [ref=e143]:
+          - generic [ref=e146]:
+            - generic [ref=e147]:
+              - paragraph [ref=e148]: Total Users
+              - paragraph [ref=e149]: "7"
+              - paragraph [ref=e150]: All accounts
+            - img [ref=e152]
+          - generic [ref=e159]:
+            - generic [ref=e160]:
+              - paragraph [ref=e161]: Verified
+              - paragraph [ref=e162]: "3"
+              - paragraph [ref=e163]: Email confirmed
+            - img [ref=e165]
+          - generic [ref=e170]:
+            - generic [ref=e171]:
+              - paragraph [ref=e172]: Admins
+              - paragraph [ref=e173]: "2"
+              - paragraph [ref=e174]: Full access
+            - img [ref=e176]
+          - generic [ref=e180]:
+            - generic [ref=e181]:
+              - paragraph [ref=e182]: Managers
+              - paragraph [ref=e183]: "1"
+              - paragraph [ref=e184]: Limited access
+            - img [ref=e186]
+        - generic [ref=e188]:
+          - generic [ref=e190]:
+            - generic [ref=e191]:
+              - generic [ref=e192]: User Directory
+              - generic [ref=e193]: 7 total users in system
+            - generic [ref=e195]:
+              - img [ref=e196]
+              - textbox "Search by name or email..." [ref=e199]
+          - generic [ref=e200]:
+            - table [ref=e203]:
+              - rowgroup [ref=e204]:
+                - row "Name Email Roles Verified Created Actions" [ref=e205]:
+                  - cell "Name" [ref=e206] [cursor=pointer]:
+                    - generic [ref=e207]:
+                      - text: Name
+                      - img [ref=e208]
+                  - cell "Email" [ref=e211] [cursor=pointer]:
+                    - generic [ref=e212]:
+                      - text: Email
+                      - img [ref=e213]
+                  - cell "Roles" [ref=e216]
+                  - cell "Verified" [ref=e217]
+                  - cell "Created" [ref=e218] [cursor=pointer]:
+                    - generic [ref=e219]:
+                      - text: Created
+                      - img [ref=e220]
+                  - cell "Actions" [ref=e223]
+              - rowgroup [ref=e224]:
+                - row "Admin User admin@tims.com No roles Verified 10/27/2025" [ref=e225]:
+                  - cell "Admin User" [ref=e226]
+                  - cell "admin@tims.com" [ref=e227]
+                  - cell "No roles" [ref=e228]:
+                    - generic [ref=e230]: No roles
+                  - cell "Verified" [ref=e231]:
+                    - generic [ref=e232]:
+                      - img
+                      - text: Verified
+                  - cell "10/27/2025" [ref=e233]
+                  - cell [ref=e234]:
+                    - generic [ref=e235]:
+                      - link [ref=e236] [cursor=pointer]:
+                        - /url: /users/4
+                        - img
+                      - link [ref=e237] [cursor=pointer]:
+                        - /url: /users/4/edit
+                        - img
+                      - button [ref=e238]:
+                        - img
+                - row "Dispatcher User dispatcher@tims.com No roles Verified 10/27/2025" [ref=e239]:
+                  - cell "Dispatcher User" [ref=e240]
+                  - cell "dispatcher@tims.com" [ref=e241]
+                  - cell "No roles" [ref=e242]:
+                    - generic [ref=e244]: No roles
+                  - cell "Verified" [ref=e245]:
+                    - generic [ref=e246]:
+                      - img
+                      - text: Verified
+                  - cell "10/27/2025" [ref=e247]
+                  - cell [ref=e248]:
+                    - generic [ref=e249]:
+                      - link [ref=e250] [cursor=pointer]:
+                        - /url: /users/6
+                        - img
+                      - link [ref=e251] [cursor=pointer]:
+                        - /url: /users/6/edit
+                        - img
+                      - button [ref=e252]:
+                        - img
+                - row "Manager User manager@test.com Manager Pending 10/27/2025" [ref=e253]:
+                  - cell "Manager User" [ref=e254]
+                  - cell "manager@test.com" [ref=e255]
+                  - cell "Manager" [ref=e256]:
+                    - generic [ref=e258]:
+                      - img
+                      - text: Manager
+                  - cell "Pending" [ref=e259]:
+                    - generic [ref=e260]:
+                      - img
+                      - text: Pending
+                  - cell "10/27/2025" [ref=e261]
+                  - cell [ref=e262]:
+                    - generic [ref=e263]:
+                      - link [ref=e264] [cursor=pointer]:
+                        - /url: /users/2
+                        - img
+                      - link [ref=e265] [cursor=pointer]:
+                        - /url: /users/2/edit
+                        - img
+                      - button [ref=e266]:
+                        - img
+                - row "Manager User manager@tims.com No roles Verified 10/27/2025" [ref=e267]:
+                  - cell "Manager User" [ref=e268]
+                  - cell "manager@tims.com" [ref=e269]
+                  - cell "No roles" [ref=e270]:
+                    - generic [ref=e272]: No roles
+                  - cell "Verified" [ref=e273]:
+                    - generic [ref=e274]:
+                      - img
+                      - text: Verified
+                  - cell "10/27/2025" [ref=e275]
+                  - cell [ref=e276]:
+                    - generic [ref=e277]:
+                      - link [ref=e278] [cursor=pointer]:
+                        - /url: /users/5
+                        - img
+                      - link [ref=e279] [cursor=pointer]:
+                        - /url: /users/5/edit
+                        - img
+                      - button [ref=e280]:
+                        - img
+                - row "Regular User user@test.com User Pending 10/27/2025" [ref=e281]:
+                  - cell "Regular User" [ref=e282]
+                  - cell "user@test.com" [ref=e283]
+                  - cell "User" [ref=e284]:
+                    - generic [ref=e286]:
+                      - img
+                      - text: User
+                  - cell "Pending" [ref=e287]:
+                    - generic [ref=e288]:
+                      - img
+                      - text: Pending
+                  - cell "10/27/2025" [ref=e289]
+                  - cell [ref=e290]:
+                    - generic [ref=e291]:
+                      - link [ref=e292] [cursor=pointer]:
+                        - /url: /users/3
+                        - img
+                      - link [ref=e293] [cursor=pointer]:
+                        - /url: /users/3/edit
+                        - img
+                      - button [ref=e294]:
+                        - img
+                - row "Test Admin User admin@test.com Admin Pending 10/27/2025" [ref=e295]:
+                  - cell "Test Admin User" [ref=e296]
+                  - cell "admin@test.com" [ref=e297]
+                  - cell "Admin" [ref=e298]:
+                    - generic [ref=e300]:
+                      - img
+                      - text: Admin
+                  - cell "Pending" [ref=e301]:
+                    - generic [ref=e302]:
+                      - img
+                      - text: Pending
+                  - cell "10/27/2025" [ref=e303]
+                  - cell [ref=e304]:
+                    - generic [ref=e305]:
+                      - link [ref=e306] [cursor=pointer]:
+                        - /url: /users/1
+                        - img
+                      - link [ref=e307] [cursor=pointer]:
+                        - /url: /users/1/edit
+                        - img
+                      - button [ref=e308]:
+                        - img
+                - row "yetimeshet yetimnew@gmail.com Admin Pending 10/28/2025" [ref=e309]:
+                  - cell "yetimeshet" [ref=e310]
+                  - cell "yetimnew@gmail.com" [ref=e311]
+                  - cell "Admin" [ref=e312]:
+                    - generic [ref=e314]:
+                      - img
+                      - text: Admin
+                  - cell "Pending" [ref=e315]:
+                    - generic [ref=e316]:
+                      - img
+                      - text: Pending
+                  - cell "10/28/2025" [ref=e317]
+                  - cell [ref=e318]:
+                    - generic [ref=e319]:
+                      - link [ref=e320] [cursor=pointer]:
+                        - /url: /users/7
+                        - img
+                      - link [ref=e321] [cursor=pointer]:
+                        - /url: /users/7/edit
+                        - img
+                      - button [ref=e322]:
+                        - img
+            - generic [ref=e323]:
+              - generic [ref=e324]:
+                - text: Showing 1 to 7 of 7
+                - generic [ref=e325]: (Page 1 of 1)
+              - navigation "Pagination" [ref=e327]:
+                - generic:
+                  - img
+                  - generic: Previous
+                - link "1" [ref=e328] [cursor=pointer]:
+                  - /url: http://localhost:8000/users?page=1
+                - generic:
+                  - generic: Next
+                  - img
+  - region "Notifications (F8)":
+    - list
+```

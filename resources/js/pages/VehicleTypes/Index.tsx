@@ -25,6 +25,7 @@ import {
     ChevronLeft,
     ChevronRight
 } from 'lucide-react';
+import { InertiaPagination } from '@/components/ui/pagination';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
@@ -220,56 +221,14 @@ export default function VehicleTypesIndex({ vehicleTypes }: VehicleTypesIndexPro
                         </div>
 
                         {/* Pagination */}
-                        {lastPage > 1 && (
-                            <div className="mt-6 flex items-center justify-between">
-                                <div className="text-sm text-muted-foreground">
-                                    Showing {vehicleTypes.from || 1} to {vehicleTypes.to || totalVehicleTypes} of {totalVehicleTypes} vehicle types
-                                </div>
-                                <div className="flex gap-2">
-                                    {/* Previous Button */}
-                                    {currentPage > 1 && (
-                                        <Button asChild variant="outline" size="sm">
-                                            <Link href={vehicleTypes.links[0].url || '#'}>
-                                                <ChevronLeft className="mr-1 h-4 w-4" />
-                                                Previous
-                                            </Link>
-                                        </Button>
-                                    )}
-
-                                    {/* Page Numbers */}
-                                    {vehicleTypes.links.map((link, index) => {
-                                        // Skip first (prev) and last (next) links
-                                        if (index === 0 || index === vehicleTypes.links.length - 1) {
-                                            return null;
-                                        }
-
-                                        return (
-                                            <Button
-                                                key={index}
-                                                asChild
-                                                variant={link.active ? 'default' : 'outline'}
-                                                size="sm"
-                                                disabled={!link.url}
-                                            >
-                                                <Link href={link.url || '#'}>
-                                                    <span dangerouslySetInnerHTML={{ __html: link.label }} />
-                                                </Link>
-                                            </Button>
-                                        );
-                                    })}
-
-                                    {/* Next Button */}
-                                    {currentPage < lastPage && (
-                                        <Button asChild variant="outline" size="sm">
-                                            <Link href={vehicleTypes.links[vehicleTypes.links.length - 1].url || '#'}>
-                                                Next
-                                                <ChevronRight className="ml-1 h-4 w-4" />
-                                            </Link>
-                                        </Button>
-                                    )}
-                                </div>
-                            </div>
-                        )}
+                        <InertiaPagination
+                          from={vehicleTypes.from}
+                          to={vehicleTypes.to}
+                          total={totalVehicleTypes}
+                          links={vehicleTypes.links}
+                          currentPage={currentPage}
+                          lastPage={lastPage}
+                        />
                     </CardContent>
                 </Card>
 

@@ -54,7 +54,7 @@ export default function StatusesShow({ status, activityLogs }: StatusesShowProps
 
   const confirmDelete = () => {
     if (!deleteConfirmation) return
-    router.delete(route('statuses.destroy', deleteConfirmation.id), {
+    router.delete(`/statuses/${deleteConfirmation.id}`, {
       onSuccess: () => {
         toast({ title: 'Success', description: 'Status deleted successfully', variant: 'success' })
         setDeleteConfirmation(null)
@@ -89,7 +89,7 @@ export default function StatusesShow({ status, activityLogs }: StatusesShowProps
     <div className="flex h-full flex-1 flex-col gap-6 overflow-auto p-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link href={route('statuses.index')}>
+          <Link href="/statuses">
             <Button variant="outline" size="icon">
               <ArrowLeft className="h-4 w-4" />
             </Button>
@@ -98,7 +98,7 @@ export default function StatusesShow({ status, activityLogs }: StatusesShowProps
         </div>
         <div className="flex gap-2">
           {hasPermission('statuses.edit') && (
-            <Link href={route('statuses.edit', status.id)}>
+            <Link href={`/statuses/${status.id}/edit`}>
               <Button variant="outline">
                 <SquarePen className="mr-2 h-4 w-4" /> Edit Status
               </Button>
@@ -131,7 +131,7 @@ export default function StatusesShow({ status, activityLogs }: StatusesShowProps
             </div>
             <div className="space-y-1">
               <p className="text-sm font-medium text-muted-foreground">Status Type</p>
-              <Link href={route('status-types.show', status.statusType.id)} className="text-primary hover:underline">
+              <Link href={`/statustypes/${status.statusType.id}`} className="text-primary hover:underline">
                 <Badge className={getStatusTypeBadgeColor(status.statusType.name)}>
                   {status.statusType.name}
                 </Badge>
@@ -180,7 +180,7 @@ export default function StatusesShow({ status, activityLogs }: StatusesShowProps
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="space-y-1">
                 <p className="text-sm font-medium text-muted-foreground">Status Type</p>
-                <Link href={route('status-types.show', status.statusType.id)} className="text-primary hover:underline">
+                <Link href={`/statustypes/${status.statusType.id}`} className="text-primary hover:underline">
                   <p className="text-base">{status.statusType.name}</p>
                 </Link>
               </div>

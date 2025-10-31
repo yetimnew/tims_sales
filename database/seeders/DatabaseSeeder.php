@@ -14,6 +14,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call(CheckPermissionSeeder::class);
+        $this->call(AdminUserSeeder::class);
 
         // Seed Ethiopia's geographic structure
         $this->call(EthiopiaRegionsSeeder::class);
@@ -21,6 +22,17 @@ class DatabaseSeeder extends Seeder
         $this->call(EthiopiaWoredasSeeder::class);
         $this->call(EthiopiaPlacesSeeder::class);
         $this->call(EthiopiaDistancesSeeder::class);
+
+        // Optionally import legacy data from old TIMS dump if configured
+        if (config('database.connections.legacy.database')) {
+            $this->call(\Database\Seeders\Legacy\LegacyImportSeeder::class);
+        } else {
+            // Seed sample TIMS data (trucks, drivers, customers, operations, performances)
+            $this->call(TimsSeeder::class);
+        }
+
+        // Seed truck statuses
+        $this->call(TruckStatusSeeder::class);
 
         // Create a test user if none exist
         if (User::count() === 0) {
