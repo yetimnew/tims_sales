@@ -128,14 +128,6 @@ class DistanceController extends Controller
 
             $distance = Distance::create($validated);
 
-            Log::info('Distance created', [
-                'distance_id' => $distance->id,
-                'from_place_id' => $distance->from_place_id,
-                'to_place_id' => $distance->to_place_id,
-                'distance_km' => $distance->distance_km,
-                'user_id' => auth()->id(),
-            ]);
-
             return redirect()->route('distances.index')
                 ->with('success', 'Distance created successfully.');
 
@@ -198,14 +190,6 @@ class DistanceController extends Controller
 
             $distance->update($validated);
 
-            Log::info('Distance updated', [
-                'distance_id' => $distance->id,
-                'origin_id' => $distance->orgion_id,
-                'destination_id' => $distance->destination_id,
-                'distance' => $distance->distance,
-                'user_id' => auth()->id(),
-            ]);
-
             return redirect()->route('distances.index')
                 ->with('success', 'Distance updated successfully.');
 
@@ -227,15 +211,7 @@ class DistanceController extends Controller
     public function destroy(Distance $distance)
     {
         try {
-            $distanceData = $distance->toArray();
             $distance->delete();
-
-            Log::info('Distance deleted', [
-                'distance_id' => $distance->id,
-                'origin_id' => $distanceData['orgion_id'],
-                'destination_id' => $distanceData['destination_id'],
-                'user_id' => auth()->id(),
-            ]);
 
             return redirect()->route('distances.index')
                 ->with('success', 'Distance deleted successfully.');

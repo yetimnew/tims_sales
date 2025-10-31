@@ -174,6 +174,71 @@ class TruckController extends Controller
     public function destroy(Truck $truck)
     {
         try {
+            // Check for related records that prevent deletion
+
+            // Check if truck has performances
+            if ($truck->performances()->count() > 0) {
+                return back()->withErrors([
+                    'error' => 'You are not allowed to delete this truck. It has ' . $truck->performances()->count() . ' performance record(s). Please remove all performance records first.'
+                ]);
+            }
+
+            // Check if truck has maintenance records
+            if ($truck->maintenanceRecords()->count() > 0) {
+                return back()->withErrors([
+                    'error' => 'You are not allowed to delete this truck. It has ' . $truck->maintenanceRecords()->count() . ' maintenance record(s). Please remove all maintenance records first.'
+                ]);
+            }
+
+            // Check if truck has fuel records
+            if ($truck->fuelRecords()->count() > 0) {
+                return back()->withErrors([
+                    'error' => 'You are not allowed to delete this truck. It has ' . $truck->fuelRecords()->count() . ' fuel record(s). Please remove all fuel records first.'
+                ]);
+            }
+
+            // Check if truck has fuel consumption analysis
+            if ($truck->fuelConsumptionAnalysis()->count() > 0) {
+                return back()->withErrors([
+                    'error' => 'You are not allowed to delete this truck. It has ' . $truck->fuelConsumptionAnalysis()->count() . ' fuel consumption analysis record(s). Please remove all fuel consumption analysis records first.'
+                ]);
+            }
+
+            // Check if truck has financial records
+            if ($truck->financialRecords()->count() > 0) {
+                return back()->withErrors([
+                    'error' => 'You are not allowed to delete this truck. It has ' . $truck->financialRecords()->count() . ' financial record(s). Please remove all financial records first.'
+                ]);
+            }
+
+            // Check if truck has insurance records
+            if ($truck->insuranceRecords()->count() > 0) {
+                return back()->withErrors([
+                    'error' => 'You are not allowed to delete this truck. It has ' . $truck->insuranceRecords()->count() . ' insurance record(s). Please remove all insurance records first.'
+                ]);
+            }
+
+            // Check if truck has route plans
+            if ($truck->routePlans()->count() > 0) {
+                return back()->withErrors([
+                    'error' => 'You are not allowed to delete this truck. It has ' . $truck->routePlans()->count() . ' route plan(s). Please remove all route plans first.'
+                ]);
+            }
+
+            // Check if truck has daily statuses
+            if ($truck->dailyStatuses()->count() > 0) {
+                return back()->withErrors([
+                    'error' => 'You are not allowed to delete this truck. It has ' . $truck->dailyStatuses()->count() . ' daily status record(s). Please remove all daily status records first.'
+                ]);
+            }
+
+            // Check if truck is currently assigned to drivers
+            if ($truck->drivers()->wherePivot('status', 'active')->count() > 0) {
+                return back()->withErrors([
+                    'error' => 'You are not allowed to delete this truck. It is currently assigned to ' . $truck->drivers()->wherePivot('status', 'active')->count() . ' active driver(s). Please unassign all drivers first.'
+                ]);
+            }
+
             $truck->delete();
 
             return redirect()->route('trucks.index')

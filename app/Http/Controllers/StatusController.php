@@ -44,13 +44,6 @@ class StatusController extends Controller
 
             $status = Status::create($validated);
 
-            Log::info('Status created', [
-                'status_id' => $status->id,
-                'name' => $status->name,
-                'statustype_id' => $status->statustype_id,
-                'user_id' => auth()->id(),
-            ]);
-
             return redirect()->route('truck-status-board.index')
                 ->with('success', 'Status created successfully.');
 
@@ -95,13 +88,6 @@ class StatusController extends Controller
 
             $status->update($validated);
 
-            Log::info('Status updated', [
-                'status_id' => $status->id,
-                'name' => $status->name,
-                'statustype_id' => $status->statustype_id,
-                'user_id' => auth()->id(),
-            ]);
-
             return redirect()->route('truck-status-board.index')
                 ->with('success', 'Status updated successfully.');
 
@@ -123,14 +109,7 @@ class StatusController extends Controller
     public function destroy(Status $status)
     {
         try {
-            $statusData = $status->toArray();
             $status->delete();
-
-            Log::info('Status deleted', [
-                'status_id' => $status->id,
-                'name' => $statusData['name'],
-                'user_id' => auth()->id(),
-            ]);
 
             return redirect()->route('truck-status-board.index')
                 ->with('success', 'Status deleted successfully.');

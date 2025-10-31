@@ -153,6 +153,43 @@ class DriverController extends Controller
     public function destroy(Driver $driver)
     {
         try {
+            // Check for related records that prevent deletion
+
+            // Check if driver has performances
+            if ($driver->performances()->count() > 0) {
+                return back()->withErrors([
+                    'error' => 'You are not allowed to delete this driver. It has ' . $driver->performances()->count() . ' performance record(s). Please remove all performance records first.'
+                ]);
+            }
+
+            // Check if driver has performance records
+            if ($driver->performanceRecords()->count() > 0) {
+                return back()->withErrors([
+                    'error' => 'You are not allowed to delete this driver. It has ' . $driver->performanceRecords()->count() . ' performance record(s). Please remove all performance records first.'
+                ]);
+            }
+
+            // Check if driver has safety records
+            if ($driver->safetyRecords()->count() > 0) {
+                return back()->withErrors([
+                    'error' => 'You are not allowed to delete this driver. It has ' . $driver->safetyRecords()->count() . ' safety record(s). Please remove all safety records first.'
+                ]);
+            }
+
+            // Check if driver has fuel records
+            if ($driver->fuelRecords()->count() > 0) {
+                return back()->withErrors([
+                    'error' => 'You are not allowed to delete this driver. It has ' . $driver->fuelRecords()->count() . ' fuel record(s). Please remove all fuel records first.'
+                ]);
+            }
+
+            // Check if driver is currently assigned to active trucks
+            if ($driver->trucks()->wherePivot('status', 'active')->count() > 0) {
+                return back()->withErrors([
+                    'error' => 'You are not allowed to delete this driver. It is currently assigned to ' . $driver->trucks()->wherePivot('status', 'active')->count() . ' active truck(s). Please unassign from all trucks first.'
+                ]);
+            }
+
             $driver->delete();
 
             return redirect()->route('drivers.index')

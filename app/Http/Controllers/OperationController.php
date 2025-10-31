@@ -91,13 +91,6 @@ class OperationController extends Controller
 
             $operation = Operation::create($validated);
 
-            Log::info('Operation created', [
-                'operation_id' => $operation->id,
-                'operationid' => $operation->operationid,
-                'customer_id' => $operation->customer_id,
-                'user_id' => auth()->id(),
-            ]);
-
             return redirect()->route('operations.index')
                 ->with('success', 'Operation created successfully.');
 
@@ -167,13 +160,6 @@ class OperationController extends Controller
 
             $operation->update($validated);
 
-            Log::info('Operation updated', [
-                'operation_id' => $operation->id,
-                'operationid' => $operation->operationid,
-                'customer_id' => $operation->customer_id,
-                'user_id' => auth()->id(),
-            ]);
-
             return redirect()->route('operations.index')
                 ->with('success', 'Operation updated successfully.');
 
@@ -195,19 +181,23 @@ class OperationController extends Controller
     public function destroy(Operation $operation)
     {
         try {
-            // Check if operation is being used in performances
+            // Check for related records that prevent deletion
+
+            // Check if operation has performances
             if ($operation->performances()->count() > 0) {
-                return back()->withErrors(['error' => 'Cannot delete operation that is being used in performances.']);
+                return back()->withErrors([
+                    'error' => 'You are not allowed to delete this operation. It has ' . $operation->performances()->count() . ' performance record(s). Please remove all performance records first.'
+                ]);
             }
 
-            $operationData = $operation->toArray();
-            $operation->delete();
+            // Check if operation has outsource performances
+            if ($operation->outsourcePerformances()->count() > 0) {
+                return back()->withErrors([
+                    'error' => 'You are not allowed to delete this operation. It has ' . $operation->outsourcePerformances()->count() . ' outsource performance record(s). Please remove all outsource performance records first.'
+                ]);
+            }
 
-            Log::info('Operation deleted', [
-                'operation_id' => $operation->id,
-                'operationid' => $operationData['operationid'],
-                'user_id' => auth()->id(),
-            ]);
+            $operation->delete();
 
             return redirect()->route('operations.index')
                 ->with('success', 'Operation deleted successfully.');

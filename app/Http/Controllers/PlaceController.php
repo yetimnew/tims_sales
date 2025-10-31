@@ -53,13 +53,6 @@ class PlaceController extends Controller
 
             $place = Place::create($validated);
 
-            Log::info('Place created', [
-                'place_id' => $place->id,
-                'name' => $place->name,
-                'woreda_id' => $place->woreda_id,
-                'user_id' => auth()->id(),
-            ]);
-
             return redirect()->route('places.index')
                 ->with('success', 'Place created successfully.');
 
@@ -113,13 +106,6 @@ class PlaceController extends Controller
 
             $place->update($validated);
 
-            Log::info('Place updated', [
-                'place_id' => $place->id,
-                'name' => $place->name,
-                'woreda_id' => $place->woreda_id,
-                'user_id' => auth()->id(),
-            ]);
-
             return redirect()->route('places.index')
                 ->with('success', 'Place updated successfully.');
 
@@ -141,22 +127,37 @@ class PlaceController extends Controller
     public function destroy(Place $place)
     {
         try {
-            // Check if place is being used in performances or distances
-            if ($place->performancesAsOrigin()->count() > 0 ||
-                $place->performancesAsDestination()->count() > 0 ||
-                $place->distancesAsOrigin()->count() > 0 ||
-                $place->distancesAsDestination()->count() > 0) {
-                return back()->withErrors(['error' => 'Cannot delete place that is being used in performances or distances.']);
+            // Check for related records that prevent deletion
+
+            // Check if place is used as origin in performances
+            if ($place->originPerformances()->count() > 0) {
+                return back()->withErrors([
+                    'error' => 'You are not allowed to delete this place. It is used as origin in ' . $place->originPerformances()->count() . ' performance record(s). Please remove all related performances first.'
+                ]);
             }
 
-            $placeData = $place->toArray();
-            $place->delete();
+            // Check if place is used as destination in performances
+            if ($place->destinationPerformances()->count() > 0) {
+                return back()->withErrors([
+                    'error' => 'You are not allowed to delete this place. It is used as destination in ' . $place->destinationPerformances()->count() . ' performance record(s). Please remove all related performances first.'
+                ]);
+            }
 
-            Log::info('Place deleted', [
-                'place_id' => $place->id,
-                'name' => $placeData['name'],
-                'user_id' => auth()->id(),
-            ]);
+            // Check if place is used as origin in distances
+            if ($place->fromDistances()->count() > 0) {
+                return back()->withErrors([
+                    'error' => 'You are not allowed to delete this place. It is used as origin in ' . $place->fromDistances()->count() . ' distance record(s). Please remove all related distances first.'
+                ]);
+            }
+
+            // Check if place is used as destination in distances
+            if ($place->toDistances()->count() > 0) {
+                return back()->withErrors([
+                    'error' => 'You are not allowed to delete this place. It is used as destination in ' . $place->toDistances()->count() . ' distance record(s). Please remove all related distances first.'
+                ]);
+            }
+
+            $place->delete();
 
             return redirect()->route('places.index')
                 ->with('success', 'Place deleted successfully.');

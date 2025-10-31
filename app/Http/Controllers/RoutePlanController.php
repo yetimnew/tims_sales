@@ -77,15 +77,6 @@ class RoutePlanController extends Controller
 
             $routePlan = RoutePlan::create($validated);
 
-            Log::info('Route plan created', [
-                'route_plan_id' => $routePlan->id,
-                'operation_id' => $routePlan->operation_id,
-                'truck_id' => $routePlan->truck_id,
-                'driver_id' => $routePlan->driver_id,
-                'planned_date' => $routePlan->planned_date,
-                'user_id' => auth()->id(),
-            ]);
-
             return redirect()->route('route-plans.index')
                 ->with('success', 'Route plan created successfully.');
 
@@ -155,15 +146,6 @@ class RoutePlanController extends Controller
 
             $routePlan->update($validated);
 
-            Log::info('Route plan updated', [
-                'route_plan_id' => $routePlan->id,
-                'operation_id' => $routePlan->operation_id,
-                'truck_id' => $routePlan->truck_id,
-                'driver_id' => $routePlan->driver_id,
-                'status' => $routePlan->status,
-                'user_id' => auth()->id(),
-            ]);
-
             return redirect()->route('route-plans.index')
                 ->with('success', 'Route plan updated successfully.');
 
@@ -185,15 +167,12 @@ class RoutePlanController extends Controller
     public function destroy(RoutePlan $routePlan)
     {
         try {
-            $routePlanData = $routePlan->toArray();
-            $routePlan->delete();
+            // Check for related records that prevent deletion
 
-            Log::info('Route plan deleted', [
-                'route_plan_id' => $routePlan->id,
-                'operation_id' => $routePlanData['operation_id'],
-                'truck_id' => $routePlanData['truck_id'],
-                'user_id' => auth()->id(),
-            ]);
+            // Route plans are typically independent and can be safely deleted
+            // as they only have BelongsTo relationships
+
+            $routePlan->delete();
 
             return redirect()->route('route-plans.index')
                 ->with('success', 'Route plan deleted successfully.');

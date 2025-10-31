@@ -5,10 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
 
 class RoutePlan extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes, LogsActivity;
 
     protected $fillable = [
         'operation_id',
@@ -178,6 +181,31 @@ class RoutePlan extends Model
             return Place::whereIn('id', $this->route_waypoints)->get();
         }
         return collect();
+    }
+
+    /**
+     * Configure the activity log options.
+     */
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly([
+                'operation_id',
+                'truck_id',
+                'driver_id',
+                'planned_date',
+                'planned_departure_time',
+                'planned_arrival_time',
+                'route_waypoints',
+                'total_distance_km',
+                'total_travel_time_minutes',
+                'estimated_fuel_cost',
+                'status',
+                'notes'
+            ])
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs()
+            ->useLogName('route_plans');
     }
 }
 

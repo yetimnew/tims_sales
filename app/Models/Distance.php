@@ -5,10 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
 
 class Distance extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsActivity;
 
     protected $fillable = [
         'from_place_id',
@@ -107,6 +109,31 @@ class Distance extends Model
     public function getTotalCost(): float
     {
         return $this->toll_road ? $this->toll_cost : 0;
+    }
+
+    /**
+     * Configure the activity log options.
+     */
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly([
+                'from_place_id',
+                'to_place_id',
+                'distance_km',
+                'estimated_time_hours',
+                'route_description',
+                'route_type',
+                'estimated_travel_time_minutes',
+                'road_condition_factor',
+                'toll_road',
+                'toll_cost',
+                'restricted_for_heavy_vehicles',
+                'route_notes'
+            ])
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs()
+            ->useLogName('distances');
     }
 }
 

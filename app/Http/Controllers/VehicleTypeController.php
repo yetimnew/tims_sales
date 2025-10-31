@@ -181,6 +181,15 @@ class VehicleTypeController extends Controller
     public function destroy(VehicleType $vehicletype)
     {
         try {
+            // Check for related records that prevent deletion
+
+            // Check if vehicle type has trucks
+            if ($vehicletype->trucks()->count() > 0) {
+                return back()->withErrors([
+                    'error' => 'You are not allowed to delete this vehicle type. It has ' . $vehicletype->trucks()->count() . ' truck(s) associated with it. Please reassign or delete all trucks first.'
+                ]);
+            }
+
             $vehicletype->delete();
 
             return redirect()->route('vehicletypes.index')

@@ -127,9 +127,13 @@ class CustomerController extends Controller
     public function destroy(Customer $customer)
     {
         try {
-            // Check if customer is being used in operations
+            // Check for related records that prevent deletion
+
+            // Check if customer has operations
             if ($customer->operations()->count() > 0) {
-                return back()->withErrors(['error' => 'Cannot delete customer that has operations.']);
+                return back()->withErrors([
+                    'error' => 'You are not allowed to delete this customer. It has ' . $customer->operations()->count() . ' operation(s). Please remove all operations first.'
+                ]);
             }
 
             $customer->delete();
