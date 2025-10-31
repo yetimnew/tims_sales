@@ -14,7 +14,7 @@ import AppLayout from '@/layouts/app-layout';
 import { usePermissions } from '@/hooks/use-permissions';
 import { Head, Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
-import { Plus, Eye, SquarePen, MapPin, Phone, Search, ArrowUpDown, ChevronLeft, ChevronRight, Trash2, FileDown, Users, UserCheck, UserX, Users2, User } from 'lucide-react';
+import { Plus, Eye, Edit, Search, ArrowUpDown, ChevronLeft, ChevronRight, Trash2, FileDown, Users, UserCheck, UserX, Users2, User } from 'lucide-react';
 import { InertiaPagination } from '@/components/ui/pagination';
 import * as React from 'react';
 

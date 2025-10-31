@@ -7,7 +7,8 @@ import AppLayout from '@/layouts/app-layout';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import { ArrowLeft, Save, AlertTriangle, Truck, User } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { toast } from '@/hooks/use-toast';
 
 interface Truck {
     id: number;
@@ -30,6 +31,32 @@ interface Props {
 
 export default function Create({ trucks, drivers, error }: Props) {
     const { errors } = usePage().props;
+
+    // Show validation errors and general errors as toast
+    useEffect(() => {
+        // Handle general error prop
+        if (error) {
+            toast({
+                title: '⚠️ Error',
+                description: error,
+                variant: 'destructive',
+            });
+        }
+
+        // Handle validation errors
+        const errorMessages = Object.entries(errors).map(([field, message]) => {
+            if (typeof message === 'string') return message;
+            return String(message);
+        });
+
+        if (errorMessages.length > 0) {
+            toast({
+                title: '⚠️ Validation Error',
+                description: errorMessages.join(', '),
+                variant: 'destructive',
+            });
+        }
+    }, [error, errors]);
 
     // Add null checking to prevent white space errors
     if (!Array.isArray(trucks) || !Array.isArray(drivers)) {
@@ -104,17 +131,6 @@ export default function Create({ trucks, drivers, error }: Props) {
                     </div>
                 </div>
 
-                {/* Error Alert */}
-                {error && (
-                    <Card className="border-red-200 bg-red-50">
-                        <CardContent className="pt-6">
-                            <div className="flex items-center gap-2 text-red-700">
-                                <AlertTriangle className="h-4 w-4" />
-                                <span>{error}</span>
-                            </div>
-                        </CardContent>
-                    </Card>
-                )}
 
                 {/* Form */}
                 <div className="grid gap-6 md:grid-cols-2">

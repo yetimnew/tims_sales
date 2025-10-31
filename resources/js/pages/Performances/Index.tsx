@@ -15,7 +15,7 @@ import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialo
 import { usePermissions } from '@/hooks/use-permissions';
 import { Head, Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
-import { Plus, Eye, Edit, Trash2, Search, ArrowUpDown, ChevronLeft, ChevronRight, FileDown, Square, Activity, TrendingUp, CheckCircle, Clock, XCircle } from 'lucide-react';
+import { Plus, Eye, Edit, Trash2, Search, ArrowUpDown, ChevronLeft, ChevronRight, FileDown, Activity, TrendingUp, CheckCircle, Clock, XCircle } from 'lucide-react';
 import { InertiaPagination } from '@/components/ui/pagination';
 import * as React from 'react';
 
