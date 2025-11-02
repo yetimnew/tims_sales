@@ -20,7 +20,10 @@ import { InertiaPagination } from '@/components/ui/pagination';
 import * as React from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Performances', href: '/performances' },
+    {
+        title: 'Performances',
+        href: '/performances',
+    },
 ];
 
 interface Performance {

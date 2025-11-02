@@ -63,7 +63,8 @@ class RegionController extends Controller
     {
         try {
             $validated = $request->validate([
-                'name' => 'required|string|max:255|unique:regions',
+                'name' => 'required|string|max:255|unique:regions,name',
+                'status' => 'required|in:active,inactive',
                 'description' => 'nullable|string|max:1000',
             ]);
 
@@ -123,6 +124,7 @@ class RegionController extends Controller
         try {
             $validated = $request->validate([
                 'name' => 'required|string|max:255|unique:regions,name,' . $region->id,
+                'status' => 'required|in:active,inactive',
                 'description' => 'nullable|string|max:1000',
             ]);
 
@@ -272,7 +274,7 @@ class RegionController extends Controller
     public function activeRegions()
     {
         try {
-            $activeRegions = Region::where('status', 'active')
+            $activeRegions = Region::active()
                 ->orderBy('name')
                 ->get();
 

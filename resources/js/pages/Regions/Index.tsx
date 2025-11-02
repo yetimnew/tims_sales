@@ -29,6 +29,9 @@ const breadcrumbs: BreadcrumbItem[] = [
 interface RegionData {
     id: number;
     name: string;
+    code?: string;
+    status: 'active' | 'inactive';
+    zones_count?: number;
     created_at?: string;
 }
 
@@ -199,6 +202,23 @@ export default function RegionsIndex({ regions, totalCount }: RegionsIndexProps)
                                                 Name <SortIcon column="name" />
                                             </div>
                                         </TableHead>
+                                        <TableHead
+                                            className="cursor-pointer select-none hover:bg-muted/70 transition-colors"
+                                            onClick={() => handleSort('code')}
+                                        >
+                                            <div className="flex items-center">
+                                                Code <SortIcon column="code" />
+                                            </div>
+                                        </TableHead>
+                                        <TableHead>Status</TableHead>
+                                        <TableHead
+                                            className="cursor-pointer select-none hover:bg-muted/70 transition-colors"
+                                            onClick={() => handleSort('zones_count')}
+                                        >
+                                            <div className="flex items-center">
+                                                Zones <SortIcon column="zones_count" />
+                                            </div>
+                                        </TableHead>
                                         <TableHead>Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -208,6 +228,13 @@ export default function RegionsIndex({ regions, totalCount }: RegionsIndexProps)
                                             <TableRow key={region.id}>
                                                 <TableCell className="font-medium">{region.id}</TableCell>
                                                 <TableCell className="font-medium">{region.name}</TableCell>
+                                                <TableCell>{region.code || '-'}</TableCell>
+                                                <TableCell>
+                                                    <Badge variant={region.status === 'active' ? 'default' : 'secondary'}>
+                                                        {region.status}
+                                                    </Badge>
+                                                </TableCell>
+                                                <TableCell>{region.zones_count || 0}</TableCell>
                                                 <TableCell>
                                                     <div className="flex items-center space-x-2">
                                                         {hasPermission('regions.show') && (

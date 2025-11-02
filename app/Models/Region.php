@@ -14,7 +14,12 @@ class Region extends Model
     protected $fillable = [
         'name',
         'code',
+        'status',
         'description',
+    ];
+
+    protected $casts = [
+        'status' => 'string',
     ];
 
     /**
@@ -31,6 +36,25 @@ class Region extends Model
     public function operations(): HasMany
     {
         return $this->hasMany(Operation::class);
+    }
+
+    /**
+     * Scope to get only active regions.
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('status', 'active');
+    }
+
+    /**
+     * Scope to filter by name or code.
+     */
+    public function scopeByName($query, $name)
+    {
+        return $query->where(function ($q) use ($name) {
+            $q->where('name', 'like', "%{$name}%")
+                ->orWhere('code', 'like', "%{$name}%");
+        });
     }
 }
 

@@ -12,8 +12,14 @@ import { AlertCircle, CheckCircle, Activity, TrendingUp, DollarSign, Zap } from 
 import { FormEventHandler, useEffect, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Performances', href: '/performances' },
-    { title: 'Create', href: '/performances/create' },
+    {
+        title: 'Performances',
+        href: '/performances',
+    },
+    {
+        title: 'Create',
+        href: '/performances/create',
+    },
 ];
 
 interface Operation {

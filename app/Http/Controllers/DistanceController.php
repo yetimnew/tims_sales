@@ -8,8 +8,8 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Auth;
 use Exception;
+use Spatie\ActivityLog\Facades\Activity;
 
 class DistanceController extends Controller
 {
@@ -109,6 +109,7 @@ class DistanceController extends Controller
                 'from_place_id' => 'required|exists:places,id',
                 'to_place_id' => 'required|exists:places,id|different:from_place_id',
                 'distance_km' => 'required|numeric|min:0',
+                'status' => 'required|in:active,inactive',
                 'estimated_time_hours' => 'required|numeric|min:0',
                 'route_description' => 'nullable|string|max:1000',
                 'route_type' => 'nullable|in:primary,secondary,alternative',
@@ -127,6 +128,10 @@ class DistanceController extends Controller
             $validated['restricted_for_heavy_vehicles'] = $validated['restricted_for_heavy_vehicles'] ?? false;
 
             $distance = Distance::create($validated);
+
+            Activity::performedOn($distance)
+                ->causedBy(auth()->user())
+                ->log('created');
 
             return redirect()->route('distances.index')
                 ->with('success', 'Distance created successfully.');
@@ -149,8 +154,14 @@ class DistanceController extends Controller
     {
         $distance->load(['fromPlace.woreda.zone.region', 'toPlace.woreda.zone.region']);
 
+        $activityLogs = Activity::forSubject($distance)
+            ->with('causer')
+            ->orderByDesc('created_at')
+            ->get();
+
         return Inertia::render('Distances/Show', [
             'distance' => $distance,
+            'activityLogs' => $activityLogs,
         ]);
     }
 
@@ -177,6 +188,7 @@ class DistanceController extends Controller
                 'from_place_id' => 'required|exists:places,id',
                 'to_place_id' => 'required|exists:places,id|different:from_place_id',
                 'distance_km' => 'required|numeric|min:0',
+                'status' => 'required|in:active,inactive',
                 'estimated_time_hours' => 'required|numeric|min:0',
                 'route_description' => 'nullable|string|max:1000',
                 'route_type' => 'nullable|in:primary,secondary,alternative',
@@ -188,7 +200,13 @@ class DistanceController extends Controller
                 'route_notes' => 'nullable|string|max:2000',
             ]);
 
+            $oldData = $distance->toArray();
             $distance->update($validated);
+
+            Activity::performedOn($distance)
+                ->causedBy(auth()->user())
+                ->withProperties(['old' => $oldData, 'new' => $distance->toArray()])
+                ->log('updated');
 
             return redirect()->route('distances.index')
                 ->with('success', 'Distance updated successfully.');
@@ -211,7 +229,13 @@ class DistanceController extends Controller
     public function destroy(Distance $distance)
     {
         try {
+            $distanceData = $distance->toArray();
             $distance->delete();
+
+            Activity::performedOn($distance)
+                ->causedBy(auth()->user())
+                ->withProperties(['deleted' => $distanceData])
+                ->log('deleted');
 
             return redirect()->route('distances.index')
                 ->with('success', 'Distance deleted successfully.');
@@ -259,53 +283,49 @@ class DistanceController extends Controller
         $distances = $query->get();
 
         // Generate CSV
-        $filename = 'distances_' . now()->format('Y-m-d_H-i-s') . '.csv';
-        $handle = fopen('php://temp', 'r+');
-
-        // Write header
-        fputcsv($handle, [
-            'ID',
-            'From Place',
-            'To Place',
-            'Distance (KM)',
-            'Estimated Time (Hours)',
-            'From Region',
-            'To Region',
-            'Created At',
-            'Updated At'
-        ]);
-
-        // Write data
-        foreach ($distances as $distance) {
-            fputcsv($handle, [
-                $distance->id,
-                $distance->fromPlace?->name ?? 'N/A',
-                $distance->toPlace?->name ?? 'N/A',
-                $distance->distance_km,
-                $distance->estimated_time_hours,
-                $distance->fromPlace?->woreda?->zone?->region?->name ?? 'N/A',
-                $distance->toPlace?->woreda?->zone?->region?->name ?? 'N/A',
-                $distance->created_at,
-                $distance->updated_at
-            ]);
-        }
-
-        rewind($handle);
-        $csv = stream_get_contents($handle);
-        fclose($handle);
-
-        // Log the export activity
-        if (Auth::check()) {
-            activity()
-                ->causedBy(Auth::user())
-                ->withProperties(['count' => count($distances)])
-                ->log('exported distances to CSV');
-        }
-
-        return response($csv, 200, [
+        $filename = 'distances-' . date('Y-m-d-H-i-s') . '.csv';
+        $headers = [
             'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
-        ]);
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+
+        $callback = function () use ($distances) {
+            $file = fopen('php://output', 'w');
+
+            // Add BOM for UTF-8
+            fwrite($file, "\xEF\xBB\xBF");
+
+            // Header row
+            fputcsv($file, ['ID', 'From Place', 'To Place', 'Status', 'Distance (KM)', 'Estimated Time (Hours)', 'Route Type', 'Toll Road', 'Toll Cost', 'Heavy Vehicle Restricted', 'From Region', 'To Region', 'Created At']);
+
+            // Data rows
+            foreach ($distances as $distance) {
+                fputcsv($file, [
+                    $distance->id,
+                    $distance->fromPlace?->name ?? 'N/A',
+                    $distance->toPlace?->name ?? 'N/A',
+                    $distance->status,
+                    $distance->distance_km,
+                    $distance->estimated_time_hours,
+                    $distance->route_type,
+                    $distance->toll_road ? 'Yes' : 'No',
+                    $distance->toll_cost,
+                    $distance->restricted_for_heavy_vehicles ? 'Yes' : 'No',
+                    $distance->fromPlace?->woreda?->zone?->region?->name ?? 'N/A',
+                    $distance->toPlace?->woreda?->zone?->region?->name ?? 'N/A',
+                    $distance->created_at,
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        // Log export activity
+        Activity::causedBy(auth()->user())
+            ->withProperties(['count' => count($distances)])
+            ->log('exported');
+
+        return response()->stream($callback, 200, $headers);
     }
 
     /**
@@ -330,7 +350,7 @@ class DistanceController extends Controller
     public function activeDistances()
     {
         try {
-            $activeDistances = Distance::where('status', 'active')
+            $activeDistances = Distance::active()
                 ->with(['fromPlace.woreda.zone.region', 'toPlace.woreda.zone.region'])
                 ->orderBy('distance_km')
                 ->get();

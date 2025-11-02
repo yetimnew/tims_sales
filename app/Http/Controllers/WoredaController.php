@@ -73,13 +73,14 @@ class WoredaController extends Controller
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
                 'zone_id' => 'required|exists:zones,id',
+                'status' => 'required|in:active,inactive',
                 'description' => 'nullable|string|max:1000',
             ]);
 
             $woreda = Woreda::create($validated);
 
             Activity::performedOn($woreda)
-                ->causedBy(auth()->user())
+                ->causedBy(auth('sanctum')->user())
                 ->log('created');
 
             return redirect()->route('woredas.index')
@@ -136,6 +137,7 @@ class WoredaController extends Controller
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
                 'zone_id' => 'required|exists:zones,id',
+                'status' => 'required|in:active,inactive',
                 'description' => 'nullable|string|max:1000',
             ]);
 
@@ -143,7 +145,7 @@ class WoredaController extends Controller
             $woreda->update($validated);
 
             Activity::performedOn($woreda)
-                ->causedBy(auth()->user())
+                ->causedBy(auth('sanctum')->user())
                 ->withProperties(['old' => $oldData, 'new' => $woreda->toArray()])
                 ->log('updated');
 
@@ -289,7 +291,7 @@ class WoredaController extends Controller
     public function activeWoredas()
     {
         try {
-            $activeWoredas = Woreda::where('status', 'active')
+            $activeWoredas = Woreda::active()
                 ->with(['zone.region'])
                 ->orderBy('name')
                 ->get();

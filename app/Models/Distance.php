@@ -16,6 +16,7 @@ class Distance extends Model
         'from_place_id',
         'to_place_id',
         'distance_km',
+        'status',
         'estimated_time_hours',
         'route_description',
         'route_type',
@@ -34,6 +35,7 @@ class Distance extends Model
         'toll_cost' => 'decimal:2',
         'toll_road' => 'boolean',
         'restricted_for_heavy_vehicles' => 'boolean',
+        'status' => 'string',
     ];
 
     /**
@@ -112,6 +114,52 @@ class Distance extends Model
     }
 
     /**
+     * Scope to get only active distances.
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('status', 'active');
+    }
+
+    /**
+     * Scope to filter by route type.
+     */
+    public function scopeByRouteType($query, $routeType)
+    {
+        return $query->where('route_type', $routeType);
+    }
+
+    /**
+     * Scope to filter distances between places.
+     */
+    public function scopeBetweenPlaces($query, $fromPlaceId, $toPlaceId)
+    {
+        return $query->where(function ($q) use ($fromPlaceId, $toPlaceId) {
+            $q->where('from_place_id', $fromPlaceId)
+                ->where('to_place_id', $toPlaceId);
+        })->orWhere(function ($q) use ($fromPlaceId, $toPlaceId) {
+            $q->where('from_place_id', $toPlaceId)
+                ->where('to_place_id', $fromPlaceId);
+        });
+    }
+
+    /**
+     * Scope to filter by distance range.
+     */
+    public function scopeByDistanceRange($query, $minDistance, $maxDistance)
+    {
+        return $query->whereBetween('distance_km', [$minDistance, $maxDistance]);
+    }
+
+    /**
+     * Scope to get toll roads.
+     */
+    public function scopeWithTolls($query)
+    {
+        return $query->where('toll_road', true);
+    }
+
+    /**
      * Configure the activity log options.
      */
     public function getActivitylogOptions(): LogOptions
@@ -121,6 +169,7 @@ class Distance extends Model
                 'from_place_id',
                 'to_place_id',
                 'distance_km',
+                'status',
                 'estimated_time_hours',
                 'route_description',
                 'route_type',

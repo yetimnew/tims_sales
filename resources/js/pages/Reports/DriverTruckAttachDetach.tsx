@@ -59,3 +59,4 @@ export default function DriverTruckAttachDetach({ rows }: { rows: Row[] }) {
 
 
 
+

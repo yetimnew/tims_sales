@@ -18,6 +18,7 @@ class Place extends Model
         'name',
         'code',
         'woreda_id',
+        'status',
         'latitude',
         'longitude',
         'description',
@@ -26,6 +27,7 @@ class Place extends Model
     protected $casts = [
         'latitude' => 'decimal:8',
         'longitude' => 'decimal:8',
+        'status' => 'string',
     ];
 
     /**
@@ -69,6 +71,42 @@ class Place extends Model
     }
 
     /**
+     * Scope to get only active places.
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('status', 'active');
+    }
+
+    /**
+     * Scope to filter by woreda.
+     */
+    public function scopeByWoreda($query, $woredaId)
+    {
+        return $query->where('woreda_id', $woredaId);
+    }
+
+    /**
+     * Scope to filter by name or code.
+     */
+    public function scopeByName($query, $name)
+    {
+        return $query->where(function ($q) use ($name) {
+            $q->where('name', 'like', "%{$name}%")
+                ->orWhere('code', 'like', "%{$name}%");
+        });
+    }
+
+    /**
+     * Scope to filter by coordinates (within bounding box).
+     */
+    public function scopeWithinBounds($query, $lat1, $lon1, $lat2, $lon2)
+    {
+        return $query->whereBetween('latitude', [min($lat1, $lat2), max($lat1, $lat2)])
+                    ->whereBetween('longitude', [min($lon1, $lon2), max($lon1, $lon2)]);
+    }
+
+    /**
      * Configure the activity log options.
      */
     public function getActivitylogOptions(): LogOptions
@@ -78,6 +116,7 @@ class Place extends Model
                 'name',
                 'code',
                 'woreda_id',
+                'status',
                 'latitude',
                 'longitude',
                 'description'

@@ -8,19 +8,50 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Auth;
 use Exception;
+use Spatie\ActivityLog\Facades\Activity;
 
 class PlaceController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index(): Response
+    public function index(Request $request): Response
     {
-        $places = Place::with(['woreda'])
-            ->orderBy('name')
-            ->paginate(15);
+        $query = Place::with(['woreda.zone.region'])->withCount(['originPerformances', 'destinationPerformances']);
+
+        // Handle search
+        if ($request->has('search') && !empty($request->input('search'))) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('code', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%")
+                    ->orWhereHas('woreda', function ($q) use ($search) {
+                        $q->where('name', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('woreda.zone', function ($q) use ($search) {
+                        $q->where('name', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('woreda.zone.region', function ($q) use ($search) {
+                        $q->where('name', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        // Handle sorting
+        $sort = $request->input('sort', 'name');
+        $direction = $request->input('direction', 'asc');
+
+        // Validate sort column to prevent SQL injection
+        $allowedSorts = ['name', 'code', 'origin_performances_count', 'destination_performances_count', 'created_at'];
+        if (!in_array($sort, $allowedSorts)) {
+            $sort = 'name';
+        }
+
+        $query->orderBy($sort, $direction);
+
+        $places = $query->paginate(15);
 
         return Inertia::render('Places/Index', [
             'places' => $places,
@@ -48,10 +79,17 @@ class PlaceController extends Controller
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
                 'woreda_id' => 'required|exists:woredas,id',
+                'status' => 'required|in:active,inactive',
+                'latitude' => 'nullable|numeric|between:-90,90',
+                'longitude' => 'nullable|numeric|between:-180,180',
                 'description' => 'nullable|string|max:1000',
             ]);
 
             $place = Place::create($validated);
+
+            Activity::performedOn($place)
+                ->causedBy(auth()->user())
+                ->log('created');
 
             return redirect()->route('places.index')
                 ->with('success', 'Place created successfully.');
@@ -72,10 +110,16 @@ class PlaceController extends Controller
      */
     public function show(Place $place): Response
     {
-        $place->load(['woreda']);
+        $place->load(['woreda.zone.region']);
+
+        $activityLogs = Activity::forSubject($place)
+            ->with('causer')
+            ->orderByDesc('created_at')
+            ->get();
 
         return Inertia::render('Places/Show', [
             'place' => $place,
+            'activityLogs' => $activityLogs,
         ]);
     }
 
@@ -101,10 +145,19 @@ class PlaceController extends Controller
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
                 'woreda_id' => 'required|exists:woredas,id',
+                'status' => 'required|in:active,inactive',
+                'latitude' => 'nullable|numeric|between:-90,90',
+                'longitude' => 'nullable|numeric|between:-180,180',
                 'description' => 'nullable|string|max:1000',
             ]);
 
+            $oldData = $place->toArray();
             $place->update($validated);
+
+            Activity::performedOn($place)
+                ->causedBy(auth()->user())
+                ->withProperties(['old' => $oldData, 'new' => $place->toArray()])
+                ->log('updated');
 
             return redirect()->route('places.index')
                 ->with('success', 'Place updated successfully.');
@@ -157,7 +210,13 @@ class PlaceController extends Controller
                 ]);
             }
 
+            $placeData = $place->toArray();
             $place->delete();
+
+            Activity::performedOn($place)
+                ->causedBy(auth()->user())
+                ->withProperties(['deleted' => $placeData])
+                ->log('deleted');
 
             return redirect()->route('places.index')
                 ->with('success', 'Place deleted successfully.');
@@ -174,79 +233,87 @@ class PlaceController extends Controller
     }
 
     /**
-     * Export places to CSV.
+     * Export places to CSV
      */
     public function export(Request $request)
     {
-        $query = Place::with(['woreda.zone.region']);
+        $query = Place::with(['woreda.zone.region'])->withCount(['originPerformances', 'destinationPerformances']);
 
-        // Apply search if provided
+        // Apply same search and sort as index
         if ($request->has('search') && !empty($request->input('search'))) {
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                     ->orWhere('code', 'like', "%{$search}%")
-                    ->orWhere('description', 'like', "%{$search}%");
+                    ->orWhere('description', 'like', "%{$search}%")
+                    ->orWhereHas('woreda', function ($q) use ($search) {
+                        $q->where('name', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('woreda.zone', function ($q) use ($search) {
+                        $q->where('name', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('woreda.zone.region', function ($q) use ($search) {
+                        $q->where('name', 'like', "%{$search}%");
+                    });
             });
         }
 
-        // Apply sorting
-        if ($request->has('sort')) {
-            $sort = $request->input('sort', 'name');
-            $direction = $request->input('direction', 'asc');
-            $query = $query->orderBy($sort, $direction);
+        $sort = $request->input('sort', 'name');
+        $direction = $request->input('direction', 'asc');
+
+        $allowedSorts = ['name', 'code', 'origin_performances_count', 'destination_performances_count', 'created_at'];
+        if (!in_array($sort, $allowedSorts)) {
+            $sort = 'name';
         }
+
+        $query->orderBy($sort, $direction);
 
         $places = $query->get();
 
         // Generate CSV
-        $filename = 'places_' . now()->format('Y-m-d_H-i-s') . '.csv';
-        $handle = fopen('php://temp', 'r+');
-
-        // Write header
-        fputcsv($handle, [
-            'ID',
-            'Name',
-            'Code',
-            'Woreda',
-            'Zone',
-            'Region',
-            'Description',
-            'Created At',
-            'Updated At'
-        ]);
-
-        // Write data
-        foreach ($places as $place) {
-            fputcsv($handle, [
-                $place->id,
-                $place->name,
-                $place->code,
-                $place->woreda?->name ?? 'N/A',
-                $place->woreda?->zone?->name ?? 'N/A',
-                $place->woreda?->zone?->region?->name ?? 'N/A',
-                $place->description,
-                $place->created_at,
-                $place->updated_at
-            ]);
-        }
-
-        rewind($handle);
-        $csv = stream_get_contents($handle);
-        fclose($handle);
-
-        // Log the export activity
-        if (Auth::check()) {
-            activity()
-                ->causedBy(Auth::user())
-                ->withProperties(['count' => count($places)])
-                ->log('exported places to CSV');
-        }
-
-        return response($csv, 200, [
+        $filename = 'places-' . date('Y-m-d-H-i-s') . '.csv';
+        $headers = [
             'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
-        ]);
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+
+        $callback = function () use ($places) {
+            $file = fopen('php://output', 'w');
+
+            // Add BOM for UTF-8
+            fwrite($file, "\xEF\xBB\xBF");
+
+            // Header row
+            fputcsv($file, ['ID', 'Name', 'Code', 'Status', 'Woreda', 'Zone', 'Region', 'Latitude', 'Longitude', 'Origin Performances', 'Destination Performances', 'Description', 'Created At']);
+
+            // Data rows
+            foreach ($places as $place) {
+                fputcsv($file, [
+                    $place->id,
+                    $place->name,
+                    $place->code,
+                    $place->status,
+                    $place->woreda?->name ?? 'N/A',
+                    $place->woreda?->zone?->name ?? 'N/A',
+                    $place->woreda?->zone?->region?->name ?? 'N/A',
+                    $place->latitude,
+                    $place->longitude,
+                    $place->origin_performances_count,
+                    $place->destination_performances_count,
+                    $place->description,
+                    $place->created_at,
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        // Log export activity
+        Activity::causedBy(auth()->user())
+            ->withProperties(['count' => count($places)])
+            ->log('exported');
+
+        return response()->stream($callback, 200, $headers);
     }
 
     /**
@@ -271,7 +338,7 @@ class PlaceController extends Controller
     public function activePlaces()
     {
         try {
-            $activePlaces = Place::where('status', 'active')
+            $activePlaces = Place::active()
                 ->with(['woreda.zone.region'])
                 ->orderBy('name')
                 ->get();

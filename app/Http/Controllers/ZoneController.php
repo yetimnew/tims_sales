@@ -73,13 +73,14 @@ class ZoneController extends Controller
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
                 'region_id' => 'required|exists:regions,id',
+                'status' => 'required|in:active,inactive',
                 'description' => 'nullable|string|max:1000',
             ]);
 
             $zone = Zone::create($validated);
 
             Activity::performedOn($zone)
-                ->causedBy(auth()->user())
+                ->causedBy(auth('sanctum')->user())
                 ->log('created');
 
             return redirect()->route('zones.index')
@@ -136,6 +137,7 @@ class ZoneController extends Controller
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
                 'region_id' => 'required|exists:regions,id',
+                'status' => 'required|in:active,inactive',
                 'description' => 'nullable|string|max:1000',
             ]);
 
@@ -289,7 +291,7 @@ class ZoneController extends Controller
     public function activeZones()
     {
         try {
-            $activeZones = Zone::where('status', 'active')
+            $activeZones = Zone::active()
                 ->with('region')
                 ->orderBy('name')
                 ->get();

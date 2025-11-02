@@ -16,7 +16,12 @@ class Woreda extends Model
         'name',
         'code',
         'zone_id',
+        'status',
         'description',
+    ];
+
+    protected $casts = [
+        'status' => 'string',
     ];
 
     /**
@@ -33,6 +38,33 @@ class Woreda extends Model
     public function places(): HasMany
     {
         return $this->hasMany(Place::class);
+    }
+
+    /**
+     * Scope to get only active woredas.
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('status', 'active');
+    }
+
+    /**
+     * Scope to filter by zone.
+     */
+    public function scopeByZone($query, $zoneId)
+    {
+        return $query->where('zone_id', $zoneId);
+    }
+
+    /**
+     * Scope to filter by name or code.
+     */
+    public function scopeByName($query, $name)
+    {
+        return $query->where(function ($q) use ($name) {
+            $q->where('name', 'like', "%{$name}%")
+                ->orWhere('code', 'like', "%{$name}%");
+        });
     }
 }
 

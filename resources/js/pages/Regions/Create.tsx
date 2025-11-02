@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useToast } from '@/hooks/use-toast'
 import { validateRegion } from '@/lib/validation'
@@ -14,12 +15,13 @@ import { CircleAlert } from 'lucide-react'
 
 interface RegionFormData {
   name: string
+  status: 'active' | 'inactive'
 }
 
 export default function RegionsCreate() {
   const { toast } = useToast()
   const [frontendErrors, setFrontendErrors] = useState<Record<string, string>>({})
-  const { data, setData, post, processing, errors } = useForm<RegionFormData>({ name: '' })
+  const { data, setData, post, processing, errors } = useForm<RegionFormData>({ name: '', status: 'active' })
 
   useEffect(() => {
     if (Object.keys(errors).length > 0) {
@@ -92,6 +94,22 @@ export default function RegionsCreate() {
               />
               {(frontendErrors.name || errors.name) && (
                 <p className="text-sm text-red-500">{frontendErrors.name || errors.name}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="status">Status *</Label>
+              <Select value={data.status} onValueChange={(value) => setData('status', value as 'active' | 'inactive')}>
+                <SelectTrigger className={frontendErrors.status || errors.status ? 'border-red-500' : ''}>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+              {(frontendErrors.status || errors.status) && (
+                <p className="text-sm text-red-500">{frontendErrors.status || errors.status}</p>
               )}
             </div>
 
