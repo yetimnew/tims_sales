@@ -13,7 +13,7 @@ use App\Models\User;
 class TruckBulkTestSeeder extends Seeder
 {
     /**
-     * Seed 50 trucks and assign them all to a single operational status for today.
+     * Seed 1000 trucks and assign them all to a single operational status for today.
      */
     public function run(): void
     {
@@ -46,15 +46,15 @@ class TruckBulkTestSeeder extends Seeder
             ]);
         }
 
-        // Create 50 trucks (or top up to 50 if some already exist)
+        // Create 1000 trucks (or top up to 1000 if some already exist)
         $existingCount = Truck::count();
-        $toCreate = max(0, 50 - $existingCount);
+        $toCreate = max(0, 1000 - $existingCount);
         if ($toCreate > 0) {
             Truck::factory($toCreate)->create();
         }
 
         // Assign all trucks to the primary status for today
-        Truck::query()->take(50)->get()->each(function (Truck $truck) use ($today, $primaryStatus, $userId) {
+        Truck::query()->take(1000)->get()->each(function (Truck $truck) use ($today, $primaryStatus, $userId) {
             DailyTruckStatus::updateOrCreate(
                 [
                     'truck_id' => $truck->id,

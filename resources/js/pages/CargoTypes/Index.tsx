@@ -10,13 +10,14 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import AppLayout from '@/layouts/app-layout';
+import ListPageLayout from '@/components/layouts/list-page-layout';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { usePermissions } from '@/hooks/use-permissions';
 import { Head, Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import { Plus, Eye, Edit, Trash2, Search, ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { InertiaPagination } from '@/components/ui/pagination';
+import ReactPaginate from 'react-paginate';
 import * as React from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -121,152 +122,168 @@ export default function CargoTypesIndex({ cargoTypes }: CargoTypesIndexProps) {
         }
     };
 
+    const headerActions = (
+        <>
+            {hasPermission('cargo-types.create') && (
+                <Button asChild>
+                    <Link href="/cargo-types/create">
+                        <Plus className="mr-2 h-4 w-4" />
+                        New Cargo Type
+                    </Link>
+                </Button>
+            )}
+        </>
+    );
+
+    const statsSection = null;
+
+    const tableHeaderExtras = (
+        <div className="relative w-64">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <Input
+                placeholder="Search by name, category, or requirements..."
+                value={searchTerm}
+                onChange={handleSearch}
+                className="pl-10"
+            />
+        </div>
+    );
+
+    const tableContent = (
+        <Table>
+            <TableHeader>
+                <TableRow>
+                    <TableHead
+                        className="cursor-pointer"
+                        onClick={() => handleSort('name')}
+                    >
+                        <div className="flex items-center gap-2">
+                            Name
+                            <ArrowUpDown size={14} />
+                        </div>
+                    </TableHead>
+                    <TableHead
+                        className="cursor-pointer"
+                        onClick={() => handleSort('category')}
+                    >
+                        <div className="flex items-center gap-2">
+                            Category
+                            <ArrowUpDown size={14} />
+                        </div>
+                    </TableHead>
+                    <TableHead>Weight/m³</TableHead>
+                    <TableHead>Special Equipment</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+            </TableHeader>
+            <TableBody>
+                {cargoTypes.data.length === 0 ? (
+                    <TableRow>
+                        <TableCell colSpan={5} className="text-center py-8">
+                            No cargo types found.
+                        </TableCell>
+                    </TableRow>
+                ) : (
+                    cargoTypes.data.map((type) => (
+                        <TableRow key={type.id}>
+                            <TableCell className="font-medium">
+                                {type.name}
+                            </TableCell>
+                            <TableCell>
+                                <Badge className={getCategoryColor(type.category)}>
+                                    {type.category}
+                                </Badge>
+                            </TableCell>
+                            <TableCell>
+                                {type.weight_per_cubic_meter ? `${type.weight_per_cubic_meter} kg` : '-'}
+                            </TableCell>
+                            <TableCell>
+                                {type.requires_special_equipment ? (
+                                    <Badge variant="secondary">Yes</Badge>
+                                ) : (
+                                    <span className="text-gray-500">No</span>
+                                )}
+                            </TableCell>
+                            <TableCell className="text-right">
+                                <div className="flex justify-end gap-2">
+                                    {hasPermission('cargo-types.show') && (
+                                        <Button asChild size="sm" variant="ghost">
+                                            <Link href={`/cargo-types/${type.id}`}>
+                                                <Eye className="h-4 w-4" />
+                                            </Link>
+                                        </Button>
+                                    )}
+                                    {hasPermission('cargo-types.edit') && (
+                                        <Button asChild size="sm" variant="ghost">
+                                            <Link href={`/cargo-types/${type.id}/edit`}>
+                                                <Edit className="h-4 w-4" />
+                                            </Link>
+                                        </Button>
+                                    )}
+                                    {hasPermission('cargo-types.destroy') && (
+                                        <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            onClick={() => handleDeleteClick(type)}
+                                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    )}
+                                </div>
+                            </TableCell>
+                        </TableRow>
+                    ))
+                )}
+            </TableBody>
+        </Table>
+    );
+
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Cargo Types" />
-
-            <div className="flex h-full flex-1 flex-col gap-6 overflow-hidden rounded-xl p-4">
-                {/* Header Section */}
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-3xl font-bold">Cargo Types</h1>
-                        <p className="text-muted-foreground mt-2">
-                            Manage and track different cargo types used in your fleet
-                        </p>
+        <ListPageLayout
+            headTitle="Cargo Types"
+            title="Cargo Types"
+            description="Manage and track different cargo types used in your fleet"
+            breadcrumbs={breadcrumbs}
+            actions={headerActions}
+            stats={statsSection}
+            tableTitle="Cargo Types"
+            tableDescription="All cargo types in your fleet"
+            tableHeaderExtras={tableHeaderExtras}
+            pagination={
+                <div className="mt-4 flex items-center justify-between w-full">
+                    <div className="text-sm text-muted-foreground">
+                        Showing <span className="font-semibold text-foreground">{cargoTypes.from}</span> to <span className="font-semibold text-foreground">{cargoTypes.to}</span> of <span className="font-semibold text-foreground">{cargoTypes.total}</span> cargo types
                     </div>
-                    {hasPermission('cargo-types.create') && (
-                        <Link href="/cargo-types/create">
-                            <Button className="gap-2">
-                                <Plus size={16} />
-                                New Cargo Type
-                            </Button>
-                        </Link>
-                    )}
-                </div>
-
-                {/* Search Bar */}
-                <div className="mb-6 flex gap-2">
-                    <div className="relative flex-1">
-                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                        <Input
-                            placeholder="Search by name, category, or requirements..."
-                            value={searchTerm}
-                            onChange={handleSearch}
-                            className="pl-10"
+                    <div>
+                        <ReactPaginate
+                            pageCount={cargoTypes.last_page}
+                            forcePage={cargoTypes.current_page - 1}
+                            onPageChange={({ selected }) => {
+                                router.get('/cargo-types', {
+                                    page: selected + 1,
+                                    search: searchTerm,
+                                    sort: sortBy,
+                                    direction: sortDirection,
+                                }, { preserveState: true });
+                            }}
+                            marginPagesDisplayed={2}
+                            pageRangeDisplayed={5}
+                            containerClassName="flex gap-2"
+                            pageClassName="px-3 py-1 rounded border text-sm bg-background text-muted-foreground hover:bg-muted"
+                            activeClassName="bg-primary text-white"
+                            previousClassName="px-3 py-1 rounded border text-sm"
+                            nextClassName="px-3 py-1 rounded border text-sm"
+                            breakClassName="px-3 py-1 rounded border text-sm"
+                            disabledClassName="pointer-events-none opacity-50"
+                            previousLabel={"<"}
+                            nextLabel={">"}
                         />
                     </div>
                 </div>
-
-                {/* Table */}
-                <div className="overflow-x-auto">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead
-                                    className="cursor-pointer"
-                                    onClick={() => handleSort('name')}
-                                >
-                                    <div className="flex items-center gap-2">
-                                        Name
-                                        <ArrowUpDown size={14} />
-                                    </div>
-                                </TableHead>
-                                <TableHead
-                                    className="cursor-pointer"
-                                    onClick={() => handleSort('category')}
-                                >
-                                    <div className="flex items-center gap-2">
-                                        Category
-                                        <ArrowUpDown size={14} />
-                                    </div>
-                                </TableHead>
-                                <TableHead>Weight/m³</TableHead>
-                                <TableHead>Special Equipment</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {cargoTypes.data.length === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={5} className="text-center py-8">
-                                        No cargo types found.
-                                    </TableCell>
-                                </TableRow>
-                            ) : (
-                                cargoTypes.data.map((type) => (
-                                    <TableRow key={type.id}>
-                                        <TableCell className="font-medium">
-                                            {type.name}
-                                        </TableCell>
-                                        <TableCell>
-                                            <Badge className={getCategoryColor(type.category)}>
-                                                {type.category}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell>
-                                            {type.weight_per_cubic_meter ? `${type.weight_per_cubic_meter} kg` : '-'}
-                                        </TableCell>
-                                        <TableCell>
-                                            {type.requires_special_equipment ? (
-                                                <Badge variant="secondary">Yes</Badge>
-                                            ) : (
-                                                <span className="text-gray-500">No</span>
-                                            )}
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <div className="flex justify-end gap-2">
-                                                {hasPermission('cargo-types.show') && (
-                                                    <Link
-                                                        href={`/cargo-types/${type.id}`}
-                                                        className="p-2 hover:bg-gray-100 rounded"
-                                                    >
-                                                        <Eye size={16} />
-                                                    </Link>
-                                                )}
-                                                {hasPermission('cargo-types.edit') && (
-                                                    <Link
-                                                        href={`/cargo-types/${type.id}/edit`}
-                                                        className="p-2 hover:bg-gray-100 rounded"
-                                                    >
-                                                        <Edit size={16} />
-                                                    </Link>
-                                                )}
-                                                {hasPermission('cargo-types.destroy') && (
-                                                    <button
-                                                        onClick={() => handleDeleteClick(type)}
-                                                        className="p-2 hover:bg-red-100 text-red-600 rounded"
-                                                    >
-                                                        <Trash2 size={16} />
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </TableCell>
-                                    </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
-                </div>
-
-                {/* Pagination */}
-                <InertiaPagination
-                  from={cargoTypes.from}
-                  to={cargoTypes.to}
-                  total={cargoTypes.total}
-                  currentPage={cargoTypes.current_page}
-                  lastPage={cargoTypes.last_page}
-                  buildHref={(page) => {
-                    const params = new URLSearchParams({
-                      page: String(page),
-                      search: searchTerm,
-                      sort: sortBy,
-                      direction: sortDirection,
-                    })
-                    return `/cargo-types?${params.toString()}`
-                  }}
-                />
-            </div>
-
+            }
+        >
+            {tableContent}
             <DeleteConfirmationDialog
                 open={deleteDialogOpen}
                 onOpenChange={setDeleteDialogOpen}
@@ -275,6 +292,6 @@ export default function CargoTypesIndex({ cargoTypes }: CargoTypesIndexProps) {
                 onConfirm={handleConfirmDelete}
                 isLoading={isDeleting}
             />
-        </AppLayout>
+        </ListPageLayout>
     );
 }

@@ -10,29 +10,16 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
-import { InertiaPagination } from '@/components/ui/pagination';
 import { Head, Link } from '@inertiajs/react';
-import { type BreadcrumbItem } from '@/types';
-import {
-    Wrench,
-    Calendar,
-    AlertTriangle,
-    CheckCircle,
-    Clock,
-    Plus,
-    Eye,
-    Edit,
-    DollarSign,
-    BarChart3
-} from 'lucide-react';
-
-const breadcrumbs: BreadcrumbItem[] = [
+import { router } from '@inertiajs/react';
+import ReactPaginate from 'react-paginate';
+import { Wrench, AlertTriangle, CheckCircle, Clock, Plus, Eye, Edit } from 'lucide-react';
+const breadcrumbs = [
     {
         title: 'Maintenance',
         href: '/maintenance',
     },
 ];
-
 interface MaintenanceRecord {
     id: number;
     scheduled_date: string;
@@ -70,10 +57,7 @@ interface MaintenanceIndexProps {
     };
 }
 
-export default function MaintenanceIndex({
-    maintenanceRecords,
-    statistics
-}: MaintenanceIndexProps) {
+export default function MaintenanceIndex({ maintenanceRecords, statistics }: MaintenanceIndexProps) {
     const getStatusBadge = (status: string) => {
         switch (status) {
             case 'scheduled':
@@ -103,19 +87,11 @@ export default function MaintenanceIndex({
     };
 
     const maintenanceData = maintenanceRecords?.data || [];
-    const stats = statistics || {
-        total_scheduled: 0,
-        total_completed: 0,
-        total_overdue: 0,
-        total_cost: 0,
-        average_cost: 0,
-    };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Maintenance Management" />
             <div className="flex h-full flex-1 flex-col gap-6 overflow-hidden rounded-xl p-4">
-                {/* Header Section */}
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-3xl font-bold">Maintenance</h1>
@@ -130,87 +106,45 @@ export default function MaintenanceIndex({
                         </Link>
                     </Button>
                 </div>
-
-                {/* Statistics Cards */}
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Total Scheduled</CardTitle>
-                            <Calendar className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{stats.total_scheduled}</div>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Completed</CardTitle>
-                            <CheckCircle className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{stats.total_completed}</div>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Overdue</CardTitle>
-                            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold text-red-600">{stats.total_overdue}</div>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Total Cost</CardTitle>
-                            <DollarSign className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">
-                                {stats.total_cost ? `$${Number(stats.total_cost).toLocaleString()}` : '$0'}
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Average Cost</CardTitle>
-                            <BarChart3 className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">
-                                {stats.average_cost
-                                    ? `$${Number(stats.average_cost).toFixed(2)}`
-                                    : '$0'}
-                            </div>
-                        </CardContent>
-                    </Card>
+                <div className="mt-4 flex items-center justify-between w-full">
+                    <div className="text-sm text-muted-foreground">
+                        Showing <span className="font-semibold text-foreground">{maintenanceRecords.meta?.from}</span> to <span className="font-semibold text-foreground">{maintenanceRecords.meta?.to}</span> of <span className="font-semibold text-foreground">{maintenanceRecords.meta?.total}</span> records
+                    </div>
+                    <div>
+                        <ReactPaginate
+                            pageCount={maintenanceRecords.meta?.last_page || 1}
+                            forcePage={(maintenanceRecords.meta?.current_page || 1) - 1}
+                            onPageChange={({ selected }) => {
+                                router.get('/maintenance', {
+                                    page: selected + 1
+                                }, { preserveState: true });
+                            }}
+                            containerClassName="pagination flex gap-2"
+                            pageClassName="page-item"
+                            pageLinkClassName="page-link px-2 py-1 rounded"
+                            previousClassName="page-item"
+                            previousLinkClassName="page-link px-2 py-1 rounded"
+                            nextClassName="page-item"
+                            nextLinkClassName="page-link px-2 py-1 rounded"
+                            breakClassName="page-item"
+                            breakLinkClassName="page-link px-2 py-1 rounded"
+                            activeClassName="bg-primary text-white"
+                            disabledClassName="opacity-50 cursor-not-allowed"
+                            marginPagesDisplayed={1}
+                            pageRangeDisplayed={3}
+                            previousLabel={"<"}
+                            nextLabel={">"}
+                        />
+                    </div>
                 </div>
-
-                {/* Maintenance Records Table */}
-                <Card className="flex flex-1 flex-col overflow-hidden">
-                    <CardHeader className="flex flex-row items-center justify-between">
-                        <div>
-                            <CardTitle>Maintenance Records</CardTitle>
-                            <CardDescription>Manage vehicle maintenance schedules and records</CardDescription>
-                        </div>
-                        <Button asChild>
-                            <Link href="/maintenance/create">
-                                <Plus className="mr-2 h-4 w-4" />
-                                Schedule Maintenance
-                            </Link>
-                        </Button>
-                    </CardHeader>
-                    <CardContent className="flex-1 overflow-auto">
-                        <div className="rounded-lg border">
+                <Card className="mt-4">
+                    <CardContent>
+                        <div className="overflow-x-auto">
                             <Table>
                                 <TableHeader>
-                                    <TableRow className="bg-muted/50">
+                                    <TableRow>
                                         <TableHead>Truck</TableHead>
-                                        <TableHead>Maintenance Type</TableHead>
+                                        <TableHead>Type</TableHead>
                                         <TableHead>Category</TableHead>
                                         <TableHead>Scheduled Date</TableHead>
                                         <TableHead>Completed Date</TableHead>
@@ -286,15 +220,15 @@ export default function MaintenanceIndex({
                                 </TableBody>
                             </Table>
                         </div>
-
-                        {/* Pagination */}
-                        <InertiaPagination links={maintenanceRecords.links as any} />
                     </CardContent>
                 </Card>
             </div>
         </AppLayout>
     );
 }
+
+
+
 
 
 

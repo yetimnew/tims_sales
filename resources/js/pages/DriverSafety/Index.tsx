@@ -2,6 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import ReactPaginate from 'react-paginate';
 import {
     Table,
     TableBody,
@@ -353,22 +354,36 @@ export default function DriverSafetyIndex({ safetyRecords, statistics }: DriverS
                         </div>
 
                         {/* Pagination */}
-                        <InertiaPagination
-                          from={safetyRecords.from}
-                          to={safetyRecords.to}
-                          total={safetyRecords.total}
-                          currentPage={safetyRecords.current_page}
-                          lastPage={safetyRecords.last_page}
-                          buildHref={(page) => {
-                            const params = new URLSearchParams({
-                              page: String(page),
-                              search: searchTerm,
-                              sort: sortBy,
-                              direction: sortDirection,
-                            })
-                            return `/driver-safety?${params.toString()}`
-                          }}
-                        />
+                                                <div className="mt-4 flex items-center justify-between w-full">
+                                                    <div className="text-sm text-muted-foreground">
+                                                        Showing <span className="font-semibold text-foreground">{safetyRecords.from}</span> to <span className="font-semibold text-foreground">{safetyRecords.to}</span> of <span className="font-semibold text-foreground">{safetyRecords.total}</span> safety records
+                                                    </div>
+                                                    <div>
+                                                        <ReactPaginate
+                                                            pageCount={safetyRecords.last_page}
+                                                            forcePage={safetyRecords.current_page - 1}
+                                                            onPageChange={({ selected }) => {
+                                                                router.get('/driver-safety', {
+                                                                    page: selected + 1,
+                                                                    search: searchTerm,
+                                                                    sort: sortBy,
+                                                                    direction: sortDirection,
+                                                                }, { preserveState: true });
+                                                            }}
+                                                            marginPagesDisplayed={2}
+                                                            pageRangeDisplayed={5}
+                                                            containerClassName="flex gap-2"
+                                                            pageClassName="px-3 py-1 rounded border text-sm bg-background text-muted-foreground hover:bg-muted"
+                                                            activeClassName="bg-primary text-white"
+                                                            previousClassName="px-3 py-1 rounded border text-sm"
+                                                            nextClassName="px-3 py-1 rounded border text-sm"
+                                                            breakClassName="px-3 py-1 rounded border text-sm"
+                                                            disabledClassName="pointer-events-none opacity-50"
+                                                            previousLabel={"<"}
+                                                            nextLabel={">"}
+                                                        />
+                                                    </div>
+                                                </div>
                     </CardContent>
                 </Card>
             </div>

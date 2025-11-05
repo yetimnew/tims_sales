@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, router } from '@inertiajs/react'
 import { Eye, Trash2, SquarePen, Plus, Search, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { InertiaPagination } from '@/components/ui/pagination'
+import ReactPaginate from 'react-paginate'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
@@ -53,7 +53,7 @@ export default function FuelIndex({ fuelRecords }: FuelIndexProps) {
     setSortColumn(column)
     setSortOrder(newOrder)
     router.get(
-      route('fuel.index'),
+      '/fuel',
       { search, sort: column, direction: newOrder },
       { preserveState: true, preserveScroll: true }
     )
@@ -62,29 +62,29 @@ export default function FuelIndex({ fuelRecords }: FuelIndexProps) {
   const handleSearch = (value: string) => {
     setSearch(value)
     router.get(
-      route('fuel.index'),
+      '/fuel',
       { search: value, sort: sortColumn, direction: sortOrder },
       { preserveState: true, preserveScroll: true }
     )
   }
 
   const handleExport = () => {
-    window.location.href = route('fuel.export', { search, sort: sortColumn, direction: sortOrder })
+  window.location.href = `/fuel/export?search=${search}&sort=${sortColumn}&direction=${sortOrder}`
   }
 
   const handleDelete = (fuel: FuelRecord) => {
-    setDeleteConfirmation({ id: fuel.id, name: `${fuel.truck?.plate || 'Fuel'} - ${fuel.fuel_date}` })
+  setDeleteConfirmation({ id: fuel.id, name: `${fuel.truck?.plate || 'Fuel'} - ${fuel.fuel_date}` })
   }
 
   const confirmDelete = () => {
     if (!deleteConfirmation) return
-    router.delete(route('fuel.destroy', deleteConfirmation.id), {
+  router.delete(`/fuel/${deleteConfirmation.id}`, {
       onSuccess: () => {
-        toast({ title: 'Success', description: 'Fuel record deleted successfully', variant: 'success' })
+  toast({ id: 'fuel-delete-success', title: 'Success', description: 'Fuel record deleted successfully', variant: 'success' })
         setDeleteConfirmation(null)
       },
       onError: () => {
-        toast({ title: 'Error', description: 'Failed to delete fuel record', variant: 'destructive' })
+  toast({ id: 'fuel-delete-error', title: 'Error', description: 'Failed to delete fuel record', variant: 'destructive' })
       },
     })
   }
@@ -133,7 +133,7 @@ export default function FuelIndex({ fuelRecords }: FuelIndexProps) {
             )}
             {hasPermission('fuel.create') && (
               <Button asChild>
-                <Link href={route('fuel.create')}>
+                <Link href={'/fuel/create'}>
                   <Plus className="mr-2 h-4 w-4" />
                   Add Fuel Record
                 </Link>
@@ -208,14 +208,14 @@ export default function FuelIndex({ fuelRecords }: FuelIndexProps) {
                           <div className="flex justify-end gap-2">
                             {hasPermission('fuel.show') && (
                               <Button variant="ghost" size="icon" asChild>
-                                <Link href={route('fuel.show', fuel.id)}>
+                                <Link href={`/fuel/${fuel.id}`}>
                                   <Eye className="h-4 w-4" />
                                 </Link>
                               </Button>
                             )}
                             {hasPermission('fuel.edit') && (
                               <Button variant="ghost" size="icon" asChild>
-                                <Link href={route('fuel.edit', fuel.id)}>
+                                <Link href={`/fuel/${fuel.id}/edit`}>
                                   <SquarePen className="h-4 w-4" />
                                 </Link>
                               </Button>
@@ -234,7 +234,7 @@ export default function FuelIndex({ fuelRecords }: FuelIndexProps) {
                       <TableCell colSpan={7} className="h-24 text-center">
                         No fuel records found.{' '}
                         {hasPermission('fuel.create') && (
-                          <Link href={route('fuel.create')} className="text-primary hover:underline">
+                          <Link href={'/fuel/create'} className="text-primary hover:underline">
                             Create one
                           </Link>
                         )}
@@ -245,21 +245,49 @@ export default function FuelIndex({ fuelRecords }: FuelIndexProps) {
               </Table>
             </div>
 
-            <InertiaPagination
-              from={fuelRecords.from}
-              to={fuelRecords.to}
-              total={fuelRecords.total}
-              links={fuelRecords.links}
-              currentPage={fuelRecords.current_page}
-              lastPage={fuelRecords.last_page}
-            />
+            <div className="mt-4 flex items-center justify-between w-full">
+              <div className="text-sm text-muted-foreground">
+                Showing <span className="font-semibold text-foreground">{fuelRecords.from}</span> to <span className="font-semibold text-foreground">{fuelRecords.to}</span> of <span className="font-semibold text-foreground">{fuelRecords.total}</span> records
+              </div>
+              <div>
+                <ReactPaginate
+                  pageCount={fuelRecords.last_page}
+                  forcePage={fuelRecords.current_page - 1}
+                  onPageChange={({ selected }) => {
+                    router.get(
+                      '/fuel',
+                      {
+                        page: selected + 1,
+                        search,
+                        sort: sortColumn,
+                        direction: sortOrder,
+                      },
+                      { preserveState: true, preserveScroll: true }
+                    );
+                  }}
+                  marginPagesDisplayed={2}
+                  pageRangeDisplayed={5}
+                  containerClassName="flex gap-2"
+                  pageClassName="px-3 py-1 rounded border text-sm bg-background text-muted-foreground hover:bg-muted"
+                  activeClassName="bg-primary text-white"
+                  previousClassName="px-3 py-1 rounded border text-sm"
+                  nextClassName="px-3 py-1 rounded border text-sm"
+                  breakClassName="px-3 py-1 rounded border text-sm"
+                  disabledClassName="pointer-events-none opacity-50"
+                  previousLabel={"<"}
+                  nextLabel={">"}
+                />
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
 
       <DeleteConfirmationDialog
         open={!!deleteConfirmation}
-        onClose={() => setDeleteConfirmation(null)}
+        onOpenChange={(open) => {
+          if (!open) setDeleteConfirmation(null);
+        }}
         onConfirm={confirmDelete}
         itemName={deleteConfirmation?.name || ''}
         title="Delete Fuel Record"

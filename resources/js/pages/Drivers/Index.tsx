@@ -1,4 +1,4 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -10,12 +10,13 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import AppLayout from '@/layouts/app-layout';
+import ListPageLayout from '@/components/layouts/list-page-layout';
 import { usePermissions } from '@/hooks/use-permissions';
-import { Head, Link, router } from '@inertiajs/react';
+import { Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
-import { Plus, Eye, Edit, Search, ArrowUpDown, ChevronLeft, ChevronRight, Trash2, FileDown, Users, UserCheck, UserX, Users2, User } from 'lucide-react';
+import { Plus, Eye, Edit, Search, ArrowUpDown, Trash2, FileDown, Users, UserCheck, UserX, User, MapPin as MapPinIcon, Phone } from 'lucide-react';
 import { InertiaPagination } from '@/components/ui/pagination';
+import ReactPaginate from 'react-paginate';
 import * as React from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -30,15 +31,10 @@ interface DriverData {
     driverid: string;
     name: string;
     sex: string;
-    birthdate?: string;
     zone?: string;
-    woreda?: string;
-    kebele?: string;
-    housenumber?: string;
     mobile?: string;
     hireddate?: string;
     status: string;
-    created_at: string;
 }
 
 interface DriversIndexProps {
@@ -46,7 +42,6 @@ interface DriversIndexProps {
         data: DriverData[];
         current_page: number;
         last_page: number;
-        per_page: number;
         total: number;
         from: number;
         to: number;
@@ -65,11 +60,26 @@ interface DriversIndexProps {
     };
 }
 
+const columns: Array<{ key: keyof DriverData | 'status'; label: string }> = [
+    { key: 'name', label: 'Name' },
+    { key: 'driverid', label: 'Driver ID' },
+    { key: 'sex', label: 'Gender' },
+    { key: 'zone', label: 'Location' },
+    { key: 'mobile', label: 'Phone' },
+    { key: 'hireddate', label: 'Hired Date' },
+    { key: 'status', label: 'Status' },
+];
+
 export default function DriversIndex({ drivers, statistics }: DriversIndexProps) {
     const { hasPermission } = usePermissions();
     const [searchTerm, setSearchTerm] = React.useState('');
-    const [sortColumn, setSortColumn] = React.useState<string | null>(null);
+    const [sortColumn, setSortColumn] = React.useState<string>('name');
     const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>('asc');
+
+    const driverData = drivers?.data || [];
+    const totalDrivers = drivers?.total || 0;
+    const currentPage = drivers?.current_page || 1;
+    const lastPage = drivers?.last_page || 1;
 
     const getStatusBadge = (status: string) => {
         switch (status) {
@@ -93,20 +103,12 @@ export default function DriversIndex({ drivers, statistics }: DriversIndexProps)
         }
     };
 
-    const driverData = drivers?.data || [];
-    const totalDrivers = drivers?.total || 0;
-    const currentPage = drivers?.current_page || 1;
-    const perPage = drivers?.per_page || 10;
-    const lastPage = drivers?.last_page || 1;
-
-    // Handle search
     const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
         setSearchTerm(value);
-        router.get('/drivers', { search: value, page: 1 }, { preserveState: true });
+        router.get('/drivers', { search: value, page: 1, sort: sortColumn, direction: sortDirection }, { preserveState: true });
     };
 
-    // Handle sorting
     const handleSort = (column: string) => {
         const newDirection = sortColumn === column && sortDirection === 'asc' ? 'desc' : 'asc';
         setSortColumn(column);
@@ -114,275 +116,260 @@ export default function DriversIndex({ drivers, statistics }: DriversIndexProps)
         router.get('/drivers', { sort: column, direction: newDirection, search: searchTerm }, { preserveState: true });
     };
 
-    // Sort icon component
-    const SortIcon = ({ column, isActive }: { column: string; isActive: boolean }) => (
-        <ArrowUpDown
-            className={`ml-2 inline h-4 w-4 ${
-                isActive ? 'text-primary' : 'text-muted-foreground opacity-50'
-            }`}
-        />
-    );
-
-    // Sortable header cell
-    const SortableHead = ({
-        column,
-        children,
-    }: {
-        column: string;
-        children: React.ReactNode;
-    }) => (
+    const renderHeaderCell = (column: string, label: string) => (
         <TableHead
-            className="cursor-pointer select-none hover:bg-muted/70 transition-colors"
+            key={column}
+            className="cursor-pointer select-none hover:bg-muted/70 transition-colors bg-background"
             onClick={() => handleSort(column)}
         >
-            <div className="flex items-center">
-                {children}
-                <SortIcon column={column} isActive={sortColumn === column} />
+            <div className="flex items-center gap-2">
+                {label}
+                <ArrowUpDown
+                    size={14}
+                    className={sortColumn === column ? 'text-primary' : 'text-muted-foreground opacity-50'}
+                />
             </div>
         </TableHead>
     );
 
-    return (
-        <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Drivers" />
-            <div className="flex h-full flex-1 flex-col gap-6 overflow-hidden rounded-xl p-4">
-                {/* Header Section */}
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-3xl font-bold">Drivers</h1>
-                        <p className="text-muted-foreground mt-2">
-                            Manage your workforce of {totalDrivers} drivers
-                        </p>
-                    </div>
-                    <div className="flex gap-2">
-                        {hasPermission('drivers.export') && (
-                            <Button variant="outline" onClick={() => {
-                                const params = new URLSearchParams({
-                                    search: searchTerm,
-                                    sort: sortColumn || 'name',
-                                    direction: sortDirection,
-                                });
-                                window.location.href = `/drivers/export/csv?${params.toString()}`;
-                            }}>
-                                <FileDown className="mr-2 h-4 w-4" />
-                                Export CSV
-                            </Button>
-                        )}
-                        {hasPermission('drivers.create') && (
-                            <Button asChild>
-                                <Link href="/drivers/create">
-                                    <Plus className="mr-2 h-4 w-4" />
-                                    Add Driver
-                                </Link>
-                            </Button>
-                        )}
-                    </div>
-                </div>
+    const headerActions = (
+        <>
+            {hasPermission('drivers.export') && (
+                <Button
+                    variant="outline"
+                    onClick={() => {
+                        const params = new URLSearchParams({
+                            search: searchTerm,
+                            sort: sortColumn || 'name',
+                            direction: sortDirection,
+                        });
+                        window.location.href = `/drivers/export/csv?${params.toString()}`;
+                    }}
+                >
+                    <FileDown className="mr-2 h-4 w-4" />
+                    Export CSV
+                </Button>
+            )}
+            {hasPermission('drivers.create') && (
+                <Button asChild>
+                    <Link href="/drivers/create">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Driver
+                    </Link>
+                </Button>
+            )}
+        </>
+    );
 
-                {/* Statistics Dashboard */}
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Total Drivers</CardTitle>
-                            <Users className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{statistics?.total || 0}</div>
-                            <p className="text-xs text-muted-foreground">
-                                Workforce size
-                            </p>
-                        </CardContent>
-                    </Card>
+    const statsSection = (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total Drivers</CardTitle>
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">{statistics?.total ?? 0}</div>
+                    <p className="text-xs text-muted-foreground">Workforce size</p>
+                </CardContent>
+            </Card>
 
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Active</CardTitle>
-                            <UserCheck className="h-4 w-4 text-green-600" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold text-green-600">{statistics?.active || 0}</div>
-                            <p className="text-xs text-muted-foreground">
-                                Currently active
-                            </p>
-                        </CardContent>
-                    </Card>
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Active</CardTitle>
+                    <UserCheck className="h-4 w-4 text-green-600" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold text-green-600">{statistics?.active ?? 0}</div>
+                    <p className="text-xs text-muted-foreground">Currently active</p>
+                </CardContent>
+            </Card>
 
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Inactive</CardTitle>
-                            <UserX className="h-4 w-4 text-red-600" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold text-red-600">{statistics?.inactive || 0}</div>
-                            <p className="text-xs text-muted-foreground">
-                                Currently inactive
-                            </p>
-                        </CardContent>
-                    </Card>
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Inactive</CardTitle>
+                    <UserX className="h-4 w-4 text-red-600" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold text-red-600">{statistics?.inactive ?? 0}</div>
+                    <p className="text-xs text-muted-foreground">Currently inactive</p>
+                </CardContent>
+            </Card>
 
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Male</CardTitle>
-                            <User className="h-4 w-4 text-blue-600" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold text-blue-600">{statistics?.male || 0}</div>
-                            <p className="text-xs text-muted-foreground">
-                                👨 Male drivers
-                            </p>
-                        </CardContent>
-                    </Card>
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Male</CardTitle>
+                    <User className="h-4 w-4 text-blue-600" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold text-blue-600">{statistics?.male ?? 0}</div>
+                    <p className="text-xs text-muted-foreground">👨 Male drivers</p>
+                </CardContent>
+            </Card>
 
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Female</CardTitle>
-                            <User className="h-4 w-4 text-pink-600" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold text-pink-600">{statistics?.female || 0}</div>
-                            <p className="text-xs text-muted-foreground">
-                                👩 Female drivers
-                            </p>
-                        </CardContent>
-                    </Card>
-                </div>
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Female</CardTitle>
+                    <User className="h-4 w-4 text-pink-600" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold text-pink-600">{statistics?.female ?? 0}</div>
+                    <p className="text-xs text-muted-foreground">👩 Female drivers</p>
+                </CardContent>
+            </Card>
+        </div>
+    );
 
-                {/* Table Section */}
-                <Card className="flex flex-1 flex-col overflow-hidden">
-                    <CardHeader>
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <CardTitle>Driver Directory</CardTitle>
-                                <CardDescription>
-                                    Complete list of all drivers in your workforce
-                                </CardDescription>
-                            </div>
-                            <div className="relative w-64">
-                                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                <Input
-                                    placeholder="Search drivers..."
-                                    value={searchTerm}
-                                    onChange={handleSearch}
-                                    className="pl-10"
-                                />
-                            </div>
-                        </div>
-                    </CardHeader>
-                    <CardContent className="flex-1 overflow-auto">
-                        <div className="rounded-lg border">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow className="bg-muted/50">
-                                        <SortableHead column="name">Name</SortableHead>
-                                        <SortableHead column="driverid">Driver ID</SortableHead>
-                                        <SortableHead column="sex">Gender</SortableHead>
-                                        <SortableHead column="zone">Location</SortableHead>
-                                        <SortableHead column="mobile">Phone</SortableHead>
-                                        <SortableHead column="hireddate">Hired Date</SortableHead>
-                                        <SortableHead column="status">Status</SortableHead>
-                                        <TableHead className="text-right">Actions</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {driverData.length > 0 ? (
-                                        driverData.map((driver) => (
-                                            <TableRow key={driver.id} className="hover:bg-muted/50">
-                                                <TableCell className="font-medium">
-                                                    {driver.name}
-                                                </TableCell>
-                                                <TableCell className="font-mono text-muted-foreground">
-                                                    {driver.driverid}
-                                                </TableCell>
-                                                <TableCell>
-                                                    {getSexBadge(driver.sex)}
-                                                </TableCell>
-                                                <TableCell className="text-muted-foreground">
-                                                    <div className="flex items-center gap-1">
-                                                        <MapPin className="h-3 w-3" />
-                                                        {driver.zone || '-'}
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell className="text-muted-foreground">
-                                                    {driver.mobile ? (
-                                                        <div className="flex items-center gap-1">
-                                                            <Phone className="h-3 w-3" />
-                                                            {driver.mobile}
-                                                        </div>
-                                                    ) : (
-                                                        '-'
-                                                    )}
-                                                </TableCell>
-                                                <TableCell className="text-muted-foreground">
-                                                    {driver.hireddate
-                                                        ? new Date(driver.hireddate).toLocaleDateString()
-                                                        : '-'
-                                                    }
-                                                </TableCell>
-                                                <TableCell>
-                                                    {getStatusBadge(driver.status)}
-                                                </TableCell>
-                                                <TableCell className="text-right">
-                                                    <div className="flex justify-end gap-2">
-                                                        <Button asChild size="sm" variant="ghost">
-                                                            <Link href={`/drivers/${driver.id}`}>
-                                                                <Eye className="h-4 w-4" />
-                                                            </Link>
-                                                        </Button>
-                                                        {hasPermission('drivers.edit') && (
-                                                            <Button asChild size="sm" variant="ghost">
-                                                                <Link href={`/drivers/${driver.id}/edit`}>
-                                                                    <Edit className="h-4 w-4" />
-                                                                </Link>
-                                                            </Button>
-                                                        )}
-                                                        {hasPermission('drivers.destroy') && (
-                                                            <Button
-                                                                size="sm"
-                                                                variant="ghost"
-                                                                onClick={() => {
-                                                                    if (confirm('Are you sure you want to delete this driver?')) {
-                                                                        router.delete(`/drivers/${driver.id}`);
-                                                                    }
-                                                                }}
-                                                            >
-                                                                <Trash2 className="h-4 w-4" />
-                                                            </Button>
-                                                        )}
-                                                    </div>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))
-                                    ) : (
-                                        <TableRow>
-                                            <TableCell colSpan={8} className="py-8 text-center text-muted-foreground">
-                                                No drivers found.
-                                                {hasPermission('drivers.create') && (
-                                                    <Link href="/drivers/create" className="ml-1 text-primary underline">
-                                                        Create one
-                                                    </Link>
-                                                )}
-                                            </TableCell>
-                                        </TableRow>
+    const tableHeaderExtras = (
+        <div className="relative w-64">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <Input
+                placeholder="Search drivers..."
+                value={searchTerm}
+                onChange={handleSearch}
+                className="pl-10"
+            />
+        </div>
+    );
+
+    const tableContent = (
+        <Table>
+            <TableHeader>
+                <TableRow className="sticky top-0 z-50 bg-background border-b">
+                    {columns.map(({ key, label }) => renderHeaderCell(key, label))}
+                    <TableHead className="text-right bg-background">Actions</TableHead>
+                </TableRow>
+            </TableHeader>
+            <TableBody>
+                {driverData.length > 0 ? (
+                    driverData.map((driver) => (
+                        <TableRow key={driver.id} className="hover:bg-muted/50">
+                            <TableCell className="font-medium">
+                                {driver.name}
+                            </TableCell>
+                            <TableCell className="font-mono text-muted-foreground">
+                                {driver.driverid}
+                            </TableCell>
+                            <TableCell>
+                                {getSexBadge(driver.sex)}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                                <div className="flex items-center gap-1">
+                                    <MapPinIcon className="h-3 w-3" />
+                                    {driver.zone || '-'}
+                                </div>
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                                {driver.mobile ? (
+                                    <div className="flex items-center gap-1">
+                                        <Phone className="h-3 w-3" />
+                                        {driver.mobile}
+                                    </div>
+                                ) : (
+                                    '-'
+                                )}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                                {driver.hireddate
+                                    ? new Date(driver.hireddate).toLocaleDateString()
+                                    : '-'
+                                }
+                            </TableCell>
+                            <TableCell>
+                                {getStatusBadge(driver.status)}
+                            </TableCell>
+                            <TableCell className="text-right">
+                                <div className="flex justify-end gap-2">
+                                    <Button asChild size="sm" variant="ghost">
+                                        <Link href={`/drivers/${driver.id}`}>
+                                            <Eye className="h-4 w-4" />
+                                        </Link>
+                                    </Button>
+                                    {hasPermission('drivers.edit') && (
+                                        <Button asChild size="sm" variant="ghost">
+                                            <Link href={`/drivers/${driver.id}/edit`}>
+                                                <Edit className="h-4 w-4" />
+                                            </Link>
+                                        </Button>
                                     )}
-                                </TableBody>
-                            </Table>
-                        </div>
+                                    {hasPermission('drivers.destroy') && (
+                                        <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            onClick={() => {
+                                                if (confirm('Are you sure you want to delete this driver?')) {
+                                                    router.delete(`/drivers/${driver.id}`);
+                                                }
+                                            }}
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    )}
+                                </div>
+                            </TableCell>
+                        </TableRow>
+                    ))
+                ) : (
+                    <TableRow>
+                        <TableCell colSpan={8} className="py-8 text-center text-muted-foreground">
+                            No drivers found.
+                            {hasPermission('drivers.create') && (
+                                <Link href="/drivers/create" className="ml-1 text-primary underline">
+                                    Create one
+                                </Link>
+                            )}
+                        </TableCell>
+                    </TableRow>
+                )}
+            </TableBody>
+        </Table>
+    );
 
-                        {/* Pagination */}
-                        <InertiaPagination
-                          from={drivers.from}
-                          to={drivers.to}
-                          total={totalDrivers}
-                          links={drivers.links}
-                          currentPage={currentPage}
-                          lastPage={lastPage}
+    return (
+        <ListPageLayout
+            headTitle="Drivers"
+            title="Drivers"
+            description={`Manage your workforce of ${totalDrivers} driver${totalDrivers !== 1 ? 's' : ''}`}
+            breadcrumbs={breadcrumbs}
+            actions={headerActions}
+            stats={statsSection}
+            tableTitle="Driver Directory"
+            tableDescription="Complete list of all drivers in your workforce"
+            tableHeaderExtras={tableHeaderExtras}
+            pagination={
+                <div className="mt-4 flex items-center justify-between w-full">
+                    <div className="text-sm text-muted-foreground">
+                        Showing <span className="font-semibold text-foreground">{drivers.from}</span> to <span className="font-semibold text-foreground">{drivers.to}</span> of <span className="font-semibold text-foreground">{totalDrivers}</span> drivers
+                    </div>
+                    <div>
+                        <ReactPaginate
+                            pageCount={lastPage}
+                            forcePage={currentPage - 1}
+                            onPageChange={({ selected }) => {
+                                router.get('/drivers', {
+                                    page: selected + 1,
+                                    search: searchTerm,
+                                    sort: sortColumn,
+                                    direction: sortDirection,
+                                }, { preserveState: true });
+                            }}
+                            marginPagesDisplayed={2}
+                            pageRangeDisplayed={5}
+                            containerClassName="flex gap-2"
+                            pageClassName="px-3 py-1 rounded border text-sm bg-background text-muted-foreground hover:bg-muted"
+                            activeClassName="bg-primary text-white"
+                            previousClassName="px-3 py-1 rounded border text-sm"
+                            nextClassName="px-3 py-1 rounded border text-sm"
+                            breakClassName="px-3 py-1 rounded border text-sm"
+                            disabledClassName="pointer-events-none opacity-50"
+                            previousLabel={"<"}
+                            nextLabel={">"}
                         />
-                    </CardContent>
-                </Card>
-            </div>
-        </AppLayout>
+                    </div>
+                </div>
+            }
+        >
+            {tableContent}
+        </ListPageLayout>
     );
 }
-
-
-

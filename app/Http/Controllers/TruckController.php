@@ -85,7 +85,7 @@ class TruckController extends Controller
 
         $query->orderBy($sort, $direction);
 
-        $trucks = $query->paginate(5);
+        $trucks = $query->paginate(10);
 
         return Inertia::render('Trucks/Index', [
             'trucks' => $trucks,

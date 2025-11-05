@@ -1,4 +1,4 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -10,13 +10,15 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import AppLayout from '@/layouts/app-layout';
+import ListPageLayout from '@/components/layouts/list-page-layout';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { usePermissions } from '@/hooks/use-permissions';
-import { Head, Link, router } from '@inertiajs/react';
+import { Link, router } from '@inertiajs/react';
+import { toast } from '@/hooks/use-toast';
 import { type BreadcrumbItem } from '@/types';
-import { Plus, Eye, Edit, Trash2, Search, ArrowUpDown, ChevronLeft, ChevronRight, FileDown, Truck, CheckCircle, Wrench, XCircle, DollarSign, Activity } from 'lucide-react';
+import { Plus, Eye, Edit, Trash2, Search, ArrowUpDown, FileDown, Truck, CheckCircle, Wrench, XCircle, DollarSign } from 'lucide-react';
 import { InertiaPagination } from '@/components/ui/pagination';
+import ReactPaginate from 'react-paginate';
 import * as React from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -46,7 +48,6 @@ interface TrucksIndexProps {
         data: TruckData[];
         current_page: number;
         last_page: number;
-        per_page: number;
         total: number;
         from: number;
         to: number;
@@ -59,37 +60,57 @@ interface TrucksIndexProps {
     totalCount?: number;
 }
 
+const columns: Array<{ key: string; label: string }> = [
+    { key: 'plate', label: 'Plate' },
+    { key: 'vehicleType', label: 'Vehicle Type' },
+    { key: 'chasisNumber', label: 'Chassis' },
+    { key: 'engineNumber', label: 'Engine' },
+    { key: 'serviceIntervalKM', label: 'Service (KM)' },
+    { key: 'purchasePrice', label: 'Price' },
+    { key: 'status', label: 'Status' },
+];
+
 export default function TrucksIndex({ trucks, totalCount }: TrucksIndexProps) {
     const { hasPermission } = usePermissions();
     const [searchTerm, setSearchTerm] = React.useState('');
     const [sortBy, setSortBy] = React.useState('plate');
-    const [sortDirection, setSortDirection] = React.useState('asc');
+    const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>('asc');
     const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
     const [selectedTruck, setSelectedTruck] = React.useState<TruckData | null>(null);
     const [isDeleting, setIsDeleting] = React.useState(false);
+
+    const truckCount = totalCount || trucks?.total || 0;
+    const currentPage = trucks?.current_page || 1;
+    const totalPages = trucks?.last_page || 1;
+
+    const activeCount = trucks?.data?.filter(truck => truck.status === 'active').length || 0;
+    const maintenanceCount = trucks?.data?.filter(truck => truck.status === 'maintenance').length || 0;
+    const totalValue = trucks?.data?.reduce((sum, truck) => {
+        const price = parseFloat(String(truck.purchasePrice ?? 0));
+        return sum + price;
+    }, 0) || 0;
 
     const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
         setSearchTerm(value);
 
-        router.get('/trucks',
+        router.get(
+            '/trucks',
             { search: value, sort: sortBy, direction: sortDirection },
-            { preserveState: true, replace: false }
+            { preserveState: true, replace: false },
         );
     };
 
     const handleSort = (column: string) => {
-        let newDirection = 'asc';
-        if (sortBy === column && sortDirection === 'asc') {
-            newDirection = 'desc';
-        }
+        const newDirection: 'asc' | 'desc' = sortBy === column && sortDirection === 'asc' ? 'desc' : 'asc';
 
         setSortBy(column);
         setSortDirection(newDirection);
 
-        router.get('/trucks',
+        router.get(
+            '/trucks',
             { search: searchTerm, sort: column, direction: newDirection },
-            { preserveState: true, replace: false }
+            { preserveState: true, replace: false },
         );
     };
 
@@ -108,353 +129,282 @@ export default function TrucksIndex({ trucks, totalCount }: TrucksIndexProps) {
                 setSelectedTruck(null);
                 setIsDeleting(false);
             },
-            onError: () => {
+            onError: (errors) => {
                 setIsDeleting(false);
+                if (errors && typeof errors === 'object') {
+                    const errorMessages = Object.values(errors).flat().join('\n');
+                    if (errorMessages) {
+                        toast({
+                            id: 'delete-failed',
+                            title: '❌ Delete Failed',
+                            description: errorMessages,
+                            variant: 'destructive',
+                        });
+                    }
+                }
             },
         });
     };
 
-    const SortIcon = ({ column }: { column: string }) => {
-        if (sortBy !== column) {
-            return <ArrowUpDown className="ml-2 h-4 w-4 opacity-50" />;
-        }
-        return (
-            <ArrowUpDown
-                className={`ml-2 h-4 w-4 transition-transform ${
-                    sortDirection === 'desc' ? 'rotate-180' : ''
-                }`}
+    const headerActions = (
+        <>
+            {hasPermission('trucks.export') && (
+                <Button
+                    variant="outline"
+                    onClick={() => {
+                        const params = new URLSearchParams({
+                            search: searchTerm,
+                            sort: sortBy,
+                            direction: sortDirection,
+                        });
+                        window.location.href = `/trucks/export/csv?${params.toString()}`;
+                    }}
+                >
+                    <FileDown className="mr-2 h-4 w-4" />
+                    Export CSV
+                </Button>
+            )}
+            {hasPermission('trucks.create') && (
+                <Button asChild>
+                    <Link href="/trucks/create">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Truck
+                    </Link>
+                </Button>
+            )}
+        </>
+    );
+
+    const statsSection = (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total Trucks</CardTitle>
+                    <Truck className="h-4 w-4 text-blue-600" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold text-blue-600">{truckCount}</div>
+                    <p className="text-xs text-muted-foreground">All vehicles</p>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Active</CardTitle>
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold text-green-600">{activeCount}</div>
+                    <p className="text-xs text-muted-foreground">Operational</p>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Maintenance</CardTitle>
+                    <Wrench className="h-4 w-4 text-yellow-600" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold text-yellow-600">{maintenanceCount}</div>
+                    <p className="text-xs text-muted-foreground">Under repair</p>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Fleet Value</CardTitle>
+                    <DollarSign className="h-4 w-4 text-purple-600" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold text-purple-600">${(totalValue / 1000000).toFixed(1)}M</div>
+                    <p className="text-xs text-muted-foreground">Total fleet value</p>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Inactive</CardTitle>
+                    <XCircle className="h-4 w-4 text-red-600" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold text-red-600">{trucks?.data?.filter(truck => truck.status === 'inactive').length || 0}</div>
+                    <p className="text-xs text-muted-foreground">Inactive trucks</p>
+                </CardContent>
+            </Card>
+        </div>
+    );
+
+    const tableHeaderExtras = (
+        <div className="relative w-64">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <Input
+                placeholder="Search trucks..."
+                value={searchTerm}
+                onChange={handleSearch}
+                className="pl-10"
             />
-        );
-    };
+        </div>
+    );
 
-    const truckCount = totalCount || trucks?.total || 0;
+    const renderHeaderCell = (column: string, label: string) => (
+        <TableHead
+            key={column}
+            className="cursor-pointer select-none hover:bg-muted/70 transition-colors bg-background"
+            onClick={() => handleSort(column)}
+        >
+            <div className="flex items-center gap-2">
+                {label}
+                <ArrowUpDown
+                    size={14}
+                    className={sortBy === column ? 'text-primary' : 'text-muted-foreground opacity-50'}
+                />
+            </div>
+        </TableHead>
+    );
 
-    const perPage = trucks?.per_page || 15;
-    const currentPage = trucks?.current_page || 1;
-    const totalPages = trucks?.last_page || 1;
-
-    // Debug pagination data
-    console.log('Pagination Debug:', {
-        totalPages,
-        currentPage,
-        truckCount,
-        trucksData: trucks,
-        hasData: trucks?.data?.length,
-        lastPage: trucks?.last_page,
-        currentPageFromData: trucks?.current_page,
-        shouldShowPagination: (totalPages > 1 || truckCount > 15)
-    });
-
-    // Calculate stats for dashboard cards
-    const activeCount = trucks?.data?.filter(truck => truck.status === 'active').length || 0;
-    const maintenanceCount = trucks?.data?.filter(truck => truck.status === 'maintenance').length || 0;
-    const inactiveCount = trucks?.data?.filter(truck => truck.status === 'inactive').length || 0;
-    const totalValue = trucks?.data?.reduce((sum, truck) => {
-        const price = parseFloat(truck.purchasePrice) || 0;
-        return sum + price;
-    }, 0) || 0;
+    const tableContent = (
+        <Table>
+            <TableHeader>
+                <TableRow className="sticky top-0 z-50 bg-background border-b">
+                    {columns.map(({ key, label }) => renderHeaderCell(key, label))}
+                    <TableHead className="text-right bg-background">Actions</TableHead>
+                </TableRow>
+            </TableHeader>
+            <TableBody>
+                {trucks?.data && trucks.data.length > 0 ? (
+                    trucks.data.map((truck) => (
+                        <TableRow key={truck.id} className="hover:bg-muted/50">
+                            <TableCell className="font-medium">
+                                {truck.plate}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                                {truck.vehicleType?.name || 'N/A'}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground text-sm">
+                                {truck.chasisNumber || '—'}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground text-sm">
+                                {truck.engineNumber || '—'}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                                {truck.serviceIntervalKM
+                                    ? `${truck.serviceIntervalKM.toLocaleString()} km`
+                                    : '—'
+                                }
+                            </TableCell>
+                            <TableCell className="font-medium">
+                                {truck.purchasePrice
+                                    ? new Intl.NumberFormat('en-US', {
+                                        style: 'currency',
+                                        currency: 'USD',
+                                        maximumFractionDigits: 0,
+                                    }).format(Number(truck.purchasePrice))
+                                    : '—'
+                                }
+                            </TableCell>
+                            <TableCell>
+                                <Badge
+                                    className={`flex items-center gap-1 w-fit ${
+                                        truck.status === 'active'
+                                            ? 'bg-green-100 text-green-800 border-green-200 hover:bg-green-200'
+                                            : truck.status === 'maintenance'
+                                            ? 'bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200'
+                                            : 'bg-red-100 text-red-800 border-red-200 hover:bg-red-200'
+                                    }`}
+                                >
+                                    {truck.status === 'active' && <CheckCircle className="h-3 w-3" />}
+                                    {truck.status === 'maintenance' && <Wrench className="h-3 w-3" />}
+                                    {truck.status === 'inactive' && <XCircle className="h-3 w-3" />}
+                                    {truck.status.charAt(0).toUpperCase() + truck.status.slice(1)}
+                                </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                                <div className="flex justify-end gap-2">
+                                    <Button asChild size="sm" variant="ghost">
+                                        <Link href={`/trucks/${truck.id}`}>
+                                            <Eye className="h-4 w-4" />
+                                        </Link>
+                                    </Button>
+                                    {hasPermission('trucks.edit') && (
+                                        <Button asChild size="sm" variant="ghost">
+                                            <Link href={`/trucks/${truck.id}/edit`}>
+                                                <Edit className="h-4 w-4" />
+                                            </Link>
+                                        </Button>
+                                    )}
+                                    {hasPermission('trucks.destroy') && (
+                                        <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            onClick={() => handleDeleteClick(truck)}
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    )}
+                                </div>
+                            </TableCell>
+                        </TableRow>
+                    ))
+                ) : (
+                    <TableRow>
+                        <TableCell colSpan={8} className="py-8 text-center text-muted-foreground">
+                            No trucks found.
+                            {hasPermission('trucks.create') && (
+                                <Link href="/trucks/create" className="ml-1 text-primary underline">
+                                    Create one
+                                </Link>
+                            )}
+                        </TableCell>
+                    </TableRow>
+                )}
+            </TableBody>
+        </Table>
+    );
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Trucks" />
-            <div className="flex h-full flex-1 flex-col gap-6 overflow-hidden rounded-xl p-4">
-                {/* Header Section */}
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-3xl font-bold">Trucks</h1>
-                        <p className="text-muted-foreground mt-2">
-                            Manage your fleet of {truckCount} truck{truckCount !== 1 ? 's' : ''}
-                        </p>
-                    </div>
-                    <div className="flex gap-2">
-                        {hasPermission('trucks.export') && (
-                            <Button variant="outline" onClick={() => {
-                                const params = new URLSearchParams({
-                                    search: searchTerm,
-                                    sort: sortBy,
-                                    direction: sortDirection,
-                                });
-                                window.location.href = `/trucks/export/csv?${params.toString()}`;
-                            }}>
-                                <FileDown className="mr-2 h-4 w-4" />
-                                Export CSV
-                            </Button>
-                        )}
-                        {hasPermission('trucks.create') && (
-                            <Button asChild>
-                                <Link href="/trucks/create">
-                                    <Plus className="mr-2 h-4 w-4" />
-                                    Add Truck
-                                </Link>
-                            </Button>
-                        )}
-                    </div>
-                </div>
-
-                {/* Enhanced Stats Cards */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                    <Card className="border-l-4 border-l-blue-500 hover:shadow-md transition-all duration-200">
-                        <CardContent className="p-4">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-xs font-medium text-muted-foreground mb-1">Total Trucks</p>
-                                    <p className="text-2xl font-bold text-blue-600">{truckCount}</p>
-                                    <p className="text-xs text-muted-foreground">All vehicles</p>
-                                </div>
-                                <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
-                                    <Truck className="h-5 w-5 text-blue-600" />
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="border-l-4 border-l-green-500 hover:shadow-md transition-all duration-200">
-                        <CardContent className="p-4">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-xs font-medium text-muted-foreground mb-1">Active</p>
-                                    <p className="text-2xl font-bold text-green-600">{activeCount}</p>
-                                    <p className="text-xs text-muted-foreground">Operational</p>
-                                </div>
-                                <div className="h-10 w-10 bg-green-100 rounded-full flex items-center justify-center">
-                                    <CheckCircle className="h-5 w-5 text-green-600" />
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="border-l-4 border-l-yellow-500 hover:shadow-md transition-all duration-200">
-                        <CardContent className="p-4">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-xs font-medium text-muted-foreground mb-1">Maintenance</p>
-                                    <p className="text-2xl font-bold text-yellow-600">{maintenanceCount}</p>
-                                    <p className="text-xs text-muted-foreground">Under repair</p>
-                                </div>
-                                <div className="h-10 w-10 bg-yellow-100 rounded-full flex items-center justify-center">
-                                    <Wrench className="h-5 w-5 text-yellow-600" />
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="border-l-4 border-l-purple-500 hover:shadow-md transition-all duration-200">
-                        <CardContent className="p-4">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-xs font-medium text-muted-foreground mb-1">Total Value</p>
-                                    <p className="text-2xl font-bold text-purple-600">${(totalValue / 1000000).toFixed(1)}M</p>
-                                    <p className="text-xs text-muted-foreground">Fleet value</p>
-                                </div>
-                                <div className="h-10 w-10 bg-purple-100 rounded-full flex items-center justify-center">
-                                    <DollarSign className="h-5 w-5 text-purple-600" />
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-
-                {/* Table Section */}
-                <Card className="flex flex-1 flex-col overflow-hidden">
-                    <CardHeader>
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <CardTitle>Truck Inventory</CardTitle>
-                                <CardDescription>
-                                    {truckCount} total truck{truckCount !== 1 ? 's' : ''} in system
-                                </CardDescription>
-                            </div>
-                            <div className="flex items-center gap-4">
-                                <div className="relative w-80">
-                                    <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                    <Input
-                                        placeholder="Search by plate, chassis, or engine..."
-                                        value={searchTerm}
-                                        onChange={handleSearch}
-                                        className="pl-10 focus:ring-2 focus:ring-blue-500"
-                                    />
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-sm text-muted-foreground">Status:</span>
-                                    <select
-                                        className="px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 bg-background"
-                                        onChange={(e) => {
-                                            // Add status filter logic here
-                                        }}
-                                    >
-                                        <option value="">All Status</option>
-                                        <option value="active">Active</option>
-                                        <option value="maintenance">Maintenance</option>
-                                        <option value="inactive">Inactive</option>
-                                    </select>
-                                </div>
-                            </div>
+        <>
+            <ListPageLayout
+                headTitle="Trucks"
+                title="Trucks"
+                description={`Manage your fleet of ${truckCount} truck${truckCount !== 1 ? 's' : ''}`}
+                breadcrumbs={breadcrumbs}
+                actions={headerActions}
+                stats={statsSection}
+                tableTitle="Truck Inventory"
+                tableDescription="Manage and track all vehicles in your fleet"
+                tableHeaderExtras={tableHeaderExtras}
+                pagination={
+                    <div className="mt-4 flex items-center justify-between w-full">
+                        <div className="text-sm text-muted-foreground">
+                            Showing <span className="font-semibold text-foreground">{trucks.from}</span> to <span className="font-semibold text-foreground">{trucks.to}</span> of <span className="font-semibold text-foreground">{truckCount}</span> trucks
                         </div>
-                    </CardHeader>
-                    <CardContent className="flex-1 p-0 flex flex-col overflow-hidden">
-                        <div className="rounded-lg border overflow-auto max-h-[55vh] relative flex-1">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow className="sticky top-0 z-50 bg-background border-b">
-                                        <TableHead
-                                            className="cursor-pointer select-none hover:bg-muted/70 transition-colors bg-background"
-                                            onClick={() => handleSort('plate')}
-                                        >
-                                            <div className="flex items-center">
-                                                Plate <SortIcon column="plate" />
-                                            </div>
-                                        </TableHead>
-                                        <TableHead
-                                            className="cursor-pointer select-none hover:bg-muted/70 transition-colors bg-background"
-                                            onClick={() => handleSort('vehicleType')}
-                                        >
-                                            <div className="flex items-center">
-                                                Vehicle Type <SortIcon column="vehicleType" />
-                                            </div>
-                                        </TableHead>
-                                        <TableHead className="bg-background">Chassis</TableHead>
-                                        <TableHead className="bg-background">Engine</TableHead>
-                                        <TableHead
-                                            className="cursor-pointer select-none hover:bg-muted/70 transition-colors bg-background"
-                                            onClick={() => handleSort('serviceIntervalKM')}
-                                        >
-                                            <div className="flex items-center">
-                                                Service (KM) <SortIcon column="serviceIntervalKM" />
-                                            </div>
-                                        </TableHead>
-                                        <TableHead
-                                            className="cursor-pointer select-none hover:bg-muted/70 transition-colors bg-background"
-                                            onClick={() => handleSort('purchasePrice')}
-                                        >
-                                            <div className="flex items-center">
-                                                Price <SortIcon column="purchasePrice" />
-                                            </div>
-                                        </TableHead>
-                                        <TableHead
-                                            className="cursor-pointer select-none hover:bg-muted/70 transition-colors bg-background"
-                                            onClick={() => handleSort('status')}
-                                        >
-                                            <div className="flex items-center">
-                                                Status <SortIcon column="status" />
-                                            </div>
-                                        </TableHead>
-                                        <TableHead className="text-center bg-background">Actions</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {trucks?.data && trucks.data.length > 0 ? (
-                                        trucks.data.map((truck) => (
-                                            <TableRow key={truck.id} className="hover:bg-muted/50">
-                                                <TableCell className="font-medium">
-                                                    {truck.plate}
-                                                </TableCell>
-                                                <TableCell className="text-muted-foreground">
-                                                    {truck.vehicleType?.name || 'N/A'}
-                                                </TableCell>
-                                                <TableCell className="text-muted-foreground text-sm">
-                                                    {truck.chasisNumber || '—'}
-                                                </TableCell>
-                                                <TableCell className="text-muted-foreground text-sm">
-                                                    {truck.engineNumber || '—'}
-                                                </TableCell>
-                                                <TableCell className="text-muted-foreground">
-                                                    {truck.serviceIntervalKM?.toLocaleString() || '—'} km
-                                                </TableCell>
-                                                <TableCell className="font-medium">
-                                                    ${Number(truck.purchasePrice || 0).toLocaleString('en-US', {
-                                                        minimumFractionDigits: 2,
-                                                        maximumFractionDigits: 2,
-                                                    })}
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Badge
-                                                        className={`flex items-center gap-1 w-fit ${
-                                                            truck.status === 'active'
-                                                                ? 'bg-green-100 text-green-800 border-green-200 hover:bg-green-200'
-                                                                : truck.status === 'maintenance'
-                                                                ? 'bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200'
-                                                                : 'bg-red-100 text-red-800 border-red-200 hover:bg-red-200'
-                                                        }`}
-                                                    >
-                                                        {truck.status === 'active' && <CheckCircle className="h-3 w-3" />}
-                                                        {truck.status === 'maintenance' && <Wrench className="h-3 w-3" />}
-                                                        {truck.status === 'inactive' && <XCircle className="h-3 w-3" />}
-                                                        {truck.status.charAt(0).toUpperCase() + truck.status.slice(1)}
-                                                    </Badge>
-                                                </TableCell>
-                                                <TableCell className="text-center">
-                                                    <div className="flex justify-center gap-2">
-                                                        <Button asChild size="sm" variant="ghost">
-                                                            <Link href={`/trucks/${truck.id}`}>
-                                                                <Eye className="h-4 w-4" />
-                                                            </Link>
-                                                        </Button>
-                                                        {hasPermission('trucks.edit') && (
-                                                            <Button asChild size="sm" variant="ghost">
-                                                                <Link href={`/trucks/${truck.id}/edit`}>
-                                                                    <Edit className="h-4 w-4" />
-                                                                </Link>
-                                                            </Button>
-                                                        )}
-                                                        {hasPermission('trucks.destroy') && (
-                                                            <Button
-                                                                size="sm"
-                                                                variant="ghost"
-                                                                onClick={() => handleDeleteClick(truck)}
-                                                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                                            >
-                                                                <Trash2 className="h-4 w-4" />
-                                                            </Button>
-                                                        )}
-                                                    </div>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))
-                                    ) : (
-                                        <TableRow>
-                                            <TableCell colSpan={8} className="py-16">
-                                                <div className="flex flex-col items-center justify-center text-center">
-                                                    <div className="h-20 w-20 bg-muted/50 rounded-full flex items-center justify-center mb-6">
-                                                        <Truck className="h-10 w-10 text-muted-foreground" />
-                                                    </div>
-                                                    <h3 className="text-xl font-semibold mb-2">No trucks found</h3>
-                                                    <p className="text-muted-foreground mb-6 max-w-md">
-                                                        {searchTerm
-                                                            ? `No trucks match "${searchTerm}". Try adjusting your search terms.`
-                                                            : "Get started by adding your first truck to the fleet. Build a comprehensive fleet management system."
-                                                        }
-                                                    </p>
-                                                    {hasPermission('trucks.create') && (
-                                                        <Button asChild size="lg" className="shadow-lg">
-                                                            <Link href="/trucks/create">
-                                                                <Plus className="mr-2 h-4 w-4" />
-                                                                {searchTerm ? 'Clear Search & Add Truck' : 'Add First Truck'}
-                                                            </Link>
-                                                        </Button>
-                                                    )}
-                                                </div>
-                                            </TableCell>
-                                        </TableRow>
-                                    )}
-                                </TableBody>
-                            </Table>
+                        <div>
+                            <ReactPaginate
+                                pageCount={totalPages}
+                                forcePage={currentPage - 1}
+                                onPageChange={({ selected }) => {
+                                    router.get('/trucks', {
+                                        page: selected + 1,
+                                        search: searchTerm,
+                                        sort: sortBy,
+                                        direction: sortDirection,
+                                    }, { preserveState: true });
+                                }}
+                                marginPagesDisplayed={2}
+                                pageRangeDisplayed={5}
+                                containerClassName="flex gap-2"
+                                pageClassName="px-3 py-1 rounded border text-sm bg-background text-muted-foreground hover:bg-muted"
+                                activeClassName="bg-primary text-white"
+                                previousClassName="px-3 py-1 rounded border text-sm"
+                                nextClassName="px-3 py-1 rounded border text-sm"
+                                breakClassName="px-3 py-1 rounded border text-sm"
+                                disabledClassName="pointer-events-none opacity-50"
+                                previousLabel={"<"}
+                                nextLabel={">"}
+                            />
                         </div>
+                    </div>
+                }
+            >
+                {tableContent}
+            </ListPageLayout>
 
-                        {/* Pagination */}
-                        <InertiaPagination
-                          from={trucks?.from}
-                          to={trucks?.to}
-                          total={truckCount}
-                          links={trucks?.links}
-                          currentPage={currentPage}
-                          lastPage={totalPages}
-                          className="mt-0 p-4 border-t bg-muted/30 flex-shrink-0"
-                        />
-                    </CardContent>
-                </Card>
-            </div>
-
-            {/* Delete Confirmation Dialog */}
             <DeleteConfirmationDialog
                 open={deleteDialogOpen}
                 onOpenChange={setDeleteDialogOpen}
@@ -464,6 +414,6 @@ export default function TrucksIndex({ trucks, totalCount }: TrucksIndexProps) {
                 onConfirm={handleDeleteConfirm}
                 isLoading={isDeleting}
             />
-        </AppLayout>
+        </>
     );
 }
