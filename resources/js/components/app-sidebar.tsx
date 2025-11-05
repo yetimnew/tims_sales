@@ -85,11 +85,6 @@ const getMainNavItems = (): NavItem[] => {
                         icon: Fuel,
                     },
                     {
-                        title: 'Driver Performance',
-                        href: '/driver-performance',
-                        icon: BarChart3,
-                    },
-                    {
                         title: 'Driver Safety',
                         href: '/driver-safety',
                         icon: Shield,
