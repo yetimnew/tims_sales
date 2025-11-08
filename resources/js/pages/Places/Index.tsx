@@ -1,6 +1,5 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import {
     Table,
@@ -10,12 +9,24 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import AppLayout from '@/layouts/app-layout';
+import ListPageLayout from '@/components/layouts/list-page-layout';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { usePermissions } from '@/hooks/use-permissions';
-import { Head, Link, router } from '@inertiajs/react';
+import { Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
-import { Plus, Eye, Edit, Trash2, Search, ArrowUpDown, ChevronLeft, ChevronRight, FileDown } from 'lucide-react';
+import {
+    Plus,
+    Eye,
+    Edit,
+    Trash2,
+    Search,
+    ArrowUpDown,
+    FileDown,
+    MapPin,
+    Ruler,
+    Compass,
+    Navigation,
+} from 'lucide-react';
 import { InertiaPagination } from '@/components/ui/pagination';
 import * as React from 'react';
 
@@ -75,9 +86,10 @@ export default function PlacesIndex({ places, totalCount }: PlacesIndexProps) {
         const value = e.target.value;
         setSearchTerm(value);
 
-        router.get('/places',
+        router.get(
+            '/places',
             { search: value, sort: sortBy, direction: sortDirection },
-            { preserveState: false }
+            { preserveState: true, replace: false },
         );
     };
 
@@ -90,9 +102,10 @@ export default function PlacesIndex({ places, totalCount }: PlacesIndexProps) {
         setSortBy(column);
         setSortDirection(newDirection);
 
-        router.get('/places',
+        router.get(
+            '/places',
             { search: searchTerm, sort: column, direction: newDirection },
-            { preserveState: false }
+            { preserveState: true, replace: false },
         );
     };
 
@@ -117,23 +130,246 @@ export default function PlacesIndex({ places, totalCount }: PlacesIndexProps) {
         });
     };
 
-    const SortIcon = ({ column }: { column: string }) => {
-        if (sortBy !== column) {
-            return <ArrowUpDown className="ml-2 h-4 w-4 opacity-50" />;
-        }
-        return (
-            <ArrowUpDown
-                className={`ml-2 h-4 w-4 transition-transform ${
-                    sortDirection === 'desc' ? 'rotate-180' : ''
-                }`}
-            />
-        );
-    };
-
     const placeCount = totalCount || places?.total || 0;
-    const perPage = places?.per_page || 15;
     const currentPage = places?.current_page || 1;
     const totalPages = places?.last_page || 1;
+    const geocodedCount = places?.data?.filter((place) => place.latitude && place.longitude).length || 0;
+    const uniqueWoredas = Array.from(new Set(places?.data?.map((place) => place.woreda?.name).filter(Boolean))) as string[];
+    const uniqueRegions = Array.from(
+        new Set(places?.data?.map((place) => place.woreda?.zone?.region?.name).filter(Boolean)),
+    ) as string[];
+    const averageLatitude = geocodedCount
+        ? (places.data.reduce((sum, place) => sum + (place.latitude ?? 0), 0) / geocodedCount).toFixed(2)
+        : null;
+
+    const headerActions = (
+        <>
+            {hasPermission('places.export') && (
+                <Button
+                    variant="outline"
+                    onClick={() => {
+                        const params = new URLSearchParams({
+                            search: searchTerm,
+                            sort: sortBy,
+                            direction: sortDirection,
+                        });
+                        window.location.href = `/places/export?${params.toString()}`;
+                    }}
+                >
+                    <FileDown className="mr-2 h-4 w-4" />
+                    Export CSV
+                </Button>
+            )}
+            {hasPermission('places.create') && (
+                <Button asChild>
+                    <Link href="/places/create">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Place
+                    </Link>
+                </Button>
+            )}
+        </>
+    );
+
+    const statsSection = (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total Places</CardTitle>
+                    <MapPin className="h-4 w-4 text-blue-600" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold text-blue-600">{placeCount}</div>
+                    <p className="text-xs text-muted-foreground">Locations managed in the system</p>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Geocoded</CardTitle>
+                    <Navigation className="h-4 w-4 text-emerald-600" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold text-emerald-600">{geocodedCount}</div>
+                    <p className="text-xs text-muted-foreground">With latitude & longitude defined</p>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Coverage</CardTitle>
+                    <Ruler className="h-4 w-4 text-indigo-600" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold text-indigo-600">{uniqueWoredas.length}</div>
+                    <p className="text-xs text-muted-foreground">Unique woredas represented</p>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Avg Latitude</CardTitle>
+                    <Compass className="h-4 w-4 text-amber-600" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-lg font-semibold text-amber-600">{averageLatitude ?? 'N/A'}</div>
+                    <p className="text-xs text-muted-foreground">Quick geo sanity check</p>
+                </CardContent>
+            </Card>
+        </div>
+    );
+
+    const tableHeaderExtras = (
+        <div className="relative w-64">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <Input
+                placeholder="Search places..."
+                value={searchTerm}
+                onChange={handleSearch}
+                className="pl-10"
+            />
+        </div>
+    );
+
+    const renderHeaderCell = (column: string, label: string) => (
+        <TableHead
+            key={column}
+            className="bg-background cursor-pointer select-none transition-colors hover:bg-muted/70"
+            onClick={() => handleSort(column)}
+        >
+            <div className="flex items-center gap-2">
+                {label}
+                <ArrowUpDown
+                    size={14}
+                    className={sortBy === column ? 'text-primary' : 'text-muted-foreground opacity-50'}
+                    style={sortBy === column && sortDirection === 'desc' ? { transform: 'rotate(180deg)' } : undefined}
+                />
+            </div>
+        </TableHead>
+    );
+
+    const formatCoordinate = (value?: number | null) => {
+        if (value === null || value === undefined) return null;
+        return Number(value).toFixed(4);
+    };
+
+    const tableContent = (
+        <Table>
+            <TableHeader>
+                <TableRow className="sticky top-0 z-20 border-b bg-background">
+                    {renderHeaderCell('id', 'ID')}
+                    {renderHeaderCell('name', 'Name')}
+                    {renderHeaderCell('latitude', 'Coordinates')}
+                    {renderHeaderCell('woreda_id', 'Location')}
+                    <TableHead className="bg-background text-right">Actions</TableHead>
+                </TableRow>
+            </TableHeader>
+            <TableBody>
+                {places.data.length > 0 ? (
+                    places.data.map((place) => {
+                        const lat = formatCoordinate(place.latitude);
+                        const lng = formatCoordinate(place.longitude);
+
+                        return (
+                            <TableRow key={place.id} className="hover:bg-muted/50">
+                                <TableCell className="font-medium">{place.id}</TableCell>
+                                <TableCell className="font-semibold text-foreground">{place.name}</TableCell>
+                                <TableCell className="text-muted-foreground">
+                                    {lat && lng ? `${lat}, ${lng}` : '—'}
+                                </TableCell>
+                                <TableCell>
+                                    <div>
+                                        <div className="font-medium text-foreground">{place.woreda?.name || '—'}</div>
+                                        {place.woreda?.zone && (
+                                            <div className="text-xs text-muted-foreground">
+                                                {place.woreda.zone.name}
+                                                {place.woreda.zone.region && `, ${place.woreda.zone.region.name}`}
+                                            </div>
+                                        )}
+                                    </div>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                    <div className="flex justify-end gap-2">
+                                        {hasPermission('places.show') && (
+                                            <Button asChild size="sm" variant="ghost">
+                                                <Link href={`/places/${place.id}`}>
+                                                    <Eye className="h-4 w-4" />
+                                                </Link>
+                                            </Button>
+                                        )}
+                                        {hasPermission('places.edit') && (
+                                            <Button asChild size="sm" variant="ghost">
+                                                <Link href={`/places/${place.id}/edit`}>
+                                                    <Edit className="h-4 w-4" />
+                                                </Link>
+                                            </Button>
+                                        )}
+                                        {hasPermission('places.destroy') && (
+                                            <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                onClick={() => handleDeleteClick(place)}
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        )}
+                                    </div>
+                                </TableCell>
+                            </TableRow>
+                        );
+                    })
+                ) : (
+                    <TableRow>
+                        <TableCell colSpan={5} className="py-8 text-center text-muted-foreground">
+                            No places found.
+                            {hasPermission('places.create') && (
+                                <Link href="/places/create" className="ml-1 text-primary underline">
+                                    Create one
+                                </Link>
+                            )}
+                        </TableCell>
+                    </TableRow>
+                )}
+            </TableBody>
+        </Table>
+    );
+
+    return (
+        <>
+            <ListPageLayout
+                headTitle="Places"
+                title="Places"
+                description={`Manage ${placeCount} location${placeCount !== 1 ? 's' : ''} across the network`}
+                breadcrumbs={breadcrumbs}
+                actions={headerActions}
+                stats={statsSection}
+                tableTitle="Place Inventory"
+                tableDescription={`Coverage across ${uniqueRegions.length} region${uniqueRegions.length !== 1 ? 's' : ''}`}
+                tableHeaderExtras={tableHeaderExtras}
+                tableContainerClassName="max-h-[55vh]"
+                pagination={
+                    <InertiaPagination
+                        from={places.from}
+                        to={places.to}
+                        total={placeCount}
+                        links={places.links as any}
+                        currentPage={currentPage}
+                        lastPage={totalPages}
+                        className="px-6 pb-6 pt-4"
+                    />
+                }
+            >
+                {tableContent}
+            </ListPageLayout>
+
+            <DeleteConfirmationDialog
+                open={deleteDialogOpen}
+                onOpenChange={setDeleteDialogOpen}
+                title="Delete Place"
+                description="Are you sure you want to delete this place? This action cannot be undone."
+                itemName={selectedPlace?.name}
+                onConfirm={handleDeleteConfirm}
+                isLoading={isDeleting}
+            />
+        </>
+    );
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>

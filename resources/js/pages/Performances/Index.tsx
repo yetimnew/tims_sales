@@ -52,8 +52,9 @@ interface PerformancesIndexProps {
 export default function PerformancesIndex({ performances, totalCount }: PerformancesIndexProps) {
     const { hasPermission } = usePermissions();
     const [searchTerm, setSearchTerm] = React.useState('');
-    const [sortBy, setSortBy] = React.useState('trip');
-    const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>('asc');
+    const searchDebounceRef = React.useRef<number | null>(null);
+    const [sortBy, setSortBy] = React.useState('DateDispach');
+    const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>('desc');
     const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
     const [selectedPerf, setSelectedPerf] = React.useState<Performance | null>(null);
     const [isDeleting, setIsDeleting] = React.useState(false);
@@ -65,14 +66,38 @@ export default function PerformancesIndex({ performances, totalCount }: Performa
     const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
         setSearchTerm(value);
-        router.get('/performances', { search: value, sort: sortBy, direction: sortDirection }, { preserveState: true });
+        // Debounce requests while typing
+        if (searchDebounceRef.current) {
+            window.clearTimeout(searchDebounceRef.current);
+        }
+        searchDebounceRef.current = window.setTimeout(() => {
+            router.get(
+                '/performances',
+                { search: value, sort: sortBy, direction: sortDirection },
+                {
+                    preserveState: true,
+                    preserveScroll: true,
+                    replace: true,
+                    only: ['performances', 'totalCount'],
+                },
+            );
+        }, 400);
     };
 
     const handleSort = (column: string) => {
         const newDirection: 'asc' | 'desc' = sortBy === column && sortDirection === 'asc' ? 'desc' : 'asc';
         setSortBy(column);
         setSortDirection(newDirection);
-        router.get('/performances', { search: searchTerm, sort: column, direction: newDirection }, { preserveState: true });
+        router.get(
+            '/performances',
+            { search: searchTerm, sort: column, direction: newDirection },
+            {
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+                only: ['performances', 'totalCount'],
+            },
+        );
     };
 
     const handleDeleteClick = (perf: Performance) => {
@@ -308,12 +333,21 @@ export default function PerformancesIndex({ performances, totalCount }: Performa
                                 pageCount={totalPages}
                                 forcePage={currentPage - 1}
                                 onPageChange={({ selected }) => {
-                                    router.get('/performances', {
-                                        page: selected + 1,
-                                        search: searchTerm,
-                                        sort: sortBy,
-                                        direction: sortDirection,
-                                    }, { preserveState: true });
+                                    router.get(
+                                        '/performances',
+                                        {
+                                            page: selected + 1,
+                                            search: searchTerm,
+                                            sort: sortBy,
+                                            direction: sortDirection,
+                                        },
+                                        {
+                                            preserveState: true,
+                                            preserveScroll: true,
+                                            replace: true,
+                                            only: ['performances', 'totalCount'],
+                                        },
+                                    );
                                 }}
                                 marginPagesDisplayed={2}
                                 pageRangeDisplayed={5}
@@ -346,4 +380,3 @@ export default function PerformancesIndex({ performances, totalCount }: Performa
         </>
     );
 }
-

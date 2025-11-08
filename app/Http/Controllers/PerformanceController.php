@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Performance;
-use App\Models\Operation;
 use App\Models\DriverTruck;
+use App\Models\Operation;
+use App\Models\Performance;
 use App\Models\Place;
 use App\Models\Distance;
 use Illuminate\Http\Request;
@@ -13,6 +13,8 @@ use Inertia\Response;
 use Spatie\Activitylog\Models\Activity;
 use Exception;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class PerformanceController extends Controller
 {
@@ -21,14 +23,18 @@ class PerformanceController extends Controller
      */
     public function index(Request $request): Response
     {
-        $query = Performance::with([
-            'operation.customer',
-            'driverTruck.driver',
-            'driverTruck.truck',
-            'origin',
-            'destination',
-            'user'
-        ]);
+        // Keep the index query lean: select only fields needed for the table
+        $query = Performance::query()
+            ->select([
+                'id',
+                'trip',
+                'FOnumber',
+                'DateDispach',
+                'LoadType',
+                'satus',
+                'DistanceWCargo',
+                'fuelInBirr',
+            ]);
 
         // Handle search
         if ($request->has('search') && !empty($request->input('search'))) {
@@ -40,9 +46,9 @@ class PerformanceController extends Controller
             });
         }
 
-        // Handle sorting
-        $sort = $request->input('sort', 'trip');
-        $direction = $request->input('direction', 'asc');
+        // Handle sorting (default to most recent first)
+        $sort = $request->input('sort', 'DateDispach');
+        $direction = $request->input('direction', 'desc');
 
         // Validate sort column to prevent SQL injection
         $allowedSorts = ['trip', 'FOnumber', 'DateDispach', 'satus', 'DistanceWCargo', 'fuelInBirr', 'created_at'];
@@ -52,7 +58,8 @@ class PerformanceController extends Controller
 
         $query->orderBy($sort, $direction);
 
-        $performances = $query->paginate(15);
+        // Preserve the current query string when paginating
+        $performances = $query->paginate(15)->withQueryString();
 
         return Inertia::render('Performances/Index', [
             'performances' => $performances,
@@ -133,9 +140,115 @@ class PerformanceController extends Controller
             ->orderByDesc('created_at')
             ->get();
 
+        $operationInsights = null;
+
+        if ($performance->operation) {
+            $operation = $performance->operation;
+
+            $operationPerformancesQuery = Performance::where('operation_id', $operation->id);
+
+            $aggregate = (clone $operationPerformancesQuery)
+                ->selectRaw('COUNT(*) as total_trips')
+                ->selectRaw('SUM(CASE WHEN is_returned = 1 THEN 1 ELSE 0 END) as completed_trips')
+                ->selectRaw('SUM(CASE WHEN is_returned = 0 OR is_returned IS NULL THEN 1 ELSE 0 END) as ongoing_trips')
+                ->selectRaw('COALESCE(SUM(COALESCE(CargoVolumMT, 0)), 0) as total_tonnage')
+                ->selectRaw('COALESCE(SUM(COALESCE(DistanceWCargo, 0) + COALESCE(DistanceWOCargo, 0)), 0) as total_distance')
+                ->selectRaw('COALESCE(SUM(COALESCE(fuelInBirr, 0) + COALESCE(perdiem, 0) + COALESCE(other, 0)), 0) as total_cost')
+                ->first();
+
+            $operationPlannedVolume = (float) ($operation->volume ?? 0);
+            $operationTotalTrips = (int) ($aggregate->total_trips ?? 0);
+            $operationCompletedTrips = (int) ($aggregate->completed_trips ?? 0);
+            $operationOngoingTrips = (int) ($aggregate->ongoing_trips ?? 0);
+            $operationTotalTonnage = (float) ($aggregate->total_tonnage ?? 0);
+            $operationRemainingTonnage = max($operationPlannedVolume - $operationTotalTonnage, 0);
+            $operationTotalDistance = (float) ($aggregate->total_distance ?? 0);
+            $operationTotalCost = (float) ($aggregate->total_cost ?? 0);
+
+            $performanceTonnage = (float) ($performance->CargoVolumMT ?? 0);
+            $performanceDistance = (float) (($performance->DistanceWCargo ?? 0) + ($performance->DistanceWOCargo ?? 0));
+            $performanceCost = (float) (($performance->fuelInBirr ?? 0) + ($performance->perdiem ?? 0) + ($performance->other ?? 0));
+            $performanceTonKm = (float) ($performance->tonkm ?? (($performance->DistanceWCargo ?? 0) * ($performance->CargoVolumMT ?? 0)));
+
+            $tonnageShare = $operationTotalTonnage > 0
+                ? round(($performanceTonnage / $operationTotalTonnage) * 100, 2)
+                : null;
+            $distanceShare = $operationTotalDistance > 0
+                ? round(($performanceDistance / $operationTotalDistance) * 100, 2)
+                : null;
+            $costShare = $operationTotalCost > 0
+                ? round(($performanceCost / $operationTotalCost) * 100, 2)
+                : null;
+            $plannedContribution = $operationPlannedVolume > 0
+                ? round(($performanceTonnage / $operationPlannedVolume) * 100, 2)
+                : null;
+
+            $recentPerformances = (clone $operationPerformancesQuery)
+                ->select(['id', 'trip', 'DateDispach', 'CargoVolumMT', 'DistanceWCargo', 'DistanceWOCargo', 'fuelInBirr', 'perdiem', 'other'])
+                ->orderByDesc('DateDispach')
+                ->limit(10)
+                ->get()
+                ->map(function (Performance $item) use ($performance) {
+                    $totalDistance = (float) (($item->DistanceWCargo ?? 0) + ($item->DistanceWOCargo ?? 0));
+                    $totalCost = (float) (($item->fuelInBirr ?? 0) + ($item->perdiem ?? 0) + ($item->other ?? 0));
+                    $tonnage = (float) ($item->CargoVolumMT ?? 0);
+
+                    return [
+                        'id' => $item->id,
+                        'trip' => $item->trip,
+                        'date' => $item->DateDispach ? Carbon::parse($item->DateDispach)->format('M j') : 'N/A',
+                        'tonnage' => round($tonnage, 2),
+                        'distance' => round($totalDistance, 2),
+                        'cost' => round($totalCost, 2),
+                        'highlight' => $performance->id === $item->id,
+                    ];
+                })
+                ->reverse()
+                ->values();
+
+            $statusBreakdown = (clone $operationPerformancesQuery)
+                ->selectRaw("CASE WHEN is_returned = 1 THEN 'Returned' ELSE 'In transit' END as label")
+                ->selectRaw('COUNT(*) as value')
+                ->groupBy(DB::raw("CASE WHEN is_returned = 1 THEN 'Returned' ELSE 'In transit' END"))
+                ->get()
+                ->map(fn ($row) => [
+                    'label' => $row->label,
+                    'value' => (int) $row->value,
+                ]);
+
+            $operationInsights = [
+                'overview' => [
+                    'plannedVolume' => round($operationPlannedVolume, 2),
+                    'totalTrips' => $operationTotalTrips,
+                    'completedTrips' => $operationCompletedTrips,
+                    'ongoingTrips' => $operationOngoingTrips,
+                    'totalTonnage' => round($operationTotalTonnage, 2),
+                    'remainingTonnage' => round($operationRemainingTonnage, 2),
+                    'completionRate' => $operationPlannedVolume > 0
+                        ? round(($operationTotalTonnage / $operationPlannedVolume) * 100, 2)
+                        : null,
+                ],
+                'performanceShare' => [
+                    'tonnageShare' => $tonnageShare,
+                    'distanceShare' => $distanceShare,
+                    'costShare' => $costShare,
+                    'plannedContribution' => $plannedContribution,
+                    'tonnage' => round($performanceTonnage, 2),
+                    'distance' => round($performanceDistance, 2),
+                    'cost' => round($performanceCost, 2),
+                    'tonKm' => round($performanceTonKm, 2),
+                ],
+                'trends' => [
+                    'recentTrips' => $recentPerformances,
+                    'statusBreakdown' => $statusBreakdown,
+                ],
+            ];
+        }
+
         return Inertia::render('Performances/Show', [
             'performance' => $performance,
             'activityLogs' => $activityLogs,
+            'operationInsights' => $operationInsights,
         ]);
     }
 
@@ -372,6 +485,4 @@ class PerformanceController extends Controller
         }
     }
 }
-
-
 

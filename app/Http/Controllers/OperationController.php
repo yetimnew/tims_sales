@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Operation;
 use App\Models\Customer;
+use App\Models\Operation;
+use App\Models\Performance;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -11,6 +12,8 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Spatie\Activitylog\Models\Activity;
 use Exception;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class OperationController extends Controller
 {
@@ -87,7 +90,7 @@ class OperationController extends Controller
             ]);
 
             // Add user_id to the validated data
-            $validated['user_id'] = auth()->id();
+            $validated['user_id'] = Auth::id();
 
             $operation = Operation::create($validated);
 
@@ -98,7 +101,7 @@ class OperationController extends Controller
             Log::error('Operation creation failed', [
                 'error' => $e->getMessage(),
                 'data' => $request->all(),
-                'user_id' => auth()->id(),
+                'user_id' => Auth::id(),
             ]);
 
             return back()->withErrors(['error' => 'Failed to create operation. Please try again.']);
@@ -118,9 +121,88 @@ class OperationController extends Controller
             ->orderByDesc('created_at')
             ->get();
 
+        $performanceQuery = Performance::where('operation_id', $operation->id);
+
+        $aggregate = (clone $performanceQuery)
+            ->selectRaw('COUNT(*) as total_trips')
+            ->selectRaw('SUM(CASE WHEN is_returned = 1 THEN 1 ELSE 0 END) as completed_trips')
+            ->selectRaw('SUM(CASE WHEN is_returned = 0 OR is_returned IS NULL THEN 1 ELSE 0 END) as ongoing_trips')
+            ->selectRaw('COALESCE(SUM(COALESCE(CargoVolumMT, 0)), 0) as total_tonnage')
+            ->selectRaw('COALESCE(SUM(COALESCE(DistanceWCargo, 0) + COALESCE(DistanceWOCargo, 0)), 0) as total_distance')
+            ->selectRaw('COALESCE(SUM(COALESCE(fuelInBirr, 0) + COALESCE(perdiem, 0) + COALESCE(other, 0)), 0) as total_cost')
+            ->first();
+
+        $totalTrips = (int) ($aggregate->total_trips ?? 0);
+        $completedTrips = (int) ($aggregate->completed_trips ?? 0);
+        $ongoingTrips = (int) ($aggregate->ongoing_trips ?? 0);
+        $totalTonnage = (float) ($aggregate->total_tonnage ?? 0);
+        $totalDistance = (float) ($aggregate->total_distance ?? 0);
+        $totalCost = (float) ($aggregate->total_cost ?? 0);
+        $plannedVolume = (float) ($operation->volume ?? 0);
+        $remainingTonnage = max($plannedVolume - $totalTonnage, 0);
+        $completionRate = $plannedVolume > 0 ? round(($totalTonnage / $plannedVolume) * 100, 2) : null;
+        $averageTonPerTrip = $totalTrips > 0 ? round($totalTonnage / $totalTrips, 2) : null;
+        $returnRate = $totalTrips > 0 ? round(($completedTrips / $totalTrips) * 100, 2) : 0;
+        $averageCostPerTrip = $totalTrips > 0 ? round($totalCost / $totalTrips, 2) : null;
+        $averageCostPerTon = $totalTonnage > 0 ? round($totalCost / $totalTonnage, 2) : null;
+
+        $timeline = (clone $performanceQuery)
+            ->selectRaw('DATE(DateDispach) as date')
+            ->selectRaw('COUNT(*) as trips')
+            ->selectRaw('COALESCE(SUM(COALESCE(CargoVolumMT, 0)), 0) as tonnage')
+            ->groupBy(DB::raw('DATE(DateDispach)'))
+            ->orderBy(DB::raw('DATE(DateDispach)'))
+            ->limit(14)
+            ->get()
+            ->map(function ($row) {
+                $dateLabel = $row->date ? Carbon::parse($row->date)->format('M j') : 'N/A';
+
+                return [
+                    'date' => $dateLabel,
+                    'trips' => (int) ($row->trips ?? 0),
+                    'tonnage' => round((float) ($row->tonnage ?? 0), 2),
+                ];
+            })
+            ->values()
+            ->toArray();
+
+        $tonnageBreakdown = [
+            [
+                'label' => 'Achieved',
+                'value' => round($totalTonnage, 2),
+            ],
+            [
+                'label' => 'Remaining',
+                'value' => round($remainingTonnage, 2),
+            ],
+        ];
+
         return Inertia::render('Operations/Show', [
             'operation' => $operation,
             'activityLogs' => $activityLogs,
+            'performanceInsights' => [
+                'totals' => [
+                    'plannedVolume' => round($plannedVolume, 2),
+                    'totalTrips' => $totalTrips,
+                    'completedTrips' => $completedTrips,
+                    'ongoingTrips' => $ongoingTrips,
+                    'returnRate' => $returnRate,
+                    'totalTonnage' => round($totalTonnage, 2),
+                    'remainingTonnage' => round($remainingTonnage, 2),
+                    'completionRate' => $completionRate,
+                    'averageTonPerTrip' => $averageTonPerTrip,
+                    'totalDistance' => round($totalDistance, 2),
+                ],
+                'financial' => [
+                    'totalCost' => round($totalCost, 2),
+                    'averageCostPerTrip' => $averageCostPerTrip,
+                    'averageCostPerTon' => $averageCostPerTon,
+                ],
+                'trends' => [
+                    'timeline' => $timeline,
+                    'tonnageBreakdown' => $tonnageBreakdown,
+                ],
+            ],
         ]);
     }
 
@@ -168,7 +250,7 @@ class OperationController extends Controller
                 'operation_id' => $operation->id,
                 'error' => $e->getMessage(),
                 'data' => $request->all(),
-                'user_id' => auth()->id(),
+                'user_id' => Auth::id(),
             ]);
 
             return back()->withErrors(['error' => 'Failed to update operation. Please try again.']);
@@ -206,7 +288,7 @@ class OperationController extends Controller
             Log::error('Operation deletion failed', [
                 'operation_id' => $operation->id,
                 'error' => $e->getMessage(),
-                'user_id' => auth()->id(),
+                'user_id' => Auth::id(),
             ]);
 
             return back()->withErrors(['error' => 'Failed to delete operation. Please try again.']);
@@ -308,7 +390,7 @@ class OperationController extends Controller
             Log::info('Operation deactivated', [
                 'operation_id' => $operation->id,
                 'operationid' => $operation->operationid,
-                'user_id' => auth()->id(),
+                'user_id' => Auth::id(),
             ]);
 
             return redirect()->route('operations.index')
@@ -318,7 +400,7 @@ class OperationController extends Controller
             Log::error('Operation deactivation failed', [
                 'operation_id' => $operation->id,
                 'error' => $e->getMessage(),
-                'user_id' => auth()->id(),
+                'user_id' => Auth::id(),
             ]);
 
             return back()->withErrors(['error' => 'Failed to deactivate operation. Please try again.']);
@@ -346,7 +428,7 @@ class OperationController extends Controller
         } catch (Exception $e) {
             Log::error('Failed to retrieve available operations', [
                 'error' => $e->getMessage(),
-                'user_id' => auth()->id(),
+                'user_id' => Auth::id(),
             ]);
 
             return response()->json([

@@ -12,6 +12,7 @@ import {
     CheckCircle,
     AlertCircle,
     Calendar,
+    CalendarDays,
     Clock,
     BarChart3,
     Target,
@@ -21,7 +22,14 @@ import {
     MapPin,
     History,
     Hash,
+    Building2,
+    Globe2,
+    UserCircle,
+    Milestone,
+    CircleDollarSign,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import { Area, AreaChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis } from 'recharts';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useState } from 'react';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
@@ -40,9 +48,33 @@ interface Operation {
     region?: { id: number; name: string };
     user?: { id: number; name: string };
 }
-interface OperationsShowProps { operation: Operation; activityLogs?: ActivityLog[]; }
+interface PerformanceInsights {
+    totals: {
+        plannedVolume: number | null;
+        totalTrips: number;
+        completedTrips: number;
+        ongoingTrips: number;
+        returnRate: number;
+        totalTonnage: number;
+        remainingTonnage: number;
+        completionRate: number | null;
+        averageTonPerTrip: number | null;
+        totalDistance: number | null;
+    };
+    financial: {
+        totalCost: number | null;
+        averageCostPerTrip: number | null;
+        averageCostPerTon: number | null;
+    };
+    trends: {
+        timeline: Array<{ date: string; trips: number; tonnage: number }>;
+        tonnageBreakdown: Array<{ label: string; value: number }>;
+    };
+}
 
-export default function OperationsShow({ operation, activityLogs = [] }: OperationsShowProps) {
+interface OperationsShowProps { operation: Operation; activityLogs?: ActivityLog[]; performanceInsights?: PerformanceInsights | null; }
+
+export default function OperationsShow({ operation, activityLogs = [], performanceInsights }: OperationsShowProps) {
     const { hasPermission } = usePermissions();
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
@@ -94,6 +126,231 @@ export default function OperationsShow({ operation, activityLogs = [] }: Operati
         if (!value) return 'Unknown';
         return value.charAt(0).toUpperCase() + value.slice(1);
     };
+
+    const formatCurrency = (value?: number | null) => {
+        if (value === null || value === undefined) return 'N/A';
+        return `${Number(value).toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        })} Birr`;
+    };
+
+    const formatPercent = (value?: number | null) => {
+        if (value === null || value === undefined) return 'N/A';
+        return `${Number(value).toFixed(1)}%`;
+    };
+
+    const formatOptionalNumber = (value?: number | null, suffix = '') => {
+        if (value === null || value === undefined) return 'N/A';
+        return `${formatNumber(value)}${suffix}`;
+    };
+
+    const startDate = operation.startdate ? new Date(operation.startdate) : null;
+    const endDate = operation.enddate ? new Date(operation.enddate) : null;
+    const createdDate = operation.created_at ? new Date(operation.created_at) : null;
+    const durationInDays = startDate && endDate
+        ? Math.max(Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)), 0)
+        : null;
+    const expectedRevenue = operation.volume !== undefined && operation.volume !== null
+        && operation.tariff !== undefined && operation.tariff !== null
+        ? Number(operation.volume) * Number(operation.tariff)
+        : null;
+
+    const totals = performanceInsights?.totals ?? {
+        plannedVolume: null,
+        totalTrips: 0,
+        completedTrips: 0,
+        ongoingTrips: 0,
+        returnRate: 0,
+        totalTonnage: 0,
+        remainingTonnage: 0,
+        completionRate: null,
+        averageTonPerTrip: null,
+        totalDistance: null,
+    };
+
+    const financials = performanceInsights?.financial ?? {
+        totalCost: null,
+        averageCostPerTrip: null,
+        averageCostPerTon: null,
+    };
+
+    const timelineData = performanceInsights?.trends?.timeline ?? [];
+    const tonnageBreakdown = performanceInsights?.trends?.tonnageBreakdown ?? [];
+    const hasTimelineData = timelineData.length > 0;
+    const hasTonnageData = tonnageBreakdown.some((item) => item.value > 0);
+    const pieColors = ['#6366f1', '#8b5cf6', '#22c55e'];
+
+    const completionPercentage = totals.completionRate ?? ((totals.plannedVolume && totals.plannedVolume > 0)
+        ? Number(((totals.totalTonnage / totals.plannedVolume) * 100).toFixed(2))
+        : null);
+    const completionLabel = completionPercentage === null ? 'N/A' : `${completionPercentage.toFixed(1)}%`;
+    const completionValue = completionPercentage ?? 0;
+    const completionBarWidth = Math.max(0, Math.min(completionValue, 100));
+    const tripProgressLabel = totals.totalTrips > 0
+        ? `${totals.completedTrips} / ${totals.totalTrips}`
+        : '0';
+
+    const relationshipMatrix: Array<{
+        label: string;
+        value: string;
+        description: string;
+        icon: LucideIcon;
+        iconClassName: string;
+    }> = [
+        {
+            label: 'Customer',
+            value: operation.customer?.name || 'Not assigned',
+            description: operation.customer?.name
+                ? 'Account receiving service delivery'
+                : 'Attach a customer to unlock CRM insights',
+            icon: Building2,
+            iconClassName: 'border-blue-200 bg-blue-50 text-blue-600 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-200',
+        },
+        {
+            label: 'Region',
+            value: operation.region?.name || 'Not specified',
+            description: operation.region?.name
+                ? 'Operational coverage area'
+                : 'Assign a region for clearer reporting',
+            icon: Globe2,
+            iconClassName: 'border-purple-200 bg-purple-50 text-purple-600 dark:border-purple-800 dark:bg-purple-900/30 dark:text-purple-200',
+        },
+        {
+            label: 'Account Owner',
+            value: operation.user?.name || 'System',
+            description: operation.user?.name
+                ? 'Responsible stakeholder overseeing execution'
+                : 'No user associated with this record',
+            icon: UserCircle,
+            iconClassName: 'border-emerald-200 bg-emerald-50 text-emerald-600 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200',
+        },
+        {
+            label: 'Lifecycle Status',
+            value: capitalize(operation.status),
+            description: operation.closed ? 'Marked as closed in the system' : 'Currently open and in progress',
+            icon: CheckCircle,
+            iconClassName: 'border-amber-200 bg-amber-50 text-amber-600 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-200',
+        },
+    ];
+
+    const metrics: Array<{
+        label: string;
+        value: string;
+        helper: string;
+        icon: LucideIcon;
+        containerClass: string;
+        iconClass: string;
+    }> = [
+        {
+            label: 'Volume (MT)',
+            value: formatNumber(operation.volume),
+            helper: 'Planned cargo throughput',
+            icon: Target,
+            containerClass: 'border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-900/20',
+            iconClass: 'text-emerald-600 dark:text-emerald-300',
+        },
+        {
+            label: 'Distance (KM)',
+            value: formatNumber(operation.km),
+            helper: 'Total projected coverage',
+            icon: Navigation,
+            containerClass: 'border-sky-200 bg-sky-50 dark:border-sky-800 dark:bg-sky-900/20',
+            iconClass: 'text-sky-600 dark:text-sky-300',
+        },
+        {
+            label: 'Tariff',
+            value: (() => {
+                const tariffValue = formatNumber(operation.tariff);
+                return tariffValue === 'N/A' ? 'N/A' : `${tariffValue} Birr`;
+            })(),
+            helper: 'Revenue per movement',
+            icon: BarChart3,
+            containerClass: 'border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/20',
+            iconClass: 'text-amber-600 dark:text-amber-300',
+        },
+        {
+            label: 'Cycle Length',
+            value: durationInDays !== null ? `${durationInDays} day${durationInDays === 1 ? '' : 's'}` : 'Awaiting schedule',
+            helper: 'Derived from start and end dates',
+            icon: CalendarDays,
+            containerClass: 'border-indigo-200 bg-indigo-50 dark:border-indigo-800 dark:bg-indigo-900/20',
+            iconClass: 'text-indigo-600 dark:text-indigo-300',
+        },
+        {
+            label: 'Trip Progress',
+            value: totals.totalTrips > 0 ? tripProgressLabel : '0',
+            helper: totals.totalTrips > 0 ? 'Completed vs logged trips' : 'No trips recorded yet',
+            icon: Activity,
+            containerClass: 'border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/20',
+            iconClass: 'text-blue-600 dark:text-blue-300',
+        },
+        {
+            label: 'Return Rate',
+            value: totals.totalTrips > 0 ? formatPercent(totals.returnRate) : 'N/A',
+            helper: 'Trips successfully closed',
+            icon: Clock,
+            containerClass: 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900/30',
+            iconClass: 'text-slate-600 dark:text-slate-200',
+        },
+        {
+            label: 'Tonnage Remaining',
+            value: formatNumber(totals.remainingTonnage ?? 0),
+            helper: totals.plannedVolume ? 'Outstanding volume vs plan' : 'No planned volume set',
+            icon: Milestone,
+            containerClass: 'border-purple-200 bg-purple-50 dark:border-purple-800 dark:bg-purple-900/20',
+            iconClass: 'text-purple-600 dark:text-purple-300',
+        },
+    ];
+
+    if (expectedRevenue !== null) {
+        const projectedRevenue = formatNumber(expectedRevenue);
+        metrics.push({
+            label: 'Revenue Potential',
+            value: projectedRevenue === 'N/A' ? 'N/A' : `${projectedRevenue} Birr`,
+            helper: 'Volume × tariff estimate',
+            icon: CircleDollarSign,
+            containerClass: 'border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-900/20',
+            iconClass: 'text-emerald-600 dark:text-emerald-300',
+        });
+    }
+
+    const timelineItems: Array<{
+        label: string;
+        value: string;
+        description: string;
+        icon: LucideIcon;
+        iconWrapperClass: string;
+    }> = [
+        {
+            label: 'Record Created',
+            value: formatDate(operation.created_at),
+            description: createdDate
+                ? createdDate.toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                })
+                : 'Timestamp unavailable',
+            icon: Clock,
+            iconWrapperClass: 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-200',
+        },
+        {
+            label: 'Kickoff',
+            value: formatDate(operation.startdate),
+            description: startDate ? 'Scheduled start of execution' : 'Start date pending',
+            icon: CalendarDays,
+            iconWrapperClass: 'border-blue-200 bg-blue-50 text-blue-600 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-200',
+        },
+        {
+            label: 'Projected Completion',
+            value: formatDate(operation.enddate),
+            description: endDate ? 'Planned wrap-up window' : 'End date pending',
+            icon: Milestone,
+            iconWrapperClass: 'border-purple-200 bg-purple-50 text-purple-600 dark:border-purple-800 dark:bg-purple-900/30 dark:text-purple-200',
+        },
+    ];
+
+    const stakeholderSummary = relationshipMatrix.filter((item) => item.label !== 'Lifecycle Status');
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -241,6 +498,242 @@ export default function OperationsShow({ operation, activityLogs = [] }: Operati
                                 </CardContent>
                             </Card>
 
+                            {/* Relationship Matrix */}
+                            <Card className="border-0 bg-gradient-to-br from-background to-muted/25 shadow-lg">
+                                <CardHeader className="border-b bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20">
+                                    <CardTitle className="flex items-center gap-2 text-xl">
+                                        <Globe2 className="h-5 w-5 text-blue-600 dark:text-blue-300" />
+                                        Relationship Matrix
+                                    </CardTitle>
+                                    <CardDescription>Visualise how this operation connects to key entities</CardDescription>
+                                </CardHeader>
+                                <CardContent className="p-6">
+                                    <div className="grid gap-4 md:grid-cols-2">
+                                        {relationshipMatrix.map((item) => (
+                                            <div
+                                                key={item.label}
+                                                className="rounded-xl border border-slate-200 bg-white/80 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/40"
+                                            >
+                                                <div className="flex items-start gap-3">
+                                                    <div className={`flex h-10 w-10 items-center justify-center rounded-lg border ${item.iconClassName}`}>
+                                                        <item.icon className="h-5 w-5" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">
+                                                            {item.label}
+                                                        </p>
+                                                        <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                                                            {item.value}
+                                                        </p>
+                                                        <p className="mt-1 text-xs text-slate-500 dark:text-slate-300">
+                                                            {item.description}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            {/* Performance Health */}
+                            <Card className="border-0 bg-gradient-to-br from-background to-muted/20 shadow-lg">
+                                <CardHeader className="border-b bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/20 dark:to-purple-950/20">
+                                    <CardTitle className="flex items-center gap-2 text-xl">
+                                        <Target className="h-5 w-5 text-indigo-600 dark:text-indigo-300" />
+                                        Performance Health
+                                    </CardTitle>
+                                    <CardDescription>Trip execution and volume progress against plan</CardDescription>
+                                </CardHeader>
+                                <CardContent className="p-6">
+                                    <div className="grid gap-6 lg:grid-cols-[minmax(0,0.65fr)_minmax(0,0.35fr)]">
+                                        <div className="space-y-4">
+                                            <div className="grid gap-4 sm:grid-cols-2">
+                                                <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm dark:border-emerald-800 dark:bg-emerald-900/30">
+                                                    <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-300">Completed Trips</p>
+                                                    <p className="mt-3 text-2xl font-bold text-emerald-700 dark:text-emerald-100">{totals.completedTrips}</p>
+                                                    <p className="mt-2 text-xs text-emerald-600/80 dark:text-emerald-300/80">Out of {totals.totalTrips} logged trips</p>
+                                                </div>
+                                                <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 shadow-sm dark:border-amber-800 dark:bg-amber-900/30">
+                                                    <p className="text-xs font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-300">Trips In Progress</p>
+                                                    <p className="mt-3 text-2xl font-bold text-amber-700 dark:text-amber-100">{totals.ongoingTrips}</p>
+                                                    <p className="mt-2 text-xs text-amber-600/80 dark:text-amber-300/80">Awaiting return confirmation</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/40">
+                                                <div className="flex items-center justify-between">
+                                                    <div>
+                                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">Volume Progress</p>
+                                                        <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                                                            {formatNumber(totals.totalTonnage ?? 0)} MT delivered
+                                                        </p>
+                                                    </div>
+                                                    <span className="rounded-full bg-indigo-100 px-3 py-1 text-xs font-semibold text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-200">
+                                                        {completionLabel}
+                                                    </span>
+                                                </div>
+                                                <div className="mt-4 h-3 w-full overflow-hidden rounded-full bg-muted">
+                                                    <div
+                                                        className="h-full rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-fuchsia-500 transition-all"
+                                                        style={{ width: `${completionBarWidth}%` }}
+                                                    />
+                                                </div>
+                                                <div className="mt-2 flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
+                                                    <span>Plan: {totals.plannedVolume ? `${formatNumber(totals.plannedVolume)} MT` : 'N/A'}</span>
+                                                    <span>
+                                                        Remaining: {totals.plannedVolume ? `${formatNumber(totals.remainingTonnage ?? 0)} MT` : 'N/A'}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <div className="grid gap-4 sm:grid-cols-2">
+                                                <div className="rounded-xl border border-slate-200 bg-white/80 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/40">
+                                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">Average Load per Trip</p>
+                                                    <p className="mt-2 text-lg font-semibold text-slate-900 dark:text-slate-100">{formatOptionalNumber(totals.averageTonPerTrip, ' MT')}</p>
+                                                    <p className="mt-1 text-xs text-muted-foreground">Helps gauge trip efficiency</p>
+                                                </div>
+                                                <div className="rounded-xl border border-slate-200 bg-white/80 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/40">
+                                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">Total Distance Covered</p>
+                                                    <p className="mt-2 text-lg font-semibold text-slate-900 dark:text-slate-100">{formatOptionalNumber(totals.totalDistance, ' km')}</p>
+                                                    <p className="mt-1 text-xs text-muted-foreground">Cumulative distance for this operation</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/40">
+                                                <div className="flex items-center justify-between">
+                                                    <div>
+                                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">Transport Timeline</p>
+                                                        <p className="mt-1 text-xs text-muted-foreground">Daily tonnage and trip cadence</p>
+                                                    </div>
+                                                    <span className="text-xs font-medium text-muted-foreground">Last 14 dispatch days</span>
+                                                </div>
+                                                <div className="mt-4 h-48">
+                                                    {hasTimelineData ? (
+                                                        <ResponsiveContainer width="100%" height="100%">
+                                                            <AreaChart data={timelineData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+                                                                <defs>
+                                                                    <linearGradient id="colorTonnage" x1="0" y1="0" x2="0" y2="1">
+                                                                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.6} />
+                                                                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0.1} />
+                                                                    </linearGradient>
+                                                                    <linearGradient id="colorTrips" x1="0" y1="0" x2="0" y2="1">
+                                                                        <stop offset="5%" stopColor="#22c55e" stopOpacity={0.4} />
+                                                                        <stop offset="95%" stopColor="#22c55e" stopOpacity={0.05} />
+                                                                    </linearGradient>
+                                                                </defs>
+                                                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.3)" />
+                                                                <XAxis dataKey="date" tick={{ fill: 'rgba(71, 85, 105, 0.9)', fontSize: 12 }} axisLine={false} tickLine={false} />
+                                                                <Tooltip
+                                                                    cursor={{ fill: 'rgba(99, 102, 241, 0.08)' }}
+                                                                    contentStyle={{
+                                                                        backgroundColor: 'var(--background)',
+                                                                        borderRadius: '0.75rem',
+                                                                        border: '1px solid hsl(var(--border))',
+                                                                        boxShadow: '0 10px 40px rgba(15, 23, 42, 0.18)',
+                                                                    }}
+                                                                />
+                                                                <Area type="monotone" dataKey="tonnage" name="Tonnage (MT)" stroke="#6366f1" strokeWidth={2} fill="url(#colorTonnage)" />
+                                                                <Area type="monotone" dataKey="trips" name="Trips" stroke="#22c55e" strokeWidth={2} fill="url(#colorTrips)" />
+                                                            </AreaChart>
+                                                        </ResponsiveContainer>
+                                                    ) : (
+                                                        <div className="flex h-full items-center justify-center rounded-lg bg-muted/40 text-sm text-muted-foreground">
+                                                            No trip data recorded yet
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <div className="rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/40">
+                                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">Volume Completion</p>
+                                                <p className="mt-1 text-xs text-muted-foreground">Achieved vs remaining tonnage</p>
+                                                <div className="relative mt-4 h-48 w-full">
+                                                    {hasTonnageData ? (
+                                                        <ResponsiveContainer width="100%" height="100%">
+                                                            <PieChart>
+                                                                <Pie
+                                                                    data={tonnageBreakdown}
+                                                                    dataKey="value"
+                                                                    nameKey="label"
+                                                                    innerRadius={60}
+                                                                    outerRadius={90}
+                                                                    paddingAngle={4}
+                                                                    stroke="none"
+                                                                >
+                                                                    {tonnageBreakdown.map((entry, index) => (
+                                                                        <Cell key={entry.label} fill={pieColors[index % pieColors.length]} />
+                                                                    ))}
+                                                                </Pie>
+                                                                <Tooltip
+                                                                    formatter={(value, name) => [`${Number(value).toFixed(2)} MT`, String(name)]}
+                                                                    contentStyle={{
+                                                                        backgroundColor: 'var(--background)',
+                                                                        borderRadius: '0.75rem',
+                                                                        border: '1px solid hsl(var(--border))',
+                                                                        boxShadow: '0 10px 40px rgba(15, 23, 42, 0.18)',
+                                                                    }}
+                                                                />
+                                                            </PieChart>
+                                                        </ResponsiveContainer>
+                                                    ) : (
+                                                        <div className="flex h-full items-center justify-center rounded-lg bg-muted/40 text-sm text-muted-foreground">
+                                                            No volume movement yet
+                                                        </div>
+                                                    )}
+
+                                                    {hasTonnageData && (
+                                                        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
+                                                            <span className="text-sm font-semibold text-foreground">{completionLabel}</span>
+                                                            <span className="text-xs text-muted-foreground">Complete</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="mt-4 space-y-2 text-xs text-muted-foreground">
+                                                    {tonnageBreakdown.map((entry, index) => (
+                                                        <div key={entry.label} className="flex items-center justify-between">
+                                                            <div className="flex items-center gap-2">
+                                                                <span
+                                                                    className="h-2.5 w-2.5 rounded-full"
+                                                                    style={{ backgroundColor: pieColors[index % pieColors.length] }}
+                                                                />
+                                                                <span className="font-medium text-foreground">{entry.label}</span>
+                                                            </div>
+                                                            <span className="font-semibold text-foreground">{formatNumber(entry.value ?? 0)} MT</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            <div className="rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/40">
+                                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">Financial Snapshot</p>
+                                                <div className="mt-3 space-y-3 text-sm">
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-muted-foreground">Total Cost</span>
+                                                        <span className="font-semibold text-foreground">{formatCurrency(financials.totalCost)}</span>
+                                                    </div>
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-muted-foreground">Average Cost / Trip</span>
+                                                        <span className="font-semibold text-foreground">{formatCurrency(financials.averageCostPerTrip)}</span>
+                                                    </div>
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-muted-foreground">Average Cost / MT</span>
+                                                        <span className="font-semibold text-foreground">{formatCurrency(financials.averageCostPerTon)}</span>
+                                                    </div>
+                                                </div>
+                                                <div className="mt-4 rounded-lg border border-indigo-100 bg-indigo-50/70 p-3 text-xs text-indigo-700 shadow-sm dark:border-indigo-900/50 dark:bg-indigo-950/30 dark:text-indigo-200">
+                                                    {totals.totalTrips > 0
+                                                        ? `Return rate currently at ${formatPercent(totals.returnRate)} with ${tripProgressLabel} trips closed.`
+                                                        : 'Log trip performances against this operation to begin monitoring financial efficiency.'}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
                             {/* Metrics */}
                             <Card className="border-0 bg-gradient-to-br from-background to-muted/20 shadow-lg">
                                 <CardHeader className="border-b bg-gradient-to-r from-emerald-50 to-emerald-100/70 dark:from-emerald-950/20 dark:to-emerald-900/20">
@@ -251,31 +744,29 @@ export default function OperationsShow({ operation, activityLogs = [] }: Operati
                                     <CardDescription>Operational volume, coverage, and tariff performance</CardDescription>
                                 </CardHeader>
                                 <CardContent className="p-6">
-                                    <div className="grid gap-4 sm:grid-cols-3">
-                                        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm dark:border-emerald-800 dark:bg-emerald-900/20">
-                                            <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-300">Volume (MT)</p>
-                                            <div className="mt-2 flex items-baseline gap-2">
-                                                <Target className="h-4 w-4 text-emerald-500" />
-                                                <span className="text-xl font-bold text-emerald-700 dark:text-emerald-200">{formatNumber(operation.volume)}</span>
-                                            </div>
-                                            <p className="mt-1 text-xs text-emerald-600/80 dark:text-emerald-300/80">Planned cargo throughput</p>
-                                        </div>
-                                        <div className="rounded-xl border border-sky-200 bg-sky-50 p-4 shadow-sm dark:border-sky-800 dark:bg-sky-900/20">
-                                            <p className="text-xs font-semibold uppercase tracking-wide text-sky-600 dark:text-sky-300">Distance (KM)</p>
-                                            <div className="mt-2 flex items-baseline gap-2">
-                                                <Navigation className="h-4 w-4 text-sky-500" />
-                                                <span className="text-xl font-bold text-sky-700 dark:text-sky-200">{formatNumber(operation.km)}</span>
-                                            </div>
-                                            <p className="mt-1 text-xs text-sky-600/80 dark:text-sky-300/80">Total route coverage</p>
-                                        </div>
-                                        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 shadow-sm dark:border-amber-800 dark:bg-amber-900/20">
-                                            <p className="text-xs font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-300">Tariff</p>
-                                            <div className="mt-2 flex items-baseline gap-2">
-                                                <BarChart3 className="h-4 w-4 text-amber-500" />
-                                                <span className="text-xl font-bold text-amber-700 dark:text-amber-200">{formatNumber(operation.tariff)}</span>
-                                            </div>
-                                            <p className="mt-1 text-xs text-amber-600/80 dark:text-amber-300/80">Revenue per movement</p>
-                                        </div>
+                                    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                                        {metrics.map((metric) => {
+                                            const Icon = metric.icon;
+                                            return (
+                                                <div
+                                                    key={metric.label}
+                                                    className={`rounded-xl border ${metric.containerClass} p-4 shadow-sm`}
+                                                >
+                                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">
+                                                        {metric.label}
+                                                    </p>
+                                                    <div className="mt-2 flex items-baseline gap-2">
+                                                        <Icon className={`h-4 w-4 ${metric.iconClass}`} />
+                                                        <span className="text-xl font-bold text-slate-900 dark:text-slate-100">
+                                                            {metric.value}
+                                                        </span>
+                                                    </div>
+                                                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-300">
+                                                        {metric.helper}
+                                                    </p>
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 </CardContent>
                             </Card>
@@ -382,19 +873,23 @@ export default function OperationsShow({ operation, activityLogs = [] }: Operati
                                     <CardTitle className="text-lg font-semibold">Stakeholders</CardTitle>
                                     <CardDescription>Key contacts linked to this operation</CardDescription>
                                 </CardHeader>
-                                <CardContent className="space-y-4 p-5">
-                                    <div className="rounded-lg border border-slate-200 bg-white/70 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/40">
-                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">Customer</p>
-                                        <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">{operation.customer?.name || 'Not assigned'}</p>
-                                    </div>
-                                    <div className="rounded-lg border border-slate-200 bg-white/70 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/40">
-                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">Region</p>
-                                        <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">{operation.region?.name || 'Not specified'}</p>
-                                    </div>
-                                    <div className="rounded-lg border border-slate-200 bg-white/70 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/40">
-                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">Account Owner</p>
-                                        <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">{operation.user?.name || 'System'}</p>
-                                    </div>
+                                <CardContent className="space-y-3 p-5">
+                                    {stakeholderSummary.map((item) => (
+                                        <div
+                                            key={item.label}
+                                            className="rounded-lg border border-slate-200 bg-white/70 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/40"
+                                        >
+                                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">
+                                                {item.label}
+                                            </p>
+                                            <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                                                {item.value}
+                                            </p>
+                                            <p className="mt-1 text-xs text-slate-500 dark:text-slate-300">
+                                                {item.description}
+                                            </p>
+                                        </div>
+                                    ))}
                                 </CardContent>
                             </Card>
 
@@ -402,28 +897,31 @@ export default function OperationsShow({ operation, activityLogs = [] }: Operati
                                 <CardHeader className="border-b bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-950/20 dark:to-blue-900/20">
                                     <CardTitle className="text-lg font-semibold">Key Dates</CardTitle>
                                 </CardHeader>
-                                <CardContent className="space-y-4 p-5 text-sm text-slate-700 dark:text-slate-200">
-                                    <div className="flex items-center justify-between">
-                                        <span className="flex items-center gap-2">
-                                            <Calendar className="h-4 w-4 text-blue-500" />
-                                            Start Date
-                                        </span>
-                                        <span className="font-semibold">{formatDate(operation.startdate)}</span>
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                        <span className="flex items-center gap-2">
-                                            <Calendar className="h-4 w-4 text-indigo-500" />
-                                            End Date
-                                        </span>
-                                        <span className="font-semibold">{formatDate(operation.enddate)}</span>
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                        <span className="flex items-center gap-2">
-                                            <Clock className="h-4 w-4 text-slate-500" />
-                                            Created On
-                                        </span>
-                                        <span className="font-semibold">{formatDate(operation.created_at)}</span>
-                                    </div>
+                                <CardContent className="space-y-3 p-5">
+                                    {timelineItems.map((item) => {
+                                        const Icon = item.icon;
+                                        return (
+                                            <div
+                                                key={item.label}
+                                                className="flex items-start gap-3 rounded-lg border border-slate-200 bg-white/70 p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900/40"
+                                            >
+                                                <div className={`flex h-10 w-10 items-center justify-center rounded-lg border ${item.iconWrapperClass}`}>
+                                                    <Icon className="h-4 w-4" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">
+                                                        {item.label}
+                                                    </p>
+                                                    <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                                                        {item.value}
+                                                    </p>
+                                                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-300">
+                                                        {item.description}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
                                 </CardContent>
                             </Card>
                         </div>

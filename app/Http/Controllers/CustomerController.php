@@ -80,8 +80,67 @@ class CustomerController extends Controller
     public function show(Customer $customer): Response
     {
         $customer->load(['operations' => function ($query) {
-            $query->with('performances')->paginate(10);
+            $query->where('status', 'active')
+                ->withCount('performances')
+                ->withCount(['performances as completed_trips' => function ($q) {
+                    $q->where('is_returned', true);
+                }])
+                ->withSum('performances as total_tonnage', 'CargoVolumMT')
+                ->withSum('performances as total_distance_wc', 'DistanceWCargo')
+                ->withSum('performances as total_distance_woc', 'DistanceWOCargo')
+                ->withSum('performances as total_cost_fuel', 'fuelInBirr')
+                ->withSum('performances as total_cost_perdiem', 'perdiem')
+                ->withSum('performances as total_cost_other', 'other')
+                ->withMax('performances as last_dispatch', 'DateDispach')
+                ->orderByDesc('startdate');
         }]);
+
+        $activeOperations = $customer->operations->map(function ($operation) {
+            $totalTrips = (int) ($operation->performances_count ?? 0);
+            $completedTrips = (int) ($operation->completed_trips ?? 0);
+            $inProgressTrips = max($totalTrips - $completedTrips, 0);
+
+            $deliveredTonnage = (float) ($operation->total_tonnage ?? 0);
+            $plannedVolume = (float) ($operation->volume ?? 0);
+            $remainingTonnage = max($plannedVolume - $deliveredTonnage, 0);
+            $completionRate = $plannedVolume > 0 ? round(($deliveredTonnage / $plannedVolume) * 100, 2) : null;
+
+            $totalDistance = (float) ($operation->total_distance_wc ?? 0) + (float) ($operation->total_distance_woc ?? 0);
+            $totalCost = (float) ($operation->total_cost_fuel ?? 0)
+                + (float) ($operation->total_cost_perdiem ?? 0)
+                + (float) ($operation->total_cost_other ?? 0);
+
+            return [
+                'id' => $operation->id,
+                'operationid' => $operation->operationid,
+                'status' => $operation->status,
+                'startdate' => $operation->startdate,
+                'enddate' => $operation->enddate,
+                'volume' => $plannedVolume,
+                'km' => $operation->km,
+                'tariff' => $operation->tariff,
+                'totalTrips' => $totalTrips,
+                'completedTrips' => $completedTrips,
+                'inProgressTrips' => $inProgressTrips,
+                'deliveredTonnage' => round($deliveredTonnage, 2),
+                'remainingTonnage' => round($remainingTonnage, 2),
+                'completionRate' => $completionRate,
+                'totalDistance' => round($totalDistance, 2),
+                'totalCost' => round($totalCost, 2),
+                'lastDispatch' => $operation->last_dispatch,
+            ];
+        })->values();
+
+        $customerData = [
+            'id' => $customer->id,
+            'name' => $customer->name,
+            'contact_person' => $customer->contact_person,
+            'phone' => $customer->phone,
+            'email' => $customer->email,
+            'address' => $customer->address,
+            'status' => $customer->status,
+            'created_at' => $customer->created_at,
+        ];
 
         $activityLogs = Activity::forSubject($customer)
             ->with('causer')
@@ -89,7 +148,9 @@ class CustomerController extends Controller
             ->get();
 
         return Inertia::render('Customers/Show', [
-            'customer' => $customer,
+            'customer' => $customerData,
+            'activeOperations' => $activeOperations,
+            'activeOperationsCount' => $activeOperations->count(),
             'activityLogs' => $activityLogs,
         ]);
     }

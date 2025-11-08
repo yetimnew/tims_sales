@@ -1,4 +1,4 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -10,12 +10,24 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import AppLayout from '@/layouts/app-layout';
+import ListPageLayout from '@/components/layouts/list-page-layout';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { usePermissions } from '@/hooks/use-permissions';
-import { Head, Link, router } from '@inertiajs/react';
+import { Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
-import { Plus, Eye, Edit, Trash2, Search, ArrowUpDown, ChevronLeft, ChevronRight, FileDown } from 'lucide-react';
+import {
+    Plus,
+    Eye,
+    Edit,
+    Trash2,
+    Search,
+    ArrowUpDown,
+    FileDown,
+    Globe,
+    CheckCircle,
+    XCircle,
+    Layers,
+} from 'lucide-react';
 import { InertiaPagination } from '@/components/ui/pagination';
 import * as React from 'react';
 
@@ -67,9 +79,10 @@ export default function RegionsIndex({ regions, totalCount }: RegionsIndexProps)
         const value = e.target.value;
         setSearchTerm(value);
 
-        router.get('/regions',
+        router.get(
+            '/regions',
             { search: value, sort: sortBy, direction: sortDirection },
-            { preserveState: false }
+            { preserveState: true, replace: false },
         );
     };
 
@@ -82,9 +95,10 @@ export default function RegionsIndex({ regions, totalCount }: RegionsIndexProps)
         setSortBy(column);
         setSortDirection(newDirection);
 
-        router.get('/regions',
+        router.get(
+            '/regions',
             { search: searchTerm, sort: column, direction: newDirection },
-            { preserveState: false }
+            { preserveState: true, replace: false },
         );
     };
 
@@ -109,191 +123,230 @@ export default function RegionsIndex({ regions, totalCount }: RegionsIndexProps)
         });
     };
 
-    const SortIcon = ({ column }: { column: string }) => {
-        if (sortBy !== column) {
-            return <ArrowUpDown className="ml-2 h-4 w-4 opacity-50" />;
-        }
-        return (
-            <ArrowUpDown
-                className={`ml-2 h-4 w-4 transition-transform ${
-                    sortDirection === 'desc' ? 'rotate-180' : ''
-                }`}
-            />
-        );
-    };
-
     const regionCount = totalCount || regions?.total || 0;
-    const perPage = regions?.per_page || 15;
     const currentPage = regions?.current_page || 1;
     const totalPages = regions?.last_page || 1;
+    const activeCount = regions?.data?.filter((region) => region.status === 'active').length || 0;
+    const inactiveCount = regions?.data?.filter((region) => region.status === 'inactive').length || 0;
+    const totalZones = regions?.data?.reduce((sum, region) => sum + (region.zones_count ?? 0), 0) || 0;
+
+    const headerActions = (
+        <>
+            {hasPermission('regions.export') && (
+                <Button
+                    variant="outline"
+                    onClick={() => {
+                        const params = new URLSearchParams({
+                            search: searchTerm,
+                            sort: sortBy,
+                            direction: sortDirection,
+                        });
+                        window.location.href = `/regions/export?${params.toString()}`;
+                    }}
+                >
+                    <FileDown className="mr-2 h-4 w-4" />
+                    Export CSV
+                </Button>
+            )}
+            {hasPermission('regions.create') && (
+                <Button asChild>
+                    <Link href="/regions/create">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Region
+                    </Link>
+                </Button>
+            )}
+        </>
+    );
+
+    const statsSection = (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total Regions</CardTitle>
+                    <Globe className="h-4 w-4 text-blue-600" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold text-blue-600">{regionCount}</div>
+                    <p className="text-xs text-muted-foreground">Across the network</p>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Active</CardTitle>
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold text-green-600">{activeCount}</div>
+                    <p className="text-xs text-muted-foreground">Ready for deployment</p>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Inactive</CardTitle>
+                    <XCircle className="h-4 w-4 text-red-600" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold text-red-600">{inactiveCount}</div>
+                    <p className="text-xs text-muted-foreground">Awaiting activation</p>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Mapped Zones</CardTitle>
+                    <Layers className="h-4 w-4 text-indigo-600" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold text-indigo-600">{totalZones}</div>
+                    <p className="text-xs text-muted-foreground">Zones on current view</p>
+                </CardContent>
+            </Card>
+        </div>
+    );
+
+    const tableHeaderExtras = (
+        <div className="relative w-64">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <Input
+                placeholder="Search regions..."
+                value={searchTerm}
+                onChange={handleSearch}
+                className="pl-10"
+            />
+        </div>
+    );
+
+    const renderHeaderCell = (column: string, label: string, sortable = true) => (
+        <TableHead
+            key={column}
+            className={`bg-background ${
+                sortable
+                    ? 'cursor-pointer select-none transition-colors hover:bg-muted/70'
+                    : 'text-right'
+            }`}
+            onClick={() => sortable && handleSort(column)}
+        >
+            <div className={`flex items-center gap-2 ${!sortable ? 'justify-end' : ''}`}>
+                {label}
+                {sortable && (
+                    <ArrowUpDown
+                        size={14}
+                        className={
+                            sortBy === column
+                                ? 'text-primary'
+                                : 'text-muted-foreground opacity-50'
+                        }
+                        style={sortBy === column && sortDirection === 'desc' ? { transform: 'rotate(180deg)' } : undefined}
+                    />
+                )}
+            </div>
+        </TableHead>
+    );
+
+    const statusClassName = (status: RegionData['status']) => (
+        status === 'active'
+            ? 'bg-green-100 text-green-800 border-green-200 hover:bg-green-200'
+            : 'bg-slate-200 text-slate-700 border-slate-300 hover:bg-slate-300'
+    );
+
+    const tableContent = (
+        <Table>
+            <TableHeader>
+                <TableRow className="sticky top-0 z-20 border-b bg-background">
+                    {renderHeaderCell('id', 'ID')}
+                    {renderHeaderCell('name', 'Name')}
+                    {renderHeaderCell('code', 'Code')}
+                    <TableHead className="bg-background">Status</TableHead>
+                    {renderHeaderCell('zones_count', 'Zones')}
+                    <TableHead className="bg-background text-right">Actions</TableHead>
+                </TableRow>
+            </TableHeader>
+            <TableBody>
+                {regions.data.length > 0 ? (
+                    regions.data.map((region) => (
+                        <TableRow key={region.id} className="hover:bg-muted/50">
+                            <TableCell className="font-medium">{region.id}</TableCell>
+                            <TableCell className="font-semibold text-foreground">{region.name}</TableCell>
+                            <TableCell className="text-muted-foreground">{region.code || '—'}</TableCell>
+                            <TableCell>
+                                <Badge className={`flex items-center gap-1 w-fit border ${statusClassName(region.status)}`}>
+                                    {region.status.charAt(0).toUpperCase() + region.status.slice(1)}
+                                </Badge>
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">{region.zones_count ?? 0}</TableCell>
+                            <TableCell className="text-right">
+                                <div className="flex justify-end gap-2">
+                                    {hasPermission('regions.show') && (
+                                        <Button asChild size="sm" variant="ghost">
+                                            <Link href={`/regions/${region.id}`}>
+                                                <Eye className="h-4 w-4" />
+                                            </Link>
+                                        </Button>
+                                    )}
+                                    {hasPermission('regions.edit') && (
+                                        <Button asChild size="sm" variant="ghost">
+                                            <Link href={`/regions/${region.id}/edit`}>
+                                                <Edit className="h-4 w-4" />
+                                            </Link>
+                                        </Button>
+                                    )}
+                                    {hasPermission('regions.destroy') && (
+                                        <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            onClick={() => handleDeleteClick(region)}
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    )}
+                                </div>
+                            </TableCell>
+                        </TableRow>
+                    ))
+                ) : (
+                    <TableRow>
+                        <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
+                            No regions found.
+                            {hasPermission('regions.create') && (
+                                <Link href="/regions/create" className="ml-1 text-primary underline">
+                                    Create one
+                                </Link>
+                            )}
+                        </TableCell>
+                    </TableRow>
+                )}
+            </TableBody>
+        </Table>
+    );
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Regions" />
-            <div className="flex h-full flex-1 flex-col gap-6 overflow-hidden rounded-xl p-4">
-                {/* Header Section */}
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-3xl font-bold">Regions</h1>
-                        <p className="text-muted-foreground mt-2">
-                            Manage your {regionCount} region{regionCount !== 1 ? 's' : ''}
-                        </p>
-                    </div>
-                    <div className="flex gap-2">
-                        {hasPermission('regions.export') && (
-                            <Button
-                                variant="outline"
-                                onClick={() => router.get('/regions/export', { search: searchTerm, sort: sortBy, direction: sortDirection })}
-                            >
-                                <FileDown className="mr-2 h-4 w-4" />
-                                Export CSV
-                            </Button>
-                        )}
-                        {hasPermission('regions.create') && (
-                            <Link href="/regions/create">
-                                <Button>
-                                    <Plus className="mr-2 h-4 w-4" />
-                                    Add Region
-                                </Button>
-                            </Link>
-                        )}
-                    </div>
-                </div>
+        <>
+            <ListPageLayout
+                headTitle="Regions"
+                title="Regions"
+                description={`Manage your network of ${regionCount} region${regionCount !== 1 ? 's' : ''}`}
+                breadcrumbs={breadcrumbs}
+                actions={headerActions}
+                stats={statsSection}
+                tableTitle="Region Inventory"
+                tableDescription="Monitor regional coverage and operational readiness"
+                tableHeaderExtras={tableHeaderExtras}
+                pagination={
+                    <InertiaPagination
+                        from={regions.from}
+                        to={regions.to}
+                        total={regionCount}
+                        links={regions.links as any}
+                        currentPage={currentPage}
+                        lastPage={totalPages}
+                        className="px-6 pb-6 pt-4"
+                    />
+                }
+                tableContainerClassName="max-h-[55vh]"
+            >
+                {tableContent}
+            </ListPageLayout>
 
-                {/* Table Section */}
-                <Card className="flex flex-1 flex-col overflow-hidden">
-                    <CardHeader>
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <CardTitle>Region Inventory</CardTitle>
-                                <CardDescription>
-                                    {regionCount} total region{regionCount !== 1 ? 's' : ''} in system
-                                </CardDescription>
-                            </div>
-                            <div className="relative w-64">
-                                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                <Input
-                                    placeholder="Search regions..."
-                                    value={searchTerm}
-                                    onChange={handleSearch}
-                                    className="pl-10"
-                                />
-                            </div>
-                        </div>
-                    </CardHeader>
-                    <CardContent className="flex-1 overflow-auto">
-                        <div className="rounded-lg border">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow className="bg-muted/50">
-                                        <TableHead
-                                            className="cursor-pointer select-none hover:bg-muted/70 transition-colors"
-                                            onClick={() => handleSort('id')}
-                                        >
-                                            <div className="flex items-center">
-                                                ID <SortIcon column="id" />
-                                            </div>
-                                        </TableHead>
-                                        <TableHead
-                                            className="cursor-pointer select-none hover:bg-muted/70 transition-colors"
-                                            onClick={() => handleSort('name')}
-                                        >
-                                            <div className="flex items-center">
-                                                Name <SortIcon column="name" />
-                                            </div>
-                                        </TableHead>
-                                        <TableHead
-                                            className="cursor-pointer select-none hover:bg-muted/70 transition-colors"
-                                            onClick={() => handleSort('code')}
-                                        >
-                                            <div className="flex items-center">
-                                                Code <SortIcon column="code" />
-                                            </div>
-                                        </TableHead>
-                                        <TableHead>Status</TableHead>
-                                        <TableHead
-                                            className="cursor-pointer select-none hover:bg-muted/70 transition-colors"
-                                            onClick={() => handleSort('zones_count')}
-                                        >
-                                            <div className="flex items-center">
-                                                Zones <SortIcon column="zones_count" />
-                                            </div>
-                                        </TableHead>
-                                        <TableHead>Actions</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {regions.data.length > 0 ? (
-                                        regions.data.map((region) => (
-                                            <TableRow key={region.id}>
-                                                <TableCell className="font-medium">{region.id}</TableCell>
-                                                <TableCell className="font-medium">{region.name}</TableCell>
-                                                <TableCell>{region.code || '-'}</TableCell>
-                                                <TableCell>
-                                                    <Badge variant={region.status === 'active' ? 'default' : 'secondary'}>
-                                                        {region.status}
-                                                    </Badge>
-                                                </TableCell>
-                                                <TableCell>{region.zones_count || 0}</TableCell>
-                                                <TableCell>
-                                                    <div className="flex items-center space-x-2">
-                                                        {hasPermission('regions.show') && (
-                                                            <Link href={`/regions/${region.id}`}>
-                                                                <Button size="sm" variant="ghost">
-                                                                    <Eye className="h-4 w-4" />
-                                                                </Button>
-                                                            </Link>
-                                                        )}
-                                                        {hasPermission('regions.edit') && (
-                                                            <Link href={`/regions/${region.id}/edit`}>
-                                                                <Button size="sm" variant="ghost">
-                                                                    <Edit className="h-4 w-4" />
-                                                                </Button>
-                                                            </Link>
-                                                        )}
-                                                        {hasPermission('regions.destroy') && (
-                                                            <Button
-                                                                size="sm"
-                                                                variant="ghost"
-                                                                onClick={() => handleDeleteClick(region)}
-                                                            >
-                                                                <Trash2 className="h-4 w-4" />
-                                                            </Button>
-                                                        )}
-                                                    </div>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))
-                                    ) : (
-                                        <TableRow>
-                                            <TableCell colSpan={3} className="py-8 text-center text-muted-foreground">
-                                                No regions found.
-                                                {hasPermission('regions.create') && (
-                                                    <Link href="/regions/create" className="ml-1 text-primary underline">
-                                                        Create one
-                                                    </Link>
-                                                )}
-                                            </TableCell>
-                                        </TableRow>
-                                    )}
-                                </TableBody>
-                            </Table>
-                        </div>
-
-                        {/* Pagination */}
-                        <InertiaPagination
-                          from={regions.from}
-                          to={regions.to}
-                          total={regionCount}
-                          links={(regions as any).links as any}
-                          currentPage={currentPage}
-                          lastPage={totalPages}
-                        />
-                    </CardContent>
-                </Card>
-            </div>
-
-            {/* Delete Confirmation Dialog */}
             <DeleteConfirmationDialog
                 open={deleteDialogOpen}
                 onOpenChange={setDeleteDialogOpen}
@@ -303,6 +356,6 @@ export default function RegionsIndex({ regions, totalCount }: RegionsIndexProps)
                 onConfirm={handleDeleteConfirm}
                 isLoading={isDeleting}
             />
-        </AppLayout>
+        </>
     );
 }
