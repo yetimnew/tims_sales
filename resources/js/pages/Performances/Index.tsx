@@ -1,4 +1,4 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -15,9 +15,39 @@ import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialo
 import { usePermissions } from '@/hooks/use-permissions';
 import { Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
-import { Plus, Eye, Edit, Trash2, Search, ArrowUpDown, FileDown, Activity, CheckCircle, Clock, XCircle, DollarSign } from 'lucide-react';
+import { Plus, Eye, Edit, Trash2, Search, ArrowUpDown, FileDown, Activity, CheckCircle, XCircle } from 'lucide-react';
 import ReactPaginate from 'react-paginate';
 import * as React from 'react';
+
+const breadcrumbs: BreadcrumbItem[] = [
+    {
+        title: 'Performances',
+        href: '/performances',
+    },
+];
+
+interface Performance {
+    id: number;
+    trip: string;
+    FOnumber: string;
+    DateDispach?: string;
+    LoadType: string;
+    satus: string;
+    DistanceWCargo?: number | string;
+    fuelInBirr?: number | string;
+}
+
+interface PerformancesIndexProps {
+    performances: {
+        data: Performance[];
+        current_page: number;
+        last_page: number;
+        total: number;
+        from: number;
+        to: number;
+    };
+    totalCount?: number;
+}
 
 export default function PerformancesIndex({ performances, totalCount }: PerformancesIndexProps) {
     const { hasPermission } = usePermissions();
