@@ -6,9 +6,12 @@ use App\Models\Region;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 use Exception;
-use Spatie\ActivityLog\Facades\Activity;
+use Spatie\Activitylog\Facades\Activity as ActivityLogger;
+use Spatie\Activitylog\Models\Activity;
 
 class RegionController extends Controller
 {
@@ -17,7 +20,7 @@ class RegionController extends Controller
      */
     public function index(Request $request): Response
     {
-        $query = Region::withCount('zones');
+    $query = Region::withCount('zones');
 
         // Handle search
         if ($request->has('search') && !empty($request->input('search'))) {
@@ -34,17 +37,26 @@ class RegionController extends Controller
         $direction = $request->input('direction', 'asc');
 
         // Validate sort column to prevent SQL injection
-        $allowedSorts = ['name', 'code', 'zones_count', 'created_at'];
+        $allowedSorts = ['name', 'code', 'zones_count', 'created_at', 'population', 'accessibility_score', 'area_km2'];
         if (!in_array($sort, $allowedSorts)) {
             $sort = 'name';
         }
 
         $query->orderBy($sort, $direction);
 
-        $regions = $query->paginate(15);
+        $metricsQuery = clone $query;
+
+        $regions = $query->paginate(15)->withQueryString();
+
+        $metrics = [
+            'totalPopulation' => (int) ((clone $metricsQuery)->sum('population') ?? 0),
+            'averageAccessibility' => round((float) (((clone $metricsQuery)->avg('accessibility_score')) ?? 0), 2),
+            'surveyedCount' => (clone $metricsQuery)->whereNotNull('last_surveyed_at')->count(),
+        ];
 
         return Inertia::render('Regions/Index', [
             'regions' => $regions,
+            'metrics' => $metrics,
         ]);
     }
 
@@ -64,14 +76,30 @@ class RegionController extends Controller
         try {
             $validated = $request->validate([
                 'name' => 'required|string|max:255|unique:regions,name',
+                'code' => [
+                    'nullable',
+                    'string',
+                    'max:50',
+                    Rule::unique('regions', 'code')->whereNull('deleted_at'),
+                ],
                 'status' => 'required|in:active,inactive',
                 'description' => 'nullable|string|max:1000',
+                'capital' => 'nullable|string|max:255',
+                'area_km2' => 'nullable|numeric|min:0|max:999999.99',
+                'population' => 'nullable|integer|min:0',
+                'latitude' => 'nullable|numeric|between:-90,90',
+                'longitude' => 'nullable|numeric|between:-180,180',
+                'elevation_m' => 'nullable|numeric|min:-400|max:9000',
+                'accessibility_score' => 'nullable|numeric|min:0|max:100',
+                'last_surveyed_at' => 'nullable|date',
+                'infrastructure_notes' => 'nullable|string|max:2000',
+                'climate_profile' => 'nullable|string|max:2000',
             ]);
 
             $region = Region::create($validated);
 
-            Activity::performedOn($region)
-                ->causedBy(auth()->user())
+            ActivityLogger::performedOn($region)
+                ->causedBy(Auth::user())
                 ->log('created');
 
             return redirect()->route('regions.index')
@@ -81,7 +109,7 @@ class RegionController extends Controller
             Log::error('Region creation failed', [
                 'error' => $e->getMessage(),
                 'data' => $request->all(),
-                'user_id' => auth()->id(),
+                'user_id' => Auth::id(),
             ]);
 
             return back()->withErrors(['error' => 'Failed to create region. Please try again.']);
@@ -124,15 +152,31 @@ class RegionController extends Controller
         try {
             $validated = $request->validate([
                 'name' => 'required|string|max:255|unique:regions,name,' . $region->id,
+                'code' => [
+                    'nullable',
+                    'string',
+                    'max:50',
+                    Rule::unique('regions', 'code')->whereNull('deleted_at')->ignore($region->id),
+                ],
                 'status' => 'required|in:active,inactive',
                 'description' => 'nullable|string|max:1000',
+                'capital' => 'nullable|string|max:255',
+                'area_km2' => 'nullable|numeric|min:0|max:999999.99',
+                'population' => 'nullable|integer|min:0',
+                'latitude' => 'nullable|numeric|between:-90,90',
+                'longitude' => 'nullable|numeric|between:-180,180',
+                'elevation_m' => 'nullable|numeric|min:-400|max:9000',
+                'accessibility_score' => 'nullable|numeric|min:0|max:100',
+                'last_surveyed_at' => 'nullable|date',
+                'infrastructure_notes' => 'nullable|string|max:2000',
+                'climate_profile' => 'nullable|string|max:2000',
             ]);
 
             $oldData = $region->toArray();
             $region->update($validated);
 
-            Activity::performedOn($region)
-                ->causedBy(auth()->user())
+            ActivityLogger::performedOn($region)
+                ->causedBy(Auth::user())
                 ->withProperties(['old' => $oldData, 'new' => $region->toArray()])
                 ->log('updated');
 
@@ -144,7 +188,7 @@ class RegionController extends Controller
                 'region_id' => $region->id,
                 'error' => $e->getMessage(),
                 'data' => $request->all(),
-                'user_id' => auth()->id(),
+                'user_id' => Auth::id(),
             ]);
 
             return back()->withErrors(['error' => 'Failed to update region. Please try again.']);
@@ -165,8 +209,8 @@ class RegionController extends Controller
             $regionData = $region->toArray();
             $region->delete();
 
-            Activity::performedOn($region)
-                ->causedBy(auth()->user())
+            ActivityLogger::performedOn($region)
+                ->causedBy(Auth::user())
                 ->withProperties(['deleted' => $regionData])
                 ->log('deleted');
 
@@ -177,7 +221,7 @@ class RegionController extends Controller
             Log::error('Region deletion failed', [
                 'region_id' => $region->id,
                 'error' => $e->getMessage(),
-                'user_id' => auth()->id(),
+                'user_id' => Auth::id(),
             ]);
 
             return back()->withErrors(['error' => 'Failed to delete region. Please try again.']);
@@ -227,7 +271,25 @@ class RegionController extends Controller
             fwrite($file, "\xEF\xBB\xBF");
 
             // Header row
-            fputcsv($file, ['ID', 'Name', 'Code', 'Description', 'Zones Count', 'Created At']);
+            fputcsv($file, [
+                'ID',
+                'Name',
+                'Code',
+                'Status',
+                'Capital',
+                'Area (km²)',
+                'Population',
+                'Latitude',
+                'Longitude',
+                'Elevation (m)',
+                'Accessibility Score',
+                'Last Surveyed At',
+                'Description',
+                'Infrastructure Notes',
+                'Climate Profile',
+                'Zones Count',
+                'Created At'
+            ]);
 
             // Data rows
             foreach ($regions as $region) {
@@ -235,7 +297,18 @@ class RegionController extends Controller
                     $region->id,
                     $region->name,
                     $region->code,
+                    $region->status,
+                    $region->capital,
+                    $region->area_km2,
+                    $region->population,
+                    $region->latitude,
+                    $region->longitude,
+                    $region->elevation_m,
+                    $region->accessibility_score,
+                    optional($region->last_surveyed_at)->toDateString(),
                     $region->description,
+                    $region->infrastructure_notes,
+                    $region->climate_profile,
                     $region->zones_count,
                     $region->created_at,
                 ]);
@@ -245,7 +318,7 @@ class RegionController extends Controller
         };
 
         // Log export activity
-        Activity::causedBy(auth()->user())
+    ActivityLogger::causedBy(Auth::user())
             ->withProperties(['count' => count($regions)])
             ->log('exported');
 

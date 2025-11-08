@@ -16,10 +16,27 @@ class Region extends Model
         'code',
         'status',
         'description',
+        'capital',
+        'area_km2',
+        'population',
+        'latitude',
+        'longitude',
+        'elevation_m',
+        'accessibility_score',
+        'last_surveyed_at',
+        'infrastructure_notes',
+        'climate_profile',
     ];
 
     protected $casts = [
         'status' => 'string',
+        'area_km2' => 'decimal:2',
+        'population' => 'integer',
+        'latitude' => 'decimal:7',
+        'longitude' => 'decimal:7',
+        'elevation_m' => 'decimal:2',
+        'accessibility_score' => 'decimal:2',
+        'last_surveyed_at' => 'date',
     ];
 
     /**

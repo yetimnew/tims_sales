@@ -7,9 +7,11 @@ use App\Models\Place;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Exception;
-use Spatie\ActivityLog\Facades\Activity;
+use Spatie\Activitylog\Facades\Activity as ActivityLogger;
+use Spatie\Activitylog\Models\Activity;
 
 class DistanceController extends Controller
 {
@@ -73,17 +75,26 @@ class DistanceController extends Controller
         $sortDirection = $request->get('direction', 'asc');
 
         // Validate sort column to prevent SQL injection
-        $allowedSortColumns = ['id', 'distance_km', 'estimated_time_hours', 'route_type', 'created_at'];
+        $allowedSortColumns = ['id', 'distance_km', 'estimated_time_hours', 'route_type', 'created_at', 'average_speed_kmph', 'road_quality_index'];
         if (!in_array($sortColumn, $allowedSortColumns)) {
             $sortColumn = 'distance_km';
         }
 
         $query->orderBy($sortColumn, $sortDirection);
 
-        $distances = $query->paginate(15);
+        $metricsQuery = clone $query;
+
+        $distances = $query->paginate(15)->withQueryString();
+
+        $metrics = [
+            'averageSpeed' => round((float) (((clone $metricsQuery)->avg('average_speed_kmph')) ?? 0), 2),
+            'averageRoadQuality' => round((float) (((clone $metricsQuery)->avg('road_quality_index')) ?? 0), 2),
+            'seasonalConstraintCount' => (clone $metricsQuery)->whereNotNull('seasonality_notes')->count(),
+        ];
 
         return Inertia::render('Distances/Index', [
             'distances' => $distances,
+            'metrics' => $metrics,
         ]);
     }
 
@@ -119,6 +130,11 @@ class DistanceController extends Controller
                 'toll_cost' => 'nullable|numeric|min:0',
                 'restricted_for_heavy_vehicles' => 'nullable|boolean',
                 'route_notes' => 'nullable|string|max:2000',
+                'average_speed_kmph' => 'nullable|numeric|min:0|max:200',
+                'typical_delay_minutes' => 'nullable|integer|min:0',
+                'road_quality_index' => 'nullable|numeric|min:0|max:10',
+                'seasonality_notes' => 'nullable|string|max:2000',
+                'safety_notes' => 'nullable|string|max:2000',
             ]);
 
             // Set default values if not provided
@@ -126,11 +142,13 @@ class DistanceController extends Controller
             $validated['road_condition_factor'] = $validated['road_condition_factor'] ?? 1.0;
             $validated['toll_road'] = $validated['toll_road'] ?? false;
             $validated['restricted_for_heavy_vehicles'] = $validated['restricted_for_heavy_vehicles'] ?? false;
+            $validated['average_speed_kmph'] = $validated['average_speed_kmph'] ?? null;
+            $validated['road_quality_index'] = $validated['road_quality_index'] ?? null;
 
             $distance = Distance::create($validated);
 
-            Activity::performedOn($distance)
-                ->causedBy(auth()->user())
+            ActivityLogger::performedOn($distance)
+                ->causedBy(Auth::user())
                 ->log('created');
 
             return redirect()->route('distances.index')
@@ -140,7 +158,7 @@ class DistanceController extends Controller
             Log::error('Distance creation failed', [
                 'error' => $e->getMessage(),
                 'data' => $request->all(),
-                'user_id' => auth()->id(),
+                'user_id' => Auth::id(),
             ]);
 
             return back()->withErrors(['error' => 'Failed to create distance. Please try again.']);
@@ -154,7 +172,7 @@ class DistanceController extends Controller
     {
         $distance->load(['fromPlace.woreda.zone.region', 'toPlace.woreda.zone.region']);
 
-        $activityLogs = Activity::forSubject($distance)
+            $activityLogs = Activity::forSubject($distance)
             ->with('causer')
             ->orderByDesc('created_at')
             ->get();
@@ -198,13 +216,18 @@ class DistanceController extends Controller
                 'toll_cost' => 'nullable|numeric|min:0',
                 'restricted_for_heavy_vehicles' => 'nullable|boolean',
                 'route_notes' => 'nullable|string|max:2000',
+                'average_speed_kmph' => 'nullable|numeric|min:0|max:200',
+                'typical_delay_minutes' => 'nullable|integer|min:0',
+                'road_quality_index' => 'nullable|numeric|min:0|max:10',
+                'seasonality_notes' => 'nullable|string|max:2000',
+                'safety_notes' => 'nullable|string|max:2000',
             ]);
 
             $oldData = $distance->toArray();
             $distance->update($validated);
 
-            Activity::performedOn($distance)
-                ->causedBy(auth()->user())
+            ActivityLogger::performedOn($distance)
+                ->causedBy(Auth::user())
                 ->withProperties(['old' => $oldData, 'new' => $distance->toArray()])
                 ->log('updated');
 
@@ -216,7 +239,7 @@ class DistanceController extends Controller
                 'distance_id' => $distance->id,
                 'error' => $e->getMessage(),
                 'data' => $request->all(),
-                'user_id' => auth()->id(),
+                'user_id' => Auth::id(),
             ]);
 
             return back()->withErrors(['error' => 'Failed to update distance. Please try again.']);
@@ -232,8 +255,8 @@ class DistanceController extends Controller
             $distanceData = $distance->toArray();
             $distance->delete();
 
-            Activity::performedOn($distance)
-                ->causedBy(auth()->user())
+            ActivityLogger::performedOn($distance)
+                ->causedBy(Auth::user())
                 ->withProperties(['deleted' => $distanceData])
                 ->log('deleted');
 
@@ -244,7 +267,7 @@ class DistanceController extends Controller
             Log::error('Distance deletion failed', [
                 'distance_id' => $distance->id,
                 'error' => $e->getMessage(),
-                'user_id' => auth()->id(),
+                'user_id' => Auth::id(),
             ]);
 
             return back()->withErrors(['error' => 'Failed to delete distance. Please try again.']);
@@ -296,7 +319,27 @@ class DistanceController extends Controller
             fwrite($file, "\xEF\xBB\xBF");
 
             // Header row
-            fputcsv($file, ['ID', 'From Place', 'To Place', 'Status', 'Distance (KM)', 'Estimated Time (Hours)', 'Route Type', 'Toll Road', 'Toll Cost', 'Heavy Vehicle Restricted', 'From Region', 'To Region', 'Created At']);
+            fputcsv($file, [
+                'ID',
+                'From Place',
+                'To Place',
+                'Status',
+                'Distance (KM)',
+                'Estimated Time (Hours)',
+                'Route Type',
+                'Average Speed (KM/H)',
+                'Typical Delay (Minutes)',
+                'Road Condition Factor',
+                'Road Quality Index',
+                'Toll Road',
+                'Toll Cost',
+                'Heavy Vehicle Restricted',
+                'Seasonality Notes',
+                'Safety Notes',
+                'From Region',
+                'To Region',
+                'Created At'
+            ]);
 
             // Data rows
             foreach ($distances as $distance) {
@@ -308,9 +351,15 @@ class DistanceController extends Controller
                     $distance->distance_km,
                     $distance->estimated_time_hours,
                     $distance->route_type,
+                    $distance->average_speed_kmph,
+                    $distance->typical_delay_minutes,
+                    $distance->road_condition_factor,
+                    $distance->road_quality_index,
                     $distance->toll_road ? 'Yes' : 'No',
                     $distance->toll_cost,
                     $distance->restricted_for_heavy_vehicles ? 'Yes' : 'No',
+                    $distance->seasonality_notes,
+                    $distance->safety_notes,
                     $distance->fromPlace?->woreda?->zone?->region?->name ?? 'N/A',
                     $distance->toPlace?->woreda?->zone?->region?->name ?? 'N/A',
                     $distance->created_at,
@@ -321,7 +370,7 @@ class DistanceController extends Controller
         };
 
         // Log export activity
-        Activity::causedBy(auth()->user())
+        ActivityLogger::causedBy(Auth::user())
             ->withProperties(['count' => count($distances)])
             ->log('exported');
 

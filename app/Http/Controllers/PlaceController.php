@@ -7,9 +7,12 @@ use App\Models\Woreda;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 use Exception;
-use Spatie\ActivityLog\Facades\Activity;
+use Spatie\Activitylog\Facades\Activity as ActivityLogger;
+use Spatie\Activitylog\Models\Activity;
 
 class PlaceController extends Controller
 {
@@ -44,17 +47,35 @@ class PlaceController extends Controller
         $direction = $request->input('direction', 'asc');
 
         // Validate sort column to prevent SQL injection
-        $allowedSorts = ['name', 'code', 'origin_performances_count', 'destination_performances_count', 'created_at'];
+        $allowedSorts = [
+            'name',
+            'code',
+            'origin_performances_count',
+            'destination_performances_count',
+            'created_at',
+            'population',
+            'accessibility_score',
+            'is_logistics_hub',
+        ];
         if (!in_array($sort, $allowedSorts)) {
             $sort = 'name';
         }
 
         $query->orderBy($sort, $direction);
 
-        $places = $query->paginate(15);
+        $metricsQuery = clone $query;
+
+        $places = $query->paginate(15)->withQueryString();
+
+        $metrics = [
+            'hubCount' => (clone $metricsQuery)->where('is_logistics_hub', true)->count(),
+            'totalPopulation' => (int) ((clone $metricsQuery)->sum('population') ?? 0),
+            'averageAccessibility' => round((float) (((clone $metricsQuery)->avg('accessibility_score')) ?? 0), 2),
+        ];
 
         return Inertia::render('Places/Index', [
             'places' => $places,
+            'metrics' => $metrics,
         ]);
     }
 
@@ -78,17 +99,29 @@ class PlaceController extends Controller
         try {
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
+                'code' => [
+                    'nullable',
+                    'string',
+                    'max:50',
+                    Rule::unique('places', 'code')->whereNull('deleted_at'),
+                ],
                 'woreda_id' => 'required|exists:woredas,id',
                 'status' => 'required|in:active,inactive',
                 'latitude' => 'nullable|numeric|between:-90,90',
                 'longitude' => 'nullable|numeric|between:-180,180',
+                'elevation_m' => 'nullable|numeric|min:-400|max:9000',
+                'population' => 'nullable|integer|min:0',
+                'is_logistics_hub' => 'nullable|boolean',
+                'accessibility_score' => 'nullable|numeric|min:0|max:100',
                 'description' => 'nullable|string|max:1000',
+                'infrastructure_notes' => 'nullable|string|max:2000',
+                'road_quality_notes' => 'nullable|string|max:2000',
             ]);
 
             $place = Place::create($validated);
 
-            Activity::performedOn($place)
-                ->causedBy(auth()->user())
+            ActivityLogger::performedOn($place)
+                ->causedBy(Auth::user())
                 ->log('created');
 
             return redirect()->route('places.index')
@@ -98,7 +131,7 @@ class PlaceController extends Controller
             Log::error('Place creation failed', [
                 'error' => $e->getMessage(),
                 'data' => $request->all(),
-                'user_id' => auth()->id(),
+                'user_id' => Auth::id(),
             ]);
 
             return back()->withErrors(['error' => 'Failed to create place. Please try again.']);
@@ -144,18 +177,30 @@ class PlaceController extends Controller
         try {
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
+                'code' => [
+                    'nullable',
+                    'string',
+                    'max:50',
+                    Rule::unique('places', 'code')->whereNull('deleted_at')->ignore($place->id),
+                ],
                 'woreda_id' => 'required|exists:woredas,id',
                 'status' => 'required|in:active,inactive',
                 'latitude' => 'nullable|numeric|between:-90,90',
                 'longitude' => 'nullable|numeric|between:-180,180',
+                'elevation_m' => 'nullable|numeric|min:-400|max:9000',
+                'population' => 'nullable|integer|min:0',
+                'is_logistics_hub' => 'nullable|boolean',
+                'accessibility_score' => 'nullable|numeric|min:0|max:100',
                 'description' => 'nullable|string|max:1000',
+                'infrastructure_notes' => 'nullable|string|max:2000',
+                'road_quality_notes' => 'nullable|string|max:2000',
             ]);
 
             $oldData = $place->toArray();
             $place->update($validated);
 
-            Activity::performedOn($place)
-                ->causedBy(auth()->user())
+            ActivityLogger::performedOn($place)
+                ->causedBy(Auth::user())
                 ->withProperties(['old' => $oldData, 'new' => $place->toArray()])
                 ->log('updated');
 
@@ -167,7 +212,7 @@ class PlaceController extends Controller
                 'place_id' => $place->id,
                 'error' => $e->getMessage(),
                 'data' => $request->all(),
-                'user_id' => auth()->id(),
+                'user_id' => Auth::id(),
             ]);
 
             return back()->withErrors(['error' => 'Failed to update place. Please try again.']);
@@ -213,8 +258,8 @@ class PlaceController extends Controller
             $placeData = $place->toArray();
             $place->delete();
 
-            Activity::performedOn($place)
-                ->causedBy(auth()->user())
+            ActivityLogger::performedOn($place)
+                ->causedBy(Auth::user())
                 ->withProperties(['deleted' => $placeData])
                 ->log('deleted');
 
@@ -225,7 +270,7 @@ class PlaceController extends Controller
             Log::error('Place deletion failed', [
                 'place_id' => $place->id,
                 'error' => $e->getMessage(),
-                'user_id' => auth()->id(),
+                'user_id' => Auth::id(),
             ]);
 
             return back()->withErrors(['error' => 'Failed to delete place. Please try again.']);
@@ -284,7 +329,27 @@ class PlaceController extends Controller
             fwrite($file, "\xEF\xBB\xBF");
 
             // Header row
-            fputcsv($file, ['ID', 'Name', 'Code', 'Status', 'Woreda', 'Zone', 'Region', 'Latitude', 'Longitude', 'Origin Performances', 'Destination Performances', 'Description', 'Created At']);
+            fputcsv($file, [
+                'ID',
+                'Name',
+                'Code',
+                'Status',
+                'Woreda',
+                'Zone',
+                'Region',
+                'Latitude',
+                'Longitude',
+                'Elevation (m)',
+                'Population',
+                'Is Logistics Hub',
+                'Accessibility Score',
+                'Origin Performances',
+                'Destination Performances',
+                'Description',
+                'Infrastructure Notes',
+                'Road Quality Notes',
+                'Created At'
+            ]);
 
             // Data rows
             foreach ($places as $place) {
@@ -298,9 +363,15 @@ class PlaceController extends Controller
                     $place->woreda?->zone?->region?->name ?? 'N/A',
                     $place->latitude,
                     $place->longitude,
+                    $place->elevation_m,
+                    $place->population,
+                    $place->is_logistics_hub ? 'Yes' : 'No',
+                    $place->accessibility_score,
                     $place->origin_performances_count,
                     $place->destination_performances_count,
                     $place->description,
+                    $place->infrastructure_notes,
+                    $place->road_quality_notes,
                     $place->created_at,
                 ]);
             }
@@ -309,7 +380,7 @@ class PlaceController extends Controller
         };
 
         // Log export activity
-        Activity::causedBy(auth()->user())
+        ActivityLogger::causedBy(Auth::user())
             ->withProperties(['count' => count($places)])
             ->log('exported');
 

@@ -10,6 +10,8 @@ type ToasterToast = {
   variant?: "default" | "destructive" | "success"
 }
 
+type ToastInput = Omit<ToasterToast, "id">
+
 const TOAST_LIMIT = 3
 const TOAST_REMOVE_DELAY = 1000000
 
@@ -75,10 +77,10 @@ function dispatch(action: ToastActionType) {
   })
 }
 
-function toast({ ...props }: ToasterToast) {
+function toast({ ...props }: ToastInput) {
   const id = genId()
 
-  const update = (props: ToasterToast) =>
+  const update = (props: ToastInput) =>
     dispatch({ type: "UPDATE_TOAST", toast: { ...props, id } })
   const dismiss = () => {
     dispatch({ type: "DISMISS_TOAST", toastId: id })

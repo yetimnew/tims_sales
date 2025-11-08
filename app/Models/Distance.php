@@ -26,6 +26,11 @@ class Distance extends Model
         'toll_cost',
         'restricted_for_heavy_vehicles',
         'route_notes',
+        'average_speed_kmph',
+        'typical_delay_minutes',
+        'road_quality_index',
+        'seasonality_notes',
+        'safety_notes',
     ];
 
     protected $casts = [
@@ -36,6 +41,9 @@ class Distance extends Model
         'toll_road' => 'boolean',
         'restricted_for_heavy_vehicles' => 'boolean',
         'status' => 'string',
+        'average_speed_kmph' => 'decimal:2',
+        'road_quality_index' => 'decimal:2',
+        'typical_delay_minutes' => 'integer',
     ];
 
     /**
@@ -178,7 +186,12 @@ class Distance extends Model
                 'toll_road',
                 'toll_cost',
                 'restricted_for_heavy_vehicles',
-                'route_notes'
+                'route_notes',
+                'average_speed_kmph',
+                'typical_delay_minutes',
+                'road_quality_index',
+                'seasonality_notes',
+                'safety_notes'
             ])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs()

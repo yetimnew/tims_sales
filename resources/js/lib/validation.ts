@@ -420,6 +420,46 @@ export const regionValidation = {
     if (value.length > 255) return 'Name cannot exceed 255 characters'
     return ''
   },
+
+  code: (value: string) => {
+    if (!value) return ''
+    if (value.length > 50) return 'Code cannot exceed 50 characters'
+    return ''
+  },
+
+  capital: (value: string) => {
+    if (!value) return ''
+    if (value.length > 255) return 'Capital cannot exceed 255 characters'
+    return ''
+  },
+
+  numericRange: (value: string | number | null | undefined, { min, max, allowEmpty = true, label }: { min: number; max: number; allowEmpty?: boolean; label: string }) => {
+    if (value === null || value === undefined || value === '') {
+      return allowEmpty ? '' : `${label} is required`
+    }
+
+    const numericValue = typeof value === 'number' ? value : parseFloat(value)
+    if (Number.isNaN(numericValue)) return `${label} must be a number`
+    if (numericValue < min) return `${label} must be at least ${min}`
+    if (numericValue > max) return `${label} cannot exceed ${max}`
+    return ''
+  },
+
+  latitude: (value: string | number | null | undefined) => {
+    if (value === null || value === undefined || value === '') return ''
+    const num = typeof value === 'number' ? value : parseFloat(value)
+    if (Number.isNaN(num)) return 'Latitude must be a number'
+    if (num < -90 || num > 90) return 'Latitude must be between -90 and 90'
+    return ''
+  },
+
+  longitude: (value: string | number | null | undefined) => {
+    if (value === null || value === undefined || value === '') return ''
+    const num = typeof value === 'number' ? value : parseFloat(value)
+    if (Number.isNaN(num)) return 'Longitude must be a number'
+    if (num < -180 || num > 180) return 'Longitude must be between -180 and 180'
+    return ''
+  },
 }
 
 // ==================== ZONE VALIDATION ====================
@@ -433,6 +473,18 @@ export const zoneValidation = {
 
   region_id: (value: string) => {
     if (!value) return 'Region is required'
+    return ''
+  },
+
+  code: (value: string) => {
+    if (!value) return ''
+    if (value.length > 50) return 'Code cannot exceed 50 characters'
+    return ''
+  },
+
+  status: (value: string) => {
+    if (!value) return 'Status is required'
+    if (!['active', 'inactive'].includes(value)) return 'Invalid status'
     return ''
   },
 }
@@ -450,6 +502,18 @@ export const woredaValidation = {
     if (!value) return 'Zone is required'
     return ''
   },
+
+  code: (value: string) => {
+    if (!value) return ''
+    if (value.length > 50) return 'Code cannot exceed 50 characters'
+    return ''
+  },
+
+  status: (value: string) => {
+    if (!value) return 'Status is required'
+    if (!['active', 'inactive'].includes(value)) return 'Invalid status'
+    return ''
+  },
 }
 
 // ==================== PLACE VALIDATION ====================
@@ -463,6 +527,18 @@ export const placeValidation = {
 
   woreda_id: (value: string) => {
     if (!value) return 'Woreda is required'
+    return ''
+  },
+
+  code: (value: string) => {
+    if (!value) return ''
+    if (value.length > 50) return 'Code cannot exceed 50 characters'
+    return ''
+  },
+
+  status: (value: string) => {
+    if (!value) return 'Status is required'
+    if (!['active', 'inactive'].includes(value)) return 'Invalid status'
     return ''
   },
 }
@@ -484,6 +560,24 @@ export const distanceValidation = {
     const num = parseFloat(value)
     if (isNaN(num)) return 'Distance must be a number'
     if (num <= 0) return 'Distance must be greater than 0'
+    return ''
+  },
+
+  average_speed_kmph: (value: string) => {
+    if (!value) return ''
+    const num = parseFloat(value)
+    if (isNaN(num)) return 'Average speed must be a number'
+    if (num < 0) return 'Average speed must be at least 0'
+    if (num > 200) return 'Average speed cannot exceed 200'
+    return ''
+  },
+
+  road_quality_index: (value: string) => {
+    if (!value) return ''
+    const num = parseFloat(value)
+    if (isNaN(num)) return 'Road quality index must be a number'
+    if (num < 0) return 'Road quality index must be at least 0'
+    if (num > 10) return 'Road quality index cannot exceed 10'
     return ''
   },
 }
@@ -676,6 +770,14 @@ export function validateDriverSafety(data: any): ValidationErrors {
 export function validateRegion(data: any): ValidationErrors {
   const errors: ValidationErrors = {}
   errors.name = regionValidation.name(data.name)
+  if (data.code) errors.code = regionValidation.code(data.code)
+  if (data.capital) errors.capital = regionValidation.capital(data.capital)
+  if (data.area_km2 !== undefined) errors.area_km2 = regionValidation.numericRange(data.area_km2, { min: 0, max: 999999.99, allowEmpty: true, label: 'Area (km²)' })
+  if (data.population !== undefined) errors.population = regionValidation.numericRange(data.population, { min: 0, max: 1000000000, allowEmpty: true, label: 'Population' })
+  if (data.latitude !== undefined) errors.latitude = regionValidation.latitude(data.latitude)
+  if (data.longitude !== undefined) errors.longitude = regionValidation.longitude(data.longitude)
+  if (data.elevation_m !== undefined) errors.elevation_m = regionValidation.numericRange(data.elevation_m, { min: -400, max: 9000, allowEmpty: true, label: 'Elevation (m)' })
+  if (data.accessibility_score !== undefined) errors.accessibility_score = regionValidation.numericRange(data.accessibility_score, { min: 0, max: 100, allowEmpty: true, label: 'Accessibility score' })
   Object.keys(errors).forEach(key => { if (!errors[key]) delete errors[key] })
   return errors
 }
@@ -684,6 +786,8 @@ export function validateZone(data: any): ValidationErrors {
   const errors: ValidationErrors = {}
   errors.name = zoneValidation.name(data.name)
   errors.region_id = zoneValidation.region_id(data.region_id)
+  errors.status = zoneValidation.status(data.status)
+  if (data.code) errors.code = zoneValidation.code(data.code)
   Object.keys(errors).forEach(key => { if (!errors[key]) delete errors[key] })
   return errors
 }
@@ -692,6 +796,8 @@ export function validateWoreda(data: any): ValidationErrors {
   const errors: ValidationErrors = {}
   errors.name = woredaValidation.name(data.name)
   errors.zone_id = woredaValidation.zone_id(data.zone_id)
+  errors.status = woredaValidation.status(data.status)
+  if (data.code) errors.code = woredaValidation.code(data.code)
   Object.keys(errors).forEach(key => { if (!errors[key]) delete errors[key] })
   return errors
 }
@@ -700,6 +806,8 @@ export function validatePlace(data: any): ValidationErrors {
   const errors: ValidationErrors = {}
   errors.name = placeValidation.name(data.name)
   errors.woreda_id = placeValidation.woreda_id(data.woreda_id)
+  errors.status = placeValidation.status(data.status)
+  if (data.code) errors.code = placeValidation.code(data.code)
   Object.keys(errors).forEach(key => { if (!errors[key]) delete errors[key] })
   return errors
 }
@@ -709,6 +817,8 @@ export function validateDistance(data: any): ValidationErrors {
   errors.origin_id = distanceValidation.origin_id(data.origin_id)
   errors.destination_id = distanceValidation.destination_id(data.destination_id)
   errors.distance_km = distanceValidation.distance_km(data.distance_km)
+  if (data.average_speed_kmph) errors.average_speed_kmph = distanceValidation.average_speed_kmph(data.average_speed_kmph)
+  if (data.road_quality_index) errors.road_quality_index = distanceValidation.road_quality_index(data.road_quality_index)
   Object.keys(errors).forEach(key => { if (!errors[key]) delete errors[key] })
   return errors
 }

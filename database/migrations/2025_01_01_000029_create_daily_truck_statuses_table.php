@@ -11,6 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
+        Schema::dropIfExists('daily_truck_statuses');
+
         Schema::create('daily_truck_statuses', function (Blueprint $table) {
             $table->id();
             $table->foreignId('truck_id')->constrained('trucks');

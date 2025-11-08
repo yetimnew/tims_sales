@@ -21,12 +21,22 @@ class Place extends Model
         'status',
         'latitude',
         'longitude',
+        'elevation_m',
+        'population',
+        'is_logistics_hub',
+        'accessibility_score',
         'description',
+        'infrastructure_notes',
+        'road_quality_notes',
     ];
 
     protected $casts = [
         'latitude' => 'decimal:8',
         'longitude' => 'decimal:8',
+        'elevation_m' => 'decimal:2',
+        'population' => 'integer',
+        'is_logistics_hub' => 'boolean',
+        'accessibility_score' => 'decimal:2',
         'status' => 'string',
     ];
 
@@ -119,7 +129,13 @@ class Place extends Model
                 'status',
                 'latitude',
                 'longitude',
-                'description'
+                'elevation_m',
+                'population',
+                'is_logistics_hub',
+                'accessibility_score',
+                'description',
+                'infrastructure_notes',
+                'road_quality_notes'
             ])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs()

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useForm } from '@inertiajs/react'
 import { Link } from '@inertiajs/react'
+import { route } from 'ziggy-js'
 import { ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -12,6 +13,7 @@ import { useToast } from '@/hooks/use-toast'
 import { validateZone } from '@/lib/validation'
 import AppLayout from '@/layouts/app-layout'
 import { CircleAlert } from 'lucide-react'
+import { Textarea } from '@/components/ui/textarea'
 
 interface Region {
   id: number
@@ -21,6 +23,18 @@ interface Region {
 interface ZoneFormData {
   name: string
   region_id: string
+  status: 'active' | 'inactive'
+  code: string
+  description: string
+  administrative_center: string
+  area_km2: string
+  population: string
+  latitude: string
+  longitude: string
+  elevation_m: string
+  accessibility_score: string
+  infrastructure_notes: string
+  climate_profile: string
 }
 
 interface ZoneCreateProps {
@@ -33,6 +47,18 @@ export default function ZonesCreate({ regions }: ZoneCreateProps) {
   const { data, setData, post, processing, errors } = useForm<ZoneFormData>({
     name: '',
     region_id: '',
+    status: 'active',
+    code: '',
+    description: '',
+    administrative_center: '',
+    area_km2: '',
+    population: '',
+    latitude: '',
+    longitude: '',
+    elevation_m: '',
+    accessibility_score: '',
+    infrastructure_notes: '',
+    climate_profile: '',
   })
 
   useEffect(() => {
@@ -41,11 +67,11 @@ export default function ZonesCreate({ regions }: ZoneCreateProps) {
     }
   }, [errors])
 
-  const handleFieldChange = (field: string, value: string) => {
-    setData(field as keyof ZoneFormData, value)
+  const handleFieldChange = (field: keyof ZoneFormData, value: string) => {
+    setData(field, value)
     if (frontendErrors[field]) {
       const validationErrors = validateZone({ ...data, [field]: value })
-      const error = validationErrors[field] || ''
+      const error = validationErrors[field as string] || ''
       if (error) {
         setFrontendErrors(prev => ({ ...prev, [field]: error }))
       } else {
@@ -66,6 +92,7 @@ export default function ZonesCreate({ regions }: ZoneCreateProps) {
       toast({ title: 'Validation Error', description: 'Please fix all errors', variant: 'destructive' })
       return
     }
+
     post(route('zones.store'))
   }
 
@@ -129,6 +156,200 @@ export default function ZonesCreate({ regions }: ZoneCreateProps) {
               </Select>
               {(frontendErrors.region_id || errors.region_id) && (
                 <p className="text-sm text-red-500">{frontendErrors.region_id || errors.region_id}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="status">Status *</Label>
+              <Select value={data.status} onValueChange={value => handleFieldChange('status', value as 'active' | 'inactive')}>
+                <SelectTrigger className={frontendErrors.status || errors.status ? 'border-red-500' : ''}>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+              {(frontendErrors.status || errors.status) && (
+                <p className="text-sm text-red-500">{frontendErrors.status || errors.status}</p>
+              )}
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="code">Code</Label>
+                <Input
+                  id="code"
+                  type="text"
+                  value={data.code}
+                  onChange={e => handleFieldChange('code', e.target.value)}
+                  placeholder="Enter zone code"
+                  className={frontendErrors.code || errors.code ? 'border-red-500' : ''}
+                />
+                {(frontendErrors.code || errors.code) && (
+                  <p className="text-sm text-red-500">{frontendErrors.code || errors.code}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="administrative_center">Administrative Center</Label>
+                <Input
+                  id="administrative_center"
+                  type="text"
+                  value={data.administrative_center}
+                  onChange={e => handleFieldChange('administrative_center', e.target.value)}
+                  placeholder="Enter administrative center"
+                  className={frontendErrors.administrative_center || errors.administrative_center ? 'border-red-500' : ''}
+                />
+                {(frontendErrors.administrative_center || errors.administrative_center) && (
+                  <p className="text-sm text-red-500">{frontendErrors.administrative_center || errors.administrative_center}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="area_km2">Area (km²)</Label>
+                <Input
+                  id="area_km2"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={data.area_km2}
+                  onChange={e => handleFieldChange('area_km2', e.target.value)}
+                  placeholder="Enter area"
+                  className={frontendErrors.area_km2 || errors.area_km2 ? 'border-red-500' : ''}
+                />
+                {(frontendErrors.area_km2 || errors.area_km2) && (
+                  <p className="text-sm text-red-500">{frontendErrors.area_km2 || errors.area_km2}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="population">Population</Label>
+                <Input
+                  id="population"
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={data.population}
+                  onChange={e => handleFieldChange('population', e.target.value)}
+                  placeholder="Enter population"
+                  className={frontendErrors.population || errors.population ? 'border-red-500' : ''}
+                />
+                {(frontendErrors.population || errors.population) && (
+                  <p className="text-sm text-red-500">{frontendErrors.population || errors.population}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-3">
+              <div className="space-y-2">
+                <Label htmlFor="latitude">Latitude</Label>
+                <Input
+                  id="latitude"
+                  type="number"
+                  step="0.000001"
+                  value={data.latitude}
+                  onChange={e => handleFieldChange('latitude', e.target.value)}
+                  placeholder="e.g. 7.123456"
+                  className={frontendErrors.latitude || errors.latitude ? 'border-red-500' : ''}
+                />
+                {(frontendErrors.latitude || errors.latitude) && (
+                  <p className="text-sm text-red-500">{frontendErrors.latitude || errors.latitude}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="longitude">Longitude</Label>
+                <Input
+                  id="longitude"
+                  type="number"
+                  step="0.000001"
+                  value={data.longitude}
+                  onChange={e => handleFieldChange('longitude', e.target.value)}
+                  placeholder="e.g. 39.987654"
+                  className={frontendErrors.longitude || errors.longitude ? 'border-red-500' : ''}
+                />
+                {(frontendErrors.longitude || errors.longitude) && (
+                  <p className="text-sm text-red-500">{frontendErrors.longitude || errors.longitude}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="elevation_m">Elevation (m)</Label>
+                <Input
+                  id="elevation_m"
+                  type="number"
+                  step="0.01"
+                  value={data.elevation_m}
+                  onChange={e => handleFieldChange('elevation_m', e.target.value)}
+                  placeholder="Enter elevation"
+                  className={frontendErrors.elevation_m || errors.elevation_m ? 'border-red-500' : ''}
+                />
+                {(frontendErrors.elevation_m || errors.elevation_m) && (
+                  <p className="text-sm text-red-500">{frontendErrors.elevation_m || errors.elevation_m}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="accessibility_score">Accessibility Score</Label>
+                <Input
+                  id="accessibility_score"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  value={data.accessibility_score}
+                  onChange={e => handleFieldChange('accessibility_score', e.target.value)}
+                  placeholder="0 - 100"
+                  className={frontendErrors.accessibility_score || errors.accessibility_score ? 'border-red-500' : ''}
+                />
+                {(frontendErrors.accessibility_score || errors.accessibility_score) && (
+                  <p className="text-sm text-red-500">{frontendErrors.accessibility_score || errors.accessibility_score}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  value={data.description}
+                  onChange={e => handleFieldChange('description', e.target.value)}
+                  placeholder="Add a short description"
+                  className={frontendErrors.description || errors.description ? 'border-red-500' : ''}
+                  rows={3}
+                />
+                {(frontendErrors.description || errors.description) && (
+                  <p className="text-sm text-red-500">{frontendErrors.description || errors.description}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="infrastructure_notes">Infrastructure Notes</Label>
+              <Textarea
+                id="infrastructure_notes"
+                value={data.infrastructure_notes}
+                onChange={e => handleFieldChange('infrastructure_notes', e.target.value)}
+                placeholder="Utility coverage, logistics insights"
+                className={frontendErrors.infrastructure_notes || errors.infrastructure_notes ? 'border-red-500' : ''}
+                rows={3}
+              />
+              {(frontendErrors.infrastructure_notes || errors.infrastructure_notes) && (
+                <p className="text-sm text-red-500">{frontendErrors.infrastructure_notes || errors.infrastructure_notes}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="climate_profile">Climate Profile</Label>
+              <Textarea
+                id="climate_profile"
+                value={data.climate_profile}
+                onChange={e => handleFieldChange('climate_profile', e.target.value)}
+                placeholder="Seasonality and climate notes"
+                className={frontendErrors.climate_profile || errors.climate_profile ? 'border-red-500' : ''}
+                rows={3}
+              />
+              {(frontendErrors.climate_profile || errors.climate_profile) && (
+                <p className="text-sm text-red-500">{frontendErrors.climate_profile || errors.climate_profile}</p>
               )}
             </div>
 

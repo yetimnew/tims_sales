@@ -18,10 +18,25 @@ class Zone extends Model
         'region_id',
         'status',
         'description',
+        'administrative_center',
+        'area_km2',
+        'population',
+        'latitude',
+        'longitude',
+        'elevation_m',
+        'accessibility_score',
+        'infrastructure_notes',
+        'climate_profile',
     ];
 
     protected $casts = [
         'status' => 'string',
+        'area_km2' => 'decimal:2',
+        'population' => 'integer',
+        'latitude' => 'decimal:7',
+        'longitude' => 'decimal:7',
+        'elevation_m' => 'decimal:2',
+        'accessibility_score' => 'decimal:2',
     ];
 
     /**

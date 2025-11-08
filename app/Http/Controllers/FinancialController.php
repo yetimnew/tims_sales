@@ -8,9 +8,11 @@ use App\Models\InsuranceRecord;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Exception;
-use Spatie\ActivityLog\Facades\Activity;
+use Spatie\Activitylog\Facades\Activity as ActivityLogger;
+use Spatie\Activitylog\Models\Activity;
 
 class FinancialController extends Controller
 {
@@ -111,7 +113,7 @@ class FinancialController extends Controller
         }
 
         // Log the export
-        Activity::causedBy(auth()->user())
+    ActivityLogger::causedBy(Auth::user())
             ->withProperties(['count' => count($financialRecords)])
             ->log('exported');
 
@@ -146,8 +148,8 @@ class FinancialController extends Controller
 
             $financialRecord = TruckFinancialRecord::create($validated);
 
-            Activity::performedOn($financialRecord)
-                ->causedBy(auth()->user())
+            ActivityLogger::performedOn($financialRecord)
+                ->causedBy(Auth::user())
                 ->log('created');
 
             return redirect()->route('financial.index')
@@ -217,8 +219,8 @@ class FinancialController extends Controller
             $oldData = $financial->toArray();
             $financial->update($validated);
 
-            Activity::performedOn($financial)
-                ->causedBy(auth()->user())
+            ActivityLogger::performedOn($financial)
+                ->causedBy(Auth::user())
                 ->withProperties(['old' => $oldData, 'new' => $financial->toArray()])
                 ->log('updated');
 
@@ -239,8 +241,8 @@ class FinancialController extends Controller
             $financialData = $financial->toArray();
             $financial->delete();
 
-            Activity::performedOn($financial)
-                ->causedBy(auth()->user())
+            ActivityLogger::performedOn($financial)
+                ->causedBy(Auth::user())
                 ->withProperties(['deleted' => $financialData])
                 ->log('deleted');
 

@@ -27,8 +27,9 @@ import {
     CheckCircle,
     XCircle,
     Layers,
+    Building,
 } from 'lucide-react';
-import { InertiaPagination } from '@/components/ui/pagination';
+import ReactPaginate from 'react-paginate';
 import * as React from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -45,6 +46,11 @@ interface RegionData {
     status: 'active' | 'inactive';
     zones_count?: number;
     created_at?: string;
+    capital?: string | null;
+    area_km2?: number | string | null;
+    population?: number | string | null;
+    accessibility_score?: number | string | null;
+    last_surveyed_at?: string | null;
 }
 
 interface RegionsIndexProps {
@@ -56,21 +62,26 @@ interface RegionsIndexProps {
         total: number;
         from: number;
         to: number;
-        links?: {
-            first?: string;
-            last?: string;
-            prev?: string;
-            next?: string;
-        };
     };
     totalCount?: number;
 }
+
+const columns: Array<{ key: keyof RegionData; label: string; sortable?: boolean }> = [
+    { key: 'name', label: 'Region', sortable: true },
+    { key: 'code', label: 'Code', sortable: true },
+    { key: 'status', label: 'Status', sortable: false },
+    { key: 'capital', label: 'Capital', sortable: false },
+    { key: 'population', label: 'Population', sortable: true },
+    { key: 'accessibility_score', label: 'Accessibility', sortable: true },
+    { key: 'zones_count', label: 'Zones', sortable: true },
+    { key: 'last_surveyed_at', label: 'Last Surveyed', sortable: false },
+];
 
 export default function RegionsIndex({ regions, totalCount }: RegionsIndexProps) {
     const { hasPermission } = usePermissions();
     const [searchTerm, setSearchTerm] = React.useState('');
     const [sortBy, setSortBy] = React.useState('name');
-    const [sortDirection, setSortDirection] = React.useState('asc');
+    const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>('asc');
     const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
     const [selectedRegion, setSelectedRegion] = React.useState<RegionData | null>(null);
     const [isDeleting, setIsDeleting] = React.useState(false);
@@ -87,10 +98,7 @@ export default function RegionsIndex({ regions, totalCount }: RegionsIndexProps)
     };
 
     const handleSort = (column: string) => {
-        let newDirection = 'asc';
-        if (sortBy === column && sortDirection === 'asc') {
-            newDirection = 'desc';
-        }
+        const newDirection: 'asc' | 'desc' = sortBy === column && sortDirection === 'asc' ? 'desc' : 'asc';
 
         setSortBy(column);
         setSortDirection(newDirection);
@@ -126,10 +134,9 @@ export default function RegionsIndex({ regions, totalCount }: RegionsIndexProps)
     const regionCount = totalCount || regions?.total || 0;
     const currentPage = regions?.current_page || 1;
     const totalPages = regions?.last_page || 1;
-    const activeCount = regions?.data?.filter((region) => region.status === 'active').length || 0;
-    const inactiveCount = regions?.data?.filter((region) => region.status === 'inactive').length || 0;
+    const activeCount = regions?.data?.filter(region => region.status === 'active').length || 0;
+    const inactiveCount = regions?.data?.filter(region => region.status === 'inactive').length || 0;
     const totalZones = regions?.data?.reduce((sum, region) => sum + (region.zones_count ?? 0), 0) || 0;
-
     const headerActions = (
         <>
             {hasPermission('regions.export') && (
@@ -168,27 +175,27 @@ export default function RegionsIndex({ regions, totalCount }: RegionsIndexProps)
                 </CardHeader>
                 <CardContent>
                     <div className="text-2xl font-bold text-blue-600">{regionCount}</div>
-                    <p className="text-xs text-muted-foreground">Across the network</p>
+                    <p className="text-xs text-muted-foreground">Active geographies tracked</p>
                 </CardContent>
             </Card>
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Active</CardTitle>
+                    <CardTitle className="text-sm font-medium">Active Regions</CardTitle>
                     <CheckCircle className="h-4 w-4 text-green-600" />
                 </CardHeader>
                 <CardContent>
                     <div className="text-2xl font-bold text-green-600">{activeCount}</div>
-                    <p className="text-xs text-muted-foreground">Ready for deployment</p>
+                    <p className="text-xs text-muted-foreground">Operational regions</p>
                 </CardContent>
             </Card>
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Inactive</CardTitle>
+                    <CardTitle className="text-sm font-medium">Inactive Regions</CardTitle>
                     <XCircle className="h-4 w-4 text-red-600" />
                 </CardHeader>
                 <CardContent>
                     <div className="text-2xl font-bold text-red-600">{inactiveCount}</div>
-                    <p className="text-xs text-muted-foreground">Awaiting activation</p>
+                    <p className="text-xs text-muted-foreground">Awaiting validation</p>
                 </CardContent>
             </Card>
             <Card>
@@ -198,7 +205,7 @@ export default function RegionsIndex({ regions, totalCount }: RegionsIndexProps)
                 </CardHeader>
                 <CardContent>
                     <div className="text-2xl font-bold text-indigo-600">{totalZones}</div>
-                    <p className="text-xs text-muted-foreground">Zones on current view</p>
+                    <p className="text-xs text-muted-foreground">Zones linked to these regions</p>
                 </CardContent>
             </Card>
         </div>
@@ -216,26 +223,30 @@ export default function RegionsIndex({ regions, totalCount }: RegionsIndexProps)
         </div>
     );
 
-    const renderHeaderCell = (column: string, label: string, sortable = true) => (
+    const statusClassName = (status: RegionData['status']) =>
+        status === 'active'
+            ? 'bg-green-100 text-green-800 border-green-200 hover:bg-green-200'
+            : 'bg-slate-200 text-slate-700 border-slate-300 hover:bg-slate-300';
+
+    const formatPopulation = (value?: number | string | null) => {
+        if (value === null || value === undefined || value === '') return '—';
+        const numeric = Number(value);
+        if (Number.isNaN(numeric)) return '—';
+        return numeric.toLocaleString();
+    };
+
+    const renderHeaderCell = (column: string, label: string, sortable: boolean) => (
         <TableHead
             key={column}
-            className={`bg-background ${
-                sortable
-                    ? 'cursor-pointer select-none transition-colors hover:bg-muted/70'
-                    : 'text-right'
-            }`}
+            className={`bg-background ${sortable ? 'cursor-pointer select-none transition-colors hover:bg-muted/70' : 'text-right'}`}
             onClick={() => sortable && handleSort(column)}
         >
-            <div className={`flex items-center gap-2 ${!sortable ? 'justify-end' : ''}`}>
+            <div className={`flex items-center gap-2 ${sortable ? '' : 'justify-end'}`}>
                 {label}
                 {sortable && (
                     <ArrowUpDown
                         size={14}
-                        className={
-                            sortBy === column
-                                ? 'text-primary'
-                                : 'text-muted-foreground opacity-50'
-                        }
+                        className={sortBy === column ? 'text-primary' : 'text-muted-foreground opacity-50'}
                         style={sortBy === column && sortDirection === 'desc' ? { transform: 'rotate(180deg)' } : undefined}
                     />
                 )}
@@ -243,37 +254,37 @@ export default function RegionsIndex({ regions, totalCount }: RegionsIndexProps)
         </TableHead>
     );
 
-    const statusClassName = (status: RegionData['status']) => (
-        status === 'active'
-            ? 'bg-green-100 text-green-800 border-green-200 hover:bg-green-200'
-            : 'bg-slate-200 text-slate-700 border-slate-300 hover:bg-slate-300'
-    );
-
     const tableContent = (
         <Table>
             <TableHeader>
                 <TableRow className="sticky top-0 z-20 border-b bg-background">
-                    {renderHeaderCell('id', 'ID')}
-                    {renderHeaderCell('name', 'Name')}
-                    {renderHeaderCell('code', 'Code')}
-                    <TableHead className="bg-background">Status</TableHead>
-                    {renderHeaderCell('zones_count', 'Zones')}
+                    {columns.map(column => renderHeaderCell(column.key, column.label, column.sortable ?? true))}
                     <TableHead className="bg-background text-right">Actions</TableHead>
                 </TableRow>
             </TableHeader>
             <TableBody>
                 {regions.data.length > 0 ? (
-                    regions.data.map((region) => (
+                    regions.data.map(region => (
                         <TableRow key={region.id} className="hover:bg-muted/50">
-                            <TableCell className="font-medium">{region.id}</TableCell>
-                            <TableCell className="font-semibold text-foreground">{region.name}</TableCell>
+                            <TableCell className="font-semibold text-foreground">
+                                <div className="flex items-center gap-2">
+                                    <Building className="h-4 w-4 text-primary" />
+                                    {region.name}
+                                </div>
+                            </TableCell>
                             <TableCell className="text-muted-foreground">{region.code || '—'}</TableCell>
                             <TableCell>
                                 <Badge className={`flex items-center gap-1 w-fit border ${statusClassName(region.status)}`}>
                                     {region.status.charAt(0).toUpperCase() + region.status.slice(1)}
                                 </Badge>
                             </TableCell>
+                            <TableCell className="text-muted-foreground">{region.capital || '—'}</TableCell>
+                            <TableCell className="text-muted-foreground">{formatPopulation(region.population)}</TableCell>
+                            <TableCell className="text-muted-foreground">{region.accessibility_score ?? '—'}</TableCell>
                             <TableCell className="text-muted-foreground">{region.zones_count ?? 0}</TableCell>
+                            <TableCell className="text-muted-foreground">
+                                {region.last_surveyed_at ? new Date(region.last_surveyed_at).toLocaleDateString() : '—'}
+                            </TableCell>
                             <TableCell className="text-right">
                                 <div className="flex justify-end gap-2">
                                     {hasPermission('regions.show') && (
@@ -291,11 +302,7 @@ export default function RegionsIndex({ regions, totalCount }: RegionsIndexProps)
                                         </Button>
                                     )}
                                     {hasPermission('regions.destroy') && (
-                                        <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            onClick={() => handleDeleteClick(region)}
-                                        >
+                                        <Button size="sm" variant="ghost" onClick={() => handleDeleteClick(region)}>
                                             <Trash2 className="h-4 w-4" />
                                         </Button>
                                     )}
@@ -305,7 +312,7 @@ export default function RegionsIndex({ regions, totalCount }: RegionsIndexProps)
                     ))
                 ) : (
                     <TableRow>
-                        <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
+                        <TableCell colSpan={columns.length + 1} className="py-8 text-center text-muted-foreground">
                             No regions found.
                             {hasPermission('regions.create') && (
                                 <Link href="/regions/create" className="ml-1 text-primary underline">
@@ -329,20 +336,44 @@ export default function RegionsIndex({ regions, totalCount }: RegionsIndexProps)
                 actions={headerActions}
                 stats={statsSection}
                 tableTitle="Region Inventory"
-                tableDescription="Monitor regional coverage and operational readiness"
+                tableDescription="Monitor coverage, readiness, and survey data across the country"
                 tableHeaderExtras={tableHeaderExtras}
                 pagination={
-                    <InertiaPagination
-                        from={regions.from}
-                        to={regions.to}
-                        total={regionCount}
-                        links={regions.links as any}
-                        currentPage={currentPage}
-                        lastPage={totalPages}
-                        className="px-6 pb-6 pt-4"
-                    />
+                    <div className="mt-4 flex w-full items-center justify-between">
+                        <div className="text-sm text-muted-foreground">
+                            Showing <span className="font-semibold text-foreground">{regions.from}</span> to{' '}
+                            <span className="font-semibold text-foreground">{regions.to}</span> of{' '}
+                            <span className="font-semibold text-foreground">{regionCount}</span> regions
+                        </div>
+                        <ReactPaginate
+                            pageCount={totalPages}
+                            forcePage={currentPage - 1}
+                            onPageChange={({ selected }) => {
+                                router.get(
+                                    '/regions',
+                                    {
+                                        page: selected + 1,
+                                        search: searchTerm,
+                                        sort: sortBy,
+                                        direction: sortDirection,
+                                    },
+                                    { preserveState: true },
+                                );
+                            }}
+                            marginPagesDisplayed={2}
+                            pageRangeDisplayed={5}
+                            containerClassName="flex gap-2"
+                            pageClassName="px-3 py-1 rounded border text-sm bg-background text-muted-foreground hover:bg-muted"
+                            activeClassName="bg-primary text-white"
+                            previousClassName="px-3 py-1 rounded border text-sm"
+                            nextClassName="px-3 py-1 rounded border text-sm"
+                            breakClassName="px-3 py-1 rounded border text-sm"
+                            disabledClassName="pointer-events-none opacity-50"
+                            previousLabel={'<'}
+                            nextLabel={'>'}
+                        />
+                    </div>
                 }
-                tableContainerClassName="max-h-[55vh]"
             >
                 {tableContent}
             </ListPageLayout>
