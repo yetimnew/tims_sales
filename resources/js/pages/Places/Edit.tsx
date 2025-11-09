@@ -29,6 +29,15 @@ interface Place {
   description: string
 }
 
+interface PlaceFormData {
+  name: string
+  code: string
+  woreda_id: string
+  latitude: string
+  longitude: string
+  description: string
+}
+
 interface PlaceEditProps {
   place: Place
   woredas: Woreda[]
@@ -37,8 +46,7 @@ interface PlaceEditProps {
 export default function PlacesEdit({ place, woredas }: PlaceEditProps) {
   const { toast } = useToast()
   const [frontendErrors, setFrontendErrors] = useState<Record<string, string>>({})
-  const { data, setData, put, processing, errors } = useForm<Place>({
-    id: place.id,
+  const { data, setData, put, processing, errors } = useForm<PlaceFormData>({
     name: place.name,
     code: place.code,
     woreda_id: place.woreda_id.toString(),
@@ -54,7 +62,7 @@ export default function PlacesEdit({ place, woredas }: PlaceEditProps) {
   }, [errors])
 
   const handleFieldChange = (field: string, value: string) => {
-    setData(field as keyof Place, value)
+    setData(field as keyof PlaceFormData, value)
     if (frontendErrors[field]) {
       const validationErrors = validatePlace({ ...data, [field]: value })
       const error = validationErrors[field] || ''
@@ -78,7 +86,7 @@ export default function PlacesEdit({ place, woredas }: PlaceEditProps) {
       toast({ title: 'Validation Error', description: 'Please fix all errors', variant: 'destructive' })
       return
     }
-    put(route('places.update', place.id))
+    put(`/places/${place.id}`)
   }
 
   const hasErrors = Object.keys(frontendErrors).length > 0 || Object.keys(errors).length > 0
@@ -86,7 +94,7 @@ export default function PlacesEdit({ place, woredas }: PlaceEditProps) {
   return (
     <div className="flex h-full flex-1 flex-col gap-6 overflow-auto p-4">
       <div className="flex items-center gap-4">
-        <Link href={route('places.index')}>
+        <Link href="/places">
           <Button variant="outline" size="icon">
             <ArrowLeft className="h-4 w-4" />
           </Button>
@@ -212,7 +220,7 @@ export default function PlacesEdit({ place, woredas }: PlaceEditProps) {
               <Button type="submit" disabled={processing || hasErrors} className="flex-1">
                 Update Place
               </Button>
-              <Link href={route('places.index')}>
+              <Link href="/places">
                 <Button type="button" variant="outline" className="flex-1">
                   Cancel
                 </Button>

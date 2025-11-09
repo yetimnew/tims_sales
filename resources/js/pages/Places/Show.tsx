@@ -1,16 +1,25 @@
-import { Link } from '@inertiajs/react'
-import { ArrowLeft, SquarePen, Trash2, MapPin, Landmark, ScrollText } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { Head, Link, router } from '@inertiajs/react'
+import {
+  ArrowLeft,
+  Edit,
+  Trash2,
+  MapPin,
+  Landmark,
+  ScrollText,
+  Compass,
+  Pin,
+  Calendar,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog'
 import { ActivityLogTable } from '@/components/activity-log-table'
 import { useToast } from '@/hooks/use-toast'
 import { usePermissions } from '@/hooks/use-permissions'
 import AppLayout from '@/layouts/app-layout'
-import { useState } from 'react'
-import { router } from '@inertiajs/react'
+import type { BreadcrumbItem } from '@/types'
 
 interface Woreda {
   id: number
@@ -31,23 +40,23 @@ interface Place {
   code: string
   woreda_id: number
   woreda: Woreda
-  latitude: number
-  longitude: number
-  description: string
+  latitude?: number | null
+  longitude?: number | null
+  description?: string | null
   created_at: string
   updated_at: string
 }
 
 interface ActivityLog {
   id: number
-  log_name: string
   description: string
-  subject_type: string
-  subject_id: number
-  causer_type: string
-  causer_id: number
-  properties: Record<string, any>
   created_at: string
+  event?: 'created' | 'updated' | 'deleted'
+  causer?: { id: number; name: string } | null
+  properties?: {
+    old?: Record<string, unknown>
+    attributes?: Record<string, unknown>
+  } | null
 }
 
 interface PlacesShowProps {
@@ -55,203 +64,226 @@ interface PlacesShowProps {
   activityLogs: ActivityLog[]
 }
 
+const breadcrumbs: BreadcrumbItem[] = [{ title: 'Places', href: '/places' }]
+
+const formatDate = (value: string) =>
+  new Date(value).toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  })
+
 export default function PlacesShow({ place, activityLogs }: PlacesShowProps) {
-  const { toast } = useToast()
-  const { hasPermission } = usePermissions()
-  const [deleteConfirmation, setDeleteConfirmation] = useState<{ id: number; name: string } | null>(null)
+    const { toast } = useToast()
+    const { hasPermission } = usePermissions()
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
 
-  const handleDelete = () => {
-    setDeleteConfirmation({ id: place.id, name: place.name })
-  }
-
-  const confirmDelete = () => {
-    if (!deleteConfirmation) return
-    router.delete(route('places.destroy', deleteConfirmation.id), {
-      onSuccess: () => {
-        toast({ title: 'Success', description: 'Place deleted successfully', variant: 'success' })
-        setDeleteConfirmation(null)
-      },
-      onError: () => {
-        toast({ title: 'Error', description: 'Failed to delete place', variant: 'destructive' })
-      },
-    })
-  }
-
-  const formatDate = (dateString: string) => {
-    const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' }
-    return new Date(dateString).toLocaleDateString(undefined, options)
-  }
-
-  return (
-    <div className="flex h-full flex-1 flex-col gap-6 overflow-auto p-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link href={route('places.index')}>
-            <Button variant="outline" size="icon">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-          </Link>
-          <h1 className="text-2xl font-bold">Place: {place.name}</h1>
-        </div>
-        <div className="flex gap-2">
-          {hasPermission('places.edit') && (
-            <Link href={route('places.edit', place.id)}>
-              <Button variant="outline">
-                <SquarePen className="mr-2 h-4 w-4" /> Edit Place
-              </Button>
-            </Link>
-          )}
-          {hasPermission('places.destroy') && (
-            <Button variant="destructive" onClick={handleDelete}>
-              <Trash2 className="mr-2 h-4 w-4" /> Delete Place
-            </Button>
-          )}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Basic Information Card */}
-        <Card className="lg:col-span-2">
-          <CardHeader className="border-b">
-            <CardTitle className="flex items-center gap-2">
-              <MapPin className="h-5 w-5" /> Basic Information
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-4 p-6 md:grid-cols-2">
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-muted-foreground">Name</p>
-              <p className="text-base">{place.name}</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-muted-foreground">Code</p>
-              <p className="text-base">{place.code || 'N/A'}</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-muted-foreground">Woreda</p>
-              <Link href={route('woredas.show', place.woreda.id)} className="text-primary hover:underline">
-                <p className="text-base">{place.woreda.name}</p>
-              </Link>
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-muted-foreground">Zone</p>
-              <Link href={route('zones.show', place.woreda.zone.id)} className="text-primary hover:underline">
-                <p className="text-base">{place.woreda.zone.name}</p>
-              </Link>
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-muted-foreground">Region</p>
-              <Link href={route('regions.show', place.woreda.zone.region.id)} className="text-primary hover:underline">
-                <p className="text-base">{place.woreda.zone.region.name}</p>
-              </Link>
-            </div>
-            <div className="space-y-1 md:col-span-2">
-              <p className="text-sm font-medium text-muted-foreground">Description</p>
-              <p className="text-base">{place.description || 'No description provided.'}</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Quick Info Sidebar */}
-        <Card className="lg:col-span-1">
-          <CardHeader className="border-b">
-            <CardTitle className="flex items-center gap-2">
-              <Landmark className="h-5 w-5" /> Quick Info
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-4 p-6">
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-muted-foreground">Location Hierarchy</p>
-              <div className="space-y-1">
-                <Badge variant="outline">{place.woreda.zone.region.name}</Badge>
-                <Badge variant="outline">{place.woreda.zone.name}</Badge>
-                <Badge variant="outline">{place.woreda.name}</Badge>
-              </div>
-            </div>
-            {(place.latitude || place.longitude) && (
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">Coordinates</p>
-                <p className="text-sm text-muted-foreground">
-                  {place.latitude && place.longitude
-                    ? `${place.latitude}, ${place.longitude}`
-                    : 'Not specified'
-                  }
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Location Details Card */}
-        <Card className="lg:col-span-3">
-          <CardHeader className="border-b">
-            <CardTitle className="flex items-center gap-2">
-              <MapPin className="h-5 w-5" /> Location Details
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-6">
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">Region</p>
-                <Link href={route('regions.show', place.woreda.zone.region.id)} className="text-primary hover:underline">
-                  <p className="text-base">{place.woreda.zone.region.name}</p>
-                </Link>
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">Zone</p>
-                <Link href={route('zones.show', place.woreda.zone.id)} className="text-primary hover:underline">
-                  <p className="text-base">{place.woreda.zone.name}</p>
-                </Link>
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">Woreda</p>
-                <Link href={route('woredas.show', place.woreda.id)} className="text-primary hover:underline">
-                  <p className="text-base">{place.woreda.name}</p>
-                </Link>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Record Information Card */}
-        <Card className="lg:col-span-3">
-          <CardHeader className="border-b">
-            <CardTitle className="flex items-center gap-2">
-              <ScrollText className="h-5 w-5" /> Record Information
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-4 p-6 md:grid-cols-2">
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-muted-foreground">Created At</p>
-              <p className="text-base">{formatDate(place.created_at)}</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-muted-foreground">Last Updated At</p>
-              <p className="text-base">{formatDate(place.updated_at)}</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Activity Log Card */}
-        <Card className="lg:col-span-3">
-          <CardHeader className="border-b">
-            <CardTitle className="flex items-center gap-2">
-              <ScrollText className="h-5 w-5" /> Activity Log
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-6">
-            <ActivityLogTable activityLogs={activityLogs} />
-          </CardContent>
-        </Card>
-      </div>
-
-      <DeleteConfirmationDialog
-        isOpen={!!deleteConfirmation}
-        onClose={() => setDeleteConfirmation(null)}
-        onConfirm={confirmDelete}
-        itemName={deleteConfirmation?.name}
-      />
-    </div>
+  const activityLogRows = useMemo(
+    () =>
+      activityLogs.map(log => ({
+        id: log.id,
+        action: log.event ?? 'updated',
+        description: log.description,
+        user: log.causer ? { name: log.causer.name } : undefined,
+        created_at: log.created_at,
+        old_values: log.properties?.old ?? undefined,
+        new_values: log.properties?.attributes ?? undefined,
+      })),
+    [activityLogs],
   )
-}
 
-PlacesShow.layout = (page: React.ReactNode) => <AppLayout children={page} />
+    const handleDelete = () => setDeleteDialogOpen(true)
+
+    const confirmDelete = () => {
+      router.delete(`/places/${place.id}`, {
+        onSuccess: () => {
+          toast({ title: 'Place deleted', description: `${place.name} was removed successfully.` })
+          setDeleteDialogOpen(false)
+        },
+        onError: () => {
+          toast({
+            title: 'Deletion failed',
+            description: 'Unable to delete the place. Try again later.',
+            variant: 'destructive',
+          })
+        },
+      })
+    }
+
+    const coordinateLabel = [place.latitude, place.longitude].filter(Boolean).join(', ')
+
+    return (
+      <AppLayout breadcrumbs={breadcrumbs}>
+        <Head title={`Place: ${place.name}`} />
+
+        <div className="flex h-full flex-1 flex-col gap-6 overflow-hidden rounded-xl p-4">
+          <div className="rounded-lg border border-slate-200 bg-gradient-to-r from-slate-50 to-purple-50 p-6 shadow-sm dark:border-slate-700 dark:from-slate-900 dark:to-purple-950/30">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="flex flex-wrap items-center gap-4">
+                <Button variant="outline" size="sm" asChild className="flex items-center gap-2">
+                  <Link href="/places" className="flex items-center gap-2">
+                    <ArrowLeft className="h-4 w-4" />
+                    Back to Places
+                  </Link>
+                </Button>
+                <div className="flex items-center gap-4">
+                  <div className="rounded-xl bg-purple-100 p-3 dark:bg-purple-900/30">
+                    <MapPin className="h-6 w-6 text-purple-700 dark:text-purple-300" />
+                  </div>
+                  <div>
+                    <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{place.name}</h1>
+                    <p className="text-sm text-slate-600 dark:text-slate-400">
+                      Logistic waypoint with hierarchical context and activity history.
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2 text-sm">
+                      <Badge variant="outline" className="flex items-center gap-2">
+                        <Landmark className="h-3.5 w-3.5" /> ID: {place.id}
+                      </Badge>
+                      <Badge variant="outline" className="flex items-center gap-2">
+                        <Compass className="h-3.5 w-3.5" /> {coordinateLabel || 'Coordinates unavailable'}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                {hasPermission('places.edit') && (
+                  <Button variant="outline" asChild className="gap-2 hover:border-purple-300 hover:bg-purple-50">
+                    <Link href={`/places/${place.id}/edit`}>
+                      <Edit className="h-4 w-4" />
+                      Edit Place
+                    </Link>
+                  </Button>
+                )}
+                {hasPermission('places.destroy') && (
+                  <Button
+                    variant="outline"
+                    onClick={handleDelete}
+                    className="gap-2 border-red-200 text-red-600 hover:border-red-300 hover:bg-red-50 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-900/30"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Delete
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-4 text-sm text-slate-600 dark:text-slate-400">
+              <span className="inline-flex items-center gap-2">
+                <ScrollText className="h-4 w-4" />
+                {place.description || 'No description provided.'}
+              </span>
+            </div>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr),20rem] lg:items-start">
+            <div className="space-y-6">
+              <Card className="shadow-lg border-0">
+                <CardHeader className="border-b bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/20 dark:to-indigo-950/20">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <MapPin className="h-5 w-5 text-purple-600" />
+                    Administrative Context
+                  </CardTitle>
+                  <CardDescription>Linked hierarchy for this place</CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-4 md:grid-cols-2">
+                  <div>
+                    <p className="text-xs font-semibold uppercase text-muted-foreground">Place Code</p>
+                    <p className="mt-2 text-base font-semibold text-foreground">{place.code || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold uppercase text-muted-foreground">Woreda</p>
+                    <Link href={`/woredas/${place.woreda.id}`} className="mt-2 inline-flex items-center gap-1 text-base font-semibold text-purple-600 hover:underline dark:text-purple-300">
+                      <MapPin className="h-4 w-4" />
+                      {place.woreda.name}
+                    </Link>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold uppercase text-muted-foreground">Zone</p>
+                    <Link href={`/zones/${place.woreda.zone.id}`} className="mt-2 inline-flex items-center gap-1 text-base font-semibold text-purple-600 hover:underline dark:text-purple-300">
+                      <Pin className="h-4 w-4" />
+                      {place.woreda.zone.name}
+                    </Link>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold uppercase text-muted-foreground">Region</p>
+                    <Link href={`/regions/${place.woreda.zone.region.id}`} className="mt-2 inline-flex items-center gap-1 text-base font-semibold text-purple-600 hover:underline dark:text-purple-300">
+                      <Landmark className="h-4 w-4" />
+                      {place.woreda.zone.region.name}
+                    </Link>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="shadow-lg border-0">
+                <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-900/40 dark:to-slate-900/10">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <ScrollText className="h-5 w-5" />
+                    Narrative Details
+                  </CardTitle>
+                  <CardDescription>Additional context and notes</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4 text-sm text-muted-foreground">
+                  <p>{place.description || 'No additional details provided for this place.'}</p>
+                </CardContent>
+              </Card>
+
+              <Card className="shadow-lg border-0">
+                <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-900/40 dark:to-slate-900/10">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <ScrollText className="h-5 w-5" />
+                    Activity History
+                  </CardTitle>
+                  <CardDescription>Auditable timeline of changes</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {activityLogRows.length > 0 ? (
+                    <ActivityLogTable logs={activityLogRows} />
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No activity recorded for this place yet.</p>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="space-y-6">
+              <Card className="shadow-lg border-0">
+                <CardHeader className="border-b bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/20 dark:to-indigo-950/20">
+                  <CardTitle className="text-lg font-semibold">Snapshot</CardTitle>
+                  <CardDescription>Quick reference values</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4 text-sm text-muted-foreground">
+                  <div className="flex items-center justify-between">
+                    <span>Place ID</span>
+                    <Badge variant="secondary" className="px-2 py-1">{place.id}</Badge>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase text-muted-foreground">Coordinates</p>
+                    <p className="mt-1 font-medium text-foreground">{coordinateLabel || 'Not captured'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase text-muted-foreground">Created</p>
+                    <p className="mt-1 font-medium text-foreground">{formatDate(place.created_at)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase text-muted-foreground">Last Updated</p>
+                    <p className="mt-1 font-medium text-foreground">{formatDate(place.updated_at)}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
+
+        <DeleteConfirmationDialog
+          open={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          title="Delete Place"
+          description={`Are you sure you want to delete ${place.name}? This action cannot be undone.`}
+          itemName={place.name}
+          onConfirm={confirmDelete}
+        />
+      </AppLayout>
+    )
+  }

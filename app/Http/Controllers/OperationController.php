@@ -128,6 +128,9 @@ class OperationController extends Controller
             ->selectRaw('SUM(CASE WHEN is_returned = 1 THEN 1 ELSE 0 END) as completed_trips')
             ->selectRaw('SUM(CASE WHEN is_returned = 0 OR is_returned IS NULL THEN 1 ELSE 0 END) as ongoing_trips')
             ->selectRaw('COALESCE(SUM(COALESCE(CargoVolumMT, 0)), 0) as total_tonnage')
+            ->selectRaw('COALESCE(SUM(COALESCE(tonkm, 0)), 0) as total_ton_km')
+            ->selectRaw('COALESCE(SUM(COALESCE(DistanceWCargo, 0)), 0) as loaded_distance')
+            ->selectRaw('COALESCE(SUM(COALESCE(DistanceWOCargo, 0)), 0) as empty_distance')
             ->selectRaw('COALESCE(SUM(COALESCE(DistanceWCargo, 0) + COALESCE(DistanceWOCargo, 0)), 0) as total_distance')
             ->selectRaw('COALESCE(SUM(COALESCE(fuelInBirr, 0) + COALESCE(perdiem, 0) + COALESCE(other, 0)), 0) as total_cost')
             ->first();
@@ -136,15 +139,33 @@ class OperationController extends Controller
         $completedTrips = (int) ($aggregate->completed_trips ?? 0);
         $ongoingTrips = (int) ($aggregate->ongoing_trips ?? 0);
         $totalTonnage = (float) ($aggregate->total_tonnage ?? 0);
+        $totalTonKm = (float) ($aggregate->total_ton_km ?? 0);
+        $loadedDistance = (float) ($aggregate->loaded_distance ?? 0);
+        $emptyDistance = (float) ($aggregate->empty_distance ?? 0);
         $totalDistance = (float) ($aggregate->total_distance ?? 0);
         $totalCost = (float) ($aggregate->total_cost ?? 0);
         $plannedVolume = (float) ($operation->volume ?? 0);
         $remainingTonnage = max($plannedVolume - $totalTonnage, 0);
         $completionRate = $plannedVolume > 0 ? round(($totalTonnage / $plannedVolume) * 100, 2) : null;
         $averageTonPerTrip = $totalTrips > 0 ? round($totalTonnage / $totalTrips, 2) : null;
+        $averageTonKmPerTrip = $totalTrips > 0 ? round($totalTonKm / $totalTrips, 2) : null;
         $returnRate = $totalTrips > 0 ? round(($completedTrips / $totalTrips) * 100, 2) : 0;
         $averageCostPerTrip = $totalTrips > 0 ? round($totalCost / $totalTrips, 2) : null;
         $averageCostPerTon = $totalTonnage > 0 ? round($totalCost / $totalTonnage, 2) : null;
+        $plannedTonKm = ($operation->volume ?? 0) * ($operation->km ?? 0);
+        $costPerTonKm = $totalTonKm > 0 ? round($totalCost / $totalTonKm, 2) : null;
+        $actualRevenue = ($operation->tariff !== null && $operation->tariff !== '') ? round($totalTonKm * (float) $operation->tariff, 2) : null;
+        $potentialRevenue = ($operation->tariff !== null && $operation->tariff !== '') ? round($plannedTonKm * (float) $operation->tariff, 2) : null;
+        $revenueGap = ($potentialRevenue !== null && $actualRevenue !== null) ? round($potentialRevenue - $actualRevenue, 2) : null;
+        $grossMarginValue = ($actualRevenue !== null) ? round($actualRevenue - $totalCost, 2) : null;
+        $grossMarginPercent = ($actualRevenue !== null && $actualRevenue != 0.0)
+            ? round(($grossMarginValue / $actualRevenue) * 100, 2)
+            : null;
+        $yieldPerTrip = ($actualRevenue !== null && $totalTrips > 0) ? round($actualRevenue / $totalTrips, 2) : null;
+        $yieldPerTon = ($actualRevenue !== null && $totalTonnage > 0) ? round($actualRevenue / $totalTonnage, 2) : null;
+        $loadFactor = ($totalDistance > 0) ? round(($loadedDistance / $totalDistance) * 100, 2) : null;
+        $emptyBackhaulShare = ($totalDistance > 0) ? round(($emptyDistance / $totalDistance) * 100, 2) : null;
+        $tonKmCompletionRate = $plannedTonKm > 0 ? round(($totalTonKm / $plannedTonKm) * 100, 2) : null;
 
         $timeline = (clone $performanceQuery)
             ->selectRaw('DATE(DateDispach) as date')
@@ -192,11 +213,37 @@ class OperationController extends Controller
                     'completionRate' => $completionRate,
                     'averageTonPerTrip' => $averageTonPerTrip,
                     'totalDistance' => round($totalDistance, 2),
+                    'totalTonKm' => round($totalTonKm, 2),
+                    'plannedTonKm' => round($plannedTonKm, 2),
+                    'tonKmCompletionRate' => $tonKmCompletionRate,
+                    'loadedDistance' => round($loadedDistance, 2),
+                    'emptyDistance' => round($emptyDistance, 2),
+                    'loadFactor' => $loadFactor,
+                    'emptyBackhaulShare' => $emptyBackhaulShare,
                 ],
                 'financial' => [
                     'totalCost' => round($totalCost, 2),
                     'averageCostPerTrip' => $averageCostPerTrip,
                     'averageCostPerTon' => $averageCostPerTon,
+                    'costPerTonKm' => $costPerTonKm,
+                ],
+                'economics' => [
+                    'totalTonKm' => round($totalTonKm, 2),
+                    'plannedTonKm' => round($plannedTonKm, 2),
+                    'tonKmCompletionRate' => $tonKmCompletionRate,
+                    'averageTonKmPerTrip' => $averageTonKmPerTrip,
+                    'actualRevenue' => $actualRevenue,
+                    'potentialRevenue' => $potentialRevenue,
+                    'revenueGap' => $revenueGap,
+                    'grossMarginValue' => $grossMarginValue,
+                    'grossMarginPercent' => $grossMarginPercent,
+                    'costPerTonKm' => $costPerTonKm,
+                    'yieldPerTrip' => $yieldPerTrip,
+                    'yieldPerTon' => $yieldPerTon,
+                    'loadFactor' => $loadFactor,
+                    'emptyBackhaulShare' => $emptyBackhaulShare,
+                    'loadedDistance' => round($loadedDistance, 2),
+                    'emptyDistance' => round($emptyDistance, 2),
                 ],
                 'trends' => [
                     'timeline' => $timeline,

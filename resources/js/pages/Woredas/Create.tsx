@@ -71,7 +71,7 @@ export default function WoredasCreate({ zones }: WoredaCreateProps) {
       toast({ title: 'Validation Error', description: 'Please fix all errors', variant: 'destructive' })
       return
     }
-    post(route('woredas.store'))
+  post('/woredas')
   }
 
   const hasErrors = Object.keys(frontendErrors).length > 0 || Object.keys(errors).length > 0
@@ -79,7 +79,7 @@ export default function WoredasCreate({ zones }: WoredaCreateProps) {
   return (
     <div className="flex h-full flex-1 flex-col gap-6 overflow-auto p-4">
       <div className="flex items-center gap-4">
-        <Link href={route('woredas.index')}>
+  <Link href="/woredas">
           <Button variant="outline" size="icon">
             <ArrowLeft className="h-4 w-4" />
           </Button>
@@ -171,7 +171,7 @@ export default function WoredasCreate({ zones }: WoredaCreateProps) {
               <Button type="submit" disabled={processing || hasErrors} className="flex-1">
                 Create Woreda
               </Button>
-              <Link href={route('woredas.index')}>
+              <Link href="/woredas">
                 <Button type="button" variant="outline" className="flex-1">
                   Cancel
                 </Button>

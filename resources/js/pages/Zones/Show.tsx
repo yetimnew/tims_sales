@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react'
+import { useMemo, useState } from 'react'
 import { Head, Link, router } from '@inertiajs/react'
 import {
   ArrowLeft,
@@ -488,5 +488,3 @@ export default function ZonesShow({ zone, activityLogs = [] }: ZoneShowProps) {
     </AppLayout>
   )
 }
-
-ZonesShow.layout = (page: ReactNode) => <AppLayout>{page}</AppLayout>

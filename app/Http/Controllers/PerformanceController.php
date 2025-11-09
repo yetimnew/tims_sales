@@ -112,12 +112,31 @@ class PerformanceController extends Controller
             'returned_date' => 'nullable|date',
         ]);
 
-        $validated['user_id'] = auth('sanctum')->id();
+        $distanceRecord = $this->findDistanceRecord((int) $validated['orgion_id'], (int) $validated['destination_id']);
+        $distanceValue = $distanceRecord ? (float) $distanceRecord->distance_km : 0.0;
+
+        $validated['DistanceWCargo'] = round($distanceValue, 2);
+        $validated['tonkm'] = $this->calculateTonKm($distanceValue, $validated['CargoVolumMT'] ?? null);
+        $validated['user_id'] = Auth::id();
 
         Performance::create($validated);
 
-        return redirect()->route('performances.index')
-            ->with('success', 'Performance created successfully.');
+        $successMessage = 'Performance created successfully.';
+        if (! $distanceRecord) {
+            $successMessage .= ' Distance between the selected origin and destination is not registered. Distance with cargo was set to 0 km. Please register this route under Distances before the next trip.';
+        }
+
+        $redirect = redirect()->route('performances.index')
+            ->with('success', $successMessage);
+
+        if ($distanceRecord) {
+            $redirect->with(
+                'info',
+                sprintf('Distance with cargo set to %s km using the registered route.', number_format($distanceValue, 2))
+            );
+        }
+
+        return $redirect;
     }
 
     /**
@@ -298,10 +317,30 @@ class PerformanceController extends Controller
             'returned_date' => 'nullable|date',
         ]);
 
+        $distanceRecord = $this->findDistanceRecord((int) $validated['orgion_id'], (int) $validated['destination_id']);
+        $distanceValue = $distanceRecord ? (float) $distanceRecord->distance_km : 0.0;
+
+        $validated['DistanceWCargo'] = round($distanceValue, 2);
+        $validated['tonkm'] = $this->calculateTonKm($distanceValue, $validated['CargoVolumMT'] ?? null);
+
         $performance->update($validated);
 
-        return redirect()->route('performances.index')
-            ->with('success', 'Performance updated successfully.');
+        $successMessage = 'Performance updated successfully.';
+        if (! $distanceRecord) {
+            $successMessage .= ' Distance between the selected origin and destination is not registered. Distance with cargo was set to 0 km. Please register this route under Distances before the next trip.';
+        }
+
+        $redirect = redirect()->route('performances.index')
+            ->with('success', $successMessage);
+
+        if ($distanceRecord) {
+            $redirect->with(
+                'info',
+                sprintf('Distance with cargo refreshed to %s km from the registered route.', number_format($distanceValue, 2))
+            );
+        }
+
+        return $redirect;
     }
 
     /**
@@ -330,26 +369,48 @@ class PerformanceController extends Controller
     /**
      * Calculate distance between places via AJAX.
      */
-    public function ajaxRequestPost(Request $request)
+    public function calculateDistance(Request $request)
     {
-        $fromPlaceId = $request->input('from_place_id');
-        $toPlaceId = $request->input('to_place_id');
+        $validated = $request->validate([
+            'from_place_id' => ['required', 'integer'],
+            'to_place_id' => ['required', 'integer'],
+        ]);
 
-        $distance = Distance::where('from_place_id', $fromPlaceId)
-            ->where('to_place_id', $toPlaceId)
-            ->first();
+        $distance = $this->findDistanceRecord((int) $validated['from_place_id'], (int) $validated['to_place_id']);
 
         if ($distance) {
             return response()->json([
-                'distance' => $distance->distance_km,
+                'distance' => (float) $distance->distance_km,
                 'estimated_time' => $distance->estimated_time_hours,
+                'found' => true,
             ]);
         }
 
         return response()->json([
-            'distance' => null,
+            'distance' => 0,
             'estimated_time' => null,
+            'found' => false,
+            'note' => 'Distance between the selected origin and destination is not registered. Please add it via the Distances module before recording performances.',
         ]);
+    }
+
+    private function calculateTonKm(float $distanceKm, $cargoVolume): float
+    {
+        $volume = $cargoVolume !== null ? (float) $cargoVolume : 0.0;
+
+        if ($volume <= 0 || $distanceKm <= 0) {
+            return 0.0;
+        }
+
+        return round($distanceKm * $volume, 4);
+    }
+
+    private function findDistanceRecord(int $originId, int $destinationId): ?Distance
+    {
+        return Distance::query()
+            ->betweenPlaces($originId, $destinationId)
+            ->orderByRaw('CASE WHEN from_place_id = ? AND to_place_id = ? THEN 0 ELSE 1 END', [$originId, $destinationId])
+            ->first();
     }
 
     /**

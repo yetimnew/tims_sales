@@ -27,6 +27,8 @@ import {
     UserCircle,
     Milestone,
     CircleDollarSign,
+    TrendingUp,
+    Zap,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { Area, AreaChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis } from 'recharts';
@@ -48,24 +50,56 @@ interface Operation {
     region?: { id: number; name: string };
     user?: { id: number; name: string };
 }
+interface PerformanceTotals {
+    plannedVolume: number | null;
+    totalTrips: number;
+    completedTrips: number;
+    ongoingTrips: number;
+    returnRate: number;
+    totalTonnage: number;
+    remainingTonnage: number;
+    completionRate: number | null;
+    averageTonPerTrip: number | null;
+    totalDistance: number | null;
+    totalTonKm?: number | null;
+    plannedTonKm?: number | null;
+    tonKmCompletionRate?: number | null;
+    loadedDistance?: number | null;
+    emptyDistance?: number | null;
+    loadFactor?: number | null;
+    emptyBackhaulShare?: number | null;
+}
+
+interface PerformanceFinancials {
+    totalCost: number | null;
+    averageCostPerTrip: number | null;
+    averageCostPerTon: number | null;
+    costPerTonKm?: number | null;
+}
+
+interface PerformanceEconomics {
+    totalTonKm: number | null;
+    plannedTonKm: number | null;
+    tonKmCompletionRate: number | null;
+    averageTonKmPerTrip: number | null;
+    actualRevenue: number | null;
+    potentialRevenue: number | null;
+    revenueGap: number | null;
+    grossMarginValue: number | null;
+    grossMarginPercent: number | null;
+    costPerTonKm: number | null;
+    yieldPerTrip: number | null;
+    yieldPerTon: number | null;
+    loadFactor: number | null;
+    emptyBackhaulShare: number | null;
+    loadedDistance: number | null;
+    emptyDistance: number | null;
+}
+
 interface PerformanceInsights {
-    totals: {
-        plannedVolume: number | null;
-        totalTrips: number;
-        completedTrips: number;
-        ongoingTrips: number;
-        returnRate: number;
-        totalTonnage: number;
-        remainingTonnage: number;
-        completionRate: number | null;
-        averageTonPerTrip: number | null;
-        totalDistance: number | null;
-    };
-    financial: {
-        totalCost: number | null;
-        averageCostPerTrip: number | null;
-        averageCostPerTon: number | null;
-    };
+    totals: PerformanceTotals;
+    financial: PerformanceFinancials;
+    economics?: PerformanceEconomics | null;
     trends: {
         timeline: Array<{ date: string; trips: number; tonnage: number }>;
         tonnageBreakdown: Array<{ label: string; value: number }>;
@@ -167,13 +201,40 @@ export default function OperationsShow({ operation, activityLogs = [], performan
         completionRate: null,
         averageTonPerTrip: null,
         totalDistance: null,
-    };
+        totalTonKm: null,
+        plannedTonKm: null,
+        tonKmCompletionRate: null,
+        loadedDistance: null,
+        emptyDistance: null,
+        loadFactor: null,
+        emptyBackhaulShare: null,
+    } satisfies PerformanceTotals;
 
     const financials = performanceInsights?.financial ?? {
         totalCost: null,
         averageCostPerTrip: null,
         averageCostPerTon: null,
-    };
+        costPerTonKm: null,
+    } satisfies PerformanceFinancials;
+
+    const economics = performanceInsights?.economics ?? {
+        totalTonKm: totals.totalTonKm ?? null,
+        plannedTonKm: totals.plannedTonKm ?? null,
+        tonKmCompletionRate: totals.tonKmCompletionRate ?? null,
+        averageTonKmPerTrip: null,
+        actualRevenue: null,
+        potentialRevenue: null,
+        revenueGap: null,
+        grossMarginValue: null,
+        grossMarginPercent: null,
+        costPerTonKm: financials.costPerTonKm ?? null,
+        yieldPerTrip: null,
+        yieldPerTon: null,
+        loadFactor: totals.loadFactor ?? null,
+        emptyBackhaulShare: totals.emptyBackhaulShare ?? null,
+        loadedDistance: totals.loadedDistance ?? null,
+        emptyDistance: totals.emptyDistance ?? null,
+    } satisfies PerformanceEconomics;
 
     const timelineData = performanceInsights?.trends?.timeline ?? [];
     const tonnageBreakdown = performanceInsights?.trends?.tonnageBreakdown ?? [];
@@ -187,9 +248,14 @@ export default function OperationsShow({ operation, activityLogs = [], performan
     const completionLabel = completionPercentage === null ? 'N/A' : `${completionPercentage.toFixed(1)}%`;
     const completionValue = completionPercentage ?? 0;
     const completionBarWidth = Math.max(0, Math.min(completionValue, 100));
+    const tonKmCompletion = economics.tonKmCompletionRate ?? null;
+    const tonKmCompletionLabel = tonKmCompletion === null ? 'N/A' : `${tonKmCompletion.toFixed(1)}%`;
+    const tonKmCompletionBarWidth = Math.max(0, Math.min(tonKmCompletion ?? 0, 100));
     const tripProgressLabel = totals.totalTrips > 0
         ? `${totals.completedTrips} / ${totals.totalTrips}`
         : '0';
+    const loadFactorLabel = economics.loadFactor === null ? 'N/A' : `${economics.loadFactor.toFixed(1)}%`;
+    const emptyShareLabel = economics.emptyBackhaulShare === null ? 'N/A' : `${economics.emptyBackhaulShare.toFixed(1)}%`;
 
     const relationshipMatrix: Array<{
         label: string;
@@ -292,6 +358,22 @@ export default function OperationsShow({ operation, activityLogs = [], performan
             icon: Clock,
             containerClass: 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900/30',
             iconClass: 'text-slate-600 dark:text-slate-200',
+        },
+        {
+            label: 'Ton-Km Delivered',
+            value: formatOptionalNumber(economics.totalTonKm ?? totals.totalTonKm ?? null, ' ton-km'),
+            helper: 'Sum of loaded tonnage × km',
+            icon: TrendingUp,
+            containerClass: 'border-cyan-200 bg-cyan-50 dark:border-cyan-800 dark:bg-cyan-900/20',
+            iconClass: 'text-cyan-600 dark:text-cyan-300',
+        },
+        {
+            label: 'Load Factor',
+            value: loadFactorLabel,
+            helper: 'Share of km travelled under load',
+            icon: Zap,
+            containerClass: 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20',
+            iconClass: 'text-green-600 dark:text-green-300',
         },
         {
             label: 'Tonnage Remaining',

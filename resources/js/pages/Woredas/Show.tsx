@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react'
+import { useMemo, useState } from 'react'
 import { Head, Link, router } from '@inertiajs/react'
 import {
   ArrowLeft,
@@ -468,6 +468,4 @@ export default function WoredasShow({ woreda, activityLogs = [] }: WoredasShowPr
     </AppLayout>
   )
 }
-
-WoredasShow.layout = (page: ReactNode) => <AppLayout>{page}</AppLayout>
 

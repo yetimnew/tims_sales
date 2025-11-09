@@ -75,7 +75,7 @@ export default function PlacesCreate({ woredas }: PlaceCreateProps) {
       toast({ title: 'Validation Error', description: 'Please fix all errors', variant: 'destructive' })
       return
     }
-    post(route('places.store'))
+  post('/places')
   }
 
   const hasErrors = Object.keys(frontendErrors).length > 0 || Object.keys(errors).length > 0
@@ -83,7 +83,7 @@ export default function PlacesCreate({ woredas }: PlaceCreateProps) {
   return (
     <div className="flex h-full flex-1 flex-col gap-6 overflow-auto p-4">
       <div className="flex items-center gap-4">
-        <Link href={route('places.index')}>
+  <Link href="/places">
           <Button variant="outline" size="icon">
             <ArrowLeft className="h-4 w-4" />
           </Button>
@@ -209,7 +209,7 @@ export default function PlacesCreate({ woredas }: PlaceCreateProps) {
               <Button type="submit" disabled={processing || hasErrors} className="flex-1">
                 Create Place
               </Button>
-              <Link href={route('places.index')}>
+              <Link href="/places">
                 <Button type="button" variant="outline" className="flex-1">
                   Cancel
                 </Button>

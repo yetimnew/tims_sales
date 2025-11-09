@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useForm } from '@inertiajs/react'
 import { Link } from '@inertiajs/react'
-import { route } from 'ziggy-js'
 import { ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -93,7 +92,7 @@ export default function ZonesCreate({ regions }: ZoneCreateProps) {
       return
     }
 
-    post(route('zones.store'))
+  post('/zones')
   }
 
   const hasErrors = Object.keys(frontendErrors).length > 0 || Object.keys(errors).length > 0
@@ -101,7 +100,7 @@ export default function ZonesCreate({ regions }: ZoneCreateProps) {
   return (
     <div className="flex h-full flex-1 flex-col gap-6 overflow-auto p-4">
       <div className="flex items-center gap-4">
-        <Link href={route('zones.index')}>
+  <Link href="/zones">
           <Button variant="outline" size="icon">
             <ArrowLeft className="h-4 w-4" />
           </Button>
@@ -357,7 +356,7 @@ export default function ZonesCreate({ regions }: ZoneCreateProps) {
               <Button type="submit" disabled={processing || hasErrors} className="flex-1">
                 Create Zone
               </Button>
-              <Link href={route('zones.index')}>
+              <Link href="/zones">
                 <Button type="button" variant="outline" className="flex-1">
                   Cancel
                 </Button>

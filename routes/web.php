@@ -1,9 +1,10 @@
 <?php
 
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\TruckController;
 use App\Http\Controllers\DriverController;
+use App\Http\Controllers\FleetAnalyticsController;
 use App\Http\Controllers\PerformanceController;
+use App\Http\Controllers\TruckController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -17,6 +18,10 @@ Route::get('/', function () {
 Route::middleware(['auth'])->group(function () {
     // Dashboard
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // Fleet analytics cockpit
+    Route::get('analytics/cockpit', [FleetAnalyticsController::class, 'index'])
+        ->name('analytics.cockpit');
 
     // Trucks with rate limiting and permission middleware
     Route::middleware(['throttle:60,1'])->group(function () {
@@ -172,22 +177,27 @@ Route::middleware(['auth'])->group(function () {
             ->name('performances.store');
 
         Route::get('performances/{performance}', [PerformanceController::class, 'show'])
+            ->whereNumber('performance')
             ->middleware('can:performances.show')
             ->name('performances.show');
 
         Route::get('performances/{performance}/edit', [PerformanceController::class, 'edit'])
+            ->whereNumber('performance')
             ->middleware('can:performances.edit')
             ->name('performances.edit');
 
         Route::put('performances/{performance}', [PerformanceController::class, 'update'])
+            ->whereNumber('performance')
             ->middleware('can:performances.update')
             ->name('performances.update');
 
         Route::delete('performances/{performance}', [PerformanceController::class, 'destroy'])
+            ->whereNumber('performance')
             ->middleware('can:performances.destroy')
             ->name('performances.destroy');
 
         Route::post('performances/{performance}/deactivate', [PerformanceController::class, 'deactivate'])
+            ->whereNumber('performance')
             ->middleware('can:performances.deactivate')
             ->name('performances.deactivate');
 
@@ -198,8 +208,8 @@ Route::middleware(['auth'])->group(function () {
         // Additional performance routes
         Route::get('performances/status/list', [PerformanceController::class, 'statusList'])
             ->name('performances.status.list');
-        Route::post('performances/calculate-distance', [PerformanceController::class, 'ajaxRequestPost'])
-            ->name('performances.calculate.distance');
+        Route::get('performances/calculate-distance', [PerformanceController::class, 'calculateDistance'])
+            ->name('performances.calculate-distance');
     });
 
     // Maintenance Management

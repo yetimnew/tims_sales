@@ -8,6 +8,7 @@ use App\Models\VehicleMaintenanceRecord;
 use App\Exceptions\MaintenanceException;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 
 class MaintenanceService
@@ -29,14 +30,19 @@ class MaintenanceService
                 throw new MaintenanceException('Maintenance type is not active');
             }
 
-            $maintenance = VehicleMaintenanceRecord::create([
+            $scheduledDate = isset($data['scheduled_date'])
+                ? Carbon::parse($data['scheduled_date'])
+                : now()->addDays(7);
+
+            $payload = array_merge($data, [
                 'truck_id' => $truckId,
                 'maintenance_type_id' => $maintenanceTypeId,
-                'scheduled_date' => $data['scheduled_date'] ?? now()->addDays(7),
-                'status' => 'scheduled',
-                'user_id' => auth()->id(),
-                ...$data
+                'scheduled_date' => $scheduledDate,
+                'status' => $data['status'] ?? 'scheduled',
+                'user_id' => $data['user_id'] ?? Auth::id(),
             ]);
+
+            $maintenance = VehicleMaintenanceRecord::create($payload);
 
             Log::info('Maintenance scheduled', [
                 'maintenance_id' => $maintenance->id,
@@ -44,10 +50,42 @@ class MaintenanceService
                 'truck_plate' => $truck->plate,
                 'maintenance_type' => $maintenanceType->name,
                 'scheduled_date' => $maintenance->scheduled_date,
-                'scheduled_by' => auth()->id(),
+                'scheduled_by' => Auth::id(),
             ]);
 
             return $maintenance;
+        });
+    }
+
+    public function updateMaintenance(VehicleMaintenanceRecord $maintenance, array $data = []): VehicleMaintenanceRecord
+    {
+        return DB::transaction(function () use ($maintenance, $data) {
+            $maintenance->refresh();
+
+            if (isset($data['completed_date']) && $data['completed_date']) {
+                $this->assertCompletedDate($maintenance, $data['completed_date']);
+            }
+
+            $maintenance->fill($data);
+
+            if (isset($data['status']) && $data['status'] === 'completed') {
+                $maintenance->completed_date = $data['completed_date'] ?? now();
+            }
+
+            if (isset($data['scheduled_date'])) {
+                $maintenance->scheduled_date = Carbon::parse($data['scheduled_date']);
+            }
+
+            $maintenance->save();
+
+            Log::info('Maintenance updated', [
+                'maintenance_id' => $maintenance->id,
+                'truck_id' => $maintenance->truck_id,
+                'status' => $maintenance->status,
+                'updated_by' => Auth::id(),
+            ]);
+
+            return $maintenance->fresh(['truck', 'maintenanceType']);
         });
     }
 
@@ -60,12 +98,16 @@ class MaintenanceService
             $maintenance = VehicleMaintenanceRecord::with(['truck', 'maintenanceType'])
                 ->findOrFail($maintenanceId);
 
+            if (isset($data['completed_date']) && $data['completed_date']) {
+                $this->assertCompletedDate($maintenance, $data['completed_date']);
+            }
+
             if ($maintenance->status === 'completed') {
                 throw new MaintenanceException('Maintenance is already completed');
             }
 
             $maintenance->update([
-                'completed_date' => now(),
+                'completed_date' => isset($data['completed_date']) ? Carbon::parse($data['completed_date']) : now(),
                 'status' => 'completed',
                 ...$data
             ]);
@@ -76,11 +118,21 @@ class MaintenanceService
                 'truck_plate' => $maintenance->truck->plate,
                 'maintenance_type' => $maintenance->maintenanceType->name,
                 'cost' => $maintenance->cost,
-                'completed_by' => auth()->id(),
+                'completed_by' => Auth::id(),
             ]);
 
             return $maintenance;
         });
+    }
+
+    protected function assertCompletedDate(VehicleMaintenanceRecord $maintenance, string $completedDate): void
+    {
+        $completed = Carbon::parse($completedDate);
+        $scheduled = Carbon::parse($maintenance->scheduled_date);
+
+        if ($completed->lt($scheduled)) {
+            throw new MaintenanceException('Completed date cannot be before the scheduled date');
+        }
     }
 
     /**

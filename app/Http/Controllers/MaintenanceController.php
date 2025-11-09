@@ -6,8 +6,10 @@ use App\Models\Truck;
 use App\Models\MaintenanceType;
 use App\Models\VehicleMaintenanceRecord;
 use App\Services\MaintenanceService;
+use App\Http\Requests\Maintenance\StoreMaintenanceRequest;
+use App\Http\Requests\Maintenance\UpdateMaintenanceRequest;
+use App\Http\Requests\Maintenance\CompleteMaintenanceRequest;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
 use Exception;
@@ -169,16 +171,10 @@ class MaintenanceController extends Controller
     /**
      * Store a newly created maintenance record.
      */
-    public function store(Request $request)
+    public function store(StoreMaintenanceRequest $request)
     {
         try {
-            $validated = $request->validate([
-                'truck_id' => 'required|exists:trucks,id',
-                'maintenance_type_id' => 'required|exists:maintenance_types,id',
-                'scheduled_date' => 'required|date|after_or_equal:today',
-                'description' => 'nullable|string|max:1000',
-                'assigned_mechanic_id' => 'nullable|exists:users,id',
-            ]);
+            $validated = $request->validated();
 
             $maintenance = $this->maintenanceService->scheduleMaintenance(
                 $validated['truck_id'],
@@ -197,25 +193,12 @@ class MaintenanceController extends Controller
     /**
      * Update the specified maintenance record.
      */
-    public function update(Request $request, VehicleMaintenanceRecord $maintenance)
+    public function update(UpdateMaintenanceRequest $request, VehicleMaintenanceRecord $maintenance)
     {
         try {
-            $validated = $request->validate([
-                'truck_id' => 'required|exists:trucks,id',
-                'maintenance_type_id' => 'required|exists:maintenance_types,id',
-                'scheduled_date' => 'required|date',
-                'completed_date' => 'nullable|date|after_or_equal:scheduled_date',
-                'odometer_reading' => 'nullable|integer|min:0',
-                'cost' => 'nullable|numeric|min:0',
-                'description' => 'nullable|string|max:1000',
-                'work_performed' => 'nullable|string|max:2000',
-                'parts_replaced' => 'nullable|string|max:2000',
-                'service_provider' => 'nullable|string|max:255',
-                'status' => 'required|string|in:scheduled,in_progress,completed,overdue',
-                'assigned_mechanic_id' => 'nullable|exists:users,id',
-            ]);
+            $validated = $request->validated();
 
-            $maintenance->update($validated);
+            $this->maintenanceService->updateMaintenance($maintenance, $validated);
 
             return redirect()->route('maintenance.index')
                 ->with('success', 'Maintenance record updated successfully.');
@@ -228,17 +211,10 @@ class MaintenanceController extends Controller
     /**
      * Complete the specified maintenance record.
      */
-    public function complete(Request $request, VehicleMaintenanceRecord $maintenance)
+    public function complete(CompleteMaintenanceRequest $request, VehicleMaintenanceRecord $maintenance)
     {
         try {
-            $validated = $request->validate([
-                'completed_date' => 'nullable|date|after_or_equal:scheduled_date',
-                'odometer_reading' => 'nullable|integer|min:0',
-                'cost' => 'nullable|numeric|min:0',
-                'work_performed' => 'nullable|string|max:2000',
-                'parts_replaced' => 'nullable|string|max:2000',
-                'service_provider' => 'nullable|string|max:255',
-            ]);
+            $validated = $request->validated();
 
             $this->maintenanceService->completeMaintenance($maintenance->id, $validated);
 

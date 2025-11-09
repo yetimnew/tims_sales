@@ -67,58 +67,82 @@ export default function OperationsEdit({ operation, customers, regions }: Operat
 
     const [frontendErrors, setFrontendErrors] = useState<Record<string, string>>({});
 
+    const setFieldError = (field: string, message: string) => {
+        setFrontendErrors(prev => {
+            const next = { ...prev };
+            if (message) {
+                next[field] = message;
+            } else {
+                delete next[field];
+            }
+            return next;
+        });
+    };
+
     const validateField = (field: string, value: string) => {
-        const newErrors: Record<string, string> = {};
+        let message = '';
 
         if (field === 'operationid' && !value.trim()) {
-            newErrors.operationid = 'Operation ID is required';
+            message = 'Operation ID is required';
         }
         if (field === 'customer_id' && !value) {
-            newErrors.customer_id = 'Customer is required';
+            message = 'Customer is required';
         }
         if (field === 'region_id' && !value) {
-            newErrors.region_id = 'Region is required';
+            message = 'Region is required';
         }
         if (field === 'startdate' && !value) {
-            newErrors.startdate = 'Start date is required';
+            message = 'Start date is required';
         }
         if (field === 'volume' && (!value || isNaN(Number(value)))) {
-            newErrors.volume = 'Volume is required and must be a number';
+            message = 'Volume is required and must be a number';
         }
         if (field === 'cargotype' && !value.trim()) {
-            newErrors.cargotype = 'Cargo type is required';
+            message = 'Cargo type is required';
         }
         if (field === 'km' && (!value || isNaN(Number(value)))) {
-            newErrors.km = 'Distance is required and must be a number';
+            message = 'Distance is required and must be a number';
         }
         if (field === 'tariff' && (!value || isNaN(Number(value)))) {
-            newErrors.tariff = 'Tariff is required and must be a number';
+            message = 'Tariff is required and must be a number';
         }
         if (field === 'status' && !value) {
-            newErrors.status = 'Status is required';
+            message = 'Status is required';
         }
 
-        setFrontendErrors(prev => ({
-            ...prev,
-            [field]: newErrors[field] || ''
-        }));
+        setFieldError(field, message);
+        return message;
     };
 
     const handleFieldChange = (field: string, value: string) => {
-        setData(field as any, value);
+        setData(field as keyof typeof data, value);
         validateField(field, value);
     };
 
-    const submit: FormEventHandler = (e) => {
-        e.preventDefault();
+    const submit: FormEventHandler = event => {
+        event.preventDefault();
 
-        const newErrors: Record<string, string> = {};
-        if (!data.operationid.trim()) newErrors.operationid = 'Operation ID is required';
-        if (!data.customer_id) newErrors.customer_id = 'Customer is required';
-        if (!data.status) newErrors.status = 'Status is required';
+        const fieldsToValidate: Record<string, string> = {
+            operationid: data.operationid,
+            customer_id: data.customer_id,
+            region_id: data.region_id,
+            startdate: data.startdate,
+            volume: data.volume,
+            cargotype: data.cargotype,
+            km: data.km,
+            tariff: data.tariff,
+            status: data.status,
+        };
 
-        if (Object.keys(newErrors).length > 0) {
-            setFrontendErrors(newErrors);
+        const validationResults = Object.entries(fieldsToValidate).reduce<Record<string, string>>((acc, [field, value]) => {
+            const message = validateField(field, value);
+            if (message) {
+                acc[field] = message;
+            }
+            return acc;
+        }, {});
+
+        if (Object.keys(validationResults).length > 0) {
             toast({
                 title: '⚠️ Validation Error',
                 description: 'Please fix the validation errors before submitting',

@@ -1,11 +1,38 @@
-import { ArrowLeft, Edit, MapPin, Clock, Route, Navigation } from 'lucide-react'
-import { Link } from '@inertiajs/react'
+import { useMemo } from 'react'
+import { Head, Link } from '@inertiajs/react'
+import {
+  ArrowLeft,
+  Edit,
+  MapPin,
+  Clock,
+  Route,
+  Navigation,
+  Gauge,
+  ScrollText,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { usePermissions } from '@/hooks/use-permissions'
 import { InteractiveMap } from '@/components/InteractiveMap'
 import AppLayout from '@/layouts/app-layout'
+import type { BreadcrumbItem } from '@/types'
+
+interface HierarchySummary {
+  name?: string | null
+  zone?: {
+    name?: string | null
+    region?: { name?: string | null } | null
+  } | null
+}
+
+interface PlaceSummary {
+  id: number
+  name?: string | null
+  latitude?: number | null
+  longitude?: number | null
+  woreda?: HierarchySummary | null
+}
 
 interface Distance {
   id: number
@@ -13,45 +40,29 @@ interface Distance {
   to_place_id: number
   distance_km: number
   estimated_time_hours: number
-  route_type?: string
-  road_condition_factor?: number
-  toll_road?: boolean
-  toll_cost?: number
-  restricted_for_heavy_vehicles?: boolean
-  route_description?: string
-  route_notes?: string
-  from_place?: {
-    id: number
-    name: string
-    latitude?: number
-    longitude?: number
-    woreda?: {
-      name: string
-      zone?: {
-        name: string
-        region?: { name: string }
-      }
-    }
-  }
-  to_place?: {
-    id: number
-    name: string
-    latitude?: number
-    longitude?: number
-    woreda?: {
-      name: string
-      zone?: {
-        name: string
-        region?: { name: string }
-      }
-    }
-  }
+  route_type?: string | null
+  road_condition_factor?: number | null
+  toll_road?: boolean | null
+  toll_cost?: number | null
+  restricted_for_heavy_vehicles?: boolean | null
+  route_description?: string | null
+  route_notes?: string | null
+  from_place?: PlaceSummary | null
+  to_place?: PlaceSummary | null
   created_at: string
   updated_at: string
 }
 
 interface DistancesShowProps {
   distance: Distance
+}
+
+const breadcrumbs: BreadcrumbItem[] = [{ title: 'Distances', href: '/distances' }]
+
+const formatHierarchy = (hierarchy?: HierarchySummary | null) => {
+  if (!hierarchy) return '—'
+  const parts = [hierarchy.name, hierarchy.zone?.name, hierarchy.zone?.region?.name].filter(Boolean)
+  return parts.join(', ') || '—'
 }
 
 export default function DistancesShow({ distance }: DistancesShowProps) {
