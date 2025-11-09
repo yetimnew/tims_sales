@@ -74,10 +74,10 @@ export default function ListPageLayout({
                             )}
                         </div>
                     </CardHeader>
-                    <CardContent className="flex-1 p-0 flex flex-col overflow-hidden">
+                    <CardContent className="flex-1 p-0 flex flex-col overflow-hidden min-h-0">
                         <div
                             className={cn(
-                                'rounded-lg border overflow-auto max-h-[55vh] relative flex-1',
+                                'rounded-lg border overflow-auto max-h-[55vh] relative flex-1 min-h-0',
                                 tableContainerClassName,
                             )}
                         >

@@ -135,7 +135,6 @@ export default function TrucksIndex({ trucks, totalCount }: TrucksIndexProps) {
                     const errorMessages = Object.values(errors).flat().join('\n');
                     if (errorMessages) {
                         toast({
-                            id: 'delete-failed',
                             title: '❌ Delete Failed',
                             description: errorMessages,
                             variant: 'destructive',
@@ -175,58 +174,56 @@ export default function TrucksIndex({ trucks, totalCount }: TrucksIndexProps) {
         </>
     );
 
+    const statsCards = [
+        {
+            title: 'Total Trucks',
+            value: truckCount,
+            description: 'All vehicles',
+            icon: <Truck className="h-4 w-4 text-blue-600" />,
+            valueClassName: 'text-blue-600',
+        },
+        {
+            title: 'Active',
+            value: activeCount,
+            description: 'Operational',
+            icon: <CheckCircle className="h-4 w-4 text-green-600" />,
+            valueClassName: 'text-green-600',
+        },
+        {
+            title: 'Maintenance',
+            value: maintenanceCount,
+            description: 'Under repair',
+            icon: <Wrench className="h-4 w-4 text-yellow-600" />,
+            valueClassName: 'text-yellow-600',
+        },
+        {
+            title: 'Fleet Value',
+            value: `${(totalValue / 1000000).toFixed(1)}M`,
+            description: 'Total fleet value',
+            icon: <DollarSign className="h-4 w-4 text-purple-600" />,
+            valueClassName: 'text-purple-600',
+        },
+    ];
+
     const statsSection = (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Trucks</CardTitle>
-                    <Truck className="h-4 w-4 text-blue-600" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold text-blue-600">{truckCount}</div>
-                    <p className="text-xs text-muted-foreground">All vehicles</p>
-                </CardContent>
-            </Card>
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Active</CardTitle>
-                    <CheckCircle className="h-4 w-4 text-green-600" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold text-green-600">{activeCount}</div>
-                    <p className="text-xs text-muted-foreground">Operational</p>
-                </CardContent>
-            </Card>
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Maintenance</CardTitle>
-                    <Wrench className="h-4 w-4 text-yellow-600" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold text-yellow-600">{maintenanceCount}</div>
-                    <p className="text-xs text-muted-foreground">Under repair</p>
-                </CardContent>
-            </Card>
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Fleet Value</CardTitle>
-                    <DollarSign className="h-4 w-4 text-purple-600" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold text-purple-600">${(totalValue / 1000000).toFixed(1)}M</div>
-                    <p className="text-xs text-muted-foreground">Total fleet value</p>
-                </CardContent>
-            </Card>
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Inactive</CardTitle>
-                    <XCircle className="h-4 w-4 text-red-600" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold text-red-600">{trucks?.data?.filter(truck => truck.status === 'inactive').length || 0}</div>
-                    <p className="text-xs text-muted-foreground">Inactive trucks</p>
-                </CardContent>
-            </Card>
+        <div className="hidden gap-2 md:grid md:grid-cols-2 xl:grid-cols-4">
+            {statsCards.map((card) => (
+                <Card
+                    key={card.title}
+                    className="border border-slate-200 shadow-sm gap-2 py-3 sm:py-4"
+                >
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 p-1 sm:p-2">
+                        <CardTitle className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                            {card.title}
+                        </CardTitle>
+                        {card.icon}
+                    </CardHeader>
+                    <CardContent className="px-2 pb-2 pt-0 sm:px-3 sm:pb-2 sm:pt-0">
+                        <div className={`text-base font-semibold sm:text-lg ${card.valueClassName}`}>{card.value}</div>
+                        <p className="text-xs text-muted-foreground">{card.description}</p>
+                    </CardContent>
+                </Card>
+            ))}
         </div>
     );
 
@@ -245,7 +242,7 @@ export default function TrucksIndex({ trucks, totalCount }: TrucksIndexProps) {
     const renderHeaderCell = (column: string, label: string) => (
         <TableHead
             key={column}
-            className="cursor-pointer select-none hover:bg-muted/70 transition-colors bg-background"
+            className="sticky top-0 z-20 cursor-pointer select-none bg-background transition-colors hover:bg-muted/70"
             onClick={() => handleSort(column)}
         >
             <div className="flex items-center gap-2">
@@ -260,10 +257,10 @@ export default function TrucksIndex({ trucks, totalCount }: TrucksIndexProps) {
 
     const tableContent = (
         <Table>
-            <TableHeader>
-                <TableRow className="sticky top-0 z-50 bg-background border-b">
+            <TableHeader className="[&_tr]:sticky [&_tr]:top-0 [&_tr]:z-20 [&_tr]:bg-background [&_tr]:shadow-sm">
+                <TableRow className="border-b bg-background">
                     {columns.map(({ key, label }) => renderHeaderCell(key, label))}
-                    <TableHead className="text-right bg-background">Actions</TableHead>
+                    <TableHead className="sticky top-0 z-20 bg-background text-center">Actions</TableHead>
                 </TableRow>
             </TableHeader>
             <TableBody>
@@ -314,8 +311,8 @@ export default function TrucksIndex({ trucks, totalCount }: TrucksIndexProps) {
                                     {truck.status.charAt(0).toUpperCase() + truck.status.slice(1)}
                                 </Badge>
                             </TableCell>
-                            <TableCell className="text-right">
-                                <div className="flex justify-end gap-2">
+                            <TableCell className="text-center">
+                                <div className="flex justify-center gap-2">
                                     <Button asChild size="sm" variant="ghost">
                                         <Link href={`/trucks/${truck.id}`}>
                                             <Eye className="h-4 w-4" />
@@ -333,6 +330,7 @@ export default function TrucksIndex({ trucks, totalCount }: TrucksIndexProps) {
                                             size="sm"
                                             variant="ghost"
                                             onClick={() => handleDeleteClick(truck)}
+                                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
                                         >
                                             <Trash2 className="h-4 w-4" />
                                         </Button>
