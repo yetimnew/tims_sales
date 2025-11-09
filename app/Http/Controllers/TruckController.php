@@ -12,6 +12,7 @@ use App\Http\Requests\StoreTruckRequest;
 use App\Http\Requests\UpdateTruckRequest;
 use App\Services\TruckAssignmentService;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Exception;
 use Spatie\Activitylog\Models\Activity;
 
@@ -52,43 +53,93 @@ class TruckController extends Controller
      */
     public function index(Request $request): Response
     {
-        $query = Truck::with('vehicleType');
+        $search = trim((string) $request->input('search'));
+        $status = $request->input('status');
+        $vehicleTypeId = $request->input('vehicle_type');
+    $perPageOptions = [15, 25, 50, 100];
+    $perPageDefault = 15;
+        $perPage = (int) $request->input('per_page', $perPageDefault);
 
-        // Handle search
-        if ($request->has('search') && !empty($request->input('search'))) {
-            $search = $request->input('search');
-            $query->where(function ($q) use ($search) {
-                $q->where('plate', 'like', "%{$search}%")
-                    ->orWhere('chasisNumber', 'like', "%{$search}%")
-                    ->orWhere('engineNumber', 'like', "%{$search}%");
-            });
-
-            // Also search in related vehicle type
-            $vehicleTypeIds = VehicleType::where('name', 'like', "%{$search}%")
-                ->pluck('id')
-                ->toArray();
-
-            if (!empty($vehicleTypeIds)) {
-                $query->orWhereIn('vehecletype_id', $vehicleTypeIds);
-            }
+        if (!in_array($perPage, $perPageOptions, true)) {
+            $perPage = $perPageDefault;
         }
 
-        // Handle sorting
+        $trucksQuery = Truck::query()->with('vehicleType');
+        $metricsQuery = Truck::query();
+
+        if ($search !== '') {
+            $applySearch = static function ($query) use ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('plate', 'like', "%{$search}%")
+                        ->orWhere('chasisNumber', 'like', "%{$search}%")
+                        ->orWhere('engineNumber', 'like', "%{$search}%")
+                        ->orWhereHas('vehicleType', function ($vehicleQuery) use ($search) {
+                            $vehicleQuery->where('name', 'like', "%{$search}%");
+                        });
+                });
+            };
+
+            $applySearch($trucksQuery);
+            $applySearch($metricsQuery);
+        }
+
+        if (!empty($vehicleTypeId)) {
+            $trucksQuery->where('vehicletype_id', $vehicleTypeId);
+            $metricsQuery->where('vehicletype_id', $vehicleTypeId);
+        }
+
+        if (!empty($status) && $status !== 'all') {
+            $trucksQuery->where('status', $status);
+        }
+
         $sort = $request->input('sort', 'plate');
         $direction = $request->input('direction', 'asc');
-
-        // Validate sort column to prevent SQL injection
         $allowedSorts = ['plate', 'chasisNumber', 'engineNumber', 'serviceIntervalKM', 'purchasePrice', 'status', 'created_at'];
-        if (!in_array($sort, $allowedSorts)) {
+
+        if (!in_array($sort, $allowedSorts, true)) {
             $sort = 'plate';
         }
 
-        $query->orderBy($sort, $direction);
+        $trucksQuery->orderBy($sort, $direction);
 
-        $trucks = $query->paginate(10);
+    $trucks = $trucksQuery->paginate($perPage)->withQueryString();
+
+        $metrics = [
+            'total' => (clone $metricsQuery)->count(),
+            'active' => (clone $metricsQuery)->where('status', 'active')->count(),
+            'maintenance' => (clone $metricsQuery)->where('status', 'maintenance')->count(),
+            'fleet_value' => (float) (clone $metricsQuery)->sum('purchasePrice'),
+        ];
+
+        $statusOptions = Truck::query()
+            ->select('status')
+            ->distinct()
+            ->whereNotNull('status')
+            ->orderBy('status')
+            ->get()
+            ->map(fn ($truck) => [
+                'label' => Str::of($truck->status)->replace('_', ' ')->headline(),
+                'value' => $truck->status,
+            ])->values();
+
+        $vehicleTypes = VehicleType::query()
+            ->orderBy('name')
+            ->get(['id', 'name']);
 
         return Inertia::render('Trucks/Index', [
             'trucks' => $trucks,
+            'metrics' => $metrics,
+            'filters' => [
+                'search' => $search !== '' ? $search : null,
+                'status' => $status ?: null,
+                'vehicle_type' => $vehicleTypeId ?: null,
+                'sort' => $sort,
+                'direction' => $direction,
+                'per_page' => $perPage,
+            ],
+            'statusOptions' => $statusOptions,
+            'vehicleTypes' => $vehicleTypes,
+            'perPageOptions' => $perPageOptions,
         ]);
     }
 

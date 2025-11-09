@@ -12,6 +12,7 @@ use Inertia\Response;
 use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Spatie\Activitylog\Models\Activity;
 use App\Http\Requests\StoreDriverTruckRequest;
 
@@ -22,53 +23,94 @@ class DriverTruckController extends Controller
      */
     public function index(Request $request): Response
     {
-        $query = DriverTruck::with(['driver', 'truck.vehicletype'])
-            ->orderBy('updated_at', 'DESC');
+        $search = trim((string) $request->input('search'));
+        $status = $request->input('status');
+        $sort = $request->input('sort', 'date_recived');
+        $direction = strtolower((string) $request->input('direction', 'desc'));
+        $perPageOptions = [15, 25, 50, 100];
+        $perPageDefault = 15;
+        $perPage = (int) $request->input('per_page', $perPageDefault);
 
-        // Handle search
-        if ($request->has('search') && !empty($request->input('search'))) {
-            $search = $request->input('search');
-            $query->where(function ($q) use ($search) {
-                $q->whereHas('driver', function ($driverQuery) use ($search) {
-                    $driverQuery->where('name', 'like', "%{$search}%")
-                               ->orWhere('driverid', 'like', "%{$search}%");
-                })
-                ->orWhereHas('truck', function ($truckQuery) use ($search) {
-                    $truckQuery->where('plate', 'like', "%{$search}%");
-                });
-            });
+        if (!in_array($perPage, $perPageOptions, true)) {
+            $perPage = $perPageDefault;
         }
 
-        // Handle status filter
-        if ($request->has('status') && $request->input('status') !== '') {
-            $status = $request->input('status');
+        if (!in_array($direction, ['asc', 'desc'], true)) {
+            $direction = 'desc';
+        }
+
+        $allowedSorts = ['date_recived', 'date_detach', 'status', 'is_attached', 'created_at', 'updated_at'];
+
+        if (!in_array($sort, $allowedSorts, true)) {
+            $sort = 'date_recived';
+        }
+
+        $assignmentsQuery = DriverTruck::query()->with(['driver', 'truck.vehicletype']);
+        $metricsQuery = DriverTruck::query();
+
+        if ($search !== '') {
+            $applySearch = static function ($query) use ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->whereHas('driver', function ($driverQuery) use ($search) {
+                        $driverQuery->where('name', 'like', "%{$search}%")
+                            ->orWhere('driverid', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('truck', function ($truckQuery) use ($search) {
+                        $truckQuery->where('plate', 'like', "%{$search}%");
+                    });
+                });
+            };
+
+            $applySearch($assignmentsQuery);
+            $applySearch($metricsQuery);
+        }
+
+        if (!empty($status) && $status !== 'all') {
             if ($status === 'attached') {
-                $query->where('is_attached', 1);
+                $assignmentsQuery->where('is_attached', 1);
+                $metricsQuery->where('is_attached', 1);
             } elseif ($status === 'detached') {
-                $query->where('is_attached', 0);
+                $assignmentsQuery->where('is_attached', 0);
+                $metricsQuery->where('is_attached', 0);
+            } else {
+                $assignmentsQuery->where('status', $status);
+                $metricsQuery->where('status', $status);
             }
         }
 
-        $driverTrucks = $query->paginate(15);
+        $assignmentsQuery->orderBy($sort, $direction);
 
-        // Get counts for statistics
-        $totalAssignments = DriverTruck::count();
-        $attachedAssignments = DriverTruck::where('is_attached', 1)->count();
-        $detachedAssignments = DriverTruck::where('is_attached', 0)->count();
+        $driverTrucks = $assignmentsQuery->paginate($perPage)->withQueryString();
+
         $availableDriversCount = $this->getAvailableDrivers()->count();
+        $availableTrucksCount = $this->getAvailableTrucks()->count();
+
+        $metrics = [
+            'total' => (clone $metricsQuery)->count(),
+            'attached' => (clone $metricsQuery)->where('is_attached', 1)->count(),
+            'detached' => (clone $metricsQuery)->where('is_attached', 0)->count(),
+            'availableDrivers' => $availableDriversCount,
+            'availableTrucks' => $availableTrucksCount,
+        ];
+
+        $statusOptions = collect(['attached', 'detached'])
+            ->map(fn ($value) => [
+                'label' => Str::headline($value),
+                'value' => $value,
+            ])->values();
 
         return Inertia::render('DriverTrucks/Index', [
             'driverTrucks' => $driverTrucks,
+            'metrics' => $metrics,
             'filters' => [
-                'search' => $request->input('search'),
-                'status' => $request->input('status'),
+                'search' => $search !== '' ? $search : null,
+                'status' => $status ?: null,
+                'sort' => $sort,
+                'direction' => $direction,
+                'per_page' => $perPage,
             ],
-            'statistics' => [
-                'total' => $totalAssignments,
-                'attached' => $attachedAssignments,
-                'detached' => $detachedAssignments,
-                'availableDrivers' => $availableDriversCount,
-            ],
+            'statusOptions' => $statusOptions,
+            'perPageOptions' => $perPageOptions,
         ]);
     }
 

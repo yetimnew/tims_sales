@@ -18,7 +18,7 @@ import { toast } from '@/hooks/use-toast';
 import { type BreadcrumbItem } from '@/types';
 import { Plus, Eye, Edit, Trash2, Search, ArrowUpDown, FileDown, Truck, CheckCircle, Wrench, XCircle, DollarSign } from 'lucide-react';
 import { InertiaPagination } from '@/components/ui/pagination';
-import ReactPaginate from 'react-paginate';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import * as React from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -57,7 +57,23 @@ interface TrucksIndexProps {
             active: boolean;
         }>;
     };
-    totalCount?: number;
+    metrics: {
+        total: number;
+        active: number;
+        maintenance: number;
+        fleet_value: number;
+    };
+    filters: {
+        search?: string | null;
+        status?: string | null;
+        vehicle_type?: number | string | null;
+        sort?: string | null;
+        direction?: 'asc' | 'desc' | null;
+        per_page?: number | null;
+    };
+    statusOptions: Array<{ label: string; value: string }>;
+    vehicleTypes: Array<{ id: number; name: string }>;
+    perPageOptions: number[];
 }
 
 const columns: Array<{ key: string; label: string }> = [
@@ -70,35 +86,90 @@ const columns: Array<{ key: string; label: string }> = [
     { key: 'status', label: 'Status' },
 ];
 
-export default function TrucksIndex({ trucks, totalCount }: TrucksIndexProps) {
+export default function TrucksIndex({ trucks, metrics, filters, statusOptions, vehicleTypes, perPageOptions }: TrucksIndexProps) {
     const { hasPermission } = usePermissions();
-    const [searchTerm, setSearchTerm] = React.useState('');
-    const [sortBy, setSortBy] = React.useState('plate');
-    const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>('asc');
+    const [searchTerm, setSearchTerm] = React.useState(filters?.search ?? '');
+    const [selectedStatus, setSelectedStatus] = React.useState(filters?.status ?? 'all');
+    const [selectedVehicleType, setSelectedVehicleType] = React.useState(
+        filters?.vehicle_type ? String(filters.vehicle_type) : 'all',
+    );
+    const [sortBy, setSortBy] = React.useState(filters?.sort ?? 'plate');
+    const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>(filters?.direction ?? 'asc');
     const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
     const [selectedTruck, setSelectedTruck] = React.useState<TruckData | null>(null);
     const [isDeleting, setIsDeleting] = React.useState(false);
+    const availablePerPageOptions = React.useMemo(() => (perPageOptions?.length ? perPageOptions : [10, 15, 25, 50]), [perPageOptions]);
+    const resolvedPerPage = React.useMemo(() => {
+        const candidate = filters?.per_page;
+        if (typeof candidate === 'number' && availablePerPageOptions.includes(candidate)) {
+            return candidate;
+        }
 
-    const truckCount = totalCount || trucks?.total || 0;
-    const currentPage = trucks?.current_page || 1;
-    const totalPages = trucks?.last_page || 1;
+        return availablePerPageOptions[0] ?? 10;
+    }, [filters?.per_page, availablePerPageOptions]);
+    const [perPage, setPerPage] = React.useState<string>(() => String(resolvedPerPage));
 
-    const activeCount = trucks?.data?.filter(truck => truck.status === 'active').length || 0;
-    const maintenanceCount = trucks?.data?.filter(truck => truck.status === 'maintenance').length || 0;
-    const totalValue = trucks?.data?.reduce((sum, truck) => {
-        const price = parseFloat(String(truck.purchasePrice ?? 0));
-        return sum + price;
-    }, 0) || 0;
+    React.useEffect(() => {
+        setPerPage(String(resolvedPerPage));
+    }, [resolvedPerPage]);
 
-    const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value;
+    const truckCount = metrics?.total ?? trucks?.total ?? 0;
+    const currentPage = trucks?.current_page ?? 1;
+    const lastPage = trucks?.last_page ?? 1;
+    const activeCount = metrics?.active ?? 0;
+    const maintenanceCount = metrics?.maintenance ?? 0;
+    const fleetValue = metrics?.fleet_value ?? 0;
+
+    const handleNavigate = React.useCallback((overrides: Partial<{ search?: string; status?: string; vehicle_type?: string | number; sort?: string; direction?: 'asc' | 'desc'; page?: number; per_page?: number }>) => {
+        const perPageValue = overrides.per_page !== undefined ? overrides.per_page : Number(perPage);
+        const params: Record<string, string | number | undefined> = {
+            search: overrides.search !== undefined ? overrides.search : (searchTerm.trim() ? searchTerm.trim() : undefined),
+            status: overrides.status !== undefined ? overrides.status : (selectedStatus !== 'all' ? selectedStatus : undefined),
+            vehicle_type: overrides.vehicle_type !== undefined ? overrides.vehicle_type : (selectedVehicleType !== 'all' ? selectedVehicleType : undefined),
+            sort: overrides.sort ?? sortBy,
+            direction: overrides.direction ?? sortDirection,
+            page: overrides.page,
+            per_page: perPageValue,
+        };
+
+        if (params.search === '') params.search = undefined;
+        if (params.status === 'all') params.status = undefined;
+        if (params.vehicle_type === 'all') params.vehicle_type = undefined;
+
+        Object.keys(params).forEach((key) => {
+            const value = params[key];
+            if (
+                value === undefined ||
+                value === null ||
+                value === '' ||
+                (key === 'per_page' && (typeof value !== 'number' || !Number.isFinite(value) || value <= 0))
+            ) {
+                delete params[key];
+            }
+        });
+
+        router.get('/trucks', params, { preserveState: true, replace: false });
+    }, [searchTerm, selectedStatus, selectedVehicleType, sortBy, sortDirection, perPage]);
+
+    const handleSearchChange = (value: string) => {
         setSearchTerm(value);
+        handleNavigate({ search: value.trim() ? value.trim() : undefined, page: 1 });
+    };
 
-        router.get(
-            '/trucks',
-            { search: value, sort: sortBy, direction: sortDirection },
-            { preserveState: true, replace: false },
-        );
+    const handleStatusChange = (value: string) => {
+        setSelectedStatus(value);
+        handleNavigate({ status: value !== 'all' ? value : undefined, page: 1 });
+    };
+
+    const handleVehicleTypeChange = (value: string) => {
+        setSelectedVehicleType(value);
+        handleNavigate({ vehicle_type: value !== 'all' ? value : undefined, page: 1 });
+    };
+
+    const handlePerPageChange = (value: string) => {
+        setPerPage(value);
+        const numericValue = Number(value);
+        handleNavigate({ per_page: Number.isNaN(numericValue) ? undefined : numericValue, page: 1 });
     };
 
     const handleSort = (column: string) => {
@@ -107,11 +178,7 @@ export default function TrucksIndex({ trucks, totalCount }: TrucksIndexProps) {
         setSortBy(column);
         setSortDirection(newDirection);
 
-        router.get(
-            '/trucks',
-            { search: searchTerm, sort: column, direction: newDirection },
-            { preserveState: true, replace: false },
-        );
+        handleNavigate({ sort: column, direction: newDirection });
     };
 
     const handleDeleteClick = (truck: TruckData) => {
@@ -151,12 +218,23 @@ export default function TrucksIndex({ trucks, totalCount }: TrucksIndexProps) {
                 <Button
                     variant="outline"
                     onClick={() => {
-                        const params = new URLSearchParams({
-                            search: searchTerm,
-                            sort: sortBy,
-                            direction: sortDirection,
-                        });
-                        window.location.href = `/trucks/export/csv?${params.toString()}`;
+                        const params = new URLSearchParams();
+                        if (searchTerm.trim()) {
+                            params.set('search', searchTerm.trim());
+                        }
+                        if (selectedStatus !== 'all') {
+                            params.set('status', selectedStatus);
+                        }
+                        if (selectedVehicleType !== 'all') {
+                            params.set('vehicle_type', selectedVehicleType);
+                        }
+                        params.set('sort', sortBy);
+                        params.set('direction', sortDirection);
+
+                        const queryString = params.toString();
+                        window.location.href = queryString
+                            ? `/trucks/export/csv?${queryString}`
+                            : '/trucks/export/csv';
                     }}
                 >
                     <FileDown className="mr-2 h-4 w-4" />
@@ -174,33 +252,35 @@ export default function TrucksIndex({ trucks, totalCount }: TrucksIndexProps) {
         </>
     );
 
+    const fleetValueDisplay = fleetValue > 0 ? `${(fleetValue / 1_000_000).toFixed(1)}M` : '0.0M';
+
     const statsCards = [
         {
             title: 'Total Trucks',
             value: truckCount,
             description: 'All vehicles',
-            icon: <Truck className="h-4 w-4 text-blue-600" />,
+            icon: <Truck className="h-3.5 w-3.5 text-blue-600" />,
             valueClassName: 'text-blue-600',
         },
         {
             title: 'Active',
             value: activeCount,
             description: 'Operational',
-            icon: <CheckCircle className="h-4 w-4 text-green-600" />,
+            icon: <CheckCircle className="h-3.5 w-3.5 text-green-600" />,
             valueClassName: 'text-green-600',
         },
         {
             title: 'Maintenance',
             value: maintenanceCount,
             description: 'Under repair',
-            icon: <Wrench className="h-4 w-4 text-yellow-600" />,
+            icon: <Wrench className="h-3.5 w-3.5 text-yellow-600" />,
             valueClassName: 'text-yellow-600',
         },
         {
             title: 'Fleet Value',
-            value: `${(totalValue / 1000000).toFixed(1)}M`,
+            value: fleetValueDisplay,
             description: 'Total fleet value',
-            icon: <DollarSign className="h-4 w-4 text-purple-600" />,
+            icon: <DollarSign className="h-3.5 w-3.5 text-purple-600" />,
             valueClassName: 'text-purple-600',
         },
     ];
@@ -210,17 +290,17 @@ export default function TrucksIndex({ trucks, totalCount }: TrucksIndexProps) {
             {statsCards.map((card) => (
                 <Card
                     key={card.title}
-                    className="border border-slate-200 shadow-sm gap-2 py-3 sm:py-4"
+                    className="gap-2 border border-slate-200 py-2 shadow-sm sm:py-3"
                 >
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 p-1 sm:p-2">
-                        <CardTitle className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 p-1.5 sm:p-2">
+                        <CardTitle className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                             {card.title}
                         </CardTitle>
                         {card.icon}
                     </CardHeader>
-                    <CardContent className="px-2 pb-2 pt-0 sm:px-3 sm:pb-2 sm:pt-0">
-                        <div className={`text-base font-semibold sm:text-lg ${card.valueClassName}`}>{card.value}</div>
-                        <p className="text-xs text-muted-foreground">{card.description}</p>
+                    <CardContent className="px-2 pb-2 pt-0 sm:px-3 sm:pb-2">
+                        <div className={`text-sm font-semibold sm:text-base ${card.valueClassName}`}>{card.value}</div>
+                        <p className="text-[11px] text-muted-foreground">{card.description}</p>
                     </CardContent>
                 </Card>
             ))}
@@ -228,14 +308,57 @@ export default function TrucksIndex({ trucks, totalCount }: TrucksIndexProps) {
     );
 
     const tableHeaderExtras = (
-        <div className="relative w-64">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-            <Input
-                placeholder="Search trucks..."
-                value={searchTerm}
-                onChange={handleSearch}
-                className="pl-10"
-            />
+        <div className="flex flex-wrap items-center gap-2">
+            <div className="relative w-[260px] max-w-full">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                    placeholder="Search trucks..."
+                    value={searchTerm}
+                    onChange={(event) => handleSearchChange(event.target.value)}
+                    className="pl-10"
+                />
+            </div>
+            <Select value={selectedStatus} onValueChange={handleStatusChange}>
+                <SelectTrigger className="w-[150px]">
+                    <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">All statuses</SelectItem>
+                    {statusOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                        </SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+            <Select value={selectedVehicleType} onValueChange={handleVehicleTypeChange}>
+                <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Vehicle type" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">All vehicle types</SelectItem>
+                    {vehicleTypes.map((type) => (
+                        <SelectItem key={type.id} value={String(type.id)}>
+                            {type.name}
+                        </SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+            <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                <span className="hidden sm:inline">Rows</span>
+                <Select value={perPage} onValueChange={handlePerPageChange}>
+                    <SelectTrigger className="w-[110px]">
+                        <SelectValue placeholder="Per page" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {availablePerPageOptions.map((option) => (
+                            <SelectItem key={option} value={String(option)}>
+                                {option} / page
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
         </div>
     );
 
@@ -255,6 +378,7 @@ export default function TrucksIndex({ trucks, totalCount }: TrucksIndexProps) {
         </TableHead>
     );
 
+    // TODO: Evaluate row virtualization or infinite scrolling once fleet size impacts render costs.
     const tableContent = (
         <Table>
             <TableHeader className="[&_tr]:sticky [&_tr]:top-0 [&_tr]:z-20 [&_tr]:bg-background [&_tr]:shadow-sm">
@@ -368,36 +492,15 @@ export default function TrucksIndex({ trucks, totalCount }: TrucksIndexProps) {
                 tableDescription="Manage and track all vehicles in your fleet"
                 tableHeaderExtras={tableHeaderExtras}
                 pagination={
-                    <div className="mt-4 flex items-center justify-between w-full">
-                        <div className="text-sm text-muted-foreground">
-                            Showing <span className="font-semibold text-foreground">{trucks.from}</span> to <span className="font-semibold text-foreground">{trucks.to}</span> of <span className="font-semibold text-foreground">{truckCount}</span> trucks
-                        </div>
-                        <div>
-                            <ReactPaginate
-                                pageCount={totalPages}
-                                forcePage={currentPage - 1}
-                                onPageChange={({ selected }) => {
-                                    router.get('/trucks', {
-                                        page: selected + 1,
-                                        search: searchTerm,
-                                        sort: sortBy,
-                                        direction: sortDirection,
-                                    }, { preserveState: true });
-                                }}
-                                marginPagesDisplayed={2}
-                                pageRangeDisplayed={5}
-                                containerClassName="flex gap-2"
-                                pageClassName="px-3 py-1 rounded border text-sm bg-background text-muted-foreground hover:bg-muted"
-                                activeClassName="bg-primary text-white"
-                                previousClassName="px-3 py-1 rounded border text-sm"
-                                nextClassName="px-3 py-1 rounded border text-sm"
-                                breakClassName="px-3 py-1 rounded border text-sm"
-                                disabledClassName="pointer-events-none opacity-50"
-                                previousLabel={"<"}
-                                nextLabel={">"}
-                            />
-                        </div>
-                    </div>
+                    <InertiaPagination
+                        className="mt-4"
+                        links={trucks.links}
+                        from={trucks.from}
+                        to={trucks.to}
+                        total={trucks.total}
+                        currentPage={currentPage}
+                        lastPage={lastPage}
+                    />
                 }
             >
                 {tableContent}

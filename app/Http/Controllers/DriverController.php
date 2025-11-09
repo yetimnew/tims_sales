@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Driver;
-use App\Models\Truck;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 use Exception;
@@ -18,49 +18,99 @@ class DriverController extends Controller
      */
     public function index(Request $request): Response
     {
-        $query = Driver::with('trucks');
+        $search = trim((string) $request->input('search'));
+        $status = $request->input('status');
+        $sex = $request->input('sex');
+    $perPageOptions = [15, 25, 50, 100];
+    $perPageDefault = 15;
+        $perPage = (int) $request->input('per_page', $perPageDefault);
 
-        // Handle search
-        if ($request->has('search') && !empty($request->input('search'))) {
-            $search = $request->input('search');
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('driverid', 'like', "%{$search}%")
-                    ->orWhere('mobile', 'like', "%{$search}%")
-                    ->orWhere('zone', 'like', "%{$search}%");
-            });
+        if (!in_array($perPage, $perPageOptions, true)) {
+            $perPage = $perPageDefault;
         }
 
-        // Handle sorting
+        $driversQuery = Driver::query()->with('trucks');
+        $metricsQuery = Driver::query();
+
+        if ($search !== '') {
+            $applySearch = static function ($query) use ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('driverid', 'like', "%{$search}%")
+                        ->orWhere('mobile', 'like', "%{$search}%")
+                        ->orWhere('zone', 'like', "%{$search}%");
+                });
+            };
+
+            $applySearch($driversQuery);
+            $applySearch($metricsQuery);
+        }
+
+        if (!empty($sex) && $sex !== 'all') {
+            $driversQuery->where('sex', $sex);
+            $metricsQuery->where('sex', $sex);
+        }
+
+        if (!empty($status) && $status !== 'all') {
+            $driversQuery->where('status', $status);
+        }
+
         $sort = $request->input('sort', 'name');
         $direction = $request->input('direction', 'asc');
-
-        // Validate sort column to prevent SQL injection
         $allowedSorts = ['name', 'driverid', 'sex', 'mobile', 'hireddate', 'status', 'zone', 'created_at'];
-        if (!in_array($sort, $allowedSorts)) {
+
+        if (!in_array($sort, $allowedSorts, true)) {
             $sort = 'name';
         }
 
-        $query->orderBy($sort, $direction);
+        $driversQuery->orderBy($sort, $direction);
 
-        $drivers = $query->paginate(15);
+    $drivers = $driversQuery->paginate($perPage)->withQueryString();
 
-        // Calculate statistics
-        $totalDrivers = Driver::count();
-        $activeDrivers = Driver::where('status', 'active')->count();
-        $inactiveDrivers = Driver::where('status', 'inactive')->count();
-        $maleDrivers = Driver::where('sex', 'male')->count();
-        $femaleDrivers = Driver::where('sex', 'female')->count();
+        $metrics = [
+            'total' => (clone $metricsQuery)->count(),
+            'active' => (clone $metricsQuery)->where('status', 'active')->count(),
+            'inactive' => (clone $metricsQuery)->where('status', 'inactive')->count(),
+            'male' => (clone $metricsQuery)->where('sex', 'male')->count(),
+            'female' => (clone $metricsQuery)->where('sex', 'female')->count(),
+        ];
+
+        $statusOptions = Driver::query()
+            ->select('status')
+            ->distinct()
+            ->whereNotNull('status')
+            ->orderBy('status')
+            ->get()
+            ->map(fn ($driver) => [
+                'label' => Str::of($driver->status)->replace('_', ' ')->headline(),
+                'value' => $driver->status,
+            ])->values();
+
+        $genderOptions = Driver::query()
+            ->select('sex')
+            ->distinct()
+            ->whereNotNull('sex')
+            ->orderBy('sex')
+            ->get()
+            ->map(fn ($driver) => [
+                'label' => Str::of($driver->sex)->replace('_', ' ')->headline(),
+                'value' => $driver->sex,
+            ])->values();
 
         return Inertia::render('Drivers/Index', [
             'drivers' => $drivers,
-            'statistics' => [
-                'total' => $totalDrivers,
-                'active' => $activeDrivers,
-                'inactive' => $inactiveDrivers,
-                'male' => $maleDrivers,
-                'female' => $femaleDrivers,
+            'metrics' => $metrics,
+            'filters' => [
+                'search' => $search !== '' ? $search : null,
+                'status' => $status ?: null,
+                'sex' => $sex ?: null,
+                'sort' => $sort,
+                'direction' => $direction,
+                'per_page' => $perPage,
             ],
+            'statusOptions' => $statusOptions,
+            'genderOptions' => $genderOptions,
+            'perPageOptions' => $perPageOptions,
         ]);
     }
 
@@ -238,22 +288,36 @@ class DriverController extends Controller
     {
         $query = Driver::with('trucks');
 
-        // Apply same search and sort as index
-        if ($request->has('search') && !empty($request->input('search'))) {
-            $search = $request->input('search');
-            $query = $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('driverid', 'like', "%{$search}%")
-                    ->orWhere('mobile', 'like', "%{$search}%")
-                    ->orWhere('zone', 'like', "%{$search}%");
-            });
+        if ($request->filled('search')) {
+            $search = trim((string) $request->input('search'));
+            if ($search !== '') {
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('driverid', 'like', "%{$search}%")
+                        ->orWhere('mobile', 'like', "%{$search}%")
+                        ->orWhere('zone', 'like', "%{$search}%");
+                });
+            }
         }
 
-        // Apply sorting
-        if ($request->has('sort')) {
+        if ($request->filled('sex') && $request->input('sex') !== 'all') {
+            $query->where('sex', $request->input('sex'));
+        }
+
+        if ($request->filled('status') && $request->input('status') !== 'all') {
+            $query->where('status', $request->input('status'));
+        }
+
+        if ($request->filled('sort')) {
             $sort = $request->input('sort', 'name');
             $direction = $request->input('direction', 'asc');
-            $query = $query->orderBy($sort, $direction);
+            $allowedSorts = ['name', 'driverid', 'sex', 'mobile', 'hireddate', 'status', 'zone', 'created_at'];
+
+            if (!in_array($sort, $allowedSorts, true)) {
+                $sort = 'name';
+            }
+
+            $query->orderBy($sort, $direction);
         }
 
         $drivers = $query->get();
