@@ -48,6 +48,9 @@ interface Performance {
     operation?: {
         id: number;
         operationid: string;
+        tariff?: number | null;
+        km?: number | null;
+        volume?: number | null;
         customer: {
             id: number;
             name: string;
@@ -73,6 +76,7 @@ interface Performance {
     origin?: {
         id: number;
         name: string;
+
     };
     destination?: {
         id: number;
@@ -96,6 +100,8 @@ interface OperationInsights {
         remainingTonnage: number;
         completionRate: number | null;
     };
+    economics?: OperationEconomics | null;
+    tripEconomics?: TripEconomics | null;
     performanceShare: {
         tonnageShare: number | null;
         distanceShare: number | null;
@@ -121,6 +127,38 @@ interface OperationInsights {
             value: number;
         }>;
     };
+}
+
+interface OperationEconomics {
+    tariff: number | null;
+    totalTonKm: number | null;
+    plannedTonKm: number | null;
+    tonKmCompletionRate: number | null;
+    actualRevenue: number | null;
+    totalCost: number | null;
+    costPerTonKm: number | null;
+    grossMarginValue: number | null;
+    grossMarginPercent: number | null;
+    loadFactor: number | null;
+    emptyBackhaulShare: number | null;
+    loadedDistance: number | null;
+    emptyDistance: number | null;
+}
+
+interface TripEconomics {
+    tariff: number | null;
+    tonKm: number | null;
+    actualRevenue: number | null;
+    cost: number | null;
+    costPerTonKm: number | null;
+    grossMarginValue: number | null;
+    grossMarginPercent: number | null;
+    yieldPerTon: number | null;
+    yieldPerKm: number | null;
+    loadFactor: number | null;
+    emptyBackhaulShare: number | null;
+    distanceWithCargo: number | null;
+    distanceWithoutCargo: number | null;
 }
 
 export default function PerformancesShow({ performance, activityLogs, operationInsights }: ShowProps) {
@@ -165,6 +203,15 @@ export default function PerformancesShow({ performance, activityLogs, operationI
         return `${Number(value).toFixed(1)}%`;
     };
 
+    const formatCurrencyPerUnit = (value?: number | null, unit?: string) => {
+        if (value === null || value === undefined) return 'N/A';
+        const formatted = Number(value).toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        });
+        return `${formatted} Birr${unit ? ` / ${unit}` : ''}`;
+    };
+
     // Ensure all values are numbers for calculations
     const dwc = parseFloat(performance.DistanceWCargo as any) || 0;
     const dwo = parseFloat(performance.DistanceWOCargo as any) || 0;
@@ -196,6 +243,8 @@ export default function PerformancesShow({ performance, activityLogs, operationI
     const operationOverview = operationInsights?.overview;
     const performanceShare = operationInsights?.performanceShare;
     const operationTrends = operationInsights?.trends;
+    const operationEconomics = operationInsights?.economics ?? null;
+    const tripEconomics = operationInsights?.tripEconomics ?? null;
 
     const completionRate = operationOverview?.completionRate;
     const completionLabel = completionRate !== null && completionRate !== undefined
@@ -204,12 +253,75 @@ export default function PerformancesShow({ performance, activityLogs, operationI
     const completionBarWidth = completionRate !== null && completionRate !== undefined
         ? Math.max(0, Math.min(completionRate, 100))
         : 0;
-    const statusData = operationTrends?.statusBreakdown ?? [];
+    const statusData = operationTrends?.statusBreakdown ?? ([] as Array<{ label: string; value: number }>);
     const hasStatusData = statusData.some((item) => item.value > 0);
-    const timelineData = operationTrends?.recentTrips ?? [];
+    const timelineData = operationTrends?.recentTrips ?? ([] as Array<{
+        id: number;
+        trip: string;
+        date: string;
+        tonnage: number;
+        distance: number;
+        cost: number;
+        highlight: boolean;
+    }>);
     const hasTimelineData = timelineData.length > 0;
     const piePalette = ['#6366f1', '#22c55e', '#f97316'];
     const statusPalette = ['#22c55e', '#f97316', '#0ea5e9'];
+
+    const tariff = tripEconomics?.tariff ?? operationRef?.tariff ?? null;
+    const actualRevenueRaw = tripEconomics?.actualRevenue ?? (tariff !== null ? Number((tonKm * tariff).toFixed(2)) : null);
+    const costPerTonKmRaw = tripEconomics?.costPerTonKm ?? (tonKm > 0 ? Number((totalCost / tonKm).toFixed(2)) : null);
+    const grossMarginValueRaw = tripEconomics?.grossMarginValue ?? (actualRevenueRaw !== null ? Number((actualRevenueRaw - totalCost).toFixed(2)) : null);
+    const grossMarginPercentRaw = tripEconomics?.grossMarginPercent ?? (
+        actualRevenueRaw !== null && actualRevenueRaw !== 0
+            ? Number(((grossMarginValueRaw ?? 0) / actualRevenueRaw * 100).toFixed(2))
+            : null
+    );
+    const yieldPerTonRaw = tripEconomics?.yieldPerTon ?? (cvm > 0 && actualRevenueRaw !== null
+        ? Number((actualRevenueRaw / cvm).toFixed(2))
+        : null);
+    const yieldPerKmRaw = tripEconomics?.yieldPerKm ?? (totalDistance > 0 && actualRevenueRaw !== null
+        ? Number((actualRevenueRaw / totalDistance).toFixed(2))
+        : null);
+    const tripLoadFactor = tripEconomics?.loadFactor ?? (totalDistance > 0
+        ? Number(((dwc / totalDistance) * 100).toFixed(2))
+        : null);
+    const tripEmptyShare = tripEconomics?.emptyBackhaulShare ?? (totalDistance > 0
+        ? Number(((dwo / totalDistance) * 100).toFixed(2))
+        : null);
+    const distanceWithCargoLabel = formatNumberDisplay(tripEconomics?.distanceWithCargo ?? dwc);
+    const distanceWithoutCargoLabel = formatNumberDisplay(tripEconomics?.distanceWithoutCargo ?? dwo);
+    const tariffLabel = tariff !== null ? formatCurrencyPerUnit(tariff, 'ton-km') : 'N/A';
+    const grossMarginPercentLabel = formatPercentDisplay(grossMarginPercentRaw);
+    const actualRevenueLabel = formatCurrencyDisplay(actualRevenueRaw);
+    const grossMarginValueLabel = formatCurrencyDisplay(grossMarginValueRaw);
+    const costPerTonKmLabel = formatCurrencyPerUnit(costPerTonKmRaw, 'ton-km');
+    const yieldPerTonLabel = yieldPerTonRaw !== null ? formatCurrencyPerUnit(yieldPerTonRaw, 'MT') : 'N/A';
+    const yieldPerKmLabel = yieldPerKmRaw !== null ? formatCurrencyPerUnit(yieldPerKmRaw, 'km') : 'N/A';
+    const loadFactorLabel = tripLoadFactor !== null ? `${tripLoadFactor.toFixed(1)}%` : 'N/A';
+    const emptyShareLabel = tripEmptyShare !== null ? `${tripEmptyShare.toFixed(1)}%` : 'N/A';
+    const grossMarginColor = grossMarginValueRaw !== null && grossMarginValueRaw < 0
+        ? 'text-rose-600'
+        : 'text-emerald-600';
+    const operationRevenueLabel = formatCurrencyDisplay(operationEconomics?.actualRevenue ?? null);
+    const operationCostPerTonKmLabel = formatCurrencyPerUnit(operationEconomics?.costPerTonKm ?? null, 'ton-km');
+    const operationGrossMarginValueLabel = formatCurrencyDisplay(operationEconomics?.grossMarginValue ?? null);
+    const operationGrossMarginPercentLabel = formatPercentDisplay(operationEconomics?.grossMarginPercent ?? null);
+    const operationTonKmLabel = operationEconomics?.totalTonKm !== undefined && operationEconomics?.totalTonKm !== null
+        ? `${formatNumberDisplay(operationEconomics.totalTonKm)} ton-km`
+        : 'N/A';
+    const operationPlannedTonKmLabel = operationEconomics?.plannedTonKm !== undefined && operationEconomics?.plannedTonKm !== null
+        ? `${formatNumberDisplay(operationEconomics.plannedTonKm)} ton-km`
+        : 'N/A';
+    const operationTonKmCompletionLabel = operationEconomics?.tonKmCompletionRate !== null && operationEconomics?.tonKmCompletionRate !== undefined
+        ? `${operationEconomics.tonKmCompletionRate.toFixed(1)}%`
+        : 'N/A';
+    const operationLoadFactorLabel = operationEconomics?.loadFactor !== null && operationEconomics?.loadFactor !== undefined
+        ? `${operationEconomics.loadFactor.toFixed(1)}%`
+        : 'N/A';
+    const operationEmptyShareLabel = operationEconomics?.emptyBackhaulShare !== null && operationEconomics?.emptyBackhaulShare !== undefined
+        ? `${operationEconomics.emptyBackhaulShare.toFixed(1)}%`
+        : 'N/A';
 
     const getStatusColor = (status: string) => {
         const colors: Record<string, string> = {
@@ -494,22 +606,71 @@ export default function PerformancesShow({ performance, activityLogs, operationI
                                                         Cost Breakdown
                                                     </h3>
                                                     <div className="space-y-3">
-                                                        <div className="flex justify-between items-center p-3 bg-muted/30 rounded-lg border">
-                                                            <span className="text-sm text-muted-foreground">Fuel Cost</span>
-                                                            <span className="font-semibold text-foreground">{fib.toFixed(2)} Birr</span>
+                                                        <div className="rounded-xl border border-emerald-200 bg-emerald-50/90 p-4 shadow-sm dark:border-emerald-800 dark:bg-emerald-900/20">
+                                                            <div className="flex items-start justify-between gap-3">
+                                                                <div>
+                                                                    <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-200">Revenue Recognised</p>
+                                                                    <p className="mt-1 text-2xl font-bold text-emerald-700 dark:text-emerald-100">{actualRevenueLabel}</p>
+                                                                    <p className="mt-1 text-xs text-emerald-700/80 dark:text-emerald-200/80">Ton-km × tariff in line with IFRS 15 delivery milestones</p>
+                                                                </div>
+                                                                <span className="rounded-md bg-white/70 px-3 py-1 text-[11px] font-semibold text-emerald-700 shadow-sm dark:bg-emerald-950/40 dark:text-emerald-200">
+                                                                    {grossMarginPercentLabel !== 'N/A' ? `Margin ${grossMarginPercentLabel}` : 'Tariff driven'}
+                                                                </span>
+                                                            </div>
+                                                            <div className="mt-3 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
+                                                                <div className="flex items-center justify-between gap-2">
+                                                                    <span>Tariff</span>
+                                                                    <span className="font-semibold text-foreground">{tariffLabel}</span>
+                                                                </div>
+                                                                <div className="flex items-center justify-between gap-2">
+                                                                    <span>Yield / Ton</span>
+                                                                    <span className="font-semibold text-foreground">{yieldPerTonLabel}</span>
+                                                                </div>
+                                                            </div>
                                                         </div>
-                                                        <div className="flex justify-between items-center p-3 bg-muted/30 rounded-lg border">
-                                                            <span className="text-sm text-muted-foreground">Per Diem</span>
-                                                            <span className="font-semibold text-foreground">{per.toFixed(2)} Birr</span>
+
+                                                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                                            <div className="flex items-center justify-between rounded-lg border bg-muted/30 p-3">
+                                                                <span className="text-sm text-muted-foreground">Fuel Cost</span>
+                                                                <span className="font-semibold text-foreground">{fib.toFixed(2)} Birr</span>
+                                                            </div>
+                                                            <div className="flex items-center justify-between rounded-lg border bg-muted/30 p-3">
+                                                                <span className="text-sm text-muted-foreground">Per Diem</span>
+                                                                <span className="font-semibold text-foreground">{per.toFixed(2)} Birr</span>
+                                                            </div>
+                                                            <div className="flex items-center justify-between rounded-lg border bg-muted/30 p-3">
+                                                                <span className="text-sm text-muted-foreground">Other Costs</span>
+                                                                <span className="font-semibold text-foreground">{oth.toFixed(2)} Birr</span>
+                                                            </div>
+                                                            <div className="flex items-center justify-between rounded-lg border bg-muted/30 p-3">
+                                                                <span className="text-sm text-muted-foreground">Cost / Ton-km</span>
+                                                                <span className="font-semibold text-foreground">{costPerTonKmLabel}</span>
+                                                            </div>
                                                         </div>
-                                                        <div className="flex justify-between items-center p-3 bg-muted/30 rounded-lg border">
-                                                            <span className="text-sm text-muted-foreground">Other Costs</span>
-                                                            <span className="font-semibold text-foreground">{oth.toFixed(2)} Birr</span>
+
+                                                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                                            <div className="flex items-center justify-between rounded-lg border bg-muted/30 p-3">
+                                                                <span className="text-sm text-muted-foreground">Yield / Km</span>
+                                                                <span className="font-semibold text-foreground">{yieldPerKmLabel}</span>
+                                                            </div>
+                                                            <div className="flex items-center justify-between rounded-lg border bg-muted/30 p-3">
+                                                                <span className="text-sm text-muted-foreground">Load Factor</span>
+                                                                <span className="font-semibold text-foreground">{loadFactorLabel}</span>
+                                                            </div>
                                                         </div>
+
                                                         <Separator />
-                                                        <div className="flex justify-between items-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border-2 border-green-200">
-                                                            <span className="font-semibold text-foreground">Total Cost</span>
-                                                            <span className="text-xl font-bold text-green-600">{totalCost.toFixed(2)} Birr</span>
+
+                                                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                                            <div className="flex items-center justify-between rounded-lg border-2 border-green-200 bg-green-50 p-3 dark:border-green-800 dark:bg-green-900/20">
+                                                                <span className="font-semibold text-foreground">Total Cost</span>
+                                                                <span className="text-xl font-bold text-green-600 dark:text-green-300">{totalCost.toFixed(2)} Birr</span>
+                                                            </div>
+                                                            <div className="rounded-lg border bg-muted/30 p-3">
+                                                                <p className="text-sm text-muted-foreground">Gross Margin</p>
+                                                                <p className={`mt-1 text-xl font-bold ${grossMarginColor}`}>{grossMarginValueLabel}</p>
+                                                                <p className="text-xs text-muted-foreground">Revenue less direct operating cost</p>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -522,21 +683,36 @@ export default function PerformancesShow({ performance, activityLogs, operationI
                                                         </div>
                                                         Performance Metrics
                                                     </h3>
-                                                    <div className="space-y-3">
-                                                        <div className="p-4 bg-muted/30 rounded-lg border">
+                                                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                                        <div className="rounded-lg border bg-muted/30 p-4">
                                                             <p className="text-xs text-muted-foreground mb-1">Cost per Kilometer</p>
                                                             <p className="text-2xl font-bold text-blue-600">{costPerKm.toFixed(2)}</p>
                                                             <p className="text-xs text-muted-foreground mt-1">Birr/km</p>
                                                         </div>
-                                                        <div className="p-4 bg-muted/30 rounded-lg border">
+                                                        <div className="rounded-lg border bg-muted/30 p-4">
                                                             <p className="text-xs text-muted-foreground mb-1">Fuel Efficiency</p>
                                                             <p className="text-2xl font-bold text-orange-600">{fuelEfficiency.toFixed(2)}</p>
                                                             <p className="text-xs text-muted-foreground mt-1">km/liter</p>
                                                         </div>
-                                                        <div className="p-4 bg-muted/30 rounded-lg border">
+                                                        <div className="rounded-lg border bg-muted/30 p-4">
                                                             <p className="text-xs text-muted-foreground mb-1">Fuel Consumed</p>
                                                             <p className="text-2xl font-bold text-purple-600">{fil.toFixed(2)}</p>
                                                             <p className="text-xs text-muted-foreground mt-1">liters</p>
+                                                        </div>
+                                                        <div className="rounded-lg border bg-muted/30 p-4">
+                                                            <p className="text-xs text-muted-foreground mb-1">Ton-Km Delivered</p>
+                                                            <p className="text-2xl font-bold text-purple-600">{tonKm.toFixed(2)}</p>
+                                                            <p className="text-xs text-muted-foreground mt-1">Loaded distance × tonnage</p>
+                                                        </div>
+                                                        <div className="rounded-lg border bg-muted/30 p-4">
+                                                            <p className="text-xs text-muted-foreground mb-1">Empty Backhaul Share</p>
+                                                            <p className="text-2xl font-bold text-amber-600">{emptyShareLabel}</p>
+                                                            <p className="text-xs text-muted-foreground mt-1">Distance without cargo ÷ total distance</p>
+                                                        </div>
+                                                        <div className="rounded-lg border bg-muted/30 p-4">
+                                                            <p className="text-xs text-muted-foreground mb-1">Distance Mix</p>
+                                                            <p className="text-sm font-semibold text-foreground">{distanceWithCargoLabel} km loaded</p>
+                                                            <p className="text-xs text-muted-foreground mt-1">{distanceWithoutCargoLabel} km empty</p>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -679,6 +855,58 @@ export default function PerformancesShow({ performance, activityLogs, operationI
                                                         </div>
                                                     </div>
                                                 </div>
+
+                                                {operationEconomics && (
+                                                    <div className="rounded-xl border border-slate-200 bg-white/80 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/40">
+                                                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Operation Economics</p>
+                                                        <p className="mt-1 text-sm text-muted-foreground">How the overall contract performs financially</p>
+                                                        <div className="mt-4 grid gap-4 md:grid-cols-2">
+                                                            <div className="rounded-lg bg-muted/30 p-3">
+                                                                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Actual Revenue</p>
+                                                                <p className="mt-1 text-lg font-semibold text-foreground">{operationRevenueLabel}</p>
+                                                                <p className="mt-2 text-xs text-muted-foreground">Tariff × delivered ton-km</p>
+                                                            </div>
+                                                            <div className="rounded-lg bg-muted/30 p-3">
+                                                                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Cost per Ton-Km</p>
+                                                                <p className="mt-1 text-lg font-semibold text-foreground">{operationCostPerTonKmLabel}</p>
+                                                                <p className="mt-2 text-xs text-muted-foreground">Total operating cost spread across delivered ton-km</p>
+                                                            </div>
+                                                            <div className="rounded-lg bg-muted/30 p-3">
+                                                                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Gross Margin</p>
+                                                                <div className="mt-1 flex items-baseline gap-2">
+                                                                    <span className="text-lg font-semibold text-foreground">{operationGrossMarginValueLabel}</span>
+                                                                    <span className={`text-xs font-semibold ${operationEconomics.grossMarginValue !== null && operationEconomics.grossMarginValue < 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+                                                                        {operationGrossMarginPercentLabel}
+                                                                    </span>
+                                                                </div>
+                                                                <p className="mt-2 text-xs text-muted-foreground">Revenue less direct operating cost</p>
+                                                            </div>
+                                                            <div className="rounded-lg bg-muted/30 p-3">
+                                                                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Load & Empty Mix</p>
+                                                                <div className="mt-1 space-y-1 text-sm font-semibold text-foreground">
+                                                                    <p>Load factor: {operationLoadFactorLabel}</p>
+                                                                    <p>Empty share: {operationEmptyShareLabel}</p>
+                                                                </div>
+                                                                <p className="mt-2 text-xs text-muted-foreground">Share of total distance achieved with cargo</p>
+                                                            </div>
+                                                        </div>
+                                                        <Separator className="my-4" />
+                                                        <div className="grid gap-3 text-xs text-muted-foreground sm:grid-cols-3">
+                                                            <div className="rounded-lg bg-muted/30 p-3">
+                                                                <p className="text-[11px] uppercase tracking-wide">Delivered Ton-Km</p>
+                                                                <p className="mt-1 text-sm font-semibold text-foreground">{operationTonKmLabel}</p>
+                                                            </div>
+                                                            <div className="rounded-lg bg-muted/30 p-3">
+                                                                <p className="text-[11px] uppercase tracking-wide">Planned Ton-Km</p>
+                                                                <p className="mt-1 text-sm font-semibold text-foreground">{operationPlannedTonKmLabel}</p>
+                                                            </div>
+                                                            <div className="rounded-lg bg-muted/30 p-3">
+                                                                <p className="text-[11px] uppercase tracking-wide">Ton-Km Completion</p>
+                                                                <p className="mt-1 text-sm font-semibold text-foreground">{operationTonKmCompletionLabel}</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
 
                                                 <div className="rounded-xl border border-slate-200 bg-white/80 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/40">
                                                     <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Performance Contribution</p>

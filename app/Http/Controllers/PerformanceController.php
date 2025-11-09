@@ -171,6 +171,9 @@ class PerformanceController extends Controller
                 ->selectRaw('SUM(CASE WHEN is_returned = 1 THEN 1 ELSE 0 END) as completed_trips')
                 ->selectRaw('SUM(CASE WHEN is_returned = 0 OR is_returned IS NULL THEN 1 ELSE 0 END) as ongoing_trips')
                 ->selectRaw('COALESCE(SUM(COALESCE(CargoVolumMT, 0)), 0) as total_tonnage')
+                ->selectRaw('COALESCE(SUM(COALESCE(tonkm, 0)), 0) as total_ton_km')
+                ->selectRaw('COALESCE(SUM(COALESCE(DistanceWCargo, 0)), 0) as loaded_distance')
+                ->selectRaw('COALESCE(SUM(COALESCE(DistanceWOCargo, 0)), 0) as empty_distance')
                 ->selectRaw('COALESCE(SUM(COALESCE(DistanceWCargo, 0) + COALESCE(DistanceWOCargo, 0)), 0) as total_distance')
                 ->selectRaw('COALESCE(SUM(COALESCE(fuelInBirr, 0) + COALESCE(perdiem, 0) + COALESCE(other, 0)), 0) as total_cost')
                 ->first();
@@ -180,14 +183,68 @@ class PerformanceController extends Controller
             $operationCompletedTrips = (int) ($aggregate->completed_trips ?? 0);
             $operationOngoingTrips = (int) ($aggregate->ongoing_trips ?? 0);
             $operationTotalTonnage = (float) ($aggregate->total_tonnage ?? 0);
+            $operationTotalTonKm = (float) ($aggregate->total_ton_km ?? 0);
             $operationRemainingTonnage = max($operationPlannedVolume - $operationTotalTonnage, 0);
             $operationTotalDistance = (float) ($aggregate->total_distance ?? 0);
+            $operationLoadedDistance = (float) ($aggregate->loaded_distance ?? 0);
+            $operationEmptyDistance = (float) ($aggregate->empty_distance ?? 0);
             $operationTotalCost = (float) ($aggregate->total_cost ?? 0);
+            $operationTariff = $operation->tariff !== null ? (float) $operation->tariff : null;
+            $operationPlannedDistance = (float) ($operation->km ?? 0);
+            $operationPlannedTonKm = $operationPlannedVolume > 0 && $operationPlannedDistance > 0
+                ? $operationPlannedVolume * $operationPlannedDistance
+                : 0;
+            $operationTonKmCompletionRate = $operationPlannedTonKm > 0
+                ? round(($operationTotalTonKm / $operationPlannedTonKm) * 100, 2)
+                : null;
+            $operationActualRevenue = ($operationTariff !== null && $operationTotalTonKm > 0)
+                ? round($operationTotalTonKm * $operationTariff, 2)
+                : null;
+            $operationCostPerTonKm = $operationTotalTonKm > 0
+                ? round($operationTotalCost / $operationTotalTonKm, 2)
+                : null;
+            $operationGrossMarginValue = ($operationActualRevenue !== null)
+                ? round($operationActualRevenue - $operationTotalCost, 2)
+                : null;
+            $operationGrossMarginPercent = ($operationActualRevenue !== null && $operationActualRevenue != 0.0)
+                ? round(($operationGrossMarginValue / $operationActualRevenue) * 100, 2)
+                : null;
+            $operationLoadFactor = $operationTotalDistance > 0
+                ? round(($operationLoadedDistance / $operationTotalDistance) * 100, 2)
+                : null;
+            $operationEmptyShare = $operationTotalDistance > 0
+                ? round(($operationEmptyDistance / $operationTotalDistance) * 100, 2)
+                : null;
 
             $performanceTonnage = (float) ($performance->CargoVolumMT ?? 0);
             $performanceDistance = (float) (($performance->DistanceWCargo ?? 0) + ($performance->DistanceWOCargo ?? 0));
             $performanceCost = (float) (($performance->fuelInBirr ?? 0) + ($performance->perdiem ?? 0) + ($performance->other ?? 0));
             $performanceTonKm = (float) ($performance->tonkm ?? (($performance->DistanceWCargo ?? 0) * ($performance->CargoVolumMT ?? 0)));
+            $performanceTariff = $operationTariff;
+            $performanceRevenue = ($performanceTariff !== null && $performanceTonKm > 0)
+                ? round($performanceTonKm * $performanceTariff, 2)
+                : null;
+            $performanceCostPerTonKm = $performanceTonKm > 0
+                ? round($performanceCost / $performanceTonKm, 2)
+                : null;
+            $performanceMarginValue = ($performanceRevenue !== null)
+                ? round($performanceRevenue - $performanceCost, 2)
+                : null;
+            $performanceMarginPercent = ($performanceRevenue !== null && $performanceRevenue != 0.0)
+                ? round(($performanceMarginValue / $performanceRevenue) * 100, 2)
+                : null;
+            $performanceYieldPerTon = ($performanceRevenue !== null && $performanceTonnage > 0)
+                ? round($performanceRevenue / $performanceTonnage, 2)
+                : null;
+            $performanceYieldPerKm = ($performanceRevenue !== null && $performanceDistance > 0)
+                ? round($performanceRevenue / $performanceDistance, 2)
+                : null;
+            $performanceLoadFactor = $performanceDistance > 0
+                ? round((($performance->DistanceWCargo ?? 0) / $performanceDistance) * 100, 2)
+                : null;
+            $performanceEmptyShare = $performanceDistance > 0
+                ? round((($performance->DistanceWOCargo ?? 0) / $performanceDistance) * 100, 2)
+                : null;
 
             $tonnageShare = $operationTotalTonnage > 0
                 ? round(($performanceTonnage / $operationTotalTonnage) * 100, 2)
@@ -246,6 +303,36 @@ class PerformanceController extends Controller
                     'completionRate' => $operationPlannedVolume > 0
                         ? round(($operationTotalTonnage / $operationPlannedVolume) * 100, 2)
                         : null,
+                ],
+                'economics' => [
+                    'tariff' => $operationTariff,
+                    'totalTonKm' => round($operationTotalTonKm, 2),
+                    'plannedTonKm' => round($operationPlannedTonKm, 2),
+                    'tonKmCompletionRate' => $operationTonKmCompletionRate,
+                    'actualRevenue' => $operationActualRevenue,
+                    'totalCost' => round($operationTotalCost, 2),
+                    'costPerTonKm' => $operationCostPerTonKm,
+                    'grossMarginValue' => $operationGrossMarginValue,
+                    'grossMarginPercent' => $operationGrossMarginPercent,
+                    'loadFactor' => $operationLoadFactor,
+                    'emptyBackhaulShare' => $operationEmptyShare,
+                    'loadedDistance' => round($operationLoadedDistance, 2),
+                    'emptyDistance' => round($operationEmptyDistance, 2),
+                ],
+                'tripEconomics' => [
+                    'tariff' => $performanceTariff,
+                    'tonKm' => round($performanceTonKm, 2),
+                    'actualRevenue' => $performanceRevenue,
+                    'cost' => round($performanceCost, 2),
+                    'costPerTonKm' => $performanceCostPerTonKm,
+                    'grossMarginValue' => $performanceMarginValue,
+                    'grossMarginPercent' => $performanceMarginPercent,
+                    'yieldPerTon' => $performanceYieldPerTon,
+                    'yieldPerKm' => $performanceYieldPerKm,
+                    'loadFactor' => $performanceLoadFactor,
+                    'emptyBackhaulShare' => $performanceEmptyShare,
+                    'distanceWithCargo' => round((float) ($performance->DistanceWCargo ?? 0), 2),
+                    'distanceWithoutCargo' => round((float) ($performance->DistanceWOCargo ?? 0), 2),
                 ],
                 'performanceShare' => [
                     'tonnageShare' => $tonnageShare,

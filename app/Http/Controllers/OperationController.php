@@ -22,7 +22,8 @@ class OperationController extends Controller
      */
     public function index(Request $request): Response
     {
-        $query = Operation::with(['customer']);
+        $query = Operation::with(['customer'])
+            ->withSum('performances as delivered_volume', 'CargoVolumMT');
 
         // Handle search
         if ($request->has('search') && !empty($request->input('search'))) {
@@ -48,7 +49,37 @@ class OperationController extends Controller
 
         $query->orderBy($sort, $direction);
 
-        $operations = $query->paginate(15);
+        $operations = $query->paginate(15)->through(function (Operation $operation) {
+            $rawPlannedVolume = $operation->volume;
+            $plannedVolume = $rawPlannedVolume !== null ? (float) $rawPlannedVolume : null;
+            $deliveredVolume = (float) ($operation->delivered_volume ?? 0);
+            $remainingVolume = $plannedVolume !== null ? max($plannedVolume - $deliveredVolume, 0) : null;
+            $completionRate = ($plannedVolume !== null && $plannedVolume > 0)
+                ? round(($deliveredVolume / $plannedVolume) * 100, 1)
+                : null;
+
+            return [
+                'id' => $operation->id,
+                'operationid' => $operation->operationid,
+                'customer' => $operation->customer
+                    ? [
+                        'id' => $operation->customer->id,
+                        'name' => $operation->customer->name,
+                    ]
+                    : null,
+                'description' => $operation->description,
+                'status' => $operation->status,
+                'volume' => $plannedVolume !== null ? round($plannedVolume, 2) : null,
+                'km' => $operation->km !== null ? round((float) $operation->km, 2) : null,
+                'startdate' => $operation->startdate,
+                'enddate' => $operation->enddate,
+                'closed' => (bool) $operation->closed,
+                'created_at' => $operation->created_at ? $operation->created_at->toDateTimeString() : null,
+                'deliveredVolume' => round($deliveredVolume, 2),
+                'remainingVolume' => $remainingVolume !== null ? round($remainingVolume, 2) : null,
+                'volumeCompletion' => $completionRate,
+            ];
+        });
 
         return Inertia::render('Operations/Index', [
             'operations' => $operations,

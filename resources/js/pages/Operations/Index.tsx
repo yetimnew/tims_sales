@@ -28,15 +28,18 @@ const breadcrumbs: BreadcrumbItem[] = [
 interface OperationData {
     id: number;
     operationid: string;
-    customer?: { id: number; name: string };
-    description?: string;
+    customer?: { id: number; name: string } | null;
+    description?: string | null;
     status: string;
-    volume?: number;
-    km?: number;
-    startdate?: string;
-    enddate?: string;
+    volume?: number | null;
+    km?: number | null;
+    startdate?: string | null;
+    enddate?: string | null;
     closed?: boolean;
-    created_at?: string;
+    created_at?: string | null;
+    deliveredVolume?: number | null;
+    remainingVolume?: number | null;
+    volumeCompletion?: number | null;
 }
 
 interface OperationsIndexProps {
@@ -62,14 +65,64 @@ interface OperationsIndexProps {
     totalCount?: number;
 }
 
-const columns: Array<{ key: keyof OperationData | 'status'; label: string }> = [
+type ColumnKey = 'operationid' | 'customer' | 'status' | 'startdate' | 'volume' | 'km' | 'tonnageProgress';
+
+const columns: Array<{ key: ColumnKey; label: string; sortable?: boolean }> = [
     { key: 'operationid', label: 'Operation ID' },
     { key: 'customer', label: 'Customer' },
     { key: 'status', label: 'Status' },
     { key: 'startdate', label: 'Start Date' },
     { key: 'volume', label: 'Volume (MT)' },
     { key: 'km', label: 'Distance (KM)' },
+    { key: 'tonnageProgress', label: 'Uplift Progress', sortable: false },
 ];
+
+const formatNumberValue = (value?: number | null, fractionDigits = 2) => {
+    if (value === null || value === undefined || Number.isNaN(Number(value))) {
+        return '-';
+    }
+
+    return Number(value).toLocaleString('en-US', {
+        minimumFractionDigits: fractionDigits,
+        maximumFractionDigits: fractionDigits,
+    });
+};
+
+const clampPercentage = (value: number) => Math.max(0, Math.min(value, 100));
+
+const renderTonnageProgress = (operation: OperationData) => {
+    const planned = operation.volume ?? null;
+    const delivered = operation.deliveredVolume ?? null;
+    const remaining = operation.remainingVolume ?? null;
+    const completion = operation.volumeCompletion ?? null;
+    const progressWidth = completion !== null ? `${clampPercentage(completion)}%` : '0%';
+
+    if ((planned === null || planned === 0) && (delivered === null || delivered === 0)) {
+        return <span className="text-muted-foreground">-</span>;
+    }
+
+    return (
+        <div className="min-w-[200px] space-y-2">
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>Delivered</span>
+                <span className="font-medium text-foreground">
+                    {delivered !== null ? `${formatNumberValue(delivered)} MT` : 'N/A'}
+                </span>
+            </div>
+            <div className="relative h-2 w-full overflow-hidden rounded-full bg-muted">
+                <div className="h-2 rounded-full bg-primary transition-all" style={{ width: progressWidth }} />
+            </div>
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>{completion !== null ? `${completion.toFixed(1)}%` : 'No plan set'}</span>
+                {planned !== null && remaining !== null ? (
+                    <span>Remaining {formatNumberValue(Math.max(remaining, 0))} MT</span>
+                ) : (
+                    <span className="invisible">placeholder</span>
+                )}
+            </div>
+        </div>
+    );
+};
 
 export default function OperationsIndex({ operations, statistics, totalCount }: OperationsIndexProps) {
     const { hasPermission } = usePermissions();
@@ -108,21 +161,44 @@ export default function OperationsIndex({ operations, statistics, totalCount }: 
         router.get('/operations', { sort: column, direction: newDirection, search: searchTerm }, { preserveState: true });
     };
 
-    const renderHeaderCell = (column: string, label: string) => (
+    const renderHeaderCell = (column: ColumnKey, label: string, sortable = true) => (
         <TableHead
             key={column}
-            className="cursor-pointer select-none hover:bg-muted/70 transition-colors bg-background"
-            onClick={() => handleSort(column)}
+            className={`select-none bg-background ${sortable ? 'cursor-pointer transition-colors hover:bg-muted/70' : ''}`}
+            onClick={sortable ? () => handleSort(column) : undefined}
         >
             <div className="flex items-center gap-2">
                 {label}
-                <ArrowUpDown
-                    size={14}
-                    className={sortColumn === column ? 'text-primary' : 'text-muted-foreground opacity-50'}
-                />
+                {sortable && (
+                    <ArrowUpDown
+                        size={14}
+                        className={sortColumn === column ? 'text-primary' : 'text-muted-foreground opacity-50'}
+                    />
+                )}
             </div>
         </TableHead>
     );
+
+    const renderCell = (operation: OperationData, column: ColumnKey): React.ReactNode => {
+        switch (column) {
+            case 'operationid':
+                return <span className="font-medium">{operation.operationid}</span>;
+            case 'customer':
+                return operation.customer?.name || '-';
+            case 'status':
+                return getStatusBadge(operation.status);
+            case 'startdate':
+                return operation.startdate ? new Date(operation.startdate).toLocaleDateString() : '-';
+            case 'volume':
+                return formatNumberValue(operation.volume);
+            case 'km':
+                return formatNumberValue(operation.km);
+            case 'tonnageProgress':
+                return renderTonnageProgress(operation);
+            default:
+                return null;
+        }
+    };
 
     const headerActions = (
         <>
@@ -214,7 +290,7 @@ export default function OperationsIndex({ operations, statistics, totalCount }: 
         <Table>
             <TableHeader>
                 <TableRow className="sticky top-0 z-50 bg-background border-b">
-                    {columns.map(({ key, label }) => renderHeaderCell(key, label))}
+                    {columns.map(({ key, label, sortable }) => renderHeaderCell(key, label, sortable ?? true))}
                     <TableHead className="text-right bg-background">Actions</TableHead>
                 </TableRow>
             </TableHeader>
@@ -222,12 +298,9 @@ export default function OperationsIndex({ operations, statistics, totalCount }: 
                 {operationData.length > 0 ? (
                     operationData.map((op) => (
                         <TableRow key={op.id} className="hover:bg-muted/50">
-                            <TableCell className="font-medium">{op.operationid}</TableCell>
-                            <TableCell>{op.customer?.name || '-'}</TableCell>
-                            <TableCell>{getStatusBadge(op.status)}</TableCell>
-                            <TableCell>{op.startdate ? new Date(op.startdate).toLocaleDateString() : '-'}</TableCell>
-                            <TableCell>{op.volume ? Number(op.volume).toFixed(2) : '-'}</TableCell>
-                            <TableCell>{op.km ? Number(op.km).toFixed(2) : '-'}</TableCell>
+                            {columns.map(({ key }) => (
+                                <TableCell key={key}>{renderCell(op, key)}</TableCell>
+                            ))}
                             <TableCell className="text-right">
                                 <div className="flex justify-end gap-2">
                                     <Button asChild size="sm" variant="ghost">

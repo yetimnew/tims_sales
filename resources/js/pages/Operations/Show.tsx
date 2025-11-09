@@ -174,6 +174,15 @@ export default function OperationsShow({ operation, activityLogs = [], performan
         return `${Number(value).toFixed(1)}%`;
     };
 
+    const formatCurrencyPerUnit = (value?: number | null, unit?: string) => {
+        if (value === null || value === undefined) return 'N/A';
+        const formatted = Number(value).toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        });
+        return `${formatted} Birr${unit ? ` / ${unit}` : ''}`;
+    };
+
     const formatOptionalNumber = (value?: number | null, suffix = '') => {
         if (value === null || value === undefined) return 'N/A';
         return `${formatNumber(value)}${suffix}`;
@@ -256,6 +265,18 @@ export default function OperationsShow({ operation, activityLogs = [], performan
         : '0';
     const loadFactorLabel = economics.loadFactor === null ? 'N/A' : `${economics.loadFactor.toFixed(1)}%`;
     const emptyShareLabel = economics.emptyBackhaulShare === null ? 'N/A' : `${economics.emptyBackhaulShare.toFixed(1)}%`;
+    const loadFactorBarWidth = Math.max(0, Math.min(economics.loadFactor ?? 0, 100));
+    const emptyShareBarWidth = Math.max(0, Math.min(economics.emptyBackhaulShare ?? 0, 100));
+    const plannedTonKm = economics.plannedTonKm ?? totals.plannedTonKm ?? null;
+    const deliveredTonKm = economics.totalTonKm ?? totals.totalTonKm ?? null;
+    const remainingTonKm = plannedTonKm !== null && deliveredTonKm !== null
+        ? Math.max(plannedTonKm - deliveredTonKm, 0)
+        : null;
+    const deliveredTonKmLabel = formatOptionalNumber(deliveredTonKm, ' ton-km');
+    const plannedTonKmLabel = formatOptionalNumber(plannedTonKm, ' ton-km');
+    const remainingTonKmLabel = formatOptionalNumber(remainingTonKm, ' ton-km');
+    const loadedDistanceLabel = formatOptionalNumber(economics.loadedDistance, ' km');
+    const emptyDistanceLabel = formatOptionalNumber(economics.emptyDistance, ' km');
 
     const relationshipMatrix: Array<{
         label: string;
@@ -396,6 +417,68 @@ export default function OperationsShow({ operation, activityLogs = [], performan
             iconClass: 'text-emerald-600 dark:text-emerald-300',
         });
     }
+
+    const economicsHighlights: Array<{
+        label: string;
+        value: string;
+        helper: string;
+        icon: LucideIcon;
+        containerClass: string;
+        iconClass: string;
+        secondary?: string;
+    }> = [
+        {
+            label: 'Actual Revenue Realised',
+            value: formatCurrency(economics.actualRevenue),
+            helper: 'Recognised ton-km × tariff (IFRS 15)',
+            icon: CircleDollarSign,
+            containerClass: 'border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-900/20',
+            iconClass: 'text-emerald-600 dark:text-emerald-300',
+        },
+        {
+            label: 'Revenue Potential',
+            value: formatCurrency(economics.potentialRevenue),
+            helper: 'Planned ton-km × tariff baseline',
+            icon: Target,
+            containerClass: 'border-indigo-200 bg-indigo-50 dark:border-indigo-800 dark:bg-indigo-900/20',
+            iconClass: 'text-indigo-600 dark:text-indigo-300',
+            secondary: tonKmCompletionLabel !== 'N/A' ? `${tonKmCompletionLabel} ton-km completion` : undefined,
+        },
+        {
+            label: 'Revenue Gap',
+            value: formatCurrency(economics.revenueGap),
+            helper: 'Variance between plan and actual',
+            icon: AlertCircle,
+            containerClass: 'border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/20',
+            iconClass: 'text-amber-600 dark:text-amber-300',
+        },
+        {
+            label: 'Gross Margin',
+            value: formatCurrency(economics.grossMarginValue),
+            helper: 'Revenue minus direct operating cost',
+            icon: BarChart3,
+            containerClass: 'border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/20',
+            iconClass: 'text-blue-600 dark:text-blue-300',
+            secondary: economics.grossMarginPercent !== null ? formatPercent(economics.grossMarginPercent) : undefined,
+        },
+        {
+            label: 'Cost per Ton-Km',
+            value: formatCurrencyPerUnit(economics.costPerTonKm ?? financials.costPerTonKm ?? null, 'ton-km'),
+            helper: 'Unit cost benchmark for pricing',
+            icon: Navigation,
+            containerClass: 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900/30',
+            iconClass: 'text-slate-600 dark:text-slate-200',
+        },
+        {
+            label: 'Yield Efficiency',
+            value: economics.yieldPerTrip === null ? 'N/A' : `${formatCurrency(economics.yieldPerTrip)} / trip`,
+            helper: 'Revenue realisation per closed trip',
+            icon: Activity,
+            containerClass: 'border-purple-200 bg-purple-50 dark:border-purple-800 dark:bg-purple-900/20',
+            iconClass: 'text-purple-600 dark:text-purple-300',
+            secondary: economics.yieldPerTon === null ? undefined : `${formatCurrency(economics.yieldPerTon)} / MT`,
+        },
+    ];
 
     const timelineItems: Array<{
         label: string;
@@ -644,28 +727,60 @@ export default function OperationsShow({ operation, activityLogs = [], performan
                                             </div>
 
                                             <div className="rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/40">
-                                                <div className="flex items-center justify-between">
+                                                <div className="flex items-start justify-between gap-4">
                                                     <div>
-                                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">Volume Progress</p>
+                                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">Volume &amp; Yield</p>
                                                         <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
                                                             {formatNumber(totals.totalTonnage ?? 0)} MT delivered
                                                         </p>
+                                                        <p className="text-xs text-muted-foreground">{deliveredTonKmLabel} realised</p>
                                                     </div>
-                                                    <span className="rounded-full bg-indigo-100 px-3 py-1 text-xs font-semibold text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-200">
-                                                        {completionLabel}
-                                                    </span>
+                                                    <div className="flex flex-col items-end gap-2">
+                                                        <span className="rounded-full bg-indigo-100 px-3 py-1 text-xs font-semibold text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-200">
+                                                            {completionLabel}
+                                                        </span>
+                                                        <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200">
+                                                            Ton-km {tonKmCompletionLabel}
+                                                        </span>
+                                                    </div>
                                                 </div>
-                                                <div className="mt-4 h-3 w-full overflow-hidden rounded-full bg-muted">
-                                                    <div
-                                                        className="h-full rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-fuchsia-500 transition-all"
-                                                        style={{ width: `${completionBarWidth}%` }}
-                                                    />
+                                                <div className="mt-4 space-y-3">
+                                                    <div>
+                                                        <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Tonnage</p>
+                                                        <div className="mt-1 h-2.5 w-full overflow-hidden rounded-full bg-muted">
+                                                            <div
+                                                                className="h-full rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-fuchsia-500 transition-all"
+                                                                style={{ width: `${completionBarWidth}%` }}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Ton-Km</p>
+                                                        <div className="mt-1 h-2.5 w-full overflow-hidden rounded-full bg-muted">
+                                                            <div
+                                                                className="h-full rounded-full bg-gradient-to-r from-emerald-500 via-cyan-500 to-teal-500 transition-all"
+                                                                style={{ width: `${tonKmCompletionBarWidth}%` }}
+                                                            />
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                                <div className="mt-2 flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
-                                                    <span>Plan: {totals.plannedVolume ? `${formatNumber(totals.plannedVolume)} MT` : 'N/A'}</span>
-                                                    <span>
-                                                        Remaining: {totals.plannedVolume ? `${formatNumber(totals.remainingTonnage ?? 0)} MT` : 'N/A'}
-                                                    </span>
+                                                <div className="mt-3 grid gap-2 text-[11px] text-muted-foreground sm:grid-cols-2">
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <span>Plan:</span>
+                                                        <span>{totals.plannedVolume ? `${formatNumber(totals.plannedVolume)} MT` : 'N/A'}</span>
+                                                    </div>
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <span>Remaining:</span>
+                                                        <span>{totals.plannedVolume ? `${formatNumber(totals.remainingTonnage ?? 0)} MT` : 'N/A'}</span>
+                                                    </div>
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <span>Ton-km Plan:</span>
+                                                        <span>{plannedTonKmLabel}</span>
+                                                    </div>
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <span>Ton-km Gap:</span>
+                                                        <span>{remainingTonKmLabel}</span>
+                                                    </div>
                                                 </div>
                                             </div>
 
@@ -804,6 +919,10 @@ export default function OperationsShow({ operation, activityLogs = [], performan
                                                         <span className="text-muted-foreground">Average Cost / MT</span>
                                                         <span className="font-semibold text-foreground">{formatCurrency(financials.averageCostPerTon)}</span>
                                                     </div>
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-muted-foreground">Cost / Ton-Km</span>
+                                                        <span className="font-semibold text-foreground">{formatCurrencyPerUnit(financials.costPerTonKm ?? economics.costPerTonKm ?? null, 'ton-km')}</span>
+                                                    </div>
                                                 </div>
                                                 <div className="mt-4 rounded-lg border border-indigo-100 bg-indigo-50/70 p-3 text-xs text-indigo-700 shadow-sm dark:border-indigo-900/50 dark:bg-indigo-950/30 dark:text-indigo-200">
                                                     {totals.totalTrips > 0
@@ -811,6 +930,136 @@ export default function OperationsShow({ operation, activityLogs = [], performan
                                                         : 'Log trip performances against this operation to begin monitoring financial efficiency.'}
                                                 </div>
                                             </div>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            {/* Economics Dashboard */}
+                            <Card className="border-0 bg-gradient-to-br from-background to-muted/20 shadow-lg">
+                                <CardHeader className="border-b bg-gradient-to-r from-emerald-50 to-cyan-50 dark:from-emerald-950/20 dark:to-cyan-950/20">
+                                    <CardTitle className="flex items-center gap-2 text-xl">
+                                        <CircleDollarSign className="h-5 w-5 text-emerald-600 dark:text-emerald-300" />
+                                        Economics Dashboard
+                                    </CardTitle>
+                                    <CardDescription>Ton-km revenue recognition, margins, and distance mix insights</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-6 p-6">
+                                    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                                        {economicsHighlights.map((highlight) => {
+                                            const Icon = highlight.icon;
+                                            return (
+                                                <div
+                                                    key={highlight.label}
+                                                    className={`rounded-xl border p-4 shadow-sm ${highlight.containerClass}`}
+                                                >
+                                                    <div className="flex items-start justify-between gap-3">
+                                                        <div>
+                                                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">
+                                                                {highlight.label}
+                                                            </p>
+                                                            <p className="mt-2 text-lg font-semibold text-slate-900 dark:text-slate-100">
+                                                                {highlight.value}
+                                                            </p>
+                                                            <p className="mt-1 text-xs text-slate-500 dark:text-slate-300">
+                                                                {highlight.helper}
+                                                            </p>
+                                                            {highlight.secondary && (
+                                                                <p className="mt-1 text-[11px] font-medium text-slate-500 dark:text-slate-300/90">
+                                                                    {highlight.secondary}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/70 text-foreground shadow-sm dark:bg-slate-900/40">
+                                                            <Icon className={`h-5 w-5 ${highlight.iconClass}`} />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+
+                                    <div className="grid gap-4 lg:grid-cols-2">
+                                        <div className="rounded-2xl border border-emerald-200 bg-white/80 p-5 shadow-sm dark:border-emerald-800 dark:bg-slate-900/40">
+                                            <div className="flex items-start justify-between gap-4">
+                                                <div>
+                                                    <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-300">Ton-Km Realisation</p>
+                                                    <p className="mt-1 text-sm font-semibold text-foreground">{deliveredTonKmLabel}</p>
+                                                    <p className="text-xs text-muted-foreground">Plan baseline {plannedTonKmLabel}</p>
+                                                </div>
+                                                <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200">
+                                                    {tonKmCompletionLabel}
+                                                </span>
+                                            </div>
+                                            <p className="mt-3 text-xs text-muted-foreground">
+                                                Recognised ton-kilometres align performance obligations with IFRS 15, ensuring revenue is booked as freight work is delivered.
+                                            </p>
+                                            <div className="mt-4 h-2.5 w-full overflow-hidden rounded-full bg-muted">
+                                                <div
+                                                    className="h-full rounded-full bg-gradient-to-r from-emerald-500 via-cyan-500 to-sky-500 transition-all"
+                                                    style={{ width: `${tonKmCompletionBarWidth}%` }}
+                                                />
+                                            </div>
+                                            <div className="mt-4 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <span>Revenue realised</span>
+                                                    <span className="font-semibold text-foreground">{formatCurrency(economics.actualRevenue)}</span>
+                                                </div>
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <span>Revenue potential</span>
+                                                    <span className="font-semibold text-foreground">{formatCurrency(economics.potentialRevenue)}</span>
+                                                </div>
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <span>Gross margin</span>
+                                                    <span className="font-semibold text-foreground">{formatCurrency(economics.grossMarginValue)}</span>
+                                                </div>
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <span>Unit cost</span>
+                                                    <span className="font-semibold text-foreground">{formatCurrencyPerUnit(economics.costPerTonKm, 'ton-km')}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="rounded-2xl border border-slate-200 bg-white/80 p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900/40">
+                                            <div className="flex items-start justify-between">
+                                                <div>
+                                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">Distance Mix</p>
+                                                    <p className="mt-1 text-sm font-semibold text-foreground">Network balance by tonnage flow</p>
+                                                </div>
+                                                <div className="text-right text-xs text-muted-foreground">
+                                                    <p>Loaded share: <span className="font-semibold text-foreground">{loadFactorLabel}</span></p>
+                                                    <p>Empty share: <span className="font-semibold text-foreground">{emptyShareLabel}</span></p>
+                                                </div>
+                                            </div>
+                                            <div className="mt-4 space-y-3">
+                                                <div>
+                                                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                                        <span>Loaded distance</span>
+                                                        <span className="font-semibold text-foreground">{loadedDistanceLabel}</span>
+                                                    </div>
+                                                    <div className="mt-1 h-2.5 w-full overflow-hidden rounded-full bg-muted">
+                                                        <div
+                                                            className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-emerald-500 transition-all"
+                                                            style={{ width: `${loadFactorBarWidth}%` }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                                        <span>Empty distance</span>
+                                                        <span className="font-semibold text-foreground">{emptyDistanceLabel}</span>
+                                                    </div>
+                                                    <div className="mt-1 h-2.5 w-full overflow-hidden rounded-full bg-muted">
+                                                        <div
+                                                            className="h-full rounded-full bg-gradient-to-r from-amber-400 to-rose-500 transition-all"
+                                                            style={{ width: `${emptyShareBarWidth}%` }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <p className="mt-4 text-xs text-muted-foreground">
+                                                Prioritise consolidating backhauls where empty ratios climb above industry benchmarks to protect tonne-km yield and margin.
+                                            </p>
                                         </div>
                                     </div>
                                 </CardContent>
