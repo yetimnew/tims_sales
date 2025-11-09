@@ -72,7 +72,9 @@ class OperationController extends Controller
             if ($closed === 'closed') {
                 $baseQuery->where('closed', true);
             } elseif ($closed === 'open') {
-                $baseQuery->where('closed', false);
+                $baseQuery->where(function ($query) {
+                    $query->where('closed', false)->orWhereNull('closed');
+                });
             }
         }
 
@@ -118,7 +120,9 @@ class OperationController extends Controller
             'active' => (clone $baseQuery)->where('status', 'active')->count(),
             'inactive' => (clone $baseQuery)->where('status', 'inactive')->count(),
             'closed' => (clone $baseQuery)->where('closed', true)->count(),
-            'open' => (clone $baseQuery)->where('closed', false)->count(),
+            'open' => (clone $baseQuery)->where(function ($query) {
+                $query->where('closed', false)->orWhereNull('closed');
+            })->count(),
         ];
 
         $statusOptions = Operation::query()
@@ -476,7 +480,9 @@ class OperationController extends Controller
             if ($closed === 'closed') {
                 $query->where('closed', true);
             } elseif ($closed === 'open') {
-                $query->where('closed', false);
+                $query->where(function ($query) {
+                    $query->where('closed', false)->orWhereNull('closed');
+                });
             }
         }
 
