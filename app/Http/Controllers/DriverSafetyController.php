@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Exception;
 use Spatie\Activitylog\Models\Activity;
 
@@ -21,39 +22,116 @@ class DriverSafetyController extends Controller
      */
     public function index(Request $request): Response
     {
-        $query = DriverSafetyRecord::with(['driver', 'reportedBy']);
+        $search = trim((string) $request->input('search'));
+        $incidentType = $request->input('incident_type');
+        $severity = $request->input('severity');
+        $driverId = $request->input('driver');
+        $sort = $request->input('sort', 'incident_date');
+        $direction = strtolower((string) $request->input('direction', 'desc'));
+        $perPageOptions = [15, 25, 50, 100];
+        $perPageDefault = 15;
+        $perPage = (int) $request->input('per_page', $perPageDefault);
 
-        // Handle search
-        if ($request->has('search') && !empty($request->input('search'))) {
-            $search = $request->input('search');
-            $query->where(function ($q) use ($search) {
-                $q->where('description', 'like', "%{$search}%")
+        if (!in_array($perPage, $perPageOptions, true)) {
+            $perPage = $perPageDefault;
+        }
+
+        if (!in_array($direction, ['asc', 'desc'], true)) {
+            $direction = 'desc';
+        }
+
+        $allowedSorts = ['incident_date', 'severity', 'incident_type', 'damage_cost', 'created_at'];
+        if (!in_array($sort, $allowedSorts, true)) {
+            $sort = 'incident_date';
+        }
+
+        $baseQuery = DriverSafetyRecord::query()->with(['driver', 'reportedBy']);
+
+        if ($search !== '') {
+            $baseQuery->where(function ($query) use ($search) {
+                $query->where('description', 'like', "%{$search}%")
                     ->orWhere('location', 'like', "%{$search}%")
                     ->orWhere('incident_type', 'like', "%{$search}%")
-                    ->orWhereHas('driver', function ($q) use ($search) {
-                        $q->where('name', 'like', "%{$search}%");
+                    ->orWhereHas('driver', function ($driverQuery) use ($search) {
+                        $driverQuery->where('name', 'like', "%{$search}%");
                     });
             });
         }
 
-        // Handle sorting
-        $sort = $request->input('sort', 'incident_date');
-        $direction = $request->input('direction', 'desc');
-
-        // Validate sort column to prevent SQL injection
-        $allowedSorts = ['incident_date', 'severity', 'incident_type', 'damage_cost', 'created_at'];
-        if (!in_array($sort, $allowedSorts)) {
-            $sort = 'incident_date';
+        if (!empty($incidentType) && $incidentType !== 'all') {
+            $baseQuery->where('incident_type', $incidentType);
         }
 
-        $query->orderBy($sort, $direction);
+        if (!empty($severity) && $severity !== 'all') {
+            $baseQuery->where('severity', $severity);
+        }
 
-        $safetyRecords = $query->paginate(15);
-        $statistics = $this->getSafetyStatistics();
+        if (!empty($driverId) && $driverId !== 'all') {
+            $baseQuery->where('driver_id', $driverId);
+        }
+
+        $safetyRecords = (clone $baseQuery)
+            ->orderBy($sort, $direction)
+            ->paginate($perPage)
+            ->withQueryString();
+
+        $metricsQuery = clone $baseQuery;
+
+        $metrics = [
+            'total' => (clone $metricsQuery)->count(),
+            'accidents' => (clone $metricsQuery)->where('incident_type', 'accident')->count(),
+            'violations' => (clone $metricsQuery)->where('incident_type', 'violation')->count(),
+            'warnings' => (clone $metricsQuery)->where('incident_type', 'warning')->count(),
+            'critical' => (clone $metricsQuery)->where('severity', 'critical')->count(),
+            'major' => (clone $metricsQuery)->where('severity', 'major')->count(),
+            'minor' => (clone $metricsQuery)->where('severity', 'minor')->count(),
+            'total_damage_cost' => (float) (clone $metricsQuery)->sum('damage_cost'),
+            'average_damage_cost' => (float) (clone $metricsQuery)->avg('damage_cost'),
+        ];
+
+        $incidentTypeOptions = DriverSafetyRecord::query()
+            ->select('incident_type')
+            ->distinct()
+            ->whereNotNull('incident_type')
+            ->orderBy('incident_type')
+            ->get()
+            ->map(static fn ($record) => [
+                'label' => Str::of($record->incident_type)->replace('_', ' ')->headline(),
+                'value' => $record->incident_type,
+            ])->values();
+
+        $severityOptions = DriverSafetyRecord::query()
+            ->select('severity')
+            ->distinct()
+            ->whereNotNull('severity')
+            ->orderBy('severity')
+            ->get()
+            ->map(static fn ($record) => [
+                'label' => Str::of($record->severity)->replace('_', ' ')->headline(),
+                'value' => $record->severity,
+            ])->values();
+
+        $driverOptions = Driver::query()
+            ->select('id', 'name')
+            ->orderBy('name')
+            ->get();
 
         return Inertia::render('DriverSafety/Index', [
             'safetyRecords' => $safetyRecords,
-            'statistics' => $statistics,
+            'metrics' => $metrics,
+            'filters' => [
+                'search' => $search !== '' ? $search : null,
+                'incident_type' => $incidentType ?: null,
+                'severity' => $severity ?: null,
+                'driver' => $driverId ?: null,
+                'sort' => $sort,
+                'direction' => $direction,
+                'per_page' => $perPage,
+            ],
+            'incidentTypeOptions' => $incidentTypeOptions,
+            'severityOptions' => $severityOptions,
+            'driverOptions' => $driverOptions,
+            'perPageOptions' => $perPageOptions,
         ]);
     }
 
@@ -251,19 +329,6 @@ class DriverSafetyController extends Controller
     /**
      * Get safety statistics.
      */
-    private function getSafetyStatistics()
-    {
-        return [
-            'total_records' => DriverSafetyRecord::count(),
-            'accidents' => DriverSafetyRecord::where('incident_type', 'accident')->count(),
-            'violations' => DriverSafetyRecord::where('incident_type', 'violation')->count(),
-            'warnings' => DriverSafetyRecord::where('incident_type', 'warning')->count(),
-            'critical_incidents' => DriverSafetyRecord::where('severity', 'critical')->count(),
-            'major_incidents' => DriverSafetyRecord::where('severity', 'major')->count(),
-            'minor_incidents' => DriverSafetyRecord::where('severity', 'minor')->count(),
-            'total_damage_cost' => DriverSafetyRecord::sum('damage_cost'),
-        ];
-    }
 }
 
 

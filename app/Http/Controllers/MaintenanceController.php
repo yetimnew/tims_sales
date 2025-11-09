@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 use Exception;
+use Illuminate\Support\Str;
 use Spatie\Activitylog\Models\Activity;
 
 class MaintenanceController extends Controller
@@ -29,40 +30,103 @@ class MaintenanceController extends Controller
      */
     public function index(Request $request): Response
     {
-        $query = VehicleMaintenanceRecord::with(['truck', 'maintenanceType', 'assignedMechanic']);
+        $search = trim((string) $request->input('search'));
+        $status = $request->input('status');
+        $maintenanceTypeId = $request->input('maintenance_type');
+        $sort = $request->input('sort', 'scheduled_date');
+        $direction = strtolower((string) $request->input('direction', 'desc'));
+        $perPageOptions = [15, 25, 50, 100];
+        $perPageDefault = 15;
+        $perPage = (int) $request->input('per_page', $perPageDefault);
 
-        // Handle search
-        if ($request->has('search') && !empty($request->input('search'))) {
-            $search = $request->input('search');
-            $query->where(function ($q) use ($search) {
-                $q->where('description', 'like', "%{$search}%")
-                    ->orWhereHas('truck', function ($q) use ($search) {
-                        $q->where('plate', 'like', "%{$search}%");
-                    })
-                    ->orWhereHas('maintenanceType', function ($q) use ($search) {
-                        $q->where('name', 'like', "%{$search}%");
-                    });
-            });
+        if (!in_array($perPage, $perPageOptions, true)) {
+            $perPage = $perPageDefault;
         }
 
-        // Handle sorting
-        $sort = $request->input('sort', 'scheduled_date');
-        $direction = $request->input('direction', 'desc');
+        if (!in_array($direction, ['asc', 'desc'], true)) {
+            $direction = 'desc';
+        }
 
-        // Validate sort column to prevent SQL injection
         $allowedSorts = ['scheduled_date', 'completed_date', 'cost', 'status', 'created_at'];
-        if (!in_array($sort, $allowedSorts)) {
+        if (!in_array($sort, $allowedSorts, true)) {
             $sort = 'scheduled_date';
         }
 
-        $query->orderBy($sort, $direction);
+        $baseQuery = VehicleMaintenanceRecord::query()->with(['truck', 'maintenanceType', 'assignedMechanic']);
 
-        $maintenanceRecords = $query->paginate(15);
-        $statistics = $this->maintenanceService->getMaintenanceStatistics();
+        if ($search !== '') {
+            $applySearch = static function ($query) use ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('description', 'like', "%{$search}%")
+                        ->orWhereHas('truck', function ($truckQuery) use ($search) {
+                            $truckQuery->where('plate', 'like', "%{$search}%");
+                        })
+                        ->orWhereHas('maintenanceType', function ($typeQuery) use ($search) {
+                            $typeQuery->where('name', 'like', "%{$search}%");
+                        })
+                        ->orWhereHas('assignedMechanic', function ($mechanicQuery) use ($search) {
+                            $mechanicQuery->where('name', 'like', "%{$search}%");
+                        });
+                });
+            };
+
+            $applySearch($baseQuery);
+        }
+
+        if (!empty($maintenanceTypeId)) {
+            $baseQuery->where('maintenance_type_id', $maintenanceTypeId);
+        }
+
+        if (!empty($status) && $status !== 'all') {
+            $baseQuery->where('status', $status);
+        }
+
+        $maintenanceRecords = (clone $baseQuery)
+            ->orderBy($sort, $direction)
+            ->paginate($perPage)
+            ->withQueryString();
+
+        $metricsQuery = clone $baseQuery;
+
+        $metrics = [
+            'total' => (clone $metricsQuery)->count(),
+            'scheduled' => (clone $metricsQuery)->where('status', 'scheduled')->count(),
+            'in_progress' => (clone $metricsQuery)->where('status', 'in_progress')->count(),
+            'completed' => (clone $metricsQuery)->where('status', 'completed')->count(),
+            'overdue' => (clone $metricsQuery)->where('status', 'overdue')->count(),
+            'total_cost' => (float) (clone $metricsQuery)->sum('cost'),
+            'average_cost' => (float) (clone $metricsQuery)->avg('cost'),
+        ];
+
+        $statusOptions = VehicleMaintenanceRecord::query()
+            ->select('status')
+            ->distinct()
+            ->whereNotNull('status')
+            ->orderBy('status')
+            ->get()
+            ->map(fn ($record) => [
+                'label' => Str::of($record->status)->replace('_', ' ')->headline(),
+                'value' => $record->status,
+            ])->values();
+
+        $maintenanceTypes = MaintenanceType::query()
+            ->orderBy('name')
+            ->get(['id', 'name']);
 
         return Inertia::render('Maintenance/Index', [
             'maintenanceRecords' => $maintenanceRecords,
-            'statistics' => $statistics,
+            'metrics' => $metrics,
+            'filters' => [
+                'search' => $search !== '' ? $search : null,
+                'status' => $status ?: null,
+                'maintenance_type' => $maintenanceTypeId ?: null,
+                'sort' => $sort,
+                'direction' => $direction,
+                'per_page' => $perPage,
+            ],
+            'statusOptions' => $statusOptions,
+            'maintenanceTypeOptions' => $maintenanceTypes,
+            'perPageOptions' => $perPageOptions,
         ]);
     }
 
@@ -71,7 +135,7 @@ class MaintenanceController extends Controller
      */
     public function export(Request $request)
     {
-        $query = VehicleMaintenanceRecord::with(['truck', 'maintenanceType']);
+        $query = VehicleMaintenanceRecord::with(['truck', 'maintenanceType', 'assignedMechanic']);
 
         // Apply search filter if provided
         if ($request->has('search') && !empty($request->input('search'))) {
@@ -83,8 +147,19 @@ class MaintenanceController extends Controller
                     })
                     ->orWhereHas('maintenanceType', function ($q) use ($search) {
                         $q->where('name', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('assignedMechanic', function ($mechanicQuery) use ($search) {
+                        $mechanicQuery->where('name', 'like', "%{$search}%");
                     });
             });
+        }
+
+        if ($request->filled('maintenance_type')) {
+            $query->where('maintenance_type_id', $request->input('maintenance_type'));
+        }
+
+        if ($request->filled('status') && $request->input('status') !== 'all') {
+            $query->where('status', $request->input('status'));
         }
 
         // Apply sorting if provided

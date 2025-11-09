@@ -14,6 +14,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Support\Facades\DB;
 use Exception;
+use Illuminate\Support\Str;
 use Spatie\Activitylog\Models\Activity;
 
 class FuelController extends Controller
@@ -23,41 +24,108 @@ class FuelController extends Controller
      */
     public function index(Request $request): Response
     {
-        $query = FuelRecord::with(['truck', 'driver', 'user']);
+        $search = trim((string) $request->input('search'));
+        $fuelType = $request->input('fuel_type');
+        $truckId = $request->input('truck');
+        $driverId = $request->input('driver');
+        $sort = $request->input('sort', 'fuel_date');
+        $direction = strtolower((string) $request->input('direction', 'desc'));
+        $perPageOptions = [15, 25, 50, 100];
+        $perPageDefault = 15;
+        $perPage = (int) $request->input('per_page', $perPageDefault);
 
-        // Handle search
-        if ($request->has('search') && !empty($request->input('search'))) {
-            $search = $request->input('search');
-            $query->where(function ($q) use ($search) {
-                $q->where('receipt_number', 'like', "%{$search}%")
+        if (!in_array($perPage, $perPageOptions, true)) {
+            $perPage = $perPageDefault;
+        }
+
+        if (!in_array($direction, ['asc', 'desc'], true)) {
+            $direction = 'desc';
+        }
+
+        $allowedSorts = ['fuel_date', 'fuel_quantity_liters', 'total_cost', 'fuel_type', 'fuel_price_per_liter', 'created_at'];
+        if (!in_array($sort, $allowedSorts, true)) {
+            $sort = 'fuel_date';
+        }
+
+        $baseQuery = FuelRecord::query()->with(['truck', 'driver', 'user']);
+
+        if ($search !== '') {
+            $baseQuery->where(function ($query) use ($search) {
+                $query->where('receipt_number', 'like', "%{$search}%")
                     ->orWhere('notes', 'like', "%{$search}%")
-                    ->orWhereHas('truck', function ($q) use ($search) {
-                        $q->where('plate', 'like', "%{$search}%");
+                    ->orWhereHas('truck', function ($truckQuery) use ($search) {
+                        $truckQuery->where('plate', 'like', "%{$search}%");
                     })
-                    ->orWhereHas('driver', function ($q) use ($search) {
-                        $q->where('name', 'like', "%{$search}%");
+                    ->orWhereHas('driver', function ($driverQuery) use ($search) {
+                        $driverQuery->where('name', 'like', "%{$search}%");
                     });
             });
         }
 
-        // Handle sorting
-        $sort = $request->input('sort', 'fuel_date');
-        $direction = $request->input('direction', 'desc');
-
-        // Validate sort column to prevent SQL injection
-        $allowedSorts = ['fuel_date', 'fuel_quantity_liters', 'total_cost', 'fuel_type', 'created_at'];
-        if (!in_array($sort, $allowedSorts)) {
-            $sort = 'fuel_date';
+        if (!empty($fuelType) && $fuelType !== 'all') {
+            $baseQuery->where('fuel_type', $fuelType);
         }
 
-        $query->orderBy($sort, $direction);
+        if (!empty($truckId)) {
+            $baseQuery->where('truck_id', $truckId);
+        }
 
-        $fuelRecords = $query->paginate(15);
-        $statistics = $this->getFuelStatistics();
+        if (!empty($driverId)) {
+            $baseQuery->where('driver_id', $driverId);
+        }
+
+        $fuelRecords = (clone $baseQuery)
+            ->orderBy($sort, $direction)
+            ->paginate($perPage)
+            ->withQueryString();
+
+        $metricsBase = clone $baseQuery;
+
+        $metrics = [
+            'total' => (clone $metricsBase)->count(),
+            'total_liters' => (float) (clone $metricsBase)->sum('fuel_quantity_liters'),
+            'total_cost' => (float) (clone $metricsBase)->sum('total_cost'),
+            'average_price_per_liter' => (float) (clone $metricsBase)->avg('fuel_price_per_liter'),
+            'diesel_count' => (clone $metricsBase)->where('fuel_type', 'diesel')->count(),
+            'petrol_count' => (clone $metricsBase)->where('fuel_type', 'petrol')->count(),
+            'gas_count' => (clone $metricsBase)->where('fuel_type', 'gas')->count(),
+        ];
+
+        $fuelTypeOptions = FuelRecord::query()
+            ->select('fuel_type')
+            ->distinct()
+            ->whereNotNull('fuel_type')
+            ->orderBy('fuel_type')
+            ->get()
+            ->map(fn ($record) => [
+                'label' => Str::headline($record->fuel_type),
+                'value' => $record->fuel_type,
+            ])->values();
+
+        $truckOptions = Truck::query()
+            ->orderBy('plate')
+            ->get(['id', 'plate']);
+
+        $driverOptions = Driver::query()
+            ->orderBy('name')
+            ->get(['id', 'name']);
 
         return Inertia::render('Fuel/Index', [
             'fuelRecords' => $fuelRecords,
-            'statistics' => $statistics,
+            'metrics' => $metrics,
+            'filters' => [
+                'search' => $search !== '' ? $search : null,
+                'fuel_type' => $fuelType ?: null,
+                'truck' => $truckId ?: null,
+                'driver' => $driverId ?: null,
+                'sort' => $sort,
+                'direction' => $direction,
+                'per_page' => $perPage,
+            ],
+            'fuelTypeOptions' => $fuelTypeOptions,
+            'truckOptions' => $truckOptions,
+            'driverOptions' => $driverOptions,
+            'perPageOptions' => $perPageOptions,
         ]);
     }
 
@@ -80,7 +148,7 @@ class FuelController extends Controller
      */
     public function export(Request $request)
     {
-        $query = FuelRecord::with(['truck', 'driver']);
+    $query = FuelRecord::with(['truck', 'driver']);
 
         // Apply search filter if provided
         if ($request->has('search') && !empty($request->input('search'))) {
@@ -95,6 +163,18 @@ class FuelController extends Controller
                         $q->where('name', 'like', "%{$search}%");
                     });
             });
+        }
+
+        if ($request->filled('fuel_type') && $request->input('fuel_type') !== 'all') {
+            $query->where('fuel_type', $request->input('fuel_type'));
+        }
+
+        if ($request->filled('truck')) {
+            $query->where('truck_id', $request->input('truck'));
+        }
+
+        if ($request->filled('driver')) {
+            $query->where('driver_id', $request->input('driver'));
         }
 
         // Apply sorting if provided
@@ -282,22 +362,6 @@ class FuelController extends Controller
                 'message' => 'Failed to generate fuel consumption analysis'
             ], 500);
         }
-    }
-
-    /**
-     * Get fuel statistics.
-     */
-    private function getFuelStatistics()
-    {
-        return [
-            'total_records' => FuelRecord::count(),
-            'total_fuel_consumed' => FuelRecord::sum('fuel_quantity_liters'),
-            'total_cost' => FuelRecord::sum('total_cost'),
-            'average_price_per_liter' => FuelRecord::avg('fuel_price_per_liter'),
-            'diesel_records' => FuelRecord::where('fuel_type', 'diesel')->count(),
-            'petrol_records' => FuelRecord::where('fuel_type', 'petrol')->count(),
-            'gas_records' => FuelRecord::where('fuel_type', 'gas')->count(),
-        ];
     }
 
     /**

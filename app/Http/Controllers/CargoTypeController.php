@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Exception;
 use Spatie\Activitylog\Models\Activity;
 
@@ -20,35 +21,90 @@ class CargoTypeController extends Controller
      */
     public function index(Request $request): Response
     {
-        $query = CargoType::query();
+        $search = trim((string) $request->input('search'));
+        $category = $request->input('category');
+        $requiresSpecialEquipment = $request->input('requires_special_equipment');
+        $sort = $request->input('sort', 'name');
+        $direction = strtolower((string) $request->input('direction', 'asc'));
+        $perPageOptions = [15, 25, 50, 100];
+        $perPageDefault = 15;
+        $perPage = (int) $request->input('per_page', $perPageDefault);
 
-        // Handle search
-        if ($request->has('search') && !empty($request->input('search'))) {
-            $search = $request->input('search');
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
+        if (!in_array($perPage, $perPageOptions, true)) {
+            $perPage = $perPageDefault;
+        }
+
+        if (!in_array($direction, ['asc', 'desc'], true)) {
+            $direction = 'asc';
+        }
+
+        $allowedSorts = ['name', 'category', 'weight_per_cubic_meter', 'requires_special_equipment', 'created_at'];
+        if (!in_array($sort, $allowedSorts, true)) {
+            $sort = 'name';
+        }
+
+        $baseQuery = CargoType::query();
+
+        if ($search !== '') {
+            $baseQuery->where(function ($query) use ($search) {
+                $query->where('name', 'like', "%{$search}%")
                     ->orWhere('category', 'like', "%{$search}%")
                     ->orWhere('handling_requirements', 'like', "%{$search}%")
                     ->orWhere('safety_requirements', 'like', "%{$search}%");
             });
         }
 
-        // Handle sorting
-        $sort = $request->input('sort', 'name');
-        $direction = $request->input('direction', 'asc');
-
-        // Validate sort column to prevent SQL injection
-        $allowedSorts = ['name', 'category', 'weight_per_cubic_meter', 'requires_special_equipment', 'created_at'];
-        if (!in_array($sort, $allowedSorts)) {
-            $sort = 'name';
+        if (!empty($category) && $category !== 'all') {
+            $baseQuery->where('category', $category);
         }
 
-        $query->orderBy($sort, $direction);
+        if ($requiresSpecialEquipment !== null && $requiresSpecialEquipment !== '' && $requiresSpecialEquipment !== 'all') {
+            if (in_array($requiresSpecialEquipment, ['1', 'true'], true)) {
+                $baseQuery->where('requires_special_equipment', true);
+            } elseif (in_array($requiresSpecialEquipment, ['0', 'false'], true)) {
+                $baseQuery->where('requires_special_equipment', false);
+            }
+        }
 
-        $cargoTypes = $query->paginate(15);
+        $cargoTypes = (clone $baseQuery)
+            ->orderBy($sort, $direction)
+            ->paginate($perPage)
+            ->withQueryString();
+
+        $metricsQuery = clone $baseQuery;
+
+        $metrics = [
+            'total' => (clone $metricsQuery)->count(),
+            'requires_special_equipment' => (clone $metricsQuery)->where('requires_special_equipment', true)->count(),
+            'without_special_equipment' => (clone $metricsQuery)->where('requires_special_equipment', false)->count(),
+            'average_weight' => (float) (clone $metricsQuery)->avg('weight_per_cubic_meter'),
+            'distinct_categories' => (clone $metricsQuery)->distinct('category')->count('category'),
+        ];
+
+        $categoryOptions = CargoType::query()
+            ->select('category')
+            ->distinct()
+            ->whereNotNull('category')
+            ->orderBy('category')
+            ->get()
+            ->map(static fn ($record) => [
+                'label' => Str::of($record->category)->replace('_', ' ')->headline(),
+                'value' => $record->category,
+            ])->values();
 
         return Inertia::render('CargoTypes/Index', [
             'cargoTypes' => $cargoTypes,
+            'metrics' => $metrics,
+            'filters' => [
+                'search' => $search !== '' ? $search : null,
+                'category' => $category ?: null,
+                'requires_special_equipment' => $requiresSpecialEquipment ?: null,
+                'sort' => $sort,
+                'direction' => $direction,
+                'per_page' => $perPage,
+            ],
+            'categoryOptions' => $categoryOptions,
+            'perPageOptions' => $perPageOptions,
         ]);
     }
 
@@ -221,9 +277,11 @@ class CargoTypeController extends Controller
     {
         $query = CargoType::query();
 
-        // Apply same search and sort as index
-        if ($request->has('search') && !empty($request->input('search'))) {
-            $search = $request->input('search');
+        $search = trim((string) $request->input('search'));
+        $category = $request->input('category');
+        $requiresSpecialEquipment = $request->input('requires_special_equipment');
+
+        if ($search !== '') {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                     ->orWhere('category', 'like', "%{$search}%")
@@ -232,12 +290,28 @@ class CargoTypeController extends Controller
             });
         }
 
+        if (!empty($category) && $category !== 'all') {
+            $query->where('category', $category);
+        }
+
+        if ($requiresSpecialEquipment !== null && $requiresSpecialEquipment !== '' && $requiresSpecialEquipment !== 'all') {
+            if (in_array($requiresSpecialEquipment, ['1', 'true'], true)) {
+                $query->where('requires_special_equipment', true);
+            } elseif (in_array($requiresSpecialEquipment, ['0', 'false'], true)) {
+                $query->where('requires_special_equipment', false);
+            }
+        }
+
         $sort = $request->input('sort', 'name');
-        $direction = $request->input('direction', 'asc');
+        $direction = strtolower((string) $request->input('direction', 'asc'));
 
         $allowedSorts = ['name', 'category', 'weight_per_cubic_meter', 'requires_special_equipment', 'created_at'];
-        if (!in_array($sort, $allowedSorts)) {
+        if (!in_array($sort, $allowedSorts, true)) {
             $sort = 'name';
+        }
+
+        if (!in_array($direction, ['asc', 'desc'], true)) {
+            $direction = 'asc';
         }
 
         $query->orderBy($sort, $direction);

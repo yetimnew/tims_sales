@@ -17,33 +17,77 @@ class VehicleTypeController extends Controller
      */
     public function index(Request $request): Response
     {
-        $query = VehicleType::query();
+        $search = trim((string) $request->input('search'));
+        $sort = $request->input('sort', 'name');
+        $direction = strtolower((string) $request->input('direction', 'asc'));
+        $perPageOptions = [15, 25, 50, 100];
+        $perPageDefault = 15;
+        $perPage = (int) $request->input('per_page', $perPageDefault);
 
-        // Handle search
-        if ($request->has('search') && !empty($request->input('search'))) {
-            $search = $request->input('search');
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
+        if (!in_array($perPage, $perPageOptions, true)) {
+            $perPage = $perPageDefault;
+        }
+
+        if (!in_array($direction, ['asc', 'desc'], true)) {
+            $direction = 'asc';
+        }
+
+        $allowedSorts = ['name', 'trucks_count', 'active_trucks_count', 'created_at'];
+        if (!in_array($sort, $allowedSorts, true)) {
+            $sort = 'name';
+        }
+
+        $baseQuery = VehicleType::query();
+
+        if ($search !== '') {
+            $baseQuery->where(function ($query) use ($search) {
+                $query->where('name', 'like', "%{$search}%")
                     ->orWhere('description', 'like', "%{$search}%");
             });
         }
 
-        // Handle sorting
-        $sort = $request->input('sort', 'name');
-        $direction = $request->input('direction', 'asc');
+        $listingQuery = (clone $baseQuery)->withCount([
+            'trucks',
+            'trucks as active_trucks_count' => fn ($query) => $query->where('status', 'active'),
+        ]);
 
-        // Validate sort column to prevent SQL injection
-        $allowedSorts = ['name', 'trucks_count', 'created_at'];
-        if (!in_array($sort, $allowedSorts)) {
-            $sort = 'name';
-        }
+        $vehicleTypes = $listingQuery
+            ->orderBy($sort, $direction)
+            ->paginate($perPage)
+            ->withQueryString();
 
-        $query->orderBy($sort, $direction);
+        $metricsBase = clone $baseQuery;
+        $totalTypes = (clone $metricsBase)->count();
+        $typesWithTrucks = (clone $metricsBase)->whereHas('trucks')->count();
+        $totalTrucks = (clone $metricsBase)
+            ->withCount('trucks')
+            ->get()
+            ->sum('trucks_count');
+        $activeTrucks = (clone $metricsBase)
+            ->withCount([
+                'trucks as active_trucks_count' => fn ($query) => $query->where('status', 'active'),
+            ])
+            ->get()
+            ->sum('active_trucks_count');
 
-        $vehicleTypes = $query->paginate(15);
+        $metrics = [
+            'total' => $totalTypes,
+            'with_trucks' => $typesWithTrucks,
+            'without_trucks' => max($totalTypes - $typesWithTrucks, 0),
+            'total_trucks' => $totalTrucks,
+            'active_trucks' => $activeTrucks,
+        ];
 
         return Inertia::render('VehicleTypes/Index', [
             'vehicleTypes' => $vehicleTypes,
+            'metrics' => $metrics,
+            'filters' => [
+                'search' => $search !== '' ? $search : null,
+                'sort' => $sort,
+                'direction' => $direction,
+                'per_page' => $perPage,
+            ],
+            'perPageOptions' => $perPageOptions,
         ]);
     }
 
@@ -52,7 +96,10 @@ class VehicleTypeController extends Controller
      */
     public function export(Request $request)
     {
-        $query = VehicleType::query();
+        $query = VehicleType::query()->withCount([
+            'trucks',
+            'trucks as active_trucks_count' => fn ($truckQuery) => $truckQuery->where('status', 'active'),
+        ]);
 
         // Apply search filter if provided
         if ($request->has('search') && !empty($request->input('search'))) {
@@ -66,7 +113,7 @@ class VehicleTypeController extends Controller
         // Apply sorting if provided
         $sort = $request->input('sort', 'name');
         $direction = $request->input('direction', 'asc');
-        $allowedSorts = ['name', 'trucks_count', 'created_at'];
+        $allowedSorts = ['name', 'trucks_count', 'active_trucks_count', 'created_at'];
         if (in_array($sort, $allowedSorts)) {
             $query->orderBy($sort, $direction);
         }
@@ -74,13 +121,14 @@ class VehicleTypeController extends Controller
         $vehicleTypes = $query->get();
 
         // Generate CSV
-        $csvData = "Name,Description,Trucks Count,Created Date\n";
+        $csvData = "Name,Description,Trucks Count,Active Trucks,Created Date\n";
         foreach ($vehicleTypes as $type) {
             $csvData .= sprintf(
-                '"%s","%s","%s","%s"' . "\n",
+                '"%s","%s","%s","%s","%s"' . "\n",
                 $type->name,
                 str_replace('"', '""', $type->description ?? ''),
                 $type->trucks_count,
+                $type->active_trucks_count,
                 $type->created_at
             );
         }

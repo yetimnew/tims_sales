@@ -10,6 +10,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Spatie\Activitylog\Models\Activity;
 use Exception;
 use Carbon\Carbon;
@@ -22,34 +23,65 @@ class OperationController extends Controller
      */
     public function index(Request $request): Response
     {
-        $query = Operation::with(['customer'])
+        $search = trim((string) $request->input('search'));
+        $status = $request->input('status');
+        $customerId = $request->input('customer');
+        $closed = $request->input('closed');
+        $sort = $request->input('sort', 'operationid');
+        $direction = strtolower((string) $request->input('direction', 'asc'));
+        $perPageOptions = [15, 25, 50, 100];
+        $perPageDefault = 15;
+        $perPage = (int) $request->input('per_page', $perPageDefault);
+
+        if (!in_array($perPage, $perPageOptions, true)) {
+            $perPage = $perPageDefault;
+        }
+
+        if (!in_array($direction, ['asc', 'desc'], true)) {
+            $direction = 'asc';
+        }
+
+        $allowedSorts = ['operationid', 'status', 'startdate', 'enddate', 'volume', 'km', 'tariff', 'closed', 'created_at'];
+        if (!in_array($sort, $allowedSorts, true)) {
+            $sort = 'operationid';
+        }
+
+        $baseQuery = Operation::query()
+            ->with(['customer'])
             ->withSum('performances as delivered_volume', 'CargoVolumMT');
 
-        // Handle search
-        if ($request->has('search') && !empty($request->input('search'))) {
-            $search = $request->input('search');
-            $query->where(function ($q) use ($search) {
-                $q->where('operationid', 'like', "%{$search}%")
+        if ($search !== '') {
+            $baseQuery->where(function ($query) use ($search) {
+                $query->where('operationid', 'like', "%{$search}%")
                     ->orWhere('remark', 'like', "%{$search}%")
-                    ->orWhereHas('customer', function ($q) use ($search) {
-                        $q->where('name', 'like', "%{$search}%");
+                    ->orWhereHas('customer', function ($customerQuery) use ($search) {
+                        $customerQuery->where('name', 'like', "%{$search}%");
                     });
             });
         }
 
-        // Handle sorting
-        $sort = $request->input('sort', 'operationid');
-        $direction = $request->input('direction', 'asc');
-
-        // Validate sort column to prevent SQL injection
-        $allowedSorts = ['operationid', 'status', 'startdate', 'enddate', 'volume', 'km', 'tariff', 'closed', 'created_at'];
-        if (!in_array($sort, $allowedSorts)) {
-            $sort = 'operationid';
+        if (!empty($status) && $status !== 'all') {
+            $baseQuery->where('status', $status);
         }
 
-        $query->orderBy($sort, $direction);
+        if (!empty($customerId) && $customerId !== 'all') {
+            $baseQuery->where('customer_id', $customerId);
+        }
 
-        $operations = $query->paginate(15)->through(function (Operation $operation) {
+        if (!empty($closed) && $closed !== 'all') {
+            if ($closed === 'closed') {
+                $baseQuery->where('closed', true);
+            } elseif ($closed === 'open') {
+                $baseQuery->where('closed', false);
+            }
+        }
+
+        $operationsPaginator = (clone $baseQuery)
+            ->orderBy($sort, $direction)
+            ->paginate($perPage)
+            ->withQueryString();
+
+        $operations = $operationsPaginator->through(function (Operation $operation) {
             $rawPlannedVolume = $operation->volume;
             $plannedVolume = $rawPlannedVolume !== null ? (float) $rawPlannedVolume : null;
             $deliveredVolume = (float) ($operation->delivered_volume ?? 0);
@@ -81,8 +113,45 @@ class OperationController extends Controller
             ];
         });
 
+        $metrics = [
+            'total' => (clone $baseQuery)->count(),
+            'active' => (clone $baseQuery)->where('status', 'active')->count(),
+            'inactive' => (clone $baseQuery)->where('status', 'inactive')->count(),
+            'closed' => (clone $baseQuery)->where('closed', true)->count(),
+            'open' => (clone $baseQuery)->where('closed', false)->count(),
+        ];
+
+        $statusOptions = Operation::query()
+            ->select('status')
+            ->distinct()
+            ->whereNotNull('status')
+            ->orderBy('status')
+            ->get()
+            ->map(static fn ($operation) => [
+                'label' => Str::of($operation->status)->headline(),
+                'value' => $operation->status,
+            ])->values();
+
+        $customerOptions = Customer::query()
+            ->select('id', 'name')
+            ->orderBy('name')
+            ->get();
+
         return Inertia::render('Operations/Index', [
             'operations' => $operations,
+            'metrics' => $metrics,
+            'filters' => [
+                'search' => $search !== '' ? $search : null,
+                'status' => $status ?: null,
+                'customer' => $customerId ?: null,
+                'closed' => $closed ?: null,
+                'sort' => $sort,
+                'direction' => $direction,
+                'per_page' => $perPage,
+            ],
+            'statusOptions' => $statusOptions,
+            'customerOptions' => $customerOptions,
+            'perPageOptions' => $perPageOptions,
             'totalCount' => $operations->total(),
         ]);
     }
@@ -380,24 +449,49 @@ class OperationController extends Controller
     {
         $query = Operation::with(['customer']);
 
-        // Apply same search and sort as index
-        if ($request->has('search') && !empty($request->input('search'))) {
-            $search = $request->input('search');
+        $search = trim((string) $request->input('search'));
+        $status = $request->input('status');
+        $customerId = $request->input('customer');
+        $closed = $request->input('closed');
+
+        if ($search !== '') {
             $query->where(function ($q) use ($search) {
                 $q->where('operationid', 'like', "%{$search}%")
                     ->orWhere('remark', 'like', "%{$search}%")
-                    ->orWhereHas('customer', function ($q) use ($search) {
-                        $q->where('name', 'like', "%{$search}%");
+                    ->orWhereHas('customer', function ($customerQuery) use ($search) {
+                        $customerQuery->where('name', 'like', "%{$search}%");
                     });
             });
         }
 
-        // Apply sorting
-        if ($request->has('sort')) {
-            $sort = $request->input('sort', 'operationid');
-            $direction = $request->input('direction', 'asc');
-            $query->orderBy($sort, $direction);
+        if (!empty($status) && $status !== 'all') {
+            $query->where('status', $status);
         }
+
+        if (!empty($customerId) && $customerId !== 'all') {
+            $query->where('customer_id', $customerId);
+        }
+
+        if (!empty($closed) && $closed !== 'all') {
+            if ($closed === 'closed') {
+                $query->where('closed', true);
+            } elseif ($closed === 'open') {
+                $query->where('closed', false);
+            }
+        }
+
+        $sort = $request->input('sort', 'operationid');
+        $direction = strtolower((string) $request->input('direction', 'asc'));
+        $allowedSorts = ['operationid', 'status', 'startdate', 'enddate', 'volume', 'km', 'tariff', 'closed', 'created_at'];
+        if (!in_array($sort, $allowedSorts, true)) {
+            $sort = 'operationid';
+        }
+
+        if (!in_array($direction, ['asc', 'desc'], true)) {
+            $direction = 'asc';
+        }
+
+        $query->orderBy($sort, $direction);
 
         $operations = $query->get();
 
