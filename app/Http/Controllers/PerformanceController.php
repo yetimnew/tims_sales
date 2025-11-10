@@ -15,6 +15,7 @@ use Exception;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Illuminate\Support\Str;
 
 class PerformanceController extends Controller
 {
@@ -23,8 +24,42 @@ class PerformanceController extends Controller
      */
     public function index(Request $request): Response
     {
-        // Keep the index query lean: select only fields needed for the table
-        $query = Performance::query()
+        $search = trim((string) $request->input('search'));
+        $status = $request->input('status');
+        $loadType = $request->input('load_type');
+        $sort = $request->input('sort', 'DateDispach');
+        $direction = strtolower((string) $request->input('direction', 'desc'));
+        $perPageOptions = [15, 25, 50, 100];
+        $perPageDefault = 15;
+        $perPage = (int) $request->input('per_page', $perPageDefault);
+
+        if (!in_array($perPage, $perPageOptions, true)) {
+            $perPage = $perPageDefault;
+        }
+
+        if (!in_array($direction, ['asc', 'desc'], true)) {
+            $direction = 'desc';
+        }
+
+        $allowedSorts = [
+            'trip',
+            'FOnumber',
+            'DateDispach',
+            'LoadType',
+            'satus',
+            'DistanceWCargo',
+            'DistanceWOCargo',
+            'CargoVolumMT',
+            'fuelInBirr',
+            'fuelInLitter',
+            'created_at',
+        ];
+
+        if (!in_array($sort, $allowedSorts, true)) {
+            $sort = 'DateDispach';
+        }
+
+        $baseQuery = Performance::query()
             ->select([
                 'id',
                 'trip',
@@ -33,37 +68,99 @@ class PerformanceController extends Controller
                 'LoadType',
                 'satus',
                 'DistanceWCargo',
+                'DistanceWOCargo',
+                'CargoVolumMT',
                 'fuelInBirr',
+                'fuelInLitter',
+                'created_at',
             ]);
 
-        // Handle search
-        if ($request->has('search') && !empty($request->input('search'))) {
-            $search = $request->input('search');
-            $query->where(function ($q) use ($search) {
-                $q->where('trip', 'like', "%{$search}%")
+        if ($search !== '') {
+            $baseQuery->where(function ($query) use ($search) {
+                $query->where('trip', 'like', "%{$search}%")
                     ->orWhere('FOnumber', 'like', "%{$search}%")
                     ->orWhere('comment', 'like', "%{$search}%");
             });
         }
 
-        // Handle sorting (default to most recent first)
-        $sort = $request->input('sort', 'DateDispach');
-        $direction = $request->input('direction', 'desc');
-
-        // Validate sort column to prevent SQL injection
-        $allowedSorts = ['trip', 'FOnumber', 'DateDispach', 'satus', 'DistanceWCargo', 'fuelInBirr', 'created_at'];
-        if (!in_array($sort, $allowedSorts)) {
-            $sort = 'trip';
+        if (!empty($status) && $status !== 'all') {
+            $baseQuery->where('satus', $status);
         }
 
-        $query->orderBy($sort, $direction);
+        if (!empty($loadType) && $loadType !== 'all') {
+            $baseQuery->where('LoadType', $loadType);
+        }
 
-        // Preserve the current query string when paginating
-        $performances = $query->paginate(15)->withQueryString();
+        $performancesPaginator = (clone $baseQuery)
+            ->orderBy($sort, $direction)
+            ->paginate($perPage)
+            ->withQueryString();
+
+        $performances = $performancesPaginator->through(function (Performance $performance) {
+            return [
+                'id' => $performance->id,
+                'trip' => $performance->trip,
+                'foNumber' => $performance->FOnumber,
+                'dispatchDate' => $performance->DateDispach,
+                'loadType' => $performance->LoadType,
+                'status' => $performance->satus,
+                'distanceWithCargo' => $performance->DistanceWCargo !== null ? (float) $performance->DistanceWCargo : null,
+                'distanceWithoutCargo' => $performance->DistanceWOCargo !== null ? (float) $performance->DistanceWOCargo : null,
+                'tonnage' => $performance->CargoVolumMT !== null ? (float) $performance->CargoVolumMT : null,
+                'fuelCost' => $performance->fuelInBirr !== null ? (float) $performance->fuelInBirr : null,
+                'fuelInLitter' => $performance->fuelInLitter !== null ? (float) $performance->fuelInLitter : null,
+                'createdAt' => $performance->created_at ? $performance->created_at->toDateTimeString() : null,
+            ];
+        });
+
+        $metricsQuery = clone $baseQuery;
+
+        $metrics = [
+            'total' => (clone $metricsQuery)->count(),
+            'active' => (clone $metricsQuery)->where('satus', 'active')->count(),
+            'completed' => (clone $metricsQuery)->where('satus', 'completed')->count(),
+            'failed' => (clone $metricsQuery)->where('satus', 'failed')->count(),
+        ];
+
+        $statusOptions = Performance::query()
+            ->select('satus')
+            ->distinct()
+            ->whereNotNull('satus')
+            ->orderBy('satus')
+            ->get()
+            ->map(static fn ($performance) => [
+                'label' => Str::of((string) $performance->satus)->replace('_', ' ')->headline(),
+                'value' => $performance->satus,
+            ])
+            ->values();
+
+        $loadTypeOptions = Performance::query()
+            ->select('LoadType')
+            ->distinct()
+            ->whereNotNull('LoadType')
+            ->orderBy('LoadType')
+            ->get()
+            ->map(static fn ($performance) => [
+                'label' => Str::of((string) $performance->LoadType)->headline(),
+                'value' => $performance->LoadType,
+            ])
+            ->values();
 
         return Inertia::render('Performances/Index', [
             'performances' => $performances,
-            'totalCount' => $performances->total(),
+            'metrics' => $metrics,
+            'filters' => [
+                'search' => $search !== '' ? $search : null,
+                'status' => $status ?: null,
+                'load_type' => $loadType ?: null,
+                'sort' => $sort,
+                'direction' => $direction,
+                'per_page' => $perPage,
+            ],
+            'statusOptions' => $statusOptions,
+            'loadTypeOptions' => $loadTypeOptions,
+            'perPageOptions' => $perPageOptions,
+            'totalCount' => $performancesPaginator->total(),
         ]);
     }
 
@@ -509,9 +606,8 @@ class PerformanceController extends Controller
             'operation.customer', 'driverTruck.driver', 'driverTruck.truck', 'origin', 'destination'
         ]);
 
-        // Apply same search and sort as index
-        if ($request->has('search') && !empty($request->input('search'))) {
-            $search = $request->input('search');
+        $search = trim((string) $request->input('search'));
+        if ($search !== '') {
             $query->where(function ($q) use ($search) {
                 $q->where('trip', 'like', "%{$search}%")
                     ->orWhere('FOnumber', 'like', "%{$search}%")
@@ -519,12 +615,41 @@ class PerformanceController extends Controller
             });
         }
 
-        // Apply sorting
-        if ($request->has('sort')) {
-            $sort = $request->input('sort', 'trip');
-            $direction = $request->input('direction', 'asc');
-            $query->orderBy($sort, $direction);
+        $status = $request->input('status');
+        if (!empty($status) && $status !== 'all') {
+            $query->where('satus', $status);
         }
+
+        $loadType = $request->input('load_type');
+        if (!empty($loadType) && $loadType !== 'all') {
+            $query->where('LoadType', $loadType);
+        }
+
+        $sort = $request->input('sort', 'DateDispach');
+        $direction = strtolower((string) $request->input('direction', 'desc'));
+        if (!in_array($direction, ['asc', 'desc'], true)) {
+            $direction = 'desc';
+        }
+
+        $allowedSorts = [
+            'trip',
+            'FOnumber',
+            'DateDispach',
+            'LoadType',
+            'satus',
+            'DistanceWCargo',
+            'DistanceWOCargo',
+            'CargoVolumMT',
+            'fuelInBirr',
+            'fuelInLitter',
+            'created_at',
+        ];
+
+        if (!in_array($sort, $allowedSorts, true)) {
+            $sort = 'DateDispach';
+        }
+
+        $query->orderBy($sort, $direction);
 
         $performances = $query->get();
 

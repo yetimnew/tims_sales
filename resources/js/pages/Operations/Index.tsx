@@ -82,7 +82,6 @@ interface OperationsIndexProps {
         search?: string | null
         status?: string | null
         customer?: string | number | null
-        closed?: string | null
         sort?: string | null
         direction?: 'asc' | 'desc' | null
         per_page?: number | null
@@ -110,12 +109,6 @@ const columns: ColumnConfig[] = [
     { key: 'volume', label: 'Volume (MT)', sortable: true, sortKey: 'volume' },
     { key: 'km', label: 'Distance (KM)', sortable: true, sortKey: 'km' },
     { key: 'tonnageProgress', label: 'Uplift Progress', sortable: false },
-]
-
-const closedFilterOptions: Array<{ label: string; value: string }> = [
-    { label: 'All operations', value: 'all' },
-    { label: 'Open operations', value: 'open' },
-    { label: 'Closed operations', value: 'closed' },
 ]
 
 const formatNumberValue = (value?: number | null, fractionDigits = 2) => {
@@ -181,7 +174,6 @@ export default function OperationsIndex({
     const [selectedCustomer, setSelectedCustomer] = React.useState(() =>
         filters?.customer ? String(filters.customer) : 'all'
     )
-    const [selectedClosedFilter, setSelectedClosedFilter] = React.useState(filters?.closed ?? 'all')
     const [sortColumn, setSortColumn] = React.useState<string>(filters?.sort ?? 'operationid')
     const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>(filters?.direction ?? 'asc')
     const availablePerPageOptions = React.useMemo(
@@ -228,7 +220,6 @@ export default function OperationsIndex({
             search?: string
             status?: string
             customer?: string
-            closed?: string
             sort?: string
             direction?: 'asc' | 'desc'
             page?: number
@@ -237,7 +228,6 @@ export default function OperationsIndex({
             const nextSearch = overrides.search !== undefined ? overrides.search : searchTerm.trim()
             const nextStatus = overrides.status !== undefined ? overrides.status : selectedStatus
             const nextCustomer = overrides.customer !== undefined ? overrides.customer : selectedCustomer
-            const nextClosed = overrides.closed !== undefined ? overrides.closed : selectedClosedFilter
             const nextSort = overrides.sort ?? sortColumn
             const nextDirection = overrides.direction ?? sortDirection
             const perPageValue = overrides.per_page !== undefined ? overrides.per_page : Number(perPage)
@@ -246,7 +236,6 @@ export default function OperationsIndex({
                 search: nextSearch ? nextSearch : undefined,
                 status: nextStatus !== 'all' ? nextStatus : undefined,
                 customer: nextCustomer !== 'all' ? nextCustomer : undefined,
-                closed: nextClosed !== 'all' ? nextClosed : undefined,
                 sort: nextSort,
                 direction: nextDirection,
                 page: overrides.page,
@@ -267,7 +256,7 @@ export default function OperationsIndex({
 
             router.get('/operations', params, { preserveState: true, preserveScroll: true, replace: false })
         },
-        [searchTerm, selectedStatus, selectedCustomer, selectedClosedFilter, sortColumn, sortDirection, perPage]
+    [searchTerm, selectedStatus, selectedCustomer, sortColumn, sortDirection, perPage]
     )
 
     const handleSearchChange = (value: string) => {
@@ -283,11 +272,6 @@ export default function OperationsIndex({
     const handleCustomerChange = (value: string) => {
         setSelectedCustomer(value)
         handleNavigate({ customer: value, page: 1 })
-    }
-
-    const handleClosedFilterChange = (value: string) => {
-        setSelectedClosedFilter(value)
-        handleNavigate({ closed: value, page: 1 })
     }
 
     const handlePerPageChange = (value: string) => {
@@ -363,15 +347,12 @@ export default function OperationsIndex({
         if (selectedCustomer !== 'all') {
             params.set('customer', selectedCustomer)
         }
-        if (selectedClosedFilter !== 'all') {
-            params.set('closed', selectedClosedFilter)
-        }
         params.set('sort', sortColumn)
         params.set('direction', sortDirection)
 
         const queryString = params.toString()
         window.location.href = queryString ? `/operations/export/csv?${queryString}` : '/operations/export/csv'
-    }, [searchTerm, selectedStatus, selectedCustomer, selectedClosedFilter, sortColumn, sortDirection])
+    }, [searchTerm, selectedStatus, selectedCustomer, sortColumn, sortDirection])
 
     const headerActions = (
         <>
@@ -443,8 +424,8 @@ export default function OperationsIndex({
     )
 
     const tableHeaderExtras = (
-        <div className="flex w-full flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div className="relative w-full max-w-xs">
+        <div className="flex flex-wrap items-center gap-2">
+            <div className="relative w-[260px] max-w-full">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                     placeholder="Search operations..."
@@ -453,47 +434,36 @@ export default function OperationsIndex({
                     className="pl-10"
                 />
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-                <Select value={selectedStatus} onValueChange={handleStatusChange}>
-                    <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">All statuses</SelectItem>
-                        {statusOptions.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                                {option.label}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-                <Select value={selectedCustomer} onValueChange={handleCustomerChange}>
-                    <SelectTrigger className="w-[220px]">
-                        <SelectValue placeholder="Customer" />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-72">
-                        <SelectItem value="all">All customers</SelectItem>
-                        {customerOptions.map((customer) => (
-                            <SelectItem key={customer.id} value={String(customer.id)}>
-                                {customer.name}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-                <Select value={selectedClosedFilter} onValueChange={handleClosedFilterChange}>
-                    <SelectTrigger className="w-[200px]">
-                        <SelectValue placeholder="Closed" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {closedFilterOptions.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                                {option.label}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
+            <Select value={selectedStatus} onValueChange={handleStatusChange}>
+                <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">All statuses</SelectItem>
+                    {statusOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                        </SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+            <Select value={selectedCustomer} onValueChange={handleCustomerChange}>
+                <SelectTrigger className="w-[220px]">
+                    <SelectValue placeholder="Customer" />
+                </SelectTrigger>
+                <SelectContent className="max-h-72">
+                    <SelectItem value="all">All customers</SelectItem>
+                    {customerOptions.map((customer) => (
+                        <SelectItem key={customer.id} value={String(customer.id)}>
+                            {customer.name}
+                        </SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+            <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                <span className="hidden sm:inline">Rows</span>
                 <Select value={perPage} onValueChange={handlePerPageChange}>
-                    <SelectTrigger className="w-[140px]">
+                    <SelectTrigger className="w-[110px]">
                         <SelectValue placeholder="Per page" />
                     </SelectTrigger>
                     <SelectContent>
