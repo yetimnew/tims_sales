@@ -483,7 +483,7 @@ export default function OperationsIndex({
             <TableHeader>
                 <TableRow className="sticky top-0 z-50 border-b bg-background">
                     {columns.map((column) => renderHeaderCell(column))}
-                    <TableHead className="bg-background text-right">Actions</TableHead>
+                    <TableHead className="bg-background text-center">Actions</TableHead>
                 </TableRow>
             </TableHeader>
             <TableBody>
@@ -493,8 +493,8 @@ export default function OperationsIndex({
                             {columns.map(({ key }) => (
                                 <TableCell key={key}>{renderCell(operation, key)}</TableCell>
                             ))}
-                            <TableCell className="text-right">
-                                <div className="flex justify-end gap-2">
+                            <TableCell className="text-center">
+                                <div className="flex justify-center gap-2">
                                     <Button asChild size="sm" variant="ghost">
                                         <Link href={`/operations/${operation.id}`}>
                                             <Eye className="h-4 w-4" />
@@ -511,6 +511,7 @@ export default function OperationsIndex({
                                         <Button
                                             size="sm"
                                             variant="ghost"
+                                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
                                             onClick={() => {
                                                 setSelectedOperation(operation)
                                                 setDeleteDialogOpen(true)

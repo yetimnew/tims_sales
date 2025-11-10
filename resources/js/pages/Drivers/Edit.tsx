@@ -129,7 +129,6 @@ export default function DriversEdit({ driver }: DriversEditProps) {
 
         if (errorMessages.length > 0) {
             toast({
-                id: 'validation-error',
                 title: '⚠️ Validation Error',
                 description: errorMessages.join(', '),
                 variant: 'destructive',
@@ -151,7 +150,6 @@ export default function DriversEdit({ driver }: DriversEditProps) {
         if (Object.keys(allErrors).length > 0) {
             setFrontendErrors(allErrors);
             toast({
-                id: 'form-validation-error',
                 title: '⚠️ Validation Error',
                 description: 'Please fix the validation errors before submitting',
                 variant: 'destructive',
@@ -362,7 +360,10 @@ export default function DriversEdit({ driver }: DriversEditProps) {
                                                 />
                                                 <div
                                                     className="absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer z-20"
-                                                    onClick={() => (document.getElementById('birthdate') as HTMLInputElement)?.showPicker()}
+                                                    onClick={() => {
+                                                        const input = document.getElementById('birthdate') as HTMLInputElement | null;
+                                                        input?.showPicker?.();
+                                                    }}
                                                 >
                                                     <Calendar className="h-4 w-4 text-slate-500 dark:text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors duration-200" />
                                                 </div>
@@ -386,7 +387,10 @@ export default function DriversEdit({ driver }: DriversEditProps) {
                                                 />
                                                 <div
                                                     className="absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer z-20"
-                                                    onClick={() => (document.getElementById('hireddate') as HTMLInputElement)?.showPicker()}
+                                                    onClick={() => {
+                                                        const input = document.getElementById('hireddate') as HTMLInputElement | null;
+                                                        input?.showPicker?.();
+                                                    }}
                                                 >
                                                     <Calendar className="h-4 w-4 text-slate-500 dark:text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors duration-200" />
                                                 </div>
@@ -475,9 +479,9 @@ export default function DriversEdit({ driver }: DriversEditProps) {
                             <div className="flex items-center justify-between pt-6 border-t border-slate-200 dark:border-slate-700 bg-gradient-to-r from-slate-50 to-blue-50 dark:from-slate-800 dark:to-blue-950/20 -mx-6 px-6 -mb-6 rounded-b-lg">
                                 <div className="flex items-center gap-4">
                                     <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-                                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                        <span className="text-red-500">*</span>
                                         <span>All required fields must be completed</span>
-                                </div>
+                                    </div>
                                     {isDirty && (
                                         <div className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400">
                                             <Save className="h-3 w-3" />

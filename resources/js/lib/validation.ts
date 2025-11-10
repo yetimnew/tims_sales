@@ -35,17 +35,11 @@ export const truckValidation = {
     return ''
   },
 
-  productionDate: (value: string) => {
-    if (!value) return ''
-    const date = new Date(value)
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    if (date > today) return 'Production date cannot be in the future'
+  productionDate: (_value: string) => {
     return ''
   },
 
-  serviceStartDate: (value: string) => {
-    if (!value) return ''
+  serviceStartDate: (_value: string) => {
     return ''
   },
 

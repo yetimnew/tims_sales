@@ -320,7 +320,10 @@ export default function TrucksEdit({ truck, vehicleTypes }: TrucksEditProps) {
                                                 />
                                                 <div
                                                     className="absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer z-20"
-                                                    onClick={() => document.getElementById('productionDate')?.showPicker()}
+                                                    onClick={() => {
+                                                        const input = document.getElementById('productionDate') as HTMLInputElement | null;
+                                                        input?.showPicker?.();
+                                                    }}
                                                 >
                                                     <Calendar className="h-4 w-4 text-slate-500 dark:text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors duration-200" />
                                                 </div>
@@ -344,7 +347,10 @@ export default function TrucksEdit({ truck, vehicleTypes }: TrucksEditProps) {
                                                 />
                                                 <div
                                                     className="absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer z-20"
-                                                    onClick={() => document.getElementById('serviceStartDate')?.showPicker()}
+                                                    onClick={() => {
+                                                        const input = document.getElementById('serviceStartDate') as HTMLInputElement | null;
+                                                        input?.showPicker?.();
+                                                    }}
                                                 >
                                                     <Calendar className="h-4 w-4 text-slate-500 dark:text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors duration-200" />
                                                 </div>
@@ -358,8 +364,9 @@ export default function TrucksEdit({ truck, vehicleTypes }: TrucksEditProps) {
                             </Tabs>
 
                             <div className="flex items-center justify-between pt-6 border-t bg-muted/30 -mx-6 px-6 -mb-6">
-                                <div className="text-sm text-muted-foreground">
-                                    All required fields must be completed
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                    <span className="text-red-500">*</span>
+                                    <span>All required fields must be completed</span>
                                 </div>
                                 <div className="flex gap-3">
                                     <Button type="button" variant="outline" asChild className="hover:bg-muted">
