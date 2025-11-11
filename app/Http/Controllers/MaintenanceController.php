@@ -14,6 +14,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Exception;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 use Spatie\Activitylog\Models\Activity;
 
 class MaintenanceController extends Controller
@@ -23,6 +24,73 @@ class MaintenanceController extends Controller
     public function __construct(MaintenanceService $maintenanceService)
     {
         $this->maintenanceService = $maintenanceService;
+    }
+
+    /**
+     * Display high-level maintenance overview metrics.
+     */
+    public function overview(): Response
+    {
+        $statistics = $this->maintenanceService->getMaintenanceStatistics();
+
+        $recentMaintenance = VehicleMaintenanceRecord::with(['truck', 'maintenanceType'])
+            ->orderByDesc('scheduled_date')
+            ->limit(6)
+            ->get()
+            ->map(fn (VehicleMaintenanceRecord $record) => $this->transformMaintenanceRecord($record))
+            ->values();
+
+        $upcomingMaintenance = $this->maintenanceService->getUpcomingMaintenance(14)
+            ->take(6)
+            ->map(fn (VehicleMaintenanceRecord $record) => $this->transformMaintenanceRecord($record))
+            ->values();
+
+        $overdueMaintenance = $this->maintenanceService->getOverdueMaintenance()
+            ->take(6)
+            ->map(fn (VehicleMaintenanceRecord $record) => $this->transformMaintenanceRecord($record))
+            ->values();
+
+        $costByType = VehicleMaintenanceRecord::select(
+                'maintenance_type_id',
+                DB::raw('COUNT(*) as total_records'),
+                DB::raw('SUM(cost) as total_cost')
+            )
+            ->groupBy('maintenance_type_id')
+            ->with('maintenanceType:id,name')
+            ->orderByDesc(DB::raw('SUM(cost)'))
+            ->limit(6)
+            ->get()
+            ->map(function ($row) {
+                return [
+                    'maintenance_type' => [
+                        'id' => $row->maintenanceType->id ?? null,
+                        'name' => $row->maintenanceType->name ?? 'Unknown',
+                    ],
+                    'total_records' => (int) $row->total_records,
+                    'total_cost' => $row->total_cost ? (float) $row->total_cost : 0.0,
+                ];
+            })
+            ->values();
+
+        $statusBreakdown = VehicleMaintenanceRecord::select('status', DB::raw('COUNT(*) as total'))
+            ->groupBy('status')
+            ->orderBy('status')
+            ->get()
+            ->map(fn ($row) => [
+                'status' => $row->status,
+                'total' => (int) $row->total,
+            ])
+            ->values();
+
+        return Inertia::render('Maintenance/Overview', [
+            'statistics' => $statistics,
+            'recentMaintenance' => $recentMaintenance,
+            'upcomingMaintenance' => $upcomingMaintenance,
+            'overdueMaintenance' => $overdueMaintenance,
+            'costByType' => $costByType,
+            'statusBreakdown' => $statusBreakdown,
+            'timeWindowDays' => 14,
+        ]);
     }
 
     /**
@@ -127,6 +195,40 @@ class MaintenanceController extends Controller
             'statusOptions' => $statusOptions,
             'maintenanceTypeOptions' => $maintenanceTypes,
             'perPageOptions' => $perPageOptions,
+        ]);
+    }
+
+    /**
+     * Display alert center for upcoming and overdue maintenance.
+     */
+    public function alerts(Request $request): Response
+    {
+        $days = (int) $request->input('days', 7);
+        if ($days < 1) {
+            $days = 1;
+        }
+        if ($days > 60) {
+            $days = 60;
+        }
+
+        $overdue = $this->maintenanceService->getOverdueMaintenance()
+            ->map(fn (VehicleMaintenanceRecord $record) => $this->transformMaintenanceRecord($record))
+            ->values();
+
+        $upcoming = $this->maintenanceService->getUpcomingMaintenance($days)
+            ->map(fn (VehicleMaintenanceRecord $record) => $this->transformMaintenanceRecord($record))
+            ->values();
+
+        return Inertia::render('Maintenance/Alerts', [
+            'overdueMaintenance' => $overdue,
+            'upcomingMaintenance' => $upcoming,
+            'filters' => [
+                'days' => $days,
+            ],
+            'summary' => [
+                'total_overdue' => $overdue->count(),
+                'total_upcoming' => $upcoming->count(),
+            ],
         ]);
     }
 
@@ -360,6 +462,36 @@ class MaintenanceController extends Controller
                 'message' => 'Failed to retrieve upcoming maintenance'
             ], 500);
         }
+    }
+
+    /**
+     * Normalize maintenance record payloads for the frontend.
+     */
+    protected function transformMaintenanceRecord(VehicleMaintenanceRecord $record): array
+    {
+        return [
+            'id' => $record->id,
+            'truck' => [
+                'id' => optional($record->truck)->id,
+                'plate' => optional($record->truck)->plate,
+            ],
+            'maintenance_type' => [
+                'id' => optional($record->maintenanceType)->id,
+                'name' => optional($record->maintenanceType)->name,
+            ],
+            'scheduled_date' => optional($record->scheduled_date)->toDateString(),
+            'completed_date' => optional($record->completed_date)->toDateString(),
+            'status' => $record->status,
+            'cost' => $record->cost ? (float) $record->cost : null,
+            'odometer_reading' => $record->odometer_reading,
+            'description' => $record->description,
+            'assigned_mechanic' => [
+                'id' => optional($record->assignedMechanic)->id,
+                'name' => optional($record->assignedMechanic)->name,
+            ],
+            'days_until_scheduled' => method_exists($record, 'getDaysUntilScheduledAttribute') ? $record->days_until_scheduled : null,
+            'is_overdue' => method_exists($record, 'getIsOverdueAttribute') ? (bool) $record->is_overdue : false,
+        ];
     }
 }
 

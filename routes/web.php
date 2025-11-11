@@ -214,6 +214,14 @@ Route::middleware(['auth'])->group(function () {
 
     // Maintenance Management
     Route::middleware(['throttle:60,1'])->group(function () {
+        Route::get('maintenance-overview', [\App\Http\Controllers\MaintenanceController::class, 'overview'])
+            ->middleware('can:maintenance.view')
+            ->name('maintenance.overview');
+
+        Route::get('maintenance/alerts', [\App\Http\Controllers\MaintenanceController::class, 'alerts'])
+            ->middleware('can:maintenance.view')
+            ->name('maintenance.alerts');
+
         Route::get('maintenance/export/csv', [\App\Http\Controllers\MaintenanceController::class, 'export'])
             ->middleware('can:maintenance.export')
             ->name('maintenance.export');
@@ -257,6 +265,57 @@ Route::middleware(['auth'])->group(function () {
         Route::post('maintenance/{maintenance}/complete', [\App\Http\Controllers\MaintenanceController::class, 'complete'])
             ->middleware('can:maintenance.update')
             ->name('maintenance.complete');
+    });
+
+    // Maintenance Type Management
+    Route::middleware(['throttle:60,1'])->group(function () {
+        Route::get('maintenance-types/export/csv', [\App\Http\Controllers\MaintenanceTypeController::class, 'export'])
+            ->middleware('can:maintenance-types.export')
+            ->name('maintenance-types.export');
+
+        Route::delete('maintenance-types/bulk-delete', [\App\Http\Controllers\MaintenanceTypeController::class, 'bulkDelete'])
+            ->middleware('can:maintenance-types.destroy')
+            ->name('maintenance-types.bulk-delete');
+
+        Route::patch('maintenance-types/bulk-activate', [\App\Http\Controllers\MaintenanceTypeController::class, 'bulkActivate'])
+            ->middleware('can:maintenance-types.update')
+            ->name('maintenance-types.bulk-activate');
+
+        Route::patch('maintenance-types/bulk-deactivate', [\App\Http\Controllers\MaintenanceTypeController::class, 'bulkDeactivate'])
+            ->middleware('can:maintenance-types.update')
+            ->name('maintenance-types.bulk-deactivate');
+
+        Route::get('maintenance-types', [\App\Http\Controllers\MaintenanceTypeController::class, 'index'])
+            ->middleware('can:maintenance-types.view')
+            ->name('maintenance-types.index');
+
+        Route::get('maintenance-types/create', [\App\Http\Controllers\MaintenanceTypeController::class, 'create'])
+            ->middleware('can:maintenance-types.create')
+            ->name('maintenance-types.create');
+
+        Route::post('maintenance-types', [\App\Http\Controllers\MaintenanceTypeController::class, 'store'])
+            ->middleware('can:maintenance-types.store')
+            ->name('maintenance-types.store');
+
+        Route::get('maintenance-types/{maintenanceType}', [\App\Http\Controllers\MaintenanceTypeController::class, 'show'])
+            ->whereNumber('maintenanceType')
+            ->middleware('can:maintenance-types.show')
+            ->name('maintenance-types.show');
+
+        Route::get('maintenance-types/{maintenanceType}/edit', [\App\Http\Controllers\MaintenanceTypeController::class, 'edit'])
+            ->whereNumber('maintenanceType')
+            ->middleware('can:maintenance-types.edit')
+            ->name('maintenance-types.edit');
+
+        Route::put('maintenance-types/{maintenanceType}', [\App\Http\Controllers\MaintenanceTypeController::class, 'update'])
+            ->whereNumber('maintenanceType')
+            ->middleware('can:maintenance-types.update')
+            ->name('maintenance-types.update');
+
+        Route::delete('maintenance-types/{maintenanceType}', [\App\Http\Controllers\MaintenanceTypeController::class, 'destroy'])
+            ->whereNumber('maintenanceType')
+            ->middleware('can:maintenance-types.destroy')
+            ->name('maintenance-types.destroy');
     });
 
     // Fuel Management

@@ -1,17 +1,18 @@
-import React, { useState } from 'react';
+import { FormEventHandler, useEffect, useMemo, useRef, useState } from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
+import { type BreadcrumbItem } from '@/types';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Label } from '@/components/ui/label';
-import { CircleAlert, Settings, Save, HelpCircle, ArrowLeft, CheckCircle, FileText, DollarSign, Calendar, Edit } from 'lucide-react';
-import { BreadcrumbItem } from '@/types';
+import { AlertCircle, ArrowUp, BadgeCheck, Calendar, ClipboardEdit, DollarSign, Info, Settings, SlidersHorizontal } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
+import { validateMaintenanceType, type ValidationErrors } from '@/lib/validation';
 
-interface MaintenanceType {
+type MaintenanceTypeResource = {
     id: number;
     name: string;
     category: string;
@@ -22,360 +23,418 @@ interface MaintenanceType {
     is_active: boolean;
     created_at: string;
     updated_at: string;
-}
+};
 
-interface MaintenanceTypesEditProps {
-    maintenanceType: MaintenanceType;
-    errors?: Record<string, string>;
-}
+type MaintenanceTypeFormData = {
+    name: string;
+    category: string;
+    interval_km: string;
+    interval_months: string;
+    estimated_cost: string;
+    description: string;
+    is_active: boolean;
+};
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Maintenance Types',
-        href: '/maintenance-types',
-    },
-    {
-        title: 'Edit',
-        href: `/maintenance-types/${maintenanceType.id}/edit`,
-    },
-];
+type MaintenanceTypesEditProps = {
+    maintenanceType: MaintenanceTypeResource;
+};
 
-export default function MaintenanceTypesEdit({ maintenanceType, errors }: MaintenanceTypesEditProps) {
-    const { data, setData, put, processing, errors: formErrors, hasErrors } = useForm({
-        name: maintenanceType.name,
-        category: maintenanceType.category,
-        interval_km: maintenanceType.interval_km?.toString() || '',
-        interval_months: maintenanceType.interval_months?.toString() || '',
-        estimated_cost: maintenanceType.estimated_cost?.toString() || '',
-        description: maintenanceType.description || '',
-        is_active: maintenanceType.is_active,
-    });
+const categoryOptions = ['Preventive', 'Corrective', 'Emergency'] as const;
 
-    const [allErrors, setAllErrors] = useState<Record<string, string>>({});
+const formatDate = (value: string) => {
+    try {
+        return new Intl.DateTimeFormat(undefined, {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+        }).format(new Date(value));
+    } catch (error) {
+        return value;
+    }
+};
 
-    React.useEffect(() => {
-        if (errors) {
-            setAllErrors(errors);
+export default function MaintenanceTypesEdit({ maintenanceType }: MaintenanceTypesEditProps) {
+    const breadcrumbs: BreadcrumbItem[] = useMemo(
+        () => [
+            { title: 'Maintenance Types', href: '/maintenance-types' },
+            { title: maintenanceType.name, href: `/maintenance-types/${maintenanceType.id}` },
+            { title: 'Edit', href: `/maintenance-types/${maintenanceType.id}/edit` },
+        ],
+        [maintenanceType.id, maintenanceType.name],
+    );
+
+    const initialFormData: MaintenanceTypeFormData = {
+        name: maintenanceType.name ?? '',
+        category: maintenanceType.category ?? '',
+        interval_km: maintenanceType.interval_km ? String(maintenanceType.interval_km) : '',
+        interval_months: maintenanceType.interval_months ? String(maintenanceType.interval_months) : '',
+        estimated_cost: maintenanceType.estimated_cost ? String(maintenanceType.estimated_cost) : '',
+        description: maintenanceType.description ?? '',
+        is_active: Boolean(maintenanceType.is_active),
+    };
+
+    const { data, setData, put, processing, errors } = useForm<MaintenanceTypeFormData>(initialFormData);
+    const initialDataRef = useRef(initialFormData);
+
+    const [frontendErrors, setFrontendErrors] = useState<ValidationErrors>({});
+    const [isDirty, setIsDirty] = useState(false);
+    const [showScrollTop, setShowScrollTop] = useState(false);
+    const scrollContainerRef = useRef<HTMLFormElement | null>(null);
+
+    useEffect(() => {
+        const backendMessages = Object.values(errors).filter((message): message is string => Boolean(message));
+        if (backendMessages.length) {
+            toast({
+                title: '⚠️ Validation Error',
+                description: backendMessages.join(', '),
+                variant: 'destructive',
+            });
+            setFrontendErrors(prev => ({ ...prev, ...errors }));
         }
     }, [errors]);
 
-    const handleFieldChange = (field: string, value: any) => {
-        setData(field, value);
-        if (allErrors[field]) {
-            const newErrors = { ...allErrors };
-            delete newErrors[field];
-            setAllErrors(newErrors);
-        }
+    useEffect(() => {
+        const container = scrollContainerRef.current;
+        if (!container) return;
+        const handleScroll = () => setShowScrollTop(container.scrollTop > 240);
+        handleScroll();
+        container.addEventListener('scroll', handleScroll);
+        return () => container.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    const syncValidation = (draft: MaintenanceTypeFormData) => {
+        const nextErrors = validateMaintenanceType(draft);
+        setFrontendErrors(nextErrors);
     };
 
-    const validateMaintenanceType = () => {
-        const newErrors: Record<string, string> = {};
-
-        if (!data.name.trim()) {
-            newErrors.name = 'Maintenance type name is required';
+    const sanitizeValue = <K extends keyof MaintenanceTypeFormData>(field: K, value: MaintenanceTypeFormData[K] | string): MaintenanceTypeFormData[K] => {
+        if (typeof value !== 'string') {
+            return value as MaintenanceTypeFormData[K];
         }
-
-        if (!data.category) {
-            newErrors.category = 'Category is required';
+        let sanitized = value;
+        if (field === 'interval_km' || field === 'interval_months') {
+            sanitized = value.replace(/[^0-9]/g, '');
+        } else if (field === 'estimated_cost') {
+            sanitized = value.replace(/[^0-9.]/g, '');
         }
-
-        if (data.interval_km && (isNaN(Number(data.interval_km)) || Number(data.interval_km) <= 0)) {
-            newErrors.interval_km = 'Interval KM must be a positive number';
-        }
-
-        if (data.interval_months && (isNaN(Number(data.interval_months)) || Number(data.interval_months) <= 0)) {
-            newErrors.interval_months = 'Interval months must be a positive number';
-        }
-
-        if (data.estimated_cost && (isNaN(Number(data.estimated_cost)) || Number(data.estimated_cost) < 0)) {
-            newErrors.estimated_cost = 'Estimated cost must be a non-negative number';
-        }
-
-        setAllErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
+        return sanitized as MaintenanceTypeFormData[K];
     };
 
-    const submit = (e: React.FormEvent) => {
-        e.preventDefault();
+    const evaluateDirty = (draft: MaintenanceTypeFormData) => {
+        return (Object.keys(draft) as Array<keyof MaintenanceTypeFormData>).some(key => draft[key] !== initialDataRef.current[key]);
+    };
 
-        if (!validateMaintenanceType()) {
+    const handleFieldChange = <K extends keyof MaintenanceTypeFormData>(field: K, value: MaintenanceTypeFormData[K] | string) => {
+        const sanitized = sanitizeValue(field, value);
+        setData(field, sanitized as any);
+        const draft = { ...data, [field]: sanitized } as MaintenanceTypeFormData;
+        syncValidation(draft);
+        setIsDirty(evaluateDirty(draft));
+    };
+
+    const submit: FormEventHandler = event => {
+        event.preventDefault();
+        const allErrors = validateMaintenanceType(data);
+        if (Object.keys(allErrors).length) {
+            setFrontendErrors(allErrors);
+            toast({
+                title: '⚠️ Validation Error',
+                description: 'Please resolve the highlighted fields before saving.',
+                variant: 'destructive',
+            });
             return;
         }
 
-        put(`/maintenance-types/${maintenanceType.id}`);
+        put(`/maintenance-types/${maintenanceType.id}`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                toast({
+                    title: 'Maintenance Type Updated',
+                    description: `${data.name} has been updated successfully.`,
+                });
+                initialDataRef.current = { ...data };
+                setFrontendErrors({});
+                setIsDirty(false);
+            },
+            onError: serverErrors => {
+                setFrontendErrors(prev => ({ ...prev, ...serverErrors }));
+            },
+        });
+    };
+
+    const getFieldError = (field: keyof MaintenanceTypeFormData) => {
+        const frontendError = frontendErrors[field];
+        const backendError = errors[field];
+        return (typeof frontendError === 'string' && frontendError) || (typeof backendError === 'string' && backendError) || '';
+    };
+
+    const hasErrors = Object.values(frontendErrors).some(Boolean) || Object.values(errors).some(Boolean);
+
+    const handleScrollToTop = () => {
+        scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`Edit ${maintenanceType.name}`} />
             <div className="flex h-full flex-1 flex-col gap-6 overflow-hidden rounded-xl p-4">
-                {/* Enhanced Professional Header */}
-                <div className="bg-gradient-to-r from-slate-50 to-blue-50 dark:from-slate-900 dark:to-blue-950/20 rounded-lg p-6 border border-slate-200 dark:border-slate-700">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => window.history.back()}
-                                className="flex items-center gap-2 hover:bg-slate-100 dark:hover:bg-slate-800 border-slate-300 dark:border-slate-600"
-                            >
-                                <ArrowLeft className="h-4 w-4" />
-                                Back to Maintenance Type
-                            </Button>
-                            <div className="flex items-center gap-4">
-                                <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
-                                    <Edit className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                <Card className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200/70 bg-white/95 text-card-foreground shadow-xl backdrop-blur-lg dark:border-slate-800/60 dark:bg-slate-900/70">
+                    <CardHeader className="px-6 pb-0">
+                        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                            <div className="flex items-start gap-4">
+                                <div className="rounded-xl bg-orange-100 p-2 text-orange-600 shadow-sm dark:bg-orange-900/30 dark:text-orange-400">
+                                    <ClipboardEdit className="h-5 w-5" />
                                 </div>
                                 <div>
-                                    <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Edit Maintenance Type</h1>
-                                    <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Update information for "{maintenanceType.name}"</p>
+                                    <CardTitle className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Edit Maintenance Type</CardTitle>
+                                    <CardDescription className="text-sm text-slate-600 dark:text-slate-400">
+                                        Keep maintenance categories aligned with the updated backend rules.
+                                    </CardDescription>
+                                </div>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-3">
+                                {isDirty && (
+                                    <div className="flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1.5 text-sm font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
+                                        <SlidersHorizontal className="h-3 w-3" />
+                                        Unsaved Changes
+                                    </div>
+                                )}
+                                <div className="flex items-center gap-2 rounded-full bg-sky-100 px-3 py-1.5 text-sm font-medium text-sky-700 dark:bg-sky-900/40 dark:text-sky-400">
+                                    <div className="h-2 w-2 animate-pulse rounded-full bg-sky-500"></div>
+                                    Last updated {formatDate(maintenanceType.updated_at)}
                                 </div>
                             </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                            <div className="flex items-center gap-2 px-3 py-1.5 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 rounded-full text-sm font-medium">
-                                <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
-                                Editing Mode
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {hasErrors && (
-                    <Alert variant="destructive" className="border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/20">
-                        <CircleAlert className="h-4 w-4" />
-                        <AlertDescription className="text-red-800 dark:text-red-200">
-                            Please fix the errors below before submitting the form
-                        </AlertDescription>
-                    </Alert>
-                )}
-
-                {/* Form */}
-                <Card className="shadow-lg border-0 bg-gradient-to-br from-background to-muted/20">
-                    <CardHeader className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20 border-b">
-                        <CardTitle className="flex items-center gap-2 text-xl">
-                            <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-                                <Edit className="h-5 w-5 text-orange-600 dark:text-orange-400" />
-                            </div>
-                            Update Maintenance Type Information
-                        </CardTitle>
-                        <CardDescription className="text-base">
-                            Modify the details for this maintenance type in your fleet management system
-                        </CardDescription>
                     </CardHeader>
-                    <CardContent className="p-6">
-                        <form onSubmit={submit} className="space-y-8">
-                            {/* Name Field */}
-                            <div className="space-y-4">
-                                <div className="rounded-lg bg-slate-50 dark:bg-slate-800/50 p-4 border border-slate-200 dark:border-slate-700">
-                                    <div className="flex items-center gap-3 mb-3">
-                                        <div className="p-1.5 bg-slate-100 dark:bg-slate-900/30 rounded-lg">
-                                            <Settings className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+
+                    <CardContent className="flex flex-1 flex-col overflow-hidden p-0">
+                        <form
+                            ref={scrollContainerRef}
+                            onSubmit={submit}
+                            className="flex flex-1 flex-col gap-8 overflow-y-auto p-6 pb-24"
+                            style={{ minHeight: 0 }}
+                            noValidate
+                        >
+                            <section className="space-y-5 rounded-xl border border-slate-200/70 bg-white/80 p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/40">
+                                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="rounded-lg bg-orange-100 p-2 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400">
+                                            <Info className="h-4 w-4" />
                                         </div>
                                         <div>
-                                            <Label htmlFor="name" className="text-sm font-medium text-slate-700 dark:text-slate-300">Maintenance Type Name *</Label>
-                                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Required field - must be unique</p>
+                                            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Maintenance Type Details</h2>
+                                            <p className="text-sm text-muted-foreground">Update the essentials and optional scheduling hints.</p>
                                         </div>
                                     </div>
-                                    <Input
-                                        id="name"
-                                        type="text"
-                                        value={data.name}
-                                        onChange={(e) => handleFieldChange('name', e.target.value)}
-                                        placeholder="e.g., Oil Change, Brake Service, Engine Overhaul"
-                                        className={`transition-colors focus:ring-2 focus:ring-orange-500 ${allErrors.name ? 'border-red-500 focus:ring-red-500' : ''}`}
-                                    />
-                                    {allErrors.name && (
-                                        <div className="flex items-center gap-2 mt-2 text-red-600 dark:text-red-400">
-                                            <CircleAlert className="h-4 w-4" />
-                                            <p className="text-sm">{allErrors.name}</p>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Category Field */}
-                            <div className="space-y-4">
-                                <div className="rounded-lg bg-slate-50 dark:bg-slate-800/50 p-4 border border-slate-200 dark:border-slate-700">
-                                    <div className="flex items-center gap-3 mb-3">
-                                        <div className="p-1.5 bg-slate-100 dark:bg-slate-900/30 rounded-lg">
-                                            <CheckCircle className="h-4 w-4 text-slate-600 dark:text-slate-400" />
-                                        </div>
-                                        <div>
-                                            <Label htmlFor="category" className="text-sm font-medium text-slate-700 dark:text-slate-300">Category *</Label>
-                                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Select the type of maintenance activity</p>
-                                        </div>
+                                    <div className="flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1.5 text-sm font-medium text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400">
+                                        <BadgeCheck className="h-4 w-4" />
+                                        {data.is_active ? 'Active' : 'Inactive'}
                                     </div>
-                                    <Select value={data.category} onValueChange={(value) => handleFieldChange('category', value)}>
-                                        <SelectTrigger className={`transition-colors focus:ring-2 focus:ring-orange-500 ${allErrors.category ? 'border-red-500 focus:ring-red-500' : ''}`}>
-                                            <SelectValue placeholder="Select a category" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="Preventive">Preventive</SelectItem>
-                                            <SelectItem value="Corrective">Corrective</SelectItem>
-                                            <SelectItem value="Emergency">Emergency</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                    {allErrors.category && (
-                                        <div className="flex items-center gap-2 mt-2 text-red-600 dark:text-red-400">
-                                            <CircleAlert className="h-4 w-4" />
-                                            <p className="text-sm">{allErrors.category}</p>
-                                        </div>
-                                    )}
                                 </div>
-                            </div>
 
-                            {/* Intervals */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {/* Interval KM */}
-                                <div className="space-y-4">
-                                    <div className="rounded-lg bg-slate-50 dark:bg-slate-800/50 p-4 border border-slate-200 dark:border-slate-700">
-                                        <div className="flex items-center gap-3 mb-3">
-                                            <div className="p-1.5 bg-slate-100 dark:bg-slate-900/30 rounded-lg">
-                                                <Settings className="h-4 w-4 text-slate-600 dark:text-slate-400" />
-                                            </div>
-                                            <div>
-                                                <Label htmlFor="interval_km" className="text-sm font-medium text-slate-700 dark:text-slate-300">Interval KM</Label>
-                                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Optional - distance-based maintenance interval</p>
-                                            </div>
-                                        </div>
+                                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="name" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                            <span className="text-red-500">*</span> Name
+                                        </Label>
+                                        <Input
+                                            id="name"
+                                            type="text"
+                                            value={data.name}
+                                            onChange={event => handleFieldChange('name', event.target.value)}
+                                            placeholder="e.g. Oil Change, Brake Inspection"
+                                            className={`transition-all duration-200 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 focus:ring-orange-500/20 focus:border-orange-500 ${getFieldError('name') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}
+                                        />
+                                        {getFieldError('name') && (
+                                            <p className="flex items-center gap-1 text-sm text-red-500">
+                                                <AlertCircle className="h-3 w-3" />
+                                                {getFieldError('name')}
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="category" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                            <span className="text-red-500">*</span> Category
+                                        </Label>
+                                        <Select
+                                            value={data.category}
+                                            onValueChange={value => handleFieldChange('category', value)}
+                                        >
+                                            <SelectTrigger className={`transition-all duration-200 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 focus:ring-orange-500/20 focus:border-orange-500 ${getFieldError('category') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}>
+                                                <SelectValue placeholder="Select category" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {categoryOptions.map(option => (
+                                                    <SelectItem key={option} value={option}>
+                                                        {option}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        {getFieldError('category') && (
+                                            <p className="flex items-center gap-1 text-sm text-red-500">
+                                                <AlertCircle className="h-3 w-3" />
+                                                {getFieldError('category')}
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="interval_km" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                            Interval (KM)
+                                        </Label>
                                         <Input
                                             id="interval_km"
-                                            type="number"
+                                            inputMode="numeric"
                                             value={data.interval_km}
-                                            onChange={(e) => handleFieldChange('interval_km', e.target.value)}
-                                            placeholder="e.g., 5000"
-                                            min="1"
-                                            className={`transition-colors focus:ring-2 focus:ring-orange-500 ${allErrors.interval_km ? 'border-red-500 focus:ring-red-500' : ''}`}
+                                            onChange={event => handleFieldChange('interval_km', event.target.value)}
+                                            placeholder="e.g. 5000"
+                                            className={`transition-all duration-200 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 focus:ring-orange-500/20 focus:border-orange-500 ${getFieldError('interval_km') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}
                                         />
-                                        {allErrors.interval_km && (
-                                            <div className="flex items-center gap-2 mt-2 text-red-600 dark:text-red-400">
-                                                <CircleAlert className="h-4 w-4" />
-                                                <p className="text-sm">{allErrors.interval_km}</p>
-                                            </div>
+                                        {getFieldError('interval_km') && (
+                                            <p className="flex items-center gap-1 text-sm text-red-500">
+                                                <AlertCircle className="h-3 w-3" />
+                                                {getFieldError('interval_km')}
+                                            </p>
                                         )}
                                     </div>
-                                </div>
 
-                                {/* Interval Months */}
-                                <div className="space-y-4">
-                                    <div className="rounded-lg bg-slate-50 dark:bg-slate-800/50 p-4 border border-slate-200 dark:border-slate-700">
-                                        <div className="flex items-center gap-3 mb-3">
-                                            <div className="p-1.5 bg-slate-100 dark:bg-slate-900/30 rounded-lg">
-                                                <Calendar className="h-4 w-4 text-slate-600 dark:text-slate-400" />
-                                            </div>
-                                            <div>
-                                                <Label htmlFor="interval_months" className="text-sm font-medium text-slate-700 dark:text-slate-300">Interval Months</Label>
-                                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Optional - time-based maintenance interval</p>
-                                            </div>
-                                        </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="interval_months" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                            Interval (Months)
+                                        </Label>
                                         <Input
                                             id="interval_months"
-                                            type="number"
+                                            inputMode="numeric"
                                             value={data.interval_months}
-                                            onChange={(e) => handleFieldChange('interval_months', e.target.value)}
-                                            placeholder="e.g., 6"
-                                            min="1"
-                                            className={`transition-colors focus:ring-2 focus:ring-orange-500 ${allErrors.interval_months ? 'border-red-500 focus:ring-red-500' : ''}`}
+                                            onChange={event => handleFieldChange('interval_months', event.target.value)}
+                                            placeholder="e.g. 6"
+                                            className={`transition-all duration-200 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 focus:ring-orange-500/20 focus:border-orange-500 ${getFieldError('interval_months') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}
                                         />
-                                        {allErrors.interval_months && (
-                                            <div className="flex items-center gap-2 mt-2 text-red-600 dark:text-red-400">
-                                                <CircleAlert className="h-4 w-4" />
-                                                <p className="text-sm">{allErrors.interval_months}</p>
-                                            </div>
+                                        {getFieldError('interval_months') && (
+                                            <p className="flex items-center gap-1 text-sm text-red-500">
+                                                <AlertCircle className="h-3 w-3" />
+                                                {getFieldError('interval_months')}
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="estimated_cost" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                            Estimated Cost
+                                        </Label>
+                                        <Input
+                                            id="estimated_cost"
+                                            inputMode="decimal"
+                                            value={data.estimated_cost}
+                                            onChange={event => handleFieldChange('estimated_cost', event.target.value)}
+                                            placeholder="e.g. 150.00"
+                                            className={`transition-all duration-200 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 focus:ring-orange-500/20 focus:border-orange-500 ${getFieldError('estimated_cost') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}
+                                        />
+                                        {getFieldError('estimated_cost') && (
+                                            <p className="flex items-center gap-1 text-sm text-red-500">
+                                                <AlertCircle className="h-3 w-3" />
+                                                {getFieldError('estimated_cost')}
+                                            </p>
                                         )}
                                     </div>
                                 </div>
-                            </div>
 
-                            {/* Estimated Cost */}
-                            <div className="space-y-4">
-                                <div className="rounded-lg bg-slate-50 dark:bg-slate-800/50 p-4 border border-slate-200 dark:border-slate-700">
-                                    <div className="flex items-center gap-3 mb-3">
-                                        <div className="p-1.5 bg-slate-100 dark:bg-slate-900/30 rounded-lg">
-                                            <DollarSign className="h-4 w-4 text-slate-600 dark:text-slate-400" />
-                                        </div>
-                                        <div>
-                                            <Label htmlFor="estimated_cost" className="text-sm font-medium text-slate-700 dark:text-slate-300">Estimated Cost</Label>
-                                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Optional - average cost for this maintenance type</p>
-                                        </div>
+                                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="description" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                            Description
+                                        </Label>
+                                        <Textarea
+                                            id="description"
+                                            value={data.description}
+                                            onChange={event => handleFieldChange('description', event.target.value)}
+                                            placeholder="Add procedure highlights and parts covered."
+                                            rows={4}
+                                            className={`resize-none transition-all duration-200 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 focus:ring-orange-500/20 focus:border-orange-500 ${getFieldError('description') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}
+                                        />
+                                        {getFieldError('description') && (
+                                            <p className="flex items-center gap-1 text-sm text-red-500">
+                                                <AlertCircle className="h-3 w-3" />
+                                                {getFieldError('description')}
+                                            </p>
+                                        )}
                                     </div>
-                                    <Input
-                                        id="estimated_cost"
-                                        type="number"
-                                        value={data.estimated_cost}
-                                        onChange={(e) => handleFieldChange('estimated_cost', e.target.value)}
-                                        placeholder="e.g., 150.00"
-                                        min="0"
-                                        step="0.01"
-                                        className={`transition-colors focus:ring-2 focus:ring-orange-500 ${allErrors.estimated_cost ? 'border-red-500 focus:ring-red-500' : ''}`}
-                                    />
-                                    {allErrors.estimated_cost && (
-                                        <div className="flex items-center gap-2 mt-2 text-red-600 dark:text-red-400">
-                                            <CircleAlert className="h-4 w-4" />
-                                            <p className="text-sm">{allErrors.estimated_cost}</p>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
 
-                            {/* Description Field */}
-                            <div className="space-y-4">
-                                <div className="rounded-lg bg-slate-50 dark:bg-slate-800/50 p-4 border border-slate-200 dark:border-slate-700">
-                                    <div className="flex items-center gap-3 mb-3">
-                                        <div className="p-1.5 bg-slate-100 dark:bg-slate-900/30 rounded-lg">
-                                            <FileText className="h-4 w-4 text-slate-600 dark:text-slate-400" />
-                                        </div>
-                                        <div>
-                                            <Label htmlFor="description" className="text-sm font-medium text-slate-700 dark:text-slate-300">Description</Label>
-                                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Optional - provide additional details about this maintenance type</p>
-                                        </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="is_active" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                            Status
+                                        </Label>
+                                        <Select
+                                            value={String(data.is_active)}
+                                            onValueChange={value => handleFieldChange('is_active', value === 'true')}
+                                        >
+                                            <SelectTrigger className={`transition-all duration-200 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 focus:ring-orange-500/20 focus:border-orange-500 ${getFieldError('is_active') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}>
+                                                <SelectValue placeholder="Select status" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="true">Active</SelectItem>
+                                                <SelectItem value="false">Inactive</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        {getFieldError('is_active') && (
+                                            <p className="flex items-center gap-1 text-sm text-red-500">
+                                                <AlertCircle className="h-3 w-3" />
+                                                {getFieldError('is_active')}
+                                            </p>
+                                        )}
                                     </div>
-                                    <Textarea
-                                        id="description"
-                                        value={data.description}
-                                        onChange={(e) => handleFieldChange('description', e.target.value)}
-                                        placeholder="Describe the maintenance procedure, parts involved, or special requirements..."
-                                        rows={4}
-                                        className={`transition-colors focus:ring-2 focus:ring-orange-500 ${allErrors.description ? 'border-red-500 focus:ring-red-500' : ''}`}
-                                    />
-                                    {allErrors.description && (
-                                        <div className="flex items-center gap-2 mt-2 text-red-600 dark:text-red-400">
-                                            <CircleAlert className="h-4 w-4" />
-                                            <p className="text-sm">{allErrors.description}</p>
-                                        </div>
-                                    )}
                                 </div>
-                            </div>
+                            </section>
 
-                            {/* Action Buttons */}
-                            <div className="flex items-center justify-between pt-6 border-t border-slate-200 dark:border-slate-700">
-                                <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-                                    <HelpCircle className="h-4 w-4" />
-                                    <span>Fields marked with * are required</span>
+                            <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-slate-200/70 bg-white/80 px-6 py-5 shadow-sm dark:border-slate-800 dark:bg-slate-900/40">
+                                <div className="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-400">
+                                    <Settings className="h-4 w-4" />
+                                    <span>Fields marked with <span className="text-red-500">*</span> are required.</span>
                                 </div>
                                 <div className="flex gap-3">
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        onClick={() => window.history.back()}
-                                        className="hover:bg-slate-50 hover:border-slate-300"
-                                    >
-                                        Cancel
+                                    <Button type="button" variant="outline" asChild className="border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700">
+                                        <Link href="/maintenance-types">Cancel</Link>
                                     </Button>
                                     <Button
                                         type="submit"
-                                        disabled={processing || hasErrors}
-                                        className="bg-orange-600 hover:bg-orange-700 text-white px-6"
+                                        disabled={processing || hasErrors || !isDirty}
+                                        className="min-w-[170px] bg-gradient-to-r from-orange-500 to-orange-600 px-6 text-white shadow-lg transition-all duration-200 hover:from-orange-600 hover:to-orange-700 hover:shadow-xl disabled:opacity-60"
                                     >
-                                        <Save className="mr-2 h-4 w-4" />
-                                        {processing ? 'Updating...' : 'Update Maintenance Type'}
+                                        {processing ? (
+                                            <>
+                                                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white"></div>
+                                                Saving...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <ArrowUp className="mr-2 h-4 w-4 rotate-90" />
+                                                Update Maintenance Type
+                                            </>
+                                        )}
                                     </Button>
                                 </div>
                             </div>
                         </form>
                     </CardContent>
                 </Card>
+
+                {showScrollTop && (
+                    <Button
+                        type="button"
+                        onClick={handleScrollToTop}
+                        className="fixed bottom-6 right-6 z-50 shadow-lg"
+                        variant="secondary"
+                        aria-label="Scroll to top"
+                    >
+                        <ArrowUp className="h-4 w-4" />
+                    </Button>
+                )}
             </div>
         </AppLayout>
     );

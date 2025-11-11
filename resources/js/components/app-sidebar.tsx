@@ -34,7 +34,10 @@ import {
     DollarSign,
     Wrench,
     Fuel,
-    Package
+    Package,
+    ClipboardCheck,
+    LineChart,
+    AlertTriangle
 } from 'lucide-react';
 import AppLogo from './app-logo';
 
@@ -52,7 +55,7 @@ const getMainNavItems = (): NavItem[] => {
             {
                 title: 'Fleet Management',
                 icon: Truck,
-                isActive: currentUrl.startsWith('/trucks') || currentUrl.startsWith('/drivers') || currentUrl.startsWith('/driver-trucks') || currentUrl.startsWith('/vehicletypes') || currentUrl.startsWith('/maintenance') || currentUrl.startsWith('/fuel') || currentUrl.startsWith('/driver-performance') || currentUrl.startsWith('/driver-safety') || currentUrl.startsWith('/cargo-types') || currentUrl.startsWith('/truck-status-board'),
+                isActive: currentUrl.startsWith('/trucks') || currentUrl.startsWith('/drivers') || currentUrl.startsWith('/driver-trucks') || currentUrl.startsWith('/vehicletypes') || currentUrl.startsWith('/fuel') || currentUrl.startsWith('/driver-performance') || currentUrl.startsWith('/driver-safety') || currentUrl.startsWith('/cargo-types') || currentUrl.startsWith('/truck-status-board'),
                 items: [
                     {
                         title: 'Trucks',
@@ -75,11 +78,6 @@ const getMainNavItems = (): NavItem[] => {
                         icon: Settings,
                     },
                     {
-                        title: 'Maintenance',
-                        href: '/maintenance',
-                        icon: Wrench,
-                    },
-                    {
                         title: 'Fuel Records',
                         href: '/fuel',
                         icon: Fuel,
@@ -93,6 +91,33 @@ const getMainNavItems = (): NavItem[] => {
                         title: 'Cargo Types',
                         href: '/cargo-types',
                         icon: Package,
+                    },
+                ],
+            },
+            {
+                title: 'Maintenance',
+                icon: Wrench,
+                isActive: currentUrl.startsWith('/maintenance') || currentUrl.startsWith('/maintenance-overview') || currentUrl.startsWith('/maintenance-types'),
+                items: [
+                    {
+                        title: 'Maintenance Records',
+                        href: '/maintenance',
+                        icon: ClipboardCheck,
+                    },
+                    {
+                        title: 'Overview',
+                        href: '/maintenance-overview',
+                        icon: LineChart,
+                    },
+                    {
+                        title: 'Maintenance Types',
+                        href: '/maintenance-types',
+                        icon: Settings,
+                    },
+                    {
+                        title: 'Overdue & Alerts',
+                        href: '/maintenance/alerts',
+                        icon: AlertTriangle,
                     },
                 ],
             },

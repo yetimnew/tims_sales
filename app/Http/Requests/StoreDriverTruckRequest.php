@@ -27,7 +27,7 @@ class StoreDriverTruckRequest extends FormRequest
             'truck_id' => [
                 'required',
                 'exists:trucks,id',
-                Rule::exists('trucks')->where(function ($query) {
+                Rule::exists('trucks', 'id')->where(function ($query) {
                     $query->where('status', 'active');
                 }),
                 function ($attribute, $value, $fail) {
@@ -45,7 +45,7 @@ class StoreDriverTruckRequest extends FormRequest
             'driver_id' => [
                 'required',
                 'exists:drivers,id',
-                Rule::exists('drivers')->where(function ($query) {
+                Rule::exists('drivers', 'id')->where(function ($query) {
                     $query->where('status', 'active');
                 }),
                 function ($attribute, $value, $fail) {

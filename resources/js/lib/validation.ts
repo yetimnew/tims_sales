@@ -60,13 +60,20 @@ export const driverValidation = {
 
   driverid: (value: string) => {
     if (!value) return 'Driver ID is required'
-    if (value.length < 3) return 'Driver ID must be at least 3 characters'
+    if (value.length > 255) return 'Driver ID cannot exceed 255 characters'
+    return ''
+  },
+
+  sex: (value: string) => {
+    if (!value) return 'Gender is required'
+    if (!['male', 'female'].includes(value)) return 'Invalid gender selection'
     return ''
   },
 
   mobile: (value: string) => {
     if (!value) return ''
-    const phoneRegex = /^[0-9\s\-\+\(\)]{7,}$/
+    if (value.length > 20) return 'Mobile number cannot exceed 20 characters'
+    const phoneRegex = /^[0-9\s\-\+\(\)]+$/
     if (!phoneRegex.test(value)) return 'Invalid phone number format'
     return ''
   },
@@ -74,15 +81,61 @@ export const driverValidation = {
   hireddate: (value: string) => {
     if (!value) return ''
     const date = new Date(value)
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    if (date > today) return 'Hired date cannot be in the future'
+    if (Number.isNaN(date.getTime())) return 'Hired date must be a valid date'
+    const todayStr = new Date().toISOString().slice(0, 10)
+    if (value > todayStr) return 'Hired date cannot be in the future'
+    return ''
+  },
+
+  birthdate: (value: string) => {
+    if (!value) return ''
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return 'Birth date must be a valid date'
+    const todayStr = new Date().toISOString().slice(0, 10)
+    if (value >= todayStr) return 'Birth date must be before today'
+    if (value <= '1900-01-01') return 'Birth date must be after January 1, 1900'
+    return ''
+  },
+
+  optionalText: (value: string, label: string) => {
+    if (!value) return ''
+    if (value.length > 255) return `${label} cannot exceed 255 characters`
     return ''
   },
 
   status: (value: string) => {
     if (!value) return 'Status is required'
     if (!['active', 'inactive'].includes(value)) return 'Invalid status'
+    return ''
+  },
+}
+
+export const driverTruckValidation = {
+  truck_id: (value: string | number) => {
+    if (!value) return 'Truck selection is required'
+    return ''
+  },
+
+  driver_id: (value: string | number) => {
+    if (!value) return 'Driver selection is required'
+    return ''
+  },
+
+  date_recived: (value: string) => {
+    if (!value) return 'Assignment date is required'
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return 'Assignment date must be a valid date'
+
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const target = new Date(value)
+    target.setHours(0, 0, 0, 0)
+    if (target > today) return 'Assignment date cannot be in the future'
+
+    const minDate = new Date(today)
+    minDate.setDate(today.getDate() - 30)
+    if (target < minDate) return 'Assignment date cannot be more than 30 days in the past'
+
     return ''
   },
 }
@@ -119,6 +172,63 @@ export const maintenanceValidation = {
     if (isNaN(num)) return 'Cost must be a number'
     if (num < 0) return 'Cost cannot be negative'
     return ''
+  },
+}
+
+export const maintenanceTypeValidation = {
+  name: (value: string) => {
+    if (!value) return 'Maintenance type name is required'
+    if (value.trim().length < 2) return 'Name must be at least 2 characters'
+    if (value.length > 255) return 'Name cannot exceed 255 characters'
+    return ''
+  },
+
+  category: (value: string) => {
+    if (!value) return 'Category is required'
+    if (!['Preventive', 'Corrective', 'Emergency'].includes(value)) return 'Invalid category'
+    return ''
+  },
+
+  interval_km: (value: string) => {
+    if (!value) return ''
+    const num = Number(value)
+    if (!Number.isFinite(num)) return 'Interval KM must be a number'
+    if (!Number.isInteger(num)) return 'Interval KM must be a whole number'
+    if (num <= 0) return 'Interval KM must be greater than zero'
+    if (num > 1000000) return 'Interval KM is too large'
+    return ''
+  },
+
+  interval_months: (value: string) => {
+    if (!value) return ''
+    const num = Number(value)
+    if (!Number.isFinite(num)) return 'Interval months must be a number'
+    if (!Number.isInteger(num)) return 'Interval months must be a whole number'
+    if (num <= 0) return 'Interval months must be greater than zero'
+    if (num > 240) return 'Interval months is too large'
+    return ''
+  },
+
+  estimated_cost: (value: string) => {
+    if (!value) return ''
+    const num = Number(value)
+    if (!Number.isFinite(num)) return 'Estimated cost must be a number'
+    if (num < 0) return 'Estimated cost cannot be negative'
+    if (num > 1000000000) return 'Estimated cost is too large'
+    return ''
+  },
+
+  description: (value: string) => {
+    if (!value) return ''
+    if (value.length > 1000) return 'Description cannot exceed 1,000 characters'
+    return ''
+  },
+
+  is_active: (value: boolean | string) => {
+    if (value === '' || value === undefined || value === null) return 'Status selection is required'
+    if (typeof value === 'boolean') return ''
+    if (value === 'true' || value === 'false') return ''
+    return 'Invalid status selection'
   },
 }
 
@@ -646,9 +756,24 @@ export function validateDriver(data: any): ValidationErrors {
   const errors: ValidationErrors = {}
   errors.name = driverValidation.name(data.name)
   errors.driverid = driverValidation.driverid(data.driverid)
+  errors.sex = driverValidation.sex(data.sex)
   errors.status = driverValidation.status(data.status)
   if (data.mobile) errors.mobile = driverValidation.mobile(data.mobile)
   if (data.hireddate) errors.hireddate = driverValidation.hireddate(data.hireddate)
+  if (data.birthdate) errors.birthdate = driverValidation.birthdate(data.birthdate)
+  if (data.zone) errors.zone = driverValidation.optionalText(data.zone, 'Zone')
+  if (data.woreda) errors.woreda = driverValidation.optionalText(data.woreda, 'Woreda')
+  if (data.kebele) errors.kebele = driverValidation.optionalText(data.kebele, 'Kebele')
+  if (data.housenumber) errors.housenumber = driverValidation.optionalText(data.housenumber, 'House number')
+  Object.keys(errors).forEach(key => { if (!errors[key]) delete errors[key] })
+  return errors
+}
+
+export function validateDriverTruck(data: any): ValidationErrors {
+  const errors: ValidationErrors = {}
+  errors.truck_id = driverTruckValidation.truck_id(data.truck_id)
+  errors.driver_id = driverTruckValidation.driver_id(data.driver_id)
+  errors.date_recived = driverTruckValidation.date_recived(data.date_recived)
   Object.keys(errors).forEach(key => { if (!errors[key]) delete errors[key] })
   return errors
 }
@@ -660,6 +785,19 @@ export function validateMaintenance(data: any): ValidationErrors {
   errors.scheduled_date = maintenanceValidation.scheduled_date(data.scheduled_date)
   errors.status = maintenanceValidation.status(data.status)
   if (data.cost) errors.cost = maintenanceValidation.cost(data.cost)
+  Object.keys(errors).forEach(key => { if (!errors[key]) delete errors[key] })
+  return errors
+}
+
+export function validateMaintenanceType(data: any): ValidationErrors {
+  const errors: ValidationErrors = {}
+  errors.name = maintenanceTypeValidation.name(data.name)
+  errors.category = maintenanceTypeValidation.category(data.category)
+  errors.interval_km = maintenanceTypeValidation.interval_km(data.interval_km)
+  errors.interval_months = maintenanceTypeValidation.interval_months(data.interval_months)
+  errors.estimated_cost = maintenanceTypeValidation.estimated_cost(data.estimated_cost)
+  errors.description = maintenanceTypeValidation.description(data.description)
+  errors.is_active = maintenanceTypeValidation.is_active(data.is_active)
   Object.keys(errors).forEach(key => { if (!errors[key]) delete errors[key] })
   return errors
 }
