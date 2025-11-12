@@ -4,12 +4,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/app-layout';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, Link, useForm } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import { FormEventHandler, useEffect, useRef, useState } from 'react';
 import { validateVehicleType, type ValidationErrors } from '@/lib/validation';
 import { toast } from '@/hooks/use-toast';
-import { AlertCircle, Info, Save, Package, CheckCircle, ArrowUp } from 'lucide-react';
+import { AlertCircle, Info, Save, Package, CheckCircle, ArrowUp, ArrowLeft } from 'lucide-react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -118,6 +118,12 @@ export default function VehicleTypesCreate() {
                                 </div>
                             </div>
                             <div className="flex flex-wrap items-center gap-3">
+                                <Button variant="ghost" size="sm" asChild>
+                                    <Link href="/vehicletypes">
+                                        <ArrowLeft className="mr-2 h-4 w-4" />
+                                        Back to Vehicle Types
+                                    </Link>
+                                </Button>
                                 {isDirty && (
                                     <div className="flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1.5 text-sm font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
                                         <Save className="h-3 w-3" />
@@ -126,7 +132,7 @@ export default function VehicleTypesCreate() {
                                 )}
                                 <div className="flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1.5 text-sm font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
                                     <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-500"></div>
-                                    Catalog Management
+                                    Fleet Operations
                                 </div>
                             </div>
                         </div>
@@ -197,18 +203,18 @@ export default function VehicleTypesCreate() {
                                 <div className="flex items-center gap-4">
                                     <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
                                         <span className="text-red-500">*</span>
-                                        <span>Required field</span>
+                                        <span>All required fields must be completed</span>
                                     </div>
                                     {isDirty && (
                                         <div className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400">
                                             <Save className="h-3 w-3" />
-                                            <span>Unsaved changes</span>
+                                            <span>You have unsaved changes</span>
                                         </div>
                                     )}
                                 </div>
                                 <div className="flex gap-3">
                                     <Button type="button" variant="outline" asChild className="border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700">
-                                        <a href="/vehicletypes">Cancel</a>
+                                        <Link href="/vehicletypes">Cancel</Link>
                                     </Button>
                                     <Button
                                         type="submit"

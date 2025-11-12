@@ -4,11 +4,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AppLayout from '@/layouts/app-layout';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, Link, useForm } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import { toast } from '@/hooks/use-toast';
 import { validateTruck, type ValidationErrors, truckValidation } from '@/lib/validation';
-import { AlertCircle, Info, Wrench, DollarSign, CheckCircle, HelpCircle, Save, Truck, Calendar, Hash, ArrowUp } from 'lucide-react';
+import { AlertCircle, Info, Wrench, DollarSign, CheckCircle, HelpCircle, Save, Truck, Calendar, Hash, ArrowUp, ArrowLeft } from 'lucide-react';
 import { FormEventHandler, useEffect, useRef, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -187,6 +187,12 @@ export default function TrucksCreate({ vehicleTypes }: TrucksCreateProps) {
                                 </div>
                             </div>
                             <div className="flex flex-wrap items-center gap-3">
+                                <Button variant="ghost" size="sm" asChild>
+                                    <Link href="/trucks">
+                                        <ArrowLeft className="mr-2 h-4 w-4" />
+                                        Back to Trucks
+                                    </Link>
+                                </Button>
                                 {isDirty && (
                                     <div className="flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1.5 text-sm font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
                                         <Save className="h-3 w-3" />
@@ -195,7 +201,7 @@ export default function TrucksCreate({ vehicleTypes }: TrucksCreateProps) {
                                 )}
                                 <div className="flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1.5 text-sm font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
                                     <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-500"></div>
-                                    Fleet Management
+                                    Fleet Operations
                                 </div>
                             </div>
                         </div>
@@ -471,8 +477,8 @@ export default function TrucksCreate({ vehicleTypes }: TrucksCreateProps) {
                                     )}
                                 </div>
                                 <div className="flex gap-3">
-                                    <Button type="button" variant="outline" asChild className="hover:bg-slate-100 dark:hover:bg-slate-700 border-slate-300 dark:border-slate-600">
-                                        <a href="/trucks">Cancel</a>
+                                    <Button type="button" variant="outline" asChild className="border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700">
+                                        <Link href="/trucks">Cancel</Link>
                                     </Button>
                                     <Button
                                         type="submit"
