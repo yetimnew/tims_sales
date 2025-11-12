@@ -8,7 +8,9 @@ enum CargoCategory: string
     case Agricultural = 'Agricultural';
     case Industrial = 'Industrial';
     case ConsumerGoods = 'Consumer Goods';
+    case Food = 'Food';
     case Hazardous = 'Hazardous';
+    case General = 'General';
 
     public function label(): string
     {
@@ -17,6 +19,8 @@ enum CargoCategory: string
             self::Agricultural => 'Agricultural',
             self::Industrial => 'Industrial',
             self::ConsumerGoods => 'Consumer Goods',
+            self::Food => 'Food & Beverages',
+            self::General => 'General Cargo',
             self::Hazardous => 'Hazardous Materials',
         };
     }

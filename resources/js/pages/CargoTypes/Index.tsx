@@ -244,6 +244,9 @@ export default function CargoTypesIndex({ cargoTypes, metrics, filters, category
 
     const getCategoryBadgeClass = (category: string) => {
         const normalized = category.toLowerCase()
+        if (normalized.includes('general')) {
+            return 'bg-slate-500 text-white hover:bg-slate-600'
+        }
         if (normalized.includes('construct')) {
             return 'bg-blue-500 text-white hover:bg-blue-600'
         }
@@ -252,6 +255,12 @@ export default function CargoTypesIndex({ cargoTypes, metrics, filters, category
         }
         if (normalized.includes('industrial')) {
             return 'bg-orange-500 text-white hover:bg-orange-600'
+        }
+        if (normalized.includes('food')) {
+            return 'bg-rose-500 text-white hover:bg-rose-600'
+        }
+        if (normalized.includes('consumer')) {
+            return 'bg-purple-500 text-white hover:bg-purple-600'
         }
         return 'bg-muted text-muted-foreground'
     }

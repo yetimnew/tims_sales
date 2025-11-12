@@ -2,6 +2,7 @@
 
 namespace Tests\Unit;
 
+use App\Enums\CargoCategory;
 use App\Models\User;
 use App\Models\VehicleType;
 use App\Models\Truck;
@@ -311,17 +312,16 @@ class TimsModelTest extends TestCase
     {
         $cargoType = CargoType::create([
             'name' => 'Construction Materials',
-            'category' => 'Heavy',
-            'description' => 'Cement, steel, and construction materials',
-            'average_weight_per_unit_kg' => 50.00,
+            'category' => CargoCategory::Construction->value,
+            'weight_per_cubic_meter' => 2500.00,
             'handling_requirements' => 'Special handling required',
-            'storage_requirements' => 'Dry storage',
-            'transportation_restrictions' => 'Heavy vehicle required'
+            'safety_requirements' => 'Use appropriate PPE',
+            'requires_special_equipment' => true,
         ]);
 
         $this->assertInstanceOf(CargoType::class, $cargoType);
         $this->assertEquals('Construction Materials', $cargoType->name);
-        $this->assertEquals('Heavy', $cargoType->category);
+        $this->assertEquals(CargoCategory::Construction->value, $cargoType->category);
     }
 
     /** @test */

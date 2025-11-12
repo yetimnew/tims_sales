@@ -10,6 +10,7 @@ use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 use Spatie\Activitylog\Models\Activity;
@@ -58,6 +59,8 @@ class CargoTypeController extends Controller
 
         if ($selectedCategory) {
             $baseQuery->where('category', $selectedCategory->value);
+        } elseif (is_string($rawCategory) && $rawCategory !== '' && $rawCategory !== 'all') {
+            $baseQuery->where('category', $rawCategory);
         }
 
         if ($requiresSpecialEquipment !== null && $requiresSpecialEquipment !== '' && $requiresSpecialEquipment !== 'all') {
@@ -83,14 +86,32 @@ class CargoTypeController extends Controller
             'distinct_categories' => (clone $metricsQuery)->distinct('category')->count('category'),
         ];
 
-        $categoryOptions = CargoCategory::options();
+        $categoryOptions = CargoType::query()
+            ->select('category')
+            ->distinct()
+            ->whereNotNull('category')
+            ->orderBy('category')
+            ->get()
+            ->map(static function ($record) {
+                $enumCategory = $record->category instanceof CargoCategory
+                    ? $record->category
+                    : CargoCategory::tryFrom((string) $record->category);
+
+                $rawValue = $enumCategory?->value ?? (string) $record->category;
+
+                return [
+                    'value' => $rawValue,
+                    'label' => $enumCategory?->label() ?? (string) Str::of($rawValue)->replace('_', ' ')->headline(),
+                ];
+            })
+            ->values();
 
         return Inertia::render('CargoTypes/Index', [
             'cargoTypes' => $cargoTypes,
             'metrics' => $metrics,
             'filters' => [
                 'search' => $search !== '' ? $search : null,
-                'category' => $selectedCategory?->value,
+                'category' => $selectedCategory?->value ?? ($rawCategory ?: null),
                 'requires_special_equipment' => $requiresSpecialEquipment ?: null,
                 'sort' => $sort,
                 'direction' => $direction,

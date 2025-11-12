@@ -539,7 +539,7 @@ class TimsSeeder extends Seeder
         $cargoTypes = collect([
             [
                 'name' => 'General Cargo',
-                'category' => 'General',
+                'category' => CargoCategory::General->value,
                 'weight_per_cubic_meter' => 1000.00,
                 'handling_requirements' => 'Standard handling procedures',
                 'safety_requirements' => 'Basic safety protocols',
@@ -555,7 +555,7 @@ class TimsSeeder extends Seeder
             ],
             [
                 'name' => 'Food & Beverages',
-                'category' => 'Food',
+                'category' => CargoCategory::Food->value,
                 'weight_per_cubic_meter' => 800.00,
                 'handling_requirements' => 'Temperature controlled transport',
                 'safety_requirements' => 'Food safety protocols',
