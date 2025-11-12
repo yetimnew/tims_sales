@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Enums\CargoCategory;
 use App\Models\User;
 use App\Models\VehicleType;
 use App\Models\Truck;
@@ -546,7 +547,7 @@ class TimsSeeder extends Seeder
             ],
             [
                 'name' => 'Construction Materials',
-                'category' => 'Construction',
+                'category' => CargoCategory::Construction->value,
                 'weight_per_cubic_meter' => 2500.00,
                 'handling_requirements' => 'Heavy lifting equipment required',
                 'safety_requirements' => 'Hard hat and safety boots mandatory',
@@ -562,7 +563,7 @@ class TimsSeeder extends Seeder
             ],
             [
                 'name' => 'Fuel & Chemicals',
-                'category' => 'Industrial',
+                'category' => CargoCategory::Industrial->value,
                 'weight_per_cubic_meter' => 900.00,
                 'handling_requirements' => 'Hazardous material handling',
                 'safety_requirements' => 'Fire safety equipment required',
@@ -570,7 +571,7 @@ class TimsSeeder extends Seeder
             ],
             [
                 'name' => 'Machinery & Equipment',
-                'category' => 'Industrial',
+                'category' => CargoCategory::Industrial->value,
                 'weight_per_cubic_meter' => 3000.00,
                 'handling_requirements' => 'Crane and specialized equipment',
                 'safety_requirements' => 'Heavy machinery safety protocols',
@@ -578,7 +579,7 @@ class TimsSeeder extends Seeder
             ],
             [
                 'name' => 'Agricultural Products',
-                'category' => 'Agricultural',
+                'category' => CargoCategory::Agricultural->value,
                 'weight_per_cubic_meter' => 600.00,
                 'handling_requirements' => 'Dry storage requirements',
                 'safety_requirements' => 'Basic agricultural safety',

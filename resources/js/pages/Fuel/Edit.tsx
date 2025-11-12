@@ -8,7 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import AppLayout from '@/layouts/app-layout';
 import { Head, useForm } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
-import { FormEventHandler, useEffect, useState } from 'react';
+import { FormEventHandler, useEffect, useMemo, useState } from 'react';
 import { validateFuel, type ValidationErrors } from '@/lib/validation';
 import { useToast } from '@/hooks/use-toast';
 import { CircleAlert } from 'lucide-react';
@@ -28,6 +28,7 @@ interface FuelRecord {
     id: number;
     truck_id: number;
     driver_id: number;
+    driver_truck_id: number | null;
     fuel_date: string;
     fuel_quantity_liters: number;
     fuel_price_per_liter: number;
@@ -38,16 +39,26 @@ interface FuelRecord {
     notes?: string;
 }
 
-interface FuelEditProps {
-    fuel: FuelRecord;
-    trucks: Array<{ id: number; plate: string }>;
-    drivers: Array<{ id: number; name: string }>;
+interface DriverTruckOption {
+    id: number;
+    truck_id: number | null;
+    truck_plate: string | null;
+    driver_id: number | null;
+    driver_name: string | null;
+    driver_code: string | null;
+    assigned_on: string | null;
 }
 
-export default function FuelEdit({ fuel, trucks, drivers }: FuelEditProps) {
+interface FuelEditProps {
+    fuel: FuelRecord;
+    assignments: DriverTruckOption[];
+}
+
+export default function FuelEdit({ fuel, assignments }: FuelEditProps) {
     const { data, setData, put, processing, errors } = useForm({
-        truck_id: fuel.truck_id.toString(),
-        driver_id: fuel.driver_id.toString(),
+        driver_truck_id: fuel.driver_truck_id ? fuel.driver_truck_id.toString() : '',
+        truck_id: fuel.truck_id ? fuel.truck_id.toString() : '',
+        driver_id: fuel.driver_id ? fuel.driver_id.toString() : '',
         fuel_date: fuel.fuel_date,
         fuel_quantity_liters: fuel.fuel_quantity_liters.toString(),
         fuel_price_per_liter: fuel.fuel_price_per_liter.toString(),
@@ -59,6 +70,10 @@ export default function FuelEdit({ fuel, trucks, drivers }: FuelEditProps) {
     });
 
     const { toast } = useToast();
+    const assignmentOptions = useMemo(() => (Array.isArray(assignments) ? assignments : []), [assignments]);
+    const selectedAssignment = useMemo(() => {
+        return assignmentOptions.find((option) => option.id.toString() === data.driver_truck_id) || null;
+    }, [assignmentOptions, data.driver_truck_id]);
     const [frontendErrors, setFrontendErrors] = useState<ValidationErrors>({});
 
     useEffect(() => {
@@ -71,16 +86,8 @@ export default function FuelEdit({ fuel, trucks, drivers }: FuelEditProps) {
         }
     }, [errors, toast]);
 
-    const validateField = (fieldName: string, value: string) => {
-        const validationData = {
-            truck_id: data.truck_id,
-            driver_id: data.driver_id,
-            fuel_date: data.fuel_date,
-            fuel_quantity_liters: data.fuel_quantity_liters,
-            fuel_price_per_liter: data.fuel_price_per_liter,
-            fuel_type: data.fuel_type,
-            [fieldName]: value,
-        };
+    const validateField = (fieldName: keyof typeof data, value: string) => {
+        const validationData = { ...data, [fieldName]: value };
 
         const allErrors = validateFuel(validationData);
         const fieldError = allErrors[fieldName] || '';
@@ -96,8 +103,8 @@ export default function FuelEdit({ fuel, trucks, drivers }: FuelEditProps) {
         });
     };
 
-    const handleFieldChange = (fieldName: string, value: string) => {
-        setData(fieldName as any, value);
+    const handleFieldChange = (fieldName: keyof typeof data, value: string) => {
+        setData(fieldName, value);
         validateField(fieldName, value);
     };
 
@@ -105,14 +112,7 @@ export default function FuelEdit({ fuel, trucks, drivers }: FuelEditProps) {
         e.preventDefault();
 
         // Run full validation
-        const allErrors = validateFuel({
-            truck_id: data.truck_id,
-            driver_id: data.driver_id,
-            fuel_date: data.fuel_date,
-            fuel_quantity_liters: data.fuel_quantity_liters,
-            fuel_price_per_liter: data.fuel_price_per_liter,
-            fuel_type: data.fuel_type,
-        });
+        const allErrors = validateFuel({ ...data });
 
         if (Object.keys(allErrors).length > 0) {
             setFrontendErrors(allErrors);
@@ -162,47 +162,55 @@ export default function FuelEdit({ fuel, trucks, drivers }: FuelEditProps) {
                     <CardContent>
                         <form onSubmit={submit} className="space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="space-y-2">
-                                    <Label htmlFor="truck_id">Truck *</Label>
+                                <div className="space-y-2 md:col-span-2">
+                                    <Label htmlFor="driver_truck_id">Driver &amp; Truck Assignment *</Label>
                                     <Select
-                                        value={data.truck_id}
-                                        onValueChange={(value) => handleFieldChange('truck_id', value)}
+                                        value={data.driver_truck_id}
+                                        onValueChange={(value) => {
+                                            handleFieldChange('driver_truck_id', value);
+                                            const assignment = assignmentOptions.find((option) => option.id.toString() === value);
+                                            setData('truck_id', assignment?.truck_id ? assignment.truck_id.toString() : '');
+                                            setData('driver_id', assignment?.driver_id ? assignment.driver_id.toString() : '');
+                                        }}
                                     >
-                                        <SelectTrigger className={allErrors.truck_id ? 'border-red-500' : ''}>
-                                            <SelectValue placeholder="Select truck" />
+                                        <SelectTrigger className={allErrors.driver_truck_id ? 'border-red-500' : ''}>
+                                            <SelectValue placeholder="Select driver & truck" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {trucks.map(truck => (
-                                                <SelectItem key={truck.id} value={truck.id.toString()}>
-                                                    {truck.plate}
+                                            {assignmentOptions.length > 0 ? (
+                                                assignmentOptions.map((assignment) => (
+                                                    <SelectItem key={assignment.id} value={assignment.id.toString()}>
+                                                        {`${assignment.truck_plate ?? 'Unknown Truck'} — ${assignment.driver_name ?? 'Unknown Driver'}`}
+                                                    </SelectItem>
+                                                ))
+                                            ) : (
+                                                <SelectItem value="" disabled>
+                                                    No active driver-truck assignments available
                                                 </SelectItem>
-                                            ))}
+                                            )}
                                         </SelectContent>
                                     </Select>
-                                    {allErrors.truck_id && (
-                                        <p className="text-sm text-red-500">{allErrors.truck_id}</p>
+                                    {allErrors.driver_truck_id && (
+                                        <p className="text-sm text-red-500">{allErrors.driver_truck_id}</p>
                                     )}
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="driver_id">Driver *</Label>
-                                    <Select
-                                        value={data.driver_id}
-                                        onValueChange={(value) => handleFieldChange('driver_id', value)}
-                                    >
-                                        <SelectTrigger className={allErrors.driver_id ? 'border-red-500' : ''}>
-                                            <SelectValue placeholder="Select driver" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {drivers.map(driver => (
-                                                <SelectItem key={driver.id} value={driver.id.toString()}>
-                                                    {driver.name}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    {allErrors.driver_id && (
-                                        <p className="text-sm text-red-500">{allErrors.driver_id}</p>
+                                    {selectedAssignment && (
+                                        <div className="mt-3 grid gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm shadow-sm dark:border-slate-700 dark:bg-slate-900/40 md:grid-cols-3">
+                                            <div>
+                                                <p className="text-xs uppercase text-muted-foreground">Truck</p>
+                                                <p className="font-semibold text-slate-800 dark:text-slate-100">{selectedAssignment.truck_plate ?? '—'}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs uppercase text-muted-foreground">Driver</p>
+                                                <p className="font-semibold text-slate-800 dark:text-slate-100">{selectedAssignment.driver_name ?? '—'}</p>
+                                                {selectedAssignment.driver_code && (
+                                                    <p className="text-xs text-muted-foreground">ID: {selectedAssignment.driver_code}</p>
+                                                )}
+                                            </div>
+                                            <div>
+                                                <p className="text-xs uppercase text-muted-foreground">Assigned On</p>
+                                                <p className="font-medium text-slate-800 dark:text-slate-100">{selectedAssignment.assigned_on ?? '—'}</p>
+                                            </div>
+                                        </div>
                                     )}
                                 </div>
 

@@ -20,8 +20,7 @@ class UpdateFuelRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'truck_id' => 'required|exists:trucks,id',
-            'driver_id' => 'required|exists:drivers,id',
+            'driver_truck_id' => 'required|exists:driver_truck,id',
             'fuel_date' => 'required|date|before_or_equal:today',
             'fuel_quantity_liters' => 'required|numeric|min:0.01|max:9999.99',
             'fuel_price_per_liter' => 'required|numeric|min:0.01|max:999.99',
@@ -39,6 +38,8 @@ class UpdateFuelRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'driver_truck_id.required' => 'Driver and truck assignment is required',
+            'driver_truck_id.exists' => 'Select a valid driver and truck assignment',
             'fuel_quantity_liters.min' => 'Fuel quantity must be at least 0.01 liters',
             'fuel_quantity_liters.max' => 'Fuel quantity cannot exceed 9,999.99 liters',
             'fuel_price_per_liter.min' => 'Fuel price must be at least 0.01',
@@ -53,6 +54,7 @@ class UpdateFuelRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $this->merge([
+            'driver_truck_id' => $this->driver_truck_id ? (int) $this->driver_truck_id : null,
             'fuel_station' => trim($this->fuel_station ?? ''),
             'receipt_number' => trim($this->receipt_number ?? ''),
             'notes' => trim($this->notes ?? ''),

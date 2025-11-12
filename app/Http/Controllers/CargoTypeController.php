@@ -2,16 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\CargoType;
+use App\Enums\CargoCategory;
 use App\Http\Requests\StoreCargoTypeRequest;
 use App\Http\Requests\UpdateCargoTypeRequest;
+use App\Models\CargoType;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
-use Exception;
 use Spatie\Activitylog\Models\Activity;
 
 class CargoTypeController extends Controller
@@ -22,7 +22,7 @@ class CargoTypeController extends Controller
     public function index(Request $request): Response
     {
         $search = trim((string) $request->input('search'));
-        $category = $request->input('category');
+        $rawCategory = $request->input('category');
         $requiresSpecialEquipment = $request->input('requires_special_equipment');
         $sort = $request->input('sort', 'name');
         $direction = strtolower((string) $request->input('direction', 'asc'));
@@ -45,6 +45,8 @@ class CargoTypeController extends Controller
 
         $baseQuery = CargoType::query();
 
+        $selectedCategory = is_string($rawCategory) ? CargoCategory::tryFrom($rawCategory) : null;
+
         if ($search !== '') {
             $baseQuery->where(function ($query) use ($search) {
                 $query->where('name', 'like', "%{$search}%")
@@ -54,8 +56,8 @@ class CargoTypeController extends Controller
             });
         }
 
-        if (!empty($category) && $category !== 'all') {
-            $baseQuery->where('category', $category);
+        if ($selectedCategory) {
+            $baseQuery->where('category', $selectedCategory->value);
         }
 
         if ($requiresSpecialEquipment !== null && $requiresSpecialEquipment !== '' && $requiresSpecialEquipment !== 'all') {
@@ -81,23 +83,14 @@ class CargoTypeController extends Controller
             'distinct_categories' => (clone $metricsQuery)->distinct('category')->count('category'),
         ];
 
-        $categoryOptions = CargoType::query()
-            ->select('category')
-            ->distinct()
-            ->whereNotNull('category')
-            ->orderBy('category')
-            ->get()
-            ->map(static fn ($record) => [
-                'label' => Str::of($record->category)->replace('_', ' ')->headline(),
-                'value' => $record->category,
-            ])->values();
+        $categoryOptions = CargoCategory::options();
 
         return Inertia::render('CargoTypes/Index', [
             'cargoTypes' => $cargoTypes,
             'metrics' => $metrics,
             'filters' => [
                 'search' => $search !== '' ? $search : null,
-                'category' => $category ?: null,
+                'category' => $selectedCategory?->value,
                 'requires_special_equipment' => $requiresSpecialEquipment ?: null,
                 'sort' => $sort,
                 'direction' => $direction,
@@ -113,7 +106,9 @@ class CargoTypeController extends Controller
      */
     public function create(): Response
     {
-        return Inertia::render('CargoTypes/Create');
+        return Inertia::render('CargoTypes/Create', [
+            'categories' => CargoCategory::options(),
+        ]);
     }
 
     /**
@@ -159,6 +154,7 @@ class CargoTypeController extends Controller
     {
         return Inertia::render('CargoTypes/Edit', [
             'cargoType' => $cargoType,
+            'categories' => CargoCategory::options(),
         ]);
     }
 
@@ -208,9 +204,9 @@ class CargoTypeController extends Controller
         try {
             $statistics = [
                 'total_types' => CargoType::count(),
-                'construction_types' => CargoType::where('category', 'Construction')->count(),
-                'agricultural_types' => CargoType::where('category', 'Agricultural')->count(),
-                'industrial_types' => CargoType::where('category', 'Industrial')->count(),
+                'construction_types' => CargoType::where('category', CargoCategory::Construction->value)->count(),
+                'agricultural_types' => CargoType::where('category', CargoCategory::Agricultural->value)->count(),
+                'industrial_types' => CargoType::where('category', CargoCategory::Industrial->value)->count(),
                 'special_equipment_types' => CargoType::where('requires_special_equipment', true)->count(),
                 'most_used_type' => CargoType::withCount('performances')
                     ->orderBy('performances_count', 'desc')
@@ -245,8 +241,10 @@ class CargoTypeController extends Controller
 
             $query = CargoType::query();
 
-            if ($category) {
-                $query->where('category', $category);
+            $enumCategory = is_string($category) ? CargoCategory::tryFrom($category) : null;
+
+            if ($enumCategory) {
+                $query->where('category', $enumCategory->value);
             }
 
             $cargoTypes = $query->orderBy('name')->get();
@@ -278,7 +276,7 @@ class CargoTypeController extends Controller
         $query = CargoType::query();
 
         $search = trim((string) $request->input('search'));
-        $category = $request->input('category');
+        $rawCategory = $request->input('category');
         $requiresSpecialEquipment = $request->input('requires_special_equipment');
 
         if ($search !== '') {
@@ -290,8 +288,10 @@ class CargoTypeController extends Controller
             });
         }
 
-        if (!empty($category) && $category !== 'all') {
-            $query->where('category', $category);
+        $exportCategory = is_string($rawCategory) ? CargoCategory::tryFrom($rawCategory) : null;
+
+        if ($exportCategory) {
+            $query->where('category', $exportCategory->value);
         }
 
         if ($requiresSpecialEquipment !== null && $requiresSpecialEquipment !== '' && $requiresSpecialEquipment !== 'all') {
@@ -339,7 +339,7 @@ class CargoTypeController extends Controller
                 fputcsv($file, [
                     $cargoType->id,
                     $cargoType->name,
-                    $cargoType->category,
+                    $cargoType->category instanceof CargoCategory ? $cargoType->category->value : $cargoType->category,
                     $cargoType->weight_per_cubic_meter,
                     $cargoType->handling_requirements,
                     $cargoType->safety_requirements,

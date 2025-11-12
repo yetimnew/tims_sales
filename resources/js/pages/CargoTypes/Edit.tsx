@@ -36,7 +36,7 @@ interface CargoType {
     requires_special_equipment: boolean;
 }
 
-interface FormData {
+interface CargoTypeFormData {
     name: string;
     category: string;
     weight_per_cubic_meter: string;
@@ -45,14 +45,31 @@ interface FormData {
     requires_special_equipment: boolean;
 }
 
-interface CargoTypesEditProps {
-    cargoType: CargoType;
+interface CategoryOption {
+    value: string;
+    label: string;
 }
 
-export default function CargoTypesEdit({ cargoType }: CargoTypesEditProps) {
-    const [formData, setFormData] = React.useState<FormData>({
+interface CargoTypesEditProps {
+    cargoType: CargoType;
+    categories: CategoryOption[];
+}
+
+export default function CargoTypesEdit({ cargoType, categories }: CargoTypesEditProps) {
+    const categoryOptions: CategoryOption[] = categories.length ? categories : [];
+    const resolvedOptions = React.useMemo<CategoryOption[]>(() => {
+        const options = [...categoryOptions];
+        if (cargoType.category && !options.some((option) => option.value === cargoType.category)) {
+            options.push({ value: cargoType.category, label: cargoType.category });
+        }
+        return options;
+    }, [categoryOptions, cargoType.category]);
+    const initialCategory = resolvedOptions.find((option) => option.value === cargoType.category)?.value
+        ?? resolvedOptions[0]?.value
+        ?? cargoType.category;
+    const [formData, setFormData] = React.useState<CargoTypeFormData>({
         name: cargoType.name,
-        category: cargoType.category,
+        category: initialCategory,
         weight_per_cubic_meter: cargoType.weight_per_cubic_meter?.toString() || '',
         handling_requirements: cargoType.handling_requirements || '',
         safety_requirements: cargoType.safety_requirements || '',
@@ -102,7 +119,11 @@ export default function CargoTypesEdit({ cargoType }: CargoTypesEditProps) {
         e.preventDefault();
         setIsSubmitting(true);
 
-        router.put(`/cargo-types/${cargoType.id}`, formData, {
+        const payload: Record<string, string | boolean> = {
+            ...formData,
+        };
+
+        router.put(`/cargo-types/${cargoType.id}`, payload, {
             onError: (errors) => {
                 setErrors(errors);
                 setIsSubmitting(false);
@@ -112,6 +133,15 @@ export default function CargoTypesEdit({ cargoType }: CargoTypesEditProps) {
             },
         });
     };
+
+    React.useEffect(() => {
+        if (!formData.category && resolvedOptions[0]) {
+            setFormData((prev) => ({
+                ...prev,
+                category: resolvedOptions[0].value,
+            }));
+        }
+    }, [resolvedOptions, formData.category]);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -171,15 +201,11 @@ export default function CargoTypesEdit({ cargoType }: CargoTypesEditProps) {
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="Construction">
-                                                Construction
-                                            </SelectItem>
-                                            <SelectItem value="Agricultural">
-                                                Agricultural
-                                            </SelectItem>
-                                            <SelectItem value="Industrial">
-                                                Industrial
-                                            </SelectItem>
+                                                {resolvedOptions.map((option) => (
+                                                    <SelectItem key={option.value} value={option.value}>
+                                                        {option.label}
+                                                    </SelectItem>
+                                                ))}
                                         </SelectContent>
                                     </Select>
                                     {errors.category && (

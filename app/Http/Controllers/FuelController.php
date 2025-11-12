@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Truck;
 use App\Models\Driver;
+use App\Models\DriverTruck;
 use App\Models\FuelRecord;
 use App\Models\FuelConsumptionAnalysis;
 use App\Http\Requests\StoreFuelRequest;
@@ -15,6 +16,7 @@ use Inertia\Response;
 use Illuminate\Support\Facades\DB;
 use Exception;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Spatie\Activitylog\Models\Activity;
 
 class FuelController extends Controller
@@ -47,7 +49,7 @@ class FuelController extends Controller
             $sort = 'fuel_date';
         }
 
-        $baseQuery = FuelRecord::query()->with(['truck', 'driver', 'user']);
+    $baseQuery = FuelRecord::query()->with(['truck', 'driver', 'user', 'driverTruck.driver', 'driverTruck.truck']);
 
         if ($search !== '') {
             $baseQuery->where(function ($query) use ($search) {
@@ -134,12 +136,31 @@ class FuelController extends Controller
      */
     public function create(): Response
     {
-        $trucks = Truck::where('status', 'active')->get();
-        $drivers = Driver::where('status', 'active')->get();
+        $assignments = DriverTruck::query()
+            ->with(['truck:id,plate,status', 'driver:id,name,driverid,status'])
+            ->where('status', 'active')
+            ->where('is_attached', 1)
+            ->where(function ($query) {
+                $query->whereNull('date_detach')
+                    ->orWhere('date_detach', '>', now());
+            })
+            ->orderByDesc('date_recived')
+            ->get()
+            ->map(function ($assignment) {
+                return [
+                    'id' => $assignment->id,
+                    'truck_id' => $assignment->truck_id,
+                    'truck_plate' => $assignment->truck?->plate,
+                    'driver_id' => $assignment->driver_id,
+                    'driver_name' => $assignment->driver?->name,
+                    'driver_code' => $assignment->driver?->driverid,
+                    'assigned_on' => optional($assignment->date_recived)->toDateString(),
+                ];
+            })
+            ->values();
 
         return Inertia::render('Fuel/Create', [
-            'trucks' => $trucks,
-            'drivers' => $drivers,
+            'assignments' => $assignments,
         ]);
     }
 
@@ -220,14 +241,31 @@ class FuelController extends Controller
         try {
             $validated = $request->validated();
 
+            $assignment = DriverTruck::query()->find($validated['driver_truck_id']);
+
+            if (
+                !$assignment
+                || (int) $assignment->is_attached !== 1
+                || $assignment->date_detach !== null
+                || $assignment->status !== 'active'
+            ) {
+                throw ValidationException::withMessages([
+                    'driver_truck_id' => 'The selected driver and truck pairing is no longer active.',
+                ]);
+            }
+
+            $validated['truck_id'] = $assignment->truck_id;
+            $validated['driver_id'] = $assignment->driver_id;
             $validated['total_cost'] = $validated['fuel_quantity_liters'] * $validated['fuel_price_per_liter'];
             $validated['user_id'] = Auth::id();
 
-            $fuelRecord = FuelRecord::create($validated);
+            FuelRecord::create($validated);
 
             return redirect()->route('fuel.index')
                 ->with('success', 'Fuel record created successfully.');
 
+        } catch (ValidationException $exception) {
+            throw $exception;
         } catch (Exception $e) {
             return back()->withErrors(['error' => 'Failed to create fuel record. Please try again.']);
         }
@@ -257,13 +295,40 @@ class FuelController extends Controller
      */
     public function edit(FuelRecord $fuel): Response
     {
-        $trucks = Truck::where('status', 'active')->get();
-        $drivers = Driver::where('status', 'active')->get();
+        $fuel->load(['truck', 'driver', 'driverTruck']);
+
+        $assignments = DriverTruck::query()
+            ->with(['truck:id,plate,status', 'driver:id,name,driverid,status'])
+            ->where(function ($query) {
+                $query->where('is_attached', 1)
+                    ->where('status', 'active')
+                    ->where(function ($nested) {
+                        $nested->whereNull('date_detach')
+                            ->orWhere('date_detach', '>', now());
+                    });
+            })
+            ->when($fuel->driver_truck_id, function ($query, $driverTruckId) {
+                $query->orWhere('id', $driverTruckId);
+            })
+            ->orderByDesc('date_recived')
+            ->get()
+            ->unique('id')
+            ->map(function ($assignment) {
+                return [
+                    'id' => $assignment->id,
+                    'truck_id' => $assignment->truck_id,
+                    'truck_plate' => $assignment->truck?->plate,
+                    'driver_id' => $assignment->driver_id,
+                    'driver_name' => $assignment->driver?->name,
+                    'driver_code' => $assignment->driver?->driverid,
+                    'assigned_on' => optional($assignment->date_recived)->toDateString(),
+                ];
+            })
+            ->values();
 
         return Inertia::render('Fuel/Edit', [
             'fuel' => $fuel,
-            'trucks' => $trucks,
-            'drivers' => $drivers,
+            'assignments' => $assignments,
         ]);
     }
 
@@ -275,6 +340,24 @@ class FuelController extends Controller
         try {
             $validated = $request->validated();
 
+            $assignment = DriverTruck::query()->find($validated['driver_truck_id']);
+
+            if (!$assignment) {
+                throw ValidationException::withMessages([
+                    'driver_truck_id' => 'The selected driver and truck pairing could not be found.',
+                ]);
+            }
+
+            $assignmentIsActive = (int) $assignment->is_attached === 1 && $assignment->date_detach === null && $assignment->status === 'active';
+
+            if (!$assignmentIsActive && $fuel->driver_truck_id !== $assignment->id) {
+                throw ValidationException::withMessages([
+                    'driver_truck_id' => 'The selected driver and truck pairing is no longer active.',
+                ]);
+            }
+
+            $validated['truck_id'] = $assignment->truck_id;
+            $validated['driver_id'] = $assignment->driver_id;
             $validated['total_cost'] = $validated['fuel_quantity_liters'] * $validated['fuel_price_per_liter'];
 
             $fuel->update($validated);
@@ -282,6 +365,8 @@ class FuelController extends Controller
             return redirect()->route('fuel.index')
                 ->with('success', 'Fuel record updated successfully.');
 
+        } catch (ValidationException $exception) {
+            throw $exception;
         } catch (Exception $e) {
             return back()->withErrors(['error' => 'Failed to update fuel record. Please try again.']);
         }

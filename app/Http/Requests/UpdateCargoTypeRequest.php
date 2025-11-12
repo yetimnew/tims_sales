@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\CargoCategory;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -27,7 +28,7 @@ class UpdateCargoTypeRequest extends FormRequest
                 'max:255',
                 Rule::unique('cargo_types')->ignore($this->route('cargoType')),
             ],
-            'category' => 'required|string|in:Construction,Agricultural,Industrial',
+            'category' => ['required', Rule::enum(CargoCategory::class)],
             'weight_per_cubic_meter' => 'nullable|numeric|min:0|max:9999.99',
             'handling_requirements' => 'nullable|string|max:2000',
             'safety_requirements' => 'nullable|string|max:2000',
@@ -42,7 +43,7 @@ class UpdateCargoTypeRequest extends FormRequest
     {
         return [
             'name.unique' => 'A cargo type with this name already exists.',
-            'category.in' => 'The category must be one of: Construction, Agricultural, or Industrial.',
+            'category.enum' => 'Please choose a valid cargo category.',
             'weight_per_cubic_meter.max' => 'Weight per cubic meter cannot exceed 9,999.99.',
         ];
     }
@@ -54,6 +55,7 @@ class UpdateCargoTypeRequest extends FormRequest
     {
         $this->merge([
             'name' => trim($this->name ?? ''),
+            'category' => is_string($this->category) ? trim($this->category) : $this->category,
             'handling_requirements' => trim($this->handling_requirements ?? ''),
             'safety_requirements' => trim($this->safety_requirements ?? ''),
         ]);

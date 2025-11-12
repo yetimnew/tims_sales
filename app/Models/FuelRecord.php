@@ -16,6 +16,7 @@ class FuelRecord extends Model
     protected $fillable = [
         'truck_id',
         'driver_id',
+        'driver_truck_id',
         'fuel_date',
         'fuel_quantity_liters',
         'fuel_price_per_liter',
@@ -57,6 +58,14 @@ class FuelRecord extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Get the driver/truck assignment associated with the fuel record.
+     */
+    public function driverTruck(): BelongsTo
+    {
+        return $this->belongsTo(DriverTruck::class);
     }
 
     /**

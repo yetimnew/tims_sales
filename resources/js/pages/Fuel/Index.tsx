@@ -31,6 +31,7 @@ interface FuelRecord {
     id: number
     truck_id: number
     driver_id: number
+    driver_truck_id?: number | null
     fuel_date: string
     fuel_quantity_liters: number
     fuel_price_per_liter: number
@@ -39,6 +40,11 @@ interface FuelRecord {
     fuel_station?: string | null
     truck?: { id: number; plate: string } | null
     driver?: { id: number; name: string } | null
+    driver_truck?: {
+        id: number
+        truck?: { id: number; plate: string } | null
+        driver?: { id: number; name: string } | null
+    } | null
     receipt_number?: string | null
 }
 
@@ -91,19 +97,34 @@ const columns: Array<{ key: string; label: string; sortable?: boolean; sortKey?:
     { key: 'receipt_number', label: 'Receipt #' },
 ]
 
-const formatNumber = (value: number | null | undefined) => {
-    if (typeof value !== 'number' || Number.isNaN(value)) {
+const toNumeric = (value: number | string | null | undefined) => {
+    if (value === null || value === undefined || value === '') {
+        return null
+    }
+
+    if (typeof value === 'number') {
+        return Number.isFinite(value) ? value : null
+    }
+
+    const parsed = Number.parseFloat(value)
+    return Number.isNaN(parsed) ? null : parsed
+}
+
+const formatNumber = (value: number | string | null | undefined) => {
+    const numeric = toNumeric(value)
+    if (numeric === null) {
         return '0.00'
     }
 
-    return value.toLocaleString('en-US', {
+    return numeric.toLocaleString('en-US', {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
     })
 }
 
-const formatCurrency = (value: number | null | undefined) => {
-    if (typeof value !== 'number' || Number.isNaN(value)) {
+const formatCurrency = (value: number | string | null | undefined) => {
+    const numeric = toNumeric(value)
+    if (numeric === null) {
         return 'ETB 0.00'
     }
 
@@ -112,7 +133,7 @@ const formatCurrency = (value: number | null | undefined) => {
         currency: 'ETB',
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
-    }).format(value)
+    }).format(numeric)
 }
 
 const formatDate = (value?: string | null) => {
@@ -120,9 +141,13 @@ const formatDate = (value?: string | null) => {
         return '—'
     }
 
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+        return value
+    }
+
     const date = new Date(value)
     if (Number.isNaN(date.getTime())) {
-        return '—'
+        return value
     }
 
     return date.toLocaleDateString()
@@ -446,50 +471,55 @@ export default function FuelIndex({ fuelRecords, metrics, filters, fuelTypeOptio
             </TableHeader>
             <TableBody>
                 {fuelData.length > 0 ? (
-                    fuelData.map((record) => (
-                        <TableRow key={record.id} className="hover:bg-muted/50">
-                            <TableCell className="font-medium">{formatDate(record.fuel_date)}</TableCell>
-                            <TableCell className="text-muted-foreground">{record.truck?.plate || '—'}</TableCell>
-                            <TableCell className="text-muted-foreground">{record.driver?.name || '—'}</TableCell>
-                            <TableCell>
-                                <Badge className={getFuelTypeBadgeClass(record.fuel_type)}>
-                                    {record.fuel_type}
-                                </Badge>
-                            </TableCell>
-                            <TableCell className="text-muted-foreground">{formatNumber(record.fuel_quantity_liters)}</TableCell>
-                            <TableCell className="text-muted-foreground">{formatCurrency(record.fuel_price_per_liter)}</TableCell>
-                            <TableCell className="font-semibold">{formatCurrency(record.total_cost)}</TableCell>
-                            <TableCell className="text-muted-foreground">{record.receipt_number || '—'}</TableCell>
-                            <TableCell className="text-center">
-                                <div className="flex justify-center gap-2">
-                                    {hasPermission('fuel.show') && (
-                                        <Button asChild size="sm" variant="ghost">
-                                            <Link href={`/fuel/${record.id}`}>
-                                                <Eye className="h-4 w-4" />
-                                            </Link>
-                                        </Button>
-                                    )}
-                                    {hasPermission('fuel.edit') && (
-                                        <Button asChild size="sm" variant="ghost">
-                                            <Link href={`/fuel/${record.id}/edit`}>
-                                                <SquarePen className="h-4 w-4" />
-                                            </Link>
-                                        </Button>
-                                    )}
-                                    {hasPermission('fuel.destroy') && (
-                                        <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            onClick={() => handleDeleteClick(record)}
-                                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                    )}
-                                </div>
-                            </TableCell>
-                        </TableRow>
-                    ))
+                    fuelData.map((record) => {
+                        const truckLabel = record.truck?.plate ?? record.driver_truck?.truck?.plate ?? '—'
+                        const driverLabel = record.driver?.name ?? record.driver_truck?.driver?.name ?? '—'
+
+                        return (
+                            <TableRow key={record.id} className="hover:bg-muted/50">
+                                <TableCell className="font-medium">{formatDate(record.fuel_date)}</TableCell>
+                                <TableCell className="text-muted-foreground">{truckLabel}</TableCell>
+                                <TableCell className="text-muted-foreground">{driverLabel}</TableCell>
+                                <TableCell>
+                                    <Badge className={getFuelTypeBadgeClass(record.fuel_type)}>
+                                        {record.fuel_type}
+                                    </Badge>
+                                </TableCell>
+                                <TableCell className="text-muted-foreground">{formatNumber(record.fuel_quantity_liters)}</TableCell>
+                                <TableCell className="text-muted-foreground">{formatCurrency(record.fuel_price_per_liter)}</TableCell>
+                                <TableCell className="font-semibold">{formatCurrency(record.total_cost)}</TableCell>
+                                <TableCell className="text-muted-foreground">{record.receipt_number || '—'}</TableCell>
+                                <TableCell className="text-center">
+                                    <div className="flex justify-center gap-2">
+                                        {hasPermission('fuel.show') && (
+                                            <Button asChild size="sm" variant="ghost">
+                                                <Link href={`/fuel/${record.id}`}>
+                                                    <Eye className="h-4 w-4" />
+                                                </Link>
+                                            </Button>
+                                        )}
+                                        {hasPermission('fuel.edit') && (
+                                            <Button asChild size="sm" variant="ghost">
+                                                <Link href={`/fuel/${record.id}/edit`}>
+                                                    <SquarePen className="h-4 w-4" />
+                                                </Link>
+                                            </Button>
+                                        )}
+                                        {hasPermission('fuel.destroy') && (
+                                            <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                onClick={() => handleDeleteClick(record)}
+                                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        )}
+                                    </div>
+                                </TableCell>
+                            </TableRow>
+                        )
+                    })
                 ) : (
                     <TableRow>
                         <TableCell colSpan={columns.length + 1} className="py-8 text-center text-muted-foreground">

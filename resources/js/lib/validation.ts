@@ -233,13 +233,8 @@ export const maintenanceTypeValidation = {
 }
 
 export const fuelValidation = {
-  truck_id: (value: string) => {
-    if (!value) return 'Truck is required'
-    return ''
-  },
-
-  driver_id: (value: string) => {
-    if (!value) return 'Driver is required'
+  driver_truck_id: (value: string) => {
+    if (!value) return 'Driver & truck pairing is required'
     return ''
   },
 
@@ -341,7 +336,6 @@ export const cargoTypeValidation = {
 
   category: (value: string) => {
     if (!value) return 'Category is required'
-    if (!['Construction', 'Agricultural', 'Industrial'].includes(value)) return 'Invalid category'
     return ''
   },
 
@@ -497,21 +491,54 @@ export const driverSafetyValidation = {
     return ''
   },
 
-  truck_id: (value: string) => {
-    if (!value) return 'Truck is required'
+  incident_date: (value: string) => {
+    if (!value) return 'Incident date is required'
+    const date = new Date(value)
+    if (Number.isNaN(date.valueOf())) return 'Incident date must be a valid date'
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    if (date > today) return 'Incident date cannot be in the future'
     return ''
   },
 
-  record_date: (value: string) => {
-    if (!value) return 'Record date is required'
+  incident_type: (value: string) => {
+    if (!value) return 'Incident type is required'
+    const allowed = ['accident', 'violation', 'warning']
+    if (!allowed.includes(value)) return 'Select a valid incident type'
     return ''
   },
 
-  safety_score: (value: string) => {
-    if (!value) return 'Safety score is required'
+  description: (value: string) => {
+    if (!value || !value.trim()) return 'Description is required'
+    if (value.length > 2000) return 'Description cannot exceed 2000 characters'
+    return ''
+  },
+
+  severity: (value: string) => {
+    if (!value) return 'Severity is required'
+    const allowed = ['minor', 'major', 'critical']
+    if (!allowed.includes(value)) return 'Select a valid severity level'
+    return ''
+  },
+
+  damage_cost: (value: string) => {
+    if (!value) return ''
     const num = parseFloat(value)
-    if (isNaN(num)) return 'Safety score must be a number'
-    if (num < 0 || num > 100) return 'Safety score must be between 0 and 100'
+    if (Number.isNaN(num)) return 'Damage cost must be a number'
+    if (num < 0) return 'Damage cost cannot be negative'
+    if (num > 999999.99) return 'Damage cost cannot exceed 999,999.99'
+    return ''
+  },
+
+  location: (value: string) => {
+    if (!value) return ''
+    if (value.length > 255) return 'Location cannot exceed 255 characters'
+    return ''
+  },
+
+  resolution: (value: string) => {
+    if (!value) return ''
+    if (value.length > 2000) return 'Corrective action cannot exceed 2000 characters'
     return ''
   },
 }
@@ -804,8 +831,7 @@ export function validateMaintenanceType(data: any): ValidationErrors {
 
 export function validateFuel(data: any): ValidationErrors {
   const errors: ValidationErrors = {}
-  errors.truck_id = fuelValidation.truck_id(data.truck_id)
-  errors.driver_id = fuelValidation.driver_id(data.driver_id)
+  errors.driver_truck_id = fuelValidation.driver_truck_id(data.driver_truck_id)
   errors.fuel_date = fuelValidation.fuel_date(data.fuel_date)
   errors.fuel_quantity_liters = fuelValidation.fuel_quantity_liters(data.fuel_quantity_liters)
   errors.fuel_price_per_liter = fuelValidation.fuel_price_per_liter(data.fuel_price_per_liter)
@@ -892,9 +918,13 @@ export function validateDriverPerformance(data: any): ValidationErrors {
 export function validateDriverSafety(data: any): ValidationErrors {
   const errors: ValidationErrors = {}
   errors.driver_id = driverSafetyValidation.driver_id(data.driver_id)
-  errors.truck_id = driverSafetyValidation.truck_id(data.truck_id)
-  errors.record_date = driverSafetyValidation.record_date(data.record_date)
-  errors.safety_score = driverSafetyValidation.safety_score(data.safety_score)
+  errors.incident_date = driverSafetyValidation.incident_date(data.incident_date)
+  errors.incident_type = driverSafetyValidation.incident_type(data.incident_type)
+  errors.description = driverSafetyValidation.description(data.description)
+  errors.severity = driverSafetyValidation.severity(data.severity)
+  errors.damage_cost = driverSafetyValidation.damage_cost(data.damage_cost)
+  errors.location = driverSafetyValidation.location(data.location)
+  errors.resolution = driverSafetyValidation.resolution(data.resolution)
   Object.keys(errors).forEach(key => { if (!errors[key]) delete errors[key] })
   return errors
 }

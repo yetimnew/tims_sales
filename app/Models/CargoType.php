@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\CargoCategory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -25,6 +26,7 @@ class CargoType extends Model
     protected $casts = [
         'weight_per_cubic_meter' => 'decimal:2',
         'requires_special_equipment' => 'boolean',
+        'category' => CargoCategory::class,
     ];
 
     /**
@@ -40,7 +42,7 @@ class CargoType extends Model
      */
     public function scopeConstruction($query)
     {
-        return $query->where('category', 'Construction');
+        return $query->where('category', CargoCategory::Construction->value);
     }
 
     /**
@@ -48,7 +50,7 @@ class CargoType extends Model
      */
     public function scopeAgricultural($query)
     {
-        return $query->where('category', 'Agricultural');
+        return $query->where('category', CargoCategory::Agricultural->value);
     }
 
     /**
@@ -56,7 +58,7 @@ class CargoType extends Model
      */
     public function scopeIndustrial($query)
     {
-        return $query->where('category', 'Industrial');
+        return $query->where('category', CargoCategory::Industrial->value);
     }
 
     /**
