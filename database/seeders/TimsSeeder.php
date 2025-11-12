@@ -3,29 +3,32 @@
 namespace Database\Seeders;
 
 use App\Enums\CargoCategory;
-use App\Models\User;
-use App\Models\VehicleType;
-use App\Models\Truck;
-use App\Models\Driver;
-use App\Models\DriverTruck;
-use App\Models\Customer;
-use App\Models\Region;
-use App\Models\Zone;
-use App\Models\Woreda;
-use App\Models\Place;
-use App\Models\Operation;
-use App\Models\Performance;
+use App\Enums\OperationDestinationScope;
 use App\Models\CargoType;
-use App\Models\MaintenanceType;
-use App\Models\VehicleMaintenanceRecord;
-use App\Models\FuelRecord;
+use App\Models\Customer;
+use App\Models\Driver;
 use App\Models\DriverPerformanceRecord;
 use App\Models\DriverSafetyRecord;
-use App\Models\TruckFinancialRecord;
+use App\Models\DriverTruck;
+use App\Models\FuelRecord;
 use App\Models\InsuranceRecord;
+use App\Models\MaintenanceType;
+use App\Models\Operation;
+use App\Models\Performance;
+use App\Models\Place;
+use App\Models\Region;
 use App\Models\RoutePlan;
+use App\Models\Truck;
+use App\Models\TruckFinancialRecord;
+use App\Models\User;
+use App\Models\VehicleMaintenanceRecord;
+use App\Models\VehicleType;
+use App\Models\Woreda;
+use App\Models\Zone;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use RuntimeException;
 
 class TimsSeeder extends Seeder
 {
@@ -60,11 +63,11 @@ class TimsSeeder extends Seeder
         // Create customers
         $customers = $this->createCustomers();
 
-        // Create operations
-        $operations = $this->createOperations($customers, $users, $regions);
-
         // Create cargo types
         $cargoTypes = $this->createCargoTypes();
+
+    // Create operations
+    $operations = $this->createOperations($customers, $users, $regions, $zones, $woredas, $places, $cargoTypes);
 
         // Create performances
         $performances = $this->createPerformances($operations, $driverTrucks, $places, $users, $cargoTypes);
@@ -461,75 +464,96 @@ class TimsSeeder extends Seeder
         });
     }
 
-    private function createOperations($customers, $users, $regions)
+    private function createOperations($customers, $users, $regions, $zones, $woredas, $places, $cargoTypes)
     {
         $this->command->info('Creating operations...');
 
+        $addisRegion = $regions->where('code', 'AA')->first();
+        $westShewaZone = $zones->where('code', 'WS')->first();
+        $adamaWoreda = $woredas->where('code', 'ADA')->first();
+        $bahirDarPlace = $places->where('code', 'BHD')->first();
+
         $operations = collect([
-            [
+            array_merge([
                 'operationid' => 'OP001',
                 'customer_id' => $customers->where('name', 'Ethiopian Airlines')->first()->id,
                 'user_id' => $users->first()->id,
-                'region_id' => $regions->where('code', 'AA')->first()->id,
                 'startdate' => now()->subDays(30),
                 'enddate' => now()->addDays(30),
                 'volume' => 5000.00,
-                'cargotype' => 'General Cargo',
+                'cargo_type_id' => $cargoTypes->where('name', 'General Cargo')->first()->id,
+                'cargo_service_type' => 'commercial',
                 'km' => 1200.00,
                 'tariff' => 15.50,
                 'closed' => false,
                 'status' => 'active',
-            ],
-            [
+            ], $this->buildDestinationAttributes($addisRegion, OperationDestinationScope::Region)),
+            array_merge([
                 'operationid' => 'OP002',
                 'customer_id' => $customers->where('name', 'Dashen Brewery')->first()->id,
                 'user_id' => $users->first()->id,
-                'region_id' => $regions->where('code', 'OR')->first()->id,
                 'startdate' => now()->subDays(15),
                 'enddate' => now()->addDays(45),
                 'volume' => 3000.00,
-                'cargotype' => 'Food & Beverages',
+                'cargo_type_id' => $cargoTypes->where('name', 'Food & Beverages')->first()->id,
+                'cargo_service_type' => 'commercial',
                 'km' => 800.00,
                 'tariff' => 12.75,
                 'closed' => false,
                 'status' => 'active',
-            ],
-            [
+            ], $this->buildDestinationAttributes($westShewaZone, OperationDestinationScope::Zone)),
+            array_merge([
                 'operationid' => 'OP003',
                 'customer_id' => $customers->where('name', 'East Africa Bottling')->first()->id,
                 'user_id' => $users->first()->id,
-                'region_id' => $regions->where('code', 'OR')->first()->id,
                 'startdate' => now()->subDays(60),
                 'enddate' => now()->subDays(30),
                 'volume' => 2000.00,
-                'cargotype' => 'Food & Beverages',
+                'cargo_type_id' => $cargoTypes->where('name', 'Food & Beverages')->first()->id,
+                'cargo_service_type' => 'commercial',
                 'km' => 600.00,
                 'tariff' => 14.25,
                 'closed' => true,
                 'status' => 'completed',
-            ],
-            [
+            ], $this->buildDestinationAttributes($adamaWoreda, OperationDestinationScope::Woreda)),
+            array_merge([
                 'operationid' => 'OP004',
                 'customer_id' => $customers->where('name', 'National Oil Company')->first()->id,
                 'user_id' => $users->first()->id,
-                'region_id' => $regions->where('code', 'AM')->first()->id,
                 'startdate' => now()->subDays(45),
                 'enddate' => now()->addDays(15),
                 'volume' => 8000.00,
-                'cargotype' => 'Fuel & Chemicals',
+                'cargo_type_id' => $cargoTypes->where('name', 'Fuel & Chemicals')->first()->id,
+                'cargo_service_type' => 'relief',
                 'km' => 1500.00,
                 'tariff' => 18.00,
                 'closed' => false,
                 'status' => 'active',
-            ],
+            ], $this->buildDestinationAttributes($bahirDarPlace, OperationDestinationScope::Place)),
         ]);
 
         return $operations->map(function ($operationData) {
-            return Operation::firstOrCreate(
+            return Operation::updateOrCreate(
                 ['operationid' => $operationData['operationid']],
                 $operationData
             );
         });
+    }
+
+    private function buildDestinationAttributes(?Model $model, OperationDestinationScope $scope): array
+    {
+        if (! $model) {
+            throw new RuntimeException('Failed to resolve destination reference for operations seeder.');
+        }
+
+        $name = $model->name ?? (string) $model->getKey();
+
+        return [
+            'destination_scope' => $scope->value,
+            'destination_name' => $name,
+            'destination_reference_type' => $model::class,
+            'destination_reference_id' => $model->getKey(),
+        ];
     }
 
     private function createCargoTypes()

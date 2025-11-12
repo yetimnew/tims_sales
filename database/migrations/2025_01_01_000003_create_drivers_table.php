@@ -26,6 +26,9 @@ return new class extends Migration
             $table->string('status')->default('active');
             $table->timestamps();
             $table->softDeletes();
+
+            $table->index(['status'], 'idx_drivers_status');
+            $table->index(['zone'], 'idx_drivers_zone');
         });
     }
 
@@ -37,6 +40,3 @@ return new class extends Migration
         Schema::dropIfExists('drivers');
     }
 };
-
-
-

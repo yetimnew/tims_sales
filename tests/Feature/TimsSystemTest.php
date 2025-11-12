@@ -2,21 +2,22 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
-use App\Models\VehicleType;
-use App\Models\Truck;
-use App\Models\Driver;
+use App\Enums\CargoCategory;
+use App\Models\CargoType;
 use App\Models\Customer;
-use App\Models\Region;
+use App\Models\Driver;
+use App\Models\DriverPerformanceRecord;
+use App\Models\FuelRecord;
+use App\Models\MaintenanceType;
 use App\Models\Operation;
 use App\Models\Performance;
-use App\Models\MaintenanceType;
-use App\Models\VehicleMaintenanceRecord;
-use App\Models\FuelRecord;
-use App\Models\DriverPerformanceRecord;
-use App\Models\CargoType;
-use App\Models\TruckFinancialRecord;
+use App\Models\Region;
 use App\Models\RoutePlan;
+use App\Models\Truck;
+use App\Models\TruckFinancialRecord;
+use App\Models\User;
+use App\Models\VehicleMaintenanceRecord;
+use App\Models\VehicleType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Tests\TestCase;
@@ -32,6 +33,7 @@ class TimsSystemTest extends TestCase
     protected Customer $customer;
     protected Region $region;
     protected Operation $operation;
+    protected CargoType $cargoType;
 
     protected function setUp(): void
     {
@@ -91,17 +93,31 @@ class TimsSystemTest extends TestCase
             'description' => 'Capital city region'
         ]);
 
+        $this->cargoType = CargoType::create([
+            'name' => 'General Cargo',
+            'category' => CargoCategory::General->value,
+            'weight_per_cubic_meter' => 1000,
+            'handling_requirements' => 'Standard',
+            'safety_requirements' => 'Standard',
+            'requires_special_equipment' => false,
+        ]);
+
         // Create Operation
         $this->operation = Operation::create([
             'operationid' => 'OP001',
             'customer_id' => $this->customer->id,
             'startdate' => '2025-01-01',
-            'region_id' => $this->region->id,
             'volume' => 100.00,
-            'cargotype' => 'General',
+            'cargo_type_id' => $this->cargoType->id,
+            'cargo_service_type' => 'commercial',
             'km' => 500.00,
             'tariff' => 50.00,
-            'status' => 'open',
+            'status' => 'active',
+            'closed' => false,
+            'destination_scope' => 'region',
+            'destination_name' => $this->region->name,
+            'destination_reference_type' => Region::class,
+            'destination_reference_id' => $this->region->id,
             'user_id' => $this->user->id
         ]);
     }
@@ -197,20 +213,25 @@ class TimsSystemTest extends TestCase
             'operationid' => 'OP002',
             'customer_id' => $this->customer->id,
             'startdate' => '2025-02-01',
-            'region_id' => $this->region->id,
+            'destination_scope' => 'region',
+            'destination_id' => $this->region->id,
             'volume' => 200.00,
-            'cargotype' => 'Construction',
+            'cargo_type_id' => $this->cargoType->id,
+            'cargo_service_type' => 'commercial',
             'km' => 750.00,
             'tariff' => 75.00,
-            'status' => 'open',
-            'user_id' => $this->user->id
+            'status' => 'active',
         ];
 
         $response = $this->actingAs($this->user)
             ->post('/operations', $operationData);
 
         $response->assertRedirect('/operations');
-        $this->assertDatabaseHas('operations', $operationData);
+        $this->assertDatabaseHas('operations', [
+            'operationid' => 'OP002',
+            'customer_id' => $this->customer->id,
+            'cargo_type_id' => $this->cargoType->id,
+        ]);
     }
 
     /** @test */

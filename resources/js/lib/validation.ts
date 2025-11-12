@@ -402,16 +402,81 @@ export const routePlanValidation = {
 
 // ==================== OPERATION VALIDATION ====================
 export const operationValidation = {
-  name: (value: string) => {
-    if (!value) return 'Operation name is required'
-    if (value.length < 2) return 'Name must be at least 2 characters'
-    if (value.length > 255) return 'Name cannot exceed 255 characters'
+  operationid: (value: string) => {
+    if (!value) return 'Operation ID is required'
+    if (value.length > 255) return 'Operation ID cannot exceed 255 characters'
+    return ''
+  },
+
+  customer_id: (value: string) => {
+    if (!value) return 'Customer is required'
+    return ''
+  },
+
+  startdate: (value: string) => {
+    if (!value) return 'Start date is required'
+    const date = new Date(value)
+    if (Number.isNaN(date.valueOf())) return 'Start date must be a valid date'
+    return ''
+  },
+
+  volume: (value: string) => {
+    if (!value) return 'Volume is required'
+    const numericValue = Number(value)
+    if (!Number.isFinite(numericValue)) return 'Volume must be a number'
+    if (numericValue < 0) return 'Volume cannot be negative'
+    return ''
+  },
+
+  cargo_type_id: (value: string) => {
+    if (!value) return 'Cargo type is required'
+    if (!/^[0-9]+$/.test(value)) return 'Cargo type selection must be valid'
+    return ''
+  },
+
+  cargo_service_type: (value: string) => {
+    if (!value) return 'Cargo service type is required'
+    if (!['relief', 'commercial'].includes(value)) return 'Invalid cargo service type'
+    return ''
+  },
+
+  km: (value: string) => {
+    if (!value) return 'Distance is required'
+    const numericValue = Number(value)
+    if (!Number.isFinite(numericValue)) return 'Distance must be a number'
+    if (numericValue < 0) return 'Distance cannot be negative'
+    return ''
+  },
+
+  tariff: (value: string) => {
+    if (!value) return 'Tariff is required'
+    const numericValue = Number(value)
+    if (!Number.isFinite(numericValue)) return 'Tariff must be a number'
+    if (numericValue < 0) return 'Tariff cannot be negative'
+    return ''
+  },
+
+  remark: (value: string) => {
+    if (!value) return ''
+    if (value.length > 1000) return 'Description cannot exceed 1,000 characters'
     return ''
   },
 
   status: (value: string) => {
     if (!value) return 'Status is required'
-    if (!['active', 'inactive', 'completed'].includes(value)) return 'Invalid status'
+    if (!['active', 'inactive'].includes(value)) return 'Invalid status'
+    return ''
+  },
+
+  destination_scope: (value: string) => {
+    if (!value) return 'Destination scope is required'
+    if (!['region', 'zone', 'woreda', 'place'].includes(value)) return 'Invalid destination scope'
+    return ''
+  },
+
+  destination_id: (value: string) => {
+    if (!value) return 'Destination selection is required'
+    if (!/^\d+$/.test(value)) return 'Destination selection must be a valid option'
     return ''
   },
 }
@@ -888,8 +953,18 @@ export function validateRoutePlan(data: any): ValidationErrors {
 
 export function validateOperation(data: any): ValidationErrors {
   const errors: ValidationErrors = {}
-  errors.name = operationValidation.name(data.name)
-  if (data.status) errors.status = operationValidation.status(data.status)
+  errors.operationid = operationValidation.operationid(data.operationid)
+  errors.customer_id = operationValidation.customer_id(data.customer_id)
+  errors.startdate = operationValidation.startdate(data.startdate)
+  errors.volume = operationValidation.volume(data.volume)
+  errors.cargo_type_id = operationValidation.cargo_type_id(data.cargo_type_id)
+  errors.cargo_service_type = operationValidation.cargo_service_type(data.cargo_service_type)
+  errors.km = operationValidation.km(data.km)
+  errors.tariff = operationValidation.tariff(data.tariff)
+  errors.status = operationValidation.status(data.status)
+  errors.destination_scope = operationValidation.destination_scope(data.destination_scope)
+  errors.destination_id = operationValidation.destination_id(data.destination_id)
+  if (data.remark) errors.remark = operationValidation.remark(data.remark)
   Object.keys(errors).forEach(key => { if (!errors[key]) delete errors[key] })
   return errors
 }

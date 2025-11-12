@@ -42,12 +42,23 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 interface User { id: number; name: string; }
 interface ActivityLog { id: number; description: string; event: string; created_at: string; causer?: User; }
+interface OperationDestination {
+    scope?: string | null;
+    name?: string | null;
+    reference_id?: number | null;
+    reference_type?: string | null;
+}
+
 interface Operation {
     id: number; operationid: string; description?: string; status: string;
     startdate?: string; enddate?: string; volume?: number; km?: number; tariff?: number;
     closed?: boolean; created_at: string;
     customer?: { id: number; name: string };
-    region?: { id: number; name: string };
+    destination_scope?: string | null;
+    destination_name?: string | null;
+    destination_reference_id?: number | null;
+    destination_reference_type?: string | null;
+    destination?: OperationDestination | null;
     user?: { id: number; name: string };
 }
 interface PerformanceTotals {
@@ -199,6 +210,28 @@ export default function OperationsShow({ operation, activityLogs = [], performan
         ? Number(operation.volume) * Number(operation.tariff)
         : null;
 
+    const destination = operation.destination ?? {
+        scope: operation.destination_scope ?? null,
+        name: operation.destination_name ?? null,
+        reference_id: operation.destination_reference_id ?? null,
+        reference_type: operation.destination_reference_type ?? null,
+    } satisfies OperationDestination;
+
+    const destinationScopeLabels: Record<string, string> = {
+        region: 'Region',
+        zone: 'Zone',
+        woreda: 'Woreda',
+        place: 'Place',
+    };
+
+    const destinationScopeKey = destination.scope ?? operation.destination_scope ?? null;
+    const destinationScopeLabel = destinationScopeKey
+        ? destinationScopeLabels[String(destinationScopeKey).toLowerCase()]
+            ?? capitalize(String(destinationScopeKey))
+        : null;
+
+    const destinationName = destination.name ?? operation.destination_name ?? 'Not specified';
+
     const totals = performanceInsights?.totals ?? {
         plannedVolume: null,
         totalTrips: 0,
@@ -295,11 +328,11 @@ export default function OperationsShow({ operation, activityLogs = [], performan
             iconClassName: 'border-blue-200 bg-blue-50 text-blue-600 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-200',
         },
         {
-            label: 'Region',
-            value: operation.region?.name || 'Not specified',
-            description: operation.region?.name
-                ? 'Operational coverage area'
-                : 'Assign a region for clearer reporting',
+            label: 'Destination',
+            value: destinationName || 'Not specified',
+            description: destinationScopeLabel
+                ? `${destinationScopeLabel} target location`
+                : 'Assign a destination for clearer logistics reporting',
             icon: Globe2,
             iconClassName: 'border-purple-200 bg-purple-50 text-purple-600 dark:border-purple-800 dark:bg-purple-900/30 dark:text-purple-200',
         },
@@ -560,7 +593,7 @@ export default function OperationsShow({ operation, activityLogs = [], performan
                                         </span>
                                         <span className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-sm font-medium shadow-sm dark:bg-slate-900/50">
                                             <MapPin className="h-3.5 w-3.5 text-purple-600 dark:text-purple-300" />
-                                            {operation.region?.name || 'No Region Assigned'}
+                                            {destinationName || 'No Destination Assigned'}
                                         </span>
                                         {operation.user?.name && (
                                             <span className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-sm font-medium shadow-sm dark:bg-slate-900/50">
@@ -637,9 +670,11 @@ export default function OperationsShow({ operation, activityLogs = [], performan
                                             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Primary business partner</p>
                                         </div>
                                         <div className="rounded-xl border border-slate-200 bg-white/80 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/40">
-                                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Region</p>
-                                            <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">{operation.region?.name || 'N/A'}</p>
-                                            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Operational coverage</p>
+                                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Destination</p>
+                                            <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">{destinationName || 'N/A'}</p>
+                                            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                                                {destinationScopeLabel ? `${destinationScopeLabel} coverage` : 'Destination scope pending'}
+                                            </p>
                                         </div>
                                     </div>
                                     <div className="grid gap-4 md:grid-cols-2">

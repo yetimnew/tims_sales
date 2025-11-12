@@ -2,14 +2,20 @@
 
 namespace Tests\Feature\Validation;
 
-use App\Models\User;
-use App\Models\Truck;
+use App\Enums\CargoCategory;
+use App\Models\CargoType;
+use App\Models\Customer;
 use App\Models\Driver;
+use App\Models\Operation;
+use App\Models\Place;
+use App\Models\Region;
+use App\Models\Truck;
+use App\Models\User;
 use App\Models\VehicleType;
-use App\Models\Zone;
 use App\Models\Woreda;
-use App\Models\Role;
-use App\Models\Permission;
+use App\Models\Zone;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Validator;
 use Tests\TestCase;
@@ -605,20 +611,28 @@ class ValidationTest extends TestCase
     {
         $customer = Customer::factory()->create();
         $region = Region::factory()->create();
+        $cargoType = CargoType::create([
+            'name' => 'Validation Cargo',
+            'category' => CargoCategory::General->value,
+            'weight_per_cubic_meter' => 1000,
+            'handling_requirements' => 'Standard',
+            'safety_requirements' => 'Standard',
+            'requires_special_equipment' => false,
+        ]);
 
         // Test valid data
         $validData = [
             'operationid' => 'OP001',
             'customer_id' => $customer->id,
             'startdate' => '2023-12-01',
-            'region_id' => $region->id,
+            'destination_scope' => 'region',
+            'destination_id' => $region->id,
             'volume' => 100.0,
-            'cargotype' => 'Test Cargo',
+            'cargo_type_id' => $cargoType->id,
+            'cargo_service_type' => 'commercial',
             'km' => 500.0,
             'tariff' => 50.0,
-            'status' => 'open',
-            'closed' => false,
-            'user_id' => $this->user->id
+            'status' => 'active',
         ];
 
         $response = $this->actingAs($this->user)
@@ -632,19 +646,32 @@ class ValidationTest extends TestCase
             'operationid' => '', // Empty operation ID
             'customer_id' => 99999, // Non-existent customer
             'startdate' => 'invalid_date', // Invalid date format
-            'region_id' => 99999, // Non-existent region
+            'destination_scope' => 'invalid_scope',
+            'destination_id' => 99999,
             'volume' => 'invalid_volume', // Invalid volume format
-            'cargotype' => '', // Empty cargo type
+            'cargo_type_id' => '', // Empty cargo type selection
+            'cargo_service_type' => 'invalid_service',
             'km' => 'invalid_km', // Invalid km format
             'tariff' => 'invalid_tariff', // Invalid tariff format
             'status' => 'invalid_status', // Invalid status
-            'user_id' => 99999 // Non-existent user
         ];
 
         $response = $this->actingAs($this->user)
             ->post(route('operations.store'), $invalidData);
 
-        $response->assertSessionHasErrors(['operationid', 'customer_id', 'startdate', 'region_id', 'volume', 'cargotype', 'km', 'tariff', 'status', 'user_id']);
+        $response->assertSessionHasErrors([
+            'operationid',
+            'customer_id',
+            'startdate',
+            'destination_scope',
+            'destination_id',
+            'volume',
+            'cargo_type_id',
+            'cargo_service_type',
+            'km',
+            'tariff',
+            'status',
+        ]);
     }
 
     /** @test */

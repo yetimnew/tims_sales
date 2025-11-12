@@ -2,13 +2,22 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
-use App\Models\VehicleType;
-use App\Models\Truck;
-use App\Models\Driver;
+use App\Enums\CargoCategory;
+use App\Models\CargoType;
 use App\Models\Customer;
-use App\Models\Region;
+use App\Models\Driver;
+use App\Models\DriverPerformanceRecord;
+use App\Models\FuelRecord;
+use App\Models\MaintenanceType;
 use App\Models\Operation;
+use App\Models\Performance;
+use App\Models\Region;
+use App\Models\RoutePlan;
+use App\Models\Truck;
+use App\Models\TruckFinancialRecord;
+use App\Models\User;
+use App\Models\VehicleMaintenanceRecord;
+use App\Models\VehicleType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Tests\TestCase;
@@ -25,6 +34,7 @@ class SecurityTest extends TestCase
     protected Customer $customer;
     protected Region $region;
     protected Operation $operation;
+    protected CargoType $cargoType;
 
     protected function setUp(): void
     {
@@ -47,7 +57,7 @@ class SecurityTest extends TestCase
     {
         $this->vehicleType = VehicleType::create([
             'name' => 'Heavy Truck',
-            'description' => 'Large cargo truck for heavy loads'
+            'description' => 'Large cargo truck for heavy loads',
         ]);
 
         $this->truck = Truck::create([
@@ -55,7 +65,7 @@ class SecurityTest extends TestCase
             'vehicletype_id' => $this->vehicleType->id,
             'status' => 'active',
             'chasisNumber' => 'CH123456',
-            'engineNumber' => 'EN789012'
+            'engineNumber' => 'EN789012',
         ]);
 
         $this->driver = Driver::create([
@@ -64,7 +74,7 @@ class SecurityTest extends TestCase
             'sex' => 'male',
             'status' => 'active',
             'zone' => 'Addis Ababa',
-            'mobile' => '+251911234567'
+            'mobile' => '+251911234567',
         ]);
 
         $this->customer = Customer::create([
@@ -72,25 +82,39 @@ class SecurityTest extends TestCase
             'contact_person' => 'Jane Smith',
             'phone' => '+251912345678',
             'email' => 'contact@abctransport.com',
-            'status' => 'active'
+            'status' => 'active',
         ]);
 
         $this->region = Region::create([
             'name' => 'Addis Ababa',
-            'description' => 'Capital city region'
+            'description' => 'Capital city region',
+        ]);
+
+        $this->cargoType = CargoType::create([
+            'name' => 'General Cargo',
+            'category' => CargoCategory::General->value,
+            'weight_per_cubic_meter' => 1000,
+            'handling_requirements' => 'Standard',
+            'safety_requirements' => 'Standard',
+            'requires_special_equipment' => false,
         ]);
 
         $this->operation = Operation::create([
             'operationid' => 'OP001',
             'customer_id' => $this->customer->id,
             'startdate' => '2025-01-01',
-            'region_id' => $this->region->id,
             'volume' => 100.00,
-            'cargotype' => 'General',
+            'cargo_type_id' => $this->cargoType->id,
+            'cargo_service_type' => 'commercial',
             'km' => 500.00,
             'tariff' => 50.00,
-            'status' => 'open',
-            'user_id' => $this->user->id
+            'status' => 'active',
+            'closed' => false,
+            'destination_scope' => 'region',
+            'destination_name' => $this->region->name,
+            'destination_reference_type' => Region::class,
+            'destination_reference_id' => $this->region->id,
+            'user_id' => $this->user->id,
         ]);
     }
 
@@ -394,7 +418,8 @@ class SecurityTest extends TestCase
     /** @test */
     public function two_factor_authentication_is_available()
     {
-        $user = User::factory()->create([
+        /** @var User $user */
+        $user = User::factory()->createOne([
             'two_factor_secret' => 'test-secret',
             'two_factor_recovery_codes' => ['test-code']
         ]);

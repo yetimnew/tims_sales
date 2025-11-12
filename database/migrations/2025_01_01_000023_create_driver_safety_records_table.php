@@ -23,6 +23,7 @@ return new class extends Migration
             $table->text('resolution')->nullable();
             $table->foreignId('reported_by')->constrained('users');
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 
@@ -34,6 +35,3 @@ return new class extends Migration
         Schema::dropIfExists('driver_safety_records');
     }
 };
-
-
-

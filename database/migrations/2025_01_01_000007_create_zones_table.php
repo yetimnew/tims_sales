@@ -17,7 +17,23 @@ return new class extends Migration
             $table->string('code')->nullable();
             $table->foreignId('region_id')->constrained('regions');
             $table->text('description')->nullable();
+            $table->enum('status', ['active', 'inactive'])->default('active');
+            $table->string('administrative_center')->nullable();
+            $table->decimal('area_km2', 12, 2)->nullable();
+            $table->unsignedBigInteger('population')->nullable();
+            $table->decimal('latitude', 10, 7)->nullable();
+            $table->decimal('longitude', 10, 7)->nullable();
+            $table->decimal('elevation_m', 8, 2)->nullable();
+            $table->decimal('accessibility_score', 5, 2)->nullable();
+            $table->text('infrastructure_notes')->nullable();
+            $table->text('climate_profile')->nullable();
             $table->timestamps();
+            $table->softDeletes();
+
+            $table->index(['status'], 'idx_zones_status');
+            $table->index(['region_id'], 'idx_zones_region_id');
+            $table->index(['accessibility_score'], 'idx_zones_accessibility_score');
+            $table->index(['population'], 'idx_zones_population');
         });
     }
 
@@ -29,6 +45,3 @@ return new class extends Migration
         Schema::dropIfExists('zones');
     }
 };
-
-
-

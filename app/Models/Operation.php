@@ -2,18 +2,20 @@
 
 namespace App\Models;
 
+use App\Enums\CargoServiceType;
+use App\Enums\OperationDestinationScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class Operation extends Model
 {
-    use HasFactory, SoftDeletes, LogsActivity;
+    use HasFactory, LogsActivity, SoftDeletes;
 
     protected $guarded = [];
 
@@ -24,6 +26,8 @@ class Operation extends Model
         'km' => 'decimal:2',
         'tariff' => 'decimal:2',
         'closed' => 'boolean',
+        'destination_scope' => OperationDestinationScope::class,
+        'cargo_service_type' => CargoServiceType::class,
     ];
 
     /**
@@ -43,14 +47,6 @@ class Operation extends Model
     }
 
     /**
-     * Get the region that owns the operation.
-     */
-    public function region(): BelongsTo
-    {
-        return $this->belongsTo(Region::class);
-    }
-
-    /**
      * Get the performances for the operation.
      */
     public function performances(): HasMany
@@ -64,6 +60,16 @@ class Operation extends Model
     public function outsourcePerformances(): HasMany
     {
         return $this->hasMany(OutsourcePerformance::class);
+    }
+
+    public function cargoType(): BelongsTo
+    {
+        return $this->belongsTo(CargoType::class);
+    }
+
+    public function destinationReference(): MorphTo
+    {
+        return $this->morphTo('destination_reference');
     }
 
     /**
@@ -95,9 +101,6 @@ class Operation extends Model
         return LogOptions::defaults()
             ->logOnly(['*'])
             ->useLogName('operation')
-            ->setDescriptionForEvent(fn(string $eventName) => "This model has been {$eventName}");
+            ->setDescriptionForEvent(fn (string $eventName) => "This model has been {$eventName}");
     }
 }
-
-
-

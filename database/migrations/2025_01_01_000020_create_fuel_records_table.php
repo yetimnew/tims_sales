@@ -25,7 +25,9 @@ return new class extends Migration
             $table->string('receipt_number')->nullable();
             $table->text('notes')->nullable();
             $table->foreignId('user_id')->constrained('users');
+            $table->foreignId('driver_truck_id')->nullable()->constrained('driver_truck')->cascadeOnDelete();
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 
@@ -37,6 +39,3 @@ return new class extends Migration
         Schema::dropIfExists('fuel_records');
     }
 };
-
-
-

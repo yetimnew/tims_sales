@@ -163,16 +163,30 @@ class TimsModelTest extends TestCase
             'description' => 'Capital city region'
         ]);
 
+        $cargoType = CargoType::create([
+            'name' => 'General Cargo',
+            'category' => CargoCategory::General->value,
+            'weight_per_cubic_meter' => 1000,
+            'handling_requirements' => 'Standard',
+            'safety_requirements' => 'Standard',
+            'requires_special_equipment' => false,
+        ]);
+
         $operation = Operation::create([
             'operationid' => 'OP001',
             'customer_id' => $customer->id,
             'startdate' => '2025-01-01',
-            'region_id' => $region->id,
             'volume' => 100.00,
-            'cargotype' => 'General',
+            'cargo_type_id' => $cargoType->id,
+            'cargo_service_type' => 'commercial',
             'km' => 500.00,
             'tariff' => 50.00,
-            'status' => 'open',
+            'status' => 'active',
+            'closed' => false,
+            'destination_scope' => 'region',
+            'destination_name' => $region->name,
+            'destination_reference_type' => Region::class,
+            'destination_reference_id' => $region->id,
             'user_id' => $user->id
         ]);
 
@@ -197,16 +211,30 @@ class TimsModelTest extends TestCase
             'description' => 'Capital city region'
         ]);
 
+        $cargoType = CargoType::create([
+            'name' => 'General Cargo',
+            'category' => CargoCategory::General->value,
+            'weight_per_cubic_meter' => 1000,
+            'handling_requirements' => 'Standard',
+            'safety_requirements' => 'Standard',
+            'requires_special_equipment' => false,
+        ]);
+
         $operation = Operation::create([
             'operationid' => 'OP001',
             'customer_id' => $customer->id,
             'startdate' => '2025-01-01',
-            'region_id' => $region->id,
             'volume' => 100.00,
-            'cargotype' => 'General',
+            'cargo_type_id' => $cargoType->id,
+            'cargo_service_type' => 'commercial',
             'km' => 500.00,
             'tariff' => 50.00,
-            'status' => 'open',
+            'status' => 'active',
+            'closed' => false,
+            'destination_scope' => 'region',
+            'destination_name' => $region->name,
+            'destination_reference_type' => Region::class,
+            'destination_reference_id' => $region->id,
             'user_id' => $user->id
         ]);
 

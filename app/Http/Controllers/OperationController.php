@@ -2,19 +2,30 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\CargoServiceType;
+use App\Enums\OperationDestinationScope;
+use App\Models\CargoType;
 use App\Models\Customer;
 use App\Models\Operation;
 use App\Models\Performance;
+use App\Models\Place;
+use App\Models\Region;
+use App\Models\Woreda;
+use App\Models\Zone;
+use Carbon\Carbon;
+use Exception;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Str;
 use Spatie\Activitylog\Models\Activity;
-use Exception;
-use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
 
 class OperationController extends Controller
 {
@@ -33,21 +44,21 @@ class OperationController extends Controller
         $perPageDefault = 15;
         $perPage = (int) $request->input('per_page', $perPageDefault);
 
-        if (!in_array($perPage, $perPageOptions, true)) {
+        if (! in_array($perPage, $perPageOptions, true)) {
             $perPage = $perPageDefault;
         }
 
-        if (!in_array($direction, ['asc', 'desc'], true)) {
+        if (! in_array($direction, ['asc', 'desc'], true)) {
             $direction = 'asc';
         }
 
         $allowedSorts = ['operationid', 'status', 'startdate', 'enddate', 'volume', 'km', 'tariff', 'closed', 'created_at'];
-        if (!in_array($sort, $allowedSorts, true)) {
+        if (! in_array($sort, $allowedSorts, true)) {
             $sort = 'operationid';
         }
 
         $baseQuery = Operation::query()
-            ->with(['customer'])
+            ->with(['customer', 'cargoType'])
             ->withSum('performances as delivered_volume', 'CargoVolumMT');
 
         if ($search !== '') {
@@ -60,15 +71,15 @@ class OperationController extends Controller
             });
         }
 
-        if (!empty($status) && $status !== 'all') {
+        if (! empty($status) && $status !== 'all') {
             $baseQuery->where('status', $status);
         }
 
-        if (!empty($customerId) && $customerId !== 'all') {
+        if (! empty($customerId) && $customerId !== 'all') {
             $baseQuery->where('customer_id', $customerId);
         }
 
-        if (!empty($closed) && $closed !== 'all') {
+        if (! empty($closed) && $closed !== 'all') {
             if ($closed === 'closed') {
                 $baseQuery->where('closed', true);
             } elseif ($closed === 'open') {
@@ -101,6 +112,19 @@ class OperationController extends Controller
                         'name' => $operation->customer->name,
                     ]
                     : null,
+                'cargoType' => $operation->cargoType
+                    ? [
+                        'id' => $operation->cargoType->id,
+                        'name' => $operation->cargoType->name,
+                        'category' => $operation->cargoType->category,
+                    ]
+                    : null,
+                'cargoServiceType' => $operation->cargo_service_type instanceof CargoServiceType
+                    ? $operation->cargo_service_type->value
+                    : $operation->cargo_service_type,
+                'cargoServiceLabel' => $operation->cargo_service_type instanceof CargoServiceType
+                    ? $operation->cargo_service_type->label()
+                    : null,
                 'description' => $operation->description,
                 'status' => $operation->status,
                 'volume' => $plannedVolume !== null ? round($plannedVolume, 2) : null,
@@ -112,6 +136,14 @@ class OperationController extends Controller
                 'deliveredVolume' => round($deliveredVolume, 2),
                 'remainingVolume' => $remainingVolume !== null ? round($remainingVolume, 2) : null,
                 'volumeCompletion' => $completionRate,
+                'destination' => [
+                    'scope' => $operation->destination_scope instanceof OperationDestinationScope
+                        ? $operation->destination_scope->value
+                        : $operation->destination_scope,
+                    'name' => $operation->destination_name,
+                    'reference_id' => $operation->destination_reference_id,
+                    'reference_type' => $operation->destination_reference_type,
+                ],
             ];
         });
 
@@ -165,12 +197,39 @@ class OperationController extends Controller
      */
     public function create(): Response
     {
-        $customers = Customer::where('status', 'active')->get();
-        $regions = \App\Models\Region::all();
+        $customers = Customer::where('status', 'active')
+            ->orderBy('name')
+            ->get(['id', 'name', 'status']);
+
+        $regions = Region::query()
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        $zones = Zone::query()
+            ->orderBy('name')
+            ->get(['id', 'name', 'region_id', 'status']);
+
+        $woredas = Woreda::query()
+            ->orderBy('name')
+            ->get(['id', 'name', 'zone_id', 'status']);
+
+        $places = Place::query()
+            ->orderBy('name')
+            ->get(['id', 'name', 'woreda_id', 'status']);
+
+        $cargoTypes = CargoType::query()
+            ->orderBy('name')
+            ->get(['id', 'name', 'category']);
 
         return Inertia::render('Operations/Create', [
             'customers' => $customers,
             'regions' => $regions,
+            'zones' => $zones,
+            'woredas' => $woredas,
+            'places' => $places,
+            'destinationScopes' => OperationDestinationScope::options(),
+            'cargoTypes' => $cargoTypes,
+            'cargoServiceTypes' => CargoServiceType::options(),
         ]);
     }
 
@@ -183,20 +242,29 @@ class OperationController extends Controller
             $validated = $request->validate([
                 'operationid' => 'required|string|max:255|unique:operations',
                 'customer_id' => 'required|exists:customers,id',
-                'region_id' => 'required|exists:regions,id',
                 'startdate' => 'required|date',
                 'volume' => 'required|numeric|min:0',
-                'cargotype' => 'required|string|max:255',
+                'cargo_type_id' => 'required|exists:cargo_types,id',
+                'cargo_service_type' => ['required', 'string', Rule::in(CargoServiceType::values())],
                 'km' => 'required|numeric|min:0',
                 'tariff' => 'required|numeric|min:0',
                 'remark' => 'nullable|string|max:1000',
                 'status' => 'required|string|in:active,inactive',
+                'destination_scope' => ['required', 'string', Rule::in(OperationDestinationScope::values())],
+                'destination_id' => ['required', 'integer', 'min:1'],
             ]);
 
-            // Add user_id to the validated data
-            $validated['user_id'] = Auth::id();
+            $destinationAttributes = $this->resolveDestinationAttributes(
+                OperationDestinationScope::from($validated['destination_scope']),
+                (int) $validated['destination_id']
+            );
 
-            $operation = Operation::create($validated);
+            $attributes = Arr::except($validated, ['destination_id']);
+            $attributes['cargo_type_id'] = (int) $attributes['cargo_type_id'];
+            $attributes['cargo_service_type'] = strtolower((string) $attributes['cargo_service_type']);
+            $attributes['user_id'] = Auth::id();
+
+            $operation = Operation::create(array_merge($attributes, $destinationAttributes));
 
             return redirect()->route('operations.index')
                 ->with('success', 'Operation created successfully.');
@@ -217,7 +285,7 @@ class OperationController extends Controller
      */
     public function show(Operation $operation): Response
     {
-        $operation->load(['customer', 'performances', 'region', 'user']);
+    $operation->load(['customer', 'performances', 'user', 'destinationReference', 'cargoType']);
 
         // Load activity logs for this operation using Spatie Activity Log
         $activityLogs = Activity::forSubject($operation)
@@ -362,13 +430,42 @@ class OperationController extends Controller
      */
     public function edit(Operation $operation): Response
     {
-        $customers = Customer::where('status', 'active')->get();
-        $regions = \App\Models\Region::all();
+    $operation->load(['destinationReference', 'cargoType']);
+
+        $customers = Customer::where('status', 'active')
+            ->orderBy('name')
+            ->get(['id', 'name', 'status']);
+
+        $regions = Region::query()
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        $zones = Zone::query()
+            ->orderBy('name')
+            ->get(['id', 'name', 'region_id', 'status']);
+
+        $woredas = Woreda::query()
+            ->orderBy('name')
+            ->get(['id', 'name', 'zone_id', 'status']);
+
+        $places = Place::query()
+            ->orderBy('name')
+            ->get(['id', 'name', 'woreda_id', 'status']);
+
+        $cargoTypes = CargoType::query()
+            ->orderBy('name')
+            ->get(['id', 'name', 'category']);
 
         return Inertia::render('Operations/Edit', [
             'operation' => $operation,
             'customers' => $customers,
             'regions' => $regions,
+            'zones' => $zones,
+            'woredas' => $woredas,
+            'places' => $places,
+            'destinationScopes' => OperationDestinationScope::options(),
+            'cargoTypes' => $cargoTypes,
+            'cargoServiceTypes' => CargoServiceType::options(),
         ]);
     }
 
@@ -379,19 +476,30 @@ class OperationController extends Controller
     {
         try {
             $validated = $request->validate([
-                'operationid' => 'required|string|max:255|unique:operations,operationid,' . $operation->id,
+                'operationid' => 'required|string|max:255|unique:operations,operationid,'.$operation->id,
                 'customer_id' => 'required|exists:customers,id',
-                'region_id' => 'required|exists:regions,id',
                 'startdate' => 'required|date',
                 'volume' => 'required|numeric|min:0',
-                'cargotype' => 'required|string|max:255',
+                'cargo_type_id' => 'required|exists:cargo_types,id',
+                'cargo_service_type' => ['required', 'string', Rule::in(CargoServiceType::values())],
                 'km' => 'required|numeric|min:0',
                 'tariff' => 'required|numeric|min:0',
                 'remark' => 'nullable|string|max:1000',
                 'status' => 'required|string|in:active,inactive',
+                'destination_scope' => ['required', 'string', Rule::in(OperationDestinationScope::values())],
+                'destination_id' => ['required', 'integer', 'min:1'],
             ]);
 
-            $operation->update($validated);
+            $destinationAttributes = $this->resolveDestinationAttributes(
+                OperationDestinationScope::from($validated['destination_scope']),
+                (int) $validated['destination_id']
+            );
+
+            $attributes = Arr::except($validated, ['destination_id']);
+            $attributes['cargo_type_id'] = (int) $attributes['cargo_type_id'];
+            $attributes['cargo_service_type'] = strtolower((string) $attributes['cargo_service_type']);
+
+            $operation->update(array_merge($attributes, $destinationAttributes));
 
             return redirect()->route('operations.index')
                 ->with('success', 'Operation updated successfully.');
@@ -409,6 +517,43 @@ class OperationController extends Controller
     }
 
     /**
+     * Resolve destination metadata for the provided scope and identifier.
+     *
+     * @throws ValidationException
+     */
+    private function resolveDestinationAttributes(OperationDestinationScope $scope, int $destinationId): array
+    {
+        return match ($scope) {
+            OperationDestinationScope::Region => $this->buildDestinationAttributes(Region::query()->find($destinationId)),
+            OperationDestinationScope::Zone => $this->buildDestinationAttributes(Zone::query()->find($destinationId)),
+            OperationDestinationScope::Woreda => $this->buildDestinationAttributes(Woreda::query()->find($destinationId)),
+            OperationDestinationScope::Place => $this->buildDestinationAttributes(Place::query()->find($destinationId)),
+        };
+    }
+
+    /**
+     * Prepare morph attributes for the resolved destination model.
+     *
+     * @throws ValidationException
+     */
+    private function buildDestinationAttributes(?Model $model): array
+    {
+        if (! $model) {
+            throw ValidationException::withMessages([
+                'destination_id' => __('The selected destination is invalid.'),
+            ]);
+        }
+
+        $name = $model->name ?? (string) $model->getKey();
+
+        return [
+            'destination_name' => $name,
+            'destination_reference_type' => $model::class,
+            'destination_reference_id' => $model->getKey(),
+        ];
+    }
+
+    /**
      * Remove the specified resource from storage.
      */
     public function destroy(Operation $operation)
@@ -419,14 +564,14 @@ class OperationController extends Controller
             // Check if operation has performances
             if ($operation->performances()->count() > 0) {
                 return back()->withErrors([
-                    'error' => 'You are not allowed to delete this operation. It has ' . $operation->performances()->count() . ' performance record(s). Please remove all performance records first.'
+                    'error' => 'You are not allowed to delete this operation. It has '.$operation->performances()->count().' performance record(s). Please remove all performance records first.',
                 ]);
             }
 
             // Check if operation has outsource performances
             if ($operation->outsourcePerformances()->count() > 0) {
                 return back()->withErrors([
-                    'error' => 'You are not allowed to delete this operation. It has ' . $operation->outsourcePerformances()->count() . ' outsource performance record(s). Please remove all outsource performance records first.'
+                    'error' => 'You are not allowed to delete this operation. It has '.$operation->outsourcePerformances()->count().' outsource performance record(s). Please remove all outsource performance records first.',
                 ]);
             }
 
@@ -468,15 +613,15 @@ class OperationController extends Controller
             });
         }
 
-        if (!empty($status) && $status !== 'all') {
+        if (! empty($status) && $status !== 'all') {
             $query->where('status', $status);
         }
 
-        if (!empty($customerId) && $customerId !== 'all') {
+        if (! empty($customerId) && $customerId !== 'all') {
             $query->where('customer_id', $customerId);
         }
 
-        if (!empty($closed) && $closed !== 'all') {
+        if (! empty($closed) && $closed !== 'all') {
             if ($closed === 'closed') {
                 $query->where('closed', true);
             } elseif ($closed === 'open') {
@@ -489,11 +634,11 @@ class OperationController extends Controller
         $sort = $request->input('sort', 'operationid');
         $direction = strtolower((string) $request->input('direction', 'asc'));
         $allowedSorts = ['operationid', 'status', 'startdate', 'enddate', 'volume', 'km', 'tariff', 'closed', 'created_at'];
-        if (!in_array($sort, $allowedSorts, true)) {
+        if (! in_array($sort, $allowedSorts, true)) {
             $sort = 'operationid';
         }
 
-        if (!in_array($direction, ['asc', 'desc'], true)) {
+        if (! in_array($direction, ['asc', 'desc'], true)) {
             $direction = 'asc';
         }
 
@@ -502,7 +647,7 @@ class OperationController extends Controller
         $operations = $query->get();
 
         // Generate CSV
-        $filename = 'operations_' . now()->format('Y-m-d_H-i-s') . '.csv';
+        $filename = 'operations_'.now()->format('Y-m-d_H-i-s').'.csv';
         $handle = fopen('php://temp', 'r+');
 
         // Write header
@@ -553,7 +698,7 @@ class OperationController extends Controller
 
         return response($csv, 200, [
             'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
         ]);
     }
 
@@ -593,14 +738,14 @@ class OperationController extends Controller
         try {
             $availableOperations = Operation::where('status', 'active')
                 ->where('closed', false)
-                ->with(['customer', 'region'])
+                ->with(['customer', 'destinationReference', 'cargoType'])
                 ->orderBy('operationid')
                 ->get();
 
             return response()->json([
                 'success' => true,
                 'data' => $availableOperations,
-                'count' => $availableOperations->count()
+                'count' => $availableOperations->count(),
             ]);
 
         } catch (Exception $e) {
@@ -611,11 +756,8 @@ class OperationController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to retrieve available operations'
+                'message' => 'Failed to retrieve available operations',
             ], 500);
         }
     }
 }
-
-
-

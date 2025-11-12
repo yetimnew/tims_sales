@@ -16,9 +16,12 @@ return new class extends Migration
             $table->string('operationid')->unique();
             $table->foreignId('customer_id')->constrained('customers');
             $table->date('startdate');
-            $table->foreignId('region_id')->constrained('regions');
+            $table->string('destination_scope')->default('region');
+            $table->string('destination_name')->nullable();
+            $table->nullableMorphs('destination_reference', 'operations_dest_ref_index');
             $table->decimal('volume', 10, 2);
-            $table->string('cargotype');
+            $table->foreignId('cargo_type_id')->constrained('cargo_types');
+            $table->string('cargo_service_type')->default('commercial');
             $table->decimal('km', 10, 2);
             $table->decimal('tariff', 10, 2);
             $table->string('status')->default('open');
@@ -39,6 +42,3 @@ return new class extends Migration
         Schema::dropIfExists('operations');
     }
 };
-
-
-

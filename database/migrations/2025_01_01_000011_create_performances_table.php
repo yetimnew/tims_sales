@@ -30,6 +30,14 @@ return new class extends Migration
             $table->decimal('perdiem', 10, 2)->nullable();
             $table->decimal('workOnGoing', 10, 2)->nullable();
             $table->decimal('other', 10, 2)->nullable();
+            $table->foreignId('cargo_type_id')->nullable()->constrained('cargo_types');
+            $table->decimal('cargo_weight_kg', 10, 2)->nullable();
+            $table->decimal('cargo_volume_cubic_meters', 10, 2)->nullable();
+            $table->string('loading_method')->nullable();
+            $table->string('unloading_method')->nullable();
+            $table->integer('loading_time_minutes')->nullable();
+            $table->integer('unloading_time_minutes')->nullable();
+            $table->text('cargo_condition_notes')->nullable();
             $table->text('comment')->nullable();
             $table->string('satus')->default('active');
             $table->boolean('is_returned')->default(false);
@@ -37,6 +45,13 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained('users');
             $table->timestamps();
             $table->softDeletes();
+
+            $table->index(['driver_truck_id', 'DateDispach'], 'idx_performance_driver_truck_date');
+            $table->index(['operation_id'], 'idx_performance_operation');
+            $table->index(['orgion_id'], 'idx_performance_origin');
+            $table->index(['destination_id'], 'idx_performance_destination');
+            $table->index(['satus'], 'idx_performance_status');
+            $table->index(['is_returned'], 'idx_performance_returned');
         });
     }
 
@@ -48,6 +63,3 @@ return new class extends Migration
         Schema::dropIfExists('performances');
     }
 };
-
-
-
