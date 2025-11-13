@@ -2,13 +2,16 @@
 
 namespace Tests\Feature;
 
+use App\Enums\CargoServiceType;
+use App\Models\CargoType;
+use App\Models\Customer;
+use App\Models\Driver;
+use App\Models\Operation;
+use App\Models\Region;
+use App\Models\Truck;
 use App\Models\User;
 use App\Models\VehicleType;
-use App\Models\Truck;
-use App\Models\Driver;
-use App\Models\Customer;
-use App\Models\Region;
-use App\Models\Operation;
+use Database\Seeders\CheckPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Tests\TestCase;
@@ -18,18 +21,29 @@ class ApiTest extends TestCase
     use RefreshDatabase, WithFaker;
 
     protected User $user;
+
     protected VehicleType $vehicleType;
+
     protected Truck $truck;
+
     protected Driver $driver;
+
     protected Customer $customer;
+
     protected Region $region;
+
+    protected CargoType $cargoType;
+
     protected Operation $operation;
 
     protected function setUp(): void
     {
         parent::setUp();
 
+        $this->seed(CheckPermissionSeeder::class);
+
         $this->user = User::factory()->create();
+        $this->user->assignRole('admin');
         $this->createTestData();
     }
 
@@ -37,7 +51,7 @@ class ApiTest extends TestCase
     {
         $this->vehicleType = VehicleType::create([
             'name' => 'Heavy Truck',
-            'description' => 'Large cargo truck for heavy loads'
+            'description' => 'Large cargo truck for heavy loads',
         ]);
 
         $this->truck = Truck::create([
@@ -45,7 +59,7 @@ class ApiTest extends TestCase
             'vehicletype_id' => $this->vehicleType->id,
             'status' => 'active',
             'chasisNumber' => 'CH123456',
-            'engineNumber' => 'EN789012'
+            'engineNumber' => 'EN789012',
         ]);
 
         $this->driver = Driver::create([
@@ -54,7 +68,7 @@ class ApiTest extends TestCase
             'sex' => 'male',
             'status' => 'active',
             'zone' => 'Addis Ababa',
-            'mobile' => '+251911234567'
+            'mobile' => '+251911234567',
         ]);
 
         $this->customer = Customer::create([
@@ -62,25 +76,32 @@ class ApiTest extends TestCase
             'contact_person' => 'Jane Smith',
             'phone' => '+251912345678',
             'email' => 'contact@abctransport.com',
-            'status' => 'active'
+            'status' => 'active',
         ]);
 
         $this->region = Region::create([
             'name' => 'Addis Ababa',
-            'description' => 'Capital city region'
+            'description' => 'Capital city region',
         ]);
+
+        $this->cargoType = CargoType::factory()->create();
 
         $this->operation = Operation::create([
             'operationid' => 'OP001',
             'customer_id' => $this->customer->id,
             'startdate' => '2025-01-01',
-            'region_id' => $this->region->id,
+            'destination_scope' => 'region',
+            'destination_name' => $this->region->name,
+            'destination_reference_type' => Region::class,
+            'destination_reference_id' => $this->region->id,
             'volume' => 100.00,
-            'cargotype' => 'General',
+            'cargo_type_id' => $this->cargoType->id,
+            'cargo_service_type' => CargoServiceType::Commercial->value,
             'km' => 500.00,
             'tariff' => 50.00,
-            'status' => 'open',
-            'user_id' => $this->user->id
+            'status' => 'active',
+            'closed' => false,
+            'user_id' => $this->user->id,
         ]);
     }
 
@@ -99,10 +120,10 @@ class ApiTest extends TestCase
                         'status',
                         'vehicle_type' => [
                             'id',
-                            'name'
-                        ]
-                    ]
-                ]
+                            'name',
+                        ],
+                    ],
+                ],
             ]);
     }
 
@@ -119,9 +140,9 @@ class ApiTest extends TestCase
                         'id',
                         'driverid',
                         'name',
-                        'status'
-                    ]
-                ]
+                        'status',
+                    ],
+                ],
             ]);
     }
 
@@ -138,9 +159,9 @@ class ApiTest extends TestCase
                         'id',
                         'name',
                         'contact_person',
-                        'status'
-                    ]
-                ]
+                        'status',
+                    ],
+                ],
             ]);
     }
 
@@ -159,10 +180,22 @@ class ApiTest extends TestCase
                         'status',
                         'customer' => [
                             'id',
-                            'name'
-                        ]
-                    ]
-                ]
+                            'name',
+                        ],
+                        'cargoType' => [
+                            'id',
+                            'name',
+                            'category',
+                        ],
+                        'cargoServiceType',
+                        'destination' => [
+                            'scope',
+                            'name',
+                            'reference_id',
+                            'reference_type',
+                        ],
+                    ],
+                ],
             ]);
     }
 
@@ -174,7 +207,7 @@ class ApiTest extends TestCase
             'vehicletype_id' => $this->vehicleType->id,
             'status' => 'active',
             'chasisNumber' => 'CH567890',
-            'engineNumber' => 'EN123456'
+            'engineNumber' => 'EN123456',
         ];
 
         $response = $this->actingAs($this->user)
@@ -186,8 +219,8 @@ class ApiTest extends TestCase
                     'id',
                     'plate',
                     'status',
-                    'vehicle_type'
-                ]
+                    'vehicle_type',
+                ],
             ]);
 
         $this->assertDatabaseHas('trucks', $truckData);
@@ -202,7 +235,7 @@ class ApiTest extends TestCase
             'sex' => 'female',
             'status' => 'active',
             'zone' => 'Dire Dawa',
-            'mobile' => '+251911234568'
+            'mobile' => '+251911234568',
         ];
 
         $response = $this->actingAs($this->user)
@@ -214,8 +247,8 @@ class ApiTest extends TestCase
                     'id',
                     'driverid',
                     'name',
-                    'status'
-                ]
+                    'status',
+                ],
             ]);
 
         $this->assertDatabaseHas('drivers', $driverData);
@@ -226,7 +259,7 @@ class ApiTest extends TestCase
     {
         $updateData = [
             'plate' => 'CC-9999',
-            'status' => 'inactive'
+            'status' => 'inactive',
         ];
 
         $response = $this->actingAs($this->user)
@@ -237,14 +270,14 @@ class ApiTest extends TestCase
                 'data' => [
                     'id',
                     'plate',
-                    'status'
-                ]
+                    'status',
+                ],
             ]);
 
         $this->assertDatabaseHas('trucks', [
             'id' => $this->truck->id,
             'plate' => 'CC-9999',
-            'status' => 'inactive'
+            'status' => 'inactive',
         ]);
     }
 
@@ -273,8 +306,8 @@ class ApiTest extends TestCase
                     'status',
                     'vehicle_type',
                     'created_at',
-                    'updated_at'
-                ]
+                    'updated_at',
+                ],
             ]);
     }
 
@@ -293,8 +326,8 @@ class ApiTest extends TestCase
                     'sex',
                     'status',
                     'zone',
-                    'mobile'
-                ]
+                    'mobile',
+                ],
             ]);
     }
 
@@ -312,8 +345,8 @@ class ApiTest extends TestCase
                     'contact_person',
                     'phone',
                     'email',
-                    'status'
-                ]
+                    'status',
+                ],
             ]);
     }
 
@@ -330,12 +363,13 @@ class ApiTest extends TestCase
                     'operationid',
                     'status',
                     'customer',
-                    'region',
+                    'cargoType',
+                    'cargoServiceType',
+                    'destination',
                     'volume',
-                    'cargotype',
                     'km',
-                    'tariff'
-                ]
+                    'tariff',
+                ],
             ]);
     }
 
@@ -345,7 +379,7 @@ class ApiTest extends TestCase
         $invalidData = [
             'plate' => '', // Required field
             'vehicletype_id' => 999, // Non-existent
-            'status' => 'invalid' // Invalid status
+            'status' => 'invalid', // Invalid status
         ];
 
         $response = $this->actingAs($this->user)
@@ -378,9 +412,9 @@ class ApiTest extends TestCase
         // Create multiple trucks
         for ($i = 0; $i < 25; $i++) {
             Truck::create([
-                'plate' => 'DD-' . str_pad($i, 4, '0', STR_PAD_LEFT),
+                'plate' => 'DD-'.str_pad($i, 4, '0', STR_PAD_LEFT),
                 'vehicletype_id' => $this->vehicleType->id,
-                'status' => 'active'
+                'status' => 'active',
             ]);
         }
 
@@ -395,8 +429,8 @@ class ApiTest extends TestCase
                     'current_page',
                     'per_page',
                     'total',
-                    'last_page'
-                ]
+                    'last_page',
+                ],
             ]);
 
         $responseData = $response->json();
@@ -412,13 +446,13 @@ class ApiTest extends TestCase
         Truck::create([
             'plate' => 'EE-0001',
             'vehicletype_id' => $this->vehicleType->id,
-            'status' => 'active'
+            'status' => 'active',
         ]);
 
         Truck::create([
             'plate' => 'EE-0002',
             'vehicletype_id' => $this->vehicleType->id,
-            'status' => 'inactive'
+            'status' => 'inactive',
         ]);
 
         $response = $this->actingAs($this->user)
@@ -439,13 +473,13 @@ class ApiTest extends TestCase
         Truck::create([
             'plate' => 'FF-1234',
             'vehicletype_id' => $this->vehicleType->id,
-            'status' => 'active'
+            'status' => 'active',
         ]);
 
         Truck::create([
             'plate' => 'GG-5678',
             'vehicletype_id' => $this->vehicleType->id,
-            'status' => 'active'
+            'status' => 'active',
         ]);
 
         $response = $this->actingAs($this->user)
@@ -472,8 +506,8 @@ class ApiTest extends TestCase
                     'total_drivers',
                     'active_drivers',
                     'total_customers',
-                    'total_operations'
-                ]
+                    'total_operations',
+                ],
             ]);
     }
 
@@ -489,11 +523,8 @@ class ApiTest extends TestCase
                     'fleet_utilization',
                     'driver_performance',
                     'cost_analysis',
-                    'revenue_trends'
-                ]
+                    'revenue_trends',
+                ],
             ]);
     }
 }
-
-
-

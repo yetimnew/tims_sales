@@ -26,7 +26,6 @@ class DriverSafetyRecordFactory extends Factory
             'damage_cost' => $this->faker->randomFloat(2, 0, 50000),
             'location' => $this->faker->address(),
             'resolution' => $this->faker->sentence(),
-            'reported_by' => $this->faker->name(),
         ];
     }
 }

@@ -2,12 +2,11 @@
 
 namespace Tests\Unit\Models;
 
-use App\Models\Truck;
 use App\Models\Driver;
-use App\Models\VehicleType;
-use App\Models\VehicleMaintenanceRecord;
 use App\Models\FuelRecord;
-use App\Models\Performance;
+use App\Models\Truck;
+use App\Models\VehicleMaintenanceRecord;
+use App\Models\VehicleType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -20,7 +19,7 @@ class TruckTest extends TestCase
     {
         $truck = Truck::factory()->create([
             'plate' => 'ABC-123',
-            'status' => 'active'
+            'status' => 'active',
         ]);
 
         $this->assertInstanceOf(Truck::class, $truck);
@@ -59,11 +58,11 @@ class TruckTest extends TestCase
 
         $truck->drivers()->attach($driver1->id, [
             'assigned_date' => now(),
-            'status' => 'active'
+            'status' => 'active',
         ]);
         $truck->drivers()->attach($driver2->id, [
             'assigned_date' => now(),
-            'status' => 'active'
+            'status' => 'active',
         ]);
 
         $this->assertCount(2, $truck->drivers);
@@ -96,7 +95,7 @@ class TruckTest extends TestCase
     {
         $truck = Truck::factory()->create([
             'productionDate' => '2023-01-15',
-            'serviceStartDate' => '2023-02-01'
+            'serviceStartDate' => '2023-02-01',
         ]);
 
         $this->assertInstanceOf(\Carbon\Carbon::class, $truck->productionDate);
@@ -108,8 +107,9 @@ class TruckTest extends TestCase
     {
         $truck = Truck::factory()->create(['purchasePrice' => 150000.50]);
 
-        $this->assertIsFloat($truck->purchasePrice);
-        $this->assertEquals(150000.50, $truck->purchasePrice);
+        $this->assertIsNumeric($truck->purchasePrice);
+        $this->assertEquals('150000.50', $truck->purchasePrice);
+        $this->assertEquals(150000.50, (float) $truck->purchasePrice);
     }
 
     /** @test */
@@ -128,7 +128,7 @@ class TruckTest extends TestCase
             'status',
         ];
 
-        $truck = new Truck();
+        $truck = new Truck;
         $this->assertEquals($fillable, $truck->getFillable());
     }
 
@@ -151,11 +151,11 @@ class TruckTest extends TestCase
         $truck = Truck::factory()->create();
         VehicleMaintenanceRecord::factory()->create([
             'truck_id' => $truck->id,
-            'cost' => 1000.00
+            'cost' => 1000.00,
         ]);
         VehicleMaintenanceRecord::factory()->create([
             'truck_id' => $truck->id,
-            'cost' => 500.00
+            'cost' => 500.00,
         ]);
 
         $totalCost = $truck->maintenanceRecords->sum('cost');
@@ -169,11 +169,11 @@ class TruckTest extends TestCase
         $truck = Truck::factory()->create();
         FuelRecord::factory()->create([
             'truck_id' => $truck->id,
-            'total_cost' => 200.00
+            'total_cost' => 200.00,
         ]);
         FuelRecord::factory()->create([
             'truck_id' => $truck->id,
-            'total_cost' => 300.00
+            'total_cost' => 300.00,
         ]);
 
         $totalCost = $truck->fuelRecords->sum('total_cost');

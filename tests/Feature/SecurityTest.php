@@ -3,21 +3,16 @@
 namespace Tests\Feature;
 
 use App\Enums\CargoCategory;
+use App\Enums\CargoServiceType;
 use App\Models\CargoType;
 use App\Models\Customer;
 use App\Models\Driver;
-use App\Models\DriverPerformanceRecord;
-use App\Models\FuelRecord;
-use App\Models\MaintenanceType;
 use App\Models\Operation;
-use App\Models\Performance;
 use App\Models\Region;
-use App\Models\RoutePlan;
 use App\Models\Truck;
-use App\Models\TruckFinancialRecord;
 use App\Models\User;
-use App\Models\VehicleMaintenanceRecord;
 use App\Models\VehicleType;
+use Database\Seeders\CheckPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Tests\TestCase;
@@ -27,18 +22,28 @@ class SecurityTest extends TestCase
     use RefreshDatabase, WithFaker;
 
     protected User $user;
+
     protected User $adminUser;
+
     protected VehicleType $vehicleType;
+
     protected Truck $truck;
+
     protected Driver $driver;
+
     protected Customer $customer;
+
     protected Region $region;
+
     protected Operation $operation;
+
     protected CargoType $cargoType;
 
     protected function setUp(): void
     {
         parent::setUp();
+
+        $this->seed(CheckPermissionSeeder::class);
 
         $this->user = User::factory()->create([
             'name' => 'Test User',
@@ -49,6 +54,9 @@ class SecurityTest extends TestCase
             'name' => 'Admin User',
             'email' => 'admin@test.com',
         ]);
+
+        $this->user->assignRole('admin');
+        $this->adminUser->assignRole('admin');
 
         $this->createTestData();
     }
@@ -105,7 +113,7 @@ class SecurityTest extends TestCase
             'startdate' => '2025-01-01',
             'volume' => 100.00,
             'cargo_type_id' => $this->cargoType->id,
-            'cargo_service_type' => 'commercial',
+            'cargo_service_type' => CargoServiceType::Commercial->value,
             'km' => 500.00,
             'tariff' => 50.00,
             'status' => 'active',
@@ -138,7 +146,7 @@ class SecurityTest extends TestCase
             '/reports/performances',
             '/reports/operations',
             '/reports/financial',
-            '/reports/maintenance'
+            '/reports/maintenance',
         ];
 
         foreach ($protectedRoutes as $route) {
@@ -161,7 +169,7 @@ class SecurityTest extends TestCase
             '/driver-performance',
             '/cargo-types',
             '/financial',
-            '/route-plans'
+            '/route-plans',
         ];
 
         foreach ($protectedRoutes as $route) {
@@ -177,7 +185,7 @@ class SecurityTest extends TestCase
             ->post('/trucks', [
                 'plate' => 'BB-5678',
                 'vehicletype_id' => $this->vehicleType->id,
-                'status' => 'active'
+                'status' => 'active',
             ]);
 
         // Should redirect back with CSRF error
@@ -193,7 +201,7 @@ class SecurityTest extends TestCase
             ->post('/trucks', [
                 'plate' => $maliciousInput,
                 'vehicletype_id' => $this->vehicleType->id,
-                'status' => 'active'
+                'status' => 'active',
             ]);
 
         // Should handle gracefully without executing SQL
@@ -215,7 +223,7 @@ class SecurityTest extends TestCase
                 'sex' => 'male',
                 'status' => 'active',
                 'zone' => 'Addis Ababa',
-                'mobile' => '+251911234568'
+                'mobile' => '+251911234568',
             ]);
 
         $response->assertRedirect('/drivers');
@@ -252,7 +260,7 @@ class SecurityTest extends TestCase
                 'plate' => 'CC-9999',
                 'vehicletype_id' => $this->vehicleType->id,
                 'status' => 'active',
-                'document' => $maliciousFile
+                'document' => $maliciousFile,
             ]);
 
         // Should reject PHP files
@@ -266,7 +274,7 @@ class SecurityTest extends TestCase
             '123',
             'password',
             '12345678',
-            'abcdefgh'
+            'abcdefgh',
         ];
 
         foreach ($weakPasswords as $password) {
@@ -274,7 +282,7 @@ class SecurityTest extends TestCase
                 'name' => 'Test User',
                 'email' => 'test@example.com',
                 'password' => $password,
-                'password_confirmation' => $password
+                'password_confirmation' => $password,
             ]);
 
             $response->assertSessionHasErrors(['password']);
@@ -288,7 +296,7 @@ class SecurityTest extends TestCase
             'invalid-email',
             '@example.com',
             'test@',
-            'test..test@example.com'
+            'test..test@example.com',
         ];
 
         foreach ($invalidEmails as $email) {
@@ -296,7 +304,7 @@ class SecurityTest extends TestCase
                 'name' => 'Test User',
                 'email' => $email,
                 'password' => 'password123',
-                'password_confirmation' => 'password123'
+                'password_confirmation' => 'password123',
             ]);
 
             $response->assertSessionHasErrors(['email']);
@@ -315,7 +323,7 @@ class SecurityTest extends TestCase
                 'sex' => 'male',
                 'status' => 'active',
                 'zone' => 'Addis Ababa',
-                'mobile' => '+251911234568'
+                'mobile' => '+251911234568',
             ]);
 
         $response->assertSessionHasErrors(['name']);
@@ -328,7 +336,7 @@ class SecurityTest extends TestCase
             ->post('/trucks', [
                 'plate' => 'DD-1111',
                 'vehicletype_id' => 99999, // Non-existent ID
-                'status' => 'active'
+                'status' => 'active',
             ]);
 
         $response->assertSessionHasErrors(['vehicletype_id']);
@@ -342,7 +350,7 @@ class SecurityTest extends TestCase
             ->post('/trucks', [
                 'plate' => 'AA-1234', // Already exists
                 'vehicletype_id' => $this->vehicleType->id,
-                'status' => 'active'
+                'status' => 'active',
             ]);
 
         $response->assertSessionHasErrors(['plate']);
@@ -368,7 +376,7 @@ class SecurityTest extends TestCase
             ->post('/trucks', [
                 'plate' => 'EE-2222',
                 'vehicletype_id' => $this->vehicleType->id,
-                'status' => 'active'
+                'status' => 'active',
             ]);
 
         $response->assertRedirect('/trucks');
@@ -376,7 +384,7 @@ class SecurityTest extends TestCase
         // Verify audit log entry exists
         $this->assertDatabaseHas('activity_log', [
             'description' => 'Truck created',
-            'subject_type' => 'App\Models\Truck'
+            'subject_type' => 'App\Models\Truck',
         ]);
     }
 
@@ -421,7 +429,7 @@ class SecurityTest extends TestCase
         /** @var User $user */
         $user = User::factory()->createOne([
             'two_factor_secret' => 'test-secret',
-            'two_factor_recovery_codes' => ['test-code']
+            'two_factor_recovery_codes' => ['test-code'],
         ]);
 
         $response = $this->actingAs($user)
@@ -434,7 +442,7 @@ class SecurityTest extends TestCase
     public function password_reset_security_is_enforced()
     {
         $response = $this->post('/forgot-password', [
-            'email' => 'nonexistent@example.com'
+            'email' => 'nonexistent@example.com',
         ]);
 
         // Should not reveal whether email exists
@@ -449,7 +457,7 @@ class SecurityTest extends TestCase
         for ($i = 0; $i < 6; $i++) {
             $response = $this->post('/login', [
                 'email' => $this->user->email,
-                'password' => 'wrong-password'
+                'password' => 'wrong-password',
             ]);
 
             if ($i >= 5) {
@@ -487,7 +495,7 @@ class SecurityTest extends TestCase
                 'status' => 'active',
                 'zone' => 'Addis Ababa',
                 'mobile' => '+251911234568',
-                'password' => 'secret-password' // Should not be logged
+                'password' => 'secret-password', // Should not be logged
             ]);
 
         $response->assertRedirect('/drivers');
@@ -497,6 +505,3 @@ class SecurityTest extends TestCase
         $this->assertStringNotContainsString('secret-password', $logContent);
     }
 }
-
-
-

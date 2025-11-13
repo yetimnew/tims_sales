@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\OperationDestinationScope;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -16,7 +17,7 @@ return new class extends Migration
             $table->string('operationid')->unique();
             $table->foreignId('customer_id')->constrained('customers');
             $table->date('startdate');
-            $table->string('destination_scope')->default('region');
+            $table->string('destination_scope')->default(OperationDestinationScope::Region->value);
             $table->string('destination_name')->nullable();
             $table->nullableMorphs('destination_reference', 'operations_dest_ref_index');
             $table->decimal('volume', 10, 2);

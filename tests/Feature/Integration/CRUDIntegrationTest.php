@@ -2,14 +2,13 @@
 
 namespace Tests\Feature\Integration;
 
-use App\Models\User;
-use App\Models\Truck;
 use App\Models\Driver;
+use App\Models\Truck;
+use App\Models\User;
 use App\Models\VehicleType;
-use App\Models\Zone;
 use App\Models\Woreda;
-use App\Models\Role;
-use App\Models\Permission;
+use App\Models\Zone;
+use Database\Seeders\CheckPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -18,39 +17,23 @@ class CRUDIntegrationTest extends TestCase
     use RefreshDatabase;
 
     protected $user;
+
     protected $vehicleType;
+
     protected $zone;
+
     protected $woreda;
 
     protected function setUp(): void
     {
         parent::setUp();
 
+        $this->seed(CheckPermissionSeeder::class);
+
         // Create user with permissions
         $this->user = User::factory()->create();
 
-        // Create permissions
-        $permissions = [
-            'trucks.view', 'trucks.create', 'trucks.edit', 'trucks.destroy',
-            'trucks.show', 'trucks.store', 'trucks.update', 'trucks.export',
-            'drivers.view', 'drivers.create', 'drivers.edit', 'drivers.destroy',
-            'drivers.show', 'drivers.store', 'drivers.update', 'drivers.export',
-            'maintenance.view', 'maintenance.create', 'maintenance.edit', 'maintenance.destroy',
-            'maintenance.show', 'maintenance.store', 'maintenance.update', 'maintenance.export',
-            'fuel.view', 'fuel.create', 'fuel.edit', 'fuel.destroy',
-            'fuel.show', 'fuel.store', 'fuel.update', 'fuel.export',
-            'financial.view', 'financial.create', 'financial.edit', 'financial.destroy',
-            'financial.show', 'financial.store', 'financial.update', 'financial.export'
-        ];
-
-        foreach ($permissions as $permission) {
-            Permission::create(['name' => $permission, 'guard_name' => 'web']);
-        }
-
-        // Create role and assign permissions
-        $role = Role::create(['name' => 'admin', 'guard_name' => 'web']);
-        $role->givePermissionTo($permissions);
-        $this->user->assignRole($role);
+        $this->user->assignRole('admin');
 
         // Create related models
         $this->vehicleType = VehicleType::factory()->create();
@@ -72,7 +55,7 @@ class CRUDIntegrationTest extends TestCase
             'purchasePrice' => 500000,
             'productionDate' => '2023-01-01',
             'serviceStartDate' => '2023-02-01',
-            'status' => 'active'
+            'status' => 'active',
         ];
 
         $createResponse = $this->actingAs($this->user)
@@ -98,7 +81,7 @@ class CRUDIntegrationTest extends TestCase
         $updateData = [
             'plate' => 'UPDATED-456',
             'vehicletype_id' => $this->vehicleType->id,
-            'status' => 'maintenance'
+            'status' => 'maintenance',
         ];
 
         $updateResponse = $this->actingAs($this->user)
@@ -108,7 +91,7 @@ class CRUDIntegrationTest extends TestCase
         $this->assertDatabaseHas('trucks', [
             'id' => $truck->id,
             'plate' => 'UPDATED-456',
-            'status' => 'maintenance'
+            'status' => 'maintenance',
         ]);
 
         // DELETE
@@ -134,7 +117,7 @@ class CRUDIntegrationTest extends TestCase
             'woreda_id' => $this->woreda->id,
             'kebele' => '01',
             'house_number' => '123',
-            'status' => 'active'
+            'status' => 'active',
         ];
 
         $createResponse = $this->actingAs($this->user)
@@ -162,7 +145,7 @@ class CRUDIntegrationTest extends TestCase
             'driver_id' => $driver->driver_id,
             'mobile' => $driver->mobile,
             'sex' => $driver->sex,
-            'status' => 'inactive'
+            'status' => 'inactive',
         ];
 
         $updateResponse = $this->actingAs($this->user)
@@ -172,7 +155,7 @@ class CRUDIntegrationTest extends TestCase
         $this->assertDatabaseHas('drivers', [
             'id' => $driver->id,
             'name' => 'Jane Smith',
-            'status' => 'inactive'
+            'status' => 'inactive',
         ]);
 
         // DELETE
@@ -195,7 +178,7 @@ class CRUDIntegrationTest extends TestCase
             'scheduled_date' => '2023-12-01',
             'status' => 'scheduled',
             'description' => 'Regular maintenance',
-            'cost' => 1500.00
+            'cost' => 1500.00,
         ];
 
         $createResponse = $this->actingAs($this->user)
@@ -224,7 +207,7 @@ class CRUDIntegrationTest extends TestCase
             'completed_date' => '2023-12-02',
             'status' => 'completed',
             'description' => 'Regular maintenance completed',
-            'cost' => 1500.00
+            'cost' => 1500.00,
         ];
 
         $updateResponse = $this->actingAs($this->user)
@@ -233,7 +216,7 @@ class CRUDIntegrationTest extends TestCase
         $updateResponse->assertRedirect(route('maintenance.show', $maintenance));
         $this->assertDatabaseHas('vehicle_maintenance_records', [
             'id' => $maintenance->id,
-            'status' => 'completed'
+            'status' => 'completed',
         ]);
 
         // DELETE
@@ -262,7 +245,7 @@ class CRUDIntegrationTest extends TestCase
             'fuel_station' => 'Shell Station',
             'receipt_number' => 'RCP001',
             'odometer_reading' => 100000,
-            'notes' => 'Regular fuel fill'
+            'notes' => 'Regular fuel fill',
         ];
 
         $createResponse = $this->actingAs($this->user)
@@ -295,7 +278,7 @@ class CRUDIntegrationTest extends TestCase
             'fuel_station' => 'Shell Station',
             'receipt_number' => 'RCP001',
             'odometer_reading' => 100000,
-            'notes' => 'Updated fuel fill'
+            'notes' => 'Updated fuel fill',
         ];
 
         $updateResponse = $this->actingAs($this->user)
@@ -305,7 +288,7 @@ class CRUDIntegrationTest extends TestCase
         $this->assertDatabaseHas('fuel_records', [
             'id' => $fuel->id,
             'fuel_quantity_liters' => 55.0,
-            'total_cost' => 2475.0
+            'total_cost' => 2475.0,
         ]);
 
         // DELETE
@@ -333,7 +316,7 @@ class CRUDIntegrationTest extends TestCase
             'insurance_cost' => 2000.00,
             'depreciation' => 3000.00,
             'other_costs' => 1000.00,
-            'notes' => 'Monthly financial record'
+            'notes' => 'Monthly financial record',
         ];
 
         $createResponse = $this->actingAs($this->user)
@@ -366,7 +349,7 @@ class CRUDIntegrationTest extends TestCase
             'insurance_cost' => 2000.00,
             'depreciation' => 3000.00,
             'other_costs' => 1000.00,
-            'notes' => 'Updated monthly financial record'
+            'notes' => 'Updated monthly financial record',
         ];
 
         $updateResponse = $this->actingAs($this->user)
@@ -375,7 +358,7 @@ class CRUDIntegrationTest extends TestCase
         $updateResponse->assertRedirect(route('financial.show', $financial));
         $this->assertDatabaseHas('truck_financial_records', [
             'id' => $financial->id,
-            'revenue' => 55000.00
+            'revenue' => 55000.00,
         ]);
 
         // DELETE
@@ -489,28 +472,28 @@ class CRUDIntegrationTest extends TestCase
         $assignResponse = $this->actingAs($this->user)
             ->post(route('drivers.assign-truck', $driver), [
                 'truck_id' => $truck->id,
-                'assigned_date' => now()->format('Y-m-d')
+                'assigned_date' => now()->format('Y-m-d'),
             ]);
 
         $assignResponse->assertRedirect();
         $this->assertDatabaseHas('driver_truck', [
             'driver_id' => $driver->id,
             'truck_id' => $truck->id,
-            'status' => 'active'
+            'status' => 'active',
         ]);
 
         // Unassign driver from truck
         $unassignResponse = $this->actingAs($this->user)
             ->post(route('drivers.unassign-truck', $driver), [
                 'truck_id' => $truck->id,
-                'unassigned_date' => now()->format('Y-m-d')
+                'unassigned_date' => now()->format('Y-m-d'),
             ]);
 
         $unassignResponse->assertRedirect();
         $this->assertDatabaseHas('driver_truck', [
             'driver_id' => $driver->id,
             'truck_id' => $truck->id,
-            'status' => 'inactive'
+            'status' => 'inactive',
         ]);
     }
 
@@ -524,14 +507,14 @@ class CRUDIntegrationTest extends TestCase
             ->put(route('trucks.update', $truck), [
                 'plate' => 'UPDATED-123',
                 'vehicletype_id' => $truck->vehicletype_id,
-                'status' => 'active'
+                'status' => 'active',
             ]);
 
         $this->assertDatabaseHas('activity_log', [
             'description' => 'updated',
             'subject_type' => 'App\Models\Truck',
             'subject_id' => $truck->id,
-            'causer_id' => $this->user->id
+            'causer_id' => $this->user->id,
         ]);
 
         // Test activity logging on delete
@@ -542,14 +525,15 @@ class CRUDIntegrationTest extends TestCase
             'description' => 'deleted',
             'subject_type' => 'App\Models\Truck',
             'subject_id' => $truck->id,
-            'causer_id' => $this->user->id
+            'causer_id' => $this->user->id,
         ]);
     }
 
     /** @test */
     public function it_can_perform_permission_operations()
     {
-        $userWithoutPermission = User::factory()->create();
+        /** @var User $userWithoutPermission */
+        $userWithoutPermission = User::factory()->createOne();
         $truck = Truck::factory()->create();
 
         // Test permission denied

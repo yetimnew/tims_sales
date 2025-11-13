@@ -21,7 +21,7 @@ class PerformanceFactory extends Factory
             'LoadType' => $this->faker->randomElement(['Full Load', 'Half Load', 'Empty']),
             'FOnumber' => $this->faker->numerify('FO####'),
             'operation_id' => \App\Models\Operation::factory(),
-            'driver_truck_id' => 1, // Will be set in tests
+            'driver_truck_id' => \App\Models\DriverTruck::factory(),
             'DateDispach' => $this->faker->dateTimeBetween('-1 year', 'now'),
             'orgion_id' => \App\Models\Place::factory(),
             'destination_id' => \App\Models\Place::factory(),

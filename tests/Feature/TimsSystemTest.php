@@ -6,18 +6,14 @@ use App\Enums\CargoCategory;
 use App\Models\CargoType;
 use App\Models\Customer;
 use App\Models\Driver;
-use App\Models\DriverPerformanceRecord;
-use App\Models\FuelRecord;
 use App\Models\MaintenanceType;
 use App\Models\Operation;
 use App\Models\Performance;
 use App\Models\Region;
-use App\Models\RoutePlan;
 use App\Models\Truck;
-use App\Models\TruckFinancialRecord;
 use App\Models\User;
-use App\Models\VehicleMaintenanceRecord;
 use App\Models\VehicleType;
+use Database\Seeders\CheckPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Tests\TestCase;
@@ -27,23 +23,34 @@ class TimsSystemTest extends TestCase
     use RefreshDatabase, WithFaker;
 
     protected User $user;
+
     protected VehicleType $vehicleType;
+
     protected Truck $truck;
+
     protected Driver $driver;
+
     protected Customer $customer;
+
     protected Region $region;
+
     protected Operation $operation;
+
     protected CargoType $cargoType;
 
     protected function setUp(): void
     {
         parent::setUp();
 
+        $this->seed(CheckPermissionSeeder::class);
+
         // Create test user
         $this->user = User::factory()->create([
             'name' => 'Test User',
             'email' => 'test@tims.com',
         ]);
+
+        $this->user->assignRole('admin');
 
         // Create test data
         $this->createTestData();
@@ -54,7 +61,7 @@ class TimsSystemTest extends TestCase
         // Create Vehicle Type
         $this->vehicleType = VehicleType::create([
             'name' => 'Heavy Truck',
-            'description' => 'Large cargo truck for heavy loads'
+            'description' => 'Large cargo truck for heavy loads',
         ]);
 
         // Create Truck
@@ -65,7 +72,7 @@ class TimsSystemTest extends TestCase
             'chasisNumber' => 'CH123456',
             'engineNumber' => 'EN789012',
             'serviceIntervalKM' => 10000,
-            'purchasePrice' => 2500000.00
+            'purchasePrice' => 2500000.00,
         ]);
 
         // Create Driver
@@ -75,7 +82,7 @@ class TimsSystemTest extends TestCase
             'sex' => 'male',
             'status' => 'active',
             'zone' => 'Addis Ababa',
-            'mobile' => '+251911234567'
+            'mobile' => '+251911234567',
         ]);
 
         // Create Customer
@@ -84,13 +91,13 @@ class TimsSystemTest extends TestCase
             'contact_person' => 'Jane Smith',
             'phone' => '+251912345678',
             'email' => 'contact@abctransport.com',
-            'status' => 'active'
+            'status' => 'active',
         ]);
 
         // Create Region
         $this->region = Region::create([
             'name' => 'Addis Ababa',
-            'description' => 'Capital city region'
+            'description' => 'Capital city region',
         ]);
 
         $this->cargoType = CargoType::create([
@@ -118,7 +125,7 @@ class TimsSystemTest extends TestCase
             'destination_name' => $this->region->name,
             'destination_reference_type' => Region::class,
             'destination_reference_id' => $this->region->id,
-            'user_id' => $this->user->id
+            'user_id' => $this->user->id,
         ]);
     }
 
@@ -129,8 +136,7 @@ class TimsSystemTest extends TestCase
             ->get('/dashboard');
 
         $response->assertStatus(200);
-        $response->assertInertia(fn ($page) =>
-            $page->component('Dashboard')
+        $response->assertInertia(fn ($page) => $page->component('Dashboard')
         );
     }
 
@@ -139,7 +145,7 @@ class TimsSystemTest extends TestCase
     {
         $vehicleTypeData = [
             'name' => 'Light Truck',
-            'description' => 'Small truck for light loads'
+            'description' => 'Small truck for light loads',
         ];
 
         $response = $this->actingAs($this->user)
@@ -159,7 +165,7 @@ class TimsSystemTest extends TestCase
             'chasisNumber' => 'CH567890',
             'engineNumber' => 'EN123456',
             'serviceIntervalKM' => 15000,
-            'purchasePrice' => 3000000.00
+            'purchasePrice' => 3000000.00,
         ];
 
         $response = $this->actingAs($this->user)
@@ -178,7 +184,7 @@ class TimsSystemTest extends TestCase
             'sex' => 'female',
             'status' => 'active',
             'zone' => 'Dire Dawa',
-            'mobile' => '+251911234568'
+            'mobile' => '+251911234568',
         ];
 
         $response = $this->actingAs($this->user)
@@ -196,7 +202,7 @@ class TimsSystemTest extends TestCase
             'contact_person' => 'Bob Johnson',
             'phone' => '+251912345679',
             'email' => 'contact@xyzlogistics.com',
-            'status' => 'active'
+            'status' => 'active',
         ];
 
         $response = $this->actingAs($this->user)
@@ -242,7 +248,7 @@ class TimsSystemTest extends TestCase
             'category' => 'Preventive',
             'description' => 'Regular oil change maintenance',
             'recommended_interval_km' => 10000,
-            'estimated_duration_hours' => 2
+            'estimated_duration_hours' => 2,
         ]);
 
         $maintenanceData = [
@@ -251,7 +257,7 @@ class TimsSystemTest extends TestCase
             'scheduled_date' => '2025-01-15',
             'status' => 'scheduled',
             'description' => 'Regular oil change',
-            'cost' => 500.00
+            'cost' => 500.00,
         ];
 
         $response = $this->actingAs($this->user)
@@ -274,7 +280,7 @@ class TimsSystemTest extends TestCase
             'total_cost' => 9000.00,
             'odometer_reading' => 50000,
             'fuel_station' => 'Shell Station',
-            'location' => 'Addis Ababa'
+            'location' => 'Addis Ababa',
         ];
 
         $response = $this->actingAs($this->user)
@@ -297,7 +303,7 @@ class TimsSystemTest extends TestCase
             'total_cargo_weight_mt' => 150.00,
             'fuel_efficiency_km_per_liter' => 8.5,
             'safety_score' => 95,
-            'compliance_score' => 98
+            'compliance_score' => 98,
         ];
 
         $response = $this->actingAs($this->user)
@@ -317,7 +323,7 @@ class TimsSystemTest extends TestCase
             'average_weight_per_unit_kg' => 50.00,
             'handling_requirements' => 'Special handling required',
             'storage_requirements' => 'Dry storage',
-            'transportation_restrictions' => 'Heavy vehicle required'
+            'transportation_restrictions' => 'Heavy vehicle required',
         ];
 
         $response = $this->actingAs($this->user)
@@ -341,7 +347,7 @@ class TimsSystemTest extends TestCase
             'insurance_cost' => 500.00,
             'depreciation' => 1000.00,
             'other_costs' => 500.00,
-            'net_profit' => 34000.00
+            'net_profit' => 34000.00,
         ];
 
         $response = $this->actingAs($this->user)
@@ -364,7 +370,7 @@ class TimsSystemTest extends TestCase
             'estimated_distance_km' => 500.00,
             'estimated_travel_time_hours' => 8,
             'status' => 'planned',
-            'notes' => 'Regular route plan'
+            'notes' => 'Regular route plan',
         ];
 
         $response = $this->actingAs($this->user)
@@ -381,9 +387,8 @@ class TimsSystemTest extends TestCase
             ->get('/trucks');
 
         $response->assertStatus(200);
-        $response->assertInertia(fn ($page) =>
-            $page->component('Trucks/Index')
-                ->has('trucks')
+        $response->assertInertia(fn ($page) => $page->component('Trucks/Index')
+            ->has('trucks')
         );
     }
 
@@ -394,9 +399,8 @@ class TimsSystemTest extends TestCase
             ->get('/drivers');
 
         $response->assertStatus(200);
-        $response->assertInertia(fn ($page) =>
-            $page->component('Drivers/Index')
-                ->has('drivers')
+        $response->assertInertia(fn ($page) => $page->component('Drivers/Index')
+            ->has('drivers')
         );
     }
 
@@ -407,9 +411,8 @@ class TimsSystemTest extends TestCase
             ->get('/customers');
 
         $response->assertStatus(200);
-        $response->assertInertia(fn ($page) =>
-            $page->component('Customers/Index')
-                ->has('customers')
+        $response->assertInertia(fn ($page) => $page->component('Customers/Index')
+            ->has('customers')
         );
     }
 
@@ -420,9 +423,8 @@ class TimsSystemTest extends TestCase
             ->get('/operations');
 
         $response->assertStatus(200);
-        $response->assertInertia(fn ($page) =>
-            $page->component('Operations/Index')
-                ->has('operations')
+        $response->assertInertia(fn ($page) => $page->component('Operations/Index')
+            ->has('operations')
         );
     }
 
@@ -433,9 +435,8 @@ class TimsSystemTest extends TestCase
             ->get('/maintenance');
 
         $response->assertStatus(200);
-        $response->assertInertia(fn ($page) =>
-            $page->component('Maintenance/Index')
-                ->has('maintenanceRecords')
+        $response->assertInertia(fn ($page) => $page->component('Maintenance/Index')
+            ->has('maintenanceRecords')
         );
     }
 
@@ -446,9 +447,8 @@ class TimsSystemTest extends TestCase
             ->get('/fuel');
 
         $response->assertStatus(200);
-        $response->assertInertia(fn ($page) =>
-            $page->component('Fuel/Index')
-                ->has('fuelRecords')
+        $response->assertInertia(fn ($page) => $page->component('Fuel/Index')
+            ->has('fuelRecords')
         );
     }
 
@@ -461,7 +461,7 @@ class TimsSystemTest extends TestCase
             'performances' => '/reports/performances',
             'operations' => '/reports/operations',
             'financial' => '/reports/financial',
-            'maintenance' => '/reports/maintenance'
+            'maintenance' => '/reports/maintenance',
         ];
 
         foreach ($reports as $report => $url) {
@@ -476,7 +476,7 @@ class TimsSystemTest extends TestCase
         $invalidData = [
             'plate' => 'INVALID', // Invalid plate format
             'vehicletype_id' => 999, // Non-existent vehicle type
-            'status' => 'invalid_status' // Invalid status
+            'status' => 'invalid_status', // Invalid status
         ];
 
         $response = $this->actingAs($this->user)
@@ -491,7 +491,7 @@ class TimsSystemTest extends TestCase
         $invalidData = [
             'driverid' => '', // Required field
             'name' => '', // Required field
-            'sex' => 'invalid' // Invalid sex
+            'sex' => 'invalid', // Invalid sex
         ];
 
         $response = $this->actingAs($this->user)
@@ -507,7 +507,7 @@ class TimsSystemTest extends TestCase
         $truck = Truck::create([
             'plate' => 'CC-9999',
             'vehicletype_id' => $this->vehicleType->id,
-            'status' => 'active'
+            'status' => 'active',
         ]);
 
         // Soft delete the truck
@@ -519,7 +519,7 @@ class TimsSystemTest extends TestCase
         // Verify it doesn't appear in normal queries
         $this->assertDatabaseMissing('trucks', [
             'id' => $truck->id,
-            'deleted_at' => null
+            'deleted_at' => null,
         ]);
     }
 
@@ -548,7 +548,7 @@ class TimsSystemTest extends TestCase
         for ($i = 0; $i < 100; $i++) {
             VehicleType::create([
                 'name' => "Test Type {$i}",
-                'description' => "Test description {$i}"
+                'description' => "Test description {$i}",
             ]);
         }
 
@@ -569,6 +569,3 @@ class TimsSystemTest extends TestCase
         $this->assertCount(100, $vehicleTypes);
     }
 }
-
-
-

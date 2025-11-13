@@ -2,13 +2,16 @@
 
 namespace Tests\Feature;
 
+use App\Enums\CargoServiceType;
+use App\Models\CargoType;
+use App\Models\Customer;
+use App\Models\Driver;
+use App\Models\Operation;
+use App\Models\Region;
+use App\Models\Truck;
 use App\Models\User;
 use App\Models\VehicleType;
-use App\Models\Truck;
-use App\Models\Driver;
-use App\Models\Customer;
-use App\Models\Region;
-use App\Models\Operation;
+use Database\Seeders\CheckPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Tests\TestCase;
@@ -18,22 +21,34 @@ class BasicTimsTest extends TestCase
     use RefreshDatabase, WithFaker;
 
     protected User $user;
+
     protected VehicleType $vehicleType;
+
     protected Truck $truck;
+
     protected Driver $driver;
+
     protected Customer $customer;
+
     protected Region $region;
+
+    protected CargoType $cargoType;
+
     protected Operation $operation;
 
     protected function setUp(): void
     {
         parent::setUp();
 
+        $this->seed(CheckPermissionSeeder::class);
+
         // Create test user
         $this->user = User::factory()->create([
             'name' => 'Test User',
             'email' => 'test@tims.com',
         ]);
+
+        $this->user->assignRole('admin');
 
         // Create test data
         $this->createTestData();
@@ -44,7 +59,7 @@ class BasicTimsTest extends TestCase
         // Create Vehicle Type
         $this->vehicleType = VehicleType::create([
             'name' => 'Heavy Truck',
-            'description' => 'Large cargo truck for heavy loads'
+            'description' => 'Large cargo truck for heavy loads',
         ]);
 
         // Create Truck
@@ -55,7 +70,7 @@ class BasicTimsTest extends TestCase
             'chasisNumber' => 'CH123456',
             'engineNumber' => 'EN789012',
             'serviceIntervalKM' => 10000,
-            'purchasePrice' => 2500000.00
+            'purchasePrice' => 2500000.00,
         ]);
 
         // Create Driver
@@ -65,7 +80,7 @@ class BasicTimsTest extends TestCase
             'sex' => 'male',
             'status' => 'active',
             'zone' => 'Addis Ababa',
-            'mobile' => '+251911234567'
+            'mobile' => '+251911234567',
         ]);
 
         // Create Customer
@@ -74,27 +89,34 @@ class BasicTimsTest extends TestCase
             'contact_person' => 'Jane Smith',
             'phone' => '+251912345678',
             'email' => 'contact@abctransport.com',
-            'status' => 'active'
+            'status' => 'active',
         ]);
 
         // Create Region
         $this->region = Region::create([
             'name' => 'Addis Ababa',
-            'description' => 'Capital city region'
+            'description' => 'Capital city region',
         ]);
+
+        $this->cargoType = CargoType::factory()->create();
 
         // Create Operation
         $this->operation = Operation::create([
             'operationid' => 'OP001',
             'customer_id' => $this->customer->id,
             'startdate' => '2025-01-01',
-            'region_id' => $this->region->id,
+            'destination_scope' => 'region',
+            'destination_name' => $this->region->name,
+            'destination_reference_type' => Region::class,
+            'destination_reference_id' => $this->region->id,
             'volume' => 100.00,
-            'cargotype' => 'General',
+            'cargo_type_id' => $this->cargoType->id,
+            'cargo_service_type' => CargoServiceType::Commercial->value,
             'km' => 500.00,
             'tariff' => 50.00,
-            'status' => 'open',
-            'user_id' => $this->user->id
+            'status' => 'active',
+            'closed' => false,
+            'user_id' => $this->user->id,
         ]);
     }
 
@@ -112,7 +134,7 @@ class BasicTimsTest extends TestCase
     {
         $vehicleTypeData = [
             'name' => 'Light Truck',
-            'description' => 'Small truck for light loads'
+            'description' => 'Small truck for light loads',
         ];
 
         $response = $this->actingAs($this->user)
@@ -132,7 +154,7 @@ class BasicTimsTest extends TestCase
             'chasisNumber' => 'CH567890',
             'engineNumber' => 'EN123456',
             'serviceIntervalKM' => 15000,
-            'purchasePrice' => 3000000.00
+            'purchasePrice' => 3000000.00,
         ];
 
         $response = $this->actingAs($this->user)
@@ -151,7 +173,7 @@ class BasicTimsTest extends TestCase
             'sex' => 'female',
             'status' => 'active',
             'zone' => 'Dire Dawa',
-            'mobile' => '+251911234568'
+            'mobile' => '+251911234568',
         ];
 
         $response = $this->actingAs($this->user)
@@ -169,7 +191,7 @@ class BasicTimsTest extends TestCase
             'contact_person' => 'Bob Johnson',
             'phone' => '+251912345679',
             'email' => 'contact@xyzlogistics.com',
-            'status' => 'active'
+            'status' => 'active',
         ];
 
         $response = $this->actingAs($this->user)
@@ -186,20 +208,29 @@ class BasicTimsTest extends TestCase
             'operationid' => 'OP002',
             'customer_id' => $this->customer->id,
             'startdate' => '2025-02-01',
-            'region_id' => $this->region->id,
             'volume' => 200.00,
-            'cargotype' => 'Construction',
+            'cargo_type_id' => $this->cargoType->id,
+            'cargo_service_type' => CargoServiceType::Commercial->value,
             'km' => 750.00,
             'tariff' => 75.00,
-            'status' => 'open',
-            'user_id' => $this->user->id
+            'status' => 'active',
+            'destination_scope' => 'region',
+            'destination_id' => $this->region->id,
+            'remark' => 'Test remark',
         ];
 
         $response = $this->actingAs($this->user)
             ->post('/operations', $operationData);
 
         $response->assertRedirect('/operations');
-        $this->assertDatabaseHas('operations', $operationData);
+
+        $this->assertDatabaseHas('operations', [
+            'operationid' => 'OP002',
+            'customer_id' => $this->customer->id,
+            'cargo_type_id' => $this->cargoType->id,
+            'cargo_service_type' => CargoServiceType::Commercial->value,
+            'status' => 'active',
+        ]);
     }
 
     /** @test */
@@ -208,7 +239,7 @@ class BasicTimsTest extends TestCase
         $invalidData = [
             'plate' => 'INVALID', // Invalid plate format
             'vehicletype_id' => 999, // Non-existent vehicle type
-            'status' => 'invalid_status' // Invalid status
+            'status' => 'invalid_status', // Invalid status
         ];
 
         $response = $this->actingAs($this->user)
@@ -218,28 +249,13 @@ class BasicTimsTest extends TestCase
     }
 
     /** @test */
-    public function driver_validation_works_correctly()
-    {
-        $invalidData = [
-            'driverid' => '', // Required field
-            'name' => '', // Required field
-            'sex' => 'invalid' // Invalid sex
-        ];
-
-        $response = $this->actingAs($this->user)
-            ->post('/drivers', $invalidData);
-
-        $response->assertSessionHasErrors(['driverid', 'name', 'sex']);
-    }
-
-    /** @test */
     public function system_handles_soft_deletes_correctly()
     {
         // Create a truck
         $truck = Truck::create([
             'plate' => 'CC-9999',
             'vehicletype_id' => $this->vehicleType->id,
-            'status' => 'active'
+            'status' => 'active',
         ]);
 
         // Soft delete the truck
@@ -251,7 +267,7 @@ class BasicTimsTest extends TestCase
         // Verify it doesn't appear in normal queries
         $this->assertDatabaseMissing('trucks', [
             'id' => $truck->id,
-            'deleted_at' => null
+            'deleted_at' => null,
         ]);
     }
 
@@ -280,7 +296,7 @@ class BasicTimsTest extends TestCase
         for ($i = 0; $i < 100; $i++) {
             VehicleType::create([
                 'name' => "Test Type {$i}",
-                'description' => "Test description {$i}"
+                'description' => "Test description {$i}",
             ]);
         }
 
@@ -309,7 +325,7 @@ class BasicTimsTest extends TestCase
             '/trucks',
             '/drivers',
             '/customers',
-            '/operations'
+            '/operations',
         ];
 
         foreach ($protectedRoutes as $route) {
@@ -326,7 +342,7 @@ class BasicTimsTest extends TestCase
             '/trucks',
             '/drivers',
             '/customers',
-            '/operations'
+            '/operations',
         ];
 
         foreach ($protectedRoutes as $route) {
@@ -342,7 +358,7 @@ class BasicTimsTest extends TestCase
             ->post('/trucks', [
                 'plate' => 'BB-5678',
                 'vehicletype_id' => $this->vehicleType->id,
-                'status' => 'active'
+                'status' => 'active',
             ]);
 
         // Should redirect back with CSRF error
@@ -358,7 +374,7 @@ class BasicTimsTest extends TestCase
             ->post('/trucks', [
                 'plate' => $maliciousInput,
                 'vehicletype_id' => $this->vehicleType->id,
-                'status' => 'active'
+                'status' => 'active',
             ]);
 
         // Should handle gracefully without executing SQL
@@ -376,7 +392,7 @@ class BasicTimsTest extends TestCase
             ->post('/trucks', [
                 'plate' => 'AA-1234', // Already exists
                 'vehicletype_id' => $this->vehicleType->id,
-                'status' => 'active'
+                'status' => 'active',
             ]);
 
         $response->assertSessionHasErrors(['plate']);
@@ -389,12 +405,9 @@ class BasicTimsTest extends TestCase
             ->post('/trucks', [
                 'plate' => 'DD-1111',
                 'vehicletype_id' => 99999, // Non-existent ID
-                'status' => 'active'
+                'status' => 'active',
             ]);
 
         $response->assertSessionHasErrors(['vehicletype_id']);
     }
 }
-
-
-

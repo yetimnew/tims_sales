@@ -3,10 +3,11 @@
 namespace Tests\Unit\Models;
 
 use App\Models\Driver;
-use App\Models\Truck;
-use App\Models\Performance;
 use App\Models\DriverPerformanceRecord;
 use App\Models\DriverSafetyRecord;
+use App\Models\DriverTruck;
+use App\Models\Performance;
+use App\Models\Truck;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -19,7 +20,7 @@ class DriverTest extends TestCase
     {
         $driver = Driver::factory()->create([
             'name' => 'John Doe',
-            'status' => 'active'
+            'status' => 'active',
         ]);
 
         $this->assertInstanceOf(Driver::class, $driver);
@@ -48,11 +49,11 @@ class DriverTest extends TestCase
 
         $driver->trucks()->attach($truck1->id, [
             'assigned_date' => now(),
-            'status' => 'active'
+            'status' => 'active',
         ]);
         $driver->trucks()->attach($truck2->id, [
             'assigned_date' => now(),
-            'status' => 'active'
+            'status' => 'active',
         ]);
 
         $this->assertCount(2, $driver->trucks);
@@ -66,15 +67,12 @@ class DriverTest extends TestCase
         $driver = Driver::factory()->create();
         $truck = Truck::factory()->create();
 
-        // Create driver-truck relationship
-        $driver->trucks()->attach($truck->id, [
-            'assigned_date' => now(),
-            'status' => 'active'
-        ]);
+        $driverTruck = DriverTruck::factory()
+            ->for($driver, 'driver')
+            ->for($truck, 'truck')
+            ->create();
 
-        $driverTruck = $driver->trucks()->wherePivot('status', 'active')->first();
-
-        Performance::factory()->count(3)->create(['driver_truck_id' => $driverTruck->pivot->id]);
+        Performance::factory()->count(3)->create(['driver_truck_id' => $driverTruck->id]);
 
         $this->assertCount(3, $driver->performances);
         $this->assertInstanceOf(Performance::class, $driver->performances->first());
@@ -88,7 +86,7 @@ class DriverTest extends TestCase
 
         DriverPerformanceRecord::factory()->count(2)->create([
             'driver_id' => $driver->id,
-            'truck_id' => $truck->id
+            'truck_id' => $truck->id,
         ]);
 
         $this->assertCount(2, $driver->performanceRecords);
@@ -111,7 +109,7 @@ class DriverTest extends TestCase
     {
         $driver = Driver::factory()->create([
             'birthdate' => '1990-05-15',
-            'hireddate' => '2020-01-01'
+            'hireddate' => '2020-01-01',
         ]);
 
         $this->assertInstanceOf(\Carbon\Carbon::class, $driver->birthdate);
@@ -135,7 +133,7 @@ class DriverTest extends TestCase
             'status',
         ];
 
-        $driver = new Driver();
+        $driver = new Driver;
         $this->assertEquals($fillable, $driver->getFillable());
     }
 
@@ -158,21 +156,18 @@ class DriverTest extends TestCase
         $driver = Driver::factory()->create();
         $truck = Truck::factory()->create();
 
-        // Create driver-truck relationship
-        $driver->trucks()->attach($truck->id, [
-            'assigned_date' => now(),
-            'status' => 'active'
-        ]);
-
-        $driverTruck = $driver->trucks()->wherePivot('status', 'active')->first();
+        $driverTruck = DriverTruck::factory()
+            ->for($driver, 'driver')
+            ->for($truck, 'truck')
+            ->create();
 
         Performance::factory()->create([
-            'driver_truck_id' => $driverTruck->pivot->id,
-            'CargoVolumMT' => 10.5
+            'driver_truck_id' => $driverTruck->id,
+            'CargoVolumMT' => 10.5,
         ]);
         Performance::factory()->create([
-            'driver_truck_id' => $driverTruck->pivot->id,
-            'CargoVolumMT' => 15.0
+            'driver_truck_id' => $driverTruck->id,
+            'CargoVolumMT' => 15.0,
         ]);
 
         $totalTonnage = $driver->performances->sum('CargoVolumMT');
@@ -188,7 +183,7 @@ class DriverTest extends TestCase
 
         $driver->trucks()->attach($truck->id, [
             'assigned_date' => now(),
-            'status' => 'active'
+            'status' => 'active',
         ]);
 
         $currentTruck = $driver->trucks()->wherePivot('status', 'active')->first();
@@ -203,11 +198,11 @@ class DriverTest extends TestCase
         $driver = Driver::factory()->create();
         DriverPerformanceRecord::factory()->create([
             'driver_id' => $driver->id,
-            'customer_rating' => 4.5
+            'customer_rating' => 4.5,
         ]);
         DriverPerformanceRecord::factory()->create([
             'driver_id' => $driver->id,
-            'customer_rating' => 3.5
+            'customer_rating' => 3.5,
         ]);
 
         $averageRating = $driver->performanceRecords->avg('customer_rating');

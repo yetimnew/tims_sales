@@ -2,9 +2,21 @@
 
 namespace Tests;
 
+use App\Models\User;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
 
 abstract class TestCase extends BaseTestCase
 {
-    //
+    protected function givePermissions(User $user, array $permissions): void
+    {
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+        foreach ($permissions as $permission) {
+            Permission::findOrCreate($permission, 'web');
+        }
+
+        $user->givePermissionTo($permissions);
+    }
 }
