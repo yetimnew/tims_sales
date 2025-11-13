@@ -14,10 +14,10 @@ use App\Models\User;
 use App\Models\VehicleType;
 use App\Models\Woreda;
 use App\Models\Zone;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Validator;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class ValidationTest extends TestCase
@@ -38,7 +38,9 @@ class ValidationTest extends TestCase
             'trucks.view', 'trucks.create', 'trucks.edit', 'trucks.destroy',
             'trucks.show', 'trucks.store', 'trucks.update', 'trucks.export',
             'drivers.view', 'drivers.create', 'drivers.edit', 'drivers.destroy',
-            'drivers.show', 'drivers.store', 'drivers.update', 'drivers.export'
+            'drivers.show', 'drivers.store', 'drivers.update', 'drivers.export',
+            'operations.view', 'operations.create', 'operations.store', 'operations.edit',
+            'operations.update', 'operations.destroy', 'operations.export',
         ];
 
         foreach ($permissions as $permission) {
@@ -67,7 +69,7 @@ class ValidationTest extends TestCase
             'purchasePrice' => 500000,
             'productionDate' => '2023-01-01',
             'serviceStartDate' => '2023-02-01',
-            'status' => 'active'
+            'status' => 'active',
         ];
 
         $response = $this->actingAs($this->user)
@@ -80,7 +82,7 @@ class ValidationTest extends TestCase
         $invalidData = [
             'plate' => '', // Empty plate
             'vehicletype_id' => 99999, // Non-existent vehicle type
-            'status' => 'invalid_status' // Invalid status
+            'status' => 'invalid_status', // Invalid status
         ];
 
         $response = $this->actingAs($this->user)
@@ -107,7 +109,7 @@ class ValidationTest extends TestCase
             'woreda_id' => $woreda->id,
             'kebele' => '01',
             'house_number' => '123',
-            'status' => 'active'
+            'status' => 'active',
         ];
 
         $response = $this->actingAs($this->user)
@@ -122,7 +124,7 @@ class ValidationTest extends TestCase
             'driver_id' => '', // Empty driver ID
             'mobile' => 'invalid_mobile', // Invalid mobile format
             'sex' => 'invalid_sex', // Invalid sex
-            'status' => 'invalid_status' // Invalid status
+            'status' => 'invalid_status', // Invalid status
         ];
 
         $response = $this->actingAs($this->user)
@@ -143,7 +145,7 @@ class ValidationTest extends TestCase
             'scheduled_date' => '2023-12-01',
             'status' => 'scheduled',
             'description' => 'Regular maintenance',
-            'cost' => 1500.00
+            'cost' => 1500.00,
         ];
 
         $response = $this->actingAs($this->user)
@@ -158,7 +160,7 @@ class ValidationTest extends TestCase
             'maintenance_type_id' => 99999, // Non-existent maintenance type
             'scheduled_date' => 'invalid_date', // Invalid date format
             'status' => 'invalid_status', // Invalid status
-            'cost' => 'invalid_cost' // Invalid cost format
+            'cost' => 'invalid_cost', // Invalid cost format
         ];
 
         $response = $this->actingAs($this->user)
@@ -185,7 +187,7 @@ class ValidationTest extends TestCase
             'fuel_station' => 'Shell Station',
             'receipt_number' => 'RCP001',
             'odometer_reading' => 100000,
-            'notes' => 'Regular fuel fill'
+            'notes' => 'Regular fuel fill',
         ];
 
         $response = $this->actingAs($this->user)
@@ -203,7 +205,7 @@ class ValidationTest extends TestCase
             'fuel_price_per_liter' => 'invalid_price', // Invalid price format
             'total_cost' => 'invalid_cost', // Invalid cost format
             'fuel_type' => '', // Empty fuel type
-            'odometer_reading' => 'invalid_odometer' // Invalid odometer format
+            'odometer_reading' => 'invalid_odometer', // Invalid odometer format
         ];
 
         $response = $this->actingAs($this->user)
@@ -229,7 +231,7 @@ class ValidationTest extends TestCase
             'insurance_cost' => 2000.00,
             'depreciation' => 3000.00,
             'other_costs' => 1000.00,
-            'notes' => 'Monthly financial record'
+            'notes' => 'Monthly financial record',
         ];
 
         $response = $this->actingAs($this->user)
@@ -249,7 +251,7 @@ class ValidationTest extends TestCase
             'driver_salary' => 'invalid_driver_salary', // Invalid driver salary format
             'insurance_cost' => 'invalid_insurance_cost', // Invalid insurance cost format
             'depreciation' => 'invalid_depreciation', // Invalid depreciation format
-            'other_costs' => 'invalid_other_costs' // Invalid other costs format
+            'other_costs' => 'invalid_other_costs', // Invalid other costs format
         ];
 
         $response = $this->actingAs($this->user)
@@ -266,7 +268,7 @@ class ValidationTest extends TestCase
             'name' => 'New User',
             'email' => 'newuser@example.com',
             'password' => 'password123',
-            'password_confirmation' => 'password123'
+            'password_confirmation' => 'password123',
         ];
 
         $response = $this->actingAs($this->user)
@@ -280,7 +282,7 @@ class ValidationTest extends TestCase
             'name' => '', // Empty name
             'email' => 'invalid_email', // Invalid email format
             'password' => '123', // Password too short
-            'password_confirmation' => '456' // Password confirmation doesn't match
+            'password_confirmation' => '456', // Password confirmation doesn't match
         ];
 
         $response = $this->actingAs($this->user)
@@ -295,7 +297,7 @@ class ValidationTest extends TestCase
         // Test valid data
         $validData = [
             'name' => 'manager',
-            'guard_name' => 'web'
+            'guard_name' => 'web',
         ];
 
         $response = $this->actingAs($this->user)
@@ -307,7 +309,7 @@ class ValidationTest extends TestCase
         // Test invalid data
         $invalidData = [
             'name' => '', // Empty name
-            'guard_name' => '' // Empty guard name
+            'guard_name' => '', // Empty guard name
         ];
 
         $response = $this->actingAs($this->user)
@@ -322,7 +324,7 @@ class ValidationTest extends TestCase
         // Test valid data
         $validData = [
             'name' => 'trucks.create',
-            'guard_name' => 'web'
+            'guard_name' => 'web',
         ];
 
         $response = $this->actingAs($this->user)
@@ -334,7 +336,7 @@ class ValidationTest extends TestCase
         // Test invalid data
         $invalidData = [
             'name' => '', // Empty name
-            'guard_name' => '' // Empty guard name
+            'guard_name' => '', // Empty guard name
         ];
 
         $response = $this->actingAs($this->user)
@@ -353,7 +355,7 @@ class ValidationTest extends TestCase
             'phone' => '+251911234567',
             'email' => 'customer@example.com',
             'address' => 'Test Address',
-            'status' => 'active'
+            'status' => 'active',
         ];
 
         $response = $this->actingAs($this->user)
@@ -367,7 +369,7 @@ class ValidationTest extends TestCase
             'name' => '', // Empty name
             'email' => 'invalid_email', // Invalid email format
             'phone' => 'invalid_phone', // Invalid phone format
-            'status' => 'invalid_status' // Invalid status
+            'status' => 'invalid_status', // Invalid status
         ];
 
         $response = $this->actingAs($this->user)
@@ -381,7 +383,7 @@ class ValidationTest extends TestCase
     {
         // Test valid data
         $validData = [
-            'name' => 'Test Region'
+            'name' => 'Test Region',
         ];
 
         $response = $this->actingAs($this->user)
@@ -392,7 +394,7 @@ class ValidationTest extends TestCase
 
         // Test invalid data
         $invalidData = [
-            'name' => '' // Empty name
+            'name' => '', // Empty name
         ];
 
         $response = $this->actingAs($this->user)
@@ -409,7 +411,7 @@ class ValidationTest extends TestCase
         // Test valid data
         $validData = [
             'name' => 'Test Zone',
-            'region_id' => $region->id
+            'region_id' => $region->id,
         ];
 
         $response = $this->actingAs($this->user)
@@ -421,7 +423,7 @@ class ValidationTest extends TestCase
         // Test invalid data
         $invalidData = [
             'name' => '', // Empty name
-            'region_id' => 99999 // Non-existent region
+            'region_id' => 99999, // Non-existent region
         ];
 
         $response = $this->actingAs($this->user)
@@ -438,7 +440,7 @@ class ValidationTest extends TestCase
         // Test valid data
         $validData = [
             'name' => 'Test Woreda',
-            'zone_id' => $zone->id
+            'zone_id' => $zone->id,
         ];
 
         $response = $this->actingAs($this->user)
@@ -450,7 +452,7 @@ class ValidationTest extends TestCase
         // Test invalid data
         $invalidData = [
             'name' => '', // Empty name
-            'zone_id' => 99999 // Non-existent zone
+            'zone_id' => 99999, // Non-existent zone
         ];
 
         $response = $this->actingAs($this->user)
@@ -467,7 +469,7 @@ class ValidationTest extends TestCase
         // Test valid data
         $validData = [
             'name' => 'Test Place',
-            'woreda_id' => $woreda->id
+            'woreda_id' => $woreda->id,
         ];
 
         $response = $this->actingAs($this->user)
@@ -479,7 +481,7 @@ class ValidationTest extends TestCase
         // Test invalid data
         $invalidData = [
             'name' => '', // Empty name
-            'woreda_id' => 99999 // Non-existent woreda
+            'woreda_id' => 99999, // Non-existent woreda
         ];
 
         $response = $this->actingAs($this->user)
@@ -497,7 +499,7 @@ class ValidationTest extends TestCase
             'category' => 'Construction',
             'weight_per_cubic_meter' => 2.5,
             'handling_requirements' => 'Handle with care',
-            'safety_requirements' => 'Wear safety equipment'
+            'safety_requirements' => 'Wear safety equipment',
         ];
 
         $response = $this->actingAs($this->user)
@@ -512,7 +514,7 @@ class ValidationTest extends TestCase
             'category' => '', // Empty category
             'weight_per_cubic_meter' => 'invalid_weight', // Invalid weight format
             'handling_requirements' => str_repeat('a', 1001), // Too long
-            'safety_requirements' => str_repeat('a', 1001) // Too long
+            'safety_requirements' => str_repeat('a', 1001), // Too long
         ];
 
         $response = $this->actingAs($this->user)
@@ -527,7 +529,7 @@ class ValidationTest extends TestCase
         // Test valid data
         $validData = [
             'name' => 'Test Vehicle Type',
-            'description' => 'Test description'
+            'description' => 'Test description',
         ];
 
         $response = $this->actingAs($this->user)
@@ -539,7 +541,7 @@ class ValidationTest extends TestCase
         // Test invalid data
         $invalidData = [
             'name' => '', // Empty name
-            'description' => str_repeat('a', 1001) // Too long
+            'description' => str_repeat('a', 1001), // Too long
         ];
 
         $response = $this->actingAs($this->user)
@@ -554,7 +556,7 @@ class ValidationTest extends TestCase
         // Test valid data
         $validData = [
             'name' => 'Test Status Type',
-            'description' => 'Test description'
+            'description' => 'Test description',
         ];
 
         $response = $this->actingAs($this->user)
@@ -566,7 +568,7 @@ class ValidationTest extends TestCase
         // Test invalid data
         $invalidData = [
             'name' => '', // Empty name
-            'description' => str_repeat('a', 1001) // Too long
+            'description' => str_repeat('a', 1001), // Too long
         ];
 
         $response = $this->actingAs($this->user)
@@ -584,7 +586,7 @@ class ValidationTest extends TestCase
         $validData = [
             'name' => 'Test Status',
             'statustype_id' => $statusType->id,
-            'description' => 'Test description'
+            'description' => 'Test description',
         ];
 
         $response = $this->actingAs($this->user)
@@ -597,7 +599,7 @@ class ValidationTest extends TestCase
         $invalidData = [
             'name' => '', // Empty name
             'statustype_id' => 99999, // Non-existent status type
-            'description' => str_repeat('a', 1001) // Too long
+            'description' => str_repeat('a', 1001), // Too long
         ];
 
         $response = $this->actingAs($this->user)
@@ -702,7 +704,7 @@ class ValidationTest extends TestCase
             'comment' => 'Test performance',
             'satus' => 'active',
             'is_returned' => false,
-            'user_id' => $this->user->id
+            'user_id' => $this->user->id,
         ];
 
         $response = $this->actingAs($this->user)
@@ -731,7 +733,7 @@ class ValidationTest extends TestCase
             'workOnGoing' => 'invalid_work', // Invalid work format
             'other' => 'invalid_other', // Invalid other format
             'satus' => 'invalid_status', // Invalid status
-            'user_id' => 99999 // Non-existent user
+            'user_id' => 99999, // Non-existent user
         ];
 
         $response = $this->actingAs($this->user)
@@ -753,7 +755,7 @@ class ValidationTest extends TestCase
             'distance_km' => 100.0,
             'estimated_time_hours' => 2.5,
             'road_condition' => 'Good',
-            'notes' => 'Test distance'
+            'notes' => 'Test distance',
         ];
 
         $response = $this->actingAs($this->user)
@@ -769,7 +771,7 @@ class ValidationTest extends TestCase
             'distance_km' => 'invalid_distance', // Invalid distance format
             'estimated_time_hours' => 'invalid_time', // Invalid time format
             'road_condition' => '', // Empty road condition
-            'notes' => str_repeat('a', 1001) // Too long
+            'notes' => str_repeat('a', 1001), // Too long
         ];
 
         $response = $this->actingAs($this->user)
@@ -787,7 +789,7 @@ class ValidationTest extends TestCase
             'email' => 'required|email|unique:users,email',
             'phone' => 'required|string|regex:/^\+251\d{9}$/',
             'date' => 'required|date|after:today',
-            'number' => 'required|numeric|min:0|max:999999.99'
+            'number' => 'required|numeric|min:0|max:999999.99',
         ];
 
         $data = [
@@ -795,7 +797,7 @@ class ValidationTest extends TestCase
             'email' => 'test@example.com',
             'phone' => '+251911234567',
             'date' => '2024-12-01',
-            'number' => 100.50
+            'number' => 100.50,
         ];
 
         $validator = Validator::make($data, $rules);
@@ -807,7 +809,7 @@ class ValidationTest extends TestCase
             'email' => 'invalid_email',
             'phone' => 'invalid_phone',
             'date' => '2020-01-01',
-            'number' => -10
+            'number' => -10,
         ];
 
         $validator = Validator::make($invalidData, $rules);
@@ -825,19 +827,19 @@ class ValidationTest extends TestCase
         $invalidData = [
             'plate' => 'invalid',
             'email' => 'invalid_email',
-            'phone' => 'invalid_phone'
+            'phone' => 'invalid_phone',
         ];
 
         $rules = [
             'plate' => 'required|string|max:20|regex:/^[A-Z]{3}-\d{3}$/',
             'email' => 'required|email',
-            'phone' => 'required|string|regex:/^\+251\d{9}$/'
+            'phone' => 'required|string|regex:/^\+251\d{9}$/',
         ];
 
         $messages = [
             'plate.regex' => 'The plate must be in format ABC-123',
             'email.email' => 'Please enter a valid email address',
-            'phone.regex' => 'Please enter a valid Ethiopian phone number'
+            'phone.regex' => 'Please enter a valid Ethiopian phone number',
         ];
 
         $validator = Validator::make($invalidData, $rules, $messages);
@@ -857,7 +859,7 @@ class ValidationTest extends TestCase
         $truckData = [
             'plate' => 'REQ-123',
             'vehicletype_id' => $vehicleType->id,
-            'status' => 'active'
+            'status' => 'active',
         ];
 
         $response = $this->actingAs($this->user)
@@ -870,7 +872,7 @@ class ValidationTest extends TestCase
         $invalidTruckData = [
             'plate' => '',
             'vehicletype_id' => 99999,
-            'status' => 'invalid'
+            'status' => 'invalid',
         ];
 
         $response = $this->actingAs($this->user)

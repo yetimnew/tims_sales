@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Enums\CargoServiceType;
 use App\Enums\OperationDestinationScope;
+use App\Http\Requests\Operations\StoreOperationRequest;
+use App\Http\Requests\Operations\UpdateOperationRequest;
 use App\Models\CargoType;
 use App\Models\Customer;
 use App\Models\Operation;
@@ -21,7 +23,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -236,23 +237,10 @@ class OperationController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(StoreOperationRequest $request)
     {
         try {
-            $validated = $request->validate([
-                'operationid' => 'required|string|max:255|unique:operations',
-                'customer_id' => 'required|exists:customers,id',
-                'startdate' => 'required|date',
-                'volume' => 'required|numeric|min:0',
-                'cargo_type_id' => 'required|exists:cargo_types,id',
-                'cargo_service_type' => ['required', 'string', Rule::in(CargoServiceType::values())],
-                'km' => 'required|numeric|min:0',
-                'tariff' => 'required|numeric|min:0',
-                'remark' => 'nullable|string|max:1000',
-                'status' => 'required|string|in:active,inactive',
-                'destination_scope' => ['required', 'string', Rule::in(OperationDestinationScope::values())],
-                'destination_id' => ['required', 'integer', 'min:1'],
-            ]);
+            $validated = $request->validated();
 
             $destinationAttributes = $this->resolveDestinationAttributes(
                 OperationDestinationScope::from($validated['destination_scope']),
@@ -269,14 +257,16 @@ class OperationController extends Controller
             return redirect()->route('operations.index')
                 ->with('success', 'Operation created successfully.');
 
+        } catch (ValidationException $e) {
+            throw $e;
         } catch (Exception $e) {
             Log::error('Operation creation failed', [
                 'error' => $e->getMessage(),
-                'data' => $request->all(),
+                'data' => $request->validated(),
                 'user_id' => Auth::id(),
             ]);
 
-            return back()->withErrors(['error' => 'Failed to create operation. Please try again.']);
+            return back()->withErrors(['error' => 'Failed to create operation. Please try again.'])->withInput();
         }
     }
 
@@ -285,7 +275,7 @@ class OperationController extends Controller
      */
     public function show(Operation $operation): Response
     {
-    $operation->load(['customer', 'performances', 'user', 'destinationReference', 'cargoType']);
+        $operation->load(['customer', 'performances', 'user', 'destinationReference', 'cargoType']);
 
         // Load activity logs for this operation using Spatie Activity Log
         $activityLogs = Activity::forSubject($operation)
@@ -430,7 +420,7 @@ class OperationController extends Controller
      */
     public function edit(Operation $operation): Response
     {
-    $operation->load(['destinationReference', 'cargoType']);
+        $operation->load(['destinationReference', 'cargoType']);
 
         $customers = Customer::where('status', 'active')
             ->orderBy('name')
@@ -472,23 +462,10 @@ class OperationController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Operation $operation)
+    public function update(UpdateOperationRequest $request, Operation $operation)
     {
         try {
-            $validated = $request->validate([
-                'operationid' => 'required|string|max:255|unique:operations,operationid,'.$operation->id,
-                'customer_id' => 'required|exists:customers,id',
-                'startdate' => 'required|date',
-                'volume' => 'required|numeric|min:0',
-                'cargo_type_id' => 'required|exists:cargo_types,id',
-                'cargo_service_type' => ['required', 'string', Rule::in(CargoServiceType::values())],
-                'km' => 'required|numeric|min:0',
-                'tariff' => 'required|numeric|min:0',
-                'remark' => 'nullable|string|max:1000',
-                'status' => 'required|string|in:active,inactive',
-                'destination_scope' => ['required', 'string', Rule::in(OperationDestinationScope::values())],
-                'destination_id' => ['required', 'integer', 'min:1'],
-            ]);
+            $validated = $request->validated();
 
             $destinationAttributes = $this->resolveDestinationAttributes(
                 OperationDestinationScope::from($validated['destination_scope']),
@@ -504,15 +481,17 @@ class OperationController extends Controller
             return redirect()->route('operations.index')
                 ->with('success', 'Operation updated successfully.');
 
+        } catch (ValidationException $e) {
+            throw $e;
         } catch (Exception $e) {
             Log::error('Operation update failed', [
                 'operation_id' => $operation->id,
                 'error' => $e->getMessage(),
-                'data' => $request->all(),
+                'data' => $request->validated(),
                 'user_id' => Auth::id(),
             ]);
 
-            return back()->withErrors(['error' => 'Failed to update operation. Please try again.']);
+            return back()->withErrors(['error' => 'Failed to update operation. Please try again.'])->withInput();
         }
     }
 

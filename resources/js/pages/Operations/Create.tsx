@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type FormEventHandler } from 'react';
+import { useEffect, useMemo, useRef, useState, useCallback, type FormEventHandler } from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
@@ -8,8 +8,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
-import { toast } from '@/hooks/use-toast';
 import { validateOperation, type ValidationErrors } from '@/lib/validation';
 import {
     AlertCircle,
@@ -17,12 +15,8 @@ import {
     ArrowUp,
     Calendar,
     ClipboardList,
-    FileText,
-    Layers,
-    MapPin,
     Rocket,
     Save,
-    TrendingUp,
     CheckCircle,
 } from 'lucide-react';
 
@@ -110,6 +104,13 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
+type RecentSelections = {
+    customers: string[];
+    cargoTypes: string[];
+};
+
+const RECENT_SELECTIONS_KEY = 'operations_recent_selections';
+
 export default function OperationsCreate({ customers, regions, zones, woredas, places, destinationScopes, cargoTypes, cargoServiceTypes }: OperationsCreateProps) {
     const { data, setData, post, processing, errors, reset } = useForm<OperationFormData>({
         operationid: '',
@@ -129,24 +130,11 @@ export default function OperationsCreate({ customers, regions, zones, woredas, p
     const [frontendErrors, setFrontendErrors] = useState<ValidationErrors>({});
     const [isDirty, setIsDirty] = useState(false);
     const [showScrollTop, setShowScrollTop] = useState(false);
+    const [recentCustomers, setRecentCustomers] = useState<string[]>([]);
+    const [recentCargoTypes, setRecentCargoTypes] = useState<string[]>([]);
     const scrollContainerRef = useRef<HTMLFormElement | null>(null);
 
     const hasErrors = useMemo(() => Object.keys(errors).length > 0 || Object.keys(frontendErrors).length > 0, [errors, frontendErrors]);
-
-    useEffect(() => {
-        const errorMessages = Object.entries(errors).map(([_, message]) => {
-            if (typeof message === 'string') return message;
-            return String(message);
-        });
-
-        if (errorMessages.length > 0) {
-            toast({
-                title: '⚠️ Validation Error',
-                description: errorMessages.join(', '),
-                variant: 'destructive',
-            });
-        }
-    }, [errors]);
 
     useEffect(() => {
         const container = scrollContainerRef.current;
@@ -165,6 +153,68 @@ export default function OperationsCreate({ customers, regions, zones, woredas, p
             container.removeEventListener('scroll', handleScroll);
         };
     }, []);
+
+    const loadRecentSelections = useCallback(() => {
+        if (typeof window === 'undefined') {
+            return;
+        }
+
+        try {
+            const storedValue = window.localStorage.getItem(RECENT_SELECTIONS_KEY);
+
+            if (!storedValue) {
+                return;
+            }
+
+            const parsed: RecentSelections = JSON.parse(storedValue);
+
+            if (Array.isArray(parsed.customers)) {
+                setRecentCustomers(parsed.customers.slice(0, 5));
+            }
+
+            if (Array.isArray(parsed.cargoTypes)) {
+                setRecentCargoTypes(parsed.cargoTypes.slice(0, 5));
+            }
+        } catch (error) {
+            console.error('Failed to load recent selections', error);
+        }
+    }, []);
+
+    useEffect(() => {
+        loadRecentSelections();
+    }, [loadRecentSelections]);
+
+    const persistRecentSelections = useCallback((next: RecentSelections) => {
+        if (typeof window === 'undefined') {
+            return;
+        }
+
+        try {
+            window.localStorage.setItem(RECENT_SELECTIONS_KEY, JSON.stringify(next));
+        } catch (error) {
+            console.error('Failed to persist recent selections', error);
+        }
+    }, []);
+
+    const updateRecentSelection = useCallback((field: 'customer' | 'cargoType', value: string) => {
+        if (!value) {
+            return;
+        }
+
+        if (field === 'customer') {
+            setRecentCustomers(prev => {
+                const next = [value, ...prev.filter(existing => existing !== value)].slice(0, 5);
+                persistRecentSelections({ customers: next, cargoTypes: recentCargoTypes });
+                return next;
+            });
+        } else {
+            setRecentCargoTypes(prev => {
+                const next = [value, ...prev.filter(existing => existing !== value)].slice(0, 5);
+                persistRecentSelections({ customers: recentCustomers, cargoTypes: next });
+                return next;
+            });
+        }
+    }, [persistRecentSelections, recentCargoTypes, recentCustomers]);
 
     const handleScrollToTop = () => {
         scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
@@ -198,9 +248,17 @@ export default function OperationsCreate({ customers, regions, zones, woredas, p
             return;
         }
 
-    setData(field, value as OperationFormData[keyof OperationFormData]);
+        setData(field, value as OperationFormData[keyof OperationFormData]);
         validateField(field, value);
         setIsDirty(true);
+
+        if (field === 'customer_id') {
+            updateRecentSelection('customer', value);
+        }
+
+        if (field === 'cargo_type_id') {
+            updateRecentSelection('cargoType', value);
+        }
     };
 
     const submit: FormEventHandler = event => {
@@ -209,11 +267,6 @@ export default function OperationsCreate({ customers, regions, zones, woredas, p
         const validationResults = validateOperation(data);
         if (Object.keys(validationResults).length > 0) {
             setFrontendErrors(validationResults);
-            toast({
-                title: '⚠️ Validation Error',
-                description: 'Please fix the highlighted errors before submitting.',
-                variant: 'destructive',
-            });
             return;
         }
 
@@ -229,10 +282,6 @@ export default function OperationsCreate({ customers, regions, zones, woredas, p
                 setData('destination_scope', 'region');
                 setData('destination_id', '');
                 setFieldError('destination_id', '');
-                toast({
-                    title: 'Operation created',
-                    description: 'The new operation has been added successfully.',
-                });
             },
         });
     };
@@ -271,24 +320,9 @@ export default function OperationsCreate({ customers, regions, zones, woredas, p
         }
     }, [data.destination_scope, safeRegions, safeZones, safeWoredas, safePlaces]);
 
-    const selectedDestinationOption = useMemo(
-        () => destinationOptions.find(option => option.value === data.destination_id) ?? null,
-        [destinationOptions, data.destination_id]
-    );
-
     const selectedDestinationScopeLabel = useMemo(
         () => destinationScopeOptions.find(option => option.value === data.destination_scope)?.label ?? null,
         [destinationScopeOptions, data.destination_scope]
-    );
-
-    const selectedCargoType = useMemo(
-        () => safeCargoTypes.find(type => type.id.toString() === data.cargo_type_id) ?? null,
-        [safeCargoTypes, data.cargo_type_id]
-    );
-
-    const selectedCargoServiceLabel = useMemo(
-        () => safeCargoServiceTypes.find(option => option.value === data.cargo_service_type)?.label ?? null,
-        [safeCargoServiceTypes, data.cargo_service_type]
     );
 
     useEffect(() => {
@@ -365,14 +399,14 @@ export default function OperationsCreate({ customers, regions, zones, woredas, p
                                 </div>
                             )}
 
-                            <section className="space-y-5 rounded-xl border border-slate-200/70 bg-white/80 p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/40">
-                                <div className="flex items-center gap-3">
-                                    <div className="rounded-lg bg-indigo-100 p-2 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400">
+                            <section className="space-y-4 rounded-xl border border-slate-200/60 bg-white/75 p-5 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/35">
+                                <div className="flex items-center gap-2.5 text-sm">
+                                    <div className="rounded-md bg-indigo-100 p-1.5 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400">
                                         <Rocket className="h-4 w-4" />
                                     </div>
-                                    <div>
-                                        <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Operation Overview</h2>
-                                        <p className="text-sm text-muted-foreground">Identify the operation and connect it to the customer ecosystem.</p>
+                                    <div className="flex flex-col gap-1">
+                                        <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">Operation Overview</h2>
+                                        <p className="text-xs text-muted-foreground">Identify the operation and connect it to the customer ecosystem.</p>
                                     </div>
                                 </div>
 
@@ -417,6 +451,26 @@ export default function OperationsCreate({ customers, regions, zones, woredas, p
                                                 <AlertCircle className="h-3 w-3" />
                                                 {getFieldError('customer_id')}
                                             </p>
+                                        )}
+                                        {!getFieldError('customer_id') && recentCustomers.length > 0 && (
+                                            <div className="flex flex-wrap gap-2 pt-1">
+                                                <p className="text-xs text-muted-foreground">Recent:</p>
+                                                {recentCustomers
+                                                    .map(customerId => safeCustomers.find(customer => customer.id.toString() === customerId))
+                                                    .filter((customer): customer is Customer => Boolean(customer))
+                                                    .map(customer => (
+                                                        <Button
+                                                            key={customer.id}
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="h-7 px-2 text-xs"
+                                                            onClick={() => handleFieldChange('customer_id', customer.id.toString())}
+                                                        >
+                                                            {customer.name}
+                                                        </Button>
+                                                    ))}
+                                            </div>
                                         )}
                                     </div>
 
@@ -506,17 +560,7 @@ export default function OperationsCreate({ customers, regions, zones, woredas, p
                                 </div>
                             </section>
 
-                            <section className="space-y-5 rounded-xl border border-slate-200/70 bg-white/80 p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/40">
-                                <div className="flex items-center gap-3">
-                                    <div className="rounded-lg bg-blue-100 p-2 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
-                                        <MapPin className="h-4 w-4" />
-                                    </div>
-                                    <div>
-                                        <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Timeline & Scope</h2>
-                                        <p className="text-sm text-muted-foreground">Set the operational window and logistics profile.</p>
-                                    </div>
-                                </div>
-
+                            <section className="space-y-4 rounded-xl border border-slate-200/60 bg-white/75 p-5 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/35">
                                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                     <div className="space-y-2">
                                         <Label htmlFor="startdate">Start Date <span className="text-red-500">*</span></Label>
@@ -594,9 +638,26 @@ export default function OperationsCreate({ customers, regions, zones, woredas, p
                                                 {getFieldError('cargo_type_id')}
                                             </p>
                                         )}
-                                        <p className="text-xs text-muted-foreground">
-                                            Choose from the configured cargo catalogue to standardise reporting.
-                                        </p>
+                                        {recentCargoTypes.length > 0 && (
+                                            <div className="flex flex-wrap items-center gap-2 pt-1">
+                                                <p className="text-xs text-muted-foreground">Recent:</p>
+                                                {recentCargoTypes
+                                                    .map(typeId => safeCargoTypes.find(type => type.id.toString() === typeId))
+                                                    .filter((type): type is CargoTypeOption => Boolean(type))
+                                                    .map(type => (
+                                                        <Button
+                                                            key={type.id}
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="h-7 px-2 text-xs"
+                                                            onClick={() => handleFieldChange('cargo_type_id', type.id.toString())}
+                                                        >
+                                                            {type.name}
+                                                        </Button>
+                                                    ))}
+                                            </div>
+                                        )}
                                     </div>
 
                                     <div className="space-y-2">
@@ -639,17 +700,7 @@ export default function OperationsCreate({ customers, regions, zones, woredas, p
                                 </div>
                             </section>
 
-                            <section className="space-y-5 rounded-xl border border-slate-200/70 bg-white/80 p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/40">
-                                <div className="flex items-center gap-3">
-                                    <div className="rounded-lg bg-emerald-100 p-2 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
-                                        <TrendingUp className="h-4 w-4" />
-                                    </div>
-                                    <div>
-                                        <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Commercial Profile</h2>
-                                        <p className="text-sm text-muted-foreground">Capture the tariff and supporting notes for quick reference.</p>
-                                    </div>
-                                </div>
-
+                            <section className="space-y-4 rounded-xl border border-slate-200/60 bg-white/75 p-5 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/35">
                                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                     <div className="space-y-2">
                                         <Label htmlFor="tariff">Tariff (per ton-km) <span className="text-red-500">*</span></Label>
@@ -688,44 +739,8 @@ export default function OperationsCreate({ customers, regions, zones, woredas, p
                                     </div>
                                 </div>
 
-                                <div className="rounded-lg border border-slate-200/70 bg-slate-50/60 p-4 text-sm shadow-sm dark:border-slate-800/60 dark:bg-slate-900/40">
-                                    <h4 className="mb-2 flex items-center gap-2 font-semibold text-slate-800 dark:text-slate-100">
-                                        <Layers className="h-4 w-4" />
-                                        Quick Summary
-                                    </h4>
-                                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                                        <Badge variant="secondary" className="justify-start gap-2">
-                                            <FileText className="h-3.5 w-3.5" />
-                                            {data.operationid || 'Operation ID pending'}
-                                        </Badge>
-                                        <Badge variant="outline" className="justify-start gap-2">
-                                            <Rocket className="h-3.5 w-3.5" />
-                                            {safeCustomers.find(customer => customer.id.toString() === data.customer_id)?.name || 'Customer not selected'}
-                                        </Badge>
-                                        <Badge variant="outline" className="justify-start gap-2">
-                                            <ClipboardList className="h-3.5 w-3.5" />
-                                            {selectedCargoServiceLabel || 'Service type not selected'}
-                                        </Badge>
-                                        <Badge variant="outline" className="justify-start gap-2">
-                                            <Layers className="h-3.5 w-3.5" />
-                                            {selectedCargoType?.name || 'Cargo type not selected'}
-                                        </Badge>
-                                        <Badge variant="outline" className="justify-start gap-2">
-                                            <Calendar className="h-3.5 w-3.5" />
-                                            {data.startdate ? new Date(data.startdate).toLocaleDateString() : 'Start date not set'}
-                                        </Badge>
-                                        <Badge variant="outline" className="justify-start gap-2">
-                                            <MapPin className="h-3.5 w-3.5" />
-                                            {selectedDestinationOption?.label || 'Destination not selected'}
-                                        </Badge>
-                                        <Badge variant="outline" className="justify-start gap-2">
-                                            <Layers className="h-3.5 w-3.5" />
-                                            {selectedDestinationScopeLabel || 'Scope not selected'}
-                                        </Badge>
-                                    </div>
-                                </div>
-                            </section>
 
+                            </section>
                             <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-slate-200/70 bg-white/80 px-6 py-5 shadow-sm dark:border-slate-800 dark:bg-slate-900/40">
                                 <div className="flex items-center gap-4">
                                     <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
