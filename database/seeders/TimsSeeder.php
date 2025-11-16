@@ -66,8 +66,8 @@ class TimsSeeder extends Seeder
         // Create cargo types
         $cargoTypes = $this->createCargoTypes();
 
-    // Create operations
-    $operations = $this->createOperations($customers, $users, $regions, $zones, $woredas, $places, $cargoTypes);
+        // Create operations
+        $operations = $this->createOperations($customers, $users, $regions, $zones, $woredas, $places, $cargoTypes);
 
         // Create performances
         $performances = $this->createPerformances($operations, $driverTrucks, $places, $users, $cargoTypes);
@@ -625,8 +625,8 @@ class TimsSeeder extends Seeder
 
         $performances = collect([
             [
-                'trip' => 'AA-001',
-                'LoadType' => 'main',
+                'load_phase' => 'main',
+                'load_completion' => 'full',
                 'FOnumber' => 'FO001',
                 'operation_id' => $operations->where('operationid', 'OP001')->first()->id,
                 'driver_truck_id' => $driverTrucks->first()->id,
@@ -657,8 +657,8 @@ class TimsSeeder extends Seeder
                 'cargo_condition_notes' => 'Good condition',
             ],
             [
-                'trip' => 'AA-002',
-                'LoadType' => 'main',
+                'load_phase' => 'return',
+                'load_completion' => 'partial',
                 'FOnumber' => 'FO002',
                 'operation_id' => $operations->where('operationid', 'OP002')->first()->id,
                 'driver_truck_id' => $driverTrucks->skip(1)->first()->id,
@@ -689,8 +689,8 @@ class TimsSeeder extends Seeder
                 'cargo_condition_notes' => 'Excellent condition',
             ],
             [
-                'trip' => 'AA-003',
-                'LoadType' => 'main',
+                'load_phase' => 'main',
+                'load_completion' => 'partial',
                 'FOnumber' => 'FO003',
                 'operation_id' => $operations->where('operationid', 'OP004')->first()->id,
                 'driver_truck_id' => $driverTrucks->skip(2)->first()->id,
@@ -720,8 +720,8 @@ class TimsSeeder extends Seeder
                 'cargo_condition_notes' => 'Secure transport',
             ],
             [
-                'trip' => 'AA-004',
-                'LoadType' => 'main',
+                'load_phase' => 'return',
+                'load_completion' => 'full',
                 'FOnumber' => 'FO004',
                 'operation_id' => $operations->where('operationid', 'OP001')->first()->id,
                 'driver_truck_id' => $driverTrucks->skip(3)->first()->id,
@@ -755,10 +755,7 @@ class TimsSeeder extends Seeder
 
         return $performances->map(function ($performanceData) {
             return Performance::firstOrCreate(
-                [
-                    'trip' => $performanceData['trip'],
-                    'FOnumber' => $performanceData['FOnumber'],
-                ],
+                ['FOnumber' => $performanceData['FOnumber']],
                 $performanceData
             );
         });

@@ -6,16 +6,16 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class Performance extends Model
 {
-    use HasFactory, SoftDeletes, LogsActivity;
+    use HasFactory, LogsActivity, SoftDeletes;
 
     protected $fillable = [
-        'trip',
-        'LoadType',
+        'load_phase',
+        'load_completion',
         'FOnumber',
         'operation_id',
         'driver_truck_id',
@@ -49,6 +49,8 @@ class Performance extends Model
     protected $casts = [
         'DateDispach' => 'date',
         'returned_date' => 'date',
+        'load_phase' => 'string',
+        'load_completion' => 'string',
         'DistanceWCargo' => 'decimal:2',
         'tonkm' => 'decimal:2',
         'DistanceWOCargo' => 'decimal:2',
@@ -148,7 +150,7 @@ class Performance extends Model
      */
     public function scopeMainTrip($query)
     {
-        return $query->where('LoadType', 'main');
+        return $query->where('load_phase', 'main');
     }
 
     /**
@@ -156,7 +158,7 @@ class Performance extends Model
      */
     public function scopeMainTripReturned($query)
     {
-        return $query->where('LoadType', 'main')->where('is_returned', true);
+        return $query->where('load_phase', 'main')->where('is_returned', true);
     }
 
     /**
@@ -164,7 +166,7 @@ class Performance extends Model
      */
     public function scopeMainTripNotReturned($query)
     {
-        return $query->where('LoadType', 'main')->where('is_returned', false);
+        return $query->where('load_phase', 'main')->where('is_returned', false);
     }
 
     /**
@@ -201,7 +203,7 @@ class Performance extends Model
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['trip', 'LoadType', 'FOnumber', 'operation_id', 'driver_truck_id', 'DateDispach', 'orgion_id', 'destination_id', 'DistanceWCargo', 'tonkm', 'DistanceWOCargo', 'CargoVolumMT', 'fuelInLitter', 'fuelInBirr', 'perdiem', 'workOnGoing', 'other', 'comment', 'satus', 'is_returned', 'cargo_type_id', 'cargo_weight_kg', 'cargo_volume_cubic_meters'])
+            ->logOnly(['load_phase', 'load_completion', 'FOnumber', 'operation_id', 'driver_truck_id', 'DateDispach', 'orgion_id', 'destination_id', 'DistanceWCargo', 'tonkm', 'DistanceWOCargo', 'CargoVolumMT', 'fuelInLitter', 'fuelInBirr', 'perdiem', 'workOnGoing', 'other', 'comment', 'satus', 'is_returned', 'cargo_type_id', 'cargo_weight_kg', 'cargo_volume_cubic_meters'])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs()
             ->useLogName('performances');

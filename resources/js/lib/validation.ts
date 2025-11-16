@@ -683,6 +683,46 @@ export const zoneValidation = {
     if (!['active', 'inactive'].includes(value)) return 'Invalid status'
     return ''
   },
+
+  administrative_center: (value: string) => {
+    if (!value) return ''
+    if (value.length > 255) return 'Administrative center cannot exceed 255 characters'
+    return ''
+  },
+
+  area_km2: (value: string | number | null | undefined) =>
+    regionValidation.numericRange(value, { min: 0, max: 999999.99, allowEmpty: true, label: 'Area (km²)' }),
+
+  population: (value: string | number | null | undefined) =>
+    regionValidation.numericRange(value, { min: 0, max: 1000000000, allowEmpty: true, label: 'Population' }),
+
+  latitude: (value: string | number | null | undefined) => regionValidation.latitude(value),
+
+  longitude: (value: string | number | null | undefined) => regionValidation.longitude(value),
+
+  elevation_m: (value: string | number | null | undefined) =>
+    regionValidation.numericRange(value, { min: -400, max: 9000, allowEmpty: true, label: 'Elevation (m)' }),
+
+  accessibility_score: (value: string | number | null | undefined) =>
+    regionValidation.numericRange(value, { min: 0, max: 100, allowEmpty: true, label: 'Accessibility score' }),
+
+  description: (value: string) => {
+    if (!value) return ''
+    if (value.length > 1000) return 'Description cannot exceed 1,000 characters'
+    return ''
+  },
+
+  infrastructure_notes: (value: string) => {
+    if (!value) return ''
+    if (value.length > 2000) return 'Infrastructure notes cannot exceed 2,000 characters'
+    return ''
+  },
+
+  climate_profile: (value: string) => {
+    if (!value) return ''
+    if (value.length > 2000) return 'Climate profile cannot exceed 2,000 characters'
+    return ''
+  },
 }
 
 // ==================== WOREDA VALIDATION ====================
@@ -710,6 +750,46 @@ export const woredaValidation = {
     if (!['active', 'inactive'].includes(value)) return 'Invalid status'
     return ''
   },
+
+  administrative_center: (value: string) => {
+    if (!value) return ''
+    if (value.length > 255) return 'Administrative center cannot exceed 255 characters'
+    return ''
+  },
+
+  area_km2: (value: string | number | null | undefined) =>
+    regionValidation.numericRange(value, { min: 0, max: 999999.99, allowEmpty: true, label: 'Area (km²)' }),
+
+  population: (value: string | number | null | undefined) =>
+    regionValidation.numericRange(value, { min: 0, max: 1000000000, allowEmpty: true, label: 'Population' }),
+
+  latitude: (value: string | number | null | undefined) => regionValidation.latitude(value),
+
+  longitude: (value: string | number | null | undefined) => regionValidation.longitude(value),
+
+  elevation_m: (value: string | number | null | undefined) =>
+    regionValidation.numericRange(value, { min: -400, max: 9000, allowEmpty: true, label: 'Elevation (m)' }),
+
+  accessibility_score: (value: string | number | null | undefined) =>
+    regionValidation.numericRange(value, { min: 0, max: 100, allowEmpty: true, label: 'Accessibility score' }),
+
+  description: (value: string) => {
+    if (!value) return ''
+    if (value.length > 1000) return 'Description cannot exceed 1,000 characters'
+    return ''
+  },
+
+  infrastructure_notes: (value: string) => {
+    if (!value) return ''
+    if (value.length > 2000) return 'Infrastructure notes cannot exceed 2,000 characters'
+    return ''
+  },
+
+  road_quality_notes: (value: string) => {
+    if (!value) return ''
+    if (value.length > 2000) return 'Road quality notes cannot exceed 2,000 characters'
+    return ''
+  },
 }
 
 // ==================== PLACE VALIDATION ====================
@@ -735,6 +815,37 @@ export const placeValidation = {
   status: (value: string) => {
     if (!value) return 'Status is required'
     if (!['active', 'inactive'].includes(value)) return 'Invalid status'
+    return ''
+  },
+
+  latitude: (value: string | number | null | undefined) => regionValidation.latitude(value),
+
+  longitude: (value: string | number | null | undefined) => regionValidation.longitude(value),
+
+  elevation_m: (value: string | number | null | undefined) =>
+    regionValidation.numericRange(value, { min: -400, max: 9000, allowEmpty: true, label: 'Elevation (m)' }),
+
+  population: (value: string | number | null | undefined) =>
+    regionValidation.numericRange(value, { min: 0, max: 1000000000, allowEmpty: true, label: 'Population' }),
+
+  accessibility_score: (value: string | number | null | undefined) =>
+    regionValidation.numericRange(value, { min: 0, max: 100, allowEmpty: true, label: 'Accessibility score' }),
+
+  description: (value: string) => {
+    if (!value) return ''
+    if (value.length > 1000) return 'Description cannot exceed 1,000 characters'
+    return ''
+  },
+
+  infrastructure_notes: (value: string) => {
+    if (!value) return ''
+    if (value.length > 2000) return 'Infrastructure notes cannot exceed 2,000 characters'
+    return ''
+  },
+
+  road_quality_notes: (value: string) => {
+    if (!value) return ''
+    if (value.length > 2000) return 'Road quality notes cannot exceed 2,000 characters'
     return ''
   },
 }
@@ -1025,6 +1136,16 @@ export function validateZone(data: any): ValidationErrors {
   errors.region_id = zoneValidation.region_id(data.region_id)
   errors.status = zoneValidation.status(data.status)
   if (data.code) errors.code = zoneValidation.code(data.code)
+  if (data.administrative_center !== undefined) errors.administrative_center = zoneValidation.administrative_center(data.administrative_center)
+  if (data.area_km2 !== undefined) errors.area_km2 = zoneValidation.area_km2(data.area_km2)
+  if (data.population !== undefined) errors.population = zoneValidation.population(data.population)
+  if (data.latitude !== undefined) errors.latitude = zoneValidation.latitude(data.latitude)
+  if (data.longitude !== undefined) errors.longitude = zoneValidation.longitude(data.longitude)
+  if (data.elevation_m !== undefined) errors.elevation_m = zoneValidation.elevation_m(data.elevation_m)
+  if (data.accessibility_score !== undefined) errors.accessibility_score = zoneValidation.accessibility_score(data.accessibility_score)
+  if (data.description !== undefined) errors.description = zoneValidation.description(data.description)
+  if (data.infrastructure_notes !== undefined) errors.infrastructure_notes = zoneValidation.infrastructure_notes(data.infrastructure_notes)
+  if (data.climate_profile !== undefined) errors.climate_profile = zoneValidation.climate_profile(data.climate_profile)
   Object.keys(errors).forEach(key => { if (!errors[key]) delete errors[key] })
   return errors
 }
@@ -1035,6 +1156,16 @@ export function validateWoreda(data: any): ValidationErrors {
   errors.zone_id = woredaValidation.zone_id(data.zone_id)
   errors.status = woredaValidation.status(data.status)
   if (data.code) errors.code = woredaValidation.code(data.code)
+  if (data.administrative_center !== undefined) errors.administrative_center = woredaValidation.administrative_center(data.administrative_center)
+  if (data.area_km2 !== undefined) errors.area_km2 = woredaValidation.area_km2(data.area_km2)
+  if (data.population !== undefined) errors.population = woredaValidation.population(data.population)
+  if (data.latitude !== undefined) errors.latitude = woredaValidation.latitude(data.latitude)
+  if (data.longitude !== undefined) errors.longitude = woredaValidation.longitude(data.longitude)
+  if (data.elevation_m !== undefined) errors.elevation_m = woredaValidation.elevation_m(data.elevation_m)
+  if (data.accessibility_score !== undefined) errors.accessibility_score = woredaValidation.accessibility_score(data.accessibility_score)
+  if (data.description !== undefined) errors.description = woredaValidation.description(data.description)
+  if (data.infrastructure_notes !== undefined) errors.infrastructure_notes = woredaValidation.infrastructure_notes(data.infrastructure_notes)
+  if (data.road_quality_notes !== undefined) errors.road_quality_notes = woredaValidation.road_quality_notes(data.road_quality_notes)
   Object.keys(errors).forEach(key => { if (!errors[key]) delete errors[key] })
   return errors
 }
@@ -1045,6 +1176,14 @@ export function validatePlace(data: any): ValidationErrors {
   errors.woreda_id = placeValidation.woreda_id(data.woreda_id)
   errors.status = placeValidation.status(data.status)
   if (data.code) errors.code = placeValidation.code(data.code)
+  if (data.latitude !== undefined) errors.latitude = placeValidation.latitude(data.latitude)
+  if (data.longitude !== undefined) errors.longitude = placeValidation.longitude(data.longitude)
+  if (data.elevation_m !== undefined) errors.elevation_m = placeValidation.elevation_m(data.elevation_m)
+  if (data.population !== undefined) errors.population = placeValidation.population(data.population)
+  if (data.accessibility_score !== undefined) errors.accessibility_score = placeValidation.accessibility_score(data.accessibility_score)
+  if (data.description !== undefined) errors.description = placeValidation.description(data.description)
+  if (data.infrastructure_notes !== undefined) errors.infrastructure_notes = placeValidation.infrastructure_notes(data.infrastructure_notes)
+  if (data.road_quality_notes !== undefined) errors.road_quality_notes = placeValidation.road_quality_notes(data.road_quality_notes)
   Object.keys(errors).forEach(key => { if (!errors[key]) delete errors[key] })
   return errors
 }

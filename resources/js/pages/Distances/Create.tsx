@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Head, Link, router, useForm } from '@inertiajs/react'
-import { ArrowLeft, MapPin, Route, Save, Navigation, CircleAlert } from 'lucide-react'
+import { ArrowLeft, MapPin, Route, Save, Navigation } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -10,8 +10,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
 import { InteractiveMap } from '@/components/InteractiveMap'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { useToast } from '@/hooks/use-toast'
 import AppLayout from '@/layouts/app-layout'
 
 
@@ -37,7 +35,6 @@ interface DistancesCreateProps {
 type ValidatableField = 'from_place_id' | 'to_place_id' | 'distance_km' | 'estimated_time_hours'
 
 export default function DistancesCreate({ places }: DistancesCreateProps) {
-  const { toast } = useToast()
   const placesWithCoordinates = useMemo(
     () => places.filter(place => place.latitude !== undefined && place.longitude !== undefined).length,
     [places],
@@ -67,7 +64,6 @@ export default function DistancesCreate({ places }: DistancesCreateProps) {
   })
 
   const getFieldError = (field: keyof typeof data) => frontendErrors[field as string] || (errors[field] as string | undefined)
-  const hasErrors = Object.keys(frontendErrors).length > 0 || Object.keys(errors).length > 0
 
   const validateField = (field: ValidatableField, value: string) => {
     const fieldErrors: Record<string, string> = {}
@@ -185,21 +181,12 @@ export default function DistancesCreate({ places }: DistancesCreateProps) {
 
     if (Object.keys(submissionErrors).length > 0) {
       setFrontendErrors(prev => ({ ...prev, ...submissionErrors }))
-      toast({
-        title: 'Validation Error',
-        description: 'Please fix the highlighted fields.',
-        variant: 'destructive',
-      })
       return
     }
 
     post('/distances', {
       preserveScroll: true,
       onSuccess: () => {
-        toast({
-          title: 'Distance Created',
-          description: 'The route has been saved successfully.',
-        })
         reset()
         setFrontendErrors({})
         setSelectedFromPlace(null)
@@ -207,13 +194,6 @@ export default function DistancesCreate({ places }: DistancesCreateProps) {
         setRoutePoints([])
         setCalculatedDistance(0)
         setCalculatedTime(0)
-      },
-      onError: () => {
-        toast({
-          title: 'Creation Failed',
-          description: 'Failed to create distance.',
-          variant: 'destructive',
-        })
       },
     })
   }
@@ -278,18 +258,6 @@ export default function DistancesCreate({ places }: DistancesCreateProps) {
             </div>
           </div>
         </div>
-
-        {hasErrors && (
-          <Alert variant="destructive" className="border border-destructive/40 bg-destructive/10 text-destructive">
-            <div className="flex items-start gap-3">
-              <CircleAlert className="mt-0.5 h-5 w-5 flex-shrink-0" />
-              <AlertDescription className="text-sm">
-                Fix the highlighted fields before saving the route.
-              </AlertDescription>
-            </div>
-          </Alert>
-        )}
-
         <Tabs defaultValue="form" className="flex flex-col">
           <TabsList className="grid w-full grid-cols-1 gap-2 rounded-xl border border-slate-200 bg-slate-100 p-1 dark:border-slate-700 dark:bg-slate-800 sm:grid-cols-3">
             <TabsTrigger

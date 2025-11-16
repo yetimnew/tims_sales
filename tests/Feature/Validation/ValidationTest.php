@@ -41,6 +41,8 @@ class ValidationTest extends TestCase
             'drivers.show', 'drivers.store', 'drivers.update', 'drivers.export',
             'operations.view', 'operations.create', 'operations.store', 'operations.edit',
             'operations.update', 'operations.destroy', 'operations.export',
+            'performances.view', 'performances.create', 'performances.store', 'performances.edit',
+            'performances.update', 'performances.destroy', 'performances.export',
         ];
 
         foreach ($permissions as $permission) {
@@ -684,8 +686,8 @@ class ValidationTest extends TestCase
 
         // Test valid data
         $validData = [
-            'trip' => 'TRIP001',
-            'LoadType' => 'Full Load',
+            'load_phase' => 'main',
+            'load_completion' => 'full',
             'FOnumber' => 'FO001',
             'operation_id' => $operation->id,
             'driver_truck_id' => $driverTruck->id,
@@ -704,19 +706,21 @@ class ValidationTest extends TestCase
             'comment' => 'Test performance',
             'satus' => 'active',
             'is_returned' => false,
-            'user_id' => $this->user->id,
         ];
 
         $response = $this->actingAs($this->user)
             ->post(route('performances.store'), $validData);
 
         $response->assertRedirect(route('performances.index'));
-        $this->assertDatabaseHas('performances', ['trip' => 'TRIP001']);
+        $this->assertDatabaseHas('performances', [
+            'FOnumber' => 'FO001',
+            'load_phase' => 'main',
+        ]);
 
         // Test invalid data
         $invalidData = [
-            'trip' => '', // Empty trip
-            'LoadType' => '', // Empty load type
+            'load_phase' => '', // Empty load phase
+            'load_completion' => '', // Empty load completion
             'FOnumber' => '', // Empty FO number
             'operation_id' => 99999, // Non-existent operation
             'driver_truck_id' => 99999, // Non-existent driver truck
@@ -733,13 +737,31 @@ class ValidationTest extends TestCase
             'workOnGoing' => 'invalid_work', // Invalid work format
             'other' => 'invalid_other', // Invalid other format
             'satus' => 'invalid_status', // Invalid status
-            'user_id' => 99999, // Non-existent user
         ];
 
         $response = $this->actingAs($this->user)
             ->post(route('performances.store'), $invalidData);
 
-        $response->assertSessionHasErrors(['trip', 'LoadType', 'FOnumber', 'operation_id', 'driver_truck_id', 'DateDispach', 'orgion_id', 'destination_id', 'DistanceWCargo', 'tonkm', 'DistanceWOCargo', 'CargoVolumMT', 'fuelInLitter', 'fuelInBirr', 'perdiem', 'workOnGoing', 'other', 'satus', 'user_id']);
+        $response->assertSessionHasErrors([
+            'load_phase',
+            'load_completion',
+            'FOnumber',
+            'operation_id',
+            'driver_truck_id',
+            'DateDispach',
+            'orgion_id',
+            'destination_id',
+            'DistanceWCargo',
+            'tonkm',
+            'DistanceWOCargo',
+            'CargoVolumMT',
+            'fuelInLitter',
+            'fuelInBirr',
+            'perdiem',
+            'workOnGoing',
+            'other',
+            'satus',
+        ]);
     }
 
     /** @test */

@@ -17,8 +17,8 @@ class PerformanceFactory extends Factory
     public function definition(): array
     {
         return [
-            'trip' => $this->faker->randomNumber(3),
-            'LoadType' => $this->faker->randomElement(['Full Load', 'Half Load', 'Empty']),
+            'load_phase' => $this->faker->randomElement(['main', 'return']),
+            'load_completion' => $this->faker->randomElement(['full', 'partial']),
             'FOnumber' => $this->faker->numerify('FO####'),
             'operation_id' => \App\Models\Operation::factory(),
             'driver_truck_id' => \App\Models\DriverTruck::factory(),

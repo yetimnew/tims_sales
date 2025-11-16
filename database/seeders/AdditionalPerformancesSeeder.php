@@ -2,12 +2,12 @@
 
 namespace Database\Seeders;
 
-use App\Models\Performance;
-use App\Models\Operation;
+use App\Models\CargoType;
 use App\Models\DriverTruck;
+use App\Models\Operation;
+use App\Models\Performance;
 use App\Models\Place;
 use App\Models\User;
-use App\Models\CargoType;
 use Illuminate\Database\Seeder;
 
 class AdditionalPerformancesSeeder extends Seeder
@@ -28,11 +28,13 @@ class AdditionalPerformancesSeeder extends Seeder
 
         if ($operations->isEmpty() || $driverTrucks->isEmpty() || $places->isEmpty()) {
             $this->command->warn('Required data not found. Please run TimsSeeder first.');
+
             return;
         }
 
         $statuses = ['returned', 'in_progress', 'pending', 'completed'];
-        $loadTypes = ['main', 'return', 'empty'];
+        $loadPhases = ['main', 'return'];
+        $loadCompletions = ['full', 'partial'];
 
         // Create 50 additional performances
         for ($i = 5; $i <= 54; $i++) {
@@ -41,7 +43,8 @@ class AdditionalPerformancesSeeder extends Seeder
             $origin = $places->random();
             $destination = $places->where('id', '!=', $origin->id)->random();
             $status = $statuses[array_rand($statuses)];
-            $loadType = $loadTypes[array_rand($loadTypes)];
+            $loadPhase = $loadPhases[array_rand($loadPhases)];
+            $loadCompletion = $loadCompletions[array_rand($loadCompletions)];
             $cargoType = $cargoTypes->random();
             $user = $users->random();
 
@@ -51,9 +54,9 @@ class AdditionalPerformancesSeeder extends Seeder
             $fuelCost = $fuelLiters * 50; // 50 birr per liter
 
             Performance::create([
-                'trip' => 'AA-' . str_pad($i, 3, '0', STR_PAD_LEFT),
-                'LoadType' => $loadType,
-                'FOnumber' => 'FO' . str_pad($i, 3, '0', STR_PAD_LEFT),
+                'load_phase' => $loadPhase,
+                'load_completion' => $loadCompletion,
+                'FOnumber' => 'FO'.str_pad($i, 3, '0', STR_PAD_LEFT),
                 'operation_id' => $operation->id,
                 'driver_truck_id' => $driverTruck->id,
                 'DateDispach' => now()->subDays(rand(1, 30)),
@@ -68,7 +71,7 @@ class AdditionalPerformancesSeeder extends Seeder
                 'perdiem' => rand(300, 800),
                 'workOnGoing' => 0.00,
                 'other' => rand(100, 500),
-                'comment' => 'Performance record #' . $i,
+                'comment' => 'Performance record #'.$i,
                 'satus' => $status,
                 'is_returned' => $status === 'returned' || $status === 'completed',
                 'returned_date' => ($status === 'returned' || $status === 'completed') ? now()->subDays(rand(0, 5)) : null,
@@ -87,4 +90,3 @@ class AdditionalPerformancesSeeder extends Seeder
         $this->command->info('✓ Created 50 additional performance records (Total: 54)');
     }
 }
-

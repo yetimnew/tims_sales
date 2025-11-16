@@ -2,20 +2,20 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Distance;
 use App\Models\DriverTruck;
 use App\Models\Operation;
 use App\Models\Performance;
 use App\Models\Place;
-use App\Models\Distance;
+use Carbon\Carbon;
+use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 use Spatie\Activitylog\Models\Activity;
-use Exception;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
-use Illuminate\Support\Str;
 
 class PerformanceController extends Controller
 {
@@ -26,26 +26,26 @@ class PerformanceController extends Controller
     {
         $search = trim((string) $request->input('search'));
         $status = $request->input('status');
-        $loadType = $request->input('load_type');
+        $loadPhase = $request->input('load_phase');
         $sort = $request->input('sort', 'DateDispach');
         $direction = strtolower((string) $request->input('direction', 'desc'));
         $perPageOptions = [15, 25, 50, 100];
         $perPageDefault = 15;
         $perPage = (int) $request->input('per_page', $perPageDefault);
 
-        if (!in_array($perPage, $perPageOptions, true)) {
+        if (! in_array($perPage, $perPageOptions, true)) {
             $perPage = $perPageDefault;
         }
 
-        if (!in_array($direction, ['asc', 'desc'], true)) {
+        if (! in_array($direction, ['asc', 'desc'], true)) {
             $direction = 'desc';
         }
 
         $allowedSorts = [
-            'trip',
             'FOnumber',
             'DateDispach',
-            'LoadType',
+            'load_phase',
+            'load_completion',
             'satus',
             'DistanceWCargo',
             'DistanceWOCargo',
@@ -55,17 +55,17 @@ class PerformanceController extends Controller
             'created_at',
         ];
 
-        if (!in_array($sort, $allowedSorts, true)) {
+        if (! in_array($sort, $allowedSorts, true)) {
             $sort = 'DateDispach';
         }
 
         $baseQuery = Performance::query()
             ->select([
                 'id',
-                'trip',
                 'FOnumber',
                 'DateDispach',
-                'LoadType',
+                'load_phase',
+                'load_completion',
                 'satus',
                 'DistanceWCargo',
                 'DistanceWOCargo',
@@ -77,18 +77,17 @@ class PerformanceController extends Controller
 
         if ($search !== '') {
             $baseQuery->where(function ($query) use ($search) {
-                $query->where('trip', 'like', "%{$search}%")
-                    ->orWhere('FOnumber', 'like', "%{$search}%")
+                $query->where('FOnumber', 'like', "%{$search}%")
                     ->orWhere('comment', 'like', "%{$search}%");
             });
         }
 
-        if (!empty($status) && $status !== 'all') {
+        if (! empty($status) && $status !== 'all') {
             $baseQuery->where('satus', $status);
         }
 
-        if (!empty($loadType) && $loadType !== 'all') {
-            $baseQuery->where('LoadType', $loadType);
+        if (! empty($loadPhase) && $loadPhase !== 'all') {
+            $baseQuery->where('load_phase', $loadPhase);
         }
 
         $performancesPaginator = (clone $baseQuery)
@@ -99,10 +98,10 @@ class PerformanceController extends Controller
         $performances = $performancesPaginator->through(function (Performance $performance) {
             return [
                 'id' => $performance->id,
-                'trip' => $performance->trip,
                 'foNumber' => $performance->FOnumber,
                 'dispatchDate' => $performance->DateDispach,
-                'loadType' => $performance->LoadType,
+                'loadPhase' => $performance->load_phase,
+                'loadCompletion' => $performance->load_completion,
                 'status' => $performance->satus,
                 'distanceWithCargo' => $performance->DistanceWCargo !== null ? (float) $performance->DistanceWCargo : null,
                 'distanceWithoutCargo' => $performance->DistanceWOCargo !== null ? (float) $performance->DistanceWOCargo : null,
@@ -134,15 +133,15 @@ class PerformanceController extends Controller
             ])
             ->values();
 
-        $loadTypeOptions = Performance::query()
-            ->select('LoadType')
+        $loadPhaseOptions = Performance::query()
+            ->select('load_phase')
             ->distinct()
-            ->whereNotNull('LoadType')
-            ->orderBy('LoadType')
+            ->whereNotNull('load_phase')
+            ->orderBy('load_phase')
             ->get()
             ->map(static fn ($performance) => [
-                'label' => Str::of((string) $performance->LoadType)->headline(),
-                'value' => $performance->LoadType,
+                'label' => Str::of((string) $performance->load_phase)->headline(),
+                'value' => $performance->load_phase,
             ])
             ->values();
 
@@ -152,13 +151,13 @@ class PerformanceController extends Controller
             'filters' => [
                 'search' => $search !== '' ? $search : null,
                 'status' => $status ?: null,
-                'load_type' => $loadType ?: null,
+                'load_phase' => $loadPhase ?: null,
                 'sort' => $sort,
                 'direction' => $direction,
                 'per_page' => $perPage,
             ],
             'statusOptions' => $statusOptions,
-            'loadTypeOptions' => $loadTypeOptions,
+            'loadPhaseOptions' => $loadPhaseOptions,
             'perPageOptions' => $perPageOptions,
             'totalCount' => $performancesPaginator->total(),
         ]);
@@ -186,8 +185,8 @@ class PerformanceController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'trip' => 'required|string|max:255',
-            'LoadType' => 'required|string|max:255',
+            'load_phase' => 'required|string|in:main,return',
+            'load_completion' => 'required|string|in:full,partial',
             'FOnumber' => 'required|string|max:255',
             'operation_id' => 'required|exists:operations,id',
             'driver_truck_id' => 'required|exists:driver_truck,id',
@@ -247,7 +246,7 @@ class PerformanceController extends Controller
             'driverTruck.truck',
             'origin',
             'destination',
-            'user'
+            'user',
         ]);
 
         // Load activity logs for this performance using Spatie Activity Log
@@ -357,7 +356,7 @@ class PerformanceController extends Controller
                 : null;
 
             $recentPerformances = (clone $operationPerformancesQuery)
-                ->select(['id', 'trip', 'DateDispach', 'CargoVolumMT', 'DistanceWCargo', 'DistanceWOCargo', 'fuelInBirr', 'perdiem', 'other'])
+                ->select(['id', 'FOnumber', 'DateDispach', 'CargoVolumMT', 'DistanceWCargo', 'DistanceWOCargo', 'fuelInBirr', 'perdiem', 'other'])
                 ->orderByDesc('DateDispach')
                 ->limit(10)
                 ->get()
@@ -368,7 +367,7 @@ class PerformanceController extends Controller
 
                     return [
                         'id' => $item->id,
-                        'trip' => $item->trip,
+                        'foNumber' => $item->FOnumber,
                         'date' => $item->DateDispach ? Carbon::parse($item->DateDispach)->format('M j') : 'N/A',
                         'tonnage' => round($tonnage, 2),
                         'distance' => round($totalDistance, 2),
@@ -478,8 +477,8 @@ class PerformanceController extends Controller
     public function update(Request $request, Performance $performance)
     {
         $validated = $request->validate([
-            'trip' => 'required|string|max:255',
-            'LoadType' => 'required|string|max:255',
+            'load_phase' => 'required|string|in:main,return',
+            'load_completion' => 'required|string|in:full,partial',
             'FOnumber' => 'required|string|max:255',
             'operation_id' => 'required|exists:operations,id',
             'driver_truck_id' => 'required|exists:driver_truck,id',
@@ -603,39 +602,38 @@ class PerformanceController extends Controller
     public function export(Request $request)
     {
         $query = Performance::with([
-            'operation.customer', 'driverTruck.driver', 'driverTruck.truck', 'origin', 'destination'
+            'operation.customer', 'driverTruck.driver', 'driverTruck.truck', 'origin', 'destination',
         ]);
 
         $search = trim((string) $request->input('search'));
         if ($search !== '') {
             $query->where(function ($q) use ($search) {
-                $q->where('trip', 'like', "%{$search}%")
-                    ->orWhere('FOnumber', 'like', "%{$search}%")
+                $q->where('FOnumber', 'like', "%{$search}%")
                     ->orWhere('comment', 'like', "%{$search}%");
             });
         }
 
         $status = $request->input('status');
-        if (!empty($status) && $status !== 'all') {
+        if (! empty($status) && $status !== 'all') {
             $query->where('satus', $status);
         }
 
-        $loadType = $request->input('load_type');
-        if (!empty($loadType) && $loadType !== 'all') {
-            $query->where('LoadType', $loadType);
+        $loadPhase = $request->input('load_phase', $request->input('load_type'));
+        if (! empty($loadPhase) && $loadPhase !== 'all') {
+            $query->where('load_phase', $loadPhase);
         }
 
         $sort = $request->input('sort', 'DateDispach');
         $direction = strtolower((string) $request->input('direction', 'desc'));
-        if (!in_array($direction, ['asc', 'desc'], true)) {
+        if (! in_array($direction, ['asc', 'desc'], true)) {
             $direction = 'desc';
         }
 
         $allowedSorts = [
-            'trip',
             'FOnumber',
             'DateDispach',
-            'LoadType',
+            'load_phase',
+            'load_completion',
             'satus',
             'DistanceWCargo',
             'DistanceWOCargo',
@@ -645,7 +643,7 @@ class PerformanceController extends Controller
             'created_at',
         ];
 
-        if (!in_array($sort, $allowedSorts, true)) {
+        if (! in_array($sort, $allowedSorts, true)) {
             $sort = 'DateDispach';
         }
 
@@ -654,15 +652,16 @@ class PerformanceController extends Controller
         $performances = $query->get();
 
         // Generate CSV
-        $filename = 'performances_' . now()->format('Y-m-d_H-i-s') . '.csv';
+        $filename = 'performances_'.now()->format('Y-m-d_H-i-s').'.csv';
         $handle = fopen('php://temp', 'r+');
 
         // Write header
         fputcsv($handle, [
             'ID',
-            'Trip',
             'FO Number',
             'Date Dispatch',
+            'Load Phase',
+            'Load Completion',
             'Customer',
             'Driver',
             'Truck',
@@ -681,9 +680,10 @@ class PerformanceController extends Controller
         foreach ($performances as $performance) {
             fputcsv($handle, [
                 $performance->id,
-                $performance->trip,
                 $performance->FOnumber,
                 $performance->DateDispach,
+                $performance->load_phase ?? 'N/A',
+                $performance->load_completion ?? 'N/A',
                 $performance->operation?->customer?->name ?? 'N/A',
                 $performance->driverTruck?->driver?->name ?? 'N/A',
                 $performance->driverTruck?->truck?->plate ?? 'N/A',
@@ -713,7 +713,7 @@ class PerformanceController extends Controller
 
         return response($csv, 200, [
             'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
         ]);
     }
 
@@ -741,21 +741,20 @@ class PerformanceController extends Controller
         try {
             $activePerformances = Performance::where('satus', 'active')
                 ->with(['operation.customer', 'driverTruck.driver', 'driverTruck.truck', 'origin', 'destination'])
-                ->orderBy('trip')
+                ->orderBy('FOnumber')
                 ->get();
 
             return response()->json([
                 'success' => true,
                 'data' => $activePerformances,
-                'count' => $activePerformances->count()
+                'count' => $activePerformances->count(),
             ]);
 
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to retrieve active performances'
+                'message' => 'Failed to retrieve active performances',
             ], 500);
         }
     }
 }
-

@@ -20,8 +20,8 @@ class StorePerformanceRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'trip' => 'required|string|max:255',
-            'LoadType' => 'required|string|in:main,return,empty',
+            'load_phase' => 'required|string|in:main,return',
+            'load_completion' => 'required|string|in:full,partial',
             'FOnumber' => 'required|string|max:255',
             'operation_id' => 'required|exists:operations,id',
             'driver_truck_id' => 'required|exists:driver_truck,id',
@@ -50,7 +50,8 @@ class StorePerformanceRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'LoadType.in' => 'Load type must be main, return, or empty',
+            'load_phase.in' => 'Load phase must be main or return',
+            'load_completion.in' => 'Load completion must be full or partial',
             'destination_id.different' => 'Destination must be different from origin',
             'DateDispach.before_or_equal' => 'Dispatch date cannot be in the future',
             'returned_date.after_or_equal' => 'Return date must be after dispatch date',
@@ -66,12 +67,8 @@ class StorePerformanceRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $this->merge([
-            'trip' => strtoupper(trim($this->trip ?? '')),
             'FOnumber' => strtoupper(trim($this->FOnumber ?? '')),
             'comment' => trim($this->comment ?? ''),
         ]);
     }
 }
-
-
-

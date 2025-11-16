@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('performances', function (Blueprint $table) {
             $table->id();
-            $table->string('trip');
-            $table->string('LoadType');
+            $table->string('load_phase', 20)->nullable();
+            $table->string('load_completion', 20)->nullable();
             $table->string('FOnumber');
             $table->foreignId('operation_id')->constrained('operations');
             $table->foreignId('driver_truck_id')->constrained('driver_truck');

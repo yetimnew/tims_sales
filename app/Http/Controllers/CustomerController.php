@@ -2,14 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Customer;
 use App\Http\Requests\StoreCustomerRequest;
 use App\Http\Requests\UpdateCustomerRequest;
+use App\Models\Customer;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
-use Exception;
 use Spatie\Activitylog\Models\Activity;
 
 class CustomerController extends Controller
@@ -22,7 +22,7 @@ class CustomerController extends Controller
         $query = Customer::withCount('operations');
 
         // Handle search
-        if ($request->has('search') && !empty($request->input('search'))) {
+        if ($request->has('search') && ! empty($request->input('search'))) {
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
@@ -32,20 +32,57 @@ class CustomerController extends Controller
             });
         }
 
+        // Handle status filter
+        $status = $request->input('status');
+        if ($status && in_array($status, ['active', 'inactive'], true)) {
+            $query->where('status', $status);
+        }
+
         // Handle sorting
         $sort = $request->input('sort', 'name');
         $direction = $request->input('direction', 'asc');
 
-        $allowedSorts = ['name', 'contact_person', 'phone', 'email', 'status', 'created_at'];
-        if (!in_array($sort, $allowedSorts)) {
+        $allowedSorts = ['name', 'contact_person', 'phone', 'email', 'status', 'created_at', 'operations_count'];
+        if (! in_array($sort, $allowedSorts)) {
             $sort = 'name';
         }
 
+        $perPageOptions = [10, 15, 25, 50];
+        $perPage = (int) $request->input('per_page', 15);
+        if (! in_array($perPage, $perPageOptions, true)) {
+            $perPage = 15;
+        }
+
         $query->orderBy($sort, $direction);
-        $customers = $query->paginate(15);
+        $customers = $query->paginate($perPage)->withQueryString();
+
+        $statusCounts = Customer::selectRaw('status, COUNT(*) as aggregate')->groupBy('status')->pluck('aggregate', 'status');
+        $metrics = [
+            'total' => (int) $statusCounts->sum(),
+            'active' => (int) ($statusCounts->get('active') ?? 0),
+            'inactive' => (int) ($statusCounts->get('inactive') ?? 0),
+            'with_operations' => (int) Customer::has('operations')->count(),
+        ];
+
+        $filters = [
+            'search' => $request->input('search'),
+            'status' => $status,
+            'sort' => $sort,
+            'direction' => $direction,
+            'per_page' => $perPage,
+        ];
+
+        $statusOptions = [
+            ['label' => 'Active', 'value' => 'active'],
+            ['label' => 'Inactive', 'value' => 'inactive'],
+        ];
 
         return Inertia::render('Customers/Index', [
             'customers' => $customers,
+            'metrics' => $metrics,
+            'filters' => $filters,
+            'statusOptions' => $statusOptions,
+            'perPageOptions' => $perPageOptions,
         ]);
     }
 
@@ -193,7 +230,7 @@ class CustomerController extends Controller
             // Check if customer has operations
             if ($customer->operations()->count() > 0) {
                 return back()->withErrors([
-                    'error' => 'You are not allowed to delete this customer. It has ' . $customer->operations()->count() . ' operation(s). Please remove all operations first.'
+                    'error' => 'You are not allowed to delete this customer. It has '.$customer->operations()->count().' operation(s). Please remove all operations first.',
                 ]);
             }
 
@@ -215,7 +252,7 @@ class CustomerController extends Controller
         $query = Customer::withCount('operations');
 
         // Apply same search and sort as index
-        if ($request->has('search') && !empty($request->input('search'))) {
+        if ($request->has('search') && ! empty($request->input('search'))) {
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
@@ -235,7 +272,7 @@ class CustomerController extends Controller
         $customers = $query->get();
 
         // Generate CSV
-        $filename = 'customers_' . now()->format('Y-m-d_H-i-s') . '.csv';
+        $filename = 'customers_'.now()->format('Y-m-d_H-i-s').'.csv';
         $handle = fopen('php://temp', 'r+');
 
         // Write header
@@ -249,7 +286,7 @@ class CustomerController extends Controller
             'Status',
             'Operations Count',
             'Created At',
-            'Updated At'
+            'Updated At',
         ]);
 
         // Write data
@@ -264,7 +301,7 @@ class CustomerController extends Controller
                 $customer->status,
                 $customer->operations_count,
                 $customer->created_at,
-                $customer->updated_at
+                $customer->updated_at,
             ]);
         }
 
@@ -282,7 +319,7 @@ class CustomerController extends Controller
 
         return response($csv, 200, [
             'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
         ]);
     }
 
@@ -315,17 +352,14 @@ class CustomerController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $activeCustomers,
-                'count' => $activeCustomers->count()
+                'count' => $activeCustomers->count(),
             ]);
 
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to retrieve active customers'
+                'message' => 'Failed to retrieve active customers',
             ], 500);
         }
     }
 }
-
-
-

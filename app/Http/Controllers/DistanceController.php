@@ -4,12 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Distance;
 use App\Models\Place;
+use Exception;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
-use Inertia\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use Exception;
+use Inertia\Inertia;
+use Inertia\Response;
 use Spatie\Activitylog\Facades\Activity as ActivityLogger;
 use Spatie\Activitylog\Models\Activity;
 
@@ -29,11 +29,11 @@ class DistanceController extends Controller
                 $q->whereHas('fromPlace', function ($placeQuery) use ($search) {
                     $placeQuery->where('name', 'like', "%{$search}%");
                 })
-                ->orWhereHas('toPlace', function ($placeQuery) use ($search) {
-                    $placeQuery->where('name', 'like', "%{$search}%");
-                })
-                ->orWhere('route_description', 'like', "%{$search}%")
-                ->orWhere('route_notes', 'like', "%{$search}%");
+                    ->orWhereHas('toPlace', function ($placeQuery) use ($search) {
+                        $placeQuery->where('name', 'like', "%{$search}%");
+                    })
+                    ->orWhere('route_description', 'like', "%{$search}%")
+                    ->orWhere('route_notes', 'like', "%{$search}%");
             });
         }
 
@@ -64,9 +64,9 @@ class DistanceController extends Controller
                 $q->whereHas('fromPlace.woreda.zone.region', function ($regionQuery) use ($request) {
                     $regionQuery->where('name', 'like', "%{$request->get('region')}%");
                 })
-                ->orWhereHas('toPlace.woreda.zone.region', function ($regionQuery) use ($request) {
-                    $regionQuery->where('name', 'like', "%{$request->get('region')}%");
-                });
+                    ->orWhereHas('toPlace.woreda.zone.region', function ($regionQuery) use ($request) {
+                        $regionQuery->where('name', 'like', "%{$request->get('region')}%");
+                    });
             });
         }
 
@@ -76,7 +76,7 @@ class DistanceController extends Controller
 
         // Validate sort column to prevent SQL injection
         $allowedSortColumns = ['id', 'distance_km', 'estimated_time_hours', 'route_type', 'created_at', 'average_speed_kmph', 'road_quality_index'];
-        if (!in_array($sortColumn, $allowedSortColumns)) {
+        if (! in_array($sortColumn, $allowedSortColumns)) {
             $sortColumn = 'distance_km';
         }
 
@@ -92,9 +92,24 @@ class DistanceController extends Controller
             'seasonalConstraintCount' => (clone $metricsQuery)->whereNotNull('seasonality_notes')->count(),
         ];
 
+        $filters = [
+            'search' => $request->get('search'),
+            'routeType' => $request->get('routeType', 'all'),
+            'tollRoad' => $request->get('tollRoad', 'all'),
+            'heavyVehicleRestricted' => $request->get('heavyVehicleRestricted', 'all'),
+            'distanceMin' => $request->get('distanceMin'),
+            'distanceMax' => $request->get('distanceMax'),
+            'timeMin' => $request->get('timeMin'),
+            'timeMax' => $request->get('timeMax'),
+            'region' => $request->get('region'),
+            'sort' => $sortColumn,
+            'direction' => $sortDirection,
+        ];
+
         return Inertia::render('Distances/Index', [
             'distances' => $distances,
             'metrics' => $metrics,
+            'filters' => $filters,
         ]);
     }
 
@@ -172,7 +187,7 @@ class DistanceController extends Controller
     {
         $distance->load(['fromPlace.woreda.zone.region', 'toPlace.woreda.zone.region']);
 
-            $activityLogs = Activity::forSubject($distance)
+        $activityLogs = Activity::forSubject($distance)
             ->with('causer')
             ->orderByDesc('created_at')
             ->get();
@@ -282,7 +297,7 @@ class DistanceController extends Controller
         $query = Distance::with(['fromPlace.woreda.zone.region', 'toPlace.woreda.zone.region']);
 
         // Apply search if provided
-        if ($request->has('search') && !empty($request->input('search'))) {
+        if ($request->has('search') && ! empty($request->input('search'))) {
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
                 $q->where('distance_km', 'like', "%{$search}%")
@@ -306,7 +321,7 @@ class DistanceController extends Controller
         $distances = $query->get();
 
         // Generate CSV
-        $filename = 'distances-' . date('Y-m-d-H-i-s') . '.csv';
+        $filename = 'distances-'.date('Y-m-d-H-i-s').'.csv';
         $headers = [
             'Content-Type' => 'text/csv',
             'Content-Disposition' => "attachment; filename=\"{$filename}\"",
@@ -338,7 +353,7 @@ class DistanceController extends Controller
                 'Safety Notes',
                 'From Region',
                 'To Region',
-                'Created At'
+                'Created At',
             ]);
 
             // Data rows
@@ -407,17 +422,14 @@ class DistanceController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $activeDistances,
-                'count' => $activeDistances->count()
+                'count' => $activeDistances->count(),
             ]);
 
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to retrieve active distances'
+                'message' => 'Failed to retrieve active distances',
             ], 500);
         }
     }
 }
-
-
-

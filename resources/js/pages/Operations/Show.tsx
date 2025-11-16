@@ -159,11 +159,19 @@ export default function OperationsShow({ operation, activityLogs = [], performan
         });
     };
 
-    const formatNumber = (value?: number | null) => {
-        if (value === null || value === undefined) return 'N/A';
-        return Number(value).toLocaleString('en-US', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
+    const formatNumber = (value?: number | null, fractionDigits = 2) => {
+        if (value === null || value === undefined) {
+            return 'N/A';
+        }
+
+        const numericValue = Number(value);
+        if (!Number.isFinite(numericValue)) {
+            return 'N/A';
+        }
+
+        return numericValue.toLocaleString('en-US', {
+            minimumFractionDigits: fractionDigits,
+            maximumFractionDigits: fractionDigits,
         });
     };
 
@@ -173,21 +181,116 @@ export default function OperationsShow({ operation, activityLogs = [], performan
     };
 
     const formatCurrency = (value?: number | null) => {
-        if (value === null || value === undefined) return 'N/A';
-        return `${Number(value).toLocaleString('en-US', {
+        if (value === null || value === undefined) {
+            return 'N/A';
+        }
+
+        const numericValue = Number(value);
+        if (!Number.isFinite(numericValue)) {
+            return 'N/A';
+        }
+
+        return `${numericValue.toLocaleString('en-US', {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
         })} Birr`;
     };
 
-    const formatPercent = (value?: number | null) => {
-        if (value === null || value === undefined) return 'N/A';
-        return `${Number(value).toFixed(1)}%`;
+    const clampPercentage = (value: number, upperBound = 130) => {
+        if (!Number.isFinite(value)) {
+            return 0;
+        }
+
+        return Math.max(0, Math.min(value, upperBound));
+    };
+
+    const formatPercent = (value?: number | null, fractionDigits = 1) => {
+        if (value === null || value === undefined) {
+            return 'N/A';
+        }
+
+        const numericValue = Number(value);
+        if (!Number.isFinite(numericValue)) {
+            return 'N/A';
+        }
+
+        return `${numericValue.toFixed(fractionDigits)}%`;
+    };
+
+    const formatShareLabel = (value?: number | null, fractionDigits = 1) => {
+        if (value === null || value === undefined) {
+            return 'N/A';
+        }
+
+        const numericValue = Number(value);
+        if (!Number.isFinite(numericValue)) {
+            return 'N/A';
+        }
+
+        if (numericValue === 0) {
+            return '0%';
+        }
+
+        if (Math.abs(numericValue) < 0.1) {
+            return '≈0%';
+        }
+
+        return `${numericValue.toFixed(fractionDigits)}%`;
+    };
+
+    const formatPointDelta = (value?: number | null) => {
+        if (value === null || value === undefined) {
+            return null;
+        }
+
+        const numericValue = Number(value);
+        if (!Number.isFinite(numericValue)) {
+            return null;
+        }
+
+        if (numericValue === 0) {
+            return '0 pts';
+        }
+
+        const precision = Math.abs(numericValue) >= 10 ? 0 : 1;
+        const formatted = Math.abs(numericValue).toFixed(precision);
+
+        return `${numericValue > 0 ? '+' : '-'}${formatted} pts`;
+    };
+
+    const calculateShareVariance = (share?: number | null, baseline?: number | null) => {
+        if (share === null || share === undefined || baseline === null || baseline === undefined) {
+            return { diff: null, baseline: null } as const;
+        }
+
+        const shareValue = Number(share);
+        const baselineValue = Number(baseline);
+
+        if (!Number.isFinite(shareValue) || !Number.isFinite(baselineValue)) {
+            return { diff: null, baseline: null } as const;
+        }
+
+        if (Math.abs(baselineValue) < 1e-3) {
+            return { diff: null, baseline: null } as const;
+        }
+
+        return {
+            diff: Number((shareValue - baselineValue).toFixed(1)),
+            baseline: baselineValue,
+        } as const;
     };
 
     const formatCurrencyPerUnit = (value?: number | null, unit?: string) => {
-        if (value === null || value === undefined) return 'N/A';
-        const formatted = Number(value).toLocaleString('en-US', {
+        if (value === null || value === undefined) {
+            return 'N/A';
+        }
+
+        const numericValue = Number(value);
+        if (!Number.isFinite(numericValue)) {
+            return 'N/A';
+        }
+
+        const formatted = numericValue.toLocaleString('en-US', {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
         });
@@ -311,6 +414,107 @@ export default function OperationsShow({ operation, activityLogs = [], performan
     const loadedDistanceLabel = formatOptionalNumber(economics.loadedDistance, ' km');
     const emptyDistanceLabel = formatOptionalNumber(economics.emptyDistance, ' km');
 
+    const contractTariff = operation.tariff !== undefined && operation.tariff !== null && Number.isFinite(Number(operation.tariff))
+        ? Number(operation.tariff)
+        : null;
+    const realisedTariffPerTonKm = deliveredTonKm !== null
+        && deliveredTonKm > 0
+        && economics.actualRevenue !== null
+        ? Number((economics.actualRevenue / deliveredTonKm).toFixed(2))
+        : null;
+    const tariffVariance = contractTariff !== null && realisedTariffPerTonKm !== null
+        ? Number((realisedTariffPerTonKm - contractTariff).toFixed(2))
+        : null;
+    const tariffVarianceLabel = tariffVariance !== null
+        ? `${tariffVariance >= 0 ? '+' : ''}${formatNumber(tariffVariance)} Birr/ton-km`
+        : 'N/A';
+    const tariffVarianceTone = tariffVariance !== null && tariffVariance < 0 ? 'text-rose-600' : 'text-emerald-600';
+
+    const loadFactorTarget = 85;
+    const loadFactorVariance = economics.loadFactor !== null
+        ? Number((economics.loadFactor - loadFactorTarget).toFixed(1))
+        : null;
+    const loadFactorVarianceLabel = loadFactorVariance !== null
+        ? `${loadFactorVariance >= 0 ? '+' : ''}${loadFactorVariance.toFixed(1)} pts`
+        : 'N/A';
+    const loadFactorVarianceTone = loadFactorVariance !== null && loadFactorVariance < 0 ? 'text-rose-600' : 'text-emerald-600';
+
+    const emptyShareTarget = 15;
+    const emptyShareVariance = economics.emptyBackhaulShare !== null
+        ? Number((economics.emptyBackhaulShare - emptyShareTarget).toFixed(1))
+        : null;
+    const emptyShareVarianceLabel = emptyShareVariance !== null
+        ? `${emptyShareVariance >= 0 ? '+' : ''}${emptyShareVariance.toFixed(1)} pts`
+        : 'N/A';
+    const emptyShareVarianceTone = emptyShareVariance !== null && emptyShareVariance > 0 ? 'text-rose-600' : 'text-emerald-600';
+
+    const returnRateTarget = 92;
+    const returnRateShare = totals.totalTrips > 0 ? Number(Number(totals.returnRate).toFixed(1)) : null;
+    const returnRateDelta = returnRateShare !== null
+        ? Number((returnRateShare - returnRateTarget).toFixed(1))
+        : null;
+    const returnRateLabel = formatShareLabel(returnRateShare);
+    const returnRateDeltaLabel = returnRateDelta !== null
+        ? `${returnRateDelta >= 0 ? '+' : ''}${returnRateDelta.toFixed(1)} pts`
+        : 'N/A';
+    const returnRateTone = returnRateDelta !== null && returnRateDelta < 0 ? 'text-amber-600' : 'text-emerald-600';
+
+    const tonnageContribution = completionPercentage !== null ? Number(completionPercentage.toFixed(1)) : null;
+    const tonKmContribution = tonKmCompletion !== null ? Number(tonKmCompletion.toFixed(1)) : null;
+    const revenueRealisationShare = economics.actualRevenue !== null
+        && economics.potentialRevenue !== null
+        && economics.potentialRevenue > 0
+        ? Number(((economics.actualRevenue / economics.potentialRevenue) * 100).toFixed(1))
+        : null;
+    const costToRevenueShare = economics.actualRevenue !== null
+        && economics.actualRevenue > 0
+        && financials.totalCost !== null
+        ? Number(((financials.totalCost / economics.actualRevenue) * 100).toFixed(1))
+        : null;
+    const contributionMetrics = [
+        {
+            label: 'Tonnage Completion',
+            value: tonnageContribution,
+            helper: 'Delivered tonnage versus planned volume',
+            benchmark: 100,
+            benchmarkLabel: 'Plan completion',
+        },
+        {
+            label: 'Ton-km Realisation',
+            value: tonKmContribution,
+            helper: 'Delivered ton-km versus contract plan',
+            benchmark: 100,
+            benchmarkLabel: 'Plan completion',
+        },
+        {
+            label: 'Revenue Realisation',
+            value: revenueRealisationShare,
+            helper: 'Recognised revenue versus potential contract revenue',
+            benchmark: 100,
+            benchmarkLabel: 'Contract revenue',
+        },
+        {
+            label: 'Return Rate',
+            value: returnRateShare,
+            helper: `Trips returned against ${returnRateTarget}% target`,
+            benchmark: returnRateTarget,
+            benchmarkLabel: 'Return rate target',
+        },
+        {
+            label: 'Cost Absorption',
+            value: costToRevenueShare,
+            helper: 'Operating cost as a share of realised revenue',
+            benchmark: 70,
+            benchmarkLabel: 'Suggested ≤ 70%',
+        },
+    ].filter((metric) => metric.value !== null);
+
+    const industryBenchmarks = {
+        fuelEfficiency: 2.8,
+        loadFactor: loadFactorTarget,
+        emptyShare: emptyShareTarget,
+    } as const;
+
     const relationshipMatrix: Array<{
         label: string;
         value: string;
@@ -384,7 +588,7 @@ export default function OperationsShow({ operation, activityLogs = [], performan
                 const tariffValue = formatNumber(operation.tariff);
                 return tariffValue === 'N/A' ? 'N/A' : `${tariffValue} Birr`;
             })(),
-            helper: 'Revenue per movement',
+            helper: `Revenue per movement${tariffVarianceLabel !== 'N/A' ? ` (${tariffVarianceLabel}` : ''}${tariffVarianceLabel !== 'N/A' ? ')' : ''}`,
             icon: BarChart3,
             containerClass: 'border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/20',
             iconClass: 'text-amber-600 dark:text-amber-300',
@@ -407,8 +611,8 @@ export default function OperationsShow({ operation, activityLogs = [], performan
         },
         {
             label: 'Return Rate',
-            value: totals.totalTrips > 0 ? formatPercent(totals.returnRate) : 'N/A',
-            helper: 'Trips successfully closed',
+            value: returnRateLabel,
+            helper: totals.totalTrips > 0 ? `Trips successfully closed (${returnRateDeltaLabel})` : 'Trips successfully closed',
             icon: Clock,
             containerClass: 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900/30',
             iconClass: 'text-slate-600 dark:text-slate-200',
@@ -424,7 +628,7 @@ export default function OperationsShow({ operation, activityLogs = [], performan
         {
             label: 'Load Factor',
             value: loadFactorLabel,
-            helper: 'Share of km travelled under load',
+            helper: `Share of km travelled under load${loadFactorVarianceLabel !== 'N/A' ? ` (${loadFactorVarianceLabel} vs ${loadFactorTarget}% target)` : ''}`,
             icon: Zap,
             containerClass: 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20',
             iconClass: 'text-green-600 dark:text-green-300',
@@ -497,7 +701,7 @@ export default function OperationsShow({ operation, activityLogs = [], performan
         {
             label: 'Cost per Ton-Km',
             value: formatCurrencyPerUnit(economics.costPerTonKm ?? financials.costPerTonKm ?? null, 'ton-km'),
-            helper: 'Unit cost benchmark for pricing',
+            helper: `Unit cost benchmark (target ${formatCurrencyPerUnit(contractTariff, 'ton-km')})`,
             icon: Navigation,
             containerClass: 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900/30',
             iconClass: 'text-slate-600 dark:text-slate-200',
@@ -822,8 +1026,8 @@ export default function OperationsShow({ operation, activityLogs = [], performan
                                             <div className="grid gap-4 sm:grid-cols-2">
                                                 <div className="rounded-xl border border-slate-200 bg-white/80 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/40">
                                                     <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">Average Load per Trip</p>
-                                                    <p className="mt-2 text-lg font-semibold text-slate-900 dark:text-slate-100">{formatOptionalNumber(totals.averageTonPerTrip, ' MT')}</p>
-                                                    <p className="mt-1 text-xs text-muted-foreground">Helps gauge trip efficiency</p>
+                                                        <p className="mt-2 text-lg font-semibold text-slate-900 dark:text-slate-100">{formatOptionalNumber(totals.averageTonPerTrip, ' MT')}</p>
+                                                        <p className="mt-1 text-xs text-muted-foreground">Helps gauge trip efficiency</p>
                                                 </div>
                                                 <div className="rounded-xl border border-slate-200 bg-white/80 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/40">
                                                     <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">Total Distance Covered</p>
@@ -961,7 +1165,7 @@ export default function OperationsShow({ operation, activityLogs = [], performan
                                                 </div>
                                                 <div className="mt-4 rounded-lg border border-indigo-100 bg-indigo-50/70 p-3 text-xs text-indigo-700 shadow-sm dark:border-indigo-900/50 dark:bg-indigo-950/30 dark:text-indigo-200">
                                                     {totals.totalTrips > 0
-                                                        ? `Return rate currently at ${formatPercent(totals.returnRate)} with ${tripProgressLabel} trips closed.`
+                                                        ? `Return rate at ${returnRateLabel} (${returnRateDeltaLabel} vs ${returnRateTarget}%) with ${tripProgressLabel} trips closed.`
                                                         : 'Log trip performances against this operation to begin monitoring financial efficiency.'}
                                                 </div>
                                             </div>
@@ -1053,49 +1257,111 @@ export default function OperationsShow({ operation, activityLogs = [], performan
                                                     <span className="font-semibold text-foreground">{formatCurrencyPerUnit(economics.costPerTonKm, 'ton-km')}</span>
                                                 </div>
                                             </div>
+                                            <div className="mt-4 grid gap-2 text-xs text-muted-foreground">
+                                                <div className="flex items-center justify-between">
+                                                    <span>Realised tariff</span>
+                                                    <span className="font-semibold text-foreground">{realisedTariffPerTonKm !== null ? `${formatNumber(realisedTariffPerTonKm)} Birr/ton-km` : 'N/A'}</span>
+                                                </div>
+                                                <div className="flex items-center justify-between">
+                                                    <span>Tariff variance</span>
+                                                    <span className={`font-semibold ${tariffVarianceTone}`}>{tariffVarianceLabel}</span>
+                                                </div>
+                                            </div>
                                         </div>
 
-                                        <div className="rounded-2xl border border-slate-200 bg-white/80 p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900/40">
-                                            <div className="flex items-start justify-between">
-                                                <div>
-                                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">Distance Mix</p>
-                                                    <p className="mt-1 text-sm font-semibold text-foreground">Network balance by tonnage flow</p>
+                                            <div className="rounded-2xl border border-slate-200 bg-white/80 p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900/40">
+                                                <div className="flex items-start justify-between">
+                                                    <div>
+                                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">Distance Mix</p>
+                                                        <p className="mt-1 text-sm font-semibold text-foreground">Network balance by tonnage flow</p>
+                                                    </div>
+                                                    <div className="text-right text-xs text-muted-foreground">
+                                                        <p>Loaded share: <span className={`font-semibold ${loadFactorVarianceTone}`}>{loadFactorLabel}</span></p>
+                                                        <p>Empty share: <span className={`font-semibold ${emptyShareVarianceTone}`}>{emptyShareLabel}</span></p>
+                                                    </div>
                                                 </div>
-                                                <div className="text-right text-xs text-muted-foreground">
-                                                    <p>Loaded share: <span className="font-semibold text-foreground">{loadFactorLabel}</span></p>
-                                                    <p>Empty share: <span className="font-semibold text-foreground">{emptyShareLabel}</span></p>
+                                                <div className="mt-4 space-y-3">
+                                                    <div>
+                                                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                                            <span>Loaded distance</span>
+                                                            <span className="font-semibold text-foreground">{loadedDistanceLabel}</span>
+                                                        </div>
+                                                        <div className="mt-1 h-2.5 w-full overflow-hidden rounded-full bg-muted">
+                                                            <div
+                                                                className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-emerald-500 transition-all"
+                                                                style={{ width: `${loadFactorBarWidth}%` }}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                                            <span>Empty distance</span>
+                                                            <span className="font-semibold text-foreground">{emptyDistanceLabel}</span>
+                                                        </div>
+                                                        <div className="mt-1 h-2.5 w-full overflow-hidden rounded-full bg-muted">
+                                                            <div
+                                                                className="h-full rounded-full bg-gradient-to-r from-amber-400 to-rose-500 transition-all"
+                                                                style={{ width: `${emptyShareBarWidth}%` }}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="mt-4 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
+                                                    <div className="flex items-center justify-between">
+                                                        <span>Load factor target</span>
+                                                        <span className={`font-semibold ${loadFactorVarianceTone}`}>{loadFactorTarget}% ({loadFactorVarianceLabel})</span>
+                                                    </div>
+                                                    <div className="flex items-center justify-between">
+                                                        <span>Empty share cap</span>
+                                                        <span className={`font-semibold ${emptyShareVarianceTone}`}>{emptyShareTarget}% ({emptyShareVarianceLabel})</span>
+                                                    </div>
+                                                </div>
+                                                <p className="mt-4 text-xs text-muted-foreground">
+                                                    Prioritise consolidating backhauls where empty ratios climb above industry benchmarks to protect tonne-km yield and margin.
+                                                </p>
+                                            </div>
+                                        {contributionMetrics.length > 0 && (
+                                            <div className="rounded-2xl border border-slate-200 bg-white/80 p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900/40">
+                                                <div className="flex items-start justify-between">
+                                                    <div>
+                                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">Contribution Mix</p>
+                                                        <p className="mt-1 text-sm font-semibold text-foreground">How contract delivery compares to plan</p>
+                                                    </div>
+                                                </div>
+                                                <div className="mt-4 space-y-4">
+                                                    {contributionMetrics.map((metric) => {
+                                                        const shareValue = metric.value ?? null;
+                                                        const { diff, baseline } = calculateShareVariance(shareValue, metric.benchmark);
+                                                        const barWidth = clampPercentage(shareValue ?? 0);
+                                                        const deltaLabel = formatPointDelta(diff);
+                                                        return (
+                                                            <div key={metric.label} className="space-y-2">
+                                                                <div className="flex items-center justify-between text-sm">
+                                                                    <span className="text-muted-foreground" title={metric.helper}>{metric.label}</span>
+                                                                    <span className="font-semibold text-foreground">{formatShareLabel(shareValue)}</span>
+                                                                </div>
+                                                                <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                                                                    <div
+                                                                        className="h-full rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-fuchsia-500"
+                                                                        style={{ width: `${barWidth}%` }}
+                                                                    />
+                                                                </div>
+                                                                {deltaLabel ? (
+                                                                    <p className={`text-[11px] ${diff !== null && diff >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                                                        {deltaLabel} {metric.benchmarkLabel}
+                                                                        {baseline !== null ? ` (${formatShareLabel(baseline)})` : ''}
+                                                                    </p>
+                                                                ) : baseline !== null ? (
+                                                                    <p className="text-[11px] text-muted-foreground">
+                                                                        {metric.benchmarkLabel}: {formatShareLabel(baseline)}
+                                                                    </p>
+                                                                ) : null}
+                                                            </div>
+                                                        );
+                                                    })}
                                                 </div>
                                             </div>
-                                            <div className="mt-4 space-y-3">
-                                                <div>
-                                                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                                        <span>Loaded distance</span>
-                                                        <span className="font-semibold text-foreground">{loadedDistanceLabel}</span>
-                                                    </div>
-                                                    <div className="mt-1 h-2.5 w-full overflow-hidden rounded-full bg-muted">
-                                                        <div
-                                                            className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-emerald-500 transition-all"
-                                                            style={{ width: `${loadFactorBarWidth}%` }}
-                                                        />
-                                                    </div>
-                                                </div>
-                                                <div>
-                                                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                                        <span>Empty distance</span>
-                                                        <span className="font-semibold text-foreground">{emptyDistanceLabel}</span>
-                                                    </div>
-                                                    <div className="mt-1 h-2.5 w-full overflow-hidden rounded-full bg-muted">
-                                                        <div
-                                                            className="h-full rounded-full bg-gradient-to-r from-amber-400 to-rose-500 transition-all"
-                                                            style={{ width: `${emptyShareBarWidth}%` }}
-                                                        />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <p className="mt-4 text-xs text-muted-foreground">
-                                                Prioritise consolidating backhauls where empty ratios climb above industry benchmarks to protect tonne-km yield and margin.
-                                            </p>
-                                        </div>
+                                        )}
                                     </div>
                                 </CardContent>
                             </Card>

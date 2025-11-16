@@ -14,8 +14,8 @@ class UpdatePerformanceRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'trip' => 'required|string|max:255',
-            'LoadType' => 'required|string|in:Full Load,Half Load,Empty',
+            'load_phase' => 'required|string|in:main,return',
+            'load_completion' => 'required|string|in:full,partial',
             'FOnumber' => 'required|string|max:255',
             'operation_id' => 'required|exists:operations,id',
             'driver_truck_id' => 'required|exists:driver_truck,id',
@@ -32,7 +32,7 @@ class UpdatePerformanceRequest extends FormRequest
             'workOnGoing' => 'nullable|numeric|min:0',
             'other' => 'nullable|numeric|min:0',
             'comment' => 'nullable|string|max:1000',
-            'satus' => 'required|string|in:completed,ongoing,cancelled',
+            'satus' => 'required|string|in:active,inactive,completed,cancelled',
             'is_returned' => 'boolean',
             'returned_date' => 'nullable|date',
         ];
@@ -41,7 +41,6 @@ class UpdatePerformanceRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $this->merge([
-            'trip' => trim($this->trip ?? ''),
             'FOnumber' => trim($this->FOnumber ?? ''),
             'comment' => trim($this->comment ?? ''),
         ]);

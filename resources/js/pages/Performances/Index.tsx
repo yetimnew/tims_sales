@@ -40,10 +40,10 @@ const breadcrumbs: BreadcrumbItem[] = [
 ]
 
 type ColumnKey =
-    | 'trip'
     | 'foNumber'
     | 'dispatchDate'
-    | 'loadType'
+    | 'loadPhase'
+    | 'loadCompletion'
     | 'status'
     | 'distanceWithCargo'
     | 'fuelCost'
@@ -56,10 +56,10 @@ interface ColumnConfig {
 }
 
 const columns: ColumnConfig[] = [
-    { key: 'trip', label: 'Trip', sortable: true, sortKey: 'trip' },
     { key: 'foNumber', label: 'FO Number', sortable: true, sortKey: 'FOnumber' },
     { key: 'dispatchDate', label: 'Dispatch Date', sortable: true, sortKey: 'DateDispach' },
-    { key: 'loadType', label: 'Load Type', sortable: true, sortKey: 'LoadType' },
+    { key: 'loadPhase', label: 'Load Phase', sortable: true, sortKey: 'load_phase' },
+    { key: 'loadCompletion', label: 'Load Completion', sortable: true, sortKey: 'load_completion' },
     { key: 'status', label: 'Status', sortable: true, sortKey: 'satus' },
     { key: 'distanceWithCargo', label: 'Distance (KM)', sortable: true, sortKey: 'DistanceWCargo' },
     { key: 'fuelCost', label: 'Fuel Cost (Birr)', sortable: true, sortKey: 'fuelInBirr' },
@@ -67,10 +67,10 @@ const columns: ColumnConfig[] = [
 
 interface PerformanceData {
     id: number
-    trip: string
     foNumber: string
     dispatchDate?: string | null
-    loadType?: string | null
+    loadPhase?: string | null
+    loadCompletion?: string | null
     status?: string | null
     distanceWithCargo?: number | null
     fuelCost?: number | null
@@ -102,13 +102,13 @@ interface PerformancesIndexProps {
     filters: {
         search?: string | null
         status?: string | null
-        load_type?: string | null
+    load_phase?: string | null
         sort?: string | null
         direction?: 'asc' | 'desc' | null
         per_page?: number | null
     }
     statusOptions: Array<{ label: string; value: string }>
-    loadTypeOptions: Array<{ label: string; value: string }>
+    loadPhaseOptions: Array<{ label: string; value: string }>
     perPageOptions: number[]
     totalCount?: number
 }
@@ -159,7 +159,7 @@ export default function PerformancesIndex({
     metrics,
     filters,
     statusOptions,
-    loadTypeOptions,
+    loadPhaseOptions,
     perPageOptions,
     totalCount,
 }: PerformancesIndexProps) {
@@ -167,12 +167,12 @@ export default function PerformancesIndex({
     const { toast } = useToast()
 
     const initialStatus = filters?.status ? String(filters.status) : 'all'
-    const initialLoadType = filters?.load_type ? String(filters.load_type) : 'all'
+    const initialLoadPhase = filters?.load_phase ? String(filters.load_phase) : 'all'
     const initialDirection = filters?.direction === 'asc' || filters?.direction === 'desc' ? filters.direction : 'desc'
 
     const [searchTerm, setSearchTerm] = React.useState(filters?.search ?? '')
     const [selectedStatus, setSelectedStatus] = React.useState(initialStatus === '' ? 'all' : initialStatus)
-    const [selectedLoadType, setSelectedLoadType] = React.useState(initialLoadType === '' ? 'all' : initialLoadType)
+    const [selectedLoadPhase, setSelectedLoadPhase] = React.useState(initialLoadPhase === '' ? 'all' : initialLoadPhase)
     const [sortColumn, setSortColumn] = React.useState<string>(filters?.sort ?? 'DateDispach')
     const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>(initialDirection ?? 'desc')
 
@@ -200,6 +200,7 @@ export default function PerformancesIndex({
     }, [resolvedPerPage])
 
     const performanceData = performances?.data ?? []
+    const startIndex = typeof performances?.from === 'number' ? performances.from : 1
     const totalRecords = totalCount ?? metrics?.total ?? performances?.total ?? 0
     const currentPage = performances?.current_page ?? 1
     const lastPage = performances?.last_page ?? 1
@@ -208,7 +209,7 @@ export default function PerformancesIndex({
         (overrides: Partial<{
             search?: string
             status?: string
-            load_type?: string
+            load_phase?: string
             sort?: string
             direction?: 'asc' | 'desc'
             page?: number
@@ -216,7 +217,7 @@ export default function PerformancesIndex({
         }>) => {
             const nextSearch = overrides.search !== undefined ? overrides.search : searchTerm.trim()
             const nextStatus = overrides.status !== undefined ? overrides.status : selectedStatus
-            const nextLoadType = overrides.load_type !== undefined ? overrides.load_type : selectedLoadType
+            const nextLoadPhase = overrides.load_phase !== undefined ? overrides.load_phase : selectedLoadPhase
             const nextSort = overrides.sort ?? sortColumn
             const nextDirection = overrides.direction ?? sortDirection
             const perPageValue = overrides.per_page !== undefined ? overrides.per_page : Number(perPage)
@@ -224,7 +225,7 @@ export default function PerformancesIndex({
             const params: Record<string, string | number | undefined> = {
                 search: nextSearch ? nextSearch : undefined,
                 status: nextStatus !== 'all' ? nextStatus : undefined,
-                load_type: nextLoadType !== 'all' ? nextLoadType : undefined,
+                load_phase: nextLoadPhase !== 'all' ? nextLoadPhase : undefined,
                 sort: nextSort,
                 direction: nextDirection,
                 page: overrides.page,
@@ -245,7 +246,7 @@ export default function PerformancesIndex({
 
             router.get('/performances', params, { preserveState: true, preserveScroll: true, replace: false })
         },
-        [searchTerm, selectedStatus, selectedLoadType, sortColumn, sortDirection, perPage]
+        [searchTerm, selectedStatus, selectedLoadPhase, sortColumn, sortDirection, perPage]
     )
 
     const handleSearchChange = (value: string) => {
@@ -258,9 +259,9 @@ export default function PerformancesIndex({
         handleNavigate({ status: value, page: 1 })
     }
 
-    const handleLoadTypeChange = (value: string) => {
-        setSelectedLoadType(value)
-        handleNavigate({ load_type: value, page: 1 })
+    const handleLoadPhaseChange = (value: string) => {
+        setSelectedLoadPhase(value)
+        handleNavigate({ load_phase: value, page: 1 })
     }
 
     const handlePerPageChange = (value: string) => {
@@ -306,16 +307,22 @@ export default function PerformancesIndex({
 
     const renderCell = (performance: PerformanceData, column: ColumnKey): React.ReactNode => {
         switch (column) {
-            case 'trip':
-                return <span className="font-medium">{performance.trip}</span>
             case 'foNumber':
                 return performance.foNumber || '—'
             case 'dispatchDate':
                 return formatDateValue(performance.dispatchDate)
-            case 'loadType':
-                return performance.loadType ? (
+            case 'loadPhase':
+                return performance.loadPhase ? (
                     <Badge variant="secondary" className="capitalize">
-                        {performance.loadType}
+                        {performance.loadPhase}
+                    </Badge>
+                ) : (
+                    '—'
+                )
+            case 'loadCompletion':
+                return performance.loadCompletion ? (
+                    <Badge variant="secondary" className="capitalize">
+                        {performance.loadCompletion}
                     </Badge>
                 ) : (
                     '—'
@@ -343,15 +350,15 @@ export default function PerformancesIndex({
         if (selectedStatus !== 'all') {
             params.set('status', selectedStatus)
         }
-        if (selectedLoadType !== 'all') {
-            params.set('load_type', selectedLoadType)
+        if (selectedLoadPhase !== 'all') {
+            params.set('load_phase', selectedLoadPhase)
         }
         params.set('sort', sortColumn)
         params.set('direction', sortDirection)
 
         const queryString = params.toString()
         window.location.href = queryString ? `/performances/export/csv?${queryString}` : '/performances/export/csv'
-    }, [searchTerm, selectedStatus, selectedLoadType, sortColumn, sortDirection])
+    }, [searchTerm, selectedStatus, selectedLoadPhase, sortColumn, sortDirection])
 
     const headerActions = (
         <>
@@ -374,32 +381,25 @@ export default function PerformancesIndex({
 
     const statsCards = [
         {
-            title: 'Total Performances',
-            value: totalRecords.toLocaleString(),
-            description: 'Overall records',
-            icon: <Activity className="h-3.5 w-3.5 text-muted-foreground" />,
-            valueClassName: 'text-foreground',
-        },
-        {
-            title: 'Active Trips',
+            title: 'Active Movements',
             value: (metrics?.active ?? 0).toLocaleString(),
             description: 'Currently active',
             icon: <CheckCircle className="h-3.5 w-3.5 text-emerald-600" />,
             valueClassName: 'text-emerald-600',
         },
         {
-            title: 'Completed',
+            title: 'Completed Movements',
             value: (metrics?.completed ?? 0).toLocaleString(),
-            description: 'Closed trips',
-            icon: <CheckCircle className="h-3.5 w-3.5 text-blue-600" />,
+            description: 'Closed records',
+            icon: <Eye className="h-3.5 w-3.5 text-blue-600" />,
             valueClassName: 'text-blue-600',
         },
         {
-            title: 'Failed',
+            title: 'Flagged Movements',
             value: (metrics?.failed ?? 0).toLocaleString(),
-            description: 'Requires attention',
-            icon: <XCircle className="h-3.5 w-3.5 text-rose-500" />,
-            valueClassName: 'text-rose-500',
+            description: 'Flagged records',
+            icon: <XCircle className="h-3.5 w-3.5 text-destructive" />,
+            valueClassName: 'text-destructive',
         },
     ]
 
@@ -446,13 +446,13 @@ export default function PerformancesIndex({
                     ))}
                 </SelectContent>
             </Select>
-            <Select value={selectedLoadType} onValueChange={handleLoadTypeChange}>
+            <Select value={selectedLoadPhase} onValueChange={handleLoadPhaseChange}>
                 <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Load type" />
+                    <SelectValue placeholder="Load phase" />
                 </SelectTrigger>
                 <SelectContent className="max-h-72">
-                    <SelectItem value="all">All load types</SelectItem>
-                    {loadTypeOptions.map((option) => (
+                    <SelectItem value="all">All phases</SelectItem>
+                    {loadPhaseOptions.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                             {option.label}
                         </SelectItem>
@@ -481,14 +481,18 @@ export default function PerformancesIndex({
         <Table>
             <TableHeader>
                 <TableRow className="sticky top-0 z-50 border-b bg-background">
+                    <TableHead className="w-16 bg-background text-center">No</TableHead>
                     {columns.map((column) => renderHeaderCell(column))}
                     <TableHead className="bg-background text-center">Actions</TableHead>
                 </TableRow>
             </TableHeader>
             <TableBody>
                 {performanceData.length > 0 ? (
-                    performanceData.map((performance) => (
+                    performanceData.map((performance, index) => (
                         <TableRow key={performance.id} className="hover:bg-muted/50">
+                            <TableCell className="text-center font-medium text-muted-foreground">
+                                {startIndex + index}
+                            </TableCell>
                             {columns.map(({ key }) => (
                                 <TableCell key={key}>{renderCell(performance, key)}</TableCell>
                             ))}
@@ -550,7 +554,9 @@ export default function PerformancesIndex({
             onSuccess: () => {
                 toast({
                     title: 'Performance deleted',
-                    description: 'The performance record was removed successfully.',
+                    description: selectedPerformance.foNumber
+                        ? `Performance ${selectedPerformance.foNumber} was removed successfully.`
+                        : 'The performance record was removed successfully.',
                 })
                 setDeleteDialogOpen(false)
                 setSelectedPerformance(null)
@@ -578,7 +584,7 @@ export default function PerformancesIndex({
                 actions={headerActions}
                 stats={statsSection}
                 tableTitle="Performance Records"
-                tableDescription="Track every trip performance entry"
+                tableDescription="Track every performance entry"
                 tableHeaderExtras={tableHeaderExtras}
                 pagination={
                     <InertiaPagination
@@ -600,7 +606,7 @@ export default function PerformancesIndex({
                 onOpenChange={setDeleteDialogOpen}
                 title="Delete Performance"
                 description="Are you sure you want to delete this performance? This action cannot be undone."
-                itemName={selectedPerformance ? selectedPerformance.trip : ''}
+                itemName={selectedPerformance ? selectedPerformance.foNumber : ''}
                 onConfirm={handleDeleteConfirm}
                 isLoading={isDeleting}
             />
