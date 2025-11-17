@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import { usePermissions } from '@/hooks/use-permissions';
@@ -103,43 +103,122 @@ interface OutsourcePerformanceIndexProps {
     perPageOptions?: number[];
 }
 
-interface ColumnDefinition {
-    key: string;
+type SortDirection = 'asc' | 'desc';
+
+type ColumnKey =
+    | 'trip_number'
+    | 'dispatch_date'
+    | 'vendor'
+    | 'route'
+    | 'distance_km'
+    | 'cargo_volume_mt'
+    | 'tonkm'
+    | 'cost'
+    | 'status';
+
+interface ColumnConfig {
+    key: ColumnKey;
     label: string;
     sortable?: boolean;
     sortKey?: string;
+    align?: 'left' | 'right';
 }
 
-type SortDirection = 'asc' | 'desc';
-
-const columns: ColumnDefinition[] = [
-    { key: 'trip_number', label: 'Trip #', sortable: true },
-    { key: 'dispatch_date', label: 'Dispatch Date', sortable: true },
-    { key: 'vendor', label: 'Vendor', sortable: false },
-    { key: 'route', label: 'Route', sortable: false },
-    { key: 'distance_km', label: 'Distance (km)', sortable: true },
-    { key: 'cargo_volume_mt', label: 'Cargo (MT)', sortable: true },
-    { key: 'tonkm', label: 'Ton-Km', sortable: true },
-    { key: 'cost', label: 'Cost', sortable: true },
-    { key: 'status', label: 'Status', sortable: true },
+const columns: ColumnConfig[] = [
+    { key: 'trip_number', label: 'Trip #', sortable: true, sortKey: 'trip_number' },
+    { key: 'dispatch_date', label: 'Dispatch Date', sortable: true, sortKey: 'dispatch_date' },
+    { key: 'vendor', label: 'Vendor' },
+    { key: 'route', label: 'Route' },
+    { key: 'distance_km', label: 'Distance (KM)', sortable: true, sortKey: 'distance_km', align: 'right' },
+    { key: 'cargo_volume_mt', label: 'Cargo (MT)', sortable: true, sortKey: 'cargo_volume_mt', align: 'right' },
+    { key: 'tonkm', label: 'Ton-KM', sortable: true, sortKey: 'tonkm', align: 'right' },
+    { key: 'cost', label: 'Cost', sortable: true, sortKey: 'cost', align: 'right' },
+    { key: 'status', label: 'Status', sortable: true, sortKey: 'status' },
 ];
 
-const dateFormatter = new Intl.DateTimeFormat('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-});
+const formatNumberValue = (value?: number | string | null, fractionDigits = 2, suffix = ''): string => {
+    if (value === null || value === undefined || value === '') {
+        return '—';
+    }
 
-const decimalFormatter = new Intl.NumberFormat('en-US', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-});
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) {
+        return '—';
+    }
 
-const currencyFormatter = new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'ETB',
-    maximumFractionDigits: 2,
-});
+    return `${numeric.toLocaleString('en-US', {
+        minimumFractionDigits: fractionDigits,
+        maximumFractionDigits: fractionDigits,
+    })}${suffix}`;
+};
+
+const formatCurrencyValue = (value?: number | string | null): string => {
+    if (value === null || value === undefined || value === '') {
+        return '—';
+    }
+
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) {
+        return '—';
+    }
+
+    return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'ETB',
+        maximumFractionDigits: 2,
+    }).format(numeric);
+};
+
+const formatDateValue = (value?: string | null): string => {
+    if (!value) {
+        return '—';
+    }
+
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+        return '—';
+    }
+
+    return parsed.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+    });
+};
+
+const renderStatusBadge = (status: string): ReactNode => {
+    const normalized = status.toLowerCase();
+
+    if (normalized === 'active' || normalized === 'in_transit') {
+        return (
+            <Badge className="border border-blue-200 bg-blue-100 text-blue-700 dark:border-blue-900/40 dark:bg-blue-900/30 dark:text-blue-200">
+                {status ? status.replace(/_/g, ' ') : 'Active'}
+            </Badge>
+        );
+    }
+
+    if (normalized === 'completed') {
+        return (
+            <Badge className="border border-emerald-200 bg-emerald-100 text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-900/30 dark:text-emerald-200">
+                Completed
+            </Badge>
+        );
+    }
+
+    if (normalized === 'cancelled') {
+        return (
+            <Badge className="border border-rose-200 bg-rose-100 text-rose-700 dark:border-rose-900/40 dark:bg-rose-900/30 dark:text-rose-200">
+                Cancelled
+            </Badge>
+        );
+    }
+
+    return (
+        <Badge className="border border-slate-200 bg-slate-100 text-slate-700 dark:border-slate-800/50 dark:bg-slate-900/40 dark:text-slate-200">
+            {status || 'Unknown'}
+        </Badge>
+    );
+};
 
 export default function OutsourcePerformancesIndex({
     outsourcePerformances,
@@ -159,7 +238,7 @@ export default function OutsourcePerformancesIndex({
     );
     const [dateFrom, setDateFrom] = useState(filters?.dispatched_from ?? '');
     const [dateTo, setDateTo] = useState(filters?.dispatched_to ?? '');
-    const [sortColumn, setSortColumn] = useState(filters?.sort ?? 'dispatch_date');
+    const [sortColumn, setSortColumn] = useState<string>(filters?.sort ?? 'dispatch_date');
     const [sortDirection, setSortDirection] = useState<SortDirection>(filters?.direction ?? 'desc');
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [selectedRecord, setSelectedRecord] = useState<OutsourcePerformanceRecord | null>(null);
@@ -190,6 +269,8 @@ export default function OutsourcePerformancesIndex({
     const totalCargo = metrics?.totalCargo ?? 0;
     const totalCost = metrics?.totalCost ?? 0;
     const activeRecords = metrics?.activeRecords ?? 0;
+
+    const startIndex = typeof outsourcePerformances?.from === 'number' ? outsourcePerformances.from : 1;
 
     const handleNavigate = useCallback((overrides: Partial<{
         search?: string;
@@ -238,9 +319,10 @@ export default function OutsourcePerformancesIndex({
 
         router.get('/outsource-performances', params, {
             preserveState: true,
+            preserveScroll: true,
             replace: false,
         });
-    }, [searchTerm, selectedStatus, selectedOutsource, dateFrom, dateTo, sortColumn, sortDirection, perPage]);
+    }, [dateFrom, dateTo, perPage, searchTerm, selectedOutsource, selectedStatus, sortColumn, sortDirection]);
 
     const handleSearchChange = (value: string) => {
         setSearchTerm(value);
@@ -273,7 +355,7 @@ export default function OutsourcePerformancesIndex({
         handleNavigate({ per_page: Number.isNaN(numericValue) ? undefined : numericValue, page: 1 });
     };
 
-    const handleSort = (column: ColumnDefinition) => {
+    const handleSort = (column: ColumnConfig) => {
         if (column.sortable === false) {
             return;
         }
@@ -336,29 +418,29 @@ export default function OutsourcePerformancesIndex({
     const statsCards = [
         {
             title: 'Trips Logged',
-            value: totalRecords,
-            description: 'Total outsource trips',
+            value: totalRecords.toLocaleString(),
+            description: `${activeRecords.toLocaleString()} active trips underway`,
             icon: <Activity className="h-3.5 w-3.5 text-indigo-600" />,
             valueClassName: 'text-indigo-600',
         },
         {
-            title: 'Active Trips',
-            value: activeRecords,
-            description: 'Currently open records',
+            title: 'Cargo Moved',
+            value: formatNumberValue(totalCargo, 0, ' MT'),
+            description: 'Total tonnage handled by vendors',
             icon: <TrendingUp className="h-3.5 w-3.5 text-emerald-600" />,
             valueClassName: 'text-emerald-600',
         },
         {
             title: 'Distance Covered',
-            value: `${decimalFormatter.format(totalDistance ?? 0)} km`,
-            description: 'Total logged kilometres',
+            value: formatNumberValue(totalDistance, 0, ' km'),
+            description: 'Kilometres logged across the period',
             icon: <MapPin className="h-3.5 w-3.5 text-rose-600" />,
             valueClassName: 'text-rose-600',
         },
         {
             title: 'Total Cost',
-            value: currencyFormatter.format(totalCost ?? 0),
-            description: 'Aggregate spend',
+            value: formatCurrencyValue(totalCost),
+            description: 'Aggregate spend with vendors',
             icon: <Coins className="h-3.5 w-3.5 text-amber-600" />,
             valueClassName: 'text-amber-600',
         },
@@ -368,7 +450,7 @@ export default function OutsourcePerformancesIndex({
         <div className="hidden gap-2 md:grid md:grid-cols-2 xl:grid-cols-4">
             {statsCards.map((card) => (
                 <Card key={card.title} className="gap-2 border border-slate-200 py-2 shadow-sm dark:border-slate-800">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 px-2 pb-1">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 p-2">
                         <CardTitle className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                             {card.title}
                         </CardTitle>
@@ -385,7 +467,7 @@ export default function OutsourcePerformancesIndex({
 
     const tableHeaderExtras = (
         <div className="flex flex-wrap items-center gap-2">
-            <div className="relative w-[240px] max-w-full">
+            <div className="relative w-[260px] max-w-full">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                     placeholder="Search trips or vendors"
@@ -456,10 +538,63 @@ export default function OutsourcePerformancesIndex({
         </div>
     );
 
-    const renderHeaderCell = (column: ColumnDefinition) => {
+    const renderCell = (record: OutsourcePerformanceRecord, column: ColumnKey): ReactNode => {
+        switch (column) {
+            case 'trip_number':
+                return record.trip_number;
+            case 'dispatch_date':
+                return (
+                    <span className="text-sm text-muted-foreground">
+                        {formatDateValue(record.dispatch_date)}
+                    </span>
+                );
+            case 'vendor':
+                return (
+                    <span className="text-sm text-muted-foreground">
+                        {record.outsource?.name ?? '—'}
+                    </span>
+                );
+            case 'route': {
+                const fromPlace = record.from_place?.name ?? record.fromPlace?.name ?? '—';
+                const toPlace = record.to_place?.name ?? record.toPlace?.name ?? '—';
+
+                return (
+                    <div className="flex flex-col text-xs text-muted-foreground">
+                        <span>{fromPlace}</span>
+                        <span className="text-muted-foreground">→ {toPlace}</span>
+                    </div>
+                );
+            }
+            case 'distance_km':
+                return (
+                    <span className="font-medium">
+                        {formatNumberValue(record.distance_km, 2, ' km')}
+                    </span>
+                );
+            case 'cargo_volume_mt':
+                return (
+                    <span className="font-medium">
+                        {formatNumberValue(record.cargo_volume_mt, 2, ' MT')}
+                    </span>
+                );
+            case 'tonkm':
+                return <span className="font-medium">{formatNumberValue(record.tonkm)}</span>;
+            case 'cost':
+                return <span className="font-medium">{formatCurrencyValue(record.cost)}</span>;
+            case 'status':
+                return renderStatusBadge(record.status ?? '');
+            default:
+                return '—';
+        }
+    };
+
+    const renderHeaderCell = (column: ColumnConfig) => {
         if (column.sortable === false) {
             return (
-                <TableHead key={column.key} className="sticky top-0 z-20 bg-background">
+                <TableHead
+                    key={column.key}
+                    className={`sticky top-0 z-20 bg-background ${column.align === 'right' ? 'text-right' : ''}`}
+                >
                     {column.label}
                 </TableHead>
             );
@@ -470,11 +605,11 @@ export default function OutsourcePerformancesIndex({
 
         return (
             <TableHead
-                key={sortKey}
-                className="sticky top-0 z-20 cursor-pointer select-none bg-background transition-colors hover:bg-muted/70"
+                key={column.key}
+                className={`sticky top-0 z-20 cursor-pointer select-none bg-background transition-colors hover:bg-muted/70 ${column.align === 'right' ? 'text-right' : ''}`}
                 onClick={() => handleSort(column)}
             >
-                <div className="flex items-center gap-2">
+                <div className={`flex items-center gap-2 ${column.align === 'right' ? 'justify-end' : ''}`}>
                     {column.label}
                     <ArrowUpDown size={14} className={isActive ? 'text-primary' : 'text-muted-foreground opacity-50'} />
                 </div>
@@ -482,115 +617,61 @@ export default function OutsourcePerformancesIndex({
         );
     };
 
-    const renderStatusBadge = (status: string) => {
-        const normalized = status.toLowerCase();
-        if (normalized === 'active') {
-            return (
-                <Badge className="w-fit border-emerald-200 bg-emerald-100 text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-900/30 dark:text-emerald-200">
-                    Active
-                </Badge>
-            );
-        }
-
-        return (
-            <Badge className="w-fit border-rose-200 bg-rose-100 text-rose-700 dark:border-rose-900/40 dark:bg-rose-900/30 dark:text-rose-200">
-                {status || 'Inactive'}
-            </Badge>
-        );
-    };
-
-    const renderNumber = (value?: number | string | null, suffix = '') => {
-        if (value === null || value === undefined || value === '') {
-            return '—';
-        }
-
-        const numeric = Number(value);
-        if (!Number.isFinite(numeric)) {
-            return '—';
-        }
-
-        return `${decimalFormatter.format(numeric)}${suffix}`;
-    };
-
     const tableContent = (
         <Table>
             <TableHeader className="[&_tr]:sticky [&_tr]:top-0 [&_tr]:z-20 [&_tr]:bg-background [&_tr]:shadow-sm">
                 <TableRow className="border-b bg-background">
+                    <TableHead className="sticky top-0 z-20 w-16 bg-background text-center">No</TableHead>
                     {columns.map((column) => renderHeaderCell(column))}
                     <TableHead className="sticky top-0 z-20 bg-background text-center">Actions</TableHead>
                 </TableRow>
             </TableHeader>
             <TableBody>
                 {outsourcePerformances?.data && outsourcePerformances.data.length > 0 ? (
-                    outsourcePerformances.data.map((record) => {
-                        const vendor = record.outsource?.name ?? '—';
-                        const fromPlace = record.from_place?.name ?? record.fromPlace?.name ?? '—';
-                        const toPlace = record.to_place?.name ?? record.toPlace?.name ?? '—';
-
-                        return (
-                            <TableRow key={record.id} className="hover:bg-muted/50">
-                                <TableCell className="font-semibold">{record.trip_number}</TableCell>
-                                <TableCell className="text-sm text-muted-foreground">
-                                    {record.dispatch_date
-                                        ? dateFormatter.format(new Date(record.dispatch_date))
-                                        : '—'}
+                    outsourcePerformances.data.map((record, index) => (
+                        <TableRow key={record.id} className="hover:bg-muted/50">
+                            <TableCell className="text-center font-medium text-muted-foreground">
+                                {startIndex + index}
+                            </TableCell>
+                            {columns.map((column) => (
+                                <TableCell
+                                    key={`${record.id}-${column.key}`}
+                                    className={column.align === 'right' ? 'text-right' : ''}
+                                >
+                                    {renderCell(record, column.key)}
                                 </TableCell>
-                                <TableCell className="text-sm text-muted-foreground">
-                                    {vendor}
-                                </TableCell>
-                                <TableCell className="text-xs text-muted-foreground">
-                                    <div className="flex flex-col">
-                                        <span>{fromPlace}</span>
-                                        <span className="text-muted-foreground">→ {toPlace}</span>
-                                    </div>
-                                </TableCell>
-                                <TableCell className="font-medium">
-                                    {renderNumber(record.distance_km, ' km')}
-                                </TableCell>
-                                <TableCell className="font-medium">
-                                    {renderNumber(record.cargo_volume_mt, ' MT')}
-                                </TableCell>
-                                <TableCell className="font-medium">
-                                    {renderNumber(record.tonkm)}
-                                </TableCell>
-                                <TableCell className="font-medium">
-                                    {record.cost === null || record.cost === undefined || record.cost === ''
-                                        ? '—'
-                                        : currencyFormatter.format(Number(record.cost))}
-                                </TableCell>
-                                <TableCell>{renderStatusBadge(record.status)}</TableCell>
-                                <TableCell className="text-center">
-                                    <div className="flex justify-center gap-2">
+                            ))}
+                            <TableCell className="text-center">
+                                <div className="flex justify-center gap-2">
+                                    <Button asChild size="sm" variant="ghost">
+                                        <Link href={`/outsource-performances/${record.id}`}>
+                                            <Eye className="h-4 w-4" />
+                                        </Link>
+                                    </Button>
+                                    {hasPermission('outsource-performances.edit') && (
                                         <Button asChild size="sm" variant="ghost">
-                                            <Link href={`/outsource-performances/${record.id}`}>
-                                                <Eye className="h-4 w-4" />
+                                            <Link href={`/outsource-performances/${record.id}/edit`}>
+                                                <Edit className="h-4 w-4" />
                                             </Link>
                                         </Button>
-                                        {hasPermission('outsource-performances.edit') && (
-                                            <Button asChild size="sm" variant="ghost">
-                                                <Link href={`/outsource-performances/${record.id}/edit`}>
-                                                    <Edit className="h-4 w-4" />
-                                                </Link>
-                                            </Button>
-                                        )}
-                                        {hasPermission('outsource-performances.destroy') && (
-                                            <Button
-                                                size="sm"
-                                                variant="ghost"
-                                                className="text-destructive hover:bg-destructive/10"
-                                                onClick={() => handleDeleteClick(record)}
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                        )}
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        );
-                    })
+                                    )}
+                                    {hasPermission('outsource-performances.destroy') && (
+                                        <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            className="text-destructive hover:bg-destructive/10"
+                                            onClick={() => handleDeleteClick(record)}
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    )}
+                                </div>
+                            </TableCell>
+                        </TableRow>
+                    ))
                 ) : (
                     <TableRow>
-                        <TableCell colSpan={columns.length + 1} className="py-8 text-center text-muted-foreground">
+                        <TableCell colSpan={columns.length + 2} className="py-8 text-center text-muted-foreground">
                             No outsource performance records found.
                             {hasPermission('outsource-performances.create') && (
                                 <Link href="/outsource-performances/create" className="ml-1 text-primary underline">
@@ -609,7 +690,7 @@ export default function OutsourcePerformancesIndex({
             <ListPageLayout
                 headTitle="Outsource Performances"
                 title="Outsource Performances"
-                description={`Monitor ${totalRecords} recorded outsource trip${totalRecords === 1 ? '' : 's'} and their impact.`}
+                description={`Manage vendor delivery performance (${totalRecords.toLocaleString()} records).`}
                 breadcrumbs={breadcrumbs}
                 actions={headerActions}
                 stats={statsSection}

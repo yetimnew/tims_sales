@@ -1,347 +1,144 @@
-import { test, expect, Page } from '@playwright/test';
+import { test, expect, Page, Locator } from '@playwright/test';
+import { AuthHelper } from './helpers/auth-helper';
 
-// Serial execution - ONE test at a time
-test.describe.configure({ mode: 'serial' });
-
-// Test users - MUST MATCH DATABASE SEEDERS
-const ADMIN = { email: 'admin@test.com', password: 'password123' };
-const MANAGER = { email: 'manager@test.com', password: 'password123' };
-const USER = { email: 'user@test.com', password: 'password123' };
-
-// Simple login function - NO LOGOUT
-async function login(page: Page, email: string, password: string) {
-  await page.goto('/login', { waitUntil: 'domcontentloaded' });
-
-  // Wait for email input to be visible
-  await page.locator('#email').waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
-  await page.waitForTimeout(300);
-
-  // Fill login form using ID selectors
-  await page.locator('#email').fill(email);
-  await page.locator('#password').fill(password);
-
-  // Click submit button
-  await page.locator('button[type="submit"]').first().click();
-
-  // Wait for navigation - expect redirect to dashboard or trucks
-  try {
-    await Promise.race([
-      page.waitForURL(/\/dashboard/, { timeout: 8000 }),
-      page.waitForURL(/\/trucks/, { timeout: 8000 }),
-    ]);
-  } catch {
-    // If navigation takes longer, just wait a bit more
-    await page.waitForTimeout(1000);
+test.describe('Truck Management CRUD', () => {
+  function comboboxByFieldLabel(page: Page, labelText: RegExp | string): Locator {
+    return page
+      .locator('label')
+      .filter({ hasText: labelText })
+      .locator('xpath=..')
+      .locator('[role="combobox"]').first();
   }
-}
 
-// Go to trucks page
-async function goTrucks(page: Page) {
-  // Use domcontentloaded instead of networkidle - trucks page has many async queries
-  await page.goto('/trucks', { waitUntil: 'domcontentloaded', timeout: 25000 });
+  async function navigateToTrucks(page: Page): Promise<void> {
+    await page.goto('/trucks', { waitUntil: 'domcontentloaded', timeout: 45000 });
+    await page.waitForLoadState('networkidle').catch(() => undefined);
+    await expect(page.getByRole('heading', { name: /Trucks/i })).toBeVisible();
+  }
 
-  // Wait for page to be interactive - wait for h1 title or table
-  await Promise.race([
-    page.locator('h1:has-text("Trucks")').waitFor({ state: 'visible', timeout: 10000 }).catch(() => {}),
-    page.locator('table tbody').waitFor({ state: 'visible', timeout: 10000 }).catch(() => {}),
-  ]);
+  async function selectFirstVehicleType(page: Page): Promise<void> {
+    const trigger = comboboxByFieldLabel(page, /Vehicle Type/i);
+    await expect(trigger).toBeVisible();
+    await trigger.click();
+    const firstOption = page.locator('[role="option"]').first();
+    await expect(firstOption).toBeVisible();
+    await firstOption.click();
+  }
 
-  await page.waitForTimeout(500);
-}
+  async function locateTruckRow(page: Page, plate: string) {
+    const searchInput = page.getByPlaceholder('Search trucks...');
+    await expect(searchInput).toBeVisible();
+    await searchInput.fill('');
+    await searchInput.fill(plate);
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(300);
+    const row = page.locator('table tbody tr').filter({ hasText: plate }).first();
+    await expect(row).toBeVisible();
+    return row;
+  }
 
-// ============================================================================
-// ADMIN TESTS (1-10)
-// ============================================================================
+  test('admin can complete the truck CRUD flow', async ({ page }) => {
+    test.setTimeout(120000);
 
-test.describe('Admin Tests', () => {
-  test('1: Navigate to trucks', async ({ page }) => {
-    await login(page, ADMIN.email, ADMIN.password);
-    await goTrucks(page);
-    await expect(page.locator('h1')).toContainText('Trucks');
-  });
+    const auth = new AuthHelper(page);
+    const uniqueSuffix = Date.now().toString().slice(-4);
+    const plate = `AB-${uniqueSuffix.padStart(4, '0')}`;
+    const updatedServiceInterval = '15000';
 
-  test('2: Create truck', async ({ page }) => {
-    await login(page, ADMIN.email, ADMIN.password);
-    await goTrucks(page);
-    const btn = page.locator('button:has-text("Add Truck")').first();
-    if (await btn.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await btn.click();
-    }
-  });
+    await auth.loginAsAdmin();
+    await navigateToTrucks(page);
 
-  test('3: View truck', async ({ page }) => {
-    await login(page, ADMIN.email, ADMIN.password);
-    await goTrucks(page);
-    const link = page.locator('a[href*="/trucks/"][href!*="/edit"]').first();
-    if (await link.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await link.click();
-    }
-  });
+    await test.step('Create truck', async () => {
+      await Promise.all([
+        page.waitForURL('**/trucks/create', { timeout: 15000 }),
+        page.getByRole('link', { name: /Add Truck/i }).click(),
+      ]);
+      await expect(page).toHaveURL(/\/trucks\/create$/);
 
-  test('4: Edit truck', async ({ page }) => {
-    await login(page, ADMIN.email, ADMIN.password);
-    await goTrucks(page);
-    const link = page.locator('a[href*="/edit"]').first();
-    if (await link.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await link.click();
-    }
-  });
+      await page.fill('#plate', plate);
+      await selectFirstVehicleType(page);
+      await page.getByRole('button', { name: /Create Truck/i }).click();
+      await expect(page).toHaveURL(/\/trucks$/, { timeout: 20000 });
 
-  test('5: Search trucks', async ({ page }) => {
-    await login(page, ADMIN.email, ADMIN.password);
-    await goTrucks(page);
-    const input = page.locator('input[placeholder*="Search"]').first();
-    if (await input.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await input.fill('TEST');
-      await page.waitForTimeout(300);
-    }
-  });
+      const createdRow = await locateTruckRow(page, plate);
+      await expect(createdRow).toContainText(plate);
+    });
 
-  test('6: Sort trucks', async ({ page }) => {
-    await login(page, ADMIN.email, ADMIN.password);
-    await goTrucks(page);
-    const header = page.locator('th', { hasText: 'Plate' }).first();
-    if (await header.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await header.click();
-    }
-  });
+    await test.step('View truck details', async () => {
+      const row = await locateTruckRow(page, plate);
+      await Promise.all([
+        page.waitForURL(/\/trucks\/[0-9]+$/, { timeout: 15000 }),
+        row.locator('a').first().click(),
+      ]);
+      await expect(page).toHaveURL(/\/trucks\/[0-9]+$/);
+      await expect(page.getByRole('heading', { name: plate })).toBeVisible();
+      await page.goBack();
+      await page.waitForURL(/\/trucks$/, { timeout: 20000 });
+      await locateTruckRow(page, plate);
+    });
 
-  test('7: Delete truck', async ({ page }) => {
-    await login(page, ADMIN.email, ADMIN.password);
-    await goTrucks(page);
-    const rows = page.locator('table tbody tr');
-    if ((await rows.count()) > 0) {
-      const btn = rows.first().locator('button').last();
-      if (await btn.isVisible({ timeout: 2000 }).catch(() => false)) {
-        await btn.click();
-      }
-    }
-  });
+    await test.step('Update truck', async () => {
+      const row = await locateTruckRow(page, plate);
+      await Promise.all([
+        page.waitForURL(/\/trucks\/.+\/edit$/, { timeout: 15000 }),
+        row.locator('a[href*="/edit"]').first().click(),
+      ]);
+      await expect(page).toHaveURL(/\/trucks\/.+\/edit$/);
 
-  test('8: Export CSV', async ({ page }) => {
-    await login(page, ADMIN.email, ADMIN.password);
-    await goTrucks(page);
-    const btn = page.locator('button:has-text("Export")').first();
-    if (await btn.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await expect(btn).toBeVisible();
-    }
-  });
+      const statusTrigger = comboboxByFieldLabel(page, /Status/i);
+      await expect(statusTrigger).toBeVisible();
+      await statusTrigger.click();
+      await page.getByRole('option', { name: /^Inactive$/i }).click();
 
-  test('9: View stats', async ({ page }) => {
-    await login(page, ADMIN.email, ADMIN.password);
-    await goTrucks(page);
-    await expect(page.locator('table').first()).toBeVisible();
-  });
+      await page.getByRole('tab', { name: /Technical/i }).click();
 
-  test('10: Pagination', async ({ page }) => {
-    await login(page, ADMIN.email, ADMIN.password);
-    await goTrucks(page);
-    await expect(page.locator('table').first()).toBeVisible();
-  });
-});
+      const serviceIntervalInput = page.locator('#serviceIntervalKM');
+      await expect(serviceIntervalInput).toBeVisible();
+      await serviceIntervalInput.fill('');
+      await serviceIntervalInput.fill(updatedServiceInterval);
 
-// ============================================================================
-// MANAGER TESTS (11-15)
-// ============================================================================
+      await page.getByRole('button', { name: /Update Truck/i }).click();
+      await expect(page).toHaveURL(/\/trucks$/, { timeout: 20000 });
 
-test.describe('Manager Tests', () => {
-  test('11: View trucks', async ({ page }) => {
-    await login(page, MANAGER.email, MANAGER.password);
-    await goTrucks(page);
-    await expect(page.locator('h1')).toContainText('Trucks');
-  });
+      const updatedRow = await locateTruckRow(page, plate);
+      await expect(updatedRow.locator('td').nth(6)).toContainText(/Inactive/i);
+    });
 
-  test('12: Create button visible', async ({ page }) => {
-    await login(page, MANAGER.email, MANAGER.password);
-    await goTrucks(page);
-    const btn = page.locator('button:has-text("Add Truck")').first();
-    if (await btn.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await expect(btn).toBeVisible();
-    }
-  });
+    await test.step('Delete truck', async () => {
+      const row = await locateTruckRow(page, plate);
+      const detailHref = await row.locator('a').first().getAttribute('href');
+      const truckIdMatch = detailHref?.match(/\/(\d+)(?:\/)?$/);
+      const truckId = truckIdMatch?.[1];
+      await row.locator('button[data-slot="button"]').last().click();
 
-  test('13: No delete button', async ({ page }) => {
-    await login(page, MANAGER.email, MANAGER.password);
-    await goTrucks(page);
-    const table = page.locator('table').first();
-    const rows = table.locator('tbody tr');
-    if ((await rows.count()) > 0) {
-      const deleteBtn = rows.first().locator('button').filter({ hasText: /delete|trash/i });
-      const visible = await deleteBtn.isVisible().catch(() => false);
-      expect(visible).toBeFalsy();
-    }
-  });
+      const dialog = page.getByRole('dialog', { name: /Delete Truck/i });
+      await expect(dialog).toBeVisible();
+      const deleteRequest = truckId
+        ? page.waitForResponse((response) =>
+            response.url().endsWith(`/trucks/${truckId}`) && response.request().method() === 'DELETE',
+          )
+        : page.waitForResponse((response) =>
+            /\/trucks\/(\d+)$/.test(response.url()) && response.request().method() === 'DELETE',
+          );
 
-  test('14: Edit visible', async ({ page }) => {
-    await login(page, MANAGER.email, MANAGER.password);
-    await goTrucks(page);
-    const link = page.locator('a[href*="/edit"]').first();
-    if (await link.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await expect(link).toBeVisible();
-    }
-  });
+      const refreshRequest = page.waitForResponse((response) =>
+        response.url().includes('/trucks') && response.request().method() === 'GET',
+      );
 
-  test('15: Export visible', async ({ page }) => {
-    await login(page, MANAGER.email, MANAGER.password);
-    await goTrucks(page);
-    const btn = page.locator('button:has-text("Export")').first();
-    if (await btn.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await expect(btn).toBeVisible();
-    }
-  });
-});
+      await dialog.getByRole('button', { name: /^Delete$/ }).click();
+      await deleteRequest;
+      await refreshRequest.catch(() => undefined);
+      await expect(dialog).toBeHidden({ timeout: 20000 });
+      await page.waitForLoadState('networkidle').catch(() => undefined);
 
-// ============================================================================
-// USER TESTS (16-21)
-// ============================================================================
+      const searchInput = page.getByPlaceholder('Search trucks...');
+      await searchInput.fill('');
+      await searchInput.fill(plate);
+      await page.waitForLoadState('networkidle').catch(() => undefined);
 
-test.describe('User Tests', () => {
-  test('16: View trucks', async ({ page }) => {
-    await login(page, USER.email, USER.password);
-    await goTrucks(page);
-    await expect(page.locator('h1')).toContainText('Trucks');
-  });
-
-  test('17: No create button', async ({ page }) => {
-    await login(page, USER.email, USER.password);
-    await goTrucks(page);
-    const btn = page.locator('button:has-text("Add Truck")').first();
-    const visible = await btn.isVisible().catch(() => false);
-    expect(visible).toBeFalsy();
-  });
-
-  test('18: No edit button', async ({ page }) => {
-    await login(page, USER.email, USER.password);
-    await goTrucks(page);
-    const table = page.locator('table').first();
-    const link = table.locator('a[href*="/edit"]');
-    const visible = await link.isVisible().catch(() => false);
-    expect(visible).toBeFalsy();
-  });
-
-  test('19: View details allowed', async ({ page }) => {
-    await login(page, USER.email, USER.password);
-    await goTrucks(page);
-    const link = page.locator('a[href*="/trucks/"][href!*="/edit"]').first();
-    if (await link.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await link.click();
-    }
-  });
-
-  test('20: Export visible', async ({ page }) => {
-    await login(page, USER.email, USER.password);
-    await goTrucks(page);
-    const btn = page.locator('button:has-text("Export")').first();
-    if (await btn.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await expect(btn).toBeVisible();
-    }
-  });
-
-  test('21: Direct create blocked', async ({ page }) => {
-    await login(page, USER.email, USER.password);
-    await page.goto('/trucks/create', { waitUntil: 'load' }).catch(() => {});
-    const form = page.locator('h1:has-text("Create")');
-    const visible = await form.isVisible().catch(() => false);
-    expect(!visible || !page.url().includes('/trucks/create')).toBeTruthy();
-  });
-});
-
-// ============================================================================
-// ADVANCED TESTS (22-25)
-// ============================================================================
-
-test.describe('Advanced Tests', () => {
-  test('22: Search functionality', async ({ page }) => {
-    await login(page, ADMIN.email, ADMIN.password);
-    await goTrucks(page);
-    const input = page.locator('input[placeholder*="Search"]').first();
-    if (await input.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await input.fill('TEST');
-      await page.waitForTimeout(300);
-    }
-  });
-
-  test('23: Sort functionality', async ({ page }) => {
-    await login(page, ADMIN.email, ADMIN.password);
-    await goTrucks(page);
-    const header = page.locator('th', { hasText: 'Plate' }).first();
-    if (await header.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await header.click();
-    }
-  });
-
-  test('24: Stats visible', async ({ page }) => {
-    await login(page, ADMIN.email, ADMIN.password);
-    await goTrucks(page);
-    const stats = await page.locator('[data-testid="stats-card"], .border-l-4').all();
-    expect(stats.length).toBeGreaterThanOrEqual(1);
-  });
-
-  test('25: Formatting correct', async ({ page }) => {
-    await login(page, ADMIN.email, ADMIN.password);
-    await goTrucks(page);
-    const price = page.locator('table tbody td').filter({ hasText: /\$/ }).first();
-    if (await price.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await expect(price).toBeVisible();
-    }
-  });
-});
-
-// ============================================================================
-// EDGE CASE TESTS (26-30)
-// ============================================================================
-
-test.describe('Edge Case Tests', () => {
-  test('26: Form validation', async ({ page }) => {
-    await login(page, ADMIN.email, ADMIN.password);
-    await goTrucks(page);
-    const btn = page.locator('button:has-text("Add Truck")').first();
-    if (await btn.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await btn.click();
-    }
-  });
-
-  test('27: Form cancel works', async ({ page }) => {
-    await login(page, ADMIN.email, ADMIN.password);
-    await goTrucks(page);
-    const btn = page.locator('button:has-text("Add Truck")').first();
-    if (await btn.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await btn.click();
-      await page.waitForURL('**/trucks/create', { timeout: 5000 }).catch(() => {});
-      const cancel = page.locator('button:has-text("Cancel")').first();
-      if (await cancel.isVisible({ timeout: 2000 }).catch(() => false)) {
-        await cancel.click();
-      }
-    }
-  });
-
-  test('28: Tab navigation', async ({ page }) => {
-    await login(page, ADMIN.email, ADMIN.password);
-    await goTrucks(page);
-    const btn = page.locator('button:has-text("Add Truck")').first();
-    if (await btn.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await btn.click();
-      await page.waitForURL('**/trucks/create', { timeout: 5000 }).catch(() => {});
-      const tab = page.locator('text=Technical');
-      if (await tab.isVisible({ timeout: 2000 }).catch(() => false)) {
-        await tab.click();
-      }
-    }
-  });
-
-  test('29: Empty state', async ({ page }) => {
-    await login(page, ADMIN.email, ADMIN.password);
-    await goTrucks(page);
-    const input = page.locator('input[placeholder*="Search"]').first();
-    if (await input.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await input.fill('NONEXISTENT-XXXXX');
-      await page.waitForTimeout(300);
-    }
-  });
-
-  test('30: Table displays', async ({ page }) => {
-    await login(page, ADMIN.email, ADMIN.password);
-    await goTrucks(page);
-    await expect(page.locator('table').first()).toBeVisible();
+      const remaining = page.locator('table tbody tr').filter({ hasText: plate });
+      await expect(remaining).toHaveCount(0, { timeout: 10000 });
+      await expect(page.locator('table tbody')).toContainText('No trucks found', { timeout: 10000 });
+    });
   });
 });

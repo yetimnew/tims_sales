@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { PlaceCombobox } from '@/components/place-combobox';
 import { useToast } from '@/hooks/use-toast';
 import { validateOutsourcePerformance, type ValidationErrors } from '@/lib/validation';
@@ -80,6 +80,13 @@ type DistanceStatus = {
     message: string;
 } | null;
 
+const RECENT_OUTSOURCE_PERFORMANCE_KEY = 'outsource_performance_recent_selections';
+
+interface RecentSelections {
+    outsources: string[];
+    operations: string[];
+}
+
 const computeTonKilometers = (distance: string, cargo: string): string => {
     const distanceValue = Number(distance || 0);
     const cargoValue = Number(cargo || 0);
@@ -130,8 +137,25 @@ export default function OutsourcePerformancesCreate({ outsources, operations, pl
     const [clientErrors, setClientErrors] = useState<ValidationErrors>({});
     const [distanceStatus, setDistanceStatus] = useState<DistanceStatus>(null);
     const [isDirty, setIsDirty] = useState(false);
+    const [distanceLoading, setDistanceLoading] = useState(false);
+    const [recent, setRecent] = useState<RecentSelections>({ outsources: [], operations: [] });
 
     const statusOptionValues = useMemo(() => (statusOptions.length ? statusOptions : [{ label: 'Active', value: 'active' }]), [statusOptions]);
+
+    useEffect(() => {
+        try {
+            const raw = localStorage.getItem(RECENT_OUTSOURCE_PERFORMANCE_KEY);
+            if (raw) {
+                const parsed = JSON.parse(raw) as RecentSelections;
+                setRecent({
+                    outsources: Array.isArray(parsed.outsources) ? parsed.outsources.slice(0, 6) : [],
+                    operations: Array.isArray(parsed.operations) ? parsed.operations.slice(0, 6) : [],
+                });
+            }
+        } catch (error) {
+            console.warn('Unable to load recent selections:', error);
+        }
+    }, []);
 
     useEffect(() => {
         if (Object.keys(errors).length === 0) {
@@ -161,6 +185,7 @@ export default function OutsourcePerformancesCreate({ outsources, operations, pl
             return;
         }
 
+        setDistanceLoading(true);
         setDistanceStatus(null);
 
         try {
@@ -211,6 +236,9 @@ export default function OutsourcePerformancesCreate({ outsources, operations, pl
                 message: 'Unable to resolve distance. Distance was set to 0 km.',
             });
         }
+        finally {
+            setDistanceLoading(false);
+        }
     }, [setData]);
 
     const setFieldError = useCallback((field: keyof OutsourcePerformanceFormData, message: string | undefined) => {
@@ -238,9 +266,36 @@ export default function OutsourcePerformancesCreate({ outsources, operations, pl
             updateTonKilometers(nextState);
         }
 
+        if (field === 'outsource_id' && typeof value === 'string') {
+            setRecent(previous => {
+                const nextOutsources = [value, ...previous.outsources.filter(item => item !== value)].slice(0, 6);
+                const updated = { ...previous, outsources: nextOutsources };
+                try {
+                    localStorage.setItem(RECENT_OUTSOURCE_PERFORMANCE_KEY, JSON.stringify(updated));
+                } catch (error) {
+                    console.warn('Unable to persist recent selections:', error);
+                }
+                return updated;
+            });
+        }
+
+        if (field === 'operation_id' && typeof value === 'string') {
+            setRecent(previous => {
+                const nextOperations = [value, ...previous.operations.filter(item => item !== value)].slice(0, 6);
+                const updated = { ...previous, operations: nextOperations };
+                try {
+                    localStorage.setItem(RECENT_OUTSOURCE_PERFORMANCE_KEY, JSON.stringify(updated));
+                } catch (error) {
+                    console.warn('Unable to persist recent selections:', error);
+                }
+                return updated;
+            });
+        }
+
         if (field === 'from_place_id' || field === 'to_place_id') {
             if (!nextState.from_place_id || !nextState.to_place_id) {
                 setDistanceStatus(null);
+                setDistanceLoading(false);
                 setData('distance_km', '');
                 updateTonKilometers({ ...nextState, distance_km: '' });
                 return;
@@ -321,19 +376,6 @@ export default function OutsourcePerformancesCreate({ outsources, operations, pl
 
     const generalError = errors.error ? String(errors.error) : '';
 
-    const renderStatusAlert = () => {
-        if (!distanceStatus) {
-            return null;
-        }
-
-        return (
-            <Alert variant={distanceStatus.found ? 'default' : 'destructive'}>
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{distanceStatus.message}</AlertDescription>
-            </Alert>
-        );
-    };
-
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Log Outsource Trip" />
@@ -342,7 +384,7 @@ export default function OutsourcePerformancesCreate({ outsources, operations, pl
                     <CardHeader className="px-6 pb-0">
                         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                             <div className="flex items-start gap-4">
-                                <div className="rounded-xl bg-emerald-100 p-2 text-emerald-600 shadow-sm dark:bg-emerald-900/30 dark:text-emerald-400">
+                                <div className="rounded-xl bg-indigo-100 p-2 text-indigo-600 shadow-sm dark:bg-indigo-900/30 dark:text-indigo-300">
                                     <CheckCircle className="h-5 w-5" />
                                 </div>
                                 <div>
@@ -367,7 +409,7 @@ export default function OutsourcePerformancesCreate({ outsources, operations, pl
                                 )}
                                 <div className="flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1.5 text-sm font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
                                     <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
-                                    Vendor Performance
+                                    Vendor Performance Control
                                 </div>
                             </div>
                         </div>
@@ -416,6 +458,32 @@ export default function OutsourcePerformancesCreate({ outsources, operations, pl
                                                 {clientErrors.outsource_id}
                                             </p>
                                         )}
+                                        {recent.outsources.length > 0 && (
+                                            <div className="flex flex-wrap gap-1 pt-1">
+                                                {recent.outsources.map(id => {
+                                                    const option = outsources.find(outsource => outsource.id.toString() === id);
+                                                    if (!option) {
+                                                        return null;
+                                                    }
+
+                                                    const isActive = data.outsource_id === id;
+                                                    return (
+                                                        <button
+                                                            type="button"
+                                                            key={id}
+                                                            onClick={() => handleFieldChange('outsource_id', id)}
+                                                            className={`rounded px-2 py-0.5 text-xs transition ${
+                                                                isActive
+                                                                    ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm'
+                                                                    : 'border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
+                                                            }`}
+                                                        >
+                                                            {option.name}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
                                     </div>
 
                                     <div className="space-y-2">
@@ -440,6 +508,36 @@ export default function OutsourcePerformancesCreate({ outsources, operations, pl
                                                 <AlertCircle className="h-3 w-3" />
                                                 {clientErrors.operation_id}
                                             </p>
+                                        )}
+                                        {recent.operations.length > 0 && (
+                                            <div className="flex flex-wrap gap-1 pt-1">
+                                                {recent.operations.map(id => {
+                                                    const option = operations.find(operation => operation.id.toString() === id);
+                                                    if (!option) {
+                                                        return null;
+                                                    }
+
+                                                    const label = option.customer?.name
+                                                        ? `${option.label} — ${option.customer.name}`
+                                                        : option.label;
+
+                                                    const isActive = data.operation_id === id;
+                                                    return (
+                                                        <button
+                                                            type="button"
+                                                            key={id}
+                                                            onClick={() => handleFieldChange('operation_id', id)}
+                                                            className={`rounded px-2 py-0.5 text-xs transition ${
+                                                                isActive
+                                                                    ? 'border-emerald-600 bg-emerald-600 text-white shadow-sm'
+                                                                    : 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                                                            }`}
+                                                        >
+                                                            {label}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
                                         )}
                                     </div>
 
@@ -543,7 +641,24 @@ export default function OutsourcePerformancesCreate({ outsources, operations, pl
                                     />
                                 </div>
 
-                                {renderStatusAlert()}
+                                {distanceLoading && (
+                                    <p className="flex items-center gap-2 rounded-lg border border-dashed border-slate-200/80 bg-slate-50/80 px-3 py-2 text-xs text-slate-600 dark:border-slate-700/70 dark:bg-slate-900/30 dark:text-slate-300">
+                                        <Loader2 className="h-3 w-3 animate-spin" />
+                                        Resolving registered distance...
+                                    </p>
+                                )}
+
+                                {distanceStatus && (
+                                    <Alert variant={distanceStatus.found ? 'default' : 'destructive'}>
+                                        {distanceStatus.found ? (
+                                            <CheckCircle className="h-4 w-4 text-emerald-500" />
+                                        ) : (
+                                            <AlertCircle className="h-4 w-4" />
+                                        )}
+                                        <AlertTitle>{distanceStatus.found ? 'Distance applied' : 'Distance missing'}</AlertTitle>
+                                        <AlertDescription>{distanceStatus.message}</AlertDescription>
+                                    </Alert>
+                                )}
 
                                 <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                                     <div className="space-y-2">
@@ -659,7 +774,7 @@ export default function OutsourcePerformancesCreate({ outsources, operations, pl
                                     <Button
                                         type="submit"
                                         disabled={processing}
-                                        className="min-w-[160px] bg-gradient-to-r from-emerald-600 to-emerald-700 px-6 text-white shadow-lg transition-all duration-200 hover:from-emerald-700 hover:to-emerald-800 hover:shadow-xl disabled:cursor-not-allowed"
+                                        className="min-w-[160px] bg-gradient-to-r from-indigo-600 to-indigo-700 px-6 text-white shadow-lg transition-all duration-200 hover:from-indigo-700 hover:to-indigo-800 hover:shadow-xl disabled:cursor-not-allowed"
                                     >
                                         {processing ? (
                                             <>
