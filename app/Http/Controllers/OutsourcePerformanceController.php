@@ -2,27 +2,148 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\OutsourcePerformance;
+use App\Models\Operation;
 use App\Models\Outsource;
+use App\Models\OutsourcePerformance;
+use App\Models\Place;
+use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
-use Illuminate\Support\Facades\Log;
-use Exception;
 
 class OutsourcePerformanceController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index(): Response
+    public function index(Request $request): Response
     {
-        $outsourcePerformances = OutsourcePerformance::with(['outsource'])
-            ->orderBy('created_at', 'desc')
-            ->paginate(15);
+        $perPageOptions = [10, 15, 25, 50];
+
+        $query = OutsourcePerformance::query()
+            ->with([
+                'outsource:id,name',
+                'fromPlace:id,name',
+                'toPlace:id,name',
+            ]);
+
+        if ($search = $request->string('search')->trim()) {
+            $query->where(function ($builder) use ($search) {
+                $builder->where('trip_number', 'like', "%{$search}%")
+                    ->orWhere('remarks', 'like', "%{$search}%")
+                    ->orWhereHas('outsource', fn ($relation) => $relation->where('name', 'like', "%{$search}%"));
+            });
+        }
+
+        if (($status = $request->string('status')->trim()) && $status !== 'all') {
+            $query->where('status', $status);
+        }
+
+        if ($outsourceId = $request->integer('outsource_id')) {
+            $query->where('outsource_id', $outsourceId);
+        }
+
+        if ($request->filled('dispatched_from')) {
+            $query->whereDate('dispatch_date', '>=', $request->date('dispatched_from'));
+        }
+
+        if ($request->filled('dispatched_to')) {
+            $query->whereDate('dispatch_date', '<=', $request->date('dispatched_to'));
+        }
+
+        $allowedSortColumns = [
+            'trip_number',
+            'dispatch_date',
+            'distance_km',
+            'cargo_volume_mt',
+            'tonkm',
+            'cost',
+            'status',
+            'created_at',
+        ];
+
+        $sortColumn = $request->get('sort', 'dispatch_date');
+        if (! in_array($sortColumn, $allowedSortColumns, true)) {
+            $sortColumn = 'dispatch_date';
+        }
+
+        $direction = $request->get('direction', 'desc');
+        if (! in_array($direction, ['asc', 'desc'], true)) {
+            $direction = 'desc';
+        }
+
+        $query->orderBy($sortColumn, $direction);
+
+        $perPage = (int) $request->get('per_page', 15);
+        if (! in_array($perPage, $perPageOptions, true)) {
+            $perPage = 15;
+        }
+
+        $metricsQuery = clone $query;
+
+        $outsourcePerformances = $query
+            ->paginate($perPage)
+            ->withQueryString();
+
+        $totalRecords = (clone $metricsQuery)->count();
+        $totalDistance = (clone $metricsQuery)->sum('distance_km');
+        $totalCargo = (clone $metricsQuery)->sum('cargo_volume_mt');
+        $totalCost = (clone $metricsQuery)->sum('cost');
+        $activeRecords = (clone $metricsQuery)->where('status', 'active')->count();
+
+        $metrics = [
+            'totalRecords' => $totalRecords,
+            'totalDistance' => $totalDistance ? (float) $totalDistance : 0.0,
+            'totalCargo' => $totalCargo ? (float) $totalCargo : 0.0,
+            'totalCost' => $totalCost ? (float) $totalCost : 0.0,
+            'activeRecords' => $activeRecords,
+        ];
+
+        $statusOptions = OutsourcePerformance::query()
+            ->select('status')
+            ->distinct()
+            ->orderBy('status')
+            ->pluck('status')
+            ->filter()
+            ->map(fn ($status) => [
+                'label' => Str::headline((string) $status),
+                'value' => $status,
+            ])
+            ->values()
+            ->all();
+
+        $outsourceOptions = Outsource::query()
+            ->select(['id', 'name'])
+            ->orderBy('name')
+            ->get()
+            ->map(fn (Outsource $outsource) => [
+                'label' => $outsource->name,
+                'value' => $outsource->id,
+            ])
+            ->values()
+            ->all();
+
+        $filters = [
+            'search' => $request->get('search'),
+            'status' => $request->get('status'),
+            'outsource_id' => $request->get('outsource_id'),
+            'dispatched_from' => $request->get('dispatched_from'),
+            'dispatched_to' => $request->get('dispatched_to'),
+            'sort' => $sortColumn,
+            'direction' => $direction,
+            'per_page' => $perPage,
+        ];
 
         return Inertia::render('OutsourcePerformances/Index', [
             'outsourcePerformances' => $outsourcePerformances,
+            'metrics' => $metrics,
+            'filters' => $filters,
+            'statusOptions' => $statusOptions,
+            'outsourceOptions' => $outsourceOptions,
+            'perPageOptions' => $perPageOptions,
         ]);
     }
 
@@ -31,10 +152,47 @@ class OutsourcePerformanceController extends Controller
      */
     public function create(): Response
     {
-        $outsources = Outsource::orderBy('name')->get();
+        $outsources = Outsource::query()
+            ->select('id', 'name')
+            ->orderBy('name')
+            ->get()
+            ->map(fn (Outsource $outsource) => [
+                'id' => $outsource->id,
+                'name' => $outsource->name,
+            ])
+            ->values();
+
+        $operations = Operation::query()
+            ->select(['id', 'operationid', 'customer_id'])
+            ->with(['customer:id,name'])
+            ->orderBy('operationid')
+            ->get()
+            ->map(fn (Operation $operation) => [
+                'id' => $operation->id,
+                'label' => $operation->operationid,
+                'customer' => $operation->customer
+                    ? $operation->customer->only(['id', 'name'])
+                    : null,
+            ])
+            ->values();
+
+        $places = Place::query()
+            ->select('id', 'name')
+            ->orderBy('name')
+            ->get()
+            ->map(fn (Place $place) => [
+                'id' => $place->id,
+                'name' => $place->name,
+            ])
+            ->values();
+
+        $statusOptions = $this->resolveStatusOptions();
 
         return Inertia::render('OutsourcePerformances/Create', [
             'outsources' => $outsources,
+            'operations' => $operations,
+            'places' => $places,
+            'statusOptions' => $statusOptions,
         ]);
     }
 
@@ -46,22 +204,29 @@ class OutsourcePerformanceController extends Controller
         try {
             $validated = $request->validate([
                 'outsource_id' => 'required|exists:outsources,id',
-                'trip' => 'required|string|max:255',
-                'DateDispach' => 'required|date',
-                'DistanceWCargo' => 'required|numeric|min:0',
-                'DistanceWOCargo' => 'nullable|numeric|min:0',
-                'CargoVolumMT' => 'nullable|numeric|min:0',
-                'satus' => 'required|string|in:active,inactive',
-                'is_returned' => 'boolean',
+                'operation_id' => 'required|exists:operations,id',
+                'trip_number' => 'required|string|max:255',
+                'dispatch_date' => 'required|date',
+                'from_place_id' => 'required|exists:places,id',
+                'to_place_id' => 'required|exists:places,id',
+                'distance_km' => 'nullable|numeric|min:0',
+                'cargo_volume_mt' => 'nullable|numeric|min:0',
+                'tonkm' => 'nullable|numeric|min:0',
+                'cost' => 'nullable|numeric|min:0',
+                'remarks' => 'nullable|string|max:2000',
+                'status' => 'required|string|max:100',
             ]);
 
-            $outsourcePerformance = OutsourcePerformance::create($validated);
+            $payload = $this->preparePayload($validated);
+            $payload['user_id'] = Auth::id();
+
+            $outsourcePerformance = OutsourcePerformance::create($payload);
 
             Log::info('Outsource performance created', [
                 'outsource_performance_id' => $outsourcePerformance->id,
                 'outsource_id' => $outsourcePerformance->outsource_id,
-                'trip' => $outsourcePerformance->trip,
-                'user_id' => auth()->id(),
+                'trip_number' => $outsourcePerformance->trip_number,
+                'user_id' => Auth::id(),
             ]);
 
             return redirect()->route('outsource-performances.index')
@@ -71,7 +236,7 @@ class OutsourcePerformanceController extends Controller
             Log::error('Outsource performance creation failed', [
                 'error' => $e->getMessage(),
                 'data' => $request->all(),
-                'user_id' => auth()->id(),
+                'user_id' => Auth::id(),
             ]);
 
             return back()->withErrors(['error' => 'Failed to create outsource performance. Please try again.']);
@@ -83,10 +248,92 @@ class OutsourcePerformanceController extends Controller
      */
     public function show(OutsourcePerformance $outsourcePerformance): Response
     {
-        $outsourcePerformance->load(['outsource']);
+        $outsourcePerformance->load([
+            'outsource:id,name',
+            'operation:id,operationid,customer_id',
+            'operation.customer:id,name',
+            'fromPlace:id,name',
+            'toPlace:id,name',
+            'user:id,name',
+        ]);
+
+        $vendorMetricsQuery = OutsourcePerformance::query()
+            ->where('outsource_id', $outsourcePerformance->outsource_id);
+
+        $vendorTripCount = (clone $vendorMetricsQuery)->count();
+        $vendorTotalDistance = (float) ((clone $vendorMetricsQuery)->sum('distance_km') ?? 0.0);
+        $vendorTotalCargo = (float) ((clone $vendorMetricsQuery)->sum('cargo_volume_mt') ?? 0.0);
+        $vendorTotalTonKm = (float) ((clone $vendorMetricsQuery)->sum('tonkm') ?? 0.0);
+        $vendorTotalCost = (float) ((clone $vendorMetricsQuery)->sum('cost') ?? 0.0);
+
+        $recentTrips = (clone $vendorMetricsQuery)
+            ->latest('dispatch_date')
+            ->limit(6)
+            ->get()
+            ->map(fn (OutsourcePerformance $record) => [
+                'id' => $record->id,
+                'trip_number' => $record->trip_number,
+                'dispatch_date' => optional($record->dispatch_date)->toDateString(),
+                'distance_km' => $record->distance_km ? (float) $record->distance_km : null,
+                'cargo_volume_mt' => $record->cargo_volume_mt ? (float) $record->cargo_volume_mt : null,
+                'cost' => $record->cost ? (float) $record->cost : null,
+                'status' => $record->status,
+                'highlight' => $record->id === $outsourcePerformance->id,
+            ])
+            ->values();
+
+        $performanceData = [
+            'id' => $outsourcePerformance->id,
+            'trip_number' => $outsourcePerformance->trip_number,
+            'dispatch_date' => optional($outsourcePerformance->dispatch_date)->toDateString(),
+            'distance_km' => $outsourcePerformance->distance_km ? (float) $outsourcePerformance->distance_km : null,
+            'cargo_volume_mt' => $outsourcePerformance->cargo_volume_mt ? (float) $outsourcePerformance->cargo_volume_mt : null,
+            'tonkm' => $outsourcePerformance->tonkm ? (float) $outsourcePerformance->tonkm : null,
+            'cost' => $outsourcePerformance->cost ? (float) $outsourcePerformance->cost : null,
+            'remarks' => $outsourcePerformance->remarks,
+            'status' => $outsourcePerformance->status,
+            'created_at' => optional($outsourcePerformance->created_at)->toDateTimeString(),
+            'updated_at' => optional($outsourcePerformance->updated_at)->toDateTimeString(),
+            'outsource' => $outsourcePerformance->outsource ? [
+                'id' => $outsourcePerformance->outsource->id,
+                'name' => $outsourcePerformance->outsource->name,
+            ] : null,
+            'operation' => $outsourcePerformance->operation ? [
+                'id' => $outsourcePerformance->operation->id,
+                'label' => $outsourcePerformance->operation->operationid,
+                'customer' => $outsourcePerformance->operation->customer ? [
+                    'id' => $outsourcePerformance->operation->customer->id,
+                    'name' => $outsourcePerformance->operation->customer->name,
+                ] : null,
+            ] : null,
+            'from_place' => $outsourcePerformance->fromPlace ? [
+                'id' => $outsourcePerformance->fromPlace->id,
+                'name' => $outsourcePerformance->fromPlace->name,
+            ] : null,
+            'to_place' => $outsourcePerformance->toPlace ? [
+                'id' => $outsourcePerformance->toPlace->id,
+                'name' => $outsourcePerformance->toPlace->name,
+            ] : null,
+            'author' => $outsourcePerformance->user ? [
+                'id' => $outsourcePerformance->user->id,
+                'name' => $outsourcePerformance->user->name,
+            ] : null,
+        ];
+
+        $metrics = [
+            'vendorTripCount' => $vendorTripCount,
+            'vendorTotalDistance' => round($vendorTotalDistance, 2),
+            'vendorTotalCargo' => round($vendorTotalCargo, 2),
+            'vendorTotalTonKm' => round($vendorTotalTonKm, 2),
+            'vendorTotalCost' => round($vendorTotalCost, 2),
+            'vendorAverageTonKm' => $vendorTripCount > 0 ? round($vendorTotalTonKm / $vendorTripCount, 2) : 0.0,
+            'vendorAverageCost' => $vendorTripCount > 0 ? round($vendorTotalCost / $vendorTripCount, 2) : 0.0,
+        ];
 
         return Inertia::render('OutsourcePerformances/Show', [
-            'outsourcePerformance' => $outsourcePerformance,
+            'performance' => $performanceData,
+            'metrics' => $metrics,
+            'recentTrips' => $recentTrips,
         ]);
     }
 
@@ -95,11 +342,84 @@ class OutsourcePerformanceController extends Controller
      */
     public function edit(OutsourcePerformance $outsourcePerformance): Response
     {
-        $outsources = Outsource::orderBy('name')->get();
+        $outsourcePerformance->load([
+            'outsource:id,name',
+            'operation:id,operationid,customer_id',
+            'operation.customer:id,name',
+            'fromPlace:id,name',
+            'toPlace:id,name',
+        ]);
+
+        $outsources = Outsource::query()
+            ->select('id', 'name')
+            ->orderBy('name')
+            ->get()
+            ->map(fn (Outsource $outsource) => [
+                'id' => $outsource->id,
+                'name' => $outsource->name,
+            ])
+            ->values();
+
+        $operations = Operation::query()
+            ->select(['id', 'operationid', 'customer_id'])
+            ->with(['customer:id,name'])
+            ->orderBy('operationid')
+            ->get()
+            ->map(fn (Operation $operation) => [
+                'id' => $operation->id,
+                'label' => $operation->operationid,
+                'customer' => $operation->customer
+                    ? $operation->customer->only(['id', 'name'])
+                    : null,
+            ])
+            ->values();
+
+        $places = Place::query()
+            ->select('id', 'name')
+            ->orderBy('name')
+            ->get()
+            ->map(fn (Place $place) => [
+                'id' => $place->id,
+                'name' => $place->name,
+            ])
+            ->values();
+
+        $statusOptions = $this->resolveStatusOptions();
+
+        $outsourcePerformanceData = [
+            'id' => $outsourcePerformance->id,
+            'outsource_id' => $outsourcePerformance->outsource_id,
+            'operation_id' => $outsourcePerformance->operation_id,
+            'trip_number' => $outsourcePerformance->trip_number,
+            'dispatch_date' => optional($outsourcePerformance->dispatch_date)->toDateString(),
+            'from_place_id' => $outsourcePerformance->from_place_id,
+            'to_place_id' => $outsourcePerformance->to_place_id,
+            'distance_km' => $outsourcePerformance->distance_km ? (float) $outsourcePerformance->distance_km : null,
+            'cargo_volume_mt' => $outsourcePerformance->cargo_volume_mt ? (float) $outsourcePerformance->cargo_volume_mt : null,
+            'tonkm' => $outsourcePerformance->tonkm ? (float) $outsourcePerformance->tonkm : null,
+            'cost' => $outsourcePerformance->cost ? (float) $outsourcePerformance->cost : null,
+            'remarks' => $outsourcePerformance->remarks,
+            'status' => $outsourcePerformance->status,
+            'outsource' => $outsourcePerformance->outsource ? [
+                'id' => $outsourcePerformance->outsource->id,
+                'name' => $outsourcePerformance->outsource->name,
+            ] : null,
+            'operation' => $outsourcePerformance->operation ? [
+                'id' => $outsourcePerformance->operation->id,
+                'label' => $outsourcePerformance->operation->operationid,
+                'customer' => $outsourcePerformance->operation->customer ? [
+                    'id' => $outsourcePerformance->operation->customer->id,
+                    'name' => $outsourcePerformance->operation->customer->name,
+                ] : null,
+            ] : null,
+        ];
 
         return Inertia::render('OutsourcePerformances/Edit', [
-            'outsourcePerformance' => $outsourcePerformance,
+            'outsourcePerformance' => $outsourcePerformanceData,
             'outsources' => $outsources,
+            'operations' => $operations,
+            'places' => $places,
+            'statusOptions' => $statusOptions,
         ]);
     }
 
@@ -111,22 +431,29 @@ class OutsourcePerformanceController extends Controller
         try {
             $validated = $request->validate([
                 'outsource_id' => 'required|exists:outsources,id',
-                'trip' => 'required|string|max:255',
-                'DateDispach' => 'required|date',
-                'DistanceWCargo' => 'required|numeric|min:0',
-                'DistanceWOCargo' => 'nullable|numeric|min:0',
-                'CargoVolumMT' => 'nullable|numeric|min:0',
-                'satus' => 'required|string|in:active,inactive',
-                'is_returned' => 'boolean',
+                'operation_id' => 'required|exists:operations,id',
+                'trip_number' => 'required|string|max:255',
+                'dispatch_date' => 'required|date',
+                'from_place_id' => 'required|exists:places,id',
+                'to_place_id' => 'required|exists:places,id',
+                'distance_km' => 'nullable|numeric|min:0',
+                'cargo_volume_mt' => 'nullable|numeric|min:0',
+                'tonkm' => 'nullable|numeric|min:0',
+                'cost' => 'nullable|numeric|min:0',
+                'remarks' => 'nullable|string|max:2000',
+                'status' => 'required|string|max:100',
             ]);
 
-            $outsourcePerformance->update($validated);
+            $payload = $this->preparePayload($validated);
+            $payload['user_id'] = Auth::id();
+
+            $outsourcePerformance->update($payload);
 
             Log::info('Outsource performance updated', [
                 'outsource_performance_id' => $outsourcePerformance->id,
                 'outsource_id' => $outsourcePerformance->outsource_id,
-                'trip' => $outsourcePerformance->trip,
-                'user_id' => auth()->id(),
+                'trip_number' => $outsourcePerformance->trip_number,
+                'user_id' => Auth::id(),
             ]);
 
             return redirect()->route('outsource-performances.index')
@@ -137,7 +464,7 @@ class OutsourcePerformanceController extends Controller
                 'outsource_performance_id' => $outsourcePerformance->id,
                 'error' => $e->getMessage(),
                 'data' => $request->all(),
-                'user_id' => auth()->id(),
+                'user_id' => Auth::id(),
             ]);
 
             return back()->withErrors(['error' => 'Failed to update outsource performance. Please try again.']);
@@ -155,8 +482,8 @@ class OutsourcePerformanceController extends Controller
 
             Log::info('Outsource performance deleted', [
                 'outsource_performance_id' => $outsourcePerformance->id,
-                'trip' => $outsourcePerformanceData['trip'],
-                'user_id' => auth()->id(),
+                'trip_number' => $outsourcePerformanceData['trip_number'] ?? null,
+                'user_id' => Auth::id(),
             ]);
 
             return redirect()->route('outsource-performances.index')
@@ -166,13 +493,66 @@ class OutsourcePerformanceController extends Controller
             Log::error('Outsource performance deletion failed', [
                 'outsource_performance_id' => $outsourcePerformance->id,
                 'error' => $e->getMessage(),
-                'user_id' => auth()->id(),
+                'user_id' => Auth::id(),
             ]);
 
             return back()->withErrors(['error' => 'Failed to delete outsource performance. Please try again.']);
         }
     }
+
+    private function resolveStatusOptions(): array
+    {
+        $options = OutsourcePerformance::query()
+            ->select('status')
+            ->distinct()
+            ->orderBy('status')
+            ->pluck('status')
+            ->filter()
+            ->map(fn ($status) => [
+                'label' => Str::headline((string) $status),
+                'value' => (string) $status,
+            ])
+            ->values()
+            ->all();
+
+        if (count($options) === 0) {
+            $defaults = ['active', 'in_transit', 'completed', 'cancelled'];
+            $options = array_map(static fn (string $status) => [
+                'label' => Str::headline($status),
+                'value' => $status,
+            ], $defaults);
+        }
+
+        return $options;
+    }
+
+    private function preparePayload(array $validated): array
+    {
+        $payload = $validated;
+
+        foreach (['distance_km', 'cargo_volume_mt', 'tonkm', 'cost'] as $numericField) {
+            if (! array_key_exists($numericField, $payload)) {
+                continue;
+            }
+
+            $value = $payload[$numericField];
+            if ($value === '' || $value === null) {
+                $payload[$numericField] = null;
+
+                continue;
+            }
+
+            $payload[$numericField] = round((float) $value, 2);
+        }
+
+        if ($payload['tonkm'] === null && $payload['distance_km'] !== null && $payload['cargo_volume_mt'] !== null) {
+            $payload['tonkm'] = round((float) $payload['distance_km'] * (float) $payload['cargo_volume_mt'], 2);
+        }
+
+        if (isset($payload['remarks']) && $payload['remarks'] === '') {
+            $payload['remarks'] = null;
+        }
+
+        return $payload;
+    }
 }
-
-
-

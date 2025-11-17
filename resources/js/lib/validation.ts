@@ -937,6 +937,86 @@ export const outsourceValidation = {
   },
 }
 
+// ==================== OUTSOURCE PERFORMANCE VALIDATION ====================
+export const outsourcePerformanceValidation = {
+  outsource_id: (value: string) => {
+    if (!value) return 'Vendor is required'
+    return ''
+  },
+
+  operation_id: (value: string) => {
+    if (!value) return 'Operation is required'
+    return ''
+  },
+
+  trip_number: (value: string) => {
+    if (!value) return 'Trip number is required'
+    if (value.length > 255) return 'Trip number cannot exceed 255 characters'
+    return ''
+  },
+
+  dispatch_date: (value: string) => {
+    if (!value) return 'Dispatch date is required'
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return 'Dispatch date must be a valid date'
+    return ''
+  },
+
+  from_place_id: (value: string) => {
+    if (!value) return 'Origin is required'
+    return ''
+  },
+
+  to_place_id: (value: string) => {
+    if (!value) return 'Destination is required'
+    return ''
+  },
+
+  distance_km: (value: string) => {
+    if (!value) return ''
+    const num = Number(value)
+    if (!Number.isFinite(num)) return 'Distance must be a number'
+    if (num < 0) return 'Distance cannot be negative'
+    return ''
+  },
+
+  cargo_volume_mt: (value: string) => {
+    if (!value) return ''
+    const num = Number(value)
+    if (!Number.isFinite(num)) return 'Cargo volume must be a number'
+    if (num < 0) return 'Cargo volume cannot be negative'
+    return ''
+  },
+
+  tonkm: (value: string) => {
+    if (!value) return ''
+    const num = Number(value)
+    if (!Number.isFinite(num)) return 'Ton-km must be a number'
+    if (num < 0) return 'Ton-km cannot be negative'
+    return ''
+  },
+
+  cost: (value: string) => {
+    if (!value) return ''
+    const num = Number(value)
+    if (!Number.isFinite(num)) return 'Cost must be a number'
+    if (num < 0) return 'Cost cannot be negative'
+    return ''
+  },
+
+  status: (value: string) => {
+    if (!value) return 'Status is required'
+    if (value.length > 100) return 'Status cannot exceed 100 characters'
+    return ''
+  },
+
+  remarks: (value: string) => {
+    if (!value) return ''
+    if (value.length > 2000) return 'Remarks cannot exceed 2,000 characters'
+    return ''
+  },
+}
+
 export type ValidationErrors = {
   [key: string]: string
 }
@@ -1219,6 +1299,38 @@ export function validateOutsource(data: any): ValidationErrors {
   errors.name = outsourceValidation.name(data.name)
   errors.contact_person = outsourceValidation.contact_person(data.contact_person)
   if (data.phone) errors.phone = outsourceValidation.phone(data.phone)
+  Object.keys(errors).forEach(key => { if (!errors[key]) delete errors[key] })
+  return errors
+}
+
+export function validateOutsourcePerformance(data: any): ValidationErrors {
+  const errors: ValidationErrors = {}
+
+  errors.outsource_id = outsourcePerformanceValidation.outsource_id(data.outsource_id)
+  errors.operation_id = outsourcePerformanceValidation.operation_id(data.operation_id)
+  errors.trip_number = outsourcePerformanceValidation.trip_number(data.trip_number)
+  errors.dispatch_date = outsourcePerformanceValidation.dispatch_date(data.dispatch_date)
+  errors.from_place_id = outsourcePerformanceValidation.from_place_id(data.from_place_id)
+  errors.to_place_id = outsourcePerformanceValidation.to_place_id(data.to_place_id)
+  errors.status = outsourcePerformanceValidation.status(data.status)
+
+  const distanceError = outsourcePerformanceValidation.distance_km(data.distance_km)
+  if (distanceError) errors.distance_km = distanceError
+
+  const cargoError = outsourcePerformanceValidation.cargo_volume_mt(data.cargo_volume_mt)
+  if (cargoError) errors.cargo_volume_mt = cargoError
+
+  const tonkmError = outsourcePerformanceValidation.tonkm(data.tonkm)
+  if (tonkmError) errors.tonkm = tonkmError
+
+  const costError = outsourcePerformanceValidation.cost(data.cost)
+  if (costError) errors.cost = costError
+
+  if (data.remarks) {
+    const remarksError = outsourcePerformanceValidation.remarks(data.remarks)
+    if (remarksError) errors.remarks = remarksError
+  }
+
   Object.keys(errors).forEach(key => { if (!errors[key]) delete errors[key] })
   return errors
 }

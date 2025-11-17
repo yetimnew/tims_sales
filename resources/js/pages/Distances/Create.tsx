@@ -212,7 +212,7 @@ export default function DistancesCreate({ places }: DistancesCreateProps) {
   return (
     <>
       <Head title="Create Distance" />
-      <div className="space-y-6 rounded-xl p-4">
+      <div className="flex h-full flex-1 flex-col gap-6 overflow-hidden rounded-xl p-4">
         <div className="rounded-lg border border-slate-200 bg-gradient-to-r from-slate-50 to-emerald-50 p-6 shadow-sm dark:border-slate-700 dark:from-slate-900 dark:to-emerald-950/30">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex flex-wrap items-center gap-4">
@@ -258,7 +258,7 @@ export default function DistancesCreate({ places }: DistancesCreateProps) {
             </div>
           </div>
         </div>
-        <Tabs defaultValue="form" className="flex flex-col">
+        <Tabs defaultValue="form" className="flex flex-1 flex-col overflow-hidden">
           <TabsList className="grid w-full grid-cols-1 gap-2 rounded-xl border border-slate-200 bg-slate-100 p-1 dark:border-slate-700 dark:bg-slate-800 sm:grid-cols-3">
             <TabsTrigger
               value="form"
@@ -283,14 +283,19 @@ export default function DistancesCreate({ places }: DistancesCreateProps) {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="form" className="space-y-6">
-            <Card className="border-0 shadow-lg">
+          <TabsContent value="form" className="mt-4 flex flex-1 flex-col overflow-hidden">
+            <Card className="flex flex-1 flex-col border-0 shadow-lg">
               <CardHeader>
                 <CardTitle>Distance Information</CardTitle>
                 <CardDescription>Select the endpoints and confirm the calculated metrics.</CardDescription>
               </CardHeader>
-              <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-6">
+              <CardContent className="flex flex-1 flex-col overflow-hidden p-0">
+                <form
+                  onSubmit={handleSubmit}
+                  className="flex flex-1 flex-col gap-6 overflow-y-auto p-6 pb-24"
+                  style={{ minHeight: 0 }}
+                  noValidate
+                >
                   <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                     <div className="space-y-2">
                       <Label htmlFor="from_place_id">From Place *</Label>
@@ -471,8 +476,8 @@ export default function DistancesCreate({ places }: DistancesCreateProps) {
             </Card>
           </TabsContent>
 
-          <TabsContent value="map" className="space-y-6">
-            <Card className="border-0 shadow-lg">
+          <TabsContent value="map" className="mt-4 flex flex-1 flex-col overflow-hidden">
+            <Card className="flex flex-1 flex-col border-0 shadow-lg">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <Navigation className="h-5 w-5 text-emerald-600" />
@@ -480,7 +485,7 @@ export default function DistancesCreate({ places }: DistancesCreateProps) {
                 </CardTitle>
                 <CardDescription>Plot the path to automatically calculate distance and travel time.</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="flex flex-1 flex-col space-y-4 overflow-y-auto p-6">
                 <InteractiveMap
                   places={places}
                   selectedFromPlace={selectedFromPlace}
@@ -499,13 +504,13 @@ export default function DistancesCreate({ places }: DistancesCreateProps) {
             </Card>
           </TabsContent>
 
-          <TabsContent value="preview" className="space-y-6">
-            <Card className="border-0 shadow-lg">
+          <TabsContent value="preview" className="mt-4 flex flex-1 flex-col overflow-hidden">
+            <Card className="flex flex-1 flex-col border-0 shadow-lg">
               <CardHeader>
                 <CardTitle>Route Preview</CardTitle>
                 <CardDescription>Check the summary before saving.</CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="flex flex-1 flex-col overflow-y-auto p-6">
                 <div className="space-y-4">
                   {routePoints.length > 0 ? (
                     <div className="space-y-4">
