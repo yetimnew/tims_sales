@@ -10,6 +10,8 @@ class FuelConsumptionAnalysis extends Model
 {
     use HasFactory;
 
+    protected $table = 'fuel_consumption_analysis';
+
     protected $fillable = [
         'truck_id',
         'analysis_date',
@@ -94,9 +96,7 @@ class FuelConsumptionAnalysis extends Model
         if ($this->fuel_efficiency_km_per_liter > 0) {
             return ($this->fuel_efficiency_km_per_liter / $targetEfficiency) * 100;
         }
+
         return 0;
     }
 }
-
-
-

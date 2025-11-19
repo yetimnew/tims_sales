@@ -18,14 +18,12 @@ interface VehicleType {
 
 interface ActivityLog {
     id: number;
-    action: 'created' | 'updated' | 'deleted';
     description: string;
-    user?: {
-        name: string;
+    causer?: {
+        name?: string;
     };
     created_at: string;
-    old_values?: Record<string, any>;
-    new_values?: Record<string, any>;
+    properties?: Record<string, any>;
 }
 
 interface DriverTruck {
@@ -34,8 +32,8 @@ interface DriverTruck {
     driverid: string;
     date_recived: string;
     date_detach?: string;
-    is_attached: number;
-    status: number;
+    is_attached: boolean;
+    status: string;
     driver: {
         id: number;
         name: string;
@@ -67,6 +65,27 @@ interface Truck {
 interface TrucksShowProps {
     truck: Truck;
     activityLogs?: ActivityLog[];
+    counts?: {
+        drivers: number;
+        performances: number;
+        driverAssignments: number;
+        maintenance: number;
+    };
+    performanceSummary?: {
+        total_records: number;
+        total_distance_km: number;
+        total_fuel_liters: number;
+        fuel_cost_birr: number;
+        avg_distance_per_record: number;
+        avg_fuel_efficiency_km_per_liter: number | null;
+    };
+    maintenanceSummary?: {
+        total_records: number;
+        completed: number;
+        scheduled: number;
+        overdue: number;
+        total_cost: number;
+    };
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -76,7 +95,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function TrucksShow({ truck, activityLogs = [] }: TrucksShowProps) {
+export default function TrucksShow({ truck, activityLogs = [], counts, performanceSummary, maintenanceSummary }: TrucksShowProps) {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
 
@@ -128,7 +147,7 @@ export default function TrucksShow({ truck, activityLogs = [] }: TrucksShowProps
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`View Truck - ${truck.plate}`} />
-            <div className="flex h-full flex-1 flex-col gap-6 overflow-hidden rounded-xl p-4">
+            <div className="flex flex-1 min-h-0 flex-col gap-6 rounded-xl p-4">
                 {/* Enhanced Professional Header */}
                 <div className="bg-gradient-to-r from-slate-50 to-blue-50 dark:from-slate-900 dark:to-blue-950/20 rounded-lg p-6 border border-slate-200 dark:border-slate-700">
                     <div className="flex items-center justify-between">
@@ -197,7 +216,7 @@ export default function TrucksShow({ truck, activityLogs = [] }: TrucksShowProps
                         </TabsTrigger>
                     </TabsList>
 
-                    <TabsContent value="overview" className="space-y-6 overflow-y-auto">
+                    <TabsContent value="overview" className="space-y-6 h-full overflow-y-auto">
                         <div className="flex flex-col lg:flex-row gap-6">
                             {/* Main Details */}
                             <div className="flex-1 space-y-6">
@@ -344,41 +363,65 @@ export default function TrucksShow({ truck, activityLogs = [] }: TrucksShowProps
                                     </CardHeader>
                                     <CardContent>
                                         <div className="grid grid-cols-2 gap-3">
-                                            <Button variant="outline" className="h-auto p-3 flex flex-col items-center gap-2 hover:bg-blue-50 hover:border-blue-300 border-slate-300 dark:border-slate-600">
-                                                <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                                                    <Wrench className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                                                </div>
-                                                <div className="text-center">
-                                                    <p className="text-xs font-medium">Schedule Maintenance</p>
-                                                    <p className="text-xs text-muted-foreground">Add service record</p>
-                                                </div>
+                                            <Button
+                                                variant="outline"
+                                                asChild
+                                                className="h-auto p-3 flex flex-col items-center gap-2 hover:bg-blue-50 hover:border-blue-300 border-slate-300 dark:border-slate-600 dark:hover:bg-blue-950/20"
+                                            >
+                                                <Link href={`/maintenance/create?truck_id=${truck.id}`}>
+                                                    <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                                                        <Wrench className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                                    </div>
+                                                    <div className="text-center">
+                                                        <p className="text-xs font-medium">Schedule Maintenance</p>
+                                                        <p className="text-xs text-muted-foreground">Add service record</p>
+                                                    </div>
+                                                </Link>
                                             </Button>
-                                            <Button variant="outline" className="h-auto p-3 flex flex-col items-center gap-2 hover:bg-green-50 hover:border-green-300 border-slate-300 dark:border-slate-600">
-                                                <div className="p-1.5 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                                                    <BarChart3 className="h-4 w-4 text-green-600 dark:text-green-400" />
-                                                </div>
-                                                <div className="text-center">
-                                                    <p className="text-xs font-medium">View Performance</p>
-                                                    <p className="text-xs text-muted-foreground">Analytics & reports</p>
-                                                </div>
+                                            <Button
+                                                variant="outline"
+                                                asChild
+                                                className="h-auto p-3 flex flex-col items-center gap-2 hover:bg-green-50 hover:border-green-300 border-slate-300 dark:border-slate-600 dark:hover:bg-green-950/20"
+                                            >
+                                                <Link href={`/performances?truck_id=${truck.id}`}>
+                                                    <div className="p-1.5 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                                                        <BarChart3 className="h-4 w-4 text-green-600 dark:text-green-400" />
+                                                    </div>
+                                                    <div className="text-center">
+                                                        <p className="text-xs font-medium">View Performance</p>
+                                                        <p className="text-xs text-muted-foreground">Analytics & reports</p>
+                                                    </div>
+                                                </Link>
                                             </Button>
-                                            <Button variant="outline" className="h-auto p-3 flex flex-col items-center gap-2 hover:bg-orange-50 hover:border-orange-300 border-slate-300 dark:border-slate-600">
-                                                <div className="p-1.5 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-                                                    <FileText className="h-4 w-4 text-orange-600 dark:text-orange-400" />
-                                                </div>
-                                                <div className="text-center">
-                                                    <p className="text-xs font-medium">Generate Report</p>
-                                                    <p className="text-xs text-muted-foreground">Export data</p>
-                                                </div>
+                                            <Button
+                                                variant="outline"
+                                                asChild
+                                                className="h-auto p-3 flex flex-col items-center gap-2 hover:bg-orange-50 hover:border-orange-300 border-slate-300 dark:border-slate-600 dark:hover:bg-orange-950/20"
+                                            >
+                                                <Link href={`/reports/trucks?truck_id=${truck.id}`}>
+                                                    <div className="p-1.5 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+                                                        <FileText className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                                                    </div>
+                                                    <div className="text-center">
+                                                        <p className="text-xs font-medium">Generate Report</p>
+                                                        <p className="text-xs text-muted-foreground">Open truck reports</p>
+                                                    </div>
+                                                </Link>
                                             </Button>
-                                            <Button variant="outline" className="h-auto p-3 flex flex-col items-center gap-2 hover:bg-purple-50 hover:border-purple-300 border-slate-300 dark:border-slate-600">
-                                                <div className="p-1.5 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                                                    <Settings className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                                                </div>
-                                                <div className="text-center">
-                                                    <p className="text-xs font-medium">Truck Settings</p>
-                                                    <p className="text-xs text-muted-foreground">Configure options</p>
-                                                </div>
+                                            <Button
+                                                variant="outline"
+                                                asChild
+                                                className="h-auto p-3 flex flex-col items-center gap-2 hover:bg-purple-50 hover:border-purple-300 border-slate-300 dark:border-slate-600 dark:hover:bg-purple-950/20"
+                                            >
+                                                <Link href={`/trucks/${truck.id}/edit`}>
+                                                    <div className="p-1.5 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                                                        <Settings className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                                                    </div>
+                                                    <div className="text-center">
+                                                        <p className="text-xs font-medium">Truck Settings</p>
+                                                        <p className="text-xs text-muted-foreground">Configure options</p>
+                                                    </div>
+                                                </Link>
                                             </Button>
                                         </div>
                                     </CardContent>
@@ -411,6 +454,38 @@ export default function TrucksShow({ truck, activityLogs = [] }: TrucksShowProps
                                         </div>
                                     </CardContent>
                                 </Card>
+
+                                {counts && (
+                                    <Card className="shadow-lg border-0 bg-gradient-to-br from-background to-muted/20">
+                                        <CardHeader className="bg-gradient-to-r from-indigo-50 to-violet-50 dark:from-indigo-950/20 dark:to-violet-950/20 border-b">
+                                            <CardTitle className="flex items-center gap-2 text-lg">
+                                                <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
+                                                    <Hash className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                                                </div>
+                                                Related Counts
+                                            </CardTitle>
+                                            <CardDescription>Summary of related records</CardDescription>
+                                        </CardHeader>
+                                        <CardContent className="p-4 space-y-3 text-sm">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-muted-foreground">Drivers</span>
+                                                <span className="font-semibold">{counts.drivers}</span>
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-muted-foreground">Performances</span>
+                                                <span className="font-semibold">{counts.performances}</span>
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-muted-foreground">Driver Assignments</span>
+                                                <span className="font-semibold">{counts.driverAssignments}</span>
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-muted-foreground">Maintenance</span>
+                                                <span className="font-semibold">{counts.maintenance}</span>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                )}
 
                                 {/* Driver Assignments */}
                                 {truck.driverTrucks && truck.driverTrucks.length > 0 && (
@@ -494,57 +569,206 @@ export default function TrucksShow({ truck, activityLogs = [] }: TrucksShowProps
                         </div>
                     </TabsContent>
 
-                    <TabsContent value="maintenance" className="space-y-6">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <Wrench className="h-5 w-5" />
-                                    Maintenance Records
+                    <TabsContent value="maintenance" className="space-y-6 h-full overflow-y-auto">
+                        <Card className="shadow-lg border-0 bg-gradient-to-br from-background to-muted/10">
+                            <CardHeader className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/20 dark:to-indigo-950/20 border-b">
+                                <CardTitle className="flex items-center gap-2 text-lg">
+                                    <Wrench className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                                    Maintenance Overview
                                 </CardTitle>
-                                <CardDescription>Track maintenance history and upcoming services</CardDescription>
+                                <CardDescription>Track scheduled and completed services</CardDescription>
                             </CardHeader>
-                            <CardContent>
-                                <div className="text-center py-8">
-                                    <Wrench className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                                    <h3 className="text-lg font-semibold mb-2">No maintenance records</h3>
-                                    <p className="text-muted-foreground mb-4">
-                                        Maintenance records will appear here when they are created
-                                    </p>
-                                    <Button>
-                                        <Wrench className="mr-2 h-4 w-4" />
-                                        Schedule Maintenance
-                                    </Button>
-                                </div>
+                            <CardContent className="space-y-6">
+                                {maintenanceSummary && (
+                                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                                        <div className="p-3 rounded-lg bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-800 text-center">
+                                            <p className="text-xs text-muted-foreground">Total</p>
+                                            <p className="text-lg font-semibold">{maintenanceSummary.total_records}</p>
+                                        </div>
+                                        <div className="p-3 rounded-lg bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-center">
+                                            <p className="text-xs text-muted-foreground">Completed</p>
+                                            <p className="text-lg font-semibold">{maintenanceSummary.completed}</p>
+                                        </div>
+                                        <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 text-center">
+                                            <p className="text-xs text-muted-foreground">Scheduled</p>
+                                            <p className="text-lg font-semibold">{maintenanceSummary.scheduled}</p>
+                                        </div>
+                                        <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-center">
+                                            <p className="text-xs text-muted-foreground">Overdue</p>
+                                            <p className="text-lg font-semibold">{maintenanceSummary.overdue}</p>
+                                        </div>
+                                        <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 text-center">
+                                            <p className="text-xs text-muted-foreground">Total Cost</p>
+                                            <p className="text-lg font-semibold">{maintenanceSummary.total_cost.toLocaleString()}</p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {truck.maintenanceRecords && truck.maintenanceRecords.length > 0 ? (
+                                    <div className="space-y-3 max-h-[480px] overflow-y-auto pr-2 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600">
+                                        {truck.maintenanceRecords.slice(0, 10).map((rec: any) => (
+                                            <div key={rec.id} className="p-4 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/40 flex flex-col gap-2">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                        <Badge className="text-xs" variant={rec.status === 'completed' ? 'default' : rec.is_overdue ? 'destructive' : 'secondary'}>
+                                                            {rec.status}
+                                                        </Badge>
+                                                        <span className="text-sm font-medium">{rec.maintenance_type_id ? `Type #${rec.maintenance_type_id}` : 'Maintenance'}</span>
+                                                    </div>
+                                                    <span className="text-xs text-muted-foreground">Odometer: {rec.odometer_reading ?? 'N/A'}</span>
+                                                </div>
+                                                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs text-muted-foreground">
+                                                    <div>
+                                                        <span className="font-medium">Scheduled:</span> {rec.scheduled_date || 'N/A'}
+                                                    </div>
+                                                    <div>
+                                                        <span className="font-medium">Completed:</span> {rec.completed_date || '—'}
+                                                    </div>
+                                                    <div>
+                                                        <span className="font-medium">Cost:</span> {rec.cost ? rec.cost.toLocaleString() : 'N/A'}
+                                                    </div>
+                                                    <div>
+                                                        <span className="font-medium">Provider:</span> {rec.service_provider || 'N/A'}
+                                                    </div>
+                                                </div>
+                                                {rec.description && (
+                                                    <p className="text-xs line-clamp-3">{rec.description}</p>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-8">
+                                        <Wrench className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                                        <h3 className="text-lg font-semibold mb-2">No maintenance records</h3>
+                                        <p className="text-muted-foreground mb-4">Maintenance records will appear here when they are created.</p>
+                                        <Button variant="outline">
+                                            <Wrench className="mr-2 h-4 w-4" />
+                                            Schedule Maintenance
+                                        </Button>
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
                     </TabsContent>
 
-                    <TabsContent value="performance" className="space-y-6">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <BarChart3 className="h-5 w-5" />
-                                    Performance Metrics
-                                </CardTitle>
-                                <CardDescription>View performance data and analytics</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-center py-8">
-                                    <BarChart3 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                                    <h3 className="text-lg font-semibold mb-2">No performance data</h3>
-                                    <p className="text-muted-foreground mb-4">
-                                        Performance metrics will be displayed here when available
-                                    </p>
-                                    <Button variant="outline">
-                                        <BarChart3 className="mr-2 h-4 w-4" />
-                                        View All Performance
-                                    </Button>
-                                </div>
-                            </CardContent>
-                        </Card>
+                    <TabsContent value="performance" className="space-y-6 h-full overflow-y-auto">
+                        <div className="flex flex-col lg:flex-row gap-6">
+                            {/* Metrics Summary */}
+                            <div className="flex-1 space-y-6">
+                                <Card className="shadow-lg border-0 bg-gradient-to-br from-background to-muted/20">
+                                    <CardHeader className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20 border-b">
+                                        <CardTitle className="flex items-center gap-2 text-xl">
+                                            <BarChart3 className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                                            Performance Overview
+                                        </CardTitle>
+                                        <CardDescription className="text-base">Operational performance and fuel efficiency</CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        {performanceSummary ? (
+                                            <div className="grid gap-4 md:grid-cols-3">
+                                                <div className="p-4 rounded-lg bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-800">
+                                                    <p className="text-xs text-muted-foreground">Records</p>
+                                                    <p className="mt-1 text-2xl font-bold">{performanceSummary.total_records}</p>
+                                                </div>
+                                                <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800">
+                                                    <p className="text-xs text-muted-foreground">Distance (KM)</p>
+                                                    <p className="mt-1 text-2xl font-bold">{performanceSummary.total_distance_km.toLocaleString()}</p>
+                                                </div>
+                                                <div className="p-4 rounded-lg bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800">
+                                                    <p className="text-xs text-muted-foreground">Fuel (L)</p>
+                                                    <p className="mt-1 text-2xl font-bold">{performanceSummary.total_fuel_liters.toLocaleString()}</p>
+                                                </div>
+                                                <div className="p-4 rounded-lg bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800">
+                                                    <p className="text-xs text-muted-foreground">Fuel Cost</p>
+                                                    <p className="mt-1 text-2xl font-bold">{performanceSummary.fuel_cost_birr.toLocaleString()}</p>
+                                                </div>
+                                                <div className="p-4 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800">
+                                                    <p className="text-xs text-muted-foreground">Avg Dist/Record</p>
+                                                    <p className="mt-1 text-2xl font-bold">{performanceSummary.avg_distance_per_record.toLocaleString()}</p>
+                                                </div>
+                                                <div className="p-4 rounded-lg bg-teal-50 dark:bg-teal-900/30 border border-teal-200 dark:border-teal-800">
+                                                    <p className="text-xs text-muted-foreground">KM / Liter</p>
+                                                    <p className="mt-1 text-2xl font-bold">{performanceSummary.avg_fuel_efficiency_km_per_liter ?? 'N/A'}</p>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="text-center py-8">
+                                                <BarChart3 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                                                <h3 className="text-lg font-semibold mb-2">No performance data</h3>
+                                                <p className="text-muted-foreground mb-4">Performance metrics will be displayed here when available.</p>
+                                            </div>
+                                        )}
+                                    </CardContent>
+                                </Card>
+
+                                {/* Recent Performance Records */}
+                                <Card className="shadow-lg border-0 bg-gradient-to-br from-background to-muted/20">
+                                    <CardHeader className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20 border-b">
+                                        <CardTitle className="flex items-center gap-2 text-lg">
+                                            <Activity className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                                            Recent Performance Records
+                                        </CardTitle>
+                                        <CardDescription>Latest operational entries</CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        {truck.performances && truck.performances.length > 0 ? (
+                                            <div className="space-y-3">
+                                                {truck.performances.slice(0, 10).map((perf: any) => (
+                                                    <div key={perf.id} className="p-4 rounded-lg border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/20 flex flex-col gap-2">
+                                                        <div className="flex items-center justify-between">
+                                                            <span className="text-sm font-medium">Performance #{perf.id}</span>
+                                                            <Badge variant="secondary" className="text-xs">{perf.load_phase || 'N/A'}</Badge>
+                                                        </div>
+                                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs text-muted-foreground">
+                                                            <div><span className="font-medium">Distance WCargo:</span> {perf.DistanceWCargo ?? '0'}</div>
+                                                            <div><span className="font-medium">Distance WOCargo:</span> {perf.DistanceWOCargo ?? '0'}</div>
+                                                            <div><span className="font-medium">Fuel (L):</span> {perf.fuelInLitter ?? '0'}</div>
+                                                            <div><span className="font-medium">Fuel (Birr):</span> {perf.fuelInBirr ?? '0'}</div>
+                                                        </div>
+                                                        {perf.comment && <p className="text-xs line-clamp-3">{perf.comment}</p>}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="text-center py-8">
+                                                <BarChart3 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                                                <h3 className="text-lg font-semibold mb-2">No performance records</h3>
+                                                <p className="text-muted-foreground mb-4">Records will appear here once they are created.</p>
+                                            </div>
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            </div>
+
+                            {/* Sidebar mimic for consistency (optional quick stats) */}
+                            <div className="w-full lg:w-80 space-y-4">
+                                <Card className="shadow-lg border-0 bg-gradient-to-br from-background to-muted/20">
+                                    <CardHeader className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20 border-b">
+                                        <CardTitle className="flex items-center gap-2 text-lg">
+                                            <BarChart3 className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                                            Quick Metrics
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="p-4 space-y-3 text-sm">
+                                        {performanceSummary ? (
+                                            <>
+                                                <div className="flex items-center justify-between"><span className="text-muted-foreground">Distance (KM)</span><span className="font-semibold">{performanceSummary.total_distance_km.toLocaleString()}</span></div>
+                                                <div className="flex items-center justify-between"><span className="text-muted-foreground">Fuel (L)</span><span className="font-semibold">{performanceSummary.total_fuel_liters.toLocaleString()}</span></div>
+                                                <div className="flex items-center justify-between"><span className="text-muted-foreground">Fuel Cost</span><span className="font-semibold">{performanceSummary.fuel_cost_birr.toLocaleString()}</span></div>
+                                                <div className="flex items-center justify-between"><span className="text-muted-foreground">Avg Dist/Record</span><span className="font-semibold">{performanceSummary.avg_distance_per_record.toLocaleString()}</span></div>
+                                                <div className="flex items-center justify-between"><span className="text-muted-foreground">KM / Liter</span><span className="font-semibold">{performanceSummary.avg_fuel_efficiency_km_per_liter ?? 'N/A'}</span></div>
+                                            </>
+                                        ) : (
+                                            <p className="text-muted-foreground">No metrics available.</p>
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        </div>
                     </TabsContent>
 
-                    <TabsContent value="history" className="space-y-6">
+                    <TabsContent value="history" className="space-y-6 h-full overflow-y-auto">
                         <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">

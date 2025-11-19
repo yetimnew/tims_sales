@@ -26,6 +26,7 @@ return new class extends Migration
             $table->string('status')->default('planned'); // planned, in_progress, completed, cancelled
             $table->text('notes')->nullable();
             $table->foreignId('user_id')->constrained('users');
+            $table->softDeletes();
             $table->timestamps();
         });
     }
@@ -38,6 +39,3 @@ return new class extends Migration
         Schema::dropIfExists('route_plans');
     }
 };
-
-
-

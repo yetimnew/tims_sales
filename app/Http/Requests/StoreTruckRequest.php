@@ -35,7 +35,7 @@ class StoreTruckRequest extends FormRequest
             'purchasePrice' => 'nullable|numeric|min:0|max:999999999.99',
             'productionDate' => 'nullable|date|before_or_equal:today',
             'serviceStartDate' => 'nullable|date|after_or_equal:productionDate',
-            'status' => 'required|string|in:active,inactive',
+            'status' => 'required|string|in:active,inactive,maintenance',
         ];
     }
 

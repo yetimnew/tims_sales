@@ -1,1152 +1,199 @@
-# Features Documentation - TIMS
+# Operations & Performance Guide - TIMS
 
-This document provides comprehensive documentation for all features in the Transport Information Management System (TIMS).
+This document focuses exclusively on the Operations, Performance, and Outsource Performance capabilities inside the Transport Information Management System (TIMS). Use it as the single reference for domain language, user flows, metrics, validation rules, and supporting assets.
 
-## 📋 Features Overview
+## 1. Module Overview
 
-### Core Features
-- **Fleet Management**: Complete truck and driver lifecycle management
-- **Performance Tracking**: Trip performance monitoring and analytics
-- **Financial Management**: Revenue tracking and cost analysis
-- **Maintenance Management**: Vehicle maintenance system
-- **User Management**: Role-based access control with permissions
-- **Reporting System**: Comprehensive analytics and reporting
-- **Geographic Management**: Regional hierarchy and distance tracking
+- **Operations** define contractual work orders: who (customer/vendor), what (cargo type and volume), where (destination scope), and the commercial envelope (tariff, kilometres, service type).
+- **Performances** capture internal fleet execution against an operation, tying a driver-truck assignment to a dispatch and tracking tonnage, distance, costs, and trip status.
+- **Outsource Performances** record similar dispatches executed by third-party vendors, adding vendor benchmarking, spend control, and comparative analytics.
+- The three modules share lifecycle stages (plan → dispatch → settle) and common KPIs (ton-km, load factor, cost per ton-km) so analysts can evaluate in-house and outsourced delivery on the same footing.
 
-### Advanced Features
-- **Activity Logging**: Comprehensive audit trails
-- **CSV Export**: Data export functionality
-- **Search & Filtering**: Advanced search capabilities
-- **Sorting & Pagination**: Data organization and navigation
-- **Permission System**: Granular access control
-- **Validation**: Frontend and backend validation
-- **Toast Notifications**: User feedback system
-- **Responsive Design**: Mobile-first approach
-
-## 🚛 Fleet Management
-
-### Truck Management
-
-#### Overview
-The truck management system provides complete lifecycle management for fleet vehicles, including registration, maintenance tracking, performance monitoring, and retirement.
-
-#### Features
-- **Truck Registration**: Add new trucks with complete specifications
-- **Truck Information**: Detailed truck profiles with specifications
-- **Status Management**: Track truck status (active, inactive, maintenance, retired)
-- **Maintenance Tracking**: Link to maintenance records and schedules
-- **Performance Monitoring**: Track trip performance and utilization
-- **Driver Assignments**: Manage driver-truck assignments
-- **Financial Tracking**: Monitor costs and revenue per truck
-
-#### Data Fields
-```typescript
-interface Truck {
-  id: number
-  plate: string                    // License plate (Ethiopian format: AA1234BB)
-  vehicletype_id: number          // Vehicle type reference
-  chasisNumber: string            // Chassis number (unique)
-  engineNumber: string            // Engine number (unique)
-  tyreSyze: string               // Tyre size specification
-  serviceIntervalKM: number       // Service interval in kilometers
-  purchasePrice: number          // Purchase price in ETB
-  productionDate: Date           // Vehicle production date
-  serviceStartDate: Date         // Service start date
-  status: 'active' | 'inactive' | 'maintenance' | 'retired'
-  created_at: Date
-  updated_at: Date
-  deleted_at?: Date              // Soft delete timestamp
-}
+```text
+Operation
+ ├─ Performance (internal fleet)
+ │    └─ driver_truck → driver + truck + places
+ └─ OutsourcePerformance (vendor network)
+      └─ outsource vendor → places
 ```
 
-#### Validation Rules
-```php
-// Backend Validation
-'plate' => 'required|string|max:255|regex:/^[A-Z]{2}[0-9]{4}[A-Z]{2}$/|unique:trucks,plate'
-'chasisNumber' => 'required|string|max:255|unique:trucks,chasisNumber'
-'engineNumber' => 'required|string|max:255|unique:trucks,engineNumber'
-'serviceIntervalKM' => 'required|integer|min:1000|max:100000'
-'purchasePrice' => 'required|numeric|min:0'
-'productionDate' => 'required|date|before:today'
-'serviceStartDate' => 'required|date|after_or_equal:productionDate'
-'status' => 'required|string|in:active,inactive,maintenance,retired'
+## 2. Domain Relationships
+
+- `Operation` has many `Performance` and many `OutsourcePerformance` records (`app/Models/Operation.php`).
+- `Performance` belongs to `Operation`, `DriverTruck`, `Place` (origin/destination), `CargoType`, and `User` (`app/Models/Performance.php`).
+- `OutsourcePerformance` belongs to `Outsource`, `Operation`, `Place` (from/to), and `User` (`app/Models/OutsourcePerformance.php`).
+- Enumerations coordinate configuration:
+  - `App\Enums\CargoServiceType`: `relief`, `commercial`.
+  - `App\Enums\OperationDestinationScope`: `region`, `zone`, `woreda`, `place`.
+- Activity logging is enabled on `Operation` and `Performance` for auditability via the Spatie activity log package.
+
+## 3. Data Model Cheat Sheet
+
+### 3.1 Operation
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `operationid` | string | Unique human-readable reference; surfaced throughout the UI. |
+| `customer_id` | FK | Required active customer. |
+| `cargo_type_id` | FK | Links to `CargoType`; contextualises tonnage. |
+| `cargo_service_type` | enum | `relief` or `commercial`; affects reporting segments. |
+| `volume` | decimal(12,2) | Planned tonnage commitment. |
+| `km` | decimal(12,2) | Planned kilometres for entire contract. |
+| `tariff` | decimal(12,2) | Birr per ton-km revenue assumption. |
+| `status` | string | Typically `active`, `inactive`. |
+| `closed` | boolean | Marks lifecycle completion; hides in open-operation filters. |
+| `destination_scope` | enum | Governs `destination_reference_type`/`_id`. |
+| `startdate` / `enddate` | date | Contract window. |
+
+### 3.2 Performance (Internal Fleet)
+
+| Field | Type | Highlights |
+| --- | --- | --- |
+| `load_phase` | string | `main` or `return`; scopes analytics. |
+| `load_completion` | string | `full`, `partial`; informs utilisation dashboards. |
+| `FOnumber` | string | Force Order number; normalised to uppercase during validation. |
+| `DateDispach` | date | Dispatch date; must be `<= today`. |
+| `orgion_id` / `destination_id` | FK | Distinct places; enforced by validation. |
+| `DistanceWCargo` | decimal(10,2) | Kilometres under load. |
+| `DistanceWOCargo` | decimal(10,2) | Kilometres without load (deadhead). |
+| `CargoVolumMT` | decimal(8,2) | Recorded payload in metric tonnes. |
+| `tonkm` | decimal(12,2) | Optional override, otherwise recomputed in front-end. |
+| `fuelInBirr`, `fuelInLitter`, `perdiem`, `other` | decimal | Capture direct trip costs. |
+| `satus` | string | Typo retained for backwards compatibility; values `active`, `inactive`, `completed`, `cancelled`. |
+| `is_returned` | bool | Flag for closed loop; controls completion counters. |
+| `returned_date` | date | Must be `>= DateDispach`. |
+
+### 3.3 OutsourcePerformance (Vendor Trips)
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `outsource_id` | FK | Required vendor. |
+| `operation_id` | FK | Optional back-reference to contract; enables margin comparison. |
+| `trip_number` | string | Vendor-facing reference; used for navigation. |
+| `dispatch_date` | date | Travel date. |
+| `from_place_id` / `to_place_id` | FK | Route definition. |
+| `distance_km` | decimal(10,2) | Travelled kilometres. |
+| `cargo_volume_mt` | decimal(8,2) | Payload tonnage. |
+| `tonkm` | decimal(12,2) | Productivity metric. |
+| `cost` | decimal(12,2) | Invoice amount. |
+| `status` | string | Common values `completed`, `in_transit`, `cancelled`. |
+| `remarks` | text | Analyst commentary. |
+
+## 4. Lifecycle Workflows
+
+### 4.1 Operation Lifecycle
+
+1. **Create** (`operations.create` → `operations.store`): capture customer, cargo type, destination scope, and contract economics. Validation lives in `App\Http\Requests\Operations\StoreOperationRequest`.
+2. **Track** (`operations.index`): filterable list with delivered volume progress via `withSum('performances', 'CargoVolumMT')`.
+3. **Analyse** (`operations.show`): aggregates internal performances to compute tonnage completion, return rate, ton-km completion, cost per ton-km, and tariff-based revenue vs. margin.
+4. **Close** (`operations.update` or `operations.deactivate`): mark `closed = true` once commitments are met; triggers open vs. closed segmentation.
+
+### 4.2 Internal Trip Capture
+
+1. Dispatcher navigates to `performances.create` and selects an active operation, driver-truck assignment, origin, and destination.
+2. Form request (`App\Http\Requests\StorePerformanceRequest`) enforces temporal sanity (dispatch date not in future, return date after dispatch) and numeric bounds.
+3. Once stored, the show view (`resources/js/Pages/Performances/Show.tsx`) calculates derived metrics client-side: total distance, ton-km, cost per km, load factor, empty backhaul share, and revenue/margin using operation tariff.
+4. Activity log records creation/update for audit. Analysts access historical records through operation insights (recent trips timeline, status breakdown pie chart) embedded in the show page props.
+
+### 4.3 Outsource Trip Capture
+
+1. Vendor controller (`OutsourcePerformanceController@create`) provides dropdowns for vendor, operation, and places, plus status options.
+2. Store action validates numerics and normalises payload before persisting. `preparePayload` handles optional ton-km recomputation.
+3. Index page (`OutsourcePerformances/Index`) surfaces metrics (total cost, distance, cargo, active count) and supports search, vendor filtering, date range filters, sorting, and pagination.
+4. Show page (`resources/js/Pages/OutsourcePerformances/Show.tsx`) highlights trip snapshot (distance, cargo, ton-km, cost), vendor benchmarks (totals and averages across history), and recent dispatch timeline. A dedicated narrative for analysts lives in `docs/features/outsource-performance-show.md`.
+
+## 5. UI Surfaces
+
+### 5.1 Operations
+
+- **Index** (`resources/js/Pages/Operations/Index.tsx`): throttle-protected route, advanced filters, completion badges, and delivered vs. planned tonnage bars.
+- **Show**: merges `operation` payload with `performanceInsights` comprising totals, financial metrics, economics, trends, and tonnage breakdown. Concepts such as return rate, load factor, empty backhaul share, and ton-km completion rate are derived in controller queries.
+- **Create/Edit**: dynamic destination resolution based on `OperationDestinationScope`, cargo type selection, and tariff entry.
+
+### 5.2 Performances
+
+- **Index**: emphasises FO numbers, driver-truck pairings, and status chips; includes CSV export with `performances.export` permission.
+- **Show** (`Performances/Show.tsx`): rich analytics cards covering trip economics (ton-km, cost per ton-km, gross margin, yield per ton/km), operational KPIs (load factor, empty share, distance mix), and contribution to the parent operation (tonnage share, planned contribution). Activity feed uses `ActivityLogTable`.
+- **Forms**: built with Inertia forms plus backend validation; load completion and phase choices ensure canonical values.
+
+### 5.3 Outsource Performances
+
+- **Index**: quick metrics banner, vendor filter drop-down, dispatch date range, per-page selection (10/15/25/50). Sorting defaults to most recent dispatch.
+- **Show**: dual-section layout—trip snapshot cards and vendor benchmark cards. Status badge styling adapts to known states (`completed`, `in_transit`, `cancelled`). Supports edit/delete actions gated by `outsource-performances.edit` and `.destroy` permissions.
+
+## 6. KPI and Formula Reference
+
+| Metric | Formula | Module |
+| --- | --- | --- |
+| Ton-Kilometre | `distance_km × cargo_mass_MT` | All trip records |
+| Load Factor | `(DistanceWCargo ÷ (DistanceWCargo + DistanceWOCargo)) × 100` | Performance Show |
+| Empty Backhaul Share | `(DistanceWOCargo ÷ total_distance) × 100` | Operation & Performance insights |
+| Cost per Ton-Km | `total_cost ÷ ton_km` | Performance & Operation financials |
+| Average Ton per Trip | `total_tonnage ÷ total_trips` | Operation Show |
+| Tariff Revenue | `ton_km × tariff` | Operation Show & Performance Show |
+| Gross Margin | `revenue − total_cost` | Operation Show & Performance Show |
+| Vendor Average Ton-Km | `Σ vendor tonkm ÷ vendorTripCount` | Outsource Show |
+| Vendor Average Cost | `Σ vendor cost ÷ vendorTripCount` | Outsource Show |
+
+### Interpretation Tips
+
+- Negative gross margin or cost per ton-km variance above benchmark flags cost drift; review input costs and FO tariff adherence.
+- Low load factor or high empty backhaul share signals routing inefficiency; coordinate with logistics planning.
+- Compare outsource average cost against internal cost per ton-km to inform make-vs-buy decisions.
+
+## 7. Validation and Data Integrity
+
+- **Operations** (`StoreOperationRequest` / `UpdateOperationRequest`): ensures destination exists for chosen scope, tariff/km/volume are non-negative, and cargo service type matches enum values.
+- **Performances** (`StorePerformanceRequest`, `UpdatePerformanceRequest`): enforces origin ≠ destination, dispatch date not in future, numeric bounds for distances and costs, and status membership. `prepareForValidation` uppercases FO numbers and trims comments.
+- **Outsource Performances** (inline validation in controller): verifies vendor, operation, and places exist; all numerics are optional but must be non-negative when provided.
+- Routine data integrity checks:
+  - Use activity logs to trace changes when investigating anomalies.
+  - Reconcile ton-km totals with planned operation volume via operation show page completion rates.
+  - Encourage analysts to append context in `remarks`/`comment` fields for later audits.
+
+## 8. Permissions and Routes
+
+| Area | Route Name | HTTP | Permission |
+| --- | --- | --- | --- |
+| Operations list | `operations.index` | GET | `operations.view` |
+| Operations create | `operations.create`/`store` | GET/POST | `operations.create`, `operations.store` |
+| Operations detail | `operations.show` | GET | `operations.show` |
+| Operations edit | `operations.edit`/`update` | GET/PUT | `operations.edit`, `operations.update` |
+| Operations export | `operations.export` | GET | `operations.export` |
+| Performances list | `performances.index` | GET | `performances.view` |
+| Performance store | `performances.store` | POST | `performances.store` (rate-limited `throttle:15,1`) |
+| Performance detail | `performances.show` | GET | `performances.show` |
+| Performance export | `performances.export` | GET | `performances.export` |
+| Outsource performances | Resource routes | REST | Default resource middleware (consider policy if tightening access) |
+
+Use Wayfinder-generated clients (`@/actions/...`) where available to keep front-end routing type-safe. Regenerate with `php artisan wayfinder:generate` after changing routes.
+
+## 9. Testing and QA
+
+- **Outsource show coverage**: `tests/Feature/OutsourcePerformance/ShowOutsourcePerformanceTest.php` verifies vendor metrics, recent trips, and payload fields.
+- **Model scaffolding**: `tests/Unit/TimsModelTest.php` covers `Operation` relationships and attribute casting.
+- **Performance module smoke**: `tests/Feature/Performance/PerformanceTest.php` emphasises response times for key fleet endpoints; extend when adding heavy analytics.
+- Targeted regression commands:
+
+```bash
+php artisan test --filter=OutsourcePerformance
+php artisan test --filter=Operation
 ```
 
-```typescript
-// Frontend Validation
-export function validateTruck(data: TruckFormData): ValidationErrors {
-  const errors: ValidationErrors = {}
-  
-  if (!data.plate) {
-    errors.plate = 'Plate number is required'
-  } else if (!/^[A-Z]{2}[0-9]{4}[A-Z]{2}$/.test(data.plate)) {
-    errors.plate = 'Invalid Ethiopian plate format (e.g., AA1234BB)'
-  }
-  
-  if (!data.chasisNumber) {
-    errors.chasisNumber = 'Chassis number is required'
-  } else if (data.chasisNumber.length < 10) {
-    errors.chasisNumber = 'Chassis number must be at least 10 characters'
-  }
-  
-  if (!data.engineNumber) {
-    errors.engineNumber = 'Engine number is required'
-  } else if (data.engineNumber.length < 10) {
-    errors.engineNumber = 'Engine number must be at least 10 characters'
-  }
-  
-  if (!data.serviceIntervalKM || data.serviceIntervalKM < 1000) {
-    errors.serviceIntervalKM = 'Service interval must be at least 1,000 KM'
-  } else if (data.serviceIntervalKM > 100000) {
-    errors.serviceIntervalKM = 'Service interval cannot exceed 100,000 KM'
-  }
-  
-  if (!data.purchasePrice || data.purchasePrice <= 0) {
-    errors.purchasePrice = 'Purchase price must be positive'
-  }
-  
-  if (!data.productionDate) {
-    errors.productionDate = 'Production date is required'
-  } else if (new Date(data.productionDate) >= new Date()) {
-    errors.productionDate = 'Production date must be in the past'
-  }
-  
-  if (!data.serviceStartDate) {
-    errors.serviceStartDate = 'Service start date is required'
-  } else if (new Date(data.serviceStartDate) < new Date(data.productionDate)) {
-    errors.serviceStartDate = 'Service start date must be on or after production date'
-  }
-  
-  return errors
-}
-```
+- Add scenario tests when introducing new KPIs (e.g., cost variance alerts) to ensure controller aggregates remain stable.
 
-#### Permissions
-- `trucks.view` - View trucks list
-- `trucks.show` - View truck details
-- `trucks.create` - Create new trucks
-- `trucks.store` - Store new trucks
-- `trucks.edit` - Edit existing trucks
-- `trucks.update` - Update existing trucks
-- `trucks.destroy` - Delete trucks
-- `trucks.export` - Export trucks to CSV
+## 10. Extensibility Roadmap
 
-#### API Endpoints
-```http
-GET    /trucks              # List trucks with search and pagination
-GET    /trucks/create       # Show create form
-POST   /trucks              # Store new truck
-GET    /trucks/{id}         # Show truck details
-GET    /trucks/{id}/edit    # Show edit form
-PUT    /trucks/{id}         # Update truck
-DELETE /trucks/{id}         # Delete truck
-GET    /trucks/export       # Export trucks to CSV
-```
+- **Margin Bridge**: Surface operation-level gross margin percentages next to outsource averages to expose profitability gaps.
+- **Automated Alerts**: Queue notifications when cost-per-ton-km exceeds tariff-derived thresholds or when load factor drops below tolerance.
+- **Vendor Scorecards**: Persist rolling averages (e.g., last 10 trips) for outsource partners to inform contract renewals.
+- **Data Quality Dashboards**: Track missing ton-km values, zero-tonnage trips, or duplicate FO numbers, feeding back into dispatcher coaching.
 
-### Driver Management
+## 11. Supporting References
 
-#### Overview
-The driver management system handles driver profiles, assignments, performance tracking, and safety records.
+- Outsource show interpretation deep dive: `docs/features/outsource-performance-show.md`.
+- Front-end sources: `resources/js/Pages/Operations`, `resources/js/Pages/Performances`, `resources/js/Pages/OutsourcePerformances`.
+- Backend controllers: `app/Http/Controllers/OperationController.php`, `PerformanceController.php`, `OutsourcePerformanceController.php`.
 
-#### Features
-- **Driver Registration**: Add new drivers with complete profiles
-- **Driver Information**: Detailed driver profiles and contact information
-- **Status Management**: Track driver status (active, inactive, suspended)
-- **Assignment Tracking**: Manage driver-truck assignments
-- **Performance Monitoring**: Track driver performance metrics
-- **Safety Records**: Monitor safety incidents and violations
-- **Performance Records**: Detailed performance analytics
-
-#### Data Fields
-```typescript
-interface Driver {
-  id: number
-  driverid: string              // Driver ID (unique)
-  name: string                 // Driver full name
-  sex: 'male' | 'female'       // Driver gender
-  birthdate: Date              // Driver birth date
-  zone: string                 // Driver zone
-  woreda: string               // Driver woreda
-  kebele: string               // Driver kebele
-  housenumber: string          // House number
-  mobile: string               // Mobile phone number
-  hireddate: Date              // Hire date
-  status: 'active' | 'inactive' | 'suspended'
-  created_at: Date
-  updated_at: Date
-  deleted_at?: Date            // Soft delete timestamp
-}
-```
-
-#### Validation Rules
-```php
-// Backend Validation
-'driverid' => 'required|string|max:255|unique:drivers,driverid'
-'name' => 'required|string|max:255'
-'sex' => 'required|string|in:male,female'
-'birthdate' => 'required|date|before:today'
-'zone' => 'required|string|max:255'
-'woreda' => 'required|string|max:255'
-'kebele' => 'required|string|max:255'
-'housenumber' => 'required|string|max:255'
-'mobile' => 'required|string|max:255'
-'hireddate' => 'required|date|before:today'
-'status' => 'required|string|in:active,inactive,suspended'
-```
-
-#### Permissions
-- `drivers.view` - View drivers list
-- `drivers.show` - View driver details
-- `drivers.create` - Create new drivers
-- `drivers.store` - Store new drivers
-- `drivers.edit` - Edit existing drivers
-- `drivers.update` - Update existing drivers
-- `drivers.destroy` - Delete drivers
-- `drivers.export` - Export drivers to CSV
-
-### Vehicle Type Management
-
-#### Overview
-The vehicle type management system categorizes different types of vehicles in the fleet.
-
-#### Features
-- **Type Registration**: Add new vehicle types
-- **Type Information**: Detailed type specifications
-- **Categorization**: Organize vehicles by type
-- **Specifications**: Define type-specific requirements
-
-#### Data Fields
-```typescript
-interface VehicleType {
-  id: number
-  name: string                 // Vehicle type name
-  description: string          // Vehicle type description
-  created_at: Date
-  updated_at: Date
-  deleted_at?: Date           // Soft delete timestamp
-}
-```
-
-## 📊 Performance Tracking
-
-### Trip Performance
-
-#### Overview
-The trip performance system tracks detailed information about each trip, including cargo, distance, fuel consumption, and costs.
-
-#### Features
-- **Trip Recording**: Record detailed trip information
-- **Cargo Tracking**: Monitor cargo volume and type
-- **Distance Monitoring**: Track distance with and without cargo
-- **Fuel Consumption**: Monitor fuel usage and costs
-- **Cost Tracking**: Track all trip-related costs
-- **Performance Analytics**: Analyze trip performance metrics
-- **Status Tracking**: Monitor trip status (completed, ongoing, cancelled)
-
-#### Data Fields
-```typescript
-interface Performance {
-  id: number
-  trip: number                 // Trip number
-  LoadType: 'Full Load' | 'Half Load' | 'Empty'
-  FOnumber: string            // FO number
-  operation_id: number        // Operation reference
-  driver_truck_id: number     // Driver-truck assignment reference
-  DateDispach: Date          // Dispatch date
-  orgion_id: number           // Origin place reference
-  destination_id: number      // Destination place reference
-  user_id: number             // User reference
-  DistanceWCargo: number      // Distance with cargo
-  tonkm: number              // Ton-kilometer
-  DistanceWOCargo: number     // Distance without cargo
-  CargoVolumMT: number        // Cargo volume in metric tons
-  fuelInLitter: number        // Fuel consumption in liters
-  fuelInBirr: number          // Fuel cost in birr
-  perdiem: number             // Per diem amount
-  workOnGoing: boolean        // Work ongoing flag
-  other: number               // Other costs
-  comment: string             // Trip comments
-  satus: 'completed' | 'ongoing' | 'cancelled'
-  is_returned: boolean        // Return trip flag
-  created_at: Date
-  updated_at: Date
-  deleted_at?: Date           // Soft delete timestamp
-}
-```
-
-#### Validation Rules
-```php
-// Backend Validation
-'trip' => 'required|integer|min:1'
-'LoadType' => 'required|string|in:Full Load,Half Load,Empty'
-'FOnumber' => 'required|string|max:255'
-'operation_id' => 'required|exists:operations,id'
-'driver_truck_id' => 'required|exists:driver_truck,id'
-'DateDispach' => 'required|date'
-'orgion_id' => 'required|exists:places,id'
-'destination_id' => 'required|exists:places,id'
-'user_id' => 'required|exists:users,id'
-'DistanceWCargo' => 'required|integer|min:0'
-'tonkm' => 'required|integer|min:0'
-'DistanceWOCargo' => 'required|integer|min:0'
-'CargoVolumMT' => 'required|numeric|min:0'
-'fuelInLitter' => 'required|numeric|min:0'
-'fuelInBirr' => 'required|numeric|min:0'
-'perdiem' => 'required|numeric|min:0'
-'other' => 'required|numeric|min:0'
-'satus' => 'required|string|in:completed,ongoing,cancelled'
-```
-
-### Driver Performance Records
-
-#### Overview
-The driver performance records system tracks comprehensive performance metrics for drivers over time.
-
-#### Features
-- **Performance Scoring**: Calculate performance scores
-- **Safety Tracking**: Monitor safety violations and accidents
-- **Customer Ratings**: Track customer satisfaction ratings
-- **Efficiency Metrics**: Monitor fuel efficiency and performance
-- **Period Tracking**: Track performance over different periods
-- **Analytics**: Analyze performance trends and patterns
-
-#### Data Fields
-```typescript
-interface DriverPerformanceRecord {
-  id: number
-  driver_id: number            // Driver reference
-  truck_id: number             // Truck reference
-  record_date: Date           // Record date
-  total_trips: number         // Total trips
-  total_distance_km: number   // Total distance in kilometers
-  total_cargo_tonnage: number // Total cargo tonnage
-  fuel_efficiency: number     // Fuel efficiency metric
-  safety_violations: number   // Safety violations count
-  accidents: number           // Accidents count
-  customer_rating: number      // Customer rating (1-5)
-  performance_notes: string    // Performance notes
-  period_type: 'daily' | 'weekly' | 'monthly'
-  created_at: Date
-  updated_at: Date
-  deleted_at?: Date           // Soft delete timestamp
-}
-```
-
-### Driver Safety Records
-
-#### Overview
-The driver safety records system tracks safety incidents, violations, and accidents.
-
-#### Features
-- **Incident Tracking**: Record safety incidents
-- **Violation Monitoring**: Track safety violations
-- **Accident Management**: Manage accident records
-- **Severity Assessment**: Assess incident severity
-- **Resolution Tracking**: Track incident resolution
-- **Cost Analysis**: Analyze damage costs
-
-#### Data Fields
-```typescript
-interface DriverSafetyRecord {
-  id: number
-  driver_id: number            // Driver reference
-  reported_by: number          // User who reported
-  incident_date: Date         // Incident date
-  incident_type: 'accident' | 'violation' | 'near_miss' | 'equipment_failure'
-  description: string          // Incident description
-  severity: 'low' | 'medium' | 'high' | 'critical'
-  damage_cost: number          // Damage cost
-  location: string             // Incident location
-  resolution: string           // Resolution details
-  created_at: Date
-  updated_at: Date
-  deleted_at?: Date           // Soft delete timestamp
-}
-```
-
-## 💰 Financial Management
-
-### Financial Records
-
-#### Overview
-The financial records system tracks revenue, costs, and profitability for each truck.
-
-#### Features
-- **Revenue Tracking**: Monitor revenue per truck
-- **Cost Analysis**: Track all costs associated with trucks
-- **Profit Calculation**: Calculate profit margins
-- **Financial Analytics**: Analyze financial performance
-- **Reporting**: Generate financial reports
-- **Trend Analysis**: Track financial trends over time
-
-#### Data Fields
-```typescript
-interface TruckFinancialRecord {
-  id: number
-  truck_id: number             // Truck reference
-  record_date: Date           // Record date
-  revenue: number             // Revenue amount
-  fuel_cost: number           // Fuel cost
-  maintenance_cost: number    // Maintenance cost
-  driver_cost: number         // Driver cost
-  other_costs: number         // Other costs
-  total_costs: number         // Total costs
-  net_profit: number          // Net profit
-  profit_margin: number       // Profit margin percentage
-  period_type: 'daily' | 'weekly' | 'monthly' | 'yearly'
-  notes: string               // Financial notes
-  created_at: Date
-  updated_at: Date
-  deleted_at?: Date           // Soft delete timestamp
-}
-```
-
-### Insurance Records
-
-#### Overview
-The insurance records system manages vehicle insurance policies and expiration tracking.
-
-#### Features
-- **Policy Management**: Track insurance policies
-- **Expiration Alerts**: Monitor policy expiration dates
-- **Coverage Tracking**: Track coverage details
-- **Cost Management**: Monitor insurance costs
-- **Renewal Tracking**: Track policy renewals
-
-#### Data Fields
-```typescript
-interface InsuranceRecord {
-  id: number
-  truck_id: number             // Truck reference
-  policy_number: string        // Policy number
-  insurance_company: string     // Insurance company
-  coverage_type: string        // Coverage type
-  coverage_amount: number      // Coverage amount
-  premium_amount: number       // Premium amount
-  start_date: Date            // Policy start date
-  end_date: Date              // Policy end date
-  renewal_date: Date          // Renewal date
-  status: 'active' | 'expired' | 'cancelled'
-  notes: string               // Insurance notes
-  created_at: Date
-  updated_at: Date
-  deleted_at?: Date           // Soft delete timestamp
-}
-```
-
-## 🔧 Maintenance Management
-
-### Maintenance Types
-
-#### Overview
-The maintenance types system categorizes different types of maintenance activities.
-
-#### Features
-- **Type Registration**: Add new maintenance types
-- **Category Management**: Organize maintenance by category
-- **Interval Tracking**: Define maintenance intervals
-- **Cost Estimation**: Estimate maintenance costs
-
-#### Data Fields
-```typescript
-interface MaintenanceType {
-  id: number
-  name: string                 // Maintenance type name
-  description: string          // Maintenance type description
-  category: string             // Maintenance category
-  interval_km: number         // Interval in kilometers
-  interval_months: number     // Interval in months
-  estimated_cost: number       // Estimated cost
-  created_at: Date
-  updated_at: Date
-  deleted_at?: Date           // Soft delete timestamp
-}
-```
-
-### Vehicle Maintenance Records
-
-#### Overview
-The vehicle maintenance records system tracks all maintenance activities for vehicles.
-
-#### Features
-- **Maintenance Scheduling**: Schedule maintenance activities
-- **Completion Tracking**: Track maintenance completion
-- **Cost Monitoring**: Monitor maintenance costs
-- **Service History**: Maintain service history
-- **Alert System**: Alert for overdue maintenance
-
-#### Data Fields
-```typescript
-interface VehicleMaintenanceRecord {
-  id: number
-  truck_id: number             // Truck reference
-  maintenance_type_id: number  // Maintenance type reference
-  scheduled_date: Date        // Scheduled date
-  completed_date?: Date        // Completed date
-  cost: number                // Maintenance cost
-  description: string         // Maintenance description
-  status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled'
-  notes: string               // Maintenance notes
-  created_at: Date
-  updated_at: Date
-  deleted_at?: Date           // Soft delete timestamp
-}
-```
-
-## 🌍 Geographic Management
-
-### Regional Hierarchy
-
-#### Overview
-The regional hierarchy system manages the geographic structure of regions, zones, woredas, and places.
-
-#### Features
-- **Region Management**: Manage regional divisions
-- **Zone Management**: Manage zone subdivisions
-- **Woreda Management**: Manage woreda divisions
-- **Place Management**: Manage specific locations
-- **Hierarchy Navigation**: Navigate through geographic hierarchy
-- **Distance Tracking**: Track distances between locations
-
-#### Data Structure
-```typescript
-interface Region {
-  id: number
-  name: string                 // Region name
-  code: string                 // Region code
-  description: string          // Region description
-  created_at: Date
-  updated_at: Date
-  deleted_at?: Date           // Soft delete timestamp
-}
-
-interface Zone {
-  id: number
-  name: string                 // Zone name
-  code: string                 // Zone code
-  region_id: number            // Region reference
-  description: string          // Zone description
-  created_at: Date
-  updated_at: Date
-  deleted_at?: Date           // Soft delete timestamp
-}
-
-interface Woreda {
-  id: number
-  name: string                 // Woreda name
-  code: string                 // Woreda code
-  zone_id: number              // Zone reference
-  description: string          // Woreda description
-  created_at: Date
-  updated_at: Date
-  deleted_at?: Date           // Soft delete timestamp
-}
-
-interface Place {
-  id: number
-  name: string                 // Place name
-  code: string                 // Place code
-  woreda_id: number            // Woreda reference
-  latitude: number             // Latitude coordinate
-  longitude: number            // Longitude coordinate
-  description: string          // Place description
-  created_at: Date
-  updated_at: Date
-  deleted_at?: Date           // Soft delete timestamp
-}
-```
-
-### Distance Management
-
-#### Overview
-The distance management system tracks distances between different locations.
-
-#### Features
-- **Distance Recording**: Record distances between places
-- **Route Optimization**: Optimize routes based on distances
-- **Cost Calculation**: Calculate costs based on distances
-- **Travel Time Estimation**: Estimate travel times
-
-#### Data Fields
-```typescript
-interface Distance {
-  id: number
-  from_place_id: number        // Origin place reference
-  to_place_id: number         // Destination place reference
-  distance_km: number         // Distance in kilometers
-  travel_time_hours: number   // Travel time in hours
-  road_condition: string      // Road condition
-  notes: string               // Distance notes
-  created_at: Date
-  updated_at: Date
-  deleted_at?: Date           // Soft delete timestamp
-}
-```
-
-## 👥 User Management
-
-### User Management
-
-#### Overview
-The user management system handles system users, authentication, and basic user information.
-
-#### Features
-- **User Registration**: Register new users
-- **User Profiles**: Manage user profiles
-- **Authentication**: Handle user authentication
-- **Two-Factor Authentication**: Enhanced security
-- **Password Management**: Password reset and updates
-- **Email Verification**: Email verification system
-
-#### Data Fields
-```typescript
-interface User {
-  id: number
-  name: string                 // User full name
-  email: string                // User email (unique)
-  email_verified_at?: Date     // Email verification timestamp
-  password: string             // Encrypted password
-  two_factor_secret?: string   // Two-factor secret
-  two_factor_recovery_codes?: string // Recovery codes
-  two_factor_confirmed_at?: Date // Two-factor confirmation
-  remember_token?: string      // Remember token
-  created_at: Date
-  updated_at: Date
-}
-```
-
-### Role Management
-
-#### Overview
-The role management system handles user roles and their associated permissions.
-
-#### Features
-- **Role Creation**: Create new roles
-- **Permission Assignment**: Assign permissions to roles
-- **Role Hierarchy**: Manage role hierarchy
-- **User Assignment**: Assign roles to users
-
-#### Data Fields
-```typescript
-interface Role {
-  id: number
-  name: string                 // Role name
-  guard_name: string           // Guard name
-  created_at: Date
-  updated_at: Date
-}
-```
-
-### Permission Management
-
-#### Overview
-The permission management system handles granular permissions for different actions.
-
-#### Features
-- **Permission Creation**: Create new permissions
-- **Permission Assignment**: Assign permissions to roles/users
-- **Permission Checking**: Check user permissions
-- **Permission Hierarchy**: Manage permission hierarchy
-
-#### Data Fields
-```typescript
-interface Permission {
-  id: number
-  name: string                 // Permission name
-  guard_name: string           // Guard name
-  created_at: Date
-  updated_at: Date
-}
-```
-
-## 📊 Reporting System
-
-### Dashboard Analytics
-
-#### Overview
-The dashboard analytics system provides key performance indicators and system overview.
-
-#### Features
-- **Key Metrics**: Display key performance indicators
-- **Performance Status**: Show performance status overview
-- **Daily Performance**: Track daily performance metrics
-- **Operations Report**: Generate operations reports
-- **Recent Activity**: Show recent system activity
-- **Trend Analysis**: Analyze performance trends
-
-#### Key Metrics
-```typescript
-interface DashboardMetrics {
-  totalTrucks: number          // Total number of trucks
-  activeTrucks: number         // Number of active trucks
-  totalDrivers: number         // Total number of drivers
-  activeDrivers: number        // Number of active drivers
-  totalOperations: number      // Total number of operations
-  activeOperations: number     // Number of active operations
-  totalPerformances: number    // Total number of performances
-  completedPerformances: number // Number of completed performances
-}
-```
-
-### Performance Reports
-
-#### Overview
-The performance reports system generates detailed performance analytics and reports.
-
-#### Features
-- **Trip Performance**: Analyze trip performance metrics
-- **Driver Performance**: Analyze driver performance
-- **Fleet Utilization**: Analyze fleet utilization
-- **Cost Analysis**: Analyze operational costs
-- **Revenue Analysis**: Analyze revenue trends
-- **Efficiency Metrics**: Calculate efficiency metrics
-
-### Financial Reports
-
-#### Overview
-The financial reports system generates comprehensive financial reports and analytics.
-
-#### Features
-- **Revenue Reports**: Generate revenue reports
-- **Cost Reports**: Generate cost analysis reports
-- **Profit Reports**: Generate profit/loss reports
-- **Budget Reports**: Generate budget comparison reports
-- **Trend Analysis**: Analyze financial trends
-- **Forecasting**: Financial forecasting and projections
-
-## 🔍 Search and Filtering
-
-### Search Functionality
-
-#### Overview
-The search functionality provides advanced search capabilities across all modules.
-
-#### Features
-- **Text Search**: Search across multiple text fields
-- **Field-Specific Search**: Search specific fields
-- **Fuzzy Search**: Approximate matching
-- **Search Suggestions**: Provide search suggestions
-- **Search History**: Track search history
-- **Advanced Filters**: Apply multiple filters
-
-#### Search Implementation
-```php
-// Backend Search Implementation
-public function index(Request $request)
-{
-    $query = Truck::with(['vehicletype'])
-        ->when($request->search, function ($q, $search) {
-            $q->where(function ($query) use ($search) {
-                $query->where('plate', 'like', "%{$search}%")
-                    ->orWhere('chasisNumber', 'like', "%{$search}%")
-                    ->orWhere('engineNumber', 'like', "%{$search}%");
-            });
-        });
-
-    $trucks = $query->paginate(15);
-
-    return Inertia::render('Trucks/Index', [
-        'trucks' => $trucks,
-        'filters' => $request->only(['search'])
-    ]);
-}
-```
-
-### Filtering System
-
-#### Overview
-The filtering system provides advanced filtering capabilities for data organization.
-
-#### Features
-- **Status Filtering**: Filter by status
-- **Date Range Filtering**: Filter by date ranges
-- **Numeric Range Filtering**: Filter by numeric ranges
-- **Multiple Filters**: Apply multiple filters simultaneously
-- **Filter Persistence**: Persist filters across sessions
-- **Filter Reset**: Reset all filters
-
-### Sorting System
-
-#### Overview
-The sorting system provides data organization and navigation capabilities.
-
-#### Features
-- **Column Sorting**: Sort by any column
-- **Multi-Column Sorting**: Sort by multiple columns
-- **Sort Direction**: Ascending and descending sort
-- **Sort Persistence**: Persist sort preferences
-- **Default Sorting**: Set default sort order
-
-#### Sorting Implementation
-```php
-// Backend Sorting Implementation
-public function index(Request $request)
-{
-    $query = Truck::with(['vehicletype'])
-        ->when($request->sort, function ($q, $sort) use ($request) {
-            $allowedSorts = ['plate', 'chasisNumber', 'engineNumber', 'status'];
-            if (in_array($sort, $allowedSorts)) {
-                $q->orderBy($sort, $request->direction ?? 'asc');
-            }
-        }, function ($q) {
-            $q->orderBy('created_at', 'desc');
-        });
-
-    $trucks = $query->paginate(15);
-
-    return Inertia::render('Trucks/Index', [
-        'trucks' => $trucks,
-        'sort' => $request->only(['sort', 'direction'])
-    ]);
-}
-```
-
-## 📤 Export Functionality
-
-### CSV Export
-
-#### Overview
-The CSV export functionality allows users to export data to CSV format for analysis and reporting.
-
-#### Features
-- **Filtered Export**: Export filtered data
-- **Column Selection**: Select specific columns for export
-- **UTF-8 Encoding**: Proper UTF-8 encoding for international characters
-- **Excel Compatibility**: Excel-compatible CSV format
-- **Large Dataset Support**: Handle large datasets efficiently
-- **Export Logging**: Log export activities
-
-#### Export Implementation
-```php
-// Backend Export Implementation
-public function export(Request $request)
-{
-    try {
-        $query = Truck::with(['vehicletype'])
-            ->when($request->search, function ($q, $search) {
-                $q->where(function ($query) use ($search) {
-                    $query->where('plate', 'like', "%{$search}%")
-                        ->orWhere('chasisNumber', 'like', "%{$search}%")
-                        ->orWhere('engineNumber', 'like', "%{$search}%");
-                });
-            });
-
-        $trucks = $query->get();
-
-        $filename = 'trucks_' . now()->format('Y-m-d_H-i-s') . '.csv';
-        
-        $headers = [
-            'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
-        ];
-
-        $callback = function () use ($trucks) {
-            $file = fopen('php://output', 'w');
-            
-            // Add UTF-8 BOM for Excel compatibility
-            fwrite($file, "\xEF\xBB\xBF");
-            
-            // Headers
-            fputcsv($file, [
-                'Plate', 'Vehicle Type', 'Chassis Number', 'Engine Number',
-                'Tyre Size', 'Service Interval (KM)', 'Purchase Price',
-                'Production Date', 'Service Start Date', 'Status', 'Created At'
-            ]);
-
-            // Data
-            foreach ($trucks as $truck) {
-                fputcsv($file, [
-                    $truck->plate,
-                    $truck->vehicletype?->name,
-                    $truck->chasisNumber,
-                    $truck->engineNumber,
-                    $truck->tyreSyze,
-                    $truck->serviceIntervalKM,
-                    $truck->purchasePrice,
-                    $truck->productionDate?->format('Y-m-d'),
-                    $truck->serviceStartDate?->format('Y-m-d'),
-                    $truck->status,
-                    $truck->created_at->format('Y-m-d H:i:s')
-                ]);
-            }
-
-            fclose($file);
-        };
-
-        Activity::log('Exported trucks CSV with ' . $trucks->count() . ' records');
-
-        return response()->stream($callback, 200, $headers);
-    } catch (\Exception $e) {
-        return redirect()->back()
-            ->withErrors(['error' => 'Failed to export trucks. Please try again.']);
-    }
-}
-```
-
-## 🔐 Security Features
-
-### Permission System
-
-#### Overview
-The permission system provides granular access control for all system features.
-
-#### Features
-- **Role-Based Access**: Assign permissions to roles
-- **User Permissions**: Assign permissions directly to users
-- **Permission Checking**: Check permissions before actions
-- **Permission Inheritance**: Inherit permissions from roles
-- **Dynamic Permissions**: Dynamic permission assignment
-- **Permission Auditing**: Audit permission changes
-
-#### Permission Structure
-```php
-// Permission naming convention
-{module}.{action}
-
-// Examples
-trucks.view
-trucks.show
-trucks.create
-trucks.store
-trucks.edit
-trucks.update
-trucks.destroy
-trucks.export
-```
-
-#### Permission Implementation
-```php
-// Middleware Protection
-Route::middleware(['permission:trucks.create'])->group(function () {
-    Route::get('/trucks/create', [TruckController::class, 'create']);
-    Route::post('/trucks', [TruckController::class, 'store']);
-});
-
-// Frontend Permission Checks
-function TruckIndex() {
-  const { can } = usePermissions()
-  
-  return (
-    <div>
-      {can('trucks.create') && (
-        <Button onClick={() => router.visit(route('trucks.create'))}>
-          Add Truck
-        </Button>
-      )}
-    </div>
-  )
-}
-```
-
-### Activity Logging
-
-#### Overview
-The activity logging system provides comprehensive audit trails for all system activities.
-
-#### Features
-- **CRUD Logging**: Log all create, read, update, delete operations
-- **User Tracking**: Track which user performed each action
-- **Change Tracking**: Track what changed in each operation
-- **Export Logging**: Log data exports
-- **Login Logging**: Log user login activities
-- **Permission Logging**: Log permission changes
-
-#### Activity Log Implementation
-```php
-// Activity Logging Implementation
-use Spatie\ActivityLog\Facades\Activity;
-
-// Log creation
-Activity::performedOn($truck)
-    ->causedBy(auth()->user())
-    ->log('created');
-
-// Log update with changes
-Activity::performedOn($truck)
-    ->causedBy(auth()->user())
-    ->withProperties([
-        'old' => $oldData,
-        'new' => $truck->toArray()
-    ])
-    ->log('updated');
-
-// Log deletion
-Activity::performedOn($truck)
-    ->causedBy(auth()->user())
-    ->withProperties(['deleted_data' => $truckData])
-    ->log('deleted');
-```
-
-## 🎨 User Interface Features
-
-### Responsive Design
-
-#### Overview
-The responsive design system ensures optimal user experience across all devices.
-
-#### Features
-- **Mobile-First**: Mobile-first design approach
-- **Breakpoint System**: Consistent breakpoint system
-- **Flexible Layouts**: Flexible and adaptive layouts
-- **Touch-Friendly**: Touch-friendly interface elements
-- **Performance Optimized**: Optimized for mobile performance
-
-#### Breakpoint System
-```css
-/* Tailwind CSS Breakpoints */
-sm: 640px   /* Small devices */
-md: 768px   /* Medium devices */
-lg: 1024px  /* Large devices */
-xl: 1280px  /* Extra large devices */
-2xl: 1536px /* 2X large devices */
-```
-
-### Toast Notifications
-
-#### Overview
-The toast notification system provides user feedback for all system actions.
-
-#### Features
-- **Success Notifications**: Success action feedback
-- **Error Notifications**: Error action feedback
-- **Warning Notifications**: Warning action feedback
-- **Info Notifications**: Information feedback
-- **Auto-Dismiss**: Automatic dismissal
-- **Manual Dismiss**: Manual dismissal option
-
-#### Toast Implementation
-```typescript
-// Toast Hook Implementation
-import { useToast } from '@/hooks/useToast'
-
-function TruckCreate() {
-  const { toast } = useToast()
-  
-  const handleSuccess = () => {
-    toast({
-      title: 'Success',
-      description: 'Truck created successfully',
-      variant: 'default'
-    })
-  }
-
-  const handleError = () => {
-    toast({
-      title: 'Error',
-      description: 'Failed to create truck',
-      variant: 'destructive'
-    })
-  }
-}
-```
-
-### Confirmation Dialogs
-
-#### Overview
-The confirmation dialog system provides user confirmation for destructive actions.
-
-#### Features
-- **Delete Confirmation**: Confirm deletion actions
-- **Custom Messages**: Custom confirmation messages
-- **Action Buttons**: Confirm and cancel buttons
-- **Keyboard Support**: Keyboard navigation support
-- **Accessibility**: Full accessibility support
-
-#### Confirmation Dialog Implementation
-```typescript
-// Confirmation Dialog Component
-import { DeleteConfirmationDialog } from '@/components/DeleteConfirmationDialog'
-
-function TruckIndex() {
-  const [deleteDialog, setDeleteDialog] = useState(false)
-  const [truckToDelete, setTruckToDelete] = useState(null)
-
-  const handleDelete = (truck) => {
-    setTruckToDelete(truck)
-    setDeleteDialog(true)
-  }
-
-  const confirmDelete = () => {
-    if (truckToDelete) {
-      // Perform deletion
-      deleteTruck(truckToDelete.id)
-      setDeleteDialog(false)
-      setTruckToDelete(null)
-    }
-  }
-
-  return (
-    <div>
-      {/* Truck list */}
-      
-      <DeleteConfirmationDialog
-        open={deleteDialog}
-        onOpenChange={setDeleteDialog}
-        onConfirm={confirmDelete}
-        title="Delete Truck"
-        description={`Are you sure you want to delete truck ${truckToDelete?.plate}? This action cannot be undone.`}
-      />
-    </div>
-  )
-}
-```
-
-## 📱 Mobile Features
-
-### Mobile Navigation
-
-#### Overview
-The mobile navigation system provides optimized navigation for mobile devices.
-
-#### Features
-- **Collapsible Menu**: Collapsible navigation menu
-- **Touch Gestures**: Touch gesture support
-- **Swipe Navigation**: Swipe navigation support
-- **Mobile-Optimized**: Mobile-optimized interface
-- **Performance**: Optimized mobile performance
-
-### Mobile Forms
-
-#### Overview
-The mobile forms system provides optimized form experiences for mobile devices.
-
-#### Features
-- **Touch-Friendly**: Touch-friendly form elements
-- **Mobile Validation**: Mobile-optimized validation
-- **Keyboard Support**: Mobile keyboard support
-- **Auto-Complete**: Mobile auto-complete support
-- **Performance**: Optimized mobile form performance
-
-## 🔧 Configuration Features
-
-### System Configuration
-
-#### Overview
-The system configuration system manages application settings and preferences.
-
-#### Features
-- **Environment Configuration**: Environment-specific settings
-- **Feature Flags**: Feature flag management
-- **System Preferences**: System-wide preferences
-- **User Preferences**: User-specific preferences
-- **Configuration Validation**: Configuration validation
-- **Configuration Backup**: Configuration backup and restore
-
-### Localization
-
-#### Overview
-The localization system provides multi-language support for the application.
-
-#### Features
-- **Language Selection**: Language selection interface
-- **Translation Management**: Translation management system
-- **RTL Support**: Right-to-left language support
-- **Date/Time Formatting**: Localized date/time formatting
-- **Number Formatting**: Localized number formatting
-- **Currency Formatting**: Localized currency formatting
-
----
-
-**Last Updated**: October 21, 2025  
-**Version**: 1.0.0  
-**Status**: Production Ready
+**Last Updated**: November 17, 2025  
+**Maintainer**: Operations & Analytics Team

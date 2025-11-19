@@ -1,451 +1,580 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, Page, Locator } from '@playwright/test';
+import { AuthHelper } from './helpers/auth-helper';
+
+type TestUserInput = {
+  name: string;
+  email: string;
+  password: string;
+  passwordConfirmation: string;
+  role: string;
+};
+
+function uniqueSuffix(): string {
+  return `${Date.now()}${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function strongPassword(): string {
+  return `Aa1!${uniqueSuffix()}`;
+}
+
+function roleLabel(role: string): string {
+  return `${role.charAt(0).toUpperCase()}${role.slice(1)}`;
+}
+
+function currentPageOrigin(page: Page): string {
+  try {
+    const url = new URL(page.url());
+    return url.origin === 'null' ? 'http://localhost:8000' : url.origin;
+  } catch {
+    return 'http://localhost:8000';
+  }
+}
+
+function buildTestUser(overrides: Partial<TestUserInput> = {}): TestUserInput {
+  const suffix = uniqueSuffix();
+  const password = overrides.password ?? strongPassword();
+
+  return {
+    name: overrides.name ?? `Test User ${suffix}`,
+    email: overrides.email ?? `testuser-${suffix}@example.com`,
+    password,
+    passwordConfirmation: overrides.passwordConfirmation ?? password,
+    role: overrides.role ?? 'user',
+  };
+}
+
+async function navigateToUsers(page: Page): Promise<void> {
+  await page.goto('/users', { waitUntil: 'domcontentloaded', timeout: 60000 });
+  await expect(page.getByRole('heading', { name: /User Management/i })).toBeVisible({ timeout: 40000 });
+  await page.waitForLoadState('networkidle').catch(() => undefined);
+  await expect(page).toHaveURL(/\/users(\?.*)?$/, { timeout: 30000 });
+}
+
+async function openAddUserForm(page: Page): Promise<void> {
+  await navigateToUsers(page);
+  const addButton = page.getByRole('link', { name: /Add User/i });
+  await expect(addButton).toBeVisible();
+  await Promise.all([
+    page.waitForURL(/\/users\/create$/, { timeout: 30000, waitUntil: 'commit' }),
+    addButton.click(),
+  ]);
+  await expect(page.getByRole('heading', { name: /Create (New )?User/i })).toBeVisible();
+}
+
+async function selectRole(page: Page, role: string): Promise<void> {
+  const trigger = page.locator('[data-slot="select-trigger"]').first();
+  await expect(trigger).toBeVisible();
+  await trigger.click();
+  await page.getByRole('option', { name: new RegExp(`^${roleLabel(role)}$`, 'i') }).click();
+}
+
+async function fillUserForm(page: Page, user: TestUserInput, options: { skipRole?: boolean } = {}): Promise<void> {
+  await page.fill('#name', user.name);
+  await page.fill('#email', user.email);
+  await page.fill('#password', user.password);
+  await page.fill('#password_confirmation', user.passwordConfirmation);
+
+  if (!options.skipRole) {
+    await selectRole(page, user.role);
+  }
+}
+
+async function findUserRow(page: Page, email: string): Promise<Locator | null> {
+  const locateRow = () => page.locator('table tbody tr').filter({ hasText: email }).first();
+  const pageOrigin = currentPageOrigin(page);
+
+  const initialRow = locateRow();
+  if (await initialRow.count()) {
+    await initialRow.scrollIntoViewIfNeeded();
+    return initialRow;
+  }
+
+  const secondPageLink = page.getByRole('link', { name: /^2$/ });
+  if (await secondPageLink.count()) {
+    const isActive = await secondPageLink.getAttribute('aria-current');
+    if (isActive !== 'page') {
+      const href = await secondPageLink.getAttribute('href');
+      const paginationResponse = page.waitForResponse((response) => {
+        if (response.request().method() !== 'GET') {
+          return false;
+        }
+
+        try {
+          const url = new URL(response.url());
+          if (url.pathname !== '/users') {
+            return false;
+          }
+
+          const isSuccessful = response.status() >= 200 && response.status() < 400;
+          if (!isSuccessful) {
+            return false;
+          }
+
+          if (!href) {
+            return true;
+          }
+
+          const targetUrl = new URL(href, pageOrigin);
+          return url.search === targetUrl.search;
+        } catch {
+          return false;
+        }
+      });
+      await secondPageLink.click();
+      await paginationResponse;
+      await page.waitForLoadState('networkidle').catch(() => undefined);
+    }
+
+    const secondRow = locateRow();
+    if (await secondRow.count()) {
+      await secondRow.scrollIntoViewIfNeeded();
+      return secondRow;
+    }
+  }
+
+  return null;
+}
+
+async function locateUserRow(page: Page, email: string): Promise<Locator> {
+  const row = await findUserRow(page, email);
+  expect(row, `Expected to find a table row for ${email}`).not.toBeNull();
+  const resolvedRow = row as Locator;
+  await expect(resolvedRow).toBeVisible();
+  return resolvedRow;
+}
+
+async function deleteUserIfExists(page: Page, email: string): Promise<boolean> {
+  try {
+    const currentUrl = new URL(page.url());
+    if (!currentUrl.pathname.startsWith('/users')) {
+      await navigateToUsers(page);
+    }
+  } catch {
+    await navigateToUsers(page);
+  }
+  const pageOrigin = currentPageOrigin(page);
+  const row = await findUserRow(page, email);
+
+  if (!row) {
+    return false;
+  }
+
+  const deleteButton = row.locator('button').last();
+  await deleteButton.waitFor({ state: 'visible', timeout: 10000 });
+
+  const deleteRequest = page.waitForResponse((response) => {
+    return response.request().method() === 'DELETE'
+      && response.url().includes('/users/')
+      && response.status() >= 200
+      && response.status() < 400;
+  });
+
+  await deleteButton.click();
+
+  const dialog = page.getByRole('dialog', { name: /Delete User/i });
+  await expect(dialog).toBeVisible();
+
+  const confirmButton = dialog.getByRole('button', { name: /^Delete/i });
+  const response = await Promise.all([
+    deleteRequest,
+    confirmButton.click(),
+  ]).then(([resp]) => resp);
+
+  const status = response?.status() ?? 0;
+  const responseUrl = response?.url() ?? 'unknown-url';
+  if (status >= 400) {
+    throw new Error(`Failed to delete user ${email}: ${responseUrl} returned status ${status}`);
+  }
+  console.log(`Deleted user ${email} via ${responseUrl} (status ${status})`);
+
+  await page.waitForLoadState('networkidle').catch(() => undefined);
+  await expect.poll(async () => {
+    return await page.locator('table').innerText();
+  }, { timeout: 30000, intervals: [500] }).not.toContain(email);
+
+  if (await dialog.isVisible()) {
+    const closeButton = dialog.getByRole('button', { name: /^Close$/i }).first();
+    const cancelButton = dialog.getByRole('button', { name: /^Cancel$/i }).first();
+
+    if (await closeButton.count() && await closeButton.isVisible()) {
+      await closeButton.click();
+    } else if (await cancelButton.count() && await cancelButton.isVisible()) {
+      await cancelButton.click();
+    }
+
+    await expect(dialog).toBeHidden({ timeout: 10000 });
+  }
+
+  const secondPageLink = page.getByRole('link', { name: /^2$/ });
+  if (await secondPageLink.count()) {
+    const isActive = await secondPageLink.getAttribute('aria-current');
+    if (isActive === 'page') {
+      const firstPageLink = page.getByRole('link', { name: /^1$/ });
+      if (await firstPageLink.count()) {
+        const href = await firstPageLink.getAttribute('href');
+        const paginationResponse = page.waitForResponse((response) => {
+          if (response.request().method() !== 'GET') {
+            return false;
+          }
+
+          try {
+            const url = new URL(response.url());
+            if (url.pathname !== '/users') {
+              return false;
+            }
+
+            const isSuccessful = response.status() >= 200 && response.status() < 400;
+            if (!isSuccessful) {
+              return false;
+            }
+
+            if (!href) {
+              return true;
+            }
+
+            const targetUrl = new URL(href, pageOrigin);
+            return url.search === targetUrl.search;
+          } catch {
+            return false;
+          }
+        });
+        await firstPageLink.click();
+        await paginationResponse;
+        await page.waitForLoadState('networkidle').catch(() => undefined);
+        await expect(page.locator('table')).not.toContainText(email);
+      }
+    }
+  }
+
+  return true;
+}
+
+async function createUserViaUI(page: Page, overrides: Partial<TestUserInput> = {}): Promise<TestUserInput> {
+  const user = buildTestUser(overrides);
+  await openAddUserForm(page);
+  await fillUserForm(page, user);
+  const redirectRequest = page.waitForResponse((response) => {
+    if (response.request().method() !== 'GET') {
+      return false;
+    }
+
+    try {
+      const url = new URL(response.url());
+      const isUsersPath = url.pathname === '/users';
+      const isSuccessful = response.status() >= 200 && response.status() < 400;
+      return isUsersPath && isSuccessful;
+    } catch {
+      return false;
+    }
+  });
+  await page.click('button[type="submit"]');
+  await redirectRequest;
+  await expect(page).toHaveURL(/\/users(\?.*)?$/, { timeout: 45000 });
+  await page.waitForLoadState('networkidle').catch(() => undefined);
+  await locateUserRow(page, user.email);
+  return user;
+}
+
+async function openEditFormForUser(page: Page, email: string): Promise<void> {
+  const row = await locateUserRow(page, email);
+  const editLink = row.locator('a[href*="/edit"]').first();
+  await expect(editLink).toBeVisible();
+  await editLink.click();
+  await page.waitForURL(/\/users\/\d+\/edit$/, { timeout: 30000 });
+  await page.waitForLoadState('networkidle').catch(() => undefined);
+}
+
+const PWNED_PASSWORD_API = '**/api.pwnedpasswords.com/**';
 
 test.describe('User Management End-to-End Tests', () => {
-  // Test data
   const adminCredentials = {
     email: 'admin@test.com',
-    password: 'password123'
-  };
-
-  const testUser = {
-    name: 'Test User',
-    email: 'testuser@example.com',
-    password: 'Password123!@#',
-    passwordConfirmation: 'Password123!@#',
-    role: 'user'
-  };
-
-  const managerUser = {
-    name: 'Manager User',
-    email: 'manager@example.com',
-    password: 'Password123!@#',
-    passwordConfirmation: 'Password123!@#',
-    role: 'manager'
+    password: 'password123',
   };
 
   test.beforeEach(async ({ page }) => {
-    // Navigate to login page
-    await page.goto('/login');
-
-    // Login with admin credentials
-    await page.fill('input[type="email"]', adminCredentials.email);
-    await page.fill('input[type="password"]', adminCredentials.password);
-    await page.click('button[type="submit"]');
-
-    // Wait for successful login and redirect to dashboard
-    await page.waitForURL('/dashboard');
+    await page.route(PWNED_PASSWORD_API, async (route) => {
+      await route.fulfill({ status: 200, contentType: 'text/plain', body: '' });
+    });
+    const auth = new AuthHelper(page);
+    await auth.loginAsAdmin();
   });
 
   test.describe('User Index Page', () => {
     test('admin can view users index page', async ({ page }) => {
-      await page.goto('/users');
-
-      // Check if users page loads
-      await expect(page.locator('h1')).toContainText(/Users|User Management/);
-
-      // Check for users table or list
-      await expect(page.locator('table, [data-testid="users-table"]')).toBeVisible();
-
-      // Check for create user button
-      await expect(page.locator('button:has-text("Create"), a:has-text("Create"), [data-testid="create-user"]')).toBeVisible();
+      await navigateToUsers(page);
+      await expect(page.locator('table')).toBeVisible();
+      await expect(page.getByRole('link', { name: /Add User/i })).toBeVisible();
+      await expect(page.getByRole('button', { name: /Export CSV/i })).toBeVisible();
     });
 
     test('users table displays user information', async ({ page }) => {
-      await page.goto('/users');
-
-      // Wait for table to load
-      await page.waitForSelector('table, [data-testid="users-table"]');
-
-      // Check for table headers
-      const table = page.locator('table, [data-testid="users-table"]').first();
-      await expect(table.locator('th')).toHaveCount.greaterThan(0);
-
-      // Check for user data rows
-      await expect(table.locator('tbody tr')).toHaveCount.greaterThan(0);
+      await navigateToUsers(page);
+      const table = page.locator('table').first();
+      const headerCount = await table.locator('th').count();
+      expect(headerCount).toBeGreaterThan(0);
+      const rowCount = await table.locator('tbody tr').count();
+      expect(rowCount).toBeGreaterThan(0);
+      await expect(table.locator('tbody')).toContainText('@');
     });
 
     test('admin can export users to CSV', async ({ page }) => {
-      await page.goto('/users');
-
-      // Look for export button
-      const exportButton = page.locator('button:has-text("Export"), a:has-text("Export"), [data-testid="export-users"]').first();
-      await expect(exportButton).toBeVisible();
-
-      // Click export button and wait for download
+      await navigateToUsers(page);
       const downloadPromise = page.waitForEvent('download');
-      await exportButton.click();
+      await page.getByRole('button', { name: /Export CSV/i }).click();
       const download = await downloadPromise;
-
-      // Verify download
-      expect(download.suggestedFilename()).toMatch(/users_export_.*\.csv/);
+      expect(download.suggestedFilename()).toMatch(/users_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.csv/);
     });
   });
 
   test.describe('User Creation', () => {
     test('admin can create a new user', async ({ page }) => {
-      await page.goto('/users');
-
-      // Click create user button
-      const createButton = page.locator('button:has-text("Create"), a:has-text("Create"), [data-testid="create-user"]').first();
-      await createButton.click();
-
-      // Wait for create user page
-      await expect(page).toHaveURL(/.*users.*create/);
-      await expect(page.locator('h1')).toContainText(/Create.*User/);
-
-      // Fill user form
-      await page.fill('input[name="name"]', testUser.name);
-      await page.fill('input[name="email"]', testUser.email);
-      await page.fill('input[name="password"]', testUser.password);
-      await page.fill('input[name="password_confirmation"]', testUser.passwordConfirmation);
-      await page.selectOption('select[name="role"]', testUser.role);
-
-      // Submit form
-      await page.click('button[type="submit"]');
-
-      // Wait for redirect to users index
-      await page.waitForURL('/users');
-
-      // Check for success message
-      await expect(page.locator('.alert-success, .success, [data-testid="success-message"]')).toContainText(/User created successfully/);
-
-      // Verify user appears in table
-      await expect(page.locator('table, [data-testid="users-table"]')).toContainText(testUser.name);
-      await expect(page.locator('table, [data-testid="users-table"]')).toContainText(testUser.email);
+      const user = await createUserViaUI(page);
+      const row = await locateUserRow(page, user.email);
+      await expect(row).toContainText(roleLabel(user.role));
+      await deleteUserIfExists(page, user.email);
     });
 
     test('user creation validates required fields', async ({ page }) => {
-      await page.goto('/users');
-
-      // Click create user button
-      const createButton = page.locator('button:has-text("Create"), a:has-text("Create"), [data-testid="create-user"]').first();
-      await createButton.click();
-
-      // Try to submit empty form
+      await openAddUserForm(page);
       await page.click('button[type="submit"]');
-
-      // Check for validation errors
-      await expect(page.locator('.error, .invalid-feedback, [data-testid="error-message"]')).toHaveCount.greaterThan(0);
+      await expect(page.getByText('Please fix all errors in the form below')).toBeVisible();
+      await expect(page.getByText('Name is required')).toBeVisible();
+      await expect(page.getByText('Email is required')).toBeVisible();
     });
 
     test('user creation validates email uniqueness', async ({ page }) => {
-      await page.goto('/users');
-
-      // Click create user button
-      const createButton = page.locator('button:has-text("Create"), a:has-text("Create"), [data-testid="create-user"]').first();
-      await createButton.click();
-
-      // Fill form with existing email
-      await page.fill('input[name="name"]', 'Another User');
-      await page.fill('input[name="email"]', adminCredentials.email); // Use existing email
-      await page.fill('input[name="password"]', testUser.password);
-      await page.fill('input[name="password_confirmation"]', testUser.passwordConfirmation);
-      await page.selectOption('select[name="role"]', testUser.role);
-
-      // Submit form
+      await openAddUserForm(page);
+      const password = strongPassword();
+      await page.fill('#name', 'Another User');
+      await page.fill('#email', adminCredentials.email);
+      await page.fill('#password', password);
+      await page.fill('#password_confirmation', password);
+      await selectRole(page, 'user');
       await page.click('button[type="submit"]');
-
-      // Check for email validation error
-      await expect(page.locator('.error, .invalid-feedback, [data-testid="error-message"]')).toContainText(/email.*already.*taken|email.*unique/);
+      await expect(page.getByText('The email has already been taken.')).toBeVisible({ timeout: 15000 });
     });
 
     test('user creation validates password confirmation', async ({ page }) => {
-      await page.goto('/users');
-
-      // Click create user button
-      const createButton = page.locator('button:has-text("Create"), a:has-text("Create"), [data-testid="create-user"]').first();
-      await createButton.click();
-
-      // Fill form with mismatched passwords
-      await page.fill('input[name="name"]', testUser.name);
-      await page.fill('input[name="email"]', 'unique@example.com');
-      await page.fill('input[name="password"]', testUser.password);
-      await page.fill('input[name="password_confirmation"]', 'DifferentPassword123!@#');
-      await page.selectOption('select[name="role"]', testUser.role);
-
-      // Submit form
+      const user = buildTestUser({ passwordConfirmation: 'Different123!@#' });
+      await openAddUserForm(page);
+      await fillUserForm(page, user);
       await page.click('button[type="submit"]');
-
-      // Check for password confirmation error
-      await expect(page.locator('.error, .invalid-feedback, [data-testid="error-message"]')).toContainText(/password.*confirmation|password.*match/);
+      await expect(page.getByText('Passwords do not match')).toBeVisible();
     });
 
     test('user creation validates password strength', async ({ page }) => {
-      await page.goto('/users');
-
-      // Click create user button
-      const createButton = page.locator('button:has-text("Create"), a:has-text("Create"), [data-testid="create-user"]').first();
-      await createButton.click();
-
-      // Fill form with weak password
-      await page.fill('input[name="name"]', testUser.name);
-      await page.fill('input[name="email"]', 'unique@example.com');
-      await page.fill('input[name="password"]', 'weak');
-      await page.fill('input[name="password_confirmation"]', 'weak');
-      await page.selectOption('select[name="role"]', testUser.role);
-
-      // Submit form
+      const user = buildTestUser({
+        password: 'weak',
+        passwordConfirmation: 'weak',
+        email: `weak-${uniqueSuffix()}@example.com`,
+      });
+      await openAddUserForm(page);
+      await fillUserForm(page, user);
       await page.click('button[type="submit"]');
-
-      // Check for password strength error
-      await expect(page.locator('.error, .invalid-feedback, [data-testid="error-message"]')).toContainText(/password.*strong|password.*requirements/);
+      await expect(page.getByText('Password must be at least 8 characters')).toBeVisible();
     });
 
     test('user creation validates role selection', async ({ page }) => {
-      await page.goto('/users');
-
-      // Click create user button
-      const createButton = page.locator('button:has-text("Create"), a:has-text("Create"), [data-testid="create-user"]').first();
-      await createButton.click();
-
-      // Fill form without selecting role
-      await page.fill('input[name="name"]', testUser.name);
-      await page.fill('input[name="email"]', 'unique@example.com');
-      await page.fill('input[name="password"]', testUser.password);
-      await page.fill('input[name="password_confirmation"]', testUser.passwordConfirmation);
-      // Don't select role
-
-      // Submit form
+      const user = buildTestUser();
+      await openAddUserForm(page);
+      await page.fill('#name', user.name);
+      await page.fill('#email', user.email);
+      await page.fill('#password', user.password);
+      await page.fill('#password_confirmation', user.passwordConfirmation);
       await page.click('button[type="submit"]');
-
-      // Check for role validation error
-      await expect(page.locator('.error, .invalid-feedback, [data-testid="error-message"]')).toContainText(/role.*required/);
+      await expect(page.getByText('The role field is required.')).toBeVisible({ timeout: 15000 });
     });
   });
 
   test.describe('User Editing', () => {
     test('admin can edit user information', async ({ page }) => {
-      // First create a user to edit
-      await page.goto('/users');
-      const createButton = page.locator('button:has-text("Create"), a:has-text("Create"), [data-testid="create-user"]').first();
-      await createButton.click();
+      const user = await createUserViaUI(page);
+      await openEditFormForUser(page, user.email);
+      await expect(page.getByRole('heading', { name: /Edit User/i })).toBeVisible();
 
-      await page.fill('input[name="name"]', testUser.name);
-      await page.fill('input[name="email"]', testUser.email);
-      await page.fill('input[name="password"]', testUser.password);
-      await page.fill('input[name="password_confirmation"]', testUser.passwordConfirmation);
-      await page.selectOption('select[name="role"]', testUser.role);
+      const updatedEmail = `updated-${uniqueSuffix()}@example.com`;
+      await page.fill('#name', 'Updated User Name');
+      await page.fill('#email', updatedEmail);
+      await selectRole(page, 'manager');
+      const editRedirect = page.waitForResponse((response) => {
+        if (response.request().method() !== 'GET') {
+          return false;
+        }
+
+        try {
+          const url = new URL(response.url());
+          const isUsersPath = url.pathname === '/users';
+          const isSuccessful = response.status() >= 200 && response.status() < 400;
+          return isUsersPath && isSuccessful;
+        } catch {
+          return false;
+        }
+      });
       await page.click('button[type="submit"]');
+      await editRedirect;
+      await expect(page).toHaveURL(/\/users(\?.*)?$/, { timeout: 45000 });
+      await page.waitForLoadState('networkidle').catch(() => undefined);
 
-      // Wait for redirect and find the created user
-      await page.waitForURL('/users');
-
-      // Find and click edit button for the created user
-      const editButton = page.locator(`button:has-text("Edit"), a:has-text("Edit"), [data-testid="edit-user"]`).first();
-      await editButton.click();
-
-      // Wait for edit page
-      await expect(page).toHaveURL(/.*users.*edit/);
-      await expect(page.locator('h1')).toContainText(/Edit.*User/);
-
-      // Update user information
-      await page.fill('input[name="name"]', 'Updated User Name');
-      await page.fill('input[name="email"]', 'updated@example.com');
-      await page.selectOption('select[name="role"]', 'manager');
-
-      // Submit form
-      await page.click('button[type="submit"]');
-
-      // Wait for redirect to users index
-      await page.waitForURL('/users');
-
-      // Check for success message
-      await expect(page.locator('.alert-success, .success, [data-testid="success-message"]')).toContainText(/User updated successfully/);
-
-      // Verify updated information appears in table
-      await expect(page.locator('table, [data-testid="users-table"]')).toContainText('Updated User Name');
-      await expect(page.locator('table, [data-testid="users-table"]')).toContainText('updated@example.com');
+      const updatedRow = await locateUserRow(page, updatedEmail);
+      await expect(updatedRow).toContainText('Updated User Name');
+      await deleteUserIfExists(page, updatedEmail);
     });
 
     test('admin can update user password', async ({ page }) => {
-      // First create a user to edit
-      await page.goto('/users');
-      const createButton = page.locator('button:has-text("Create"), a:has-text("Create"), [data-testid="create-user"]').first();
-      await createButton.click();
+      const user = await createUserViaUI(page);
+      await openEditFormForUser(page, user.email);
+      await page.fill('#password', 'NewPassword123!@#');
+      await page.fill('#password_confirmation', 'NewPassword123!@#');
+      const passwordRedirect = page.waitForResponse((response) => {
+        if (response.request().method() !== 'GET') {
+          return false;
+        }
 
-      await page.fill('input[name="name"]', testUser.name);
-      await page.fill('input[name="email"]', testUser.email);
-      await page.fill('input[name="password"]', testUser.password);
-      await page.fill('input[name="password_confirmation"]', testUser.passwordConfirmation);
-      await page.selectOption('select[name="role"]', testUser.role);
+        try {
+          const url = new URL(response.url());
+          const isUsersPath = url.pathname === '/users';
+          const isSuccessful = response.status() >= 200 && response.status() < 400;
+          return isUsersPath && isSuccessful;
+        } catch {
+          return false;
+        }
+      });
       await page.click('button[type="submit"]');
-
-      // Wait for redirect and find the created user
-      await page.waitForURL('/users');
-
-      // Find and click edit button for the created user
-      const editButton = page.locator(`button:has-text("Edit"), a:has-text("Edit"), [data-testid="edit-user"]`).first();
-      await editButton.click();
-
-      // Update password
-      await page.fill('input[name="password"]', 'NewPassword123!@#');
-      await page.fill('input[name="password_confirmation"]', 'NewPassword123!@#');
-
-      // Submit form
-      await page.click('button[type="submit"]');
-
-      // Wait for redirect to users index
-      await page.waitForURL('/users');
-
-      // Check for success message
-      await expect(page.locator('.alert-success, .success, [data-testid="success-message"]')).toContainText(/User updated successfully/);
+      await passwordRedirect;
+      await expect(page).toHaveURL(/\/users(\?.*)?$/, { timeout: 45000 });
+      await deleteUserIfExists(page, user.email);
     });
   });
 
   test.describe('User Deletion', () => {
     test('admin can delete user', async ({ page }) => {
-      // First create a user to delete
-      await page.goto('/users');
-      const createButton = page.locator('button:has-text("Create"), a:has-text("Create"), [data-testid="create-user"]').first();
-      await createButton.click();
-
-      await page.fill('input[name="name"]', 'User To Delete');
-      await page.fill('input[name="email"]', 'delete@example.com');
-      await page.fill('input[name="password"]', testUser.password);
-      await page.fill('input[name="password_confirmation"]', testUser.passwordConfirmation);
-      await page.selectOption('select[name="role"]', testUser.role);
-      await page.click('button[type="submit"]');
-
-      // Wait for redirect
-      await page.waitForURL('/users');
-
-      // Find and click delete button for the created user
-      const deleteButton = page.locator(`button:has-text("Delete"), a:has-text("Delete"), [data-testid="delete-user"]`).first();
-      await deleteButton.click();
-
-      // Confirm deletion if there's a confirmation dialog
-      const confirmButton = page.locator('button:has-text("Confirm"), button:has-text("Delete"), [data-testid="confirm-delete"]');
-      if (await confirmButton.isVisible()) {
-        await confirmButton.click();
-      }
-
-      // Wait for redirect to users index
-      await page.waitForURL('/users');
-
-      // Check for success message
-      await expect(page.locator('.alert-success, .success, [data-testid="success-message"]')).toContainText(/User deleted successfully/);
-
-      // Verify user no longer appears in table
-      await expect(page.locator('table, [data-testid="users-table"]')).not.toContainText('User To Delete');
+      const user = await createUserViaUI(page);
+      const deleted = await deleteUserIfExists(page, user.email);
+      expect(deleted).toBe(true);
     });
 
     test('admin cannot delete themselves', async ({ page }) => {
-      // Try to find and delete the admin user (current user)
-      await page.goto('/users');
+      await navigateToUsers(page);
+      const adminRow = page.locator('table tbody tr').filter({ hasText: adminCredentials.email });
 
-      // Look for delete button for admin user
-      const adminRow = page.locator('tr').filter({ hasText: adminCredentials.email });
-      const deleteButton = adminRow.locator('button:has-text("Delete"), a:has-text("Delete"), [data-testid="delete-user"]');
-
-      if (await deleteButton.isVisible()) {
-        await deleteButton.click();
-
-        // Check for error message
-        await expect(page.locator('.alert-error, .error, [data-testid="error-message"]')).toContainText(/cannot.*delete.*yourself|delete.*own.*account/);
+      if ((await adminRow.count()) === 0) {
+        return;
       }
+
+      const deleteButton = adminRow.first().getByRole('button');
+      if (!(await deleteButton.isVisible())) {
+        return;
+      }
+
+      await deleteButton.click();
+      const dialog = page.getByRole('dialog', { name: /Delete User/i });
+      await expect(dialog).toBeVisible();
+
+      const deleteAttempt = page.waitForResponse((response) => {
+        return response.request().method() === 'DELETE'
+          && response.url().includes('/users/')
+          && response.status() >= 200
+          && response.status() < 400;
+      });
+
+      await Promise.all([
+        deleteAttempt,
+        dialog.getByRole('button', { name: /^Delete/i }).click(),
+      ]);
+      await expect(dialog).toBeVisible();
+      await expect(page.locator('table tbody tr').filter({ hasText: adminCredentials.email })).toHaveCount(1);
+
+      const cancelButton = dialog.getByRole('button', { name: /^Cancel$/i });
+      await cancelButton.click();
+      await expect(dialog).toBeHidden();
     });
   });
 
   test.describe('Permission-based Access Control', () => {
     test('regular user can view users but cannot create', async ({ page }) => {
-      // First logout admin
-      await page.goto('/logout');
+      const auth = new AuthHelper(page);
+      await auth.logout();
+      await auth.loginAsUser();
 
-      // Create a regular user session (this would need to be set up in your test environment)
-      // For now, we'll test the UI behavior
-      await page.goto('/users');
-
-      // If user has view permission, they should see the users page
-      // If they don't have create permission, create button should not be visible or should show error
-      const createButton = page.locator('button:has-text("Create"), a:has-text("Create"), [data-testid="create-user"]');
-
-      if (await createButton.isVisible()) {
-        await createButton.click();
-
-        // Check if we get permission error or redirect
-        const hasPermissionError = await page.locator('.alert-error, .error, [data-testid="error-message"]').isVisible();
-        const isRedirected = page.url().includes('/login') || page.url().includes('/dashboard');
-
-        expect(hasPermissionError || isRedirected).toBeTruthy();
-      }
+      await navigateToUsers(page);
+      await expect(page.locator('table')).toBeVisible();
+      await expect(page.getByRole('link', { name: /Add User/i })).toHaveCount(0);
     });
 
-    test('unauthenticated user is redirected to login', async ({ page }) => {
-      // Logout first
-      await page.goto('/logout');
-
-      // Try to access users page
+    test('unauthenticated user is redirected to login', async ({ browser }) => {
+      const context = await browser.newContext();
+      const page = await context.newPage();
       await page.goto('/users');
-
-      // Should be redirected to login
-      await expect(page).toHaveURL('/login');
+      await expect(page).toHaveURL(/\/login/);
+      await context.close();
     });
   });
 
   test.describe('Form Validation', () => {
     test('form shows validation errors for invalid data', async ({ page }) => {
-      await page.goto('/users');
+      await openAddUserForm(page);
+      await page.fill('#name', 'Invalid User');
+      await page.fill('#email', 'invalid-email');
+      await page.fill('#password', '123');
+      await page.fill('#password_confirmation', '456');
+      await selectRole(page, 'user');
+      await page.click('button[type="submit"]');
 
-      // Click create user button
-      const createButton = page.locator('button:has-text("Create"), a:has-text("Create"), [data-testid="create-user"]').first();
-      await createButton.click();
-
-      // Test various invalid inputs
-      const invalidInputs = [
-        { field: 'name', value: '', error: 'name.*required' },
-        { field: 'email', value: 'invalid-email', error: 'email.*valid' },
-        { field: 'password', value: '123', error: 'password.*length' },
-        { field: 'password_confirmation', value: 'different', error: 'password.*confirmation' }
-      ];
-
-      for (const input of invalidInputs) {
-        await page.fill(`input[name="${input.field}"]`, input.value);
-        await page.click('button[type="submit"]');
-
-        // Check for validation error
-        await expect(page.locator('.error, .invalid-feedback, [data-testid="error-message"]')).toContainText(new RegExp(input.error, 'i'));
-
-        // Clear field for next test
-        await page.fill(`input[name="${input.field}"]`, '');
-      }
+      await expect(page.getByText('Please enter a valid email address')).toBeVisible();
+      await expect(page.getByText('Passwords do not match')).toBeVisible();
+      await expect(page.getByText('Password must be at least 8 characters')).toBeVisible();
     });
   });
 
   test.describe('Navigation and UI', () => {
     test('user management navigation works correctly', async ({ page }) => {
-      // Test navigation from dashboard to users
       await page.goto('/dashboard');
+      const usersLink = page.getByRole('link', { name: /^Users$/i }).first();
 
-      // Look for users link in navigation
-      const usersLink = page.locator('a:has-text("Users"), button:has-text("Users"), [data-testid="users-nav"]').first();
       if (await usersLink.isVisible()) {
         await usersLink.click();
-        await expect(page).toHaveURL('/users');
+      } else {
+        await page.goto('/users');
       }
+
+      await expect(page).toHaveURL('/users');
+      await expect(page.getByRole('heading', { name: /User Management/i })).toBeVisible();
     });
 
     test('breadcrumb navigation works', async ({ page }) => {
-      await page.goto('/users');
+      await navigateToUsers(page);
+      const breadcrumb = page.getByRole('navigation', { name: /breadcrumb/i });
 
-      // Check for breadcrumb navigation
-      const breadcrumb = page.locator('.breadcrumb, [data-testid="breadcrumb"], nav[aria-label="breadcrumb"]');
       if (await breadcrumb.isVisible()) {
         await expect(breadcrumb).toContainText(/Users|User Management/);
       }
     });
 
     test('pagination works if implemented', async ({ page }) => {
-      await page.goto('/users');
+      await navigateToUsers(page);
+      const paginationNav = page.getByRole('navigation', { name: /Pagination/i });
 
-      // Look for pagination controls
-      const pagination = page.locator('.pagination, [data-testid="pagination"], nav[aria-label="pagination"]');
-      if (await pagination.isVisible()) {
-        // Test pagination navigation
-        const nextButton = pagination.locator('button:has-text("Next"), a:has-text("Next")');
-        if (await nextButton.isVisible()) {
-          await nextButton.click();
-          // Verify URL changed or page content updated
-          await page.waitForLoadState('networkidle');
+      if (await paginationNav.isVisible()) {
+        await expect(paginationNav).toContainText(/Previous|Next/);
+        const nextLink = paginationNav.getByRole('link', { name: /^Next$/i }).first();
+        if (await nextLink.count() && await nextLink.isVisible()) {
+          const href = await nextLink.getAttribute('href');
+          await Promise.all([
+            page.waitForURL(href ?? /\/users\?page=2/, { waitUntil: 'commit' }),
+            nextLink.click(),
+          ]);
+          await page.waitForLoadState('networkidle').catch(() => undefined);
+        } else {
+          const pageTwoLink = paginationNav.getByRole('link', { name: /^2$/ }).first();
+          if (await pageTwoLink.count() && await pageTwoLink.isVisible()) {
+            const href = await pageTwoLink.getAttribute('href');
+            await Promise.all([
+              page.waitForURL(href ?? /\/users\?page=2/, { waitUntil: 'commit' }),
+              pageTwoLink.click(),
+            ]);
+            await page.waitForLoadState('networkidle').catch(() => undefined);
+          }
         }
       }
     });

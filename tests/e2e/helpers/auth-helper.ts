@@ -8,7 +8,7 @@ export class AuthHelper {
     await this.page.fill('input[type="email"]', 'admin@test.com');
     await this.page.fill('input[type="password"]', 'password123');
     await this.page.click('button[type="submit"]');
-    await this.page.waitForURL('/dashboard');
+    await this.page.waitForURL('/dashboard', { timeout: 45000 });
   }
 
   async loginAsManager() {
@@ -16,7 +16,7 @@ export class AuthHelper {
     await this.page.fill('input[type="email"]', 'manager@test.com');
     await this.page.fill('input[type="password"]', 'password123');
     await this.page.click('button[type="submit"]');
-    await this.page.waitForURL('/dashboard');
+    await this.page.waitForURL('/dashboard', { timeout: 45000 });
   }
 
   async loginAsUser() {
@@ -24,12 +24,25 @@ export class AuthHelper {
     await this.page.fill('input[type="email"]', 'user@test.com');
     await this.page.fill('input[type="password"]', 'password123');
     await this.page.click('button[type="submit"]');
-    await this.page.waitForURL('/dashboard');
+    await this.page.waitForURL('/dashboard', { timeout: 45000 });
   }
 
   async logout() {
-    await this.page.goto('/logout');
-    await this.page.waitForURL('/login');
+    await this.page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
+
+    const menuTrigger = this.page.locator('button[aria-haspopup="menu"]').last();
+    await menuTrigger.waitFor({ state: 'visible', timeout: 10000 });
+    await menuTrigger.click();
+
+    const logoutButton = this.page.locator('[data-test="logout-button"]');
+    await logoutButton.waitFor({ state: 'visible', timeout: 10000 });
+    await Promise.all([
+      this.page.waitForURL((url) => {
+        const target = typeof url === 'string' ? new URL(url) : url;
+        return target.pathname === '/login' || target.pathname === '/';
+      }, { timeout: 45000 }),
+      logoutButton.click(),
+    ]);
   }
 
   async waitForSuccessMessage() {

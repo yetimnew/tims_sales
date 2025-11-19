@@ -9,6 +9,7 @@ use App\Http\Requests\Operations\UpdateOperationRequest;
 use App\Models\CargoType;
 use App\Models\Customer;
 use App\Models\Operation;
+use App\Models\OutsourcePerformance;
 use App\Models\Performance;
 use App\Models\Place;
 use App\Models\Region;
@@ -360,6 +361,46 @@ class OperationController extends Controller
             ],
         ];
 
+        $outsourceAggregate = OutsourcePerformance::query()
+            ->where('operation_id', $operation->id)
+            ->selectRaw('COUNT(*) as vendor_trips')
+            ->selectRaw('COALESCE(SUM(COALESCE(cargo_volume_mt, 0)), 0) as vendor_tonnage')
+            ->selectRaw('COALESCE(SUM(COALESCE(tonkm, 0)), 0) as vendor_ton_km')
+            ->selectRaw('COALESCE(SUM(COALESCE(cost, 0)), 0) as vendor_cost')
+            ->first();
+
+        $vendorTrips = (int) ($outsourceAggregate->vendor_trips ?? 0);
+        $vendorTonnage = (float) ($outsourceAggregate->vendor_tonnage ?? 0);
+        $vendorTonKm = (float) ($outsourceAggregate->vendor_ton_km ?? 0);
+        $vendorCost = (float) ($outsourceAggregate->vendor_cost ?? 0);
+
+        $totalTripsCombined = $totalTrips + $vendorTrips;
+        $totalTonnageCombined = $totalTonnage + $vendorTonnage;
+        $totalTonKmCombined = $totalTonKm + $vendorTonKm;
+        $totalCostCombined = $totalCost + $vendorCost;
+
+        $companyTripShare = $totalTripsCombined > 0 ? round(($totalTrips / $totalTripsCombined) * 100, 1) : null;
+        $vendorTripShare = $totalTripsCombined > 0 ? round(($vendorTrips / $totalTripsCombined) * 100, 1) : null;
+        $companyTonnageShare = $totalTonnageCombined > 0 ? round(($totalTonnage / $totalTonnageCombined) * 100, 1) : null;
+        $vendorTonnageShare = $totalTonnageCombined > 0 ? round(($vendorTonnage / $totalTonnageCombined) * 100, 1) : null;
+        $companyTonKmShare = $totalTonKmCombined > 0 ? round(($totalTonKm / $totalTonKmCombined) * 100, 1) : null;
+        $vendorTonKmShare = $totalTonKmCombined > 0 ? round(($vendorTonKm / $totalTonKmCombined) * 100, 1) : null;
+        $companyCostShare = $totalCostCombined > 0 ? round(($totalCost / $totalCostCombined) * 100, 1) : null;
+        $vendorCostShare = $totalCostCombined > 0 ? round(($vendorCost / $totalCostCombined) * 100, 1) : null;
+        $companyAverageTonPerTrip = $totalTrips > 0 ? round($totalTonnage / $totalTrips, 2) : null;
+        $vendorAverageTonPerTrip = $vendorTrips > 0 ? round($vendorTonnage / $vendorTrips, 2) : null;
+        $companyAverageTonKmPerTrip = $totalTrips > 0 ? round($totalTonKm / $totalTrips, 2) : null;
+        $vendorAverageTonKmPerTrip = $vendorTrips > 0 ? round($vendorTonKm / $vendorTrips, 2) : null;
+        $companyCostPerTonKm = $totalTonKm > 0 ? round($totalCost / $totalTonKm, 2) : null;
+        $vendorCostPerTonKm = $vendorTonKm > 0 ? round($vendorCost / $vendorTonKm, 2) : null;
+
+        $executionMode = match (true) {
+            $totalTrips > 0 && $vendorTrips === 0 => 'company',
+            $vendorTrips > 0 && $totalTrips === 0 => 'vendor',
+            $totalTrips > 0 && $vendorTrips > 0 => 'hybrid',
+            default => 'pending',
+        };
+
         return Inertia::render('Operations/Show', [
             'operation' => $operation,
             'activityLogs' => $activityLogs,
@@ -411,6 +452,32 @@ class OperationController extends Controller
                     'timeline' => $timeline,
                     'tonnageBreakdown' => $tonnageBreakdown,
                 ],
+            ],
+            'transportExecution' => [
+                'companyTrips' => $totalTrips,
+                'vendorTrips' => $vendorTrips,
+                'companyTonnage' => round($totalTonnage, 2),
+                'vendorTonnage' => round($vendorTonnage, 2),
+                'companyTonKm' => round($totalTonKm, 2),
+                'vendorTonKm' => round($vendorTonKm, 2),
+                'companyCost' => round($totalCost, 2),
+                'vendorCost' => round($vendorCost, 2),
+                'totalCost' => round($totalCostCombined, 2),
+                'companyTripShare' => $companyTripShare,
+                'vendorTripShare' => $vendorTripShare,
+                'companyTonnageShare' => $companyTonnageShare,
+                'vendorTonnageShare' => $vendorTonnageShare,
+                'companyTonKmShare' => $companyTonKmShare,
+                'vendorTonKmShare' => $vendorTonKmShare,
+                'companyCostShare' => $companyCostShare,
+                'vendorCostShare' => $vendorCostShare,
+                'companyAverageTonPerTrip' => $companyAverageTonPerTrip,
+                'vendorAverageTonPerTrip' => $vendorAverageTonPerTrip,
+                'companyAverageTonKmPerTrip' => $companyAverageTonKmPerTrip,
+                'vendorAverageTonKmPerTrip' => $vendorAverageTonKmPerTrip,
+                'companyCostPerTonKm' => $companyCostPerTonKm,
+                'vendorCostPerTonKm' => $vendorCostPerTonKm,
+                'executionMode' => $executionMode,
             ],
         ]);
     }

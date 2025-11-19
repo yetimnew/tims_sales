@@ -2,13 +2,13 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
 use App\Models\Truck;
+use App\Models\User;
 use App\Models\VehicleType;
-use Spatie\Permission\Models\Role;
-use Spatie\Permission\Models\Permission;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class TruckControllerTest extends TestCase
@@ -16,6 +16,7 @@ class TruckControllerTest extends TestCase
     use RefreshDatabase, WithFaker;
 
     protected $user;
+
     protected $vehicleType;
 
     protected function setUp(): void
@@ -28,7 +29,7 @@ class TruckControllerTest extends TestCase
         // Create permissions
         $permissions = [
             'trucks.view', 'trucks.create', 'trucks.edit', 'trucks.destroy',
-            'trucks.show', 'trucks.store', 'trucks.update', 'trucks.export'
+            'trucks.show', 'trucks.store', 'trucks.update', 'trucks.export',
         ];
 
         foreach ($permissions as $permission) {
@@ -120,7 +121,7 @@ class TruckControllerTest extends TestCase
             'purchasePrice' => 500000,
             'productionDate' => '2023-01-01',
             'serviceStartDate' => '2023-02-01',
-            'status' => 'active'
+            'status' => 'active',
         ];
 
         $response = $this->actingAs($this->user)
@@ -145,7 +146,7 @@ class TruckControllerTest extends TestCase
         $truck = Truck::factory()->create([
             'plate' => 'AA-1111',
             'status' => 'active',
-            'vehicletype_id' => $this->vehicleType->id
+            'vehicletype_id' => $this->vehicleType->id,
         ]);
 
         $response = $this->actingAs($this->user)
@@ -175,7 +176,7 @@ class TruckControllerTest extends TestCase
             'productionDate' => '2023-01-01',
             'serviceStartDate' => '2023-02-01',
             'status' => 'active',
-            'vehicletype_id' => $this->vehicleType->id
+            'vehicletype_id' => $this->vehicleType->id,
         ]);
 
         $response = $this->actingAs($this->user)
@@ -219,7 +220,7 @@ class TruckControllerTest extends TestCase
         $updateData = [
             'plate' => 'AA-2222',
             'vehicletype_id' => $this->vehicleType->id,
-            'status' => 'inactive'
+            'status' => 'inactive',
         ];
 
         $response = $this->actingAs($this->user)
@@ -229,7 +230,7 @@ class TruckControllerTest extends TestCase
         $this->assertDatabaseHas('trucks', [
             'id' => $truck->id,
             'plate' => 'AA-2222',
-            'status' => 'inactive'
+            'status' => 'inactive',
         ]);
     }
 
@@ -328,7 +329,7 @@ class TruckControllerTest extends TestCase
         $truckData = [
             'plate' => 'AA-5678',
             'vehicletype_id' => $this->vehicleType->id,
-            'status' => 'active'
+            'status' => 'active',
         ];
 
         $this->actingAs($this->user)
@@ -347,7 +348,7 @@ class TruckControllerTest extends TestCase
             ->put(route('trucks.update', $truck), [
                 'plate' => 'AA-9999',
                 'vehicletype_id' => $this->vehicleType->id,
-                'status' => 'active'
+                'status' => 'active',
             ]);
 
         // Activity logging may be disabled in test environment
@@ -367,7 +368,7 @@ class TruckControllerTest extends TestCase
             'subject_type' => 'App\Models\Truck',
             'subject_id' => $truck->id,
             'causer_id' => $this->user->id,
-            'causer_type' => 'App\Models\User'
+            'causer_type' => 'App\Models\User',
         ]);
     }
 
@@ -379,7 +380,7 @@ class TruckControllerTest extends TestCase
         $truckData = [
             'plate' => 'AA-9999',
             'vehicletype_id' => $this->vehicleType->id,
-            'status' => 'active'
+            'status' => 'active',
         ];
 
         $response = $this->actingAs($this->user)
@@ -407,7 +408,7 @@ class TruckControllerTest extends TestCase
 
         // Verify at least one active truck is returned
         $trucks = $response->viewData('page')['props']['trucks']['data'];
-        $activeTrucks = collect($trucks)->filter(fn($truck) => $truck['status'] === 'active');
+        $activeTrucks = collect($trucks)->filter(fn ($truck) => $truck['status'] === 'active');
         $this->assertGreaterThanOrEqual(1, $activeTrucks->count());
     }
 
@@ -442,8 +443,8 @@ class TruckControllerTest extends TestCase
                 ->component('Trucks/Index')
                 ->has('trucks')
                 ->where('trucks.total', 25)
-                ->where('trucks.per_page', 5)
-                ->where('trucks.last_page', 5)
+                ->where('trucks.per_page', 15)
+                ->where('trucks.last_page', 2)
             );
     }
 
@@ -453,7 +454,7 @@ class TruckControllerTest extends TestCase
         // vehicletype_id is required, so we'll test with a valid one
         $truck = Truck::factory()->create([
             'vehicletype_id' => $this->vehicleType->id,
-            'status' => 'active'
+            'status' => 'active',
         ]);
 
         $response = $this->actingAs($this->user)
@@ -475,7 +476,7 @@ class TruckControllerTest extends TestCase
         $response = $this->actingAs($this->user)
             ->put(route('trucks.update', $truck), [
                 'plate' => '',
-                'status' => ''
+                'status' => '',
             ]);
 
         $response->assertSessionHasErrors(['plate', 'status']);
@@ -500,7 +501,7 @@ class TruckControllerTest extends TestCase
     public function edit_page_loads_truck_with_all_relationships()
     {
         $truck = Truck::factory()->create([
-            'vehicletype_id' => $this->vehicleType->id
+            'vehicletype_id' => $this->vehicleType->id,
         ]);
 
         $response = $this->actingAs($this->user)

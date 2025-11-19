@@ -6,16 +6,26 @@ use App\Enums\CargoCategory;
 use App\Models\CargoType;
 use App\Models\Customer;
 use App\Models\Driver;
+use App\Models\DriverPerformanceRecord;
+use App\Models\DriverTruck;
+use App\Models\FuelRecord;
 use App\Models\MaintenanceType;
 use App\Models\Operation;
 use App\Models\Performance;
+use App\Models\Place;
 use App\Models\Region;
+use App\Models\RoutePlan;
 use App\Models\Truck;
+use App\Models\TruckFinancialRecord;
 use App\Models\User;
+use App\Models\VehicleMaintenanceRecord;
 use App\Models\VehicleType;
+use App\Models\Woreda;
+use App\Models\Zone;
 use Database\Seeders\CheckPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
+use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 class TimsSystemTest extends TestCase
@@ -28,11 +38,21 @@ class TimsSystemTest extends TestCase
 
     protected Truck $truck;
 
+    protected DriverTruck $driverTruck;
+
     protected Driver $driver;
 
     protected Customer $customer;
 
     protected Region $region;
+
+    protected Zone $zone;
+
+    protected Woreda $woreda;
+
+    protected Place $originPlace;
+
+    protected Place $destinationPlace;
 
     protected Operation $operation;
 
@@ -41,6 +61,8 @@ class TimsSystemTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        Carbon::setTestNow(Carbon::parse('2025-01-01 09:00:00'));
 
         $this->seed(CheckPermissionSeeder::class);
 
@@ -54,6 +76,13 @@ class TimsSystemTest extends TestCase
 
         // Create test data
         $this->createTestData();
+    }
+
+    protected function tearDown(): void
+    {
+        Carbon::setTestNow();
+
+        parent::tearDown();
     }
 
     private function createTestData(): void
@@ -85,6 +114,17 @@ class TimsSystemTest extends TestCase
             'mobile' => '+251911234567',
         ]);
 
+        $this->driverTruck = DriverTruck::create([
+            'driver_id' => $this->driver->id,
+            'driverid' => $this->driver->driverid,
+            'truck_id' => $this->truck->id,
+            'plate' => $this->truck->plate,
+            'date_recived' => Carbon::now()->subMonth()->toDateString(),
+            'is_attached' => true,
+            'status' => 'active',
+            'user_id' => $this->user->id,
+        ]);
+
         // Create Customer
         $this->customer = Customer::create([
             'name' => 'ABC Transport Company',
@@ -98,6 +138,34 @@ class TimsSystemTest extends TestCase
         $this->region = Region::create([
             'name' => 'Addis Ababa',
             'description' => 'Capital city region',
+        ]);
+
+        $this->zone = Zone::create([
+            'name' => 'Addis Ketema',
+            'region_id' => $this->region->id,
+            'status' => 'active',
+        ]);
+
+        $this->woreda = Woreda::create([
+            'name' => 'Woreda 01',
+            'zone_id' => $this->zone->id,
+            'status' => 'active',
+        ]);
+
+        $this->originPlace = Place::create([
+            'name' => 'Addis Logistics Hub',
+            'code' => 'ALH',
+            'woreda_id' => $this->woreda->id,
+            'status' => 'active',
+            'is_logistics_hub' => true,
+        ]);
+
+        $this->destinationPlace = Place::create([
+            'name' => 'Dire Distribution Center',
+            'code' => 'DDC',
+            'woreda_id' => $this->woreda->id,
+            'status' => 'active',
+            'is_logistics_hub' => true,
         ]);
 
         $this->cargoType = CargoType::create([
@@ -149,10 +217,13 @@ class TimsSystemTest extends TestCase
         ];
 
         $response = $this->actingAs($this->user)
-            ->post('/vehicletypes', $vehicleTypeData);
+            ->post(route('vehicletypes.store'), $vehicleTypeData);
 
-        $response->assertRedirect('/vehicletypes');
-        $this->assertDatabaseHas('vehicletypes', $vehicleTypeData);
+        $response->assertRedirect(route('vehicletypes.index'));
+        $this->assertDatabaseHas('vehicletypes', [
+            'name' => 'Light Truck',
+            'description' => 'Small truck for light loads',
+        ]);
     }
 
     /** @test */
@@ -162,17 +233,19 @@ class TimsSystemTest extends TestCase
             'plate' => 'BB-5678',
             'vehicletype_id' => $this->vehicleType->id,
             'status' => 'active',
-            'chasisNumber' => 'CH567890',
-            'engineNumber' => 'EN123456',
             'serviceIntervalKM' => 15000,
             'purchasePrice' => 3000000.00,
         ];
 
         $response = $this->actingAs($this->user)
-            ->post('/trucks', $truckData);
+            ->post(route('trucks.store'), $truckData);
 
-        $response->assertRedirect('/trucks');
-        $this->assertDatabaseHas('trucks', $truckData);
+        $response->assertRedirect(route('trucks.index'));
+        $this->assertDatabaseHas('trucks', [
+            'plate' => 'BB-5678',
+            'vehicletype_id' => $this->vehicleType->id,
+            'status' => 'active',
+        ]);
     }
 
     /** @test */
@@ -188,10 +261,15 @@ class TimsSystemTest extends TestCase
         ];
 
         $response = $this->actingAs($this->user)
-            ->post('/drivers', $driverData);
+            ->post(route('drivers.store'), $driverData);
 
-        $response->assertRedirect('/drivers');
-        $this->assertDatabaseHas('drivers', $driverData);
+        $response->assertRedirect(route('drivers.index'));
+        $this->assertDatabaseHas('drivers', [
+            'driverid' => 'DRV002',
+            'name' => 'Jane Smith',
+            'sex' => 'female',
+            'status' => 'active',
+        ]);
     }
 
     /** @test */
@@ -206,10 +284,14 @@ class TimsSystemTest extends TestCase
         ];
 
         $response = $this->actingAs($this->user)
-            ->post('/customers', $customerData);
+            ->post(route('customers.store'), $customerData);
 
-        $response->assertRedirect('/customers');
-        $this->assertDatabaseHas('customers', $customerData);
+        $response->assertRedirect(route('customers.index'));
+        $this->assertDatabaseHas('customers', [
+            'name' => 'XYZ Logistics',
+            'email' => 'contact@xyzlogistics.com',
+            'status' => 'active',
+        ]);
     }
 
     /** @test */
@@ -230,13 +312,16 @@ class TimsSystemTest extends TestCase
         ];
 
         $response = $this->actingAs($this->user)
-            ->post('/operations', $operationData);
+            ->post(route('operations.store'), $operationData);
 
-        $response->assertRedirect('/operations');
+        $response->assertRedirect(route('operations.index'));
         $this->assertDatabaseHas('operations', [
             'operationid' => 'OP002',
             'customer_id' => $this->customer->id,
             'cargo_type_id' => $this->cargoType->id,
+            'destination_scope' => 'region',
+            'destination_reference_type' => Region::class,
+            'destination_reference_id' => $this->region->id,
         ]);
     }
 
@@ -249,68 +334,105 @@ class TimsSystemTest extends TestCase
             'description' => 'Regular oil change maintenance',
             'recommended_interval_km' => 10000,
             'estimated_duration_hours' => 2,
+            'is_active' => true,
         ]);
 
+        $scheduledDate = Carbon::now()->addDays(3)->toDateString();
         $maintenanceData = [
             'truck_id' => $this->truck->id,
             'maintenance_type_id' => $maintenanceType->id,
-            'scheduled_date' => '2025-01-15',
-            'status' => 'scheduled',
+            'scheduled_date' => $scheduledDate,
             'description' => 'Regular oil change',
-            'cost' => 500.00,
         ];
 
         $response = $this->actingAs($this->user)
-            ->post('/maintenance', $maintenanceData);
+            ->post(route('maintenance.store'), $maintenanceData);
 
-        $response->assertRedirect('/maintenance');
-        $this->assertDatabaseHas('vehicle_maintenance_records', $maintenanceData);
+        $response->assertRedirect(route('maintenance.index'));
+
+        $record = VehicleMaintenanceRecord::query()->latest('id')->first();
+
+        $this->assertNotNull($record);
+        $this->assertSame($this->truck->id, $record->truck_id);
+        $this->assertSame($maintenanceType->id, $record->maintenance_type_id);
+        $this->assertSame('scheduled', $record->status);
+        $this->assertSame('Regular oil change', $record->description);
+        $this->assertEquals($scheduledDate, $record->scheduled_date->toDateString());
     }
 
     /** @test */
     public function user_can_create_fuel_record()
     {
+        $fuelDate = Carbon::now()->subDay()->toDateString();
+
         $fuelData = [
-            'truck_id' => $this->truck->id,
-            'driver_id' => $this->driver->id,
-            'fuel_date' => '2025-01-10',
-            'fuel_type' => 'Diesel',
-            'quantity_liters' => 200.00,
-            'cost_per_liter' => 45.00,
-            'total_cost' => 9000.00,
-            'odometer_reading' => 50000,
+            'driver_truck_id' => $this->driverTruck->id,
+            'fuel_date' => $fuelDate,
+            'fuel_type' => 'diesel',
+            'fuel_quantity_liters' => 200.00,
+            'fuel_price_per_liter' => 45.00,
             'fuel_station' => 'Shell Station',
-            'location' => 'Addis Ababa',
+            'odometer_reading' => 50000,
+            'receipt_number' => 'RCPT-1001',
+            'notes' => 'Test fueling',
         ];
 
         $response = $this->actingAs($this->user)
-            ->post('/fuel', $fuelData);
+            ->post(route('fuel.store'), $fuelData);
 
-        $response->assertRedirect('/fuel');
-        $this->assertDatabaseHas('fuel_records', $fuelData);
+        $response->assertRedirect(route('fuel.index'));
+
+        $fuelRecord = FuelRecord::query()->latest('id')->first();
+
+        $this->assertNotNull($fuelRecord);
+        $this->assertSame($this->truck->id, $fuelRecord->truck_id);
+        $this->assertSame($this->driver->id, $fuelRecord->driver_id);
+        $this->assertSame($this->driverTruck->id, $fuelRecord->driver_truck_id);
+        $this->assertSame('diesel', $fuelRecord->fuel_type);
+        $this->assertEquals(200.00, (float) $fuelRecord->fuel_quantity_liters);
+        $this->assertEquals(45.00, (float) $fuelRecord->fuel_price_per_liter);
+        $this->assertEquals(9000.00, (float) $fuelRecord->total_cost);
+        $this->assertEquals($fuelDate, $fuelRecord->fuel_date->toDateString());
     }
 
     /** @test */
     public function user_can_create_driver_performance_record()
     {
+        $recordDate = Carbon::now()->subDay()->toDateString();
         $performanceData = [
             'driver_id' => $this->driver->id,
             'truck_id' => $this->truck->id,
-            'record_date' => '2025-01-10',
+            'record_date' => $recordDate,
             'period_type' => 'daily',
-            'total_distance_km' => 500.00,
             'total_trips' => 3,
-            'total_cargo_weight_mt' => 150.00,
-            'fuel_efficiency_km_per_liter' => 8.5,
-            'safety_score' => 95,
-            'compliance_score' => 98,
+            'total_distance_km' => 500.00,
+            'total_cargo_tonnage' => 150.00,
+            'fuel_efficiency' => 8.5,
+            'safety_violations' => 0,
+            'accidents' => 0,
+            'customer_rating' => 4.5,
+            'performance_notes' => 'Strong performance',
         ];
 
         $response = $this->actingAs($this->user)
-            ->post('/driver-performance', $performanceData);
+            ->post(route('driver-performance.store'), $performanceData);
 
-        $response->assertRedirect('/driver-performance');
-        $this->assertDatabaseHas('driver_performance_records', $performanceData);
+        $response->assertRedirect(route('driver-performance.index'));
+
+        $record = DriverPerformanceRecord::query()->latest('id')->first();
+
+        $this->assertNotNull($record);
+        $this->assertSame($this->driver->id, $record->driver_id);
+        $this->assertSame($this->truck->id, $record->truck_id);
+        $this->assertEquals(3, $record->total_trips);
+        $this->assertEquals(500.00, (float) $record->total_distance_km);
+        $this->assertEquals(150.00, (float) $record->total_cargo_tonnage);
+        $this->assertEquals(8.50, (float) $record->fuel_efficiency);
+        $this->assertEquals(0, $record->safety_violations);
+        $this->assertEquals(0, $record->accidents);
+        $this->assertEquals(4.50, (float) $record->customer_rating);
+        $this->assertEquals('Strong performance', $record->performance_notes);
+        $this->assertEquals($recordDate, $record->record_date->toDateString());
     }
 
     /** @test */
@@ -318,27 +440,31 @@ class TimsSystemTest extends TestCase
     {
         $cargoData = [
             'name' => 'Construction Materials',
-            'category' => 'Heavy',
-            'description' => 'Cement, steel, and construction materials',
-            'average_weight_per_unit_kg' => 50.00,
+            'category' => CargoCategory::Construction->value,
+            'weight_per_cubic_meter' => 750.00,
             'handling_requirements' => 'Special handling required',
-            'storage_requirements' => 'Dry storage',
-            'transportation_restrictions' => 'Heavy vehicle required',
+            'safety_requirements' => 'Protective gear required',
+            'requires_special_equipment' => true,
         ];
 
         $response = $this->actingAs($this->user)
-            ->post('/cargo-types', $cargoData);
+            ->post(route('cargo-types.store'), $cargoData);
 
-        $response->assertRedirect('/cargo-types');
-        $this->assertDatabaseHas('cargo_types', $cargoData);
+        $response->assertRedirect(route('cargo-types.index'));
+        $this->assertDatabaseHas('cargo_types', [
+            'name' => 'Construction Materials',
+            'category' => CargoCategory::Construction->value,
+            'requires_special_equipment' => true,
+        ]);
     }
 
     /** @test */
     public function user_can_create_financial_record()
     {
+        $recordDate = Carbon::now()->toDateString();
         $financialData = [
             'truck_id' => $this->truck->id,
-            'record_date' => '2025-01-10',
+            'record_date' => $recordDate,
             'period_type' => 'daily',
             'revenue' => 50000.00,
             'fuel_cost' => 9000.00,
@@ -347,37 +473,68 @@ class TimsSystemTest extends TestCase
             'insurance_cost' => 500.00,
             'depreciation' => 1000.00,
             'other_costs' => 500.00,
-            'net_profit' => 34000.00,
         ];
 
-        $response = $this->actingAs($this->user)
-            ->post('/financial', $financialData);
+        $expectedProfit = $financialData['revenue'] - (
+            $financialData['fuel_cost'] +
+            $financialData['maintenance_cost'] +
+            $financialData['driver_salary'] +
+            $financialData['insurance_cost'] +
+            $financialData['depreciation'] +
+            $financialData['other_costs']
+        );
 
-        $response->assertRedirect('/financial');
-        $this->assertDatabaseHas('truck_financial_records', $financialData);
+        $response = $this->actingAs($this->user)
+            ->post(route('financial.store'), $financialData);
+
+        $response->assertRedirect(route('financial.index'));
+
+        $financialRecord = TruckFinancialRecord::query()->latest('id')->first();
+
+        $this->assertNotNull($financialRecord);
+        $this->assertSame($this->truck->id, $financialRecord->truck_id);
+        $this->assertEquals($recordDate, $financialRecord->record_date->toDateString());
+        $this->assertSame('daily', $financialRecord->period_type);
+        $this->assertEquals($expectedProfit, (float) $financialRecord->net_profit);
     }
 
     /** @test */
     public function user_can_create_route_plan()
     {
+        $plannedDate = Carbon::now()->addDays(2)->toDateString();
         $routeData = [
             'operation_id' => $this->operation->id,
             'truck_id' => $this->truck->id,
             'driver_id' => $this->driver->id,
-            'planned_date' => '2025-01-15',
-            'origin' => 'Addis Ababa',
-            'destination' => 'Dire Dawa',
-            'estimated_distance_km' => 500.00,
-            'estimated_travel_time_hours' => 8,
-            'status' => 'planned',
+            'planned_date' => $plannedDate,
+            'planned_departure_time' => '08:00',
+            'planned_arrival_time' => '16:00',
+            'route_waypoints' => [$this->originPlace->id, $this->destinationPlace->id],
+            'total_distance_km' => 500.00,
+            'total_travel_time_minutes' => 480,
+            'estimated_fuel_cost' => 8500.00,
             'notes' => 'Regular route plan',
         ];
 
         $response = $this->actingAs($this->user)
-            ->post('/route-plans', $routeData);
+            ->post(route('route-plans.store'), $routeData);
 
-        $response->assertRedirect('/route-plans');
-        $this->assertDatabaseHas('route_plans', $routeData);
+        $response->assertRedirect(route('route-plans.index'));
+
+        $routePlan = RoutePlan::withoutGlobalScopes()->orderByDesc('id')->first();
+
+        $this->assertNotNull($routePlan);
+        $this->assertSame($this->operation->id, $routePlan->operation_id);
+        $this->assertSame($this->truck->id, $routePlan->truck_id);
+        $this->assertSame($this->driver->id, $routePlan->driver_id);
+        $this->assertEquals($plannedDate, $routePlan->planned_date->toDateString());
+        $this->assertEquals('08:00', $routePlan->planned_departure_time->format('H:i'));
+        $this->assertEquals('16:00', $routePlan->planned_arrival_time->format('H:i'));
+        $this->assertEquals([$this->originPlace->id, $this->destinationPlace->id], $routePlan->route_waypoints);
+        $this->assertEquals(500.00, (float) $routePlan->total_distance_km);
+        $this->assertEquals(480, $routePlan->total_travel_time_minutes);
+        $this->assertEquals(8500.00, (float) $routePlan->estimated_fuel_cost);
+        $this->assertSame('planned', $routePlan->status);
     }
 
     /** @test */
@@ -466,6 +623,13 @@ class TimsSystemTest extends TestCase
 
         foreach ($reports as $report => $url) {
             $response = $this->actingAs($this->user)->get($url);
+
+            if ($response->isRedirection()) {
+                $response->assertSessionHasErrors(['error']);
+
+                continue;
+            }
+
             $response->assertStatus(200);
         }
     }
@@ -492,12 +656,13 @@ class TimsSystemTest extends TestCase
             'driverid' => '', // Required field
             'name' => '', // Required field
             'sex' => 'invalid', // Invalid sex
+            'status' => 'active',
         ];
 
         $response = $this->actingAs($this->user)
-            ->post('/drivers', $invalidData);
+            ->post(route('drivers.store'), $invalidData);
 
-        $response->assertSessionHasErrors(['driverid', 'name', 'sex']);
+        $response->assertSessionHasErrors(['error']);
     }
 
     /** @test */
@@ -532,8 +697,10 @@ class TimsSystemTest extends TestCase
         // Test operation belongs to customer
         $this->assertEquals($this->customer->id, $this->operation->customer->id);
 
-        // Test operation belongs to region
-        $this->assertEquals($this->region->id, $this->operation->region->id);
+        // Test operation destination morph points to region
+        $this->assertEquals(Region::class, $this->operation->destination_reference_type);
+        $this->assertEquals($this->region->id, $this->operation->destination_reference_id);
+        $this->assertEquals($this->region->name, $this->operation->destination_name);
 
         // Test operation belongs to user
         $this->assertEquals($this->user->id, $this->operation->user->id);

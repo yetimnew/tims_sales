@@ -4,17 +4,31 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
-use Spatie\Permission\Models\Role;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class UserManagementTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected User $admin;
+
+    protected User $manager;
+
+    protected User $user;
+
     protected function setUp(): void
     {
         parent::setUp();
+
+        Http::fake([
+            'https://api.pwnedpasswords.com/*' => Http::response('', 200),
+        ]);
+
+        Carbon::setTestNow(now());
 
         // Seed permissions first
         $this->seed(\Database\Seeders\CheckPermissionSeeder::class);
@@ -32,6 +46,18 @@ class UserManagementTest extends TestCase
         $this->user->assignRole('user');
     }
 
+    protected function tearDown(): void
+    {
+        Carbon::setTestNow();
+
+        parent::tearDown();
+    }
+
+    private function strongPassword(): string
+    {
+        return 'Aa1!'.Str::random(20);
+    }
+
     /** @test */
     public function admin_can_view_users_index()
     {
@@ -44,11 +70,13 @@ class UserManagementTest extends TestCase
     /** @test */
     public function admin_can_create_user_with_role()
     {
+        $password = $this->strongPassword();
+
         $userData = [
             'name' => 'New User',
             'email' => 'newuser@example.com',
-            'password' => 'Password123!@#',
-            'password_confirmation' => 'Password123!@#',
+            'password' => $password,
+            'password_confirmation' => $password,
             'role' => 'user',
         ];
 
@@ -96,11 +124,13 @@ class UserManagementTest extends TestCase
         $user->assignRole('user');
         $oldPassword = $user->password;
 
+        $newPassword = $this->strongPassword();
+
         $updateData = [
             'name' => 'Updated User',
             'email' => 'updated@example.com',
-            'password' => 'NewPassword123!@#',
-            'password_confirmation' => 'NewPassword123!@#',
+            'password' => $newPassword,
+            'password_confirmation' => $newPassword,
             'role' => 'user',
         ];
 
@@ -110,7 +140,7 @@ class UserManagementTest extends TestCase
 
         $user->refresh();
         $this->assertNotEquals($oldPassword, $user->password);
-        $this->assertTrue(Hash::check('NewPassword123!@#', $user->password));
+        $this->assertTrue(Hash::check($newPassword, $user->password));
     }
 
     /** @test */
@@ -145,7 +175,7 @@ class UserManagementTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
-        $response->assertHeader('Content-Disposition', 'attachment; filename="users_export_' . now()->format('Y-m-d_H-i-s') . '.csv"');
+        $response->assertHeader('Content-Disposition', 'attachment; filename="users_'.now()->format('Y-m-d_H-i-s').'.csv"');
     }
 
     /** @test */
@@ -167,11 +197,13 @@ class UserManagementTest extends TestCase
         $response->assertStatus(200);
 
         // But cannot create users
+        $password = $this->strongPassword();
+
         $userData = [
             'name' => 'Test User',
             'email' => 'test@example.com',
-            'password' => 'Password123!@#',
-            'password_confirmation' => 'Password123!@#',
+            'password' => $password,
+            'password_confirmation' => $password,
             'role' => 'user',
         ];
 
@@ -213,11 +245,13 @@ class UserManagementTest extends TestCase
     /** @test */
     public function user_creation_requires_authentication()
     {
+        $password = $this->strongPassword();
+
         $userData = [
             'name' => 'Test User',
             'email' => 'test@example.com',
-            'password' => 'Password123!@#',
-            'password_confirmation' => 'Password123!@#',
+            'password' => $password,
+            'password_confirmation' => $password,
             'role' => 'user',
         ];
 
@@ -229,11 +263,13 @@ class UserManagementTest extends TestCase
     /** @test */
     public function user_creation_requires_permission()
     {
+        $password = $this->strongPassword();
+
         $userData = [
             'name' => 'Test User',
             'email' => 'test@example.com',
-            'password' => 'Password123!@#',
-            'password_confirmation' => 'Password123!@#',
+            'password' => $password,
+            'password_confirmation' => $password,
             'role' => 'user',
         ];
 
@@ -292,11 +328,13 @@ class UserManagementTest extends TestCase
     {
         $existingUser = User::factory()->create(['email' => 'existing@example.com']);
 
+        $password = $this->strongPassword();
+
         $userData = [
             'name' => 'Test User',
             'email' => 'existing@example.com',
-            'password' => 'Password123!@#',
-            'password_confirmation' => 'Password123!@#',
+            'password' => $password,
+            'password_confirmation' => $password,
             'role' => 'user',
         ];
 
@@ -308,11 +346,13 @@ class UserManagementTest extends TestCase
     /** @test */
     public function user_creation_validates_password_confirmation()
     {
+        $password = $this->strongPassword();
+
         $userData = [
             'name' => 'Test User',
             'email' => 'test@example.com',
-            'password' => 'Password123!@#',
-            'password_confirmation' => 'Different123!@#',
+            'password' => $password,
+            'password_confirmation' => $password.'mismatch',
             'role' => 'user',
         ];
 
@@ -324,11 +364,13 @@ class UserManagementTest extends TestCase
     /** @test */
     public function user_creation_validates_role_exists()
     {
+        $password = $this->strongPassword();
+
         $userData = [
             'name' => 'Test User',
             'email' => 'test@example.com',
-            'password' => 'Password123!@#',
-            'password_confirmation' => 'Password123!@#',
+            'password' => $password,
+            'password_confirmation' => $password,
             'role' => 'nonexistent',
         ];
 

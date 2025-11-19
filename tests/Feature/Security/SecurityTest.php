@@ -2,17 +2,32 @@
 
 namespace Tests\Feature\Security;
 
-use App\Models\User;
 use App\Models\Truck;
-use App\Models\Driver;
-use App\Models\Role;
-use App\Models\Permission;
+use App\Models\User;
+use Database\Seeders\CheckPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class SecurityTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->seed(CheckPermissionSeeder::class);
+    }
+
+    private function createUser(): User
+    {
+        /** @var User $user */
+        $user = $this->createUser();
+
+        return $user;
+    }
 
     /** @test */
     public function it_prevents_unauthorized_access()
@@ -32,7 +47,7 @@ class SecurityTest extends TestCase
     /** @test */
     public function it_prevents_access_without_permissions()
     {
-        $userWithoutPermission = User::factory()->create();
+        $userWithoutPermission = $this->createUser();
         $truck = Truck::factory()->create();
 
         $response = $this->actingAs($userWithoutPermission)
@@ -54,17 +69,17 @@ class SecurityTest extends TestCase
     /** @test */
     public function it_prevents_cross_user_data_access()
     {
-        $user1 = User::factory()->create();
-        $user2 = User::factory()->create();
+        $user1 = $this->createUser();
+        $user2 = $this->createUser();
 
         // Create permissions for both users
         $permissions = ['trucks.view', 'trucks.show'];
         foreach ($permissions as $permission) {
-            Permission::create(['name' => $permission, 'guard_name' => 'web']);
+            Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
         }
 
-        $role1 = Role::create(['name' => 'user1', 'guard_name' => 'web']);
-        $role2 = Role::create(['name' => 'user2', 'guard_name' => 'web']);
+        $role1 = Role::findOrCreate('user1', 'web');
+        $role2 = Role::findOrCreate('user2', 'web');
 
         $role1->givePermissionTo($permissions);
         $role2->givePermissionTo($permissions);
@@ -89,12 +104,12 @@ class SecurityTest extends TestCase
     /** @test */
     public function it_prevents_sql_injection_attacks()
     {
-        $user = User::factory()->create();
+        $user = $this->createUser();
         $permissions = ['trucks.view'];
         foreach ($permissions as $permission) {
-            Permission::create(['name' => $permission, 'guard_name' => 'web']);
+            Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
         }
-        $role = Role::create(['name' => 'admin', 'guard_name' => 'web']);
+        $role = Role::findByName('admin', 'web');
         $role->givePermissionTo($permissions);
         $user->assignRole($role);
 
@@ -107,18 +122,18 @@ class SecurityTest extends TestCase
         $response->assertStatus(200);
 
         // Verify trucks table still exists
-        $this->assertDatabaseHas('trucks', []);
+        $this->assertGreaterThan(0, Truck::count());
     }
 
     /** @test */
     public function it_prevents_xss_attacks()
     {
-        $user = User::factory()->create();
+        $user = $this->createUser();
         $permissions = ['trucks.create'];
         foreach ($permissions as $permission) {
-            Permission::create(['name' => $permission, 'guard_name' => 'web']);
+            Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
         }
-        $role = Role::create(['name' => 'admin', 'guard_name' => 'web']);
+        $role = Role::findByName('admin', 'web');
         $role->givePermissionTo($permissions);
         $user->assignRole($role);
 
@@ -127,7 +142,7 @@ class SecurityTest extends TestCase
         $truckData = [
             'plate' => $xssPayload,
             'vehicletype_id' => \App\Models\VehicleType::factory()->create()->id,
-            'status' => 'active'
+            'status' => 'active',
         ];
 
         $response = $this->actingAs($user)
@@ -142,19 +157,19 @@ class SecurityTest extends TestCase
     /** @test */
     public function it_prevents_csrf_attacks()
     {
-        $user = User::factory()->create();
+        $user = $this->createUser();
         $permissions = ['trucks.create'];
         foreach ($permissions as $permission) {
-            Permission::create(['name' => $permission, 'guard_name' => 'web']);
+            Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
         }
-        $role = Role::create(['name' => 'admin', 'guard_name' => 'web']);
+        $role = Role::findByName('admin', 'web');
         $role->givePermissionTo($permissions);
         $user->assignRole($role);
 
         $truckData = [
             'plate' => 'CSRF-TEST',
             'vehicletype_id' => \App\Models\VehicleType::factory()->create()->id,
-            'status' => 'active'
+            'status' => 'active',
         ];
 
         // Test without CSRF token
@@ -172,12 +187,12 @@ class SecurityTest extends TestCase
     /** @test */
     public function it_prevents_mass_assignment_attacks()
     {
-        $user = User::factory()->create();
+        $user = $this->createUser();
         $permissions = ['trucks.create'];
         foreach ($permissions as $permission) {
-            Permission::create(['name' => $permission, 'guard_name' => 'web']);
+            Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
         }
-        $role = Role::create(['name' => 'admin', 'guard_name' => 'web']);
+        $role = Role::findByName('admin', 'web');
         $role->givePermissionTo($permissions);
         $user->assignRole($role);
 
@@ -205,12 +220,12 @@ class SecurityTest extends TestCase
     /** @test */
     public function it_prevents_directory_traversal_attacks()
     {
-        $user = User::factory()->create();
+        $user = $this->createUser();
         $permissions = ['trucks.export'];
         foreach ($permissions as $permission) {
-            Permission::create(['name' => $permission, 'guard_name' => 'web']);
+            Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
         }
-        $role = Role::create(['name' => 'admin', 'guard_name' => 'web']);
+        $role = Role::findByName('admin', 'web');
         $role->givePermissionTo($permissions);
         $user->assignRole($role);
 
@@ -226,12 +241,12 @@ class SecurityTest extends TestCase
     /** @test */
     public function it_prevents_file_upload_attacks()
     {
-        $user = User::factory()->create();
+        $user = $this->createUser();
         $permissions = ['trucks.create'];
         foreach ($permissions as $permission) {
-            Permission::create(['name' => $permission, 'guard_name' => 'web']);
+            Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
         }
-        $role = Role::create(['name' => 'admin', 'guard_name' => 'web']);
+        $role = Role::findByName('admin', 'web');
         $role->givePermissionTo($permissions);
         $user->assignRole($role);
 
@@ -242,7 +257,7 @@ class SecurityTest extends TestCase
             'plate' => 'FILE-UPLOAD',
             'vehicletype_id' => \App\Models\VehicleType::factory()->create()->id,
             'status' => 'active',
-            'description' => $maliciousFile
+            'description' => $maliciousFile,
         ];
 
         $response = $this->actingAs($user)
@@ -261,23 +276,27 @@ class SecurityTest extends TestCase
         for ($i = 0; $i < 5; $i++) {
             $response = $this->post('/login', [
                 'email' => 'nonexistent@example.com',
-                'password' => 'wrongpassword'
+                'password' => 'wrongpassword',
             ]);
-            $response->assertStatus(422);
+            $response->assertStatus(302);
+            $response->assertSessionHasErrors('email');
         }
 
         // After multiple failed attempts, should still work
         $response = $this->post('/login', [
             'email' => 'nonexistent@example.com',
-            'password' => 'wrongpassword'
+            'password' => 'wrongpassword',
         ]);
-        $response->assertStatus(422);
+        $response->assertStatus(302);
+        $response->assertSessionHasErrors('email');
     }
 
     /** @test */
     public function it_prevents_session_fixation()
     {
-        $user = User::factory()->create();
+        $user = $this->createUser();
+        Permission::firstOrCreate(['name' => 'trucks.view', 'guard_name' => 'web']);
+        $user->givePermissionTo('trucks.view');
 
         $response = $this->actingAs($user)
             ->get(route('trucks.index'));
@@ -285,18 +304,18 @@ class SecurityTest extends TestCase
         $response->assertStatus(200);
 
         // Verify session is properly managed
-        $this->assertTrue($this->app['session']->has('login_web_' . sha1('App\Models\User')));
+        $this->assertTrue($this->app['session']->has('login_web_'.sha1('App\Models\User')));
     }
 
     /** @test */
     public function it_prevents_clickjacking()
     {
-        $user = User::factory()->create();
+        $user = $this->createUser();
         $permissions = ['trucks.view'];
         foreach ($permissions as $permission) {
-            Permission::create(['name' => $permission, 'guard_name' => 'web']);
+            Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
         }
-        $role = Role::create(['name' => 'admin', 'guard_name' => 'web']);
+        $role = Role::findByName('admin', 'web');
         $role->givePermissionTo($permissions);
         $user->assignRole($role);
 
@@ -320,22 +339,22 @@ class SecurityTest extends TestCase
         // Verify error messages don't reveal sensitive information
         $response = $this->post('/login', [
             'email' => 'nonexistent@example.com',
-            'password' => 'wrongpassword'
+            'password' => 'wrongpassword',
         ]);
 
-        $response->assertStatus(422);
+        $response->assertStatus(302);
         $response->assertSessionHasErrors('email');
     }
 
     /** @test */
     public function it_prevents_http_parameter_pollution()
     {
-        $user = User::factory()->create();
+        $user = $this->createUser();
         $permissions = ['trucks.view'];
         foreach ($permissions as $permission) {
-            Permission::create(['name' => $permission, 'guard_name' => 'web']);
+            Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
         }
-        $role = Role::create(['name' => 'admin', 'guard_name' => 'web']);
+        $role = Role::findByName('admin', 'web');
         $role->givePermissionTo($permissions);
         $user->assignRole($role);
 
@@ -343,7 +362,7 @@ class SecurityTest extends TestCase
         $response = $this->actingAs($user)
             ->get(route('trucks.index', [
                 'search' => 'test',
-                'search' => 'malicious'
+                'search' => 'malicious',
             ]));
 
         $response->assertStatus(200);
@@ -355,12 +374,12 @@ class SecurityTest extends TestCase
     /** @test */
     public function it_prevents_open_redirect_attacks()
     {
-        $user = User::factory()->create();
+        $user = $this->createUser();
         $permissions = ['trucks.view'];
         foreach ($permissions as $permission) {
-            Permission::create(['name' => $permission, 'guard_name' => 'web']);
+            Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
         }
-        $role = Role::create(['name' => 'admin', 'guard_name' => 'web']);
+        $role = Role::findByName('admin', 'web');
         $role->givePermissionTo($permissions);
         $user->assignRole($role);
 
@@ -378,12 +397,12 @@ class SecurityTest extends TestCase
     /** @test */
     public function it_prevents_timing_attacks()
     {
-        $user = User::factory()->create();
+        $user = $this->createUser();
         $permissions = ['trucks.view'];
         foreach ($permissions as $permission) {
-            Permission::create(['name' => $permission, 'guard_name' => 'web']);
+            Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
         }
-        $role = Role::create(['name' => 'admin', 'guard_name' => 'web']);
+        $role = Role::findByName('admin', 'web');
         $role->givePermissionTo($permissions);
         $user->assignRole($role);
 
@@ -404,12 +423,12 @@ class SecurityTest extends TestCase
     /** @test */
     public function it_prevents_ldap_injection()
     {
-        $user = User::factory()->create();
+        $user = $this->createUser();
         $permissions = ['trucks.view'];
         foreach ($permissions as $permission) {
-            Permission::create(['name' => $permission, 'guard_name' => 'web']);
+            Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
         }
-        $role = Role::create(['name' => 'admin', 'guard_name' => 'web']);
+        $role = Role::findByName('admin', 'web');
         $role->givePermissionTo($permissions);
         $user->assignRole($role);
 
@@ -427,12 +446,12 @@ class SecurityTest extends TestCase
     /** @test */
     public function it_prevents_command_injection()
     {
-        $user = User::factory()->create();
+        $user = $this->createUser();
         $permissions = ['trucks.create'];
         foreach ($permissions as $permission) {
-            Permission::create(['name' => $permission, 'guard_name' => 'web']);
+            Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
         }
-        $role = Role::create(['name' => 'admin', 'guard_name' => 'web']);
+        $role = Role::findByName('admin', 'web');
         $role->givePermissionTo($permissions);
         $user->assignRole($role);
 
@@ -441,7 +460,7 @@ class SecurityTest extends TestCase
         $truckData = [
             'plate' => $commandPayload,
             'vehicletype_id' => \App\Models\VehicleType::factory()->create()->id,
-            'status' => 'active'
+            'status' => 'active',
         ];
 
         $response = $this->actingAs($user)
@@ -456,12 +475,12 @@ class SecurityTest extends TestCase
     /** @test */
     public function it_prevents_xml_external_entity_attacks()
     {
-        $user = User::factory()->create();
+        $user = $this->createUser();
         $permissions = ['trucks.view'];
         foreach ($permissions as $permission) {
-            Permission::create(['name' => $permission, 'guard_name' => 'web']);
+            Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
         }
-        $role = Role::create(['name' => 'admin', 'guard_name' => 'web']);
+        $role = Role::findByName('admin', 'web');
         $role->givePermissionTo($permissions);
         $user->assignRole($role);
 
@@ -479,12 +498,12 @@ class SecurityTest extends TestCase
     /** @test */
     public function it_prevents_server_side_request_forgery()
     {
-        $user = User::factory()->create();
+        $user = $this->createUser();
         $permissions = ['trucks.view'];
         foreach ($permissions as $permission) {
-            Permission::create(['name' => $permission, 'guard_name' => 'web']);
+            Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
         }
-        $role = Role::create(['name' => 'admin', 'guard_name' => 'web']);
+        $role = Role::findByName('admin', 'web');
         $role->givePermissionTo($permissions);
         $user->assignRole($role);
 

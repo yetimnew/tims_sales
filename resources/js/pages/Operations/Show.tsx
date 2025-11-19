@@ -29,6 +29,10 @@ import {
     CircleDollarSign,
     TrendingUp,
     Zap,
+    Truck,
+    Handshake,
+    GitMerge,
+    HelpCircle,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { Area, AreaChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis } from 'recharts';
@@ -117,9 +121,43 @@ interface PerformanceInsights {
     };
 }
 
-interface OperationsShowProps { operation: Operation; activityLogs?: ActivityLog[]; performanceInsights?: PerformanceInsights | null; }
+type ExecutionMode = 'company' | 'vendor' | 'hybrid' | 'pending';
 
-export default function OperationsShow({ operation, activityLogs = [], performanceInsights }: OperationsShowProps) {
+interface TransportExecution {
+    companyTrips: number;
+    vendorTrips: number;
+    companyTonnage: number;
+    vendorTonnage: number;
+    companyTonKm: number;
+    vendorTonKm: number;
+    companyCost: number;
+    vendorCost: number;
+    totalCost: number;
+    companyTripShare: number | null;
+    vendorTripShare: number | null;
+    companyTonnageShare: number | null;
+    vendorTonnageShare: number | null;
+    companyTonKmShare: number | null;
+    vendorTonKmShare: number | null;
+    companyCostShare: number | null;
+    vendorCostShare: number | null;
+    companyAverageTonPerTrip: number | null;
+    vendorAverageTonPerTrip: number | null;
+    companyAverageTonKmPerTrip: number | null;
+    vendorAverageTonKmPerTrip: number | null;
+    companyCostPerTonKm: number | null;
+    vendorCostPerTonKm: number | null;
+    executionMode: ExecutionMode;
+}
+
+interface OperationsShowProps {
+    operation: Operation;
+    activityLogs?: ActivityLog[];
+    performanceInsights?: PerformanceInsights | null;
+    transportExecution?: TransportExecution | null;
+}
+
+export default function OperationsShow({ operation, activityLogs = [], performanceInsights, transportExecution: transportExecutionProp }: OperationsShowProps) {
     const { hasPermission } = usePermissions();
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
@@ -380,6 +418,96 @@ export default function OperationsShow({ operation, activityLogs = [], performan
         loadedDistance: totals.loadedDistance ?? null,
         emptyDistance: totals.emptyDistance ?? null,
     } satisfies PerformanceEconomics;
+
+    const fallbackTonKm = Number(economics.totalTonKm ?? totals.totalTonKm ?? 0);
+    const transportExecution = transportExecutionProp ?? {
+        companyTrips: totals.totalTrips,
+        vendorTrips: 0,
+        companyTonnage: totals.totalTonnage ?? 0,
+        vendorTonnage: 0,
+        companyTonKm: fallbackTonKm,
+        vendorTonKm: 0,
+        companyCost: financials.totalCost ?? 0,
+        vendorCost: 0,
+        totalCost: financials.totalCost ?? 0,
+        companyTripShare: totals.totalTrips > 0 ? 100 : null,
+        vendorTripShare: totals.totalTrips > 0 ? 0 : null,
+        companyTonnageShare: (totals.totalTonnage ?? 0) > 0 ? 100 : null,
+        vendorTonnageShare: (totals.totalTonnage ?? 0) > 0 ? 0 : null,
+        companyTonKmShare: fallbackTonKm > 0 ? 100 : null,
+        vendorTonKmShare: fallbackTonKm > 0 ? 0 : null,
+        companyCostShare: (financials.totalCost ?? 0) > 0 ? 100 : null,
+        vendorCostShare: (financials.totalCost ?? 0) > 0 ? 0 : null,
+        companyAverageTonPerTrip: totals.averageTonPerTrip ?? null,
+        vendorAverageTonPerTrip: null,
+        companyAverageTonKmPerTrip: economics.averageTonKmPerTrip ?? null,
+        vendorAverageTonKmPerTrip: null,
+        companyCostPerTonKm: financials.costPerTonKm ?? economics.costPerTonKm ?? null,
+        vendorCostPerTonKm: null,
+        executionMode: totals.totalTrips > 0 ? 'company' : 'pending',
+    } satisfies TransportExecution;
+
+    const executionModeConfig: Record<ExecutionMode, {
+        label: string;
+        description: string;
+        badgeClass: string;
+        chipClass: string;
+        icon: LucideIcon;
+    }> = {
+        company: {
+            label: 'Company Fleet',
+            description: 'Trips executed using internal fleet resources.',
+            badgeClass: 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-200 dark:border-emerald-800',
+            chipClass: 'text-emerald-700 dark:text-emerald-200',
+            icon: Truck,
+        },
+        vendor: {
+            label: 'Vendor Managed',
+            description: 'Fulfilled entirely via vendor partners.',
+            badgeClass: 'bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-200 dark:border-sky-800',
+            chipClass: 'text-sky-700 dark:text-sky-200',
+            icon: Handshake,
+        },
+        hybrid: {
+            label: 'Hybrid Execution',
+            description: 'Mix of company fleet and vendor partners.',
+            badgeClass: 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-200 dark:border-purple-800',
+            chipClass: 'text-purple-700 dark:text-purple-200',
+            icon: GitMerge,
+        },
+        pending: {
+            label: 'No Trips Logged',
+            description: 'Log either fleet or outsourced trips to analyse execution mix.',
+            badgeClass: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-900/40 dark:text-slate-200 dark:border-slate-700',
+            chipClass: 'text-slate-700 dark:text-slate-200',
+            icon: HelpCircle,
+        },
+    };
+
+    const executionProfile = executionModeConfig[transportExecution.executionMode] ?? executionModeConfig.pending;
+    const ExecutionIcon = executionProfile.icon;
+    const totalTripsMix = transportExecution.companyTrips + transportExecution.vendorTrips;
+    const totalTonnageMix = transportExecution.companyTonnage + transportExecution.vendorTonnage;
+    const totalTonKmMix = transportExecution.companyTonKm + transportExecution.vendorTonKm;
+    const companyTripShareLabel = formatShareLabel(transportExecution.companyTripShare);
+    const vendorTripShareLabel = formatShareLabel(transportExecution.vendorTripShare);
+    const companyTonnageShareLabel = formatShareLabel(transportExecution.companyTonnageShare);
+    const vendorTonnageShareLabel = formatShareLabel(transportExecution.vendorTonnageShare);
+    const companyTonKmShareLabel = formatShareLabel(transportExecution.companyTonKmShare);
+    const vendorTonKmShareLabel = formatShareLabel(transportExecution.vendorTonKmShare);
+    const companyCostShareLabel = formatShareLabel(transportExecution.companyCostShare);
+    const vendorCostShareLabel = formatShareLabel(transportExecution.vendorCostShare);
+    const companyAverageTonPerTripLabel = formatOptionalNumber(transportExecution.companyAverageTonPerTrip, ' MT');
+    const vendorAverageTonPerTripLabel = formatOptionalNumber(transportExecution.vendorAverageTonPerTrip, ' MT');
+    const companyAverageTonKmPerTripLabel = formatOptionalNumber(transportExecution.companyAverageTonKmPerTrip, ' ton-km');
+    const vendorAverageTonKmPerTripLabel = formatOptionalNumber(transportExecution.vendorAverageTonKmPerTrip, ' ton-km');
+    const companyTonKmLabel = formatOptionalNumber(transportExecution.companyTonKm, ' ton-km');
+    const vendorTonKmLabel = formatOptionalNumber(transportExecution.vendorTonKm, ' ton-km');
+    const companyCostLabel = formatCurrency(transportExecution.companyCost);
+    const vendorCostLabel = formatCurrency(transportExecution.vendorCost);
+    const totalCostLabel = formatCurrency(transportExecution.totalCost);
+    const companyCostPerTonKmLabel = formatCurrencyPerUnit(transportExecution.companyCostPerTonKm ?? null, 'ton-km');
+    const vendorCostPerTonKmLabel = formatCurrencyPerUnit(transportExecution.vendorCostPerTonKm ?? null, 'ton-km');
 
     const timelineData = performanceInsights?.trends?.timeline ?? [];
     const tonnageBreakdown = performanceInsights?.trends?.tonnageBreakdown ?? [];
@@ -786,6 +914,10 @@ export default function OperationsShow({ operation, activityLogs = [], performan
                                             {operation.closed ? <CheckCircle className="h-3.5 w-3.5" /> : <AlertCircle className="h-3.5 w-3.5" />}
                                             {operation.closed ? 'Closed' : 'Open'}
                                         </Badge>
+                                        <Badge className={`flex items-center gap-1 border text-sm font-medium ${executionProfile.badgeClass}`}>
+                                            <ExecutionIcon className="h-3.5 w-3.5" />
+                                            {executionProfile.label}
+                                        </Badge>
                                     </div>
                                     <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
                                         Comprehensive view of the operation lifecycle and performance indicators.
@@ -805,6 +937,10 @@ export default function OperationsShow({ operation, activityLogs = [], performan
                                                 Owner: {operation.user.name}
                                             </span>
                                         )}
+                                        <span className={`inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-sm font-medium shadow-sm dark:bg-slate-900/50 ${executionProfile.chipClass}`}>
+                                            <ExecutionIcon className="h-3.5 w-3.5" />
+                                            Execution: {executionProfile.label}
+                                        </span>
                                     </div>
                                 </div>
                             </div>
@@ -897,6 +1033,61 @@ export default function OperationsShow({ operation, activityLogs = [], performan
                                                 {formatDate(operation.enddate)}
                                             </div>
                                             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Projected completion</p>
+                                        </div>
+                                    </div>
+                                    <div className="rounded-xl border border-slate-200 bg-white/80 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/40 md:col-span-2">
+                                        <div className="flex flex-wrap items-start justify-between gap-3">
+                                            <div>
+                                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Transport Execution</p>
+                                                <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">{executionProfile.label}</p>
+                                                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{executionProfile.description}</p>
+                                            </div>
+                                            <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold ${executionProfile.badgeClass}`}>
+                                                <ExecutionIcon className="h-3.5 w-3.5" />
+                                                {executionProfile.label}
+                                            </span>
+                                        </div>
+                                        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                                            <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 shadow-sm dark:border-emerald-800 dark:bg-emerald-900/20">
+                                                <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-300">
+                                                    <span>Company Fleet</span>
+                                                    <span>{companyTripShareLabel}</span>
+                                                </div>
+                                                <p className="mt-2 text-sm font-semibold text-emerald-700 dark:text-emerald-100">
+                                                    {formatNumber(transportExecution.companyTrips, 0)} trips · {formatNumber(transportExecution.companyTonnage)} MT
+                                                </p>
+                                                <p className="mt-1 text-xs text-emerald-600/80 dark:text-emerald-300/80">Ton-km share {companyTonKmShareLabel}</p>
+                                            </div>
+                                            <div className="rounded-lg border border-sky-200 bg-sky-50 p-4 shadow-sm dark:border-sky-800 dark:bg-sky-900/20">
+                                                <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-sky-600 dark:text-sky-300">
+                                                    <span>Vendor Partners</span>
+                                                    <span>{vendorTripShareLabel}</span>
+                                                </div>
+                                                <p className="mt-2 text-sm font-semibold text-sky-700 dark:text-sky-100">
+                                                    {formatNumber(transportExecution.vendorTrips, 0)} trips · {formatNumber(transportExecution.vendorTonnage)} MT
+                                                </p>
+                                                <p className="mt-1 text-xs text-sky-600/80 dark:text-sky-300/80">Ton-km share {vendorTonKmShareLabel}</p>
+                                            </div>
+                                        </div>
+                                        <div className="mt-4 grid gap-2 text-xs text-muted-foreground sm:grid-cols-3">
+                                            <div className="flex items-center justify-between">
+                                                <span>Total trips tracked</span>
+                                                <span className="font-semibold text-foreground">{formatNumber(totalTripsMix, 0)}</span>
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <span>Total tonnage handled</span>
+                                                <span className="font-semibold text-foreground">{formatNumber(totalTonnageMix)}</span>
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <span>Total ton-km delivered</span>
+                                                <span className="font-semibold text-foreground">{formatOptionalNumber(totalTonKmMix, ' ton-km')}</span>
+                                            </div>
+                                        </div>
+                                        <div className="mt-2 grid gap-1 text-[11px] text-muted-foreground sm:grid-cols-2">
+                                            <div>Trip mix: {companyTripShareLabel} company · {vendorTripShareLabel} vendor</div>
+                                            <div>Tonnage mix: {companyTonnageShareLabel} company · {vendorTonnageShareLabel} vendor</div>
+                                            <div>Ton-km mix: {companyTonKmShareLabel} company · {vendorTonKmShareLabel} vendor</div>
+                                            <div>Cost mix: {companyCostShareLabel} company · {vendorCostShareLabel} vendor</div>
                                         </div>
                                     </div>
                                 </CardContent>
@@ -1019,6 +1210,31 @@ export default function OperationsShow({ operation, activityLogs = [], performan
                                                     <div className="flex items-center justify-between gap-2">
                                                         <span>Ton-km Gap:</span>
                                                         <span>{remainingTonKmLabel}</span>
+                                                    </div>
+                                                </div>
+                                                <div className="mt-2 grid gap-1 text-[11px] text-muted-foreground sm:grid-cols-2">
+                                                    <div>Trip mix: {companyTripShareLabel} company · {vendorTripShareLabel} vendor</div>
+                                                    <div>Tonnage mix: {companyTonnageShareLabel} company · {vendorTonnageShareLabel} vendor</div>
+                                                    <div>Ton-km mix: {companyTonKmShareLabel} company · {vendorTonKmShareLabel} vendor</div>
+                                                    <div>Cost mix: {companyCostShareLabel} company · {vendorCostShareLabel} vendor</div>
+                                                </div>
+                                                <div className="mt-4 rounded-xl border border-slate-200 bg-white/70 p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900/40">
+                                                    <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">Source mix snapshot</p>
+                                                    <div className="mt-2 grid gap-2 text-xs sm:grid-cols-2">
+                                                        <div>
+                                                            <p className="font-semibold text-emerald-700 dark:text-emerald-200">Company Fleet</p>
+                                                            <p className="text-muted-foreground">{formatNumber(transportExecution.companyTonnage)} MT · {companyTonKmLabel}</p>
+                                                            <p className="text-muted-foreground">Avg load {companyAverageTonPerTripLabel}</p>
+                                                            <p className="text-muted-foreground">Avg ton-km / trip {companyAverageTonKmPerTripLabel}</p>
+                                                            <p className="text-muted-foreground">Cost / ton-km {companyCostPerTonKmLabel}</p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-semibold text-sky-700 dark:text-sky-200">Vendor Partners</p>
+                                                            <p className="text-muted-foreground">{formatNumber(transportExecution.vendorTonnage)} MT · {vendorTonKmLabel}</p>
+                                                            <p className="text-muted-foreground">Avg load {vendorAverageTonPerTripLabel}</p>
+                                                            <p className="text-muted-foreground">Avg ton-km / trip {vendorAverageTonKmPerTripLabel}</p>
+                                                            <p className="text-muted-foreground">Cost / ton-km {vendorCostPerTonKmLabel}</p>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -1147,25 +1363,37 @@ export default function OperationsShow({ operation, activityLogs = [], performan
                                                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">Financial Snapshot</p>
                                                 <div className="mt-3 space-y-3 text-sm">
                                                     <div className="flex items-center justify-between">
-                                                        <span className="text-muted-foreground">Total Cost</span>
-                                                        <span className="font-semibold text-foreground">{formatCurrency(financials.totalCost)}</span>
+                                                        <span className="text-muted-foreground">Company Fleet Cost</span>
+                                                        <span className="font-semibold text-foreground">{companyCostLabel}</span>
                                                     </div>
                                                     <div className="flex items-center justify-between">
-                                                        <span className="text-muted-foreground">Average Cost / Trip</span>
+                                                        <span className="text-muted-foreground">Vendor Partner Cost</span>
+                                                        <span className="font-semibold text-foreground">{vendorCostLabel}</span>
+                                                    </div>
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-muted-foreground">Total Cost (Blended)</span>
+                                                        <span className="font-semibold text-foreground">{totalCostLabel}</span>
+                                                    </div>
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-muted-foreground">Company Avg Cost / Trip</span>
                                                         <span className="font-semibold text-foreground">{formatCurrency(financials.averageCostPerTrip)}</span>
                                                     </div>
                                                     <div className="flex items-center justify-between">
-                                                        <span className="text-muted-foreground">Average Cost / MT</span>
+                                                        <span className="text-muted-foreground">Company Avg Cost / MT</span>
                                                         <span className="font-semibold text-foreground">{formatCurrency(financials.averageCostPerTon)}</span>
                                                     </div>
                                                     <div className="flex items-center justify-between">
-                                                        <span className="text-muted-foreground">Cost / Ton-Km</span>
+                                                        <span className="text-muted-foreground">Company Cost / Ton-Km</span>
                                                         <span className="font-semibold text-foreground">{formatCurrencyPerUnit(financials.costPerTonKm ?? economics.costPerTonKm ?? null, 'ton-km')}</span>
+                                                    </div>
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-muted-foreground">Vendor Cost / Ton-Km</span>
+                                                        <span className="font-semibold text-foreground">{vendorCostPerTonKmLabel}</span>
                                                     </div>
                                                 </div>
                                                 <div className="mt-4 rounded-lg border border-indigo-100 bg-indigo-50/70 p-3 text-xs text-indigo-700 shadow-sm dark:border-indigo-900/50 dark:bg-indigo-950/30 dark:text-indigo-200">
                                                     {totals.totalTrips > 0
-                                                        ? `Return rate at ${returnRateLabel} (${returnRateDeltaLabel} vs ${returnRateTarget}%) with ${tripProgressLabel} trips closed.`
+                                                        ? `Return rate at ${returnRateLabel} (${returnRateDeltaLabel} vs ${returnRateTarget}%) with ${tripProgressLabel} trips closed. Cost mix ${companyCostShareLabel} company / ${vendorCostShareLabel} vendor.`
                                                         : 'Log trip performances against this operation to begin monitoring financial efficiency.'}
                                                 </div>
                                             </div>

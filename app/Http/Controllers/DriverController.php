@@ -3,12 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Driver;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
-use Exception;
 use Spatie\Activitylog\Models\Activity;
 
 class DriverController extends Controller
@@ -21,11 +21,11 @@ class DriverController extends Controller
         $search = trim((string) $request->input('search'));
         $status = $request->input('status');
         $sex = $request->input('sex');
-    $perPageOptions = [15, 25, 50, 100];
-    $perPageDefault = 15;
+        $perPageOptions = [15, 25, 50, 100];
+        $perPageDefault = 15;
         $perPage = (int) $request->input('per_page', $perPageDefault);
 
-        if (!in_array($perPage, $perPageOptions, true)) {
+        if (! in_array($perPage, $perPageOptions, true)) {
             $perPage = $perPageDefault;
         }
 
@@ -46,12 +46,12 @@ class DriverController extends Controller
             $applySearch($metricsQuery);
         }
 
-        if (!empty($sex) && $sex !== 'all') {
+        if (! empty($sex) && $sex !== 'all') {
             $driversQuery->where('sex', $sex);
             $metricsQuery->where('sex', $sex);
         }
 
-        if (!empty($status) && $status !== 'all') {
+        if (! empty($status) && $status !== 'all') {
             $driversQuery->where('status', $status);
         }
 
@@ -59,13 +59,13 @@ class DriverController extends Controller
         $direction = $request->input('direction', 'asc');
         $allowedSorts = ['name', 'driverid', 'sex', 'mobile', 'hireddate', 'status', 'zone', 'created_at'];
 
-        if (!in_array($sort, $allowedSorts, true)) {
+        if (! in_array($sort, $allowedSorts, true)) {
             $sort = 'name';
         }
 
         $driversQuery->orderBy($sort, $direction);
 
-    $drivers = $driversQuery->paginate($perPage)->withQueryString();
+        $drivers = $driversQuery->paginate($perPage)->withQueryString();
 
         $metrics = [
             'total' => (clone $metricsQuery)->count(),
@@ -160,20 +160,64 @@ class DriverController extends Controller
         $driver->load([
             'trucks',
             'performances',
-            'driverTrucks' => function($query) {
+            'performanceRecords',
+            'safetyRecords',
+            'fuelRecords',
+            'driverTrucks' => function ($query) {
                 $query->with('truck')->orderBy('date_recived', 'desc');
-            }
+            },
         ]);
 
-        // Load activity logs for this driver using Spatie Activity Log
-        $activityLogs = Activity::forSubject($driver)
+        // Activity logs (limit for payload size) mapped to UI-friendly structure
+        $rawActivityLogs = Activity::forSubject($driver)
             ->with('causer')
             ->orderByDesc('created_at')
+            ->limit(50)
             ->get();
+
+        $activityLogs = $this->transformActivityLogs($rawActivityLogs);
+
+        // Aggregated performance summary from performanceRecords (higher-level records)
+        $performanceRecords = $driver->performanceRecords;
+        $performanceSummary = [
+            'total_records' => $performanceRecords->count(),
+            'total_distance_km' => (float) $performanceRecords->sum('total_distance_km'),
+            'total_trips' => (int) $performanceRecords->sum('total_trips'),
+            'total_cargo_tonnage' => (float) $performanceRecords->sum('total_cargo_tonnage'),
+            'avg_fuel_efficiency' => $performanceRecords->count() > 0 ? round((float) $performanceRecords->avg('fuel_efficiency'), 2) : null,
+            'avg_customer_rating' => $performanceRecords->count() > 0 ? round((float) $performanceRecords->avg('customer_rating'), 2) : null,
+            'safety_incidents' => (int) $performanceRecords->sum('safety_violations') + (int) $performanceRecords->sum('accidents'),
+        ];
+
+        // Safety summary from safetyRecords
+        $safetyRecords = $driver->safetyRecords;
+        $safetySummary = [
+            'total_records' => $safetyRecords->count(),
+            'accidents' => $safetyRecords->where('incident_type', 'accident')->count(),
+            'violations' => $safetyRecords->where('incident_type', 'violation')->count(),
+            'warnings' => $safetyRecords->where('incident_type', 'warning')->count(),
+            'critical' => $safetyRecords->where('severity', 'critical')->count(),
+            'major' => $safetyRecords->where('severity', 'major')->count(),
+            'minor' => $safetyRecords->where('severity', 'minor')->count(),
+            'total_damage_cost' => (float) $safetyRecords->sum('damage_cost'),
+        ];
+
+        // General counts similar to truck counts
+        $counts = [
+            'trucks' => $driver->trucks->count(),
+            'assignments' => $driver->driverTrucks->count(),
+            'performances' => $driver->performances->count(),
+            'performance_records' => $performanceRecords->count(),
+            'safety_records' => $safetyRecords->count(),
+            'fuel_records' => $driver->fuelRecords->count(),
+        ];
 
         return Inertia::render('Drivers/Show', [
             'driver' => $driver,
             'activityLogs' => $activityLogs,
+            'performanceSummary' => $performanceSummary,
+            'safetySummary' => $safetySummary,
+            'counts' => $counts,
         ]);
     }
 
@@ -194,7 +238,7 @@ class DriverController extends Controller
     {
         try {
             $validated = $request->validate([
-                'driverid' => 'required|string|max:255|unique:drivers,driverid,' . $driver->id,
+                'driverid' => 'required|string|max:255|unique:drivers,driverid,'.$driver->id,
                 'name' => 'required|string|max:255',
                 'sex' => 'required|string|in:male,female',
                 'birthdate' => 'nullable|date',
@@ -228,35 +272,35 @@ class DriverController extends Controller
             // Check if driver has performances
             if ($driver->performances()->count() > 0) {
                 return back()->withErrors([
-                    'error' => 'You are not allowed to delete this driver. It has ' . $driver->performances()->count() . ' performance record(s). Please remove all performance records first.'
+                    'error' => 'You are not allowed to delete this driver. It has '.$driver->performances()->count().' performance record(s). Please remove all performance records first.',
                 ]);
             }
 
             // Check if driver has performance records
             if ($driver->performanceRecords()->count() > 0) {
                 return back()->withErrors([
-                    'error' => 'You are not allowed to delete this driver. It has ' . $driver->performanceRecords()->count() . ' performance record(s). Please remove all performance records first.'
+                    'error' => 'You are not allowed to delete this driver. It has '.$driver->performanceRecords()->count().' performance record(s). Please remove all performance records first.',
                 ]);
             }
 
             // Check if driver has safety records
             if ($driver->safetyRecords()->count() > 0) {
                 return back()->withErrors([
-                    'error' => 'You are not allowed to delete this driver. It has ' . $driver->safetyRecords()->count() . ' safety record(s). Please remove all safety records first.'
+                    'error' => 'You are not allowed to delete this driver. It has '.$driver->safetyRecords()->count().' safety record(s). Please remove all safety records first.',
                 ]);
             }
 
             // Check if driver has fuel records
             if ($driver->fuelRecords()->count() > 0) {
                 return back()->withErrors([
-                    'error' => 'You are not allowed to delete this driver. It has ' . $driver->fuelRecords()->count() . ' fuel record(s). Please remove all fuel records first.'
+                    'error' => 'You are not allowed to delete this driver. It has '.$driver->fuelRecords()->count().' fuel record(s). Please remove all fuel records first.',
                 ]);
             }
 
             // Check if driver is currently assigned to active trucks
             if ($driver->trucks()->wherePivot('status', 'active')->count() > 0) {
                 return back()->withErrors([
-                    'error' => 'You are not allowed to delete this driver. It is currently assigned to ' . $driver->trucks()->wherePivot('status', 'active')->count() . ' active truck(s). Please unassign from all trucks first.'
+                    'error' => 'You are not allowed to delete this driver. It is currently assigned to '.$driver->trucks()->wherePivot('status', 'active')->count().' active truck(s). Please unassign from all trucks first.',
                 ]);
             }
 
@@ -313,7 +357,7 @@ class DriverController extends Controller
             $direction = $request->input('direction', 'asc');
             $allowedSorts = ['name', 'driverid', 'sex', 'mobile', 'hireddate', 'status', 'zone', 'created_at'];
 
-            if (!in_array($sort, $allowedSorts, true)) {
+            if (! in_array($sort, $allowedSorts, true)) {
                 $sort = 'name';
             }
 
@@ -323,7 +367,7 @@ class DriverController extends Controller
         $drivers = $query->get();
 
         // Generate CSV
-        $filename = 'drivers_' . now()->format('Y-m-d_H-i-s') . '.csv';
+        $filename = 'drivers_'.now()->format('Y-m-d_H-i-s').'.csv';
         $handle = fopen('php://temp', 'r+');
 
         // Write header
@@ -341,7 +385,7 @@ class DriverController extends Controller
             'Hired Date',
             'Status',
             'Created At',
-            'Updated At'
+            'Updated At',
         ]);
 
         // Write data
@@ -360,7 +404,7 @@ class DriverController extends Controller
                 $driver->hireddate,
                 $driver->status,
                 $driver->created_at,
-                $driver->updated_at
+                $driver->updated_at,
             ]);
         }
 
@@ -381,6 +425,3 @@ class DriverController extends Controller
             ->header('Content-Disposition', "attachment; filename=\"$filename\"");
     }
 }
-
-
-

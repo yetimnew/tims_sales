@@ -57,9 +57,20 @@ export default function DriverTrucksCreate({ trucks, drivers, error }: Props) {
         return toLocalDateString(base);
     }, []);
 
+    const searchParams = useMemo(() => {
+        if (typeof window === 'undefined') {
+            return null;
+        }
+
+        return new URLSearchParams(window.location.search);
+    }, []);
+
+    const defaultDriverId = searchParams?.get('driver_id')?.trim() ?? '';
+    const defaultTruckId = searchParams?.get('truck_id')?.trim() ?? '';
+
     const { data, setData, post, processing, errors } = useForm<DriverTruckFormData>({
-        truck_id: '',
-        driver_id: '',
+        truck_id: defaultTruckId,
+        driver_id: defaultDriverId,
         date_recived: todayString,
     });
 

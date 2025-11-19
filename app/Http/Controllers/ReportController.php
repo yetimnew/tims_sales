@@ -2,28 +2,26 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Truck;
-use App\Models\Driver;
-use App\Models\Performance;
-use App\Models\Operation;
-use App\Models\TruckFinancialRecord;
-use App\Models\VehicleMaintenanceRecord;
-use App\Models\FuelRecord;
 use App\Models\Customer;
+use App\Models\Distance;
+use App\Models\Driver;
+use App\Models\FuelRecord;
+use App\Models\Operation;
 use App\Models\Outsource;
 use App\Models\OutsourcePerformance;
-use App\Models\Distance;
+use App\Models\Performance;
 use App\Models\Place;
-use App\Models\DriverTruck;
 use App\Models\Status;
-use App\Models\StatusType;
-use App\Models\VehicleType;
-use Illuminate\Support\Facades\DB;
+use App\Models\Truck;
+use App\Models\TruckFinancialRecord;
+use App\Models\VehicleMaintenanceRecord;
+use Carbon\Carbon;
+use Exception;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
-use Illuminate\Http\RedirectResponse;
-use Exception;
 
 class ReportController extends Controller
 {
@@ -135,27 +133,303 @@ class ReportController extends Controller
     public function operations(Request $request): Response|RedirectResponse
     {
         try {
+            $toInput = $request->input('to');
+            $fromInput = $request->input('from');
+
+            $toDate = $toInput ? Carbon::parse($toInput) : now();
+            $fromDate = $fromInput ? Carbon::parse($fromInput) : $toDate->copy()->subMonths(3);
+
+            if ($fromDate->greaterThan($toDate)) {
+                $fromDate = $toDate->copy()->subMonths(3);
+            }
+
+            $fromDateString = $fromDate->toDateString();
+            $toDateString = $toDate->toDateString();
+
+            $applyPerformanceDateFilter = static function ($query) use ($fromDateString, $toDateString) {
+                return $query
+                    ->when($fromDateString, fn ($inner) => $inner->whereDate('DateDispach', '>=', $fromDateString))
+                    ->when($toDateString, fn ($inner) => $inner->whereDate('DateDispach', '<=', $toDateString));
+            };
+
+            $applyOutsourceDateFilter = static function ($query) use ($fromDateString, $toDateString) {
+                return $query
+                    ->when($fromDateString, fn ($inner) => $inner->whereDate('dispatch_date', '>=', $fromDateString))
+                    ->when($toDateString, fn ($inner) => $inner->whereDate('dispatch_date', '<=', $toDateString));
+            };
+
+            $connection = DB::connection();
+            $driverName = $connection->getDriverName();
+
+            $performancePeriodExpression = $driverName === 'sqlite'
+                ? "strftime('%Y-%m', DateDispach)"
+                : "DATE_FORMAT(DateDispach, '%Y-%m')";
+
+            $outsourcePeriodExpression = $driverName === 'sqlite'
+                ? "strftime('%Y-%m', dispatch_date)"
+                : "DATE_FORMAT(dispatch_date, '%Y-%m')";
+
             $operationStats = [
                 'total_operations' => Operation::count(),
                 'active_operations' => Operation::where('status', 'active')->count(),
                 'inactive_operations' => Operation::where('status', 'inactive')->count(),
-                'operations_by_customer' => Operation::with('customer')
-                    ->select('customer_id', DB::raw('count(*) as count'))
-                    ->groupBy('customer_id')
-                    ->get(),
-                'operations_with_performances' => Operation::has('performances')->count(),
+                'operations_with_performances' => Operation::whereHas('performances', $applyPerformanceDateFilter)->count(),
+                'operations_with_outsource' => Operation::whereHas('outsourcePerformances', $applyOutsourceDateFilter)->count(),
             ];
 
-            $operations = Operation::with(['customer', 'performances'])
-                ->paginate(15);
+            $operationsWithActivity = Operation::where(function ($query) use ($applyPerformanceDateFilter, $applyOutsourceDateFilter) {
+                $query->whereHas('performances', $applyPerformanceDateFilter)
+                    ->orWhereHas('outsourcePerformances', $applyOutsourceDateFilter);
+            })->count();
+
+            $operationStats['operations_with_activity'] = $operationsWithActivity;
+
+            $operationsByCustomer = Operation::with('customer')
+                ->select('customer_id', DB::raw('count(*) as count'))
+                ->groupBy('customer_id')
+                ->orderByDesc('count')
+                ->limit(10)
+                ->get();
+
+            $operationStats['operations_by_customer'] = $operationsByCustomer;
+
+            $internalTotalsQuery = Performance::query();
+            $applyPerformanceDateFilter($internalTotalsQuery);
+            $internalTotals = $internalTotalsQuery
+                ->selectRaw('COUNT(*) as trips')
+                ->selectRaw('SUM(COALESCE(CargoVolumMT, 0)) as tonnage')
+                ->selectRaw('SUM(COALESCE(DistanceWCargo, 0) + COALESCE(DistanceWOCargo, 0)) as distance_km')
+                ->selectRaw('SUM(COALESCE(fuelInBirr, 0) + COALESCE(perdiem, 0) + COALESCE(other, 0)) as cost')
+                ->first();
+
+            $outsourceTotalsQuery = OutsourcePerformance::query();
+            $applyOutsourceDateFilter($outsourceTotalsQuery);
+            $outsourceTotals = $outsourceTotalsQuery
+                ->selectRaw('COUNT(*) as trips')
+                ->selectRaw('SUM(COALESCE(cargo_volume_mt, 0)) as tonnage')
+                ->selectRaw('SUM(COALESCE(distance_km, 0)) as distance_km')
+                ->selectRaw('SUM(COALESCE(cost, 0)) as cost')
+                ->first();
+
+            $internalRevenueQuery = Performance::query();
+            $applyPerformanceDateFilter($internalRevenueQuery);
+            $internalRevenue = (float) $internalRevenueQuery
+                ->join('operations', 'operations.id', '=', 'performances.operation_id')
+                ->selectRaw('SUM(COALESCE(performances.CargoVolumMT, 0) * COALESCE(operations.tariff, 0)) as revenue')
+                ->value('revenue');
+
+            $outsourceRevenueQuery = OutsourcePerformance::query();
+            $applyOutsourceDateFilter($outsourceRevenueQuery);
+            $outsourceRevenue = (float) $outsourceRevenueQuery
+                ->join('operations', 'operations.id', '=', 'outsource_performances.operation_id')
+                ->selectRaw('SUM(COALESCE(outsource_performances.cargo_volume_mt, 0) * COALESCE(operations.tariff, 0)) as revenue')
+                ->value('revenue');
+
+            $operationStats['internal_trips'] = (int) ($internalTotals->trips ?? 0);
+            $operationStats['internal_tonnage'] = (float) ($internalTotals->tonnage ?? 0.0);
+            $operationStats['internal_distance_km'] = (float) ($internalTotals->distance_km ?? 0.0);
+            $operationStats['internal_cost'] = (float) ($internalTotals->cost ?? 0.0);
+            $operationStats['internal_revenue'] = $internalRevenue;
+
+            $operationStats['outsource_trips'] = (int) ($outsourceTotals->trips ?? 0);
+            $operationStats['outsource_tonnage'] = (float) ($outsourceTotals->tonnage ?? 0.0);
+            $operationStats['outsource_distance_km'] = (float) ($outsourceTotals->distance_km ?? 0.0);
+            $operationStats['outsource_cost'] = (float) ($outsourceTotals->cost ?? 0.0);
+            $operationStats['outsource_revenue'] = $outsourceRevenue;
+
+            $operationStats['total_revenue'] = $operationStats['internal_revenue'] + $operationStats['outsource_revenue'];
+            $operationStats['margin'] = $operationStats['total_revenue'] - ($operationStats['internal_cost'] + $operationStats['outsource_cost']);
+
+            $operations = Operation::query()
+                ->with('customer')
+                ->withCount([
+                    'performances as internal_trip_count' => $applyPerformanceDateFilter,
+                    'outsourcePerformances as outsource_trip_count' => $applyOutsourceDateFilter,
+                ])
+                ->withSum(['performances as internal_tonnage_sum' => $applyPerformanceDateFilter], 'CargoVolumMT')
+                ->withSum(['performances as internal_distance_wc_sum' => $applyPerformanceDateFilter], 'DistanceWCargo')
+                ->withSum(['performances as internal_distance_wo_sum' => $applyPerformanceDateFilter], 'DistanceWOCargo')
+                ->withSum(['performances as internal_fuel_cost_sum' => $applyPerformanceDateFilter], 'fuelInBirr')
+                ->withSum(['performances as internal_perdiem_cost_sum' => $applyPerformanceDateFilter], 'perdiem')
+                ->withSum(['performances as internal_other_cost_sum' => $applyPerformanceDateFilter], 'other')
+                ->withSum(['outsourcePerformances as outsource_tonnage_sum' => $applyOutsourceDateFilter], 'cargo_volume_mt')
+                ->withSum(['outsourcePerformances as outsource_distance_sum' => $applyOutsourceDateFilter], 'distance_km')
+                ->withSum(['outsourcePerformances as outsource_cost_sum' => $applyOutsourceDateFilter], 'cost')
+                ->orderByDesc('internal_trip_count')
+                ->orderByDesc('outsource_trip_count')
+                ->paginate(15)
+                ->withQueryString()
+                ->through(function (Operation $operation) {
+                    $internalTonnage = (float) ($operation->internal_tonnage_sum ?? 0.0);
+                    $outsourceTonnage = (float) ($operation->outsource_tonnage_sum ?? 0.0);
+                    $internalDistance = (float) ($operation->internal_distance_wc_sum ?? 0.0) + (float) ($operation->internal_distance_wo_sum ?? 0.0);
+                    $outsourceDistance = (float) ($operation->outsource_distance_sum ?? 0.0);
+                    $internalCost = (float) ($operation->internal_fuel_cost_sum ?? 0.0)
+                        + (float) ($operation->internal_perdiem_cost_sum ?? 0.0)
+                        + (float) ($operation->internal_other_cost_sum ?? 0.0);
+                    $outsourceCost = (float) ($operation->outsource_cost_sum ?? 0.0);
+                    $totalTonnage = $internalTonnage + $outsourceTonnage;
+                    $revenue = (float) ($operation->tariff ?? 0.0) * $totalTonnage;
+                    $totalCost = $internalCost + $outsourceCost;
+                    $margin = $revenue - $totalCost;
+                    $marginPercent = $revenue > 0 ? round(($margin / $revenue) * 100, 2) : null;
+
+                    return [
+                        'id' => $operation->id,
+                        'code' => $operation->operationid ?? (string) $operation->id,
+                        'status' => $operation->status,
+                        'tariff' => (float) ($operation->tariff ?? 0.0),
+                        'customer' => [
+                            'id' => $operation->customer?->id,
+                            'name' => $operation->customer?->name ?? 'N/A',
+                        ],
+                        'internal' => [
+                            'trips' => (int) ($operation->internal_trip_count ?? 0),
+                            'tonnage' => round($internalTonnage, 2),
+                            'distance_km' => round($internalDistance, 2),
+                            'cost' => round($internalCost, 2),
+                        ],
+                        'outsource' => [
+                            'trips' => (int) ($operation->outsource_trip_count ?? 0),
+                            'tonnage' => round($outsourceTonnage, 2),
+                            'distance_km' => round($outsourceDistance, 2),
+                            'cost' => round($outsourceCost, 2),
+                        ],
+                        'revenue' => round($revenue, 2),
+                        'total_cost' => round($totalCost, 2),
+                        'margin' => round($margin, 2),
+                        'margin_percent' => $marginPercent,
+                    ];
+                });
+
+            $operationsPerCustomer = Operation::query()
+                ->select('customer_id', DB::raw('COUNT(DISTINCT operations.id) as operations_count'))
+                ->where(function ($query) use ($applyPerformanceDateFilter, $applyOutsourceDateFilter) {
+                    $query->whereHas('performances', $applyPerformanceDateFilter)
+                        ->orWhereHas('outsourcePerformances', $applyOutsourceDateFilter);
+                })
+                ->groupBy('customer_id')
+                ->get()
+                ->keyBy('customer_id');
+
+            $customerInternalQuery = Performance::query();
+            $applyPerformanceDateFilter($customerInternalQuery);
+            $customerInternal = $customerInternalQuery
+                ->join('operations', 'operations.id', '=', 'performances.operation_id')
+                ->join('customers', 'customers.id', '=', 'operations.customer_id')
+                ->select('operations.customer_id')
+                ->selectRaw('MAX(customers.name) as customer_name')
+                ->selectRaw('COUNT(*) as internal_trips')
+                ->selectRaw('SUM(COALESCE(performances.CargoVolumMT, 0)) as internal_tonnage')
+                ->selectRaw('SUM(COALESCE(performances.fuelInBirr, 0) + COALESCE(performances.perdiem, 0) + COALESCE(performances.other, 0)) as internal_cost')
+                ->selectRaw('SUM(COALESCE(performances.CargoVolumMT, 0) * COALESCE(operations.tariff, 0)) as internal_revenue')
+                ->groupBy('operations.customer_id')
+                ->get()
+                ->keyBy('customer_id');
+
+            $customerOutsourceQuery = OutsourcePerformance::query();
+            $applyOutsourceDateFilter($customerOutsourceQuery);
+            $customerOutsource = $customerOutsourceQuery
+                ->join('operations', 'operations.id', '=', 'outsource_performances.operation_id')
+                ->join('customers', 'customers.id', '=', 'operations.customer_id')
+                ->select('operations.customer_id')
+                ->selectRaw('MAX(customers.name) as customer_name')
+                ->selectRaw('COUNT(*) as outsource_trips')
+                ->selectRaw('SUM(COALESCE(outsource_performances.cargo_volume_mt, 0)) as outsource_tonnage')
+                ->selectRaw('SUM(COALESCE(outsource_performances.cost, 0)) as outsource_cost')
+                ->selectRaw('SUM(COALESCE(outsource_performances.cargo_volume_mt, 0) * COALESCE(operations.tariff, 0)) as outsource_revenue')
+                ->groupBy('operations.customer_id')
+                ->get()
+                ->keyBy('customer_id');
+
+            $customerHighlights = [];
+            $customerIds = $customerInternal->keys()->merge($customerOutsource->keys())->unique();
+
+            foreach ($customerIds as $customerId) {
+                $internal = $customerInternal->get($customerId);
+                $external = $customerOutsource->get($customerId);
+                $operationsCount = (int) ($operationsPerCustomer->get($customerId)->operations_count ?? 0);
+                $name = $internal->customer_name ?? $external->customer_name ?? 'N/A';
+
+                $internalTrips = (int) ($internal->internal_trips ?? 0);
+                $internalTonnage = (float) ($internal->internal_tonnage ?? 0.0);
+                $internalCost = (float) ($internal->internal_cost ?? 0.0);
+                $internalRevenueCustomer = (float) ($internal->internal_revenue ?? 0.0);
+
+                $outTrips = (int) ($external->outsource_trips ?? 0);
+                $outTonnage = (float) ($external->outsource_tonnage ?? 0.0);
+                $outCost = (float) ($external->outsource_cost ?? 0.0);
+                $outRevenue = (float) ($external->outsource_revenue ?? 0.0);
+
+                $revenue = $internalRevenueCustomer + $outRevenue;
+                $cost = $internalCost + $outCost;
+                $margin = $revenue - $cost;
+                $marginPercent = $revenue > 0 ? round(($margin / $revenue) * 100, 2) : null;
+
+                $customerHighlights[] = [
+                    'customer_id' => $customerId,
+                    'customer_name' => $name,
+                    'operations' => $operationsCount,
+                    'internal_trips' => $internalTrips,
+                    'outsource_trips' => $outTrips,
+                    'tonnage' => round($internalTonnage + $outTonnage, 2),
+                    'revenue' => round($revenue, 2),
+                    'cost' => round($cost, 2),
+                    'margin' => round($margin, 2),
+                    'margin_percent' => $marginPercent,
+                ];
+            }
+
+            usort($customerHighlights, fn ($a, $b) => $b['revenue'] <=> $a['revenue']);
+            $customerHighlights = array_slice($customerHighlights, 0, 5);
+
+            $internalTrendQuery = Performance::query();
+            $applyPerformanceDateFilter($internalTrendQuery);
+            $internalTrend = $internalTrendQuery
+                ->selectRaw("{$performancePeriodExpression} as period")
+                ->selectRaw('COUNT(*) as trips')
+                ->selectRaw('SUM(COALESCE(CargoVolumMT, 0)) as tonnage')
+                ->groupBy('period')
+                ->orderBy('period')
+                ->get()
+                ->keyBy('period');
+
+            $outsourceTrendQuery = OutsourcePerformance::query();
+            $applyOutsourceDateFilter($outsourceTrendQuery);
+            $outsourceTrend = $outsourceTrendQuery
+                ->selectRaw("{$outsourcePeriodExpression} as period")
+                ->selectRaw('COUNT(*) as trips')
+                ->selectRaw('SUM(COALESCE(cargo_volume_mt, 0)) as tonnage')
+                ->groupBy('period')
+                ->orderBy('period')
+                ->get()
+                ->keyBy('period');
+
+            $trendPeriods = $internalTrend->keys()->merge($outsourceTrend->keys())->unique()->sort()->values();
+            $mixTrend = [];
+
+            foreach ($trendPeriods as $period) {
+                $internalRow = $internalTrend->get($period);
+                $outRow = $outsourceTrend->get($period);
+
+                $mixTrend[] = [
+                    'period' => $period,
+                    'internal_trips' => (int) ($internalRow->trips ?? 0),
+                    'outsource_trips' => (int) ($outRow->trips ?? 0),
+                    'internal_tonnage' => round((float) ($internalRow->tonnage ?? 0.0), 2),
+                    'outsource_tonnage' => round((float) ($outRow->tonnage ?? 0.0), 2),
+                ];
+            }
 
             return Inertia::render('Reports/Operations', [
                 'filters' => [
-                    'from' => $request->input('from', ''),
-                    'to' => $request->input('to', ''),
+                    'from' => $fromDateString,
+                    'to' => $toDateString,
                 ],
                 'operationStats' => $operationStats,
                 'operations' => $operations,
+                'customerHighlights' => $customerHighlights,
+                'mixTrend' => $mixTrend,
             ]);
 
         } catch (Exception $e) {
@@ -247,23 +521,23 @@ class ReportController extends Controller
 
             // Aggregate liters and total cost per truck for the period
             $fuelAgg = FuelRecord::select('truck_id',
-                    DB::raw('SUM(fuel_quantity_liters) as total_liters'),
-                    DB::raw('SUM(total_cost) as total_cost')
-                )
+                DB::raw('SUM(fuel_quantity_liters) as total_liters'),
+                DB::raw('SUM(total_cost) as total_cost')
+            )
                 ->whereBetween('fuel_date', [$from, $to])
-                ->when($truckId, fn($q) => $q->where('truck_id', $truckId))
+                ->when($truckId, fn ($q) => $q->where('truck_id', $truckId))
                 ->groupBy('truck_id')
                 ->get()
                 ->keyBy('truck_id');
 
             // Aggregate odometer min/max to estimate distance per truck
             $odoAgg = FuelRecord::select('truck_id',
-                    DB::raw('MIN(odometer_reading) as min_odo'),
-                    DB::raw('MAX(odometer_reading) as max_odo')
-                )
+                DB::raw('MIN(odometer_reading) as min_odo'),
+                DB::raw('MAX(odometer_reading) as max_odo')
+            )
                 ->whereBetween('fuel_date', [$from, $to])
                 ->whereNotNull('odometer_reading')
-                ->when($truckId, fn($q) => $q->where('truck_id', $truckId))
+                ->when($truckId, fn ($q) => $q->where('truck_id', $truckId))
                 ->groupBy('truck_id')
                 ->get()
                 ->keyBy('truck_id');
@@ -283,10 +557,10 @@ class ReportController extends Controller
                 $oa = $odoAgg->get($tid);
                 $distance = 0.0;
                 if ($oa && $oa->max_odo !== null && $oa->min_odo !== null) {
-                    $distance = max(0.0, (float)$oa->max_odo - (float)$oa->min_odo);
+                    $distance = max(0.0, (float) $oa->max_odo - (float) $oa->min_odo);
                 }
-                $liters = $fa ? (float)$fa->total_liters : 0.0;
-                $cost = $fa ? (float)$fa->total_cost : 0.0;
+                $liters = $fa ? (float) $fa->total_liters : 0.0;
+                $cost = $fa ? (float) $fa->total_cost : 0.0;
                 $eff = $liters > 0 ? round($distance / $liters, 2) : null;
                 $costPerKm = $distance > 0 ? round($cost / $distance, 2) : null;
 
@@ -295,8 +569,8 @@ class ReportController extends Controller
                 $totals['totalDistanceKm'] += $distance;
 
                 $breakdown[] = [
-                    'truck_id' => (int)$tid,
-                    'plate' => $trucks->get($tid)->plate ?? 'Truck #' . $tid,
+                    'truck_id' => (int) $tid,
+                    'plate' => $trucks->get($tid)->plate ?? 'Truck #'.$tid,
                     'total_liters' => round($liters, 2),
                     'total_cost' => round($cost, 2),
                     'distance_km' => round($distance, 2),
@@ -318,9 +592,16 @@ class ReportController extends Controller
             usort($breakdown, function ($a, $b) {
                 $ac = $a['cost_per_km'];
                 $bc = $b['cost_per_km'];
-                if ($ac === null && $bc === null) return 0;
-                if ($ac === null) return 1;
-                if ($bc === null) return -1;
+                if ($ac === null && $bc === null) {
+                    return 0;
+                }
+                if ($ac === null) {
+                    return 1;
+                }
+                if ($bc === null) {
+                    return -1;
+                }
+
                 return $bc <=> $ac;
             });
 
@@ -362,17 +643,17 @@ class ReportController extends Controller
 
             foreach ($performances as $p) {
                 $customer = $p->operation?->customer;
-                if (!$customer) {
+                if (! $customer) {
                     continue;
                 }
                 $cid = $customer->id;
                 // Approximate revenue: operation tariff per ton times cargo volume (if provided)
-                $revenue = (float)($p->operation?->tariff ?? 0) * (float)($p->CargoVolumMT ?? 1);
-                $cost = (float)($p->fuelInBirr ?? 0) + (float)($p->perdiem ?? 0) + (float)($p->other ?? 0);
+                $revenue = (float) ($p->operation?->tariff ?? 0) * (float) ($p->CargoVolumMT ?? 1);
+                $cost = (float) ($p->fuelInBirr ?? 0) + (float) ($p->perdiem ?? 0) + (float) ($p->other ?? 0);
                 $profit = $revenue - $cost;
-                $laneKey = ($p->orgion_id ?? 'N') . '-' . ($p->destination_id ?? 'N');
+                $laneKey = ($p->orgion_id ?? 'N').'-'.($p->destination_id ?? 'N');
 
-                if (!isset($byCustomer[$cid])) {
+                if (! isset($byCustomer[$cid])) {
                     $byCustomer[$cid] = [
                         'customer_id' => $cid,
                         'customer_name' => $customer->name,
@@ -388,13 +669,13 @@ class ReportController extends Controller
                 $byCustomer[$cid]['cost'] += $cost;
                 $byCustomer[$cid]['profit'] += $profit;
                 $byCustomer[$cid]['trips'] += 1;
-                $byCustomer[$cid]['tonnage'] += (float)($p->CargoVolumMT ?? 0);
+                $byCustomer[$cid]['tonnage'] += (float) ($p->CargoVolumMT ?? 0);
                 $byCustomer[$cid]['lanes'][$laneKey] = true;
 
                 // Trend (YYYY-MM)
                 $ym = $p->DateDispach?->format('Y-m');
                 if ($ym) {
-                    if (!isset($trend[$ym])) {
+                    if (! isset($trend[$ym])) {
                         $trend[$ym] = ['revenue' => 0.0, 'profit' => 0.0];
                     }
                     $trend[$ym]['revenue'] += $revenue;
@@ -419,7 +700,7 @@ class ReportController extends Controller
             }
 
             // Sort by highest revenue
-            usort($customers, fn($a, $b) => $b['revenue'] <=> $a['revenue']);
+            usort($customers, fn ($a, $b) => $b['revenue'] <=> $a['revenue']);
 
             // Trend sorted by month desc
             krsort($trend);
@@ -464,24 +745,26 @@ class ReportController extends Controller
             foreach ($perfs as $p) {
                 $fromId = $p->orgion_id;
                 $toId = $p->destination_id;
-                if (!$fromId || !$toId) continue;
-                $key = $fromId . '-' . $toId;
-                if (!isset($lanes[$key])) {
+                if (! $fromId || ! $toId) {
+                    continue;
+                }
+                $key = $fromId.'-'.$toId;
+                if (! isset($lanes[$key])) {
                     // Try to get planned baseline from Distance
                     $dist = Distance::where('from_place_id', $fromId)->where('to_place_id', $toId)->first();
                     $lanes[$key] = [
                         'from_id' => $fromId,
                         'to_id' => $toId,
-                        'from_name' => $p->origin?->name ?? (string)$fromId,
-                        'to_name' => $p->destination?->name ?? (string)$toId,
-                        'planned_km' => $dist?->distance_km ? (float)$dist->distance_km : null,
+                        'from_name' => $p->origin?->name ?? (string) $fromId,
+                        'to_name' => $p->destination?->name ?? (string) $toId,
+                        'planned_km' => $dist?->distance_km ? (float) $dist->distance_km : null,
                         'actual_km_total' => 0.0,
                         'cost_total' => 0.0,
                         'trips' => 0,
                     ];
                 }
-                $actualKm = (float)($p->DistanceWCargo ?? 0) + (float)($p->DistanceWOCargo ?? 0);
-                $cost = (float)($p->fuelInBirr ?? 0) + (float)($p->perdiem ?? 0) + (float)($p->other ?? 0);
+                $actualKm = (float) ($p->DistanceWCargo ?? 0) + (float) ($p->DistanceWOCargo ?? 0);
+                $cost = (float) ($p->fuelInBirr ?? 0) + (float) ($p->perdiem ?? 0) + (float) ($p->other ?? 0);
                 $lanes[$key]['actual_km_total'] += $actualKm;
                 $lanes[$key]['cost_total'] += $cost;
                 $lanes[$key]['trips'] += 1;
@@ -509,9 +792,16 @@ class ReportController extends Controller
             usort($laneRows, function ($a, $b) {
                 $ad = $a['detour_pct'];
                 $bd = $b['detour_pct'];
-                if ($ad === null && $bd === null) return 0;
-                if ($ad === null) return 1;
-                if ($bd === null) return -1;
+                if ($ad === null && $bd === null) {
+                    return 0;
+                }
+                if ($ad === null) {
+                    return 1;
+                }
+                if ($bd === null) {
+                    return -1;
+                }
+
                 return $bd <=> $ad;
             });
 
@@ -521,8 +811,12 @@ class ReportController extends Controller
                 'avg_cost_per_km' => null,
             ];
             // Compute overall avg cost per km weighted by km if possible
-            $sumCost = 0.0; $sumKm = 0.0;
-            foreach ($lanes as $l) { $sumCost += $l['cost_total']; $sumKm += $l['actual_km_total']; }
+            $sumCost = 0.0;
+            $sumKm = 0.0;
+            foreach ($lanes as $l) {
+                $sumCost += $l['cost_total'];
+                $sumKm += $l['actual_km_total'];
+            }
             $totals['avg_cost_per_km'] = $sumKm > 0 ? round($sumCost / $sumKm, 2) : null;
 
             return Inertia::render('Reports/RouteEfficiency', [
@@ -551,17 +845,17 @@ class ReportController extends Controller
 
             // Internal baseline cost per km from Performance
             $perfs = Performance::whereBetween('DateDispach', [$from, $to])->get();
-            $internalCost = $perfs->sum(fn($p) => (float)($p->fuelInBirr ?? 0) + (float)($p->perdiem ?? 0) + (float)($p->other ?? 0));
-            $internalKm = $perfs->sum(fn($p) => (float)($p->DistanceWCargo ?? 0) + (float)($p->DistanceWOCargo ?? 0));
+            $internalCost = $perfs->sum(fn ($p) => (float) ($p->fuelInBirr ?? 0) + (float) ($p->perdiem ?? 0) + (float) ($p->other ?? 0));
+            $internalKm = $perfs->sum(fn ($p) => (float) ($p->DistanceWCargo ?? 0) + (float) ($p->DistanceWOCargo ?? 0));
             $internalCostPerKm = $internalKm > 0 ? $internalCost / $internalKm : null;
 
             $vendors = [];
             foreach ($ops as $op) {
                 $vid = $op->outsource_id;
-                if (!isset($vendors[$vid])) {
+                if (! isset($vendors[$vid])) {
                     $vendors[$vid] = [
                         'outsource_id' => $vid,
-                        'name' => $op->outsource?->name ?? ('Vendor #' . $vid),
+                        'name' => $op->outsource?->name ?? ('Vendor #'.$vid),
                         'trips' => 0,
                         'distance_km' => 0.0,
                         'cost' => 0.0,
@@ -569,8 +863,8 @@ class ReportController extends Controller
                     ];
                 }
                 $vendors[$vid]['trips'] += 1;
-                $vendors[$vid]['distance_km'] += (float)($op->distance_km ?? 0);
-                $vendors[$vid]['cost'] += (float)($op->cost ?? 0);
+                $vendors[$vid]['distance_km'] += (float) ($op->distance_km ?? 0);
+                $vendors[$vid]['cost'] += (float) ($op->cost ?? 0);
                 if ($op->status === 'completed') {
                     $vendors[$vid]['completed'] += 1;
                 }
@@ -600,9 +894,16 @@ class ReportController extends Controller
             usort($rows, function ($a, $b) {
                 $ad = $a['delta_vs_internal_cost_per_km'];
                 $bd = $b['delta_vs_internal_cost_per_km'];
-                if ($ad === null && $bd === null) return 0;
-                if ($ad === null) return 1;
-                if ($bd === null) return -1;
+                if ($ad === null && $bd === null) {
+                    return 0;
+                }
+                if ($ad === null) {
+                    return 1;
+                }
+                if ($bd === null) {
+                    return -1;
+                }
+
                 return $bd <=> $ad;
             });
 
@@ -650,12 +951,14 @@ class ReportController extends Controller
             $ops = [];
             foreach ($perfs as $p) {
                 $op = $p->operation;
-                if (!$op) continue;
+                if (! $op) {
+                    continue;
+                }
                 $opId = $op->id;
-                if (!isset($ops[$opId])) {
+                if (! isset($ops[$opId])) {
                     $ops[$opId] = [
                         'operation_id' => $opId,
-                        'code' => (string)($op->id),
+                        'code' => (string) ($op->id),
                         'customer_name' => $op->customer->name ?? 'N/A',
                         'region_name' => $op->region->name ?? 'N/A',
                         'revenue' => 0.0,
@@ -666,14 +969,14 @@ class ReportController extends Controller
                         'total_km' => 0.0,
                     ];
                 }
-                $revenue = (float)($op->tariff ?? 0) * (float)($p->CargoVolumMT ?? 1);
-                $cost = (float)($p->fuelInBirr ?? 0) + (float)($p->perdiem ?? 0) + (float)($p->other ?? 0);
-                $km = (float)($p->DistanceWCargo ?? 0) + (float)($p->DistanceWOCargo ?? 0);
+                $revenue = (float) ($op->tariff ?? 0) * (float) ($p->CargoVolumMT ?? 1);
+                $cost = (float) ($p->fuelInBirr ?? 0) + (float) ($p->perdiem ?? 0) + (float) ($p->other ?? 0);
+                $km = (float) ($p->DistanceWCargo ?? 0) + (float) ($p->DistanceWOCargo ?? 0);
                 $ops[$opId]['revenue'] += $revenue;
                 $ops[$opId]['cost'] += $cost;
                 $ops[$opId]['profit'] += ($revenue - $cost);
                 $ops[$opId]['trips'] += 1;
-                $ops[$opId]['tonnage'] += (float)($p->CargoVolumMT ?? 0);
+                $ops[$opId]['tonnage'] += (float) ($p->CargoVolumMT ?? 0);
                 $ops[$opId]['total_km'] += $km;
             }
 
@@ -699,7 +1002,7 @@ class ReportController extends Controller
             }
 
             // Sort by highest profit
-            usort($rows, fn($a, $b) => $b['profit'] <=> $a['profit']);
+            usort($rows, fn ($a, $b) => $b['profit'] <=> $a['profit']);
 
             $totals = [
                 'revenue' => array_sum(array_column($rows, 'revenue')),
@@ -732,15 +1035,15 @@ class ReportController extends Controller
         try {
             $from = $request->input('from', now()->subMonths(3)->toDateString());
             $to = $request->input('to', now()->toDateString());
-            $capacityTons = (float)$request->input('capacity_tons', 20); // default 20 MT per trip
+            $capacityTons = (float) $request->input('capacity_tons', 20); // default 20 MT per trip
 
             $perfs = Performance::with(['operation.customer', 'origin', 'destination'])
                 ->whereBetween('DateDispach', [$from, $to])
                 ->get();
 
             $totalTrips = $perfs->count();
-            $totalTonnage = (float)$perfs->sum(fn($p) => (float)($p->CargoVolumMT ?? 0));
-            $emptyRuns = $perfs->filter(fn($p) => (float)($p->CargoVolumMT ?? 0) <= 0 && (float)($p->DistanceWOCargo ?? 0) > 0)->count();
+            $totalTonnage = (float) $perfs->sum(fn ($p) => (float) ($p->CargoVolumMT ?? 0));
+            $emptyRuns = $perfs->filter(fn ($p) => (float) ($p->CargoVolumMT ?? 0) <= 0 && (float) ($p->DistanceWOCargo ?? 0) > 0)->count();
             $estCapacity = $capacityTons * max(1, $totalTrips);
             $avgLoadFactor = $estCapacity > 0 ? round(($totalTonnage / $estCapacity) * 100, 2) : null;
 
@@ -749,11 +1052,11 @@ class ReportController extends Controller
             foreach ($perfs as $p) {
                 $fromId = $p->orgion_id;
                 $toId = $p->destination_id;
-                $key = ($fromId ?? 'N') . '-' . ($toId ?? 'N');
-                if (!isset($lanes[$key])) {
+                $key = ($fromId ?? 'N').'-'.($toId ?? 'N');
+                if (! isset($lanes[$key])) {
                     $lanes[$key] = [
-                        'from_name' => $p->origin?->name ?? (string)$fromId,
-                        'to_name' => $p->destination?->name ?? (string)$toId,
+                        'from_name' => $p->origin?->name ?? (string) $fromId,
+                        'to_name' => $p->destination?->name ?? (string) $toId,
                         'trips' => 0,
                         'tonnage' => 0.0,
                         'empty_runs' => 0,
@@ -761,8 +1064,8 @@ class ReportController extends Controller
                     ];
                 }
                 $lanes[$key]['trips'] += 1;
-                $lanes[$key]['tonnage'] += (float)($p->CargoVolumMT ?? 0);
-                if ((float)($p->CargoVolumMT ?? 0) <= 0 && (float)($p->DistanceWOCargo ?? 0) > 0) {
+                $lanes[$key]['tonnage'] += (float) ($p->CargoVolumMT ?? 0);
+                if ((float) ($p->CargoVolumMT ?? 0) <= 0 && (float) ($p->DistanceWOCargo ?? 0) > 0) {
                     $lanes[$key]['empty_runs'] += 1;
                 }
             }
@@ -785,9 +1088,11 @@ class ReportController extends Controller
             $customers = [];
             foreach ($perfs as $p) {
                 $cust = $p->operation?->customer;
-                if (!$cust) continue;
+                if (! $cust) {
+                    continue;
+                }
                 $cid = $cust->id;
-                if (!isset($customers[$cid])) {
+                if (! isset($customers[$cid])) {
                     $customers[$cid] = [
                         'customer_id' => $cid,
                         'customer_name' => $cust->name,
@@ -798,8 +1103,8 @@ class ReportController extends Controller
                     ];
                 }
                 $customers[$cid]['trips'] += 1;
-                $customers[$cid]['tonnage'] += (float)($p->CargoVolumMT ?? 0);
-                if ((float)($p->CargoVolumMT ?? 0) <= 0 && (float)($p->DistanceWOCargo ?? 0) > 0) {
+                $customers[$cid]['tonnage'] += (float) ($p->CargoVolumMT ?? 0);
+                if ((float) ($p->CargoVolumMT ?? 0) <= 0 && (float) ($p->DistanceWOCargo ?? 0) > 0) {
                     $customers[$cid]['empty_runs'] += 1;
                 }
             }
@@ -819,18 +1124,34 @@ class ReportController extends Controller
 
             // Sort lanes by worst load factor
             usort($laneRows, function ($a, $b) {
-                $al = $a['load_factor_pct']; $bl = $b['load_factor_pct'];
-                if ($al === null && $bl === null) return 0;
-                if ($al === null) return 1;
-                if ($bl === null) return -1;
+                $al = $a['load_factor_pct'];
+                $bl = $b['load_factor_pct'];
+                if ($al === null && $bl === null) {
+                    return 0;
+                }
+                if ($al === null) {
+                    return 1;
+                }
+                if ($bl === null) {
+                    return -1;
+                }
+
                 return $al <=> $bl; // ascending (worst first)
             });
             // Sort customers by worst load factor
             usort($customerRows, function ($a, $b) {
-                $al = $a['load_factor_pct']; $bl = $b['load_factor_pct'];
-                if ($al === null && $bl === null) return 0;
-                if ($al === null) return 1;
-                if ($bl === null) return -1;
+                $al = $a['load_factor_pct'];
+                $bl = $b['load_factor_pct'];
+                if ($al === null && $bl === null) {
+                    return 0;
+                }
+                if ($al === null) {
+                    return 1;
+                }
+                if ($bl === null) {
+                    return -1;
+                }
+
                 return $al <=> $bl;
             });
 
@@ -875,11 +1196,11 @@ class ReportController extends Controller
                 $zoneName = $origin?->woreda?->zone?->name ?? 'Unknown';
                 $woredaName = $origin?->woreda?->name ?? 'Unknown';
                 $placeName = $origin?->name ?? 'Unknown';
-                $tonnage = (float)($p->CargoVolumMT ?? 0);
-                $revenue = (float)($p->operation?->tariff ?? 0) * ($tonnage > 0 ? $tonnage : 1);
+                $tonnage = (float) ($p->CargoVolumMT ?? 0);
+                $revenue = (float) ($p->operation?->tariff ?? 0) * ($tonnage > 0 ? $tonnage : 1);
 
                 // Region
-                if (!isset($byRegion[$regionName])) {
+                if (! isset($byRegion[$regionName])) {
                     $byRegion[$regionName] = ['name' => $regionName, 'trips' => 0, 'tonnage' => 0.0, 'revenue' => 0.0];
                 }
                 $byRegion[$regionName]['trips'] += 1;
@@ -887,7 +1208,7 @@ class ReportController extends Controller
                 $byRegion[$regionName]['revenue'] += $revenue;
 
                 // Zone
-                if (!isset($byZone[$zoneName])) {
+                if (! isset($byZone[$zoneName])) {
                     $byZone[$zoneName] = ['name' => $zoneName, 'trips' => 0, 'tonnage' => 0.0, 'revenue' => 0.0];
                 }
                 $byZone[$zoneName]['trips'] += 1;
@@ -895,7 +1216,7 @@ class ReportController extends Controller
                 $byZone[$zoneName]['revenue'] += $revenue;
 
                 // Woreda
-                if (!isset($byWoreda[$woredaName])) {
+                if (! isset($byWoreda[$woredaName])) {
                     $byWoreda[$woredaName] = ['name' => $woredaName, 'trips' => 0, 'tonnage' => 0.0, 'revenue' => 0.0];
                 }
                 $byWoreda[$woredaName]['trips'] += 1;
@@ -903,7 +1224,7 @@ class ReportController extends Controller
                 $byWoreda[$woredaName]['revenue'] += $revenue;
 
                 // Place
-                if (!isset($byPlace[$placeName])) {
+                if (! isset($byPlace[$placeName])) {
                     $byPlace[$placeName] = ['name' => $placeName, 'trips' => 0, 'tonnage' => 0.0, 'revenue' => 0.0];
                 }
                 $byPlace[$placeName]['trips'] += 1;
@@ -913,30 +1234,38 @@ class ReportController extends Controller
 
             // Convert to arrays and sort by revenue desc
             $regions = array_values($byRegion);
-            usort($regions, fn($a, $b) => $b['revenue'] <=> $a['revenue']);
+            usort($regions, fn ($a, $b) => $b['revenue'] <=> $a['revenue']);
             $zones = array_values($byZone);
-            usort($zones, fn($a, $b) => $b['revenue'] <=> $a['revenue']);
+            usort($zones, fn ($a, $b) => $b['revenue'] <=> $a['revenue']);
             $woredas = array_values($byWoreda);
-            usort($woredas, fn($a, $b) => $b['revenue'] <=> $a['revenue']);
+            usort($woredas, fn ($a, $b) => $b['revenue'] <=> $a['revenue']);
             $places = array_values($byPlace);
-            usort($places, fn($a, $b) => $b['revenue'] <=> $a['revenue']);
+            usort($places, fn ($a, $b) => $b['revenue'] <=> $a['revenue']);
 
             // Trend by month at region level
             $trend = [];
             foreach ($perfs as $p) {
                 $ym = $p->DateDispach?->format('Y-m');
-                if (!$ym) continue;
+                if (! $ym) {
+                    continue;
+                }
                 $regionName = $p->origin?->woreda?->zone?->region?->name ?? 'Unknown';
-                $revenue = (float)($p->operation?->tariff ?? 0) * ((float)($p->CargoVolumMT ?? 0) > 0 ? (float)$p->CargoVolumMT : 1);
-                if (!isset($trend[$regionName])) { $trend[$regionName] = []; }
-                if (!isset($trend[$regionName][$ym])) { $trend[$regionName][$ym] = 0.0; }
+                $revenue = (float) ($p->operation?->tariff ?? 0) * ((float) ($p->CargoVolumMT ?? 0) > 0 ? (float) $p->CargoVolumMT : 1);
+                if (! isset($trend[$regionName])) {
+                    $trend[$regionName] = [];
+                }
+                if (! isset($trend[$regionName][$ym])) {
+                    $trend[$regionName][$ym] = 0.0;
+                }
                 $trend[$regionName][$ym] += $revenue;
             }
             $regionTrends = [];
             foreach ($trend as $region => $months) {
                 krsort($months);
                 $series = [];
-                foreach ($months as $ym => $val) { $series[] = ['month' => $ym, 'revenue' => round($val, 2)]; }
+                foreach ($months as $ym => $val) {
+                    $series[] = ['month' => $ym, 'revenue' => round($val, 2)];
+                }
                 $regionTrends[] = ['region' => $region, 'series' => $series];
             }
 
@@ -960,7 +1289,7 @@ class ReportController extends Controller
     public function performanceAll(Request $request): Response|RedirectResponse
     {
         try {
-            $limit = (int)$request->input('limit', 200);
+            $limit = (int) $request->input('limit', 200);
             $perfs = Performance::with(['operation.customer', 'driverTruck.driver', 'driverTruck.truck.vehicleType', 'destination'])
                 ->orderByDesc('DateDispach')
                 ->limit($limit)
@@ -1012,16 +1341,17 @@ class ReportController extends Controller
             $rows = $query->orderByDesc('trips')->get();
 
             $mapped = collect($rows)->map(function ($r) {
-                $cost = (float)$r->fuel_cost + (float)$r->perdiem + (float)$r->other_cost;
-                $profit = (float)$r->revenue - $cost;
-                $margin = ((float)$r->revenue) > 0 ? round(($profit / (float)$r->revenue) * 100, 2) : null;
+                $cost = (float) $r->fuel_cost + (float) $r->perdiem + (float) $r->other_cost;
+                $profit = (float) $r->revenue - $cost;
+                $margin = ((float) $r->revenue) > 0 ? round(($profit / (float) $r->revenue) * 100, 2) : null;
+
                 return [
                     'driver_id' => $r->driver_id,
                     'driver_name' => $r->driver_name,
-                    'trips' => (int)$r->trips,
-                    'tonnage' => (float)$r->tonnage,
-                    'distance_km' => (float)$r->distance_wcargo + (float)$r->distance_wocargo,
-                    'revenue' => (float)$r->revenue,
+                    'trips' => (int) $r->trips,
+                    'tonnage' => (float) $r->tonnage,
+                    'distance_km' => (float) $r->distance_wcargo + (float) $r->distance_wocargo,
+                    'revenue' => (float) $r->revenue,
                     'cost' => $cost,
                     'profit' => $profit,
                     'margin_percent' => $margin,
@@ -1074,16 +1404,17 @@ class ReportController extends Controller
             $rows = $query->orderByDesc('trips')->get();
 
             $mapped = collect($rows)->map(function ($r) {
-                $cost = (float)$r->fuel_cost + (float)$r->perdiem + (float)$r->other_cost;
-                $profit = (float)$r->revenue - $cost;
-                $margin = ((float)$r->revenue) > 0 ? round(($profit / (float)$r->revenue) * 100, 2) : null;
+                $cost = (float) $r->fuel_cost + (float) $r->perdiem + (float) $r->other_cost;
+                $profit = (float) $r->revenue - $cost;
+                $margin = ((float) $r->revenue) > 0 ? round(($profit / (float) $r->revenue) * 100, 2) : null;
+
                 return [
                     'truck_id' => $r->truck_id,
                     'plate' => $r->plate,
-                    'trips' => (int)$r->trips,
-                    'tonnage' => (float)$r->tonnage,
-                    'distance_km' => (float)$r->distance_wcargo + (float)$r->distance_wocargo,
-                    'revenue' => (float)$r->revenue,
+                    'trips' => (int) $r->trips,
+                    'tonnage' => (float) $r->tonnage,
+                    'distance_km' => (float) $r->distance_wcargo + (float) $r->distance_wocargo,
+                    'revenue' => (float) $r->revenue,
                     'cost' => $cost,
                     'profit' => $profit,
                     'margin_percent' => $margin,
@@ -1195,6 +1526,3 @@ class ReportController extends Controller
         }
     }
 }
-
-
-

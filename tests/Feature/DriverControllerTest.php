@@ -2,15 +2,16 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
 use App\Models\Driver;
-use App\Models\Truck;
-use App\Models\Zone;
-use App\Models\Woreda;
-use App\Models\Role;
 use App\Models\Permission;
+use App\Models\Role;
+use App\Models\Truck;
+use App\Models\User;
+use App\Models\Woreda;
+use App\Models\Zone;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class DriverControllerTest extends TestCase
@@ -18,7 +19,9 @@ class DriverControllerTest extends TestCase
     use RefreshDatabase, WithFaker;
 
     protected $user;
+
     protected $zone;
+
     protected $woreda;
 
     protected function setUp(): void
@@ -31,7 +34,7 @@ class DriverControllerTest extends TestCase
         // Create permissions
         $permissions = [
             'drivers.view', 'drivers.create', 'drivers.edit', 'drivers.destroy',
-            'drivers.show', 'drivers.store', 'drivers.update', 'drivers.export'
+            'drivers.show', 'drivers.store', 'drivers.update', 'drivers.export',
         ];
 
         foreach ($permissions as $permission) {
@@ -126,7 +129,7 @@ class DriverControllerTest extends TestCase
             'woreda_id' => $this->woreda->id,
             'kebele' => '01',
             'house_number' => '123',
-            'status' => 'active'
+            'status' => 'active',
         ];
 
         $response = $this->actingAs($this->user)
@@ -154,10 +157,20 @@ class DriverControllerTest extends TestCase
             ->get(route('drivers.show', $driver));
 
         $response->assertStatus(200)
-            ->assertInertia(fn ($page) => $page
+            ->assertInertia(fn (Assert $page) => $page
                 ->component('Drivers/Show')
                 ->has('driver')
                 ->has('activityLogs')
+                ->has('performanceSummary')
+                ->has('safetySummary')
+                ->has('counts', fn (Assert $counts) => $counts
+                    ->where('trucks', 0)
+                    ->where('assignments', 0)
+                    ->where('performances', 0)
+                    ->where('performance_records', 0)
+                    ->where('safety_records', 0)
+                    ->where('fuel_records', 0)
+                )
                 ->where('driver.id', $driver->id)
             );
     }
@@ -190,7 +203,7 @@ class DriverControllerTest extends TestCase
             'driver_id' => $driver->driver_id,
             'mobile' => $driver->mobile,
             'sex' => $driver->sex,
-            'status' => 'inactive'
+            'status' => 'inactive',
         ];
 
         $response = $this->actingAs($this->user)
@@ -200,7 +213,7 @@ class DriverControllerTest extends TestCase
         $this->assertDatabaseHas('drivers', [
             'id' => $driver->id,
             'name' => 'New Name',
-            'status' => 'inactive'
+            'status' => 'inactive',
         ]);
     }
 
@@ -238,14 +251,14 @@ class DriverControllerTest extends TestCase
         $response = $this->actingAs($this->user)
             ->post(route('drivers.assign-truck', $driver), [
                 'truck_id' => $truck->id,
-                'assigned_date' => now()->format('Y-m-d')
+                'assigned_date' => now()->format('Y-m-d'),
             ]);
 
         $response->assertRedirect();
         $this->assertDatabaseHas('driver_truck', [
             'driver_id' => $driver->id,
             'truck_id' => $truck->id,
-            'status' => 'active'
+            'status' => 'active',
         ]);
     }
 
@@ -258,20 +271,20 @@ class DriverControllerTest extends TestCase
         // First assign the driver to truck
         $driver->trucks()->attach($truck->id, [
             'assigned_date' => now(),
-            'status' => 'active'
+            'status' => 'active',
         ]);
 
         $response = $this->actingAs($this->user)
             ->post(route('drivers.unassign-truck', $driver), [
                 'truck_id' => $truck->id,
-                'unassigned_date' => now()->format('Y-m-d')
+                'unassigned_date' => now()->format('Y-m-d'),
             ]);
 
         $response->assertRedirect();
         $this->assertDatabaseHas('driver_truck', [
             'driver_id' => $driver->id,
             'truck_id' => $truck->id,
-            'status' => 'inactive'
+            'status' => 'inactive',
         ]);
     }
 
@@ -329,7 +342,7 @@ class DriverControllerTest extends TestCase
             'driver_id' => 'DRV001',
             'mobile' => '+251911234567',
             'sex' => 'Male',
-            'status' => 'active'
+            'status' => 'active',
         ];
 
         $this->actingAs($this->user)
@@ -339,7 +352,7 @@ class DriverControllerTest extends TestCase
             'description' => 'created',
             'subject_type' => 'App\Models\Driver',
             'causer_id' => $this->user->id,
-            'causer_type' => 'App\Models\User'
+            'causer_type' => 'App\Models\User',
         ]);
     }
 
@@ -354,7 +367,7 @@ class DriverControllerTest extends TestCase
                 'driver_id' => $driver->driver_id,
                 'mobile' => $driver->mobile,
                 'sex' => $driver->sex,
-                'status' => 'active'
+                'status' => 'active',
             ]);
 
         $this->assertDatabaseHas('activity_log', [
@@ -362,7 +375,7 @@ class DriverControllerTest extends TestCase
             'subject_type' => 'App\Models\Driver',
             'subject_id' => $driver->id,
             'causer_id' => $this->user->id,
-            'causer_type' => 'App\Models\User'
+            'causer_type' => 'App\Models\User',
         ]);
     }
 
@@ -379,7 +392,7 @@ class DriverControllerTest extends TestCase
             'subject_type' => 'App\Models\Driver',
             'subject_id' => $driver->id,
             'causer_id' => $this->user->id,
-            'causer_type' => 'App\Models\User'
+            'causer_type' => 'App\Models\User',
         ]);
     }
 

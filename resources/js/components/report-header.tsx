@@ -14,6 +14,11 @@ export function ReportHeader({ title, subtitle, from = '', to = '', onApply, rig
     const [fromState, setFromState] = React.useState(from);
     const [toState, setToState] = React.useState(to);
 
+    React.useEffect(() => {
+        setFromState(from);
+        setToState(to);
+    }, [from, to]);
+
     return (
         <div className="flex items-center justify-between">
             <div>

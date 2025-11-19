@@ -2,18 +2,18 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Truck;
-use App\Models\DailyTruckStatus;
-use Illuminate\Http\Request;
-use Inertia\Inertia;
-use Inertia\Response;
-use App\Models\VehicleType;
 use App\Http\Requests\StoreTruckRequest;
 use App\Http\Requests\UpdateTruckRequest;
+use App\Models\DailyTruckStatus;
+use App\Models\Truck;
+use App\Models\VehicleType;
 use App\Services\TruckAssignmentService;
+use Exception;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
-use Exception;
+use Inertia\Inertia;
+use Inertia\Response;
 use Spatie\Activitylog\Models\Activity;
 
 class TruckController extends Controller
@@ -39,7 +39,7 @@ class TruckController extends Controller
 
         return Inertia::render('Status/StatusHistory', [
             'truck' => $truck->only(['id', 'plate']) + [
-                'vehicleType' => $truck->relationLoaded('vehicleType') ? $truck->vehicleType : $truck->vehicleType()->first(['id','name'])
+                'vehicleType' => $truck->relationLoaded('vehicleType') ? $truck->vehicleType : $truck->vehicleType()->first(['id', 'name']),
             ],
             'history' => $history,
             'filters' => [
@@ -48,6 +48,7 @@ class TruckController extends Controller
             ],
         ]);
     }
+
     /**
      * Display a listing of the resource.
      */
@@ -56,11 +57,11 @@ class TruckController extends Controller
         $search = trim((string) $request->input('search'));
         $status = $request->input('status');
         $vehicleTypeId = $request->input('vehicle_type');
-    $perPageOptions = [15, 25, 50, 100];
-    $perPageDefault = 15;
+        $perPageOptions = [15, 25, 50, 100];
+        $perPageDefault = 15;
         $perPage = (int) $request->input('per_page', $perPageDefault);
 
-        if (!in_array($perPage, $perPageOptions, true)) {
+        if (! in_array($perPage, $perPageOptions, true)) {
             $perPage = $perPageDefault;
         }
 
@@ -83,12 +84,12 @@ class TruckController extends Controller
             $applySearch($metricsQuery);
         }
 
-        if (!empty($vehicleTypeId)) {
+        if (! empty($vehicleTypeId)) {
             $trucksQuery->where('vehicletype_id', $vehicleTypeId);
             $metricsQuery->where('vehicletype_id', $vehicleTypeId);
         }
 
-        if (!empty($status) && $status !== 'all') {
+        if (! empty($status) && $status !== 'all') {
             $trucksQuery->where('status', $status);
         }
 
@@ -96,13 +97,13 @@ class TruckController extends Controller
         $direction = $request->input('direction', 'asc');
         $allowedSorts = ['plate', 'chasisNumber', 'engineNumber', 'serviceIntervalKM', 'purchasePrice', 'status', 'created_at'];
 
-        if (!in_array($sort, $allowedSorts, true)) {
+        if (! in_array($sort, $allowedSorts, true)) {
             $sort = 'plate';
         }
 
         $trucksQuery->orderBy($sort, $direction);
 
-    $trucks = $trucksQuery->paginate($perPage)->withQueryString();
+        $trucks = $trucksQuery->paginate($perPage)->withQueryString();
 
         $metrics = [
             'total' => (clone $metricsQuery)->count(),
@@ -176,24 +177,63 @@ class TruckController extends Controller
      */
     public function show(Truck $truck): Response
     {
+        // Eager load required relationships (order driver assignments by received date)
         $truck->load([
             'vehicleType',
             'drivers',
             'performances',
-            'driverTrucks' => function($query) {
+            'maintenanceRecords' => function ($query) {
+                $query->orderByDesc('scheduled_date')->orderByDesc('created_at');
+            },
+            'driverTrucks' => function ($query) {
                 $query->with('driver')->orderBy('date_recived', 'desc');
-            }
+            },
         ]);
 
-        // Load activity logs for this truck using Spatie Activity Log
-        $activityLogs = Activity::forSubject($truck)
+        // Limit activity logs to most recent 50 for payload efficiency, then normalize for the UI
+        $rawActivityLogs = Activity::forSubject($truck)
             ->with('causer')
-            ->orderByDesc('created_at')
+            ->latest()
+            ->limit(50)
             ->get();
+
+        $activityLogs = $this->transformActivityLogs($rawActivityLogs);
+
+        // Performance summary metrics
+        $totalDistance = ($truck->performances->sum('DistanceWCargo') ?? 0) + ($truck->performances->sum('DistanceWOCargo') ?? 0);
+        $totalFuel = $truck->performances->sum('fuelInLitter') ?? 0;
+        $performanceSummary = [
+            'total_records' => $truck->performances->count(),
+            'total_distance_km' => (float) $totalDistance,
+            'total_fuel_liters' => (float) $totalFuel,
+            'fuel_cost_birr' => (float) ($truck->performances->sum('fuelInBirr') ?? 0),
+            'avg_distance_per_record' => $truck->performances->count() > 0 ? (float) round($totalDistance / $truck->performances->count(), 2) : 0.0,
+            'avg_fuel_efficiency_km_per_liter' => $totalFuel > 0 ? (float) round($totalDistance / $totalFuel, 2) : null,
+        ];
+
+        // Maintenance summary metrics
+        $maintenanceSummary = [
+            'total_records' => $truck->maintenanceRecords->count(),
+            'completed' => $truck->maintenanceRecords->where('status', 'completed')->count(),
+            'scheduled' => $truck->maintenanceRecords->where('status', 'scheduled')->count(),
+            'overdue' => $truck->maintenanceRecords->filter(fn ($r) => $r->is_overdue)->count(),
+            'total_cost' => (float) ($truck->maintenanceRecords->sum('cost') ?? 0),
+        ];
+
+        // Related counts for quick frontend display
+        $counts = [
+            'drivers' => $truck->drivers->count(),
+            'performances' => $truck->performances->count(),
+            'driverAssignments' => $truck->driverTrucks->count(),
+            'maintenance' => $truck->maintenanceRecords->count(),
+        ];
 
         return Inertia::render('Trucks/Show', [
             'truck' => $truck,
             'activityLogs' => $activityLogs,
+            'counts' => $counts,
+            'performanceSummary' => $performanceSummary,
+            'maintenanceSummary' => $maintenanceSummary,
         ]);
     }
 
@@ -237,63 +277,63 @@ class TruckController extends Controller
             // Check if truck has performances
             if ($truck->performances()->count() > 0) {
                 return back()->withErrors([
-                    'error' => 'You are not allowed to delete this truck. It has ' . $truck->performances()->count() . ' performance record(s). Please remove all performance records first.'
+                    'error' => 'You are not allowed to delete this truck. It has '.$truck->performances()->count().' performance record(s). Please remove all performance records first.',
                 ]);
             }
 
             // Check if truck has maintenance records
             if ($truck->maintenanceRecords()->count() > 0) {
                 return back()->withErrors([
-                    'error' => 'You are not allowed to delete this truck. It has ' . $truck->maintenanceRecords()->count() . ' maintenance record(s). Please remove all maintenance records first.'
+                    'error' => 'You are not allowed to delete this truck. It has '.$truck->maintenanceRecords()->count().' maintenance record(s). Please remove all maintenance records first.',
                 ]);
             }
 
             // Check if truck has fuel records
             if ($truck->fuelRecords()->count() > 0) {
                 return back()->withErrors([
-                    'error' => 'You are not allowed to delete this truck. It has ' . $truck->fuelRecords()->count() . ' fuel record(s). Please remove all fuel records first.'
+                    'error' => 'You are not allowed to delete this truck. It has '.$truck->fuelRecords()->count().' fuel record(s). Please remove all fuel records first.',
                 ]);
             }
 
             // Check if truck has fuel consumption analysis
             if ($truck->fuelConsumptionAnalysis()->count() > 0) {
                 return back()->withErrors([
-                    'error' => 'You are not allowed to delete this truck. It has ' . $truck->fuelConsumptionAnalysis()->count() . ' fuel consumption analysis record(s). Please remove all fuel consumption analysis records first.'
+                    'error' => 'You are not allowed to delete this truck. It has '.$truck->fuelConsumptionAnalysis()->count().' fuel consumption analysis record(s). Please remove all fuel consumption analysis records first.',
                 ]);
             }
 
             // Check if truck has financial records
             if ($truck->financialRecords()->count() > 0) {
                 return back()->withErrors([
-                    'error' => 'You are not allowed to delete this truck. It has ' . $truck->financialRecords()->count() . ' financial record(s). Please remove all financial records first.'
+                    'error' => 'You are not allowed to delete this truck. It has '.$truck->financialRecords()->count().' financial record(s). Please remove all financial records first.',
                 ]);
             }
 
             // Check if truck has insurance records
             if ($truck->insuranceRecords()->count() > 0) {
                 return back()->withErrors([
-                    'error' => 'You are not allowed to delete this truck. It has ' . $truck->insuranceRecords()->count() . ' insurance record(s). Please remove all insurance records first.'
+                    'error' => 'You are not allowed to delete this truck. It has '.$truck->insuranceRecords()->count().' insurance record(s). Please remove all insurance records first.',
                 ]);
             }
 
             // Check if truck has route plans
             if ($truck->routePlans()->count() > 0) {
                 return back()->withErrors([
-                    'error' => 'You are not allowed to delete this truck. It has ' . $truck->routePlans()->count() . ' route plan(s). Please remove all route plans first.'
+                    'error' => 'You are not allowed to delete this truck. It has '.$truck->routePlans()->count().' route plan(s). Please remove all route plans first.',
                 ]);
             }
 
             // Check if truck has daily statuses
             if ($truck->dailyStatuses()->count() > 0) {
                 return back()->withErrors([
-                    'error' => 'You are not allowed to delete this truck. It has ' . $truck->dailyStatuses()->count() . ' daily status record(s). Please remove all daily status records first.'
+                    'error' => 'You are not allowed to delete this truck. It has '.$truck->dailyStatuses()->count().' daily status record(s). Please remove all daily status records first.',
                 ]);
             }
 
             // Check if truck is currently assigned to drivers
             if ($truck->drivers()->wherePivot('status', 'active')->count() > 0) {
                 return back()->withErrors([
-                    'error' => 'You are not allowed to delete this truck. It is currently assigned to ' . $truck->drivers()->wherePivot('status', 'active')->count() . ' active driver(s). Please unassign all drivers first.'
+                    'error' => 'You are not allowed to delete this truck. It is currently assigned to '.$truck->drivers()->wherePivot('status', 'active')->count().' active driver(s). Please unassign all drivers first.',
                 ]);
             }
 
@@ -303,6 +343,8 @@ class TruckController extends Controller
                 ->with('success', 'Truck deleted successfully.');
 
         } catch (Exception $e) {
+            report($e);
+
             return back()->withErrors(['error' => 'Failed to delete truck. Please try again.']);
         }
     }
@@ -324,19 +366,19 @@ class TruckController extends Controller
     public function freeTrucks()
     {
         try {
-            $assignmentService = new TruckAssignmentService();
+            $assignmentService = new TruckAssignmentService;
             $freeTrucks = $assignmentService->getAvailableTrucks();
 
             return response()->json([
                 'success' => true,
                 'data' => $freeTrucks,
-                'count' => $freeTrucks->count()
+                'count' => $freeTrucks->count(),
             ]);
 
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to retrieve free trucks'
+                'message' => 'Failed to retrieve free trucks',
             ], 500);
         }
     }
@@ -349,7 +391,7 @@ class TruckController extends Controller
         $query = Truck::with('vehicleType');
 
         // Apply same search and sort as index
-        if ($request->has('search') && !empty($request->input('search'))) {
+        if ($request->has('search') && ! empty($request->input('search'))) {
             $search = $request->input('search');
             $query = $query->where(function ($q) use ($search) {
                 $q->where('plate', 'like', "%{$search}%")
@@ -361,8 +403,8 @@ class TruckController extends Controller
                 ->pluck('id')
                 ->toArray();
 
-            if (!empty($vehicleTypeIds)) {
-                $query = $query->orWhereIn('vehecletype_id', $vehicleTypeIds);
+            if (! empty($vehicleTypeIds)) {
+                $query = $query->orWhereIn('vehicletype_id', $vehicleTypeIds);
             }
         }
 
@@ -376,7 +418,7 @@ class TruckController extends Controller
         $trucks = $query->get();
 
         // Generate CSV
-        $filename = 'trucks_' . now()->format('Y-m-d_H-i-s') . '.csv';
+        $filename = 'trucks_'.now()->format('Y-m-d_H-i-s').'.csv';
         $handle = fopen('php://temp', 'r+');
 
         // Write header
@@ -393,7 +435,7 @@ class TruckController extends Controller
             'Service Start Date',
             'Status',
             'Created At',
-            'Updated At'
+            'Updated At',
         ]);
 
         // Write data
@@ -411,7 +453,7 @@ class TruckController extends Controller
                 $truck->serviceStartDate ?? 'N/A',
                 $truck->status,
                 $truck->created_at,
-                $truck->updated_at
+                $truck->updated_at,
             ]);
         }
 
