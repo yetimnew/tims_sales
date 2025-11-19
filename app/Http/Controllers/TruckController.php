@@ -75,7 +75,24 @@ class TruckController extends Controller
 
         $filtersSearch = $search !== '' ? $search : null;
 
-        $trucksQuery = $this->truckMetrics->applyFilters(Truck::query()->with('vehicleType'), $filtersSearch, $vehicleTypeId);
+        $trucksQuery = $this->truckMetrics->applyFilters(
+            Truck::query()
+                ->select([
+                    'id',
+                    'plate',
+                    'status',
+                    'vehicletype_id',
+                    'serviceIntervalKM',
+                    'purchasePrice',
+                    'productionDate',
+                    'serviceStartDate',
+                    'created_at',
+                    'updated_at',
+                ])
+                ->with(['vehicleType:id,name']),
+            $filtersSearch,
+            $vehicleTypeId,
+        );
 
         if (! empty($status) && $status !== 'all') {
             $trucksQuery->where('status', $status);
@@ -93,7 +110,27 @@ class TruckController extends Controller
 
         $trucks = $trucksQuery->paginate($perPage)->withQueryString();
 
-        $metrics = $this->truckMetrics->metrics($filtersSearch, $vehicleTypeId);
+        $trucks->setCollection(
+            $trucks->getCollection()->map(function (Truck $truck) {
+                return [
+                    'id' => $truck->id,
+                    'plate' => $truck->plate,
+                    'status' => $truck->status,
+                    'vehicletype_id' => $truck->vehicletype_id,
+                    'vehicle_type' => $truck->relationLoaded('vehicleType')
+                        ? $truck->vehicleType?->only(['id', 'name'])
+                        : $truck->vehicleType()->first(['id', 'name']),
+                    'serviceIntervalKM' => $truck->serviceIntervalKM,
+                    'purchasePrice' => $truck->purchasePrice,
+                    'productionDate' => $truck->productionDate,
+                    'serviceStartDate' => $truck->serviceStartDate,
+                    'created_at' => $truck->created_at,
+                    'updated_at' => $truck->updated_at,
+                ];
+            }),
+        );
+
+        $trucksData = $this->trimPagination($trucks);
 
         $statusOptions = Truck::query()
             ->select('status')
@@ -111,8 +148,8 @@ class TruckController extends Controller
             ->get(['id', 'name']);
 
         return Inertia::render('Trucks/Index', [
-            'trucks' => $trucks,
-            'metrics' => $metrics,
+            'trucks' => $trucksData,
+            'metrics' => Inertia::lazy(fn () => $this->truckMetrics->metrics($filtersSearch, $vehicleTypeId)),
             'filters' => [
                 'search' => $search !== '' ? $search : null,
                 'status' => $status ?: null,
@@ -125,6 +162,27 @@ class TruckController extends Controller
             'vehicleTypes' => $vehicleTypes,
             'perPageOptions' => $perPageOptions,
         ]);
+    }
+
+    private function trimPagination($paginator): array
+    {
+        return [
+            'data' => $paginator->items(),
+            'meta' => [
+                'current_page' => $paginator->currentPage(),
+                'last_page' => $paginator->lastPage(),
+                'per_page' => $paginator->perPage(),
+                'total' => $paginator->total(),
+                'from' => $paginator->firstItem(),
+                'to' => $paginator->lastItem(),
+            ],
+            'links' => [
+                'first' => $paginator->url(1),
+                'last' => $paginator->url($paginator->lastPage()),
+                'prev' => $paginator->previousPageUrl(),
+                'next' => $paginator->nextPageUrl(),
+            ],
+        ];
     }
 
     /**
