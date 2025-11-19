@@ -2,11 +2,18 @@
 
 namespace Tests\Feature;
 
+use App\Models\DailyTruckStatus;
+use App\Models\Driver;
+use App\Models\DriverTruck;
+use App\Models\Status;
+use App\Models\StatusType;
 use App\Models\Truck;
 use App\Models\User;
+use App\Models\VehicleMaintenanceRecord;
 use App\Models\VehicleType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
+use PHPUnit\Framework\Attributes\Test;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -30,6 +37,7 @@ class TruckControllerTest extends TestCase
         $permissions = [
             'trucks.view', 'trucks.create', 'trucks.edit', 'trucks.destroy',
             'trucks.show', 'trucks.store', 'trucks.update', 'trucks.export',
+            'trucks.deactivate', 'trucks.free',
         ];
 
         foreach ($permissions as $permission) {
@@ -45,7 +53,7 @@ class TruckControllerTest extends TestCase
         $this->vehicleType = VehicleType::factory()->create();
     }
 
-    /** @test */
+    #[Test]
     public function it_can_display_trucks_index_page()
     {
         Truck::factory()->count(5)->create();
@@ -60,7 +68,7 @@ class TruckControllerTest extends TestCase
             );
     }
 
-    /** @test */
+    #[Test]
     public function it_can_search_trucks()
     {
         Truck::factory()->create(['plate' => 'AA-1234']);
@@ -77,7 +85,7 @@ class TruckControllerTest extends TestCase
             );
     }
 
-    /** @test */
+    #[Test]
     public function it_can_sort_trucks_by_plate()
     {
         Truck::factory()->create(['plate' => 'ZZ-9999']);
@@ -95,7 +103,7 @@ class TruckControllerTest extends TestCase
             );
     }
 
-    /** @test */
+    #[Test]
     public function it_can_display_truck_create_page()
     {
         $response = $this->actingAs($this->user)
@@ -108,7 +116,7 @@ class TruckControllerTest extends TestCase
             );
     }
 
-    /** @test */
+    #[Test]
     public function it_can_store_a_new_truck()
     {
         $truckData = [
@@ -131,7 +139,7 @@ class TruckControllerTest extends TestCase
         $this->assertDatabaseHas('trucks', ['plate' => 'AA-1234']);
     }
 
-    /** @test */
+    #[Test]
     public function it_validates_truck_store_request()
     {
         $response = $this->actingAs($this->user)
@@ -140,7 +148,7 @@ class TruckControllerTest extends TestCase
         $response->assertSessionHasErrors(['plate', 'vehicletype_id', 'status']);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_display_truck_show_page()
     {
         $truck = Truck::factory()->create([
@@ -163,7 +171,7 @@ class TruckControllerTest extends TestCase
             );
     }
 
-    /** @test */
+    #[Test]
     public function show_page_displays_all_truck_information()
     {
         $truck = Truck::factory()->create([
@@ -195,7 +203,7 @@ class TruckControllerTest extends TestCase
             );
     }
 
-    /** @test */
+    #[Test]
     public function it_can_display_truck_edit_page()
     {
         $truck = Truck::factory()->create();
@@ -212,7 +220,7 @@ class TruckControllerTest extends TestCase
             );
     }
 
-    /** @test */
+    #[Test]
     public function it_can_update_a_truck()
     {
         $truck = Truck::factory()->create(['plate' => 'AA-1111']);
@@ -234,7 +242,7 @@ class TruckControllerTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_delete_a_truck()
     {
         $truck = Truck::factory()->create();
@@ -246,7 +254,20 @@ class TruckControllerTest extends TestCase
         $this->assertSoftDeleted('trucks', ['id' => $truck->id]);
     }
 
-    /** @test */
+    #[Test]
+    public function it_prevents_deleting_truck_with_related_records()
+    {
+        $truck = Truck::factory()->create();
+        VehicleMaintenanceRecord::factory()->for($truck)->create();
+
+        $response = $this->actingAs($this->user)
+            ->delete(route('trucks.destroy', $truck));
+
+        $response->assertSessionHasErrors(['error']);
+        $this->assertDatabaseHas('trucks', ['id' => $truck->id, 'deleted_at' => null]);
+    }
+
+    #[Test]
     public function it_can_export_trucks_to_csv()
     {
         Truck::factory()->count(3)->create();
@@ -261,9 +282,10 @@ class TruckControllerTest extends TestCase
         $this->assertStringContainsString('.csv"', $contentDisposition);
     }
 
-    /** @test */
+    #[Test]
     public function it_requires_permission_to_view_trucks()
     {
+        /** @var User $userWithoutPermission */
         $userWithoutPermission = User::factory()->create();
 
         $response = $this->actingAs($userWithoutPermission)
@@ -272,9 +294,10 @@ class TruckControllerTest extends TestCase
         $response->assertStatus(403);
     }
 
-    /** @test */
+    #[Test]
     public function it_requires_permission_to_create_trucks()
     {
+        /** @var User $userWithoutPermission */
         $userWithoutPermission = User::factory()->create();
 
         $response = $this->actingAs($userWithoutPermission)
@@ -283,10 +306,11 @@ class TruckControllerTest extends TestCase
         $response->assertStatus(403);
     }
 
-    /** @test */
+    #[Test]
     public function it_requires_permission_to_edit_trucks()
     {
         $truck = Truck::factory()->create();
+        /** @var User $userWithoutPermission */
         $userWithoutPermission = User::factory()->create();
 
         $response = $this->actingAs($userWithoutPermission)
@@ -295,10 +319,11 @@ class TruckControllerTest extends TestCase
         $response->assertStatus(403);
     }
 
-    /** @test */
+    #[Test]
     public function it_requires_permission_to_delete_trucks()
     {
         $truck = Truck::factory()->create();
+        /** @var User $userWithoutPermission */
         $userWithoutPermission = User::factory()->create();
 
         $response = $this->actingAs($userWithoutPermission)
@@ -307,7 +332,7 @@ class TruckControllerTest extends TestCase
         $response->assertStatus(403);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_paginate_trucks()
     {
         Truck::factory()->count(25)->create();
@@ -323,7 +348,7 @@ class TruckControllerTest extends TestCase
             );
     }
 
-    /** @test */
+    #[Test]
     public function it_logs_activity_when_creating_truck()
     {
         $truckData = [
@@ -339,7 +364,7 @@ class TruckControllerTest extends TestCase
         $this->assertDatabaseHas('trucks', ['plate' => 'AA-5678']);
     }
 
-    /** @test */
+    #[Test]
     public function it_logs_activity_when_updating_truck()
     {
         $truck = Truck::factory()->create();
@@ -355,7 +380,7 @@ class TruckControllerTest extends TestCase
         $this->assertDatabaseHas('trucks', ['plate' => 'AA-9999']);
     }
 
-    /** @test */
+    #[Test]
     public function it_logs_activity_when_deleting_truck()
     {
         $truck = Truck::factory()->create();
@@ -372,7 +397,7 @@ class TruckControllerTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function it_validates_unique_plate_number()
     {
         Truck::factory()->create(['plate' => 'AA-9999']);
@@ -389,7 +414,7 @@ class TruckControllerTest extends TestCase
         $response->assertSessionHasErrors(['plate']);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_filter_trucks_by_status()
     {
         // Create trucks with explicit statuses
@@ -412,7 +437,7 @@ class TruckControllerTest extends TestCase
         $this->assertGreaterThanOrEqual(1, $activeTrucks->count());
     }
 
-    /** @test */
+    #[Test]
     public function it_can_sort_trucks_by_multiple_columns()
     {
         Truck::factory()->create(['plate' => 'ZZ-9999', 'purchasePrice' => 100000]);
@@ -430,7 +455,7 @@ class TruckControllerTest extends TestCase
             );
     }
 
-    /** @test */
+    #[Test]
     public function it_displays_correct_pagination_metadata()
     {
         Truck::factory()->count(25)->create();
@@ -448,7 +473,7 @@ class TruckControllerTest extends TestCase
             );
     }
 
-    /** @test */
+    #[Test]
     public function show_page_handles_missing_vehicle_type_gracefully()
     {
         // vehicletype_id is required, so we'll test with a valid one
@@ -468,7 +493,7 @@ class TruckControllerTest extends TestCase
             );
     }
 
-    /** @test */
+    #[Test]
     public function update_validates_required_fields()
     {
         $truck = Truck::factory()->create();
@@ -482,7 +507,7 @@ class TruckControllerTest extends TestCase
         $response->assertSessionHasErrors(['plate', 'status']);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_handle_empty_search_results()
     {
         Truck::factory()->create(['plate' => 'AA-1111']);
@@ -497,7 +522,7 @@ class TruckControllerTest extends TestCase
             );
     }
 
-    /** @test */
+    #[Test]
     public function edit_page_loads_truck_with_all_relationships()
     {
         $truck = Truck::factory()->create([
@@ -515,5 +540,145 @@ class TruckControllerTest extends TestCase
                 ->where('truck.id', $truck->id)
                 ->where('truck.vehicletype_id', $this->vehicleType->id)
             );
+    }
+
+    #[Test]
+    public function it_can_display_truck_status_history()
+    {
+        $truck = Truck::factory()->create([
+            'vehicletype_id' => $this->vehicleType->id,
+            'plate' => 'HIS-1001',
+        ]);
+
+        $statusType = StatusType::create([
+            'name' => 'Truck Status',
+        ]);
+
+        $availableStatus = Status::create([
+            'statustype_id' => $statusType->id,
+            'name' => 'Available',
+        ]);
+
+        $maintenanceStatus = Status::create([
+            'statustype_id' => $statusType->id,
+            'name' => 'Maintenance',
+        ]);
+
+        DailyTruckStatus::create([
+            'truck_id' => $truck->id,
+            'status_id' => $maintenanceStatus->id,
+            'status_date' => now()->subDays(2)->toDateString(),
+            'notes' => 'Scheduled maintenance',
+            'changed_by' => $this->user->id,
+        ]);
+
+        DailyTruckStatus::create([
+            'truck_id' => $truck->id,
+            'status_id' => $availableStatus->id,
+            'status_date' => now()->subDay()->toDateString(),
+            'notes' => 'Returned to service',
+            'changed_by' => $this->user->id,
+        ]);
+
+        $response = $this->actingAs($this->user)
+            ->get(route('trucks.status-history', $truck));
+
+        $response->assertStatus(200)
+            ->assertInertia(fn ($page) => $page
+                ->component('Status/StatusHistory')
+                ->where('truck.id', $truck->id)
+                ->where('truck.plate', 'HIS-1001')
+                ->has('history.data', 2)
+                ->where('history.data.0.status.name', 'Available')
+                ->where('history.data.1.status.name', 'Maintenance')
+            );
+    }
+
+    #[Test]
+    public function it_can_deactivate_a_truck()
+    {
+        $truck = Truck::factory()->create([
+            'status' => 'active',
+        ]);
+
+        $response = $this->actingAs($this->user)
+            ->post(route('trucks.deactivate', $truck));
+
+        $response->assertRedirect(route('trucks.index'));
+
+        $this->assertDatabaseHas('trucks', [
+            'id' => $truck->id,
+            'status' => 'inactive',
+        ]);
+    }
+
+    #[Test]
+    public function it_requires_permission_to_deactivate_trucks()
+    {
+        $truck = Truck::factory()->create([
+            'status' => 'active',
+        ]);
+
+        /** @var User $userWithoutPermission */
+        $userWithoutPermission = User::factory()->create();
+
+        $response = $this->actingAs($userWithoutPermission)
+            ->post(route('trucks.deactivate', $truck));
+
+        $response->assertStatus(403);
+    }
+
+    #[Test]
+    public function it_returns_free_trucks_list()
+    {
+        $freeTruck = Truck::factory()->create([
+            'status' => 'active',
+        ]);
+
+        $assignedTruck = Truck::factory()->create([
+            'status' => 'active',
+        ]);
+
+        $driver = Driver::factory()->create([
+            'status' => 'active',
+        ]);
+
+        DriverTruck::factory()->create([
+            'driver_id' => $driver->id,
+            'truck_id' => $assignedTruck->id,
+            'status' => 'active',
+            'unassigned_date' => null,
+        ]);
+
+        $response = $this->actingAs($this->user)
+            ->getJson(route('trucks.free'));
+
+        $response->assertOk()
+            ->assertJson([
+                'success' => true,
+                'count' => 1,
+            ]);
+
+        $data = $response->json('data');
+
+        $this->assertIsArray($data);
+        $this->assertCount(1, $data);
+        $this->assertEquals($freeTruck->id, $data[0]['id']);
+    }
+
+    #[Test]
+    public function it_requires_permission_to_view_free_trucks()
+    {
+        Truck::factory()->create([
+            'status' => 'active',
+        ]);
+
+        /** @var User $userWithoutPermission */
+        $userWithoutPermission = User::factory()->create();
+
+        $response = $this->actingAs($userWithoutPermission)
+            ->getJson(route('trucks.free'));
+
+        $response->assertStatus(403);
     }
 }

@@ -7,7 +7,6 @@ use App\Http\Controllers\PerformanceController;
 use App\Http\Controllers\TruckController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-use Laravel\Fortify\Features;
 
 Route::get('/', function () {
     return Inertia::render('welcome', [

@@ -8,6 +8,8 @@ use App\Models\DailyTruckStatus;
 use App\Models\Truck;
 use App\Models\VehicleType;
 use App\Services\TruckAssignmentService;
+use App\Services\TruckDeletionGuard;
+use App\Services\TruckMetricsService;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -18,6 +20,11 @@ use Spatie\Activitylog\Models\Activity;
 
 class TruckController extends Controller
 {
+    public function __construct(
+        private TruckDeletionGuard $truckDeletionGuard,
+        private TruckMetricsService $truckMetrics,
+    ) {}
+
     /**
      * Show per-truck status history (timeline).
      */
@@ -56,7 +63,8 @@ class TruckController extends Controller
     {
         $search = trim((string) $request->input('search'));
         $status = $request->input('status');
-        $vehicleTypeId = $request->input('vehicle_type');
+        $vehicleTypeIdInput = $request->input('vehicle_type');
+        $vehicleTypeId = ($vehicleTypeIdInput !== null && $vehicleTypeIdInput !== '') ? (int) $vehicleTypeIdInput : null;
         $perPageOptions = [15, 25, 50, 100];
         $perPageDefault = 15;
         $perPage = (int) $request->input('per_page', $perPageDefault);
@@ -65,29 +73,9 @@ class TruckController extends Controller
             $perPage = $perPageDefault;
         }
 
-        $trucksQuery = Truck::query()->with('vehicleType');
-        $metricsQuery = Truck::query();
+        $filtersSearch = $search !== '' ? $search : null;
 
-        if ($search !== '') {
-            $applySearch = static function ($query) use ($search) {
-                $query->where(function ($q) use ($search) {
-                    $q->where('plate', 'like', "%{$search}%")
-                        ->orWhere('chasisNumber', 'like', "%{$search}%")
-                        ->orWhere('engineNumber', 'like', "%{$search}%")
-                        ->orWhereHas('vehicleType', function ($vehicleQuery) use ($search) {
-                            $vehicleQuery->where('name', 'like', "%{$search}%");
-                        });
-                });
-            };
-
-            $applySearch($trucksQuery);
-            $applySearch($metricsQuery);
-        }
-
-        if (! empty($vehicleTypeId)) {
-            $trucksQuery->where('vehicletype_id', $vehicleTypeId);
-            $metricsQuery->where('vehicletype_id', $vehicleTypeId);
-        }
+        $trucksQuery = $this->truckMetrics->applyFilters(Truck::query()->with('vehicleType'), $filtersSearch, $vehicleTypeId);
 
         if (! empty($status) && $status !== 'all') {
             $trucksQuery->where('status', $status);
@@ -105,12 +93,7 @@ class TruckController extends Controller
 
         $trucks = $trucksQuery->paginate($perPage)->withQueryString();
 
-        $metrics = [
-            'total' => (clone $metricsQuery)->count(),
-            'active' => (clone $metricsQuery)->where('status', 'active')->count(),
-            'maintenance' => (clone $metricsQuery)->where('status', 'maintenance')->count(),
-            'fleet_value' => (float) (clone $metricsQuery)->sum('purchasePrice'),
-        ];
+        $metrics = $this->truckMetrics->metrics($filtersSearch, $vehicleTypeId);
 
         $statusOptions = Truck::query()
             ->select('status')
@@ -163,6 +146,8 @@ class TruckController extends Controller
     {
         try {
             $truck = Truck::create($request->validated());
+
+            $this->truckMetrics->clearCache();
 
             return redirect()->route('trucks.index')
                 ->with('success', 'Truck created successfully.');
@@ -258,6 +243,8 @@ class TruckController extends Controller
         try {
             $truck->update($request->validated());
 
+            $this->truckMetrics->clearCache();
+
             return redirect()->route('trucks.index')
                 ->with('success', 'Truck updated successfully.');
 
@@ -272,72 +259,17 @@ class TruckController extends Controller
     public function destroy(Truck $truck)
     {
         try {
-            // Check for related records that prevent deletion
+            $blockers = $this->truckDeletionGuard->blockers($truck);
 
-            // Check if truck has performances
-            if ($truck->performances()->count() > 0) {
+            if (! empty($blockers)) {
                 return back()->withErrors([
-                    'error' => 'You are not allowed to delete this truck. It has '.$truck->performances()->count().' performance record(s). Please remove all performance records first.',
-                ]);
-            }
-
-            // Check if truck has maintenance records
-            if ($truck->maintenanceRecords()->count() > 0) {
-                return back()->withErrors([
-                    'error' => 'You are not allowed to delete this truck. It has '.$truck->maintenanceRecords()->count().' maintenance record(s). Please remove all maintenance records first.',
-                ]);
-            }
-
-            // Check if truck has fuel records
-            if ($truck->fuelRecords()->count() > 0) {
-                return back()->withErrors([
-                    'error' => 'You are not allowed to delete this truck. It has '.$truck->fuelRecords()->count().' fuel record(s). Please remove all fuel records first.',
-                ]);
-            }
-
-            // Check if truck has fuel consumption analysis
-            if ($truck->fuelConsumptionAnalysis()->count() > 0) {
-                return back()->withErrors([
-                    'error' => 'You are not allowed to delete this truck. It has '.$truck->fuelConsumptionAnalysis()->count().' fuel consumption analysis record(s). Please remove all fuel consumption analysis records first.',
-                ]);
-            }
-
-            // Check if truck has financial records
-            if ($truck->financialRecords()->count() > 0) {
-                return back()->withErrors([
-                    'error' => 'You are not allowed to delete this truck. It has '.$truck->financialRecords()->count().' financial record(s). Please remove all financial records first.',
-                ]);
-            }
-
-            // Check if truck has insurance records
-            if ($truck->insuranceRecords()->count() > 0) {
-                return back()->withErrors([
-                    'error' => 'You are not allowed to delete this truck. It has '.$truck->insuranceRecords()->count().' insurance record(s). Please remove all insurance records first.',
-                ]);
-            }
-
-            // Check if truck has route plans
-            if ($truck->routePlans()->count() > 0) {
-                return back()->withErrors([
-                    'error' => 'You are not allowed to delete this truck. It has '.$truck->routePlans()->count().' route plan(s). Please remove all route plans first.',
-                ]);
-            }
-
-            // Check if truck has daily statuses
-            if ($truck->dailyStatuses()->count() > 0) {
-                return back()->withErrors([
-                    'error' => 'You are not allowed to delete this truck. It has '.$truck->dailyStatuses()->count().' daily status record(s). Please remove all daily status records first.',
-                ]);
-            }
-
-            // Check if truck is currently assigned to drivers
-            if ($truck->drivers()->wherePivot('status', 'active')->count() > 0) {
-                return back()->withErrors([
-                    'error' => 'You are not allowed to delete this truck. It is currently assigned to '.$truck->drivers()->wherePivot('status', 'active')->count().' active driver(s). Please unassign all drivers first.',
+                    'error' => $blockers,
                 ]);
             }
 
             $truck->delete();
+            $this->truckDeletionGuard->clearCache($truck);
+            $this->truckMetrics->clearCache();
 
             return redirect()->route('trucks.index')
                 ->with('success', 'Truck deleted successfully.');
@@ -355,6 +287,7 @@ class TruckController extends Controller
     public function deactivate(Truck $truck)
     {
         $truck->update(['status' => 'inactive']);
+        $this->truckMetrics->clearCache();
 
         return redirect()->route('trucks.index')
             ->with('success', 'Truck deactivated successfully.');
