@@ -344,7 +344,7 @@ class TruckControllerTest extends TestCase
             ->assertInertia(fn ($page) => $page
                 ->component('Trucks/Index')
                 ->has('trucks')
-                ->where('trucks.current_page', 2)
+                ->where('trucks.meta.current_page', 2)
             );
     }
 
@@ -467,9 +467,9 @@ class TruckControllerTest extends TestCase
             ->assertInertia(fn ($page) => $page
                 ->component('Trucks/Index')
                 ->has('trucks')
-                ->where('trucks.total', 25)
-                ->where('trucks.per_page', 15)
-                ->where('trucks.last_page', 2)
+                ->where('trucks.meta.total', 25)
+                ->where('trucks.meta.per_page', 15)
+                ->where('trucks.meta.last_page', 2)
             );
     }
 

@@ -43,26 +43,33 @@ interface TruckData {
     created_at?: string;
 }
 
+interface PaginationMeta {
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+    from: number | null;
+    to: number | null;
+}
+
+interface PaginationLink {
+    url: string | null;
+    label: string;
+    active: boolean;
+}
+
 interface TrucksIndexProps {
     trucks: {
         data: TruckData[];
-        current_page: number;
-        last_page: number;
-        total: number;
-        from: number;
-        to: number;
-        links: Array<{
-            url: string | null;
-            label: string;
-            active: boolean;
-        }>;
+        meta: PaginationMeta;
+        links: PaginationLink[];
     };
-    metrics: {
+    metrics?: {
         total: number;
         active: number;
         maintenance: number;
         fleet_value: number;
-    };
+    } | null;
     filters: {
         search?: string | null;
         status?: string | null;
@@ -113,9 +120,9 @@ export default function TrucksIndex({ trucks, metrics, filters, statusOptions, v
         setPerPage(String(resolvedPerPage));
     }, [resolvedPerPage]);
 
-    const truckCount = metrics?.total ?? trucks?.total ?? 0;
-    const currentPage = trucks?.current_page ?? 1;
-    const lastPage = trucks?.last_page ?? 1;
+    const truckCount = metrics?.total ?? trucks?.meta?.total ?? trucks?.data?.length ?? 0;
+    const currentPage = trucks?.meta?.current_page ?? 1;
+    const lastPage = trucks?.meta?.last_page ?? 1;
     const activeCount = metrics?.active ?? 0;
     const maintenanceCount = metrics?.maintenance ?? 0;
     const fleetValue = metrics?.fleet_value ?? 0;
@@ -495,9 +502,9 @@ export default function TrucksIndex({ trucks, metrics, filters, statusOptions, v
                     <InertiaPagination
                         className="mt-4"
                         links={trucks.links}
-                        from={trucks.from}
-                        to={trucks.to}
-                        total={trucks.total}
+                        from={trucks.meta?.from ?? undefined}
+                        to={trucks.meta?.to ?? undefined}
+                        total={trucks.meta?.total ?? undefined}
                         currentPage={currentPage}
                         lastPage={lastPage}
                     />

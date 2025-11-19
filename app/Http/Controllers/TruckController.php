@@ -12,6 +12,7 @@ use App\Services\TruckDeletionGuard;
 use App\Services\TruckMetricsService;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -82,6 +83,8 @@ class TruckController extends Controller
                     'plate',
                     'status',
                     'vehicletype_id',
+                    'chasisNumber',
+                    'engineNumber',
                     'serviceIntervalKM',
                     'purchasePrice',
                     'productionDate',
@@ -117,9 +120,11 @@ class TruckController extends Controller
                     'plate' => $truck->plate,
                     'status' => $truck->status,
                     'vehicletype_id' => $truck->vehicletype_id,
-                    'vehicle_type' => $truck->relationLoaded('vehicleType')
+                    'vehicleType' => $truck->relationLoaded('vehicleType')
                         ? $truck->vehicleType?->only(['id', 'name'])
                         : $truck->vehicleType()->first(['id', 'name']),
+                    'chasisNumber' => $truck->chasisNumber,
+                    'engineNumber' => $truck->engineNumber,
                     'serviceIntervalKM' => $truck->serviceIntervalKM,
                     'purchasePrice' => $truck->purchasePrice,
                     'productionDate' => $truck->productionDate,
@@ -164,8 +169,22 @@ class TruckController extends Controller
         ]);
     }
 
-    private function trimPagination($paginator): array
+    private function trimPagination(LengthAwarePaginator $paginator): array
     {
+        $links = $paginator->linkCollection()->map(static function (array $link): array {
+            $label = $link['label'];
+
+            if (is_string($label)) {
+                $label = trim(strip_tags(html_entity_decode($label)));
+            }
+
+            return [
+                'url' => $link['url'],
+                'label' => $label,
+                'active' => (bool) $link['active'],
+            ];
+        })->values()->all();
+
         return [
             'data' => $paginator->items(),
             'meta' => [
@@ -176,12 +195,7 @@ class TruckController extends Controller
                 'from' => $paginator->firstItem(),
                 'to' => $paginator->lastItem(),
             ],
-            'links' => [
-                'first' => $paginator->url(1),
-                'last' => $paginator->url($paginator->lastPage()),
-                'prev' => $paginator->previousPageUrl(),
-                'next' => $paginator->nextPageUrl(),
-            ],
+            'links' => $links,
         ];
     }
 
