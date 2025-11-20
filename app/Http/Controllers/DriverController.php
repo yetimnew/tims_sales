@@ -55,7 +55,7 @@ class DriverController extends Controller
         )->with('trucks');
 
         $sort = $request->input('sort', 'created_at');
-        $direction = $request->input('direction', 'asc');
+        $direction = $request->input('direction', 'desc');
         $allowedSorts = ['name', 'driverid', 'sex', 'mobile', 'hireddate', 'status', 'zone', 'created_at'];
 
         if (! in_array($sort, $allowedSorts, true)) {
@@ -63,7 +63,7 @@ class DriverController extends Controller
         }
 
         if (! in_array(strtolower((string) $direction), ['asc', 'desc'], true)) {
-            $direction = 'desc';
+            $direction = 'asc';
         }
 
         $driversQuery->orderBy($sort, $direction);
