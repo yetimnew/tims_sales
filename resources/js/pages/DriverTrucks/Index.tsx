@@ -14,6 +14,8 @@ import ListPageLayout from '@/components/layouts/list-page-layout';
 import { usePermissions } from '@/hooks/use-permissions';
 import { Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
+import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
+import { toast } from '@/hooks/use-toast';
 import { Plus, Eye, Edit, Search, ArrowUpDown, Trash2, Truck, User, UserCheck, UserX } from 'lucide-react';
 import { InertiaPagination } from '@/components/ui/pagination';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -71,9 +73,13 @@ interface DriverTrucksIndexProps {
         sort?: string | null;
         direction?: 'asc' | 'desc' | null;
         per_page?: number | null;
+        driver_id?: number | null;
+        truck_id?: number | null;
     };
     statusOptions: Array<{ label: string; value: string }>;
     perPageOptions: number[];
+    driverOptions: Array<{ label: string; value: number }>;
+    truckOptions: Array<{ label: string; value: number }>;
 }
 
 const columns: Array<{ key: string; label: string; sortable?: boolean; sortKey?: string }> = [
@@ -83,12 +89,29 @@ const columns: Array<{ key: string; label: string; sortable?: boolean; sortKey?:
     { key: 'status', label: 'Status', sortable: true, sortKey: 'is_attached' },
 ];
 
-export default function DriverTrucksIndex({ driverTrucks, metrics, filters, statusOptions, perPageOptions }: DriverTrucksIndexProps) {
+type NavigateOverrides = Partial<{
+    search: string;
+    status: string;
+    sort: string;
+    direction: 'asc' | 'desc';
+    page: number;
+    per_page: number;
+    driver_id: number | null;
+    truck_id: number | null;
+}>;
+
+export default function DriverTrucksIndex({ driverTrucks, metrics, filters, statusOptions, perPageOptions, driverOptions, truckOptions }: DriverTrucksIndexProps) {
     const { hasPermission } = usePermissions();
     const [searchTerm, setSearchTerm] = React.useState(filters?.search ?? '');
     const [selectedStatus, setSelectedStatus] = React.useState(filters?.status ?? 'all');
     const [sortColumn, setSortColumn] = React.useState<string>(filters?.sort ?? 'date_recived');
     const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>(filters?.direction ?? 'desc');
+    const [selectedDriver, setSelectedDriver] = React.useState<string | undefined>(
+        filters?.driver_id ? String(filters.driver_id) : undefined,
+    );
+    const [selectedTruck, setSelectedTruck] = React.useState<string | undefined>(
+        filters?.truck_id ? String(filters.truck_id) : undefined,
+    );
     const availablePerPageOptions = React.useMemo(() => (perPageOptions?.length ? perPageOptions : [15, 25, 50, 100]), [perPageOptions]);
     const resolvedPerPage = React.useMemo(() => {
         const candidate = filters?.per_page;
@@ -98,6 +121,9 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
         return availablePerPageOptions[0] ?? 15;
     }, [filters?.per_page, availablePerPageOptions]);
     const [perPage, setPerPage] = React.useState<string>(() => String(resolvedPerPage));
+    const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+    const [selectedAssignment, setSelectedAssignment] = React.useState<DriverTruckData | null>(null);
+    const [isDeleting, setIsDeleting] = React.useState(false);
 
     React.useEffect(() => {
         setPerPage(String(resolvedPerPage));
@@ -106,9 +132,21 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
     const totalAssignments = metrics?.total ?? driverTrucks?.total ?? 0;
     const currentPage = driverTrucks?.current_page ?? 1;
     const lastPage = driverTrucks?.last_page ?? 1;
+    const driverTruckFilterActive = Boolean(selectedDriver || selectedTruck);
 
-    const handleNavigate = React.useCallback((overrides: Partial<{ search?: string; status?: string; sort?: string; direction?: 'asc' | 'desc'; page?: number; per_page?: number }>) => {
-        const perPageValue = overrides.per_page !== undefined ? overrides.per_page : Number(perPage);
+    const handleNavigate = React.useCallback((overrides: NavigateOverrides = {}) => {
+        const perPageValue = Object.prototype.hasOwnProperty.call(overrides, 'per_page')
+            ? overrides.per_page
+            : Number(perPage);
+        const hasDriverOverride = Object.prototype.hasOwnProperty.call(overrides, 'driver_id');
+        const hasTruckOverride = Object.prototype.hasOwnProperty.call(overrides, 'truck_id');
+        const driverIdCandidate = hasDriverOverride
+            ? overrides.driver_id
+            : (selectedDriver ? Number(selectedDriver) : undefined);
+        const truckIdCandidate = hasTruckOverride
+            ? overrides.truck_id
+            : (selectedTruck ? Number(selectedTruck) : undefined);
+
         const params: Record<string, string | number | undefined> = {
             search: overrides.search !== undefined ? overrides.search : (searchTerm.trim() ? searchTerm.trim() : undefined),
             status: overrides.status !== undefined ? overrides.status : (selectedStatus !== 'all' ? selectedStatus : undefined),
@@ -116,6 +154,12 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
             direction: overrides.direction ?? sortDirection,
             page: overrides.page,
             per_page: perPageValue,
+            driver_id: typeof driverIdCandidate === 'number' && Number.isFinite(driverIdCandidate)
+                ? driverIdCandidate
+                : undefined,
+            truck_id: typeof truckIdCandidate === 'number' && Number.isFinite(truckIdCandidate)
+                ? truckIdCandidate
+                : undefined,
         };
 
         Object.keys(params).forEach((key) => {
@@ -131,7 +175,7 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
         });
 
         router.get('/driver-trucks', params, { preserveState: true, replace: false });
-    }, [searchTerm, selectedStatus, sortColumn, sortDirection, perPage]);
+    }, [searchTerm, selectedStatus, sortColumn, sortDirection, perPage, selectedDriver, selectedTruck]);
 
     const handleSearchChange = (value: string) => {
         setSearchTerm(value);
@@ -143,10 +187,32 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
         handleNavigate({ status: value !== 'all' ? value : undefined, page: 1 });
     };
 
+    const handleDriverChange = (value: string) => {
+        setSelectedDriver(value);
+        const numericValue = Number(value);
+        handleNavigate({ driver_id: Number.isFinite(numericValue) ? numericValue : null, page: 1 });
+    };
+
+    const handleTruckChange = (value: string) => {
+        setSelectedTruck(value);
+        const numericValue = Number(value);
+        handleNavigate({ truck_id: Number.isFinite(numericValue) ? numericValue : null, page: 1 });
+    };
+
     const handlePerPageChange = (value: string) => {
         setPerPage(value);
         const numericValue = Number(value);
         handleNavigate({ per_page: Number.isNaN(numericValue) ? undefined : numericValue, page: 1 });
+    };
+
+    const handleDriverTruckReset = () => {
+        if (!driverTruckFilterActive) {
+            return;
+        }
+
+        setSelectedDriver(undefined);
+        setSelectedTruck(undefined);
+        handleNavigate({ driver_id: null, truck_id: null, page: 1 });
     };
 
     const handleSort = (column: string) => {
@@ -154,6 +220,40 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
         setSortColumn(column);
         setSortDirection(newDirection);
         handleNavigate({ sort: column, direction: newDirection });
+    };
+
+    const handleDeleteClick = (assignment: DriverTruckData) => {
+        setSelectedAssignment(assignment);
+        setDeleteDialogOpen(true);
+    };
+
+    const handleDeleteConfirm = () => {
+        if (!selectedAssignment) {
+            return;
+        }
+
+        setIsDeleting(true);
+
+        router.delete(`/driver-trucks/${selectedAssignment.id}`, {
+            onSuccess: () => {
+                setDeleteDialogOpen(false);
+                setSelectedAssignment(null);
+                setIsDeleting(false);
+            },
+            onError: (errors) => {
+                setIsDeleting(false);
+                if (errors && typeof errors === 'object') {
+                    const errorMessages = Object.values(errors).flat().join('\n');
+                    if (errorMessages) {
+                        toast({
+                            title: '❌ Delete Failed',
+                            description: errorMessages,
+                            variant: 'destructive',
+                        });
+                    }
+                }
+            },
+        });
     };
 
     const renderHeaderCell = (column: { key: string; label: string; sortable?: boolean; sortKey?: string }) => {
@@ -273,6 +373,39 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
                     ))}
                 </SelectContent>
             </Select>
+            <Select value={selectedDriver} onValueChange={handleDriverChange}>
+                <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder="Driver" />
+                </SelectTrigger>
+                <SelectContent>
+                    {driverOptions.map((option) => (
+                        <SelectItem key={option.value} value={String(option.value)}>
+                            {option.label}
+                        </SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+            <Select value={selectedTruck} onValueChange={handleTruckChange}>
+                <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Truck" />
+                </SelectTrigger>
+                <SelectContent>
+                    {truckOptions.map((option) => (
+                        <SelectItem key={option.value} value={String(option.value)}>
+                            {option.label}
+                        </SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+            <Button
+                variant="ghost"
+                size="sm"
+                className="px-2 text-xs text-muted-foreground hover:text-primary"
+                onClick={handleDriverTruckReset}
+                disabled={!driverTruckFilterActive}
+            >
+                Reset driver / truck
+            </Button>
             <div className="flex items-center gap-1 text-sm text-muted-foreground">
                 <span className="hidden sm:inline">Rows</span>
                 <Select value={perPage} onValueChange={handlePerPageChange}>
@@ -299,20 +432,26 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
     };
 
     // TODO: Evaluate infinite scrolling if assignment volumes increase notably.
+    const rowOffset = Math.max((driverTrucks.from ?? 1) - 1, 0);
+
     const tableContent = (
         <Table>
             <TableHeader className="[&_tr]:sticky [&_tr]:top-0 [&_tr]:z-20 [&_tr]:bg-background [&_tr]:shadow-sm">
                 <TableRow className="border-b bg-background">
+                    <TableHead className="sticky top-0 z-20 w-12 bg-background text-center">#</TableHead>
                     {columns.map((column) => renderHeaderCell(column))}
                     <TableHead className="sticky top-0 z-20 bg-background text-center">Actions</TableHead>
                 </TableRow>
             </TableHeader>
             <TableBody>
                 {driverTrucks?.data && driverTrucks.data.length > 0 ? (
-                    driverTrucks.data.map((assignment) => {
+                    driverTrucks.data.map((assignment, index) => {
                         const assignedDate = assignment.date_recived ?? assignment.assigned_at;
                         return (
                             <TableRow key={assignment.id} className="hover:bg-muted/50">
+                                <TableCell className="text-center font-medium">
+                                    {rowOffset + index + 1}
+                                </TableCell>
                                 <TableCell className="font-medium">
                                     <div className="flex flex-col">
                                         <span>{assignment.driver.name}</span>
@@ -357,11 +496,7 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
                                                 size="sm"
                                                 variant="ghost"
                                                 className="text-red-600 hover:bg-red-50 hover:text-red-700"
-                                                onClick={() => {
-                                                    if (confirm('Are you sure you want to delete this assignment?')) {
-                                                        router.delete(`/driver-trucks/${assignment.id}`);
-                                                    }
-                                                }}
+                                                onClick={() => handleDeleteClick(assignment)}
                                             >
                                                 <Trash2 className="h-4 w-4" />
                                             </Button>
@@ -373,7 +508,7 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
                     })
                 ) : (
                     <TableRow>
-                        <TableCell colSpan={5} className="py-8 text-center text-muted-foreground">
+                        <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
                             No assignments found.
                             {hasPermission('driver-trucks.create') && (
                                 <Link href="/driver-trucks/create" className="ml-1 text-primary underline">
@@ -388,29 +523,41 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
     );
 
     return (
-        <ListPageLayout
-            headTitle="Driver-Truck Assignments"
-            title="Driver-Truck Assignments"
-            description={`Manage all driver-truck assignments. Total: ${totalAssignments}`}
-            breadcrumbs={breadcrumbs}
-            actions={headerActions}
-            stats={statsSection}
-            tableTitle="Assignments"
-            tableDescription="List of all driver-truck assignments"
-            tableHeaderExtras={tableHeaderExtras}
-            pagination={
-                <InertiaPagination
-                    className="mt-4"
-                    from={driverTrucks.from}
-                    to={driverTrucks.to}
-                    total={driverTrucks.total}
-                    links={driverTrucks.links}
-                    currentPage={currentPage}
-                    lastPage={lastPage}
-                />
-            }
-        >
-            {tableContent}
-        </ListPageLayout>
+        <>
+            <ListPageLayout
+                headTitle="Driver-Truck Assignments"
+                title="Driver-Truck Assignments"
+                description={`Manage all driver-truck assignments. Total: ${totalAssignments}`}
+                breadcrumbs={breadcrumbs}
+                actions={headerActions}
+                stats={statsSection}
+                tableTitle="Assignments"
+                tableDescription="List of all driver-truck assignments"
+                tableHeaderExtras={tableHeaderExtras}
+                pagination={
+                    <InertiaPagination
+                        className="mt-4"
+                        from={driverTrucks.from}
+                        to={driverTrucks.to}
+                        total={driverTrucks.total}
+                        links={driverTrucks.links}
+                        currentPage={currentPage}
+                        lastPage={lastPage}
+                    />
+                }
+            >
+                {tableContent}
+            </ListPageLayout>
+
+            <DeleteConfirmationDialog
+                open={deleteDialogOpen}
+                onOpenChange={setDeleteDialogOpen}
+                title="Delete Assignment"
+                description="Are you sure you want to delete this driver-truck assignment? This action cannot be undone."
+                itemName={selectedAssignment ? `${selectedAssignment.driver.name} ↔ ${selectedAssignment.truck.plate}` : undefined}
+                onConfirm={handleDeleteConfirm}
+                isLoading={isDeleting}
+            />
+        </>
     );
 }

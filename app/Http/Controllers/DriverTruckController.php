@@ -2,19 +2,19 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\DriverTruck;
+use App\Http\Requests\StoreDriverTruckRequest;
 use App\Models\Driver;
-use App\Models\Truck;
+use App\Models\DriverTruck;
 use App\Models\Performance;
+use App\Models\Truck;
+use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
-use Exception;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Str;
 use Spatie\Activitylog\Models\Activity;
-use App\Http\Requests\StoreDriverTruckRequest;
 
 class DriverTruckController extends Controller
 {
@@ -27,21 +27,23 @@ class DriverTruckController extends Controller
         $status = $request->input('status');
         $sort = $request->input('sort', 'date_recived');
         $direction = strtolower((string) $request->input('direction', 'desc'));
+        $driverId = $request->input('driver_id');
+        $truckId = $request->input('truck_id');
         $perPageOptions = [15, 25, 50, 100];
         $perPageDefault = 15;
         $perPage = (int) $request->input('per_page', $perPageDefault);
 
-        if (!in_array($perPage, $perPageOptions, true)) {
+        if (! in_array($perPage, $perPageOptions, true)) {
             $perPage = $perPageDefault;
         }
 
-        if (!in_array($direction, ['asc', 'desc'], true)) {
+        if (! in_array($direction, ['asc', 'desc'], true)) {
             $direction = 'desc';
         }
 
         $allowedSorts = ['date_recived', 'date_detach', 'status', 'is_attached', 'created_at', 'updated_at'];
 
-        if (!in_array($sort, $allowedSorts, true)) {
+        if (! in_array($sort, $allowedSorts, true)) {
             $sort = 'date_recived';
         }
 
@@ -55,9 +57,9 @@ class DriverTruckController extends Controller
                         $driverQuery->where('name', 'like', "%{$search}%")
                             ->orWhere('driverid', 'like', "%{$search}%");
                     })
-                    ->orWhereHas('truck', function ($truckQuery) use ($search) {
-                        $truckQuery->where('plate', 'like', "%{$search}%");
-                    });
+                        ->orWhereHas('truck', function ($truckQuery) use ($search) {
+                            $truckQuery->where('plate', 'like', "%{$search}%");
+                        });
                 });
             };
 
@@ -65,7 +67,7 @@ class DriverTruckController extends Controller
             $applySearch($metricsQuery);
         }
 
-        if (!empty($status) && $status !== 'all') {
+        if (! empty($status) && $status !== 'all') {
             if ($status === 'attached') {
                 $assignmentsQuery->where('is_attached', 1);
                 $metricsQuery->where('is_attached', 1);
@@ -76,6 +78,16 @@ class DriverTruckController extends Controller
                 $assignmentsQuery->where('status', $status);
                 $metricsQuery->where('status', $status);
             }
+        }
+
+        if (! empty($driverId) && ctype_digit((string) $driverId)) {
+            $assignmentsQuery->where('driver_id', (int) $driverId);
+            $metricsQuery->where('driver_id', (int) $driverId);
+        }
+
+        if (! empty($truckId) && ctype_digit((string) $truckId)) {
+            $assignmentsQuery->where('truck_id', (int) $truckId);
+            $metricsQuery->where('truck_id', (int) $truckId);
         }
 
         $assignmentsQuery->orderBy($sort, $direction);
@@ -94,10 +106,39 @@ class DriverTruckController extends Controller
         ];
 
         $statusOptions = collect(['attached', 'detached'])
+            ->merge(
+                DriverTruck::query()
+                    ->select('status')
+                    ->whereNotNull('status')
+                    ->distinct()
+                    ->pluck('status')
+            )
+            ->unique()
+            ->filter()
             ->map(fn ($value) => [
-                'label' => Str::headline($value),
-                'value' => $value,
+                'label' => Str::headline((string) $value),
+                'value' => (string) $value,
             ])->values();
+
+        $driverOptions = Driver::query()
+            ->select('drivers.id', 'drivers.name', 'drivers.driverid')
+            ->whereHas('driverTrucks')
+            ->orderBy('drivers.name')
+            ->get()
+            ->map(fn (Driver $driver) => [
+                'label' => trim($driver->name.' ('.$driver->driverid.')'),
+                'value' => $driver->id,
+            ]);
+
+        $truckOptions = Truck::query()
+            ->select('trucks.id', 'trucks.plate')
+            ->whereHas('driverTrucks')
+            ->orderBy('trucks.plate')
+            ->get()
+            ->map(fn (Truck $truck) => [
+                'label' => $truck->plate,
+                'value' => $truck->id,
+            ]);
 
         return Inertia::render('DriverTrucks/Index', [
             'driverTrucks' => $driverTrucks,
@@ -108,9 +149,13 @@ class DriverTruckController extends Controller
                 'sort' => $sort,
                 'direction' => $direction,
                 'per_page' => $perPage,
+                'driver_id' => $driverId ? (int) $driverId : null,
+                'truck_id' => $truckId ? (int) $truckId : null,
             ],
             'statusOptions' => $statusOptions,
             'perPageOptions' => $perPageOptions,
+            'driverOptions' => $driverOptions,
+            'truckOptions' => $truckOptions,
         ]);
     }
 
@@ -186,7 +231,7 @@ class DriverTruckController extends Controller
             $start = \Carbon\Carbon::parse($driverTruck->date_detach);
             $end = \Carbon\Carbon::parse($driverTruck->date_recived);
             $diff = $end->diff($start);
-            $dateDifference = $diff->d . ' days ' . $diff->h . ' hours ' . $diff->i . ' minutes';
+            $dateDifference = $diff->d.' days '.$diff->h.' hours '.$diff->i.' minutes';
         }
 
         // Load activity logs
@@ -329,9 +374,9 @@ class DriverTruckController extends Controller
     private function getAvailableTrucks()
     {
         return Truck::select(
-                'trucks.*',
-                DB::raw('COALESCE(SUM(driver_truck.is_attached), 0) as total_assigned')
-            )
+            'trucks.*',
+            DB::raw('COALESCE(SUM(driver_truck.is_attached), 0) as total_assigned')
+        )
             ->leftJoin('driver_truck', 'trucks.id', '=', 'driver_truck.truck_id')
             ->where('trucks.status', 'active')
             ->groupBy('trucks.id', 'trucks.plate', 'trucks.vehicletype_id', 'trucks.chasisNumber', 'trucks.engineNumber', 'trucks.tyreSyze', 'trucks.serviceIntervalKM', 'trucks.purchasePrice', 'trucks.productionDate', 'trucks.serviceStartDate', 'trucks.status', 'trucks.created_at', 'trucks.updated_at', 'trucks.deleted_at')
@@ -346,9 +391,9 @@ class DriverTruckController extends Controller
     private function getAvailableDrivers()
     {
         return Driver::select(
-                'drivers.*',
-                DB::raw('COALESCE(SUM(driver_truck.is_attached), 0) as total_assigned')
-            )
+            'drivers.*',
+            DB::raw('COALESCE(SUM(driver_truck.is_attached), 0) as total_assigned')
+        )
             ->leftJoin('driver_truck', 'drivers.id', '=', 'driver_truck.driver_id')
             ->where('drivers.status', 'active')
             ->groupBy('drivers.id', 'drivers.driverid', 'drivers.name', 'drivers.sex', 'drivers.birthdate', 'drivers.zone', 'drivers.woreda', 'drivers.kebele', 'drivers.housenumber', 'drivers.mobile', 'drivers.hireddate', 'drivers.status', 'drivers.created_at', 'drivers.updated_at', 'drivers.deleted_at')
