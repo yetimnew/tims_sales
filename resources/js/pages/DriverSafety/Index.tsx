@@ -1,3 +1,4 @@
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -186,6 +187,7 @@ export default function DriverSafetyIndex({
     const currentPage = safetyRecords?.current_page ?? 1
     const lastPage = safetyRecords?.last_page ?? 1
     const safetyData = safetyRecords?.data ?? []
+    const rowOffset = Math.max(0, (safetyRecords?.from ?? 1) - 1)
 
     const handleNavigate = React.useCallback((overrides: Partial<{
         search?: string
@@ -330,18 +332,18 @@ export default function DriverSafetyIndex({
     const statsSection = (
         <div className="hidden gap-2 md:grid md:grid-cols-2 xl:grid-cols-4">
             {statsCards.map((card) => (
-                <div key={card.title} className="gap-2 rounded-lg border border-slate-200 py-2 shadow-sm sm:py-3">
-                    <div className="flex items-center justify-between px-2 pb-1 sm:px-3">
-                        <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                <Card key={card.title} className="gap-2 border border-slate-200 py-2 shadow-sm sm:py-3">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 p-1.5 sm:p-2">
+                        <CardTitle className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                             {card.title}
-                        </span>
+                        </CardTitle>
                         {card.icon}
-                    </div>
-                    <div className="px-2 pb-2 pt-0 sm:px-3">
+                    </CardHeader>
+                    <CardContent className="px-2 pb-2 pt-0 sm:px-3 sm:pb-2">
                         <div className={`text-sm font-semibold sm:text-base ${card.valueClassName}`}>{card.value}</div>
                         <p className="text-[11px] text-muted-foreground">{card.description}</p>
-                    </div>
-                </div>
+                    </CardContent>
+                </Card>
             ))}
         </div>
     )
@@ -445,14 +447,16 @@ export default function DriverSafetyIndex({
         <Table>
             <TableHeader className="[&_tr]:sticky [&_tr]:top-0 [&_tr]:z-20 [&_tr]:bg-background [&_tr]:shadow-sm">
                 <TableRow className="border-b bg-background">
+                    <TableHead className="sticky top-0 z-20 w-12 bg-background text-center">#</TableHead>
                     {columns.map((column) => renderHeaderCell(column))}
                     <TableHead className="sticky top-0 z-20 bg-background text-center">Actions</TableHead>
                 </TableRow>
             </TableHeader>
             <TableBody>
                 {safetyData.length > 0 ? (
-                    safetyData.map((record) => (
+                    safetyData.map((record, index) => (
                         <TableRow key={record.id} className="hover:bg-muted/50">
+                            <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
                             <TableCell className="font-medium">{formatDate(record.incident_date)}</TableCell>
                             <TableCell className="text-muted-foreground">{record.driver?.name || '—'}</TableCell>
                             <TableCell>
@@ -501,7 +505,7 @@ export default function DriverSafetyIndex({
                     ))
                 ) : (
                     <TableRow>
-                        <TableCell colSpan={columns.length + 1} className="py-8 text-center text-muted-foreground">
+                        <TableCell colSpan={columns.length + 2} className="py-8 text-center text-muted-foreground">
                             No safety records found.
                             {hasPermission('driver-safety.create') && (
                                 <Link href="/driver-safety/create" className="ml-1 text-primary underline">

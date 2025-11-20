@@ -111,8 +111,8 @@ export function ActivityLogTable({ logs, isLoading = false }: ActivityLogTablePr
                 <CardDescription>Recent system activity and changes</CardDescription>
             </CardHeader>
             <CardContent>
-                <div className="overflow-x-auto">
-                    <Table>
+                <div className="max-h-96 overflow-x-auto overflow-y-auto">
+                    <Table className="min-w-full">
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Action</TableHead>
@@ -131,34 +131,35 @@ export function ActivityLogTable({ logs, isLoading = false }: ActivityLogTablePr
 
                                 return (
                                     <TableRow key={log.id}>
-                                    <TableCell>
-                                        <div className="flex items-center gap-2">
+                                        <TableCell>
+                                            <div className="flex items-center gap-2">
                                                 {getActionIcon(action)}
                                                 <Badge className={getActionBadgeColor(action)}>
                                                     {actionLabel}
-                                            </Badge>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="text-sm">{log.description}</TableCell>
-                                    <TableCell className="text-sm">{log.user?.name || 'System'}</TableCell>
-                                    <TableCell className="text-sm">
-                                            {action === 'updated' && log.old_values && log.new_values ? (
-                                            <div className="space-y-1">
-                                                {getChangedFields(log.old_values, log.new_values).map((field, idx) => (
-                                                    <div key={idx} className="text-xs text-muted-foreground">
-                                                        • {field}
-                                                    </div>
-                                                ))}
+                                                </Badge>
                                             </div>
-                                        ) : (
-                                            <span className="text-xs text-muted-foreground">—</span>
-                                        )}
-                                    </TableCell>
-                                    <TableCell className="text-sm text-muted-foreground">
-                                        {formatDate(log.created_at)}
-                                    </TableCell>
-                                </TableRow>
-                            ))}
+                                        </TableCell>
+                                        <TableCell className="text-sm">{log.description}</TableCell>
+                                        <TableCell className="text-sm">{log.user?.name || 'System'}</TableCell>
+                                        <TableCell className="text-sm">
+                                            {action === 'updated' && log.old_values && log.new_values ? (
+                                                <div className="space-y-1">
+                                                    {getChangedFields(log.old_values, log.new_values).map((field, idx) => (
+                                                        <div key={idx} className="text-xs text-muted-foreground">
+                                                            • {field}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <span className="text-xs text-muted-foreground">—</span>
+                                            )}
+                                        </TableCell>
+                                        <TableCell className="text-sm text-muted-foreground">
+                                            {formatDate(log.created_at)}
+                                        </TableCell>
+                                    </TableRow>
+                                );
+                            })}
                         </TableBody>
                     </Table>
                 </div>

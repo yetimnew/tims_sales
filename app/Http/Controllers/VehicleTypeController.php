@@ -186,6 +186,12 @@ class VehicleTypeController extends Controller
      */
     public function show(VehicleType $vehicletype): Response
     {
+        $vehicletype->load([
+            'trucks' => fn ($query) => $query
+                ->select('id', 'vehicletype_id', 'plate', 'status', 'created_at')
+                ->latest('created_at'),
+        ]);
+
         // Load activity logs for this vehicle type using Spatie Activity Log
         $activityLogs = Activity::forSubject($vehicletype)
             ->with('causer')
@@ -194,8 +200,26 @@ class VehicleTypeController extends Controller
             ->map(fn (Activity $activity) => $this->formatActivityLog($activity))
             ->values();
 
+        $vehicleType = [
+            'id' => $vehicletype->id,
+            'name' => $vehicletype->name,
+            'description' => $vehicletype->description,
+            'created_at' => $vehicletype->created_at?->toIso8601String(),
+            'updated_at' => $vehicletype->updated_at?->toIso8601String(),
+            'trucks' => [
+                'data' => $vehicletype->trucks
+                    ->map(fn ($truck) => [
+                        'id' => $truck->id,
+                        'plate' => $truck->plate,
+                        'status' => $truck->status,
+                        'created_at' => $truck->created_at?->toIso8601String(),
+                    ])
+                    ->values(),
+            ],
+        ];
+
         return Inertia::render('VehicleTypes/Show', [
-            'vehicleType' => $vehicletype,
+            'vehicleType' => $vehicleType,
             'activityLogs' => $activityLogs,
         ]);
     }
@@ -237,12 +261,16 @@ class VehicleTypeController extends Controller
     public function destroy(VehicleType $vehicletype)
     {
         try {
-            // Check for related records that prevent deletion
+            $blockers = [];
 
-            // Check if vehicle type has trucks
-            if ($vehicletype->trucks()->count() > 0) {
+            $truckCount = $vehicletype->trucks()->count();
+            if ($truckCount > 0) {
+                $blockers[] = 'Unable to delete this vehicle type because '.$truckCount.' truck(s) currently reference it. Reassign or delete those trucks first.';
+            }
+
+            if (! empty($blockers)) {
                 return back()->withErrors([
-                    'error' => 'You are not allowed to delete this vehicle type. It has '.$vehicletype->trucks()->count().' truck(s) associated with it. Please reassign or delete all trucks first.',
+                    'error' => $blockers,
                 ]);
             }
 
