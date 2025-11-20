@@ -16,7 +16,7 @@ import { Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { toast } from '@/hooks/use-toast';
-import { Plus, Eye, Edit, Search, ArrowUpDown, Trash2, Truck, User, UserCheck, UserX } from 'lucide-react';
+import { Plus, Eye, Edit, Search, ArrowDown, ArrowUp, ArrowUpDown, Trash2, Truck, User, UserCheck, UserX } from 'lucide-react';
 import { InertiaPagination } from '@/components/ui/pagination';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import * as React from 'react';
@@ -73,45 +73,24 @@ interface DriverTrucksIndexProps {
         sort?: string | null;
         direction?: 'asc' | 'desc' | null;
         per_page?: number | null;
-        driver_id?: number | null;
-        truck_id?: number | null;
     };
     statusOptions: Array<{ label: string; value: string }>;
     perPageOptions: number[];
-    driverOptions: Array<{ label: string; value: number }>;
-    truckOptions: Array<{ label: string; value: number }>;
 }
 
 const columns: Array<{ key: string; label: string; sortable?: boolean; sortKey?: string }> = [
-    { key: 'driver', label: 'Driver' },
-    { key: 'truck', label: 'Truck' },
+    { key: 'driver', label: 'Driver', sortable: true, sortKey: 'driver_name' },
+    { key: 'truck', label: 'Truck', sortable: true, sortKey: 'truck_plate' },
     { key: 'date_recived', label: 'Assigned Date', sortable: true, sortKey: 'date_recived' },
     { key: 'status', label: 'Status', sortable: true, sortKey: 'is_attached' },
 ];
 
-type NavigateOverrides = Partial<{
-    search: string;
-    status: string;
-    sort: string;
-    direction: 'asc' | 'desc';
-    page: number;
-    per_page: number;
-    driver_id: number | null;
-    truck_id: number | null;
-}>;
-
-export default function DriverTrucksIndex({ driverTrucks, metrics, filters, statusOptions, perPageOptions, driverOptions, truckOptions }: DriverTrucksIndexProps) {
+export default function DriverTrucksIndex({ driverTrucks, metrics, filters, statusOptions, perPageOptions }: DriverTrucksIndexProps) {
     const { hasPermission } = usePermissions();
     const [searchTerm, setSearchTerm] = React.useState(filters?.search ?? '');
     const [selectedStatus, setSelectedStatus] = React.useState(filters?.status ?? 'all');
     const [sortColumn, setSortColumn] = React.useState<string>(filters?.sort ?? 'date_recived');
     const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>(filters?.direction ?? 'desc');
-    const [selectedDriver, setSelectedDriver] = React.useState<string | undefined>(
-        filters?.driver_id ? String(filters.driver_id) : undefined,
-    );
-    const [selectedTruck, setSelectedTruck] = React.useState<string | undefined>(
-        filters?.truck_id ? String(filters.truck_id) : undefined,
-    );
     const availablePerPageOptions = React.useMemo(() => (perPageOptions?.length ? perPageOptions : [15, 25, 50, 100]), [perPageOptions]);
     const resolvedPerPage = React.useMemo(() => {
         const candidate = filters?.per_page;
@@ -132,21 +111,9 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
     const totalAssignments = metrics?.total ?? driverTrucks?.total ?? 0;
     const currentPage = driverTrucks?.current_page ?? 1;
     const lastPage = driverTrucks?.last_page ?? 1;
-    const driverTruckFilterActive = Boolean(selectedDriver || selectedTruck);
 
-    const handleNavigate = React.useCallback((overrides: NavigateOverrides = {}) => {
-        const perPageValue = Object.prototype.hasOwnProperty.call(overrides, 'per_page')
-            ? overrides.per_page
-            : Number(perPage);
-        const hasDriverOverride = Object.prototype.hasOwnProperty.call(overrides, 'driver_id');
-        const hasTruckOverride = Object.prototype.hasOwnProperty.call(overrides, 'truck_id');
-        const driverIdCandidate = hasDriverOverride
-            ? overrides.driver_id
-            : (selectedDriver ? Number(selectedDriver) : undefined);
-        const truckIdCandidate = hasTruckOverride
-            ? overrides.truck_id
-            : (selectedTruck ? Number(selectedTruck) : undefined);
-
+    const handleNavigate = React.useCallback((overrides: Partial<{ search?: string; status?: string; sort?: string; direction?: 'asc' | 'desc'; page?: number; per_page?: number }>) => {
+        const perPageValue = overrides.per_page !== undefined ? overrides.per_page : Number(perPage);
         const params: Record<string, string | number | undefined> = {
             search: overrides.search !== undefined ? overrides.search : (searchTerm.trim() ? searchTerm.trim() : undefined),
             status: overrides.status !== undefined ? overrides.status : (selectedStatus !== 'all' ? selectedStatus : undefined),
@@ -154,12 +121,6 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
             direction: overrides.direction ?? sortDirection,
             page: overrides.page,
             per_page: perPageValue,
-            driver_id: typeof driverIdCandidate === 'number' && Number.isFinite(driverIdCandidate)
-                ? driverIdCandidate
-                : undefined,
-            truck_id: typeof truckIdCandidate === 'number' && Number.isFinite(truckIdCandidate)
-                ? truckIdCandidate
-                : undefined,
         };
 
         Object.keys(params).forEach((key) => {
@@ -175,7 +136,7 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
         });
 
         router.get('/driver-trucks', params, { preserveState: true, replace: false });
-    }, [searchTerm, selectedStatus, sortColumn, sortDirection, perPage, selectedDriver, selectedTruck]);
+    }, [searchTerm, selectedStatus, sortColumn, sortDirection, perPage]);
 
     const handleSearchChange = (value: string) => {
         setSearchTerm(value);
@@ -187,32 +148,10 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
         handleNavigate({ status: value !== 'all' ? value : undefined, page: 1 });
     };
 
-    const handleDriverChange = (value: string) => {
-        setSelectedDriver(value);
-        const numericValue = Number(value);
-        handleNavigate({ driver_id: Number.isFinite(numericValue) ? numericValue : null, page: 1 });
-    };
-
-    const handleTruckChange = (value: string) => {
-        setSelectedTruck(value);
-        const numericValue = Number(value);
-        handleNavigate({ truck_id: Number.isFinite(numericValue) ? numericValue : null, page: 1 });
-    };
-
     const handlePerPageChange = (value: string) => {
         setPerPage(value);
         const numericValue = Number(value);
         handleNavigate({ per_page: Number.isNaN(numericValue) ? undefined : numericValue, page: 1 });
-    };
-
-    const handleDriverTruckReset = () => {
-        if (!driverTruckFilterActive) {
-            return;
-        }
-
-        setSelectedDriver(undefined);
-        setSelectedTruck(undefined);
-        handleNavigate({ driver_id: null, truck_id: null, page: 1 });
     };
 
     const handleSort = (column: string) => {
@@ -260,6 +199,11 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
         const sortable = column.sortable ?? false;
         const columnKey = column.sortKey ?? column.key;
         const isActive = sortColumn === columnKey;
+        const SortIcon = !sortable
+            ? null
+            : isActive
+                ? (sortDirection === 'asc' ? ArrowUp : ArrowDown)
+                : ArrowUpDown;
         return (
             <TableHead
                 key={column.key}
@@ -268,8 +212,8 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
             >
                 <div className="flex items-center gap-2">
                     {column.label}
-                    {sortable && (
-                        <ArrowUpDown
+                    {SortIcon && (
+                        <SortIcon
                             size={14}
                             className={isActive ? 'text-primary' : 'text-muted-foreground opacity-50'}
                         />
@@ -373,39 +317,6 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
                     ))}
                 </SelectContent>
             </Select>
-            <Select value={selectedDriver} onValueChange={handleDriverChange}>
-                <SelectTrigger className="w-[200px]">
-                    <SelectValue placeholder="Driver" />
-                </SelectTrigger>
-                <SelectContent>
-                    {driverOptions.map((option) => (
-                        <SelectItem key={option.value} value={String(option.value)}>
-                            {option.label}
-                        </SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
-            <Select value={selectedTruck} onValueChange={handleTruckChange}>
-                <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Truck" />
-                </SelectTrigger>
-                <SelectContent>
-                    {truckOptions.map((option) => (
-                        <SelectItem key={option.value} value={String(option.value)}>
-                            {option.label}
-                        </SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
-            <Button
-                variant="ghost"
-                size="sm"
-                className="px-2 text-xs text-muted-foreground hover:text-primary"
-                onClick={handleDriverTruckReset}
-                disabled={!driverTruckFilterActive}
-            >
-                Reset driver / truck
-            </Button>
             <div className="flex items-center gap-1 text-sm text-muted-foreground">
                 <span className="hidden sm:inline">Rows</span>
                 <Select value={perPage} onValueChange={handlePerPageChange}>

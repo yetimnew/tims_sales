@@ -1,4 +1,5 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useMemo, useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -11,18 +12,24 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
-import { Head, Link } from '@inertiajs/react';
+import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
+import { toast } from '@/hooks/use-toast';
+import { Head, Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import {
+    Activity,
+    AlertCircle,
     ArrowLeft,
-    Edit,
-    UserX,
+    BarChart3,
     Calendar,
+    CheckCircle,
     Clock,
+    Edit,
+    History,
     Truck,
     User,
-    Activity,
-    BarChart3
+    UserX,
+    XCircle,
 } from 'lucide-react';
 
 interface DriverTruck {
@@ -35,7 +42,7 @@ interface DriverTruck {
     date_detach?: string;
     reason?: string;
     is_attached: boolean;
-    status: number;
+    status?: string | number | null;
     driver: {
         id: number;
         name: string;
@@ -84,7 +91,6 @@ interface Props {
 }
 
 export default function Show({ driverTruck, performances, dateDifference, activityLogs }: Props) {
-    // Add null checking to prevent white space errors
     if (!driverTruck || !driverTruck.driver || !driverTruck.truck) {
         return (
             <AppLayout breadcrumbs={[]}>
@@ -98,215 +104,377 @@ export default function Show({ driverTruck, performances, dateDifference, activi
         );
     }
 
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+
     const breadcrumbs: BreadcrumbItem[] = [
-        {
-            title: 'Fleet Management',
-            href: '#',
-        },
         {
             title: 'Driver-Truck Assignments',
             href: '/driver-trucks',
         },
         {
-            title: `${driverTruck.driver.name} - ${driverTruck.truck.plate}`,
+            title: `${driverTruck.driver.name} – ${driverTruck.truck.plate}`,
             href: `/driver-trucks/${driverTruck.id}`,
         },
     ];
+
+    const formatDate = (value?: string) => {
+        if (!value) {
+            return 'N/A';
+        }
+
+        return new Date(value).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+        });
+    };
+
+    const formatDateTime = (value?: string) => {
+        if (!value) {
+            return 'N/A';
+        }
+
+        return new Date(value).toLocaleString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+        });
+    };
+
+    const assignmentStatus = driverTruck.is_attached ? 'Attached' : 'Detached';
+    const assignmentStatusTone = driverTruck.is_attached
+        ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200'
+        : 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200';
+
+    const quickMetrics = useMemo(
+        () => [
+            {
+                label: 'Assignment ID',
+                value: `#${driverTruck.id}`,
+                tone: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-200',
+                icon: CheckCircle,
+            },
+            {
+                label: 'Performances',
+                value: performances.length,
+                tone: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-200',
+                icon: BarChart3,
+            },
+            {
+                label: 'Duration',
+                value: dateDifference ?? 'N/A',
+                tone: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-200',
+                icon: Clock,
+            },
+            {
+                label: 'Status',
+                value: driverTruck.status ? String(driverTruck.status) : assignmentStatus,
+                tone: driverTruck.is_attached
+                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-200'
+                    : 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-200',
+                icon: driverTruck.is_attached ? CheckCircle : XCircle,
+            },
+        ],
+        [driverTruck.id, driverTruck.is_attached, driverTruck.status, dateDifference, performances.length, assignmentStatus]
+    );
+
+    const handleDeleteConfirm = () => {
+        setIsDeleting(true);
+        router.delete(`/driver-trucks/${driverTruck.id}`, {
+            onSuccess: () => {
+                setDeleteDialogOpen(false);
+                setIsDeleting(false);
+            },
+            onError: (errors) => {
+                setIsDeleting(false);
+
+                if (errors && typeof errors === 'object') {
+                    const errorMessages = Object.values(errors)
+                        .flatMap((value) => (Array.isArray(value) ? value : [value]))
+                        .filter((message): message is string => Boolean(message && message.length));
+
+                    if (errorMessages.length > 0) {
+                        toast({
+                            title: '❌ Delete Failed',
+                            description: errorMessages.join('\n'),
+                            variant: 'destructive',
+                        });
+                    }
+                }
+            },
+        });
+    };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`Assignment: ${driverTruck.driver.name} - ${driverTruck.truck.plate}`} />
 
-            <div className="flex h-full flex-1 flex-col gap-4 overflow-y-auto rounded-xl p-4">
-                {/* Header */}
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <Link href="/driver-trucks">
-                            <Button variant="ghost" size="sm">
-                                <ArrowLeft className="mr-2 h-4 w-4" />
+            <div className="flex min-h-0 flex-1 flex-col gap-6 rounded-xl p-4">
+                <div className="rounded-lg border border-slate-200 bg-gradient-to-r from-slate-50 to-blue-50 p-6 dark:border-slate-700 dark:from-slate-900 dark:to-blue-950/30">
+                    <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+                        <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => router.get('/driver-trucks')}
+                                className="w-full gap-2 border-slate-300 hover:bg-slate-100 dark:border-slate-600 dark:hover:bg-slate-800 lg:w-auto"
+                            >
+                                <ArrowLeft className="h-4 w-4" />
                                 Back to Assignments
                             </Button>
-                        </Link>
-                        <div>
-                            <div className="flex items-center gap-2">
-                                <h1 className="text-2xl font-bold">
-                                    {driverTruck.driver.name} - {driverTruck.truck.plate}
-                                </h1>
-                                <Badge variant={driverTruck.is_attached ? "default" : "secondary"}>
-                                    {driverTruck.is_attached ? 'Attached' : 'Detached'}
-                                </Badge>
+                            <div className="flex items-center gap-4">
+                                <div className="rounded-xl bg-blue-100 p-3 dark:bg-blue-900/30">
+                                    <Truck className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                                </div>
+                                <div>
+                                    <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+                                        {driverTruck.driver.name} · {driverTruck.truck.plate}
+                                    </h1>
+                                    <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+                                        Detailed overview of the driver-truck assignment lifecycle
+                                    </p>
+                                </div>
                             </div>
-                            <p className="text-muted-foreground">
-                                Driver-Truck Assignment Details
-                            </p>
+                        </div>
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                            <Badge className={`flex items-center gap-2 px-4 py-1 text-sm font-medium ${assignmentStatusTone}`}>
+                                <div className="h-2 w-2 rounded-full bg-current" />
+                                {assignmentStatus}
+                            </Badge>
+                            <div className="flex gap-2">
+                                <Button
+                                    variant="outline"
+                                    asChild
+                                    className="border-slate-300 hover:border-blue-300 hover:bg-blue-50 dark:border-slate-600 dark:hover:bg-blue-950/40"
+                                >
+                                    <Link href={`/driver-trucks/${driverTruck.id}/edit`}>
+                                        <Edit className="mr-2 h-4 w-4" />
+                                        Edit Assignment
+                                    </Link>
+                                </Button>
+                                {driverTruck.is_attached && (
+                                    <Button
+                                        variant="outline"
+                                        asChild
+                                        className="border-amber-200 text-amber-700 hover:border-amber-300 hover:bg-amber-50 dark:border-amber-700 dark:text-amber-300 dark:hover:bg-amber-900/40"
+                                    >
+                                        <Link href={`/driver-trucks/${driverTruck.id}/detach`}>
+                                            <UserX className="mr-2 h-4 w-4" />
+                                            Detach Driver
+                                        </Link>
+                                    </Button>
+                                )}
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setDeleteDialogOpen(true)}
+                                    className="border-red-200 text-red-600 hover:border-red-300 hover:bg-red-50 dark:border-red-700 dark:text-red-300 dark:hover:bg-red-900/40"
+                                >
+                                    <AlertCircle className="mr-2 h-4 w-4" />
+                                    Delete
+                                </Button>
+                            </div>
                         </div>
                     </div>
-                    <div className="flex gap-2">
-                        <Link href={`/driver-trucks/${driverTruck.id}/edit`}>
-                            <Button variant="outline">
-                                <Edit className="mr-2 h-4 w-4" />
-                                Edit Assignment
-                            </Button>
-                        </Link>
-                        {driverTruck.is_attached && (
-                            <Link href={`/driver-trucks/${driverTruck.id}/detach`}>
-                                <Button variant="outline">
-                                    <UserX className="mr-2 h-4 w-4" />
-                                    Detach Driver
-                                </Button>
-                            </Link>
-                        )}
-                    </div>
                 </div>
 
-                {/* Quick Stats */}
-                <div className="grid gap-4 md:grid-cols-4">
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Driver</CardTitle>
-                            <User className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-lg font-bold">{driverTruck.driver.name}</div>
-                            <p className="text-xs text-muted-foreground">
-                                ID: {driverTruck.driver.driverid}
-                            </p>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Truck</CardTitle>
-                            <Truck className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-lg font-bold">{driverTruck.truck.plate}</div>
-                            <p className="text-xs text-muted-foreground">
-                                Plate: {driverTruck.plate}
-                            </p>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Assigned Date</CardTitle>
-                            <Calendar className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-lg font-bold">
-                                {new Date(driverTruck.date_recived).toLocaleDateString()}
-                            </div>
-                            <p className="text-xs text-muted-foreground">
-                                Assignment date
-                            </p>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Status</CardTitle>
-                            <Activity className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-lg font-bold">
-                                {driverTruck.is_attached ? 'Active' : 'Inactive'}
-                            </div>
-                            <p className="text-xs text-muted-foreground">
-                                Current status
-                            </p>
-                        </CardContent>
-                    </Card>
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                    {quickMetrics.map((metric) => {
+                        const Icon = metric.icon;
+                        return (
+                            <Card key={metric.label} className="border-0 bg-gradient-to-br from-background to-muted/20 shadow-lg">
+                                <CardHeader className="border-b bg-gradient-to-r from-white to-transparent dark:from-slate-800/80">
+                                    <CardTitle className="flex items-center justify-between text-sm font-medium text-muted-foreground">
+                                        {metric.label}
+                                        <span className={`rounded-full px-2 py-1 text-xs font-semibold ${metric.tone}`}>
+                                            <Icon className="mr-1 inline-block h-3 w-3" />
+                                            {metric.value}
+                                        </span>
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="pt-4">
+                                    <p className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                                        {metric.value}
+                                    </p>
+                                </CardContent>
+                            </Card>
+                        );
+                    })}
                 </div>
 
-                {/* Tabs */}
-                <Tabs defaultValue="overview" className="flex-1">
-                    <TabsList className="grid w-full grid-cols-3">
-                        <TabsTrigger value="overview">Overview</TabsTrigger>
-                        <TabsTrigger value="performances">Performances ({performances.length})</TabsTrigger>
-                        <TabsTrigger value="activity">Activity Log</TabsTrigger>
+                <Tabs defaultValue="overview" className="flex flex-1 flex-col overflow-hidden">
+                    <TabsList className="grid w-full grid-cols-3 rounded-xl border border-slate-200 bg-slate-100 p-1 dark:border-slate-700 dark:bg-slate-800">
+                        <TabsTrigger
+                            value="overview"
+                            className="flex items-center gap-2 rounded-lg font-medium transition-all duration-200 data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:border data-[state=active]:border-slate-200 dark:data-[state=active]:bg-slate-700 dark:data-[state=active]:border-slate-600"
+                        >
+                            <CheckCircle className="h-4 w-4" />
+                            Overview
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="performances"
+                            className="flex items-center gap-2 rounded-lg font-medium transition-all duration-200 data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:border data-[state=active]:border-slate-200 dark:data-[state=active]:bg-slate-700 dark:data-[state=active]:border-slate-600"
+                        >
+                            <BarChart3 className="h-4 w-4" />
+                            Performances ({performances.length})
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="activity"
+                            className="flex items-center gap-2 rounded-lg font-medium transition-all duration-200 data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:border data-[state=active]:border-slate-200 dark:data-[state=active]:bg-slate-700 dark:data-[state=active]:border-slate-600"
+                        >
+                            <History className="h-4 w-4" />
+                            Activity
+                        </TabsTrigger>
                     </TabsList>
 
-                    <TabsContent value="overview" className="space-y-4">
-                        <div className="grid gap-6 md:grid-cols-2">
-                            {/* Assignment Details */}
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Assignment Information</CardTitle>
-                                </CardHeader>
-                                <CardContent className="space-y-4">
-                                    <div className="grid grid-cols-2 gap-4">
+                    <TabsContent value="overview" className="h-full overflow-y-auto space-y-6">
+                        <div className="flex flex-col gap-6 lg:flex-row">
+                            <div className="flex-1 space-y-6">
+                                <Card className="border-0 bg-gradient-to-br from-background to-muted/20 shadow-lg">
+                                    <CardHeader className="border-b bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20">
+                                        <CardTitle className="flex items-center gap-2 text-lg">
+                                            <CheckCircle className="h-5 w-5 text-blue-600" />
+                                            Assignment Summary
+                                        </CardTitle>
+                                        <CardDescription>Snapshot of the assignment timeline and status</CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="grid gap-4 md:grid-cols-2">
                                         <div>
-                                            <label className="text-sm font-medium text-muted-foreground">Assignment ID</label>
-                                            <p className="text-sm font-medium">#{driverTruck.id}</p>
+                                            <p className="text-sm font-medium text-muted-foreground">Driver</p>
+                                            <p className="mt-1 text-base font-semibold text-slate-900 dark:text-slate-100">
+                                                {driverTruck.driver.name}
+                                            </p>
+                                            <p className="text-xs text-muted-foreground">ID: {driverTruck.driver.driverid}</p>
                                         </div>
                                         <div>
-                                            <label className="text-sm font-medium text-muted-foreground">Status</label>
-                                            <div className="mt-1">
-                                                <Badge variant={driverTruck.is_attached ? "default" : "secondary"}>
-                                                    {driverTruck.is_attached ? 'Currently Attached' : 'Detached'}
-                                                </Badge>
-                                            </div>
+                                            <p className="text-sm font-medium text-muted-foreground">Truck</p>
+                                            <p className="mt-1 text-base font-semibold text-slate-900 dark:text-slate-100">
+                                                {driverTruck.truck.plate}
+                                            </p>
+                                            <p className="text-xs text-muted-foreground">Plate copied: {driverTruck.plate}</p>
                                         </div>
                                         <div>
-                                            <label className="text-sm font-medium text-muted-foreground">Assigned On</label>
-                                            <p className="text-sm">{new Date(driverTruck.date_recived).toLocaleDateString()}</p>
+                                            <p className="text-sm font-medium text-muted-foreground">Assigned On</p>
+                                            <p className="mt-1 text-sm">{formatDate(driverTruck.date_recived)}</p>
                                         </div>
-                                        {driverTruck.date_detach && (
-                                            <div>
-                                                <label className="text-sm font-medium text-muted-foreground">Detached On</label>
-                                                <p className="text-sm">{new Date(driverTruck.date_detach).toLocaleDateString()}</p>
-                                            </div>
-                                        )}
+                                        <div>
+                                            <p className="text-sm font-medium text-muted-foreground">Detached On</p>
+                                            <p className="mt-1 text-sm">{formatDate(driverTruck.date_detach)}</p>
+                                        </div>
                                         {dateDifference && (
-                                            <div className="col-span-2">
-                                                <label className="text-sm font-medium text-muted-foreground">Assignment Duration</label>
-                                                <p className="text-sm font-medium text-blue-600">{dateDifference}</p>
+                                            <div className="md:col-span-2">
+                                                <p className="text-sm font-medium text-muted-foreground">Assignment Duration</p>
+                                                <p className="mt-1 text-sm font-semibold text-blue-600 dark:text-blue-300">{dateDifference}</p>
                                             </div>
                                         )}
                                         {driverTruck.reason && (
-                                            <div className="col-span-2">
-                                                <label className="text-sm font-medium text-muted-foreground">Reason for Detachment</label>
-                                                <p className="text-sm">{driverTruck.reason}</p>
+                                            <div className="md:col-span-2">
+                                                <p className="text-sm font-medium text-muted-foreground">Detachment Reason</p>
+                                                <p className="mt-1 text-sm text-slate-700 dark:text-slate-200">{driverTruck.reason}</p>
                                             </div>
                                         )}
-                                    </div>
-                                </CardContent>
-                            </Card>
+                                    </CardContent>
+                                </Card>
 
-                            {/* System Information */}
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>System Information</CardTitle>
-                                </CardHeader>
-                                <CardContent className="space-y-4">
-                                    <div className="grid grid-cols-2 gap-4">
+                                <Card className="border-0 bg-gradient-to-br from-background to-muted/20 shadow-lg">
+                                    <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-900/40 dark:to-slate-900/10">
+                                        <CardTitle className="flex items-center gap-2 text-lg">
+                                            <Clock className="h-5 w-5 text-slate-600" />
+                                            System Metadata
+                                        </CardTitle>
+                                        <CardDescription>Audit information recorded for this assignment</CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="grid gap-4 md:grid-cols-2">
                                         <div>
-                                            <label className="text-sm font-medium text-muted-foreground">Created</label>
-                                            <p className="text-sm">{new Date(driverTruck.created_at).toLocaleString()}</p>
+                                            <p className="text-sm font-medium text-muted-foreground">Created At</p>
+                                            <p className="mt-1 text-sm">{formatDateTime(driverTruck.created_at)}</p>
                                         </div>
                                         <div>
-                                            <label className="text-sm font-medium text-muted-foreground">Last Updated</label>
-                                            <p className="text-sm">{new Date(driverTruck.updated_at).toLocaleString()}</p>
+                                            <p className="text-sm font-medium text-muted-foreground">Last Updated</p>
+                                            <p className="mt-1 text-sm">{formatDateTime(driverTruck.updated_at)}</p>
                                         </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
+                                    </CardContent>
+                                </Card>
+                            </div>
+
+                            <div className="w-full space-y-4 lg:w-80">
+                                <Card className="border-0 bg-gradient-to-br from-background to-muted/20 shadow-lg">
+                                    <CardHeader className="border-b bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20">
+                                        <CardTitle className="flex items-center gap-2 text-lg">
+                                            <Activity className="h-5 w-5 text-emerald-600" />
+                                            Current Status
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-3">
+                                        <div className={`rounded-lg border px-3 py-2 text-sm font-medium ${assignmentStatusTone.replace('bg-', 'border-')}`}>
+                                            <span>{assignmentStatus}</span>
+                                        </div>
+                                        <div className="rounded-lg border border-slate-200 bg-white/60 p-3 text-sm dark:border-slate-700 dark:bg-slate-900/40">
+                                            <p className="font-medium text-muted-foreground">Operational Notes</p>
+                                            <p className="mt-1 text-sm text-slate-700 dark:text-slate-200">
+                                                {driverTruck.status ? String(driverTruck.status) : 'No additional status notes recorded.'}
+                                            </p>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+
+                                <Card className="border-0 bg-gradient-to-br from-background to-muted/20 shadow-lg">
+                                    <CardHeader className="border-b bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20">
+                                        <CardTitle className="flex items-center gap-2 text-lg">
+                                            <User className="h-5 w-5 text-purple-600" />
+                                            Driver Snapshot
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-2 text-sm">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-muted-foreground">Name</span>
+                                            <span className="font-semibold">{driverTruck.driver.name}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-muted-foreground">Identifier</span>
+                                            <span className="font-mono text-xs">{driverTruck.driver.driverid}</span>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+
+                                <Card className="border-0 bg-gradient-to-br from-background to-muted/20 shadow-lg">
+                                    <CardHeader className="border-b bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20">
+                                        <CardTitle className="flex items-center gap-2 text-lg">
+                                            <Truck className="h-5 w-5 text-orange-600" />
+                                            Truck Snapshot
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-2 text-sm">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-muted-foreground">Plate</span>
+                                            <span className="font-semibold">{driverTruck.truck.plate}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-muted-foreground">Assignment Plate</span>
+                                            <span className="font-mono text-xs">{driverTruck.plate}</span>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </div>
                         </div>
                     </TabsContent>
 
-                    <TabsContent value="performances" className="space-y-4">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <BarChart3 className="h-5 w-5" />
-                                    Performance Records ({performances.length})
+                    <TabsContent value="performances" className="h-full overflow-y-auto space-y-6">
+                        <Card className="border-0 bg-gradient-to-br from-background to-muted/10 shadow-lg">
+                            <CardHeader className="border-b bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20">
+                                <CardTitle className="flex items-center gap-2 text-lg">
+                                    <BarChart3 className="h-5 w-5 text-orange-600" />
+                                    Performance Records
                                 </CardTitle>
+                                <CardDescription>Operational history captured for this pairing</CardDescription>
                             </CardHeader>
                             <CardContent>
                                 {performances.length > 0 ? (
-                                    <div className="rounded-lg border overflow-auto max-h-[500px]">
+                                    <div className="max-h-[520px] overflow-auto rounded-lg border border-slate-200 dark:border-slate-700">
                                         <Table>
-                                            <TableHeader className="sticky top-0 bg-background">
+                                            <TableHeader className="sticky top-0 bg-background/95 backdrop-blur">
                                                 <TableRow>
                                                     <TableHead>Trip</TableHead>
                                                     <TableHead>Date</TableHead>
@@ -319,51 +487,54 @@ export default function Show({ driverTruck, performances, dateDifference, activi
                                                 {performances.map((performance) => (
                                                     <TableRow key={performance.id}>
                                                         <TableCell className="font-medium">{performance.trip}</TableCell>
-                                                        <TableCell>{new Date(performance.DateDispach).toLocaleDateString()}</TableCell>
-                                                        <TableCell>{performance.operation?.customer?.name || 'N/A'}</TableCell>
+                                                        <TableCell>{formatDate(performance.DateDispach)}</TableCell>
+                                                        <TableCell>{performance.operation?.customer?.name ?? 'N/A'}</TableCell>
                                                         <TableCell>
-                                                            {performance.origin?.name || 'N/A'} → {performance.destination?.name || 'N/A'}
+                                                            {performance.origin?.name ?? 'N/A'} → {performance.destination?.name ?? 'N/A'}
                                                         </TableCell>
-                                                        <TableCell className="text-right font-medium">
-                                                            {performance.CargoVolumMT} MT
-                                                        </TableCell>
+                                                        <TableCell className="text-right font-medium">{performance.CargoVolumMT} MT</TableCell>
                                                     </TableRow>
                                                 ))}
                                             </TableBody>
                                         </Table>
                                     </div>
                                 ) : (
-                                    <div className="text-center py-8 text-muted-foreground">
-                                        <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                                    <div className="py-10 text-center text-muted-foreground">
+                                        <BarChart3 className="mx-auto mb-4 h-12 w-12 opacity-60" />
                                         <p>No performance records found for this assignment.</p>
+                                        <p className="mt-2 text-sm">Performance entries will appear once linked operations are recorded.</p>
                                     </div>
                                 )}
                             </CardContent>
                         </Card>
                     </TabsContent>
 
-                    <TabsContent value="activity" className="space-y-4">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <Activity className="h-5 w-5" />
+                    <TabsContent value="activity" className="h-full overflow-y-auto space-y-6">
+                        <Card className="border-0 bg-gradient-to-br from-background to-muted/10 shadow-lg">
+                            <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-900/40 dark:to-slate-900/10">
+                                <CardTitle className="flex items-center gap-2 text-lg">
+                                    <History className="h-5 w-5 text-slate-600" />
                                     Activity Log
                                 </CardTitle>
+                                <CardDescription>Recent events recorded for this assignment</CardDescription>
                             </CardHeader>
                             <CardContent>
                                 {activityLogs.length > 0 ? (
-                                    <div className="space-y-4 max-h-[500px] overflow-auto">
+                                    <div className="space-y-3">
                                         {activityLogs.map((log) => (
-                                            <div key={log.id} className="flex items-start gap-4 p-4 border rounded-lg">
-                                                <div className="flex-shrink-0">
-                                                    <Activity className="h-5 w-5 text-muted-foreground" />
+                                            <div
+                                                key={log.id}
+                                                className="flex items-start gap-3 rounded-lg border border-slate-200 bg-white/70 p-4 transition hover:border-blue-200 hover:bg-blue-50/70 dark:border-slate-700 dark:bg-slate-900/50 dark:hover:border-blue-800 dark:hover:bg-blue-950/30"
+                                            >
+                                                <div className="rounded-lg bg-blue-100 p-2 dark:bg-blue-900/30">
+                                                    <Activity className="h-4 w-4 text-blue-600 dark:text-blue-300" />
                                                 </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="text-sm">{log.description}</p>
-                                                    <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+                                                <div className="flex-1">
+                                                    <p className="text-sm text-slate-800 dark:text-slate-100">{log.description}</p>
+                                                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                                                         <Clock className="h-3 w-3" />
-                                                        <span>{new Date(log.created_at).toLocaleString()}</span>
-                                                        {log.causer && (
+                                                        <span>{formatDateTime(log.created_at)}</span>
+                                                        {log.causer?.name && (
                                                             <>
                                                                 <span>•</span>
                                                                 <span>by {log.causer.name}</span>
@@ -375,9 +546,10 @@ export default function Show({ driverTruck, performances, dateDifference, activi
                                         ))}
                                     </div>
                                 ) : (
-                                    <div className="text-center py-8 text-muted-foreground">
-                                        <Activity className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                                        <p>No activity logs found for this assignment.</p>
+                                    <div className="py-10 text-center text-muted-foreground">
+                                        <Activity className="mx-auto mb-4 h-12 w-12 opacity-60" />
+                                        <p>No activity recorded for this assignment yet.</p>
+                                        <p className="mt-2 text-sm">Updates will appear here as changes are made.</p>
                                     </div>
                                 )}
                             </CardContent>
@@ -385,6 +557,16 @@ export default function Show({ driverTruck, performances, dateDifference, activi
                     </TabsContent>
                 </Tabs>
             </div>
+
+            <DeleteConfirmationDialog
+                open={deleteDialogOpen}
+                onOpenChange={setDeleteDialogOpen}
+                title="Delete Assignment"
+                description="Are you sure you want to delete this driver-truck assignment? This action cannot be undone."
+                itemName={`${driverTruck.driver.name} ↔ ${driverTruck.truck.plate}`}
+                onConfirm={handleDeleteConfirm}
+                isLoading={isDeleting}
+            />
         </AppLayout>
     );
 }

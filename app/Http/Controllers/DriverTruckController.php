@@ -7,6 +7,7 @@ use App\Models\Driver;
 use App\Models\DriverTruck;
 use App\Models\Performance;
 use App\Models\Truck;
+use App\Services\DriverTruckDeletionGuard;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -18,6 +19,8 @@ use Spatie\Activitylog\Models\Activity;
 
 class DriverTruckController extends Controller
 {
+    public function __construct(private DriverTruckDeletionGuard $driverTruckDeletionGuard) {}
+
     /**
      * Display a listing of driver-truck assignments.
      */
@@ -27,8 +30,6 @@ class DriverTruckController extends Controller
         $status = $request->input('status');
         $sort = $request->input('sort', 'date_recived');
         $direction = strtolower((string) $request->input('direction', 'desc'));
-        $driverId = $request->input('driver_id');
-        $truckId = $request->input('truck_id');
         $perPageOptions = [15, 25, 50, 100];
         $perPageDefault = 15;
         $perPage = (int) $request->input('per_page', $perPageDefault);
@@ -41,7 +42,7 @@ class DriverTruckController extends Controller
             $direction = 'desc';
         }
 
-        $allowedSorts = ['date_recived', 'date_detach', 'status', 'is_attached', 'created_at', 'updated_at'];
+        $allowedSorts = ['date_recived', 'date_detach', 'status', 'is_attached', 'created_at', 'updated_at', 'driver_name', 'truck_plate'];
 
         if (! in_array($sort, $allowedSorts, true)) {
             $sort = 'date_recived';
@@ -80,17 +81,24 @@ class DriverTruckController extends Controller
             }
         }
 
-        if (! empty($driverId) && ctype_digit((string) $driverId)) {
-            $assignmentsQuery->where('driver_id', (int) $driverId);
-            $metricsQuery->where('driver_id', (int) $driverId);
-        }
+        switch ($sort) {
+            case 'driver_name':
+                $assignmentsQuery
+                    ->select('driver_truck.*')
+                    ->leftJoin('drivers as sort_drivers', 'driver_truck.driver_id', '=', 'sort_drivers.id')
+                    ->orderBy('sort_drivers.name', $direction);
 
-        if (! empty($truckId) && ctype_digit((string) $truckId)) {
-            $assignmentsQuery->where('truck_id', (int) $truckId);
-            $metricsQuery->where('truck_id', (int) $truckId);
-        }
+                break;
+            case 'truck_plate':
+                $assignmentsQuery
+                    ->select('driver_truck.*')
+                    ->leftJoin('trucks as sort_trucks', 'driver_truck.truck_id', '=', 'sort_trucks.id')
+                    ->orderBy('sort_trucks.plate', $direction);
 
-        $assignmentsQuery->orderBy($sort, $direction);
+                break;
+            default:
+                $assignmentsQuery->orderBy($sort, $direction);
+        }
 
         $driverTrucks = $assignmentsQuery->paginate($perPage)->withQueryString();
 
@@ -120,26 +128,6 @@ class DriverTruckController extends Controller
                 'value' => (string) $value,
             ])->values();
 
-        $driverOptions = Driver::query()
-            ->select('drivers.id', 'drivers.name', 'drivers.driverid')
-            ->whereHas('driverTrucks')
-            ->orderBy('drivers.name')
-            ->get()
-            ->map(fn (Driver $driver) => [
-                'label' => trim($driver->name.' ('.$driver->driverid.')'),
-                'value' => $driver->id,
-            ]);
-
-        $truckOptions = Truck::query()
-            ->select('trucks.id', 'trucks.plate')
-            ->whereHas('driverTrucks')
-            ->orderBy('trucks.plate')
-            ->get()
-            ->map(fn (Truck $truck) => [
-                'label' => $truck->plate,
-                'value' => $truck->id,
-            ]);
-
         return Inertia::render('DriverTrucks/Index', [
             'driverTrucks' => $driverTrucks,
             'metrics' => $metrics,
@@ -149,13 +137,9 @@ class DriverTruckController extends Controller
                 'sort' => $sort,
                 'direction' => $direction,
                 'per_page' => $perPage,
-                'driver_id' => $driverId ? (int) $driverId : null,
-                'truck_id' => $truckId ? (int) $truckId : null,
             ],
             'statusOptions' => $statusOptions,
             'perPageOptions' => $perPageOptions,
-            'driverOptions' => $driverOptions,
-            'truckOptions' => $truckOptions,
         ]);
     }
 
@@ -311,19 +295,21 @@ class DriverTruckController extends Controller
     public function destroy(DriverTruck $driverTruck)
     {
         try {
-            // Check if there are performances associated with this assignment
-            $performances = Performance::where('driver_truck_id', $driverTruck->id)->first();
+            $blockers = $this->driverTruckDeletionGuard->blockers($driverTruck);
 
-            if ($performances) {
-                return back()->withErrors(['error' => 'Cannot delete this assignment. There are performance records associated with it.']);
+            if (! empty($blockers)) {
+                return back()->withErrors(['error' => $blockers]);
             }
 
             $driverTruck->delete();
+            $this->driverTruckDeletionGuard->clearCache($driverTruck);
 
             return redirect()->route('driver-trucks.index')
                 ->with('success', 'Driver-truck assignment deleted successfully.');
 
         } catch (Exception $e) {
+            report($e);
+
             return back()->withErrors(['error' => 'Failed to delete assignment. Please try again.']);
         }
     }

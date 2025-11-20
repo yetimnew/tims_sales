@@ -2,19 +2,18 @@
 
 namespace App\Models;
 
+use DateTime;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
-use DateTime;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class DriverTruck extends Model
 {
-    use HasFactory, SoftDeletes, LogsActivity;
+    use HasFactory, LogsActivity, SoftDeletes;
 
     protected $table = 'driver_truck';
 
@@ -67,6 +66,14 @@ class DriverTruck extends Model
     }
 
     /**
+     * Get the fuel records associated with the assignment.
+     */
+    public function fuelRecords(): HasMany
+    {
+        return $this->hasMany(FuelRecord::class);
+    }
+
+    /**
      * Get the date difference attribute.
      */
     public function getDateDifferenceAttribute()
@@ -83,7 +90,7 @@ class DriverTruck extends Model
      */
     public function scopeActive($query)
     {
-        return $query->where("status", "=", "active");
+        return $query->where('status', '=', 'active');
     }
 
     /**
@@ -91,7 +98,7 @@ class DriverTruck extends Model
      */
     public function scopeIsAttached($query)
     {
-        return $query->where("is_attached", "=", 1);
+        return $query->where('is_attached', '=', 1);
     }
 
     /**
@@ -99,15 +106,16 @@ class DriverTruck extends Model
      */
     public function getFormattedDateDifferenceAttribute()
     {
-        if (!$this->date_recived) {
+        if (! $this->date_recived) {
             return 'N/A';
         }
 
         $date_recived = new DateTime($this->date_recived);
-        $date_detach = $this->date_detach ? new DateTime($this->date_detach) : new DateTime();
+        $date_detach = $this->date_detach ? new DateTime($this->date_detach) : new DateTime;
 
         $diff = $date_detach->diff($date_recived);
-        return $diff->d . ' days ' . $diff->h . ' hours ' . $diff->i . ' minutes';
+
+        return $diff->d.' days '.$diff->h.' hours '.$diff->i.' minutes';
     }
 
     /**
@@ -125,13 +133,10 @@ class DriverTruck extends Model
                 'date_detach',
                 'reason',
                 'is_attached',
-                'status'
+                'status',
             ])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs()
             ->useLogName('driver_trucks');
     }
 }
-
-
-
