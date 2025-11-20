@@ -84,8 +84,8 @@ class TruckDeletionGuard
                 'routePlans',
                 'dailyStatuses',
                 'drivers as active_drivers_count' => fn ($query) => $query
-                    ->wherePivotIn('status', ['active'])
-                    ->wherePivotNull('deleted_at'),
+                    ->where('driver_truck.status', 'active')
+                    ->whereNull('driver_truck.deleted_at'),
             ]);
 
             return [
