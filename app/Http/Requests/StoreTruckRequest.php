@@ -25,7 +25,7 @@ class StoreTruckRequest extends FormRequest
                 'string',
                 'max:255',
                 'unique:trucks',
-                'regex:/^[A-Z]{2,3}-[0-9]{4,5}$/', // Ethiopian plate format
+                'regex:/^[A-Z]{2,4}-[0-9]{3,5}$/', // Ethiopian plate format (allows 2-4 letters and 3-5 digits)
             ],
             'vehicletype_id' => 'required|exists:vehicletypes,id',
             'chasisNumber' => 'nullable|string|max:255',

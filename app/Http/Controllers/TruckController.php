@@ -95,11 +95,8 @@ class TruckController extends Controller
                 ->with(['vehicleType:id,name']),
             $filtersSearch,
             $vehicleTypeId,
+            $status,
         );
-
-        if (! empty($status) && $status !== 'all') {
-            $trucksQuery->where('status', $status);
-        }
 
         $sort = $request->input('sort', 'created_at');
         $direction = $request->input('direction', 'desc');
@@ -158,7 +155,7 @@ class TruckController extends Controller
 
         return Inertia::render('Trucks/Index', [
             'trucks' => $trucksData,
-            'metrics' => Inertia::lazy(fn () => $this->truckMetrics->metrics($filtersSearch, $vehicleTypeId)),
+            'metrics' => $this->truckMetrics->metrics($filtersSearch, $vehicleTypeId, $status),
             'filters' => [
                 'search' => $search !== '' ? $search : null,
                 'status' => $status ?: null,

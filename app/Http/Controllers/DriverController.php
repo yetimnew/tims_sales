@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Driver;
+use App\Services\DriverMetricsService;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -13,6 +15,8 @@ use Spatie\Activitylog\Models\Activity;
 
 class DriverController extends Controller
 {
+    public function __construct(private DriverMetricsService $driverMetrics) {}
+
     /**
      * Display a listing of the resource.
      */
@@ -29,51 +33,61 @@ class DriverController extends Controller
             $perPage = $perPageDefault;
         }
 
-        $driversQuery = Driver::query()->with('trucks');
-        $metricsQuery = Driver::query();
+        $filtersSearch = $search !== '' ? $search : null;
 
-        if ($search !== '') {
-            $applySearch = static function ($query) use ($search) {
-                $query->where(function ($q) use ($search) {
-                    $q->where('name', 'like', "%{$search}%")
-                        ->orWhere('driverid', 'like', "%{$search}%")
-                        ->orWhere('mobile', 'like', "%{$search}%")
-                        ->orWhere('zone', 'like', "%{$search}%");
-                });
-            };
+        $driversQuery = $this->driverMetrics->applyFilters(
+            Driver::query()
+                ->select([
+                    'id',
+                    'driverid',
+                    'name',
+                    'sex',
+                    'zone',
+                    'mobile',
+                    'hireddate',
+                    'status',
+                    'created_at',
+                    'updated_at',
+                ]),
+            $filtersSearch,
+            $sex,
+            $status,
+        )->with('trucks');
 
-            $applySearch($driversQuery);
-            $applySearch($metricsQuery);
-        }
-
-        if (! empty($sex) && $sex !== 'all') {
-            $driversQuery->where('sex', $sex);
-            $metricsQuery->where('sex', $sex);
-        }
-
-        if (! empty($status) && $status !== 'all') {
-            $driversQuery->where('status', $status);
-        }
-
-        $sort = $request->input('sort', 'name');
+        $sort = $request->input('sort', 'created_at');
         $direction = $request->input('direction', 'asc');
         $allowedSorts = ['name', 'driverid', 'sex', 'mobile', 'hireddate', 'status', 'zone', 'created_at'];
 
         if (! in_array($sort, $allowedSorts, true)) {
-            $sort = 'name';
+            $sort = 'created_at';
+        }
+
+        if (! in_array(strtolower((string) $direction), ['asc', 'desc'], true)) {
+            $direction = 'asc';
         }
 
         $driversQuery->orderBy($sort, $direction);
 
         $drivers = $driversQuery->paginate($perPage)->withQueryString();
 
-        $metrics = [
-            'total' => (clone $metricsQuery)->count(),
-            'active' => (clone $metricsQuery)->where('status', 'active')->count(),
-            'inactive' => (clone $metricsQuery)->where('status', 'inactive')->count(),
-            'male' => (clone $metricsQuery)->where('sex', 'male')->count(),
-            'female' => (clone $metricsQuery)->where('sex', 'female')->count(),
-        ];
+        $drivers->setCollection(
+            $drivers->getCollection()->map(fn (Driver $driver) => [
+                'id' => $driver->id,
+                'driverid' => $driver->driverid,
+                'name' => $driver->name,
+                'sex' => $driver->sex,
+                'zone' => $driver->zone,
+                'mobile' => $driver->mobile,
+                'hireddate' => $driver->hireddate,
+                'status' => $driver->status,
+                'created_at' => $driver->created_at,
+                'updated_at' => $driver->updated_at,
+            ])
+        );
+
+        $driversData = $this->trimPagination($drivers);
+
+        $metrics = $this->driverMetrics->metrics($filtersSearch, $sex, $status);
 
         $statusOptions = Driver::query()
             ->select('status')
@@ -98,7 +112,7 @@ class DriverController extends Controller
             ])->values();
 
         return Inertia::render('Drivers/Index', [
-            'drivers' => $drivers,
+            'drivers' => $driversData,
             'metrics' => $metrics,
             'filters' => [
                 'search' => $search !== '' ? $search : null,
@@ -112,6 +126,36 @@ class DriverController extends Controller
             'genderOptions' => $genderOptions,
             'perPageOptions' => $perPageOptions,
         ]);
+    }
+
+    private function trimPagination(LengthAwarePaginator $paginator): array
+    {
+        $links = $paginator->linkCollection()->map(static function (array $link): array {
+            $label = $link['label'];
+
+            if (is_string($label)) {
+                $label = trim(strip_tags(html_entity_decode($label)));
+            }
+
+            return [
+                'url' => $link['url'],
+                'label' => $label,
+                'active' => (bool) $link['active'],
+            ];
+        })->values()->all();
+
+        return [
+            'data' => $paginator->items(),
+            'meta' => [
+                'current_page' => $paginator->currentPage(),
+                'last_page' => $paginator->lastPage(),
+                'per_page' => $paginator->perPage(),
+                'total' => $paginator->total(),
+                'from' => $paginator->firstItem(),
+                'to' => $paginator->lastItem(),
+            ],
+            'links' => $links,
+        ];
     }
 
     /**
@@ -143,6 +187,8 @@ class DriverController extends Controller
             ]);
 
             $driver = Driver::create($validated);
+
+            $this->driverMetrics->clearCache();
 
             return redirect()->route('drivers.index')
                 ->with('success', 'Driver created successfully.');
@@ -253,6 +299,8 @@ class DriverController extends Controller
 
             $driver->update($validated);
 
+            $this->driverMetrics->clearCache();
+
             return redirect()->route('drivers.index')
                 ->with('success', 'Driver updated successfully.');
 
@@ -306,6 +354,8 @@ class DriverController extends Controller
 
             $driver->delete();
 
+            $this->driverMetrics->clearCache();
+
             return redirect()->route('drivers.index')
                 ->with('success', 'Driver deleted successfully.');
 
@@ -321,6 +371,8 @@ class DriverController extends Controller
     {
         $driver->update(['status' => 'inactive']);
 
+        $this->driverMetrics->clearCache();
+
         return redirect()->route('drivers.index')
             ->with('success', 'Driver deactivated successfully.');
     }
@@ -330,27 +382,12 @@ class DriverController extends Controller
      */
     public function export(Request $request)
     {
-        $query = Driver::with('trucks');
-
-        if ($request->filled('search')) {
-            $search = trim((string) $request->input('search'));
-            if ($search !== '') {
-                $query->where(function ($q) use ($search) {
-                    $q->where('name', 'like', "%{$search}%")
-                        ->orWhere('driverid', 'like', "%{$search}%")
-                        ->orWhere('mobile', 'like', "%{$search}%")
-                        ->orWhere('zone', 'like', "%{$search}%");
-                });
-            }
-        }
-
-        if ($request->filled('sex') && $request->input('sex') !== 'all') {
-            $query->where('sex', $request->input('sex'));
-        }
-
-        if ($request->filled('status') && $request->input('status') !== 'all') {
-            $query->where('status', $request->input('status'));
-        }
+        $query = $this->driverMetrics->applyFilters(
+            Driver::with('trucks'),
+            $request->filled('search') ? $request->input('search') : null,
+            $request->input('sex'),
+            $request->input('status'),
+        );
 
         if ($request->filled('sort')) {
             $sort = $request->input('sort', 'name');
@@ -359,6 +396,10 @@ class DriverController extends Controller
 
             if (! in_array($sort, $allowedSorts, true)) {
                 $sort = 'name';
+            }
+
+            if (! in_array(strtolower((string) $direction), ['asc', 'desc'], true)) {
+                $direction = 'asc';
             }
 
             $query->orderBy($sort, $direction);

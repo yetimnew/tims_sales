@@ -3,7 +3,6 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class UpdateTruckRequest extends FormRequest
 {
@@ -27,8 +26,8 @@ class UpdateTruckRequest extends FormRequest
                 'required',
                 'string',
                 'max:255',
-                Rule::unique('trucks')->ignore($truckId),
-                'regex:/^[A-Z]{2,3}-[0-9]{4,5}$/', // Ethiopian plate format
+                'unique:trucks,plate'.($truckId ? ','.$truckId : ''),
+                'regex:/^[A-Z]{2,4}-[0-9]{3,5}$/', // Ethiopian plate format (allows 2-4 letters and 3-5 digits)
             ],
             'vehicletype_id' => 'required|exists:vehicletypes,id',
             'chasisNumber' => 'nullable|string|max:255',

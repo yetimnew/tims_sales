@@ -37,19 +37,26 @@ interface DriverData {
     status: string;
 }
 
+interface PaginationMeta {
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+    from: number | null;
+    to: number | null;
+}
+
+interface PaginationLink {
+    url: string | null;
+    label: string;
+    active: boolean;
+}
+
 interface DriversIndexProps {
     drivers: {
         data: DriverData[];
-        current_page: number;
-        last_page: number;
-        total: number;
-        from: number;
-        to: number;
-        links: Array<{
-            url: string | null;
-            label: string;
-            active: boolean;
-        }>;
+        meta: PaginationMeta;
+        links: PaginationLink[];
     };
     metrics: {
         total: number;
@@ -81,6 +88,16 @@ const columns: Array<{ key: keyof DriverData | 'status'; label: string }> = [
     { key: 'status', label: 'Status' },
 ];
 
+type NavigateOverrides = {
+    search?: string;
+    status?: string;
+    sex?: string;
+    sort?: string;
+    direction?: 'asc' | 'desc';
+    page?: number;
+    per_page?: number;
+};
+
 export default function DriversIndex({ drivers, metrics, filters, statusOptions, genderOptions, perPageOptions }: DriversIndexProps) {
     const { hasPermission } = usePermissions();
     const [searchTerm, setSearchTerm] = React.useState(filters?.search ?? '');
@@ -104,30 +121,39 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
     }, [resolvedPerPage]);
 
     const driverData = drivers?.data ?? [];
-    const totalDrivers = metrics?.total ?? drivers?.total ?? 0;
-    const currentPage = drivers?.current_page ?? 1;
-    const lastPage = drivers?.last_page ?? 1;
+    const totalDrivers = metrics?.total ?? drivers?.meta?.total ?? driverData.length ?? 0;
+    const currentPage = drivers?.meta?.current_page ?? 1;
+    const lastPage = drivers?.meta?.last_page ?? 1;
 
-    const handleNavigate = React.useCallback((overrides: Partial<{ search?: string; status?: string; sex?: string; sort?: string; direction?: 'asc' | 'desc'; page?: number; per_page?: number }>) => {
-        const perPageValue = overrides.per_page !== undefined ? overrides.per_page : Number(perPage);
+    const handleNavigate = React.useCallback((overrides: NavigateOverrides = {}) => {
+        const hasOverride = (key: keyof NavigateOverrides) => Object.prototype.hasOwnProperty.call(overrides, key);
+
+        const nextSearch = hasOverride('search')
+            ? overrides.search
+            : (searchTerm.trim() ? searchTerm.trim() : undefined);
+        const nextStatus = hasOverride('status')
+            ? overrides.status
+            : (selectedStatus !== 'all' ? selectedStatus : undefined);
+        const nextSex = hasOverride('sex')
+            ? overrides.sex
+            : (selectedGender !== 'all' ? selectedGender : undefined);
+        const nextSort = hasOverride('sort') ? overrides.sort ?? sortColumn : sortColumn;
+        const nextDirection = hasOverride('direction') ? overrides.direction ?? sortDirection : sortDirection;
+        const nextPerPage = hasOverride('per_page') ? overrides.per_page : Number(perPage);
+        const nextPage = hasOverride('page') ? overrides.page : undefined;
+
         const params: Record<string, string | number | undefined> = {
-            search: overrides.search !== undefined ? overrides.search : (searchTerm.trim() ? searchTerm.trim() : undefined),
-            status: overrides.status !== undefined ? overrides.status : (selectedStatus !== 'all' ? selectedStatus : undefined),
-            sex: overrides.sex !== undefined ? overrides.sex : (selectedGender !== 'all' ? selectedGender : undefined),
-            sort: overrides.sort ?? sortColumn,
-            direction: overrides.direction ?? sortDirection,
-            page: overrides.page,
-            per_page: perPageValue,
+            search: nextSearch && nextSearch !== '' ? nextSearch : undefined,
+            status: nextStatus && nextStatus !== 'all' ? nextStatus : undefined,
+            sex: nextSex && nextSex !== 'all' ? nextSex : undefined,
+            sort: nextSort,
+            direction: nextDirection,
+            page: nextPage,
+            per_page: typeof nextPerPage === 'number' && Number.isFinite(nextPerPage) && nextPerPage > 0 ? nextPerPage : undefined,
         };
 
         Object.keys(params).forEach((key) => {
-            const value = params[key];
-            if (
-                value === undefined ||
-                value === null ||
-                value === '' ||
-                (key === 'per_page' && (typeof value !== 'number' || !Number.isFinite(value) || value <= 0))
-            ) {
+            if (params[key] === undefined) {
                 delete params[key];
             }
         });
@@ -461,17 +487,17 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
             tableTitle="Driver Directory"
             tableDescription="Complete list of all drivers in your workforce"
             tableHeaderExtras={tableHeaderExtras}
-            pagination={
-                <InertiaPagination
-                    className="mt-4"
-                    links={drivers.links}
-                    from={drivers.from}
-                    to={drivers.to}
-                    total={drivers.total}
-                    currentPage={currentPage}
-                    lastPage={lastPage}
-                />
-            }
+                pagination={
+                    <InertiaPagination
+                        className="mt-4"
+                        links={drivers.links}
+                        from={drivers.meta?.from ?? undefined}
+                        to={drivers.meta?.to ?? undefined}
+                        total={drivers.meta?.total ?? undefined}
+                        currentPage={currentPage}
+                        lastPage={lastPage}
+                    />
+                }
         >
             {tableContent}
         </ListPageLayout>

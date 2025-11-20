@@ -3,53 +3,49 @@
 namespace App\Services;
 
 use App\Models\Truck;
-use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use Illuminate\Database\Eloquent\Builder;
 
 class TruckMetricsService
 {
-    private const CACHE_PREFIX = 'truck:metrics:';
+    private array $localMetrics = [];
 
-    private const KEY_REGISTRY = 'truck:metrics:keys';
-
-    private const CACHE_TTL_MINUTES = 5;
-
-    public function __construct(private CacheRepository $cache) {}
-
-    public function metrics(?string $search, ?int $vehicleTypeId): array
+    public function metrics(?string $search, ?int $vehicleTypeId, ?string $status = null): array
     {
         $filters = [
             'search' => $search !== null && $search !== '' ? trim($search) : null,
             'vehicle_type' => $vehicleTypeId ?: null,
+            'status' => $this->normalizeStatus($status),
         ];
 
-        $cacheKey = $this->cacheKey($filters);
+        $cacheKey = md5(json_encode($filters));
 
-        $metrics = $this->cache->remember($cacheKey, now()->addMinutes(self::CACHE_TTL_MINUTES), function () use ($filters) {
-            $query = Truck::query();
-            $this->applyFilters($query, $filters['search'], $filters['vehicle_type']);
+        if (array_key_exists($cacheKey, $this->localMetrics)) {
+            return $this->localMetrics[$cacheKey];
+        }
 
-            $baseQuery = clone $query;
+        $query = Truck::query();
+        $this->applyFilters($query, $filters['search'], $filters['vehicle_type'], $filters['status']);
 
-            $total = (clone $baseQuery)->count();
-            $active = (clone $baseQuery)->where('status', 'active')->count();
-            $maintenance = (clone $baseQuery)->where('status', 'maintenance')->count();
-            $fleetValue = (float) (clone $baseQuery)->sum('purchasePrice');
+        $metricsRow = $query
+            ->selectRaw('COUNT(*) as total_count')
+            ->selectRaw("SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active_count")
+            ->selectRaw("SUM(CASE WHEN status = 'maintenance' THEN 1 ELSE 0 END) as maintenance_count")
+            ->selectRaw('COALESCE(SUM(purchasePrice), 0) as fleet_value_sum')
+            ->first();
 
-            return [
-                'total' => $total,
-                'active' => $active,
-                'maintenance' => $maintenance,
-                'fleet_value' => $fleetValue,
-            ];
-        });
+        $metrics = [
+            'total' => (int) ($metricsRow->total_count ?? 0),
+            'active' => (int) ($metricsRow->active_count ?? 0),
+            'maintenance' => (int) ($metricsRow->maintenance_count ?? 0),
+            'fleet_value' => (float) ($metricsRow->fleet_value_sum ?? 0.0),
+        ];
 
-        $this->registerCacheKey($cacheKey);
+        $this->localMetrics[$cacheKey] = $metrics;
 
         return $metrics;
     }
 
-    public function applyFilters(Builder $query, ?string $search, ?int $vehicleTypeId): Builder
+    public function applyFilters(Builder $query, ?string $search, ?int $vehicleTypeId, ?string $status = null): Builder
     {
         $search = $search !== null ? trim($search) : '';
         if ($search !== '') {
@@ -67,32 +63,32 @@ class TruckMetricsService
             $query->where('vehicletype_id', $vehicleTypeId);
         }
 
+        $status = $this->normalizeStatus($status);
+
+        if ($status !== null) {
+            $query->where('status', $status);
+        }
+
         return $query;
+    }
+
+    private function normalizeStatus(?string $status): ?string
+    {
+        if ($status === null) {
+            return null;
+        }
+
+        $value = strtolower(trim($status));
+
+        if ($value === '' || $value === 'all') {
+            return null;
+        }
+
+        return $value;
     }
 
     public function clearCache(): void
     {
-        $keys = $this->cache->get(self::KEY_REGISTRY, []);
-
-        foreach ($keys as $key) {
-            $this->cache->forget($key);
-        }
-
-        $this->cache->forget(self::KEY_REGISTRY);
-    }
-
-    private function cacheKey(array $filters): string
-    {
-        return self::CACHE_PREFIX.md5(json_encode($filters));
-    }
-
-    private function registerCacheKey(string $cacheKey): void
-    {
-        $keys = $this->cache->get(self::KEY_REGISTRY, []);
-
-        if (! in_array($cacheKey, $keys, true)) {
-            $keys[] = $cacheKey;
-            $this->cache->forever(self::KEY_REGISTRY, $keys);
-        }
+        $this->localMetrics = [];
     }
 }
