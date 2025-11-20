@@ -303,7 +303,19 @@ class TruckController extends Controller
         $vehicleTypes = VehicleType::all();
 
         return Inertia::render('Trucks/Edit', [
-            'truck' => $truck,
+            'truck' => [
+                'id' => $truck->id,
+                'plate' => $truck->plate,
+                'vehicletype_id' => $truck->vehicletype_id,
+                'chasisNumber' => $truck->chasisNumber,
+                'engineNumber' => $truck->engineNumber,
+                'tyreSyze' => $truck->tyreSyze,
+                'serviceIntervalKM' => $truck->serviceIntervalKM,
+                'purchasePrice' => $truck->purchasePrice,
+                'productionDate' => $truck->productionDate?->format('Y-m-d'),
+                'serviceStartDate' => $truck->serviceStartDate?->format('Y-m-d'),
+                'status' => $truck->status,
+            ],
             'vehicleTypes' => $vehicleTypes,
         ]);
     }

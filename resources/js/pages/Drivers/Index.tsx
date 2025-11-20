@@ -14,6 +14,8 @@ import ListPageLayout from '@/components/layouts/list-page-layout';
 import { usePermissions } from '@/hooks/use-permissions';
 import { Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
+import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
+import { toast } from '@/hooks/use-toast';
 import { Plus, Eye, Edit, Search, ArrowUpDown, Trash2, FileDown, Users, UserCheck, UserX, User, MapPin as MapPinIcon, Phone } from 'lucide-react';
 import { InertiaPagination } from '@/components/ui/pagination';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -115,6 +117,9 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
         return availablePerPageOptions[0] ?? 10;
     }, [filters?.per_page, availablePerPageOptions]);
     const [perPage, setPerPage] = React.useState<string>(() => String(resolvedPerPage));
+    const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+    const [selectedDriver, setSelectedDriver] = React.useState<DriverData | null>(null);
+    const [isDeleting, setIsDeleting] = React.useState(false);
 
     React.useEffect(() => {
         setPerPage(String(resolvedPerPage));
@@ -124,6 +129,11 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
     const totalDrivers = metrics?.total ?? drivers?.meta?.total ?? driverData.length ?? 0;
     const currentPage = drivers?.meta?.current_page ?? 1;
     const lastPage = drivers?.meta?.last_page ?? 1;
+    const perPageCountRaw = drivers?.meta?.per_page ?? Number(perPage);
+    const perPageCount = Number.isFinite(perPageCountRaw) && perPageCountRaw > 0
+        ? Number(perPageCountRaw)
+        : driverData.length || 1;
+    const rowOffset = (currentPage - 1) * perPageCount;
 
     const handleNavigate = React.useCallback((overrides: NavigateOverrides = {}) => {
         const hasOverride = (key: keyof NavigateOverrides) => Object.prototype.hasOwnProperty.call(overrides, key);
@@ -211,6 +221,40 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
         setSortColumn(column);
         setSortDirection(newDirection);
         handleNavigate({ sort: column, direction: newDirection });
+    };
+
+    const handleDeleteClick = (driver: DriverData) => {
+        setSelectedDriver(driver);
+        setDeleteDialogOpen(true);
+    };
+
+    const handleDeleteConfirm = () => {
+        if (!selectedDriver) {
+            return;
+        }
+
+        setIsDeleting(true);
+
+        router.delete(`/drivers/${selectedDriver.id}`, {
+            onSuccess: () => {
+                setDeleteDialogOpen(false);
+                setSelectedDriver(null);
+                setIsDeleting(false);
+            },
+            onError: (errors) => {
+                setIsDeleting(false);
+                if (errors && typeof errors === 'object') {
+                    const errorMessages = Object.values(errors).flat().join('\n');
+                    if (errorMessages) {
+                        toast({
+                            title: '❌ Delete Failed',
+                            description: errorMessages,
+                            variant: 'destructive',
+                        });
+                    }
+                }
+            },
+        });
     };
 
     const renderHeaderCell = (column: string, label: string) => (
@@ -386,14 +430,18 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
         <Table>
             <TableHeader className="[&_tr]:sticky [&_tr]:top-0 [&_tr]:z-20 [&_tr]:bg-background [&_tr]:shadow-sm">
                 <TableRow className="border-b bg-background">
+                    <TableHead className="sticky top-0 z-20 w-12 bg-background text-center">#</TableHead>
                     {columns.map(({ key, label }) => renderHeaderCell(key, label))}
                     <TableHead className="sticky top-0 z-20 bg-background text-center">Actions</TableHead>
                 </TableRow>
             </TableHeader>
             <TableBody>
                 {driverData.length > 0 ? (
-                    driverData.map((driver) => (
+                    driverData.map((driver, index) => (
                         <TableRow key={driver.id} className="hover:bg-muted/50">
+                            <TableCell className="text-center font-medium">
+                                {rowOffset + index + 1}
+                            </TableCell>
                             <TableCell className="font-medium">
                                 {driver.name}
                             </TableCell>
@@ -446,11 +494,7 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
                                         <Button
                                             size="sm"
                                             variant="ghost"
-                                            onClick={() => {
-                                                if (confirm('Are you sure you want to delete this driver?')) {
-                                                    router.delete(`/drivers/${driver.id}`);
-                                                }
-                                            }}
+                                            onClick={() => handleDeleteClick(driver)}
                                             className="text-red-600 hover:bg-red-50 hover:text-red-700"
                                         >
                                             <Trash2 className="h-4 w-4" />
@@ -477,29 +521,41 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
     );
 
     return (
-        <ListPageLayout
-            headTitle="Drivers"
-            title="Drivers"
-            description={`Manage your workforce of ${totalDrivers} driver${totalDrivers !== 1 ? 's' : ''}`}
-            breadcrumbs={breadcrumbs}
-            actions={headerActions}
-            stats={statsSection}
-            tableTitle="Driver Directory"
-            tableDescription="Complete list of all drivers in your workforce"
-            tableHeaderExtras={tableHeaderExtras}
-                pagination={
-                    <InertiaPagination
-                        className="mt-4"
-                        links={drivers.links}
-                        from={drivers.meta?.from ?? undefined}
-                        to={drivers.meta?.to ?? undefined}
-                        total={drivers.meta?.total ?? undefined}
-                        currentPage={currentPage}
-                        lastPage={lastPage}
-                    />
-                }
-        >
-            {tableContent}
-        </ListPageLayout>
+        <>
+            <ListPageLayout
+                headTitle="Drivers"
+                title="Drivers"
+                description={`Manage your workforce of ${totalDrivers} driver${totalDrivers !== 1 ? 's' : ''}`}
+                breadcrumbs={breadcrumbs}
+                actions={headerActions}
+                stats={statsSection}
+                tableTitle="Driver Directory"
+                tableDescription="Complete list of all drivers in your workforce"
+                tableHeaderExtras={tableHeaderExtras}
+                    pagination={
+                        <InertiaPagination
+                            className="mt-4"
+                            links={drivers.links}
+                            from={drivers.meta?.from ?? undefined}
+                            to={drivers.meta?.to ?? undefined}
+                            total={drivers.meta?.total ?? undefined}
+                            currentPage={currentPage}
+                            lastPage={lastPage}
+                        />
+                    }
+            >
+                {tableContent}
+            </ListPageLayout>
+
+            <DeleteConfirmationDialog
+                open={deleteDialogOpen}
+                onOpenChange={setDeleteDialogOpen}
+                title="Delete Driver"
+                description="Are you sure you want to delete this driver? This action cannot be undone."
+                itemName={selectedDriver?.name}
+                onConfirm={handleDeleteConfirm}
+                isLoading={isDeleting}
+            />
+        </>
     );
 }

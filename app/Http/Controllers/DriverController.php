@@ -79,7 +79,7 @@ class DriverController extends Controller
                 'zone' => $driver->zone,
                 'mobile' => $driver->mobile,
                 'hireddate' => $driver->hireddate,
-                'status' => $driver->status,
+                'status' => strtolower((string) ($driver->getRawOriginal('status') ?? '')),
                 'created_at' => $driver->created_at,
                 'updated_at' => $driver->updated_at,
             ])
@@ -272,8 +272,23 @@ class DriverController extends Controller
      */
     public function edit(Driver $driver): Response
     {
+        $driver->refresh();
+
         return Inertia::render('Drivers/Edit', [
-            'driver' => $driver,
+            'driver' => [
+                'id' => $driver->id,
+                'driverid' => $driver->driverid,
+                'name' => $driver->name,
+                'sex' => strtolower((string) $driver->getRawOriginal('sex') ?? ''),
+                'birthdate' => $driver->birthdate?->format('Y-m-d'),
+                'zone' => $driver->zone,
+                'woreda' => $driver->woreda,
+                'kebele' => $driver->kebele,
+                'housenumber' => $driver->housenumber,
+                'mobile' => $driver->mobile,
+                'hireddate' => $driver->hireddate?->format('Y-m-d'),
+                'status' => $driver->status,
+            ],
         ]);
     }
 

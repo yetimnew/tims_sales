@@ -133,6 +133,11 @@ export default function TrucksIndex({ trucks, metrics, filters, statusOptions, v
     const truckCount = metrics?.total ?? trucks?.meta?.total ?? trucks?.data?.length ?? 0;
     const currentPage = trucks?.meta?.current_page ?? 1;
     const lastPage = trucks?.meta?.last_page ?? 1;
+    const perPageCountRaw = trucks?.meta?.per_page ?? Number(perPage);
+    const perPageCount = Number.isFinite(perPageCountRaw) && perPageCountRaw > 0
+        ? Number(perPageCountRaw)
+        : trucks?.data?.length || 1;
+    const rowOffset = (currentPage - 1) * perPageCount;
     const activeCount = metrics?.active ?? 0;
     const maintenanceCount = metrics?.maintenance ?? 0;
     const fleetValue = metrics?.fleet_value ?? 0;
@@ -405,14 +410,18 @@ export default function TrucksIndex({ trucks, metrics, filters, statusOptions, v
         <Table>
             <TableHeader className="[&_tr]:sticky [&_tr]:top-0 [&_tr]:z-20 [&_tr]:bg-background [&_tr]:shadow-sm">
                 <TableRow className="border-b bg-background">
+                    <TableHead className="sticky top-0 z-20 w-12 bg-background text-center">#</TableHead>
                     {columns.map(({ key, label }) => renderHeaderCell(key, label))}
                     <TableHead className="sticky top-0 z-20 bg-background text-center">Actions</TableHead>
                 </TableRow>
             </TableHeader>
             <TableBody>
                 {trucks?.data && trucks.data.length > 0 ? (
-                    trucks.data.map((truck) => (
+                    trucks.data.map((truck, index) => (
                         <TableRow key={truck.id} className="hover:bg-muted/50">
+                            <TableCell className="text-center font-medium">
+                                {rowOffset + index + 1}
+                            </TableCell>
                             <TableCell className="font-medium">
                                 {truck.plate}
                             </TableCell>
