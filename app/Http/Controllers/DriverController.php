@@ -63,7 +63,7 @@ class DriverController extends Controller
         }
 
         if (! in_array(strtolower((string) $direction), ['asc', 'desc'], true)) {
-            $direction = 'asc';
+            $direction = 'desc';
         }
 
         $driversQuery->orderBy($sort, $direction);
