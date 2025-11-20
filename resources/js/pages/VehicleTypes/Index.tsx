@@ -88,8 +88,8 @@ export default function VehicleTypesIndex({ vehicleTypes, metrics, filters, perP
     const { hasPermission } = usePermissions();
     const { toast } = useToast();
     const [searchTerm, setSearchTerm] = React.useState(filters?.search ?? '');
-    const [sortColumn, setSortColumn] = React.useState<string>(filters?.sort ?? 'name');
-    const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>(filters?.direction ?? 'asc');
+    const [sortColumn, setSortColumn] = React.useState<string>(filters?.sort ?? 'created_at');
+    const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>(filters?.direction ?? 'desc');
     const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
     const [selectedVehicleType, setSelectedVehicleType] = React.useState<VehicleType | null>(null);
     const [isDeleting, setIsDeleting] = React.useState(false);
@@ -112,6 +112,12 @@ export default function VehicleTypesIndex({ vehicleTypes, metrics, filters, perP
     const totalVehicleTypes = metrics?.total ?? vehicleTypes?.total ?? 0;
     const currentPage = vehicleTypes?.current_page ?? 1;
     const lastPage = vehicleTypes?.last_page ?? 1;
+    const perPageCountRaw = vehicleTypes?.per_page ?? Number(perPage);
+    const perPageCountNumber = Number(perPageCountRaw);
+    const perPageCount = Number.isFinite(perPageCountNumber) && perPageCountNumber > 0
+        ? perPageCountNumber
+        : vehicleTypeData.length || 1;
+    const rowOffset = (currentPage - 1) * perPageCount;
 
     const handleNavigate = React.useCallback((overrides: Partial<{ search?: string; sort?: string; direction?: 'asc' | 'desc'; page?: number; per_page?: number }>) => {
         const perPageValue = overrides.per_page !== undefined ? overrides.per_page : Number(perPage);
@@ -176,6 +182,7 @@ export default function VehicleTypesIndex({ vehicleTypes, metrics, filters, perP
                 toast({
                     title: 'Vehicle type removed',
                     description: 'The vehicle type was deleted successfully.',
+                    variant: 'success',
                 });
             },
             onError: (errors) => {
@@ -330,6 +337,7 @@ export default function VehicleTypesIndex({ vehicleTypes, metrics, filters, perP
         <Table>
             <TableHeader className="[&_tr]:sticky [&_tr]:top-0 [&_tr]:z-20 [&_tr]:bg-background [&_tr]:shadow-sm">
                 <TableRow className="border-b bg-background">
+                    <TableHead className="sticky top-0 z-20 w-12 bg-background text-center">#</TableHead>
                     {columns.map((column) =>
                         column.key === 'actions' ? (
                             <TableHead key={column.key} className="sticky top-0 z-20 bg-background text-center">
@@ -341,8 +349,9 @@ export default function VehicleTypesIndex({ vehicleTypes, metrics, filters, perP
             </TableHeader>
             <TableBody>
                 {vehicleTypeData.length > 0 ? (
-                    vehicleTypeData.map((vehicleType) => (
+                    vehicleTypeData.map((vehicleType, index) => (
                         <TableRow key={vehicleType.id} className="hover:bg-muted/50">
+                            <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
                             <TableCell className="font-medium">{vehicleType.name}</TableCell>
                             <TableCell className="text-muted-foreground">
                                 {vehicleType.description || '—'}
@@ -386,7 +395,7 @@ export default function VehicleTypesIndex({ vehicleTypes, metrics, filters, perP
                     ))
                 ) : (
                     <TableRow>
-                        <TableCell colSpan={columns.length} className="py-8 text-center text-muted-foreground">
+                        <TableCell colSpan={columns.length + 1} className="py-8 text-center text-muted-foreground">
                             No vehicle types found.
                             {hasPermission('vehicletypes.create') && (
                                 <Link href="/vehicletypes/create" className="ml-1 text-primary underline">

@@ -153,7 +153,7 @@ export default function Detach({ driverTruck }: Props) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`Detach: ${driverTruck.driver.name} - ${driverTruck.truck.plate}`} />
 
-            <div className="flex min-h-0 flex-1 flex-col gap-6 rounded-xl p-4">
+            <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto rounded-xl p-4">
                 <div className="rounded-lg border border-slate-200 bg-gradient-to-r from-rose-50 via-amber-50 to-orange-50 p-6 shadow-sm dark:border-slate-700 dark:from-slate-900 dark:via-amber-950/10 dark:to-rose-950/20">
                     <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
                         <div className="flex flex-col gap-4 lg:flex-row lg:items-center">

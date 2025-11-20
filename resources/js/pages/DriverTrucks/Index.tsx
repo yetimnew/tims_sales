@@ -44,6 +44,7 @@ interface DriverTruckData {
     assigned_at?: string;
     status?: string | null;
     is_attached?: boolean;
+    created_at?: string;
 }
 
 interface DriverTrucksIndexProps {
@@ -82,6 +83,7 @@ const columns: Array<{ key: string; label: string; sortable?: boolean; sortKey?:
     { key: 'driver', label: 'Driver', sortable: true, sortKey: 'driver_name' },
     { key: 'truck', label: 'Truck', sortable: true, sortKey: 'truck_plate' },
     { key: 'date_recived', label: 'Assigned Date', sortable: true, sortKey: 'date_recived' },
+    { key: 'created_at', label: 'Created', sortable: true, sortKey: 'created_at' },
     { key: 'status', label: 'Status', sortable: true, sortKey: 'is_attached' },
 ];
 
@@ -89,7 +91,7 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
     const { hasPermission } = usePermissions();
     const [searchTerm, setSearchTerm] = React.useState(filters?.search ?? '');
     const [selectedStatus, setSelectedStatus] = React.useState(filters?.status ?? 'all');
-    const [sortColumn, setSortColumn] = React.useState<string>(filters?.sort ?? 'date_recived');
+    const [sortColumn, setSortColumn] = React.useState<string>(filters?.sort ?? 'created_at');
     const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>(filters?.direction ?? 'desc');
     const availablePerPageOptions = React.useMemo(() => (perPageOptions?.length ? perPageOptions : [15, 25, 50, 100]), [perPageOptions]);
     const resolvedPerPage = React.useMemo(() => {
@@ -375,6 +377,9 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
                                 <TableCell className="text-muted-foreground">
                                     {assignedDate ? new Date(assignedDate).toLocaleDateString() : '-'}
                                 </TableCell>
+                                <TableCell className="text-muted-foreground">
+                                    {assignment.created_at ? new Date(assignment.created_at).toLocaleDateString() : '-'}
+                                </TableCell>
                                 <TableCell>
                                     <div className="flex flex-col items-start gap-1">
                                         {getAttachmentBadge(assignment.is_attached)}
@@ -419,7 +424,7 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
                     })
                 ) : (
                     <TableRow>
-                        <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
+                        <TableCell colSpan={columns.length + 2} className="py-8 text-center text-muted-foreground">
                             No assignments found.
                             {hasPermission('driver-trucks.create') && (
                                 <Link href="/driver-trucks/create" className="ml-1 text-primary underline">

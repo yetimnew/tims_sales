@@ -3,11 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\VehicleType;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
-use Exception;
 use Spatie\Activitylog\Models\Activity;
 
 class VehicleTypeController extends Controller
@@ -18,23 +19,23 @@ class VehicleTypeController extends Controller
     public function index(Request $request): Response
     {
         $search = trim((string) $request->input('search'));
-        $sort = $request->input('sort', 'name');
-        $direction = strtolower((string) $request->input('direction', 'asc'));
+        $sort = $request->input('sort', 'created_at');
+        $direction = strtolower((string) $request->input('direction', 'desc'));
         $perPageOptions = [15, 25, 50, 100];
         $perPageDefault = 15;
         $perPage = (int) $request->input('per_page', $perPageDefault);
 
-        if (!in_array($perPage, $perPageOptions, true)) {
+        if (! in_array($perPage, $perPageOptions, true)) {
             $perPage = $perPageDefault;
         }
 
-        if (!in_array($direction, ['asc', 'desc'], true)) {
-            $direction = 'asc';
+        if (! in_array($direction, ['asc', 'desc'], true)) {
+            $direction = 'desc';
         }
 
         $allowedSorts = ['name', 'trucks_count', 'active_trucks_count', 'created_at'];
-        if (!in_array($sort, $allowedSorts, true)) {
-            $sort = 'name';
+        if (! in_array($sort, $allowedSorts, true)) {
+            $sort = 'created_at';
         }
 
         $baseQuery = VehicleType::query();
@@ -102,7 +103,7 @@ class VehicleTypeController extends Controller
         ]);
 
         // Apply search filter if provided
-        if ($request->has('search') && !empty($request->input('search'))) {
+        if ($request->has('search') && ! empty($request->input('search'))) {
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
@@ -111,12 +112,17 @@ class VehicleTypeController extends Controller
         }
 
         // Apply sorting if provided
-        $sort = $request->input('sort', 'name');
-        $direction = $request->input('direction', 'asc');
-        $allowedSorts = ['name', 'trucks_count', 'active_trucks_count', 'created_at'];
-        if (in_array($sort, $allowedSorts)) {
-            $query->orderBy($sort, $direction);
+        $sort = $request->input('sort', 'created_at');
+        $direction = strtolower((string) $request->input('direction', 'desc'));
+        if (! in_array($direction, ['asc', 'desc'], true)) {
+            $direction = 'desc';
         }
+        $allowedSorts = ['name', 'trucks_count', 'active_trucks_count', 'created_at'];
+        if (! in_array($sort, $allowedSorts, true)) {
+            $sort = 'created_at';
+        }
+
+        $query->orderBy($sort, $direction);
 
         $vehicleTypes = $query->get();
 
@@ -124,7 +130,7 @@ class VehicleTypeController extends Controller
         $csvData = "Name,Description,Trucks Count,Active Trucks,Created Date\n";
         foreach ($vehicleTypes as $type) {
             $csvData .= sprintf(
-                '"%s","%s","%s","%s","%s"' . "\n",
+                '"%s","%s","%s","%s","%s"'."\n",
                 $type->name,
                 str_replace('"', '""', $type->description ?? ''),
                 $type->trucks_count,
@@ -184,7 +190,9 @@ class VehicleTypeController extends Controller
         $activityLogs = Activity::forSubject($vehicletype)
             ->with('causer')
             ->orderByDesc('created_at')
-            ->get();
+            ->get()
+            ->map(fn (Activity $activity) => $this->formatActivityLog($activity))
+            ->values();
 
         return Inertia::render('VehicleTypes/Show', [
             'vehicleType' => $vehicletype,
@@ -209,7 +217,7 @@ class VehicleTypeController extends Controller
     {
         try {
             $validated = $request->validate([
-                'name' => 'required|string|max:255|unique:vehicletypes,name,' . $vehicletype->id,
+                'name' => 'required|string|max:255|unique:vehicletypes,name,'.$vehicletype->id,
                 'description' => 'nullable|string|max:1000',
             ]);
 
@@ -234,7 +242,7 @@ class VehicleTypeController extends Controller
             // Check if vehicle type has trucks
             if ($vehicletype->trucks()->count() > 0) {
                 return back()->withErrors([
-                    'error' => 'You are not allowed to delete this vehicle type. It has ' . $vehicletype->trucks()->count() . ' truck(s) associated with it. Please reassign or delete all trucks first.'
+                    'error' => 'You are not allowed to delete this vehicle type. It has '.$vehicletype->trucks()->count().' truck(s) associated with it. Please reassign or delete all trucks first.',
                 ]);
             }
 
@@ -247,7 +255,41 @@ class VehicleTypeController extends Controller
             return back()->withErrors(['error' => 'Failed to delete vehicle type. Please try again.']);
         }
     }
+
+    private function formatActivityLog(Activity $activity): array
+    {
+        $event = $activity->event;
+        $description = (string) ($activity->description ?? '');
+
+        $action = match ($event) {
+            'created', 'updated', 'deleted' => $event,
+            default => null,
+        };
+
+        if ($action === null) {
+            $lowerDescription = Str::lower($description);
+
+            if (Str::contains($lowerDescription, ['delete', 'removed'])) {
+                $action = 'deleted';
+            } elseif (Str::contains($lowerDescription, ['create', 'added'])) {
+                $action = 'created';
+            } else {
+                $action = 'updated';
+            }
+        }
+
+        $properties = $activity->properties?->toArray() ?? [];
+
+        return [
+            'id' => $activity->id,
+            'action' => $action,
+            'description' => $description !== '' ? $description : Str::headline($action ?? 'activity'),
+            'user' => $activity->causer ? [
+                'name' => $activity->causer->name,
+            ] : null,
+            'created_at' => $activity->created_at?->toIso8601String(),
+            'old_values' => $properties['old'] ?? null,
+            'new_values' => $properties['attributes'] ?? null,
+        ];
+    }
 }
-
-
-

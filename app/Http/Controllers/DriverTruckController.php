@@ -28,7 +28,7 @@ class DriverTruckController extends Controller
     {
         $search = trim((string) $request->input('search'));
         $status = $request->input('status');
-        $sort = $request->input('sort', 'date_recived');
+        $sort = $request->input('sort', 'created_at');
         $direction = strtolower((string) $request->input('direction', 'desc'));
         $perPageOptions = [15, 25, 50, 100];
         $perPageDefault = 15;
@@ -45,7 +45,7 @@ class DriverTruckController extends Controller
         $allowedSorts = ['date_recived', 'date_detach', 'status', 'is_attached', 'created_at', 'updated_at', 'driver_name', 'truck_plate'];
 
         if (! in_array($sort, $allowedSorts, true)) {
-            $sort = 'date_recived';
+            $sort = 'created_at';
         }
 
         $assignmentsQuery = DriverTruck::query()->with(['driver', 'truck.vehicletype']);

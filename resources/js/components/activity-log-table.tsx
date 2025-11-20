@@ -12,7 +12,7 @@ import { CheckCircle2, Edit, Trash2, Clock } from 'lucide-react';
 
 interface ActivityLog {
     id: number;
-    action: 'created' | 'updated' | 'deleted';
+    action?: string;
     description: string;
     user?: {
         name: string;
@@ -123,20 +123,26 @@ export function ActivityLogTable({ logs, isLoading = false }: ActivityLogTablePr
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {logs.map((log) => (
-                                <TableRow key={log.id}>
+                            {logs.map((log) => {
+                                const action = log.action ?? 'updated';
+                                const actionLabel = action
+                                    ? action.charAt(0).toUpperCase() + action.slice(1)
+                                    : 'Unknown';
+
+                                return (
+                                    <TableRow key={log.id}>
                                     <TableCell>
                                         <div className="flex items-center gap-2">
-                                            {getActionIcon(log.action)}
-                                            <Badge className={getActionBadgeColor(log.action)}>
-                                                {log.action.charAt(0).toUpperCase() + log.action.slice(1)}
+                                                {getActionIcon(action)}
+                                                <Badge className={getActionBadgeColor(action)}>
+                                                    {actionLabel}
                                             </Badge>
                                         </div>
                                     </TableCell>
                                     <TableCell className="text-sm">{log.description}</TableCell>
                                     <TableCell className="text-sm">{log.user?.name || 'System'}</TableCell>
                                     <TableCell className="text-sm">
-                                        {log.action === 'updated' && log.old_values && log.new_values ? (
+                                            {action === 'updated' && log.old_values && log.new_values ? (
                                             <div className="space-y-1">
                                                 {getChangedFields(log.old_values, log.new_values).map((field, idx) => (
                                                     <div key={idx} className="text-xs text-muted-foreground">
