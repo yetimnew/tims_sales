@@ -2,12 +2,12 @@
 
 namespace Tests\Feature\Frontend;
 
-use App\Models\User;
-use App\Models\Truck;
 use App\Models\Driver;
-use App\Models\Role;
-use App\Models\Permission;
+use App\Models\Truck;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class ComponentTest extends TestCase
@@ -16,29 +16,89 @@ class ComponentTest extends TestCase
 
     protected $user;
 
+    protected array $permissionNames = [];
+
     protected function setUp(): void
     {
         parent::setUp();
 
-        // Create user with permissions
-        $this->user = User::factory()->create();
-
-        // Create permissions
-        $permissions = [
-            'trucks.view', 'trucks.create', 'trucks.edit', 'trucks.destroy',
-            'trucks.show', 'trucks.store', 'trucks.update', 'trucks.export',
-            'drivers.view', 'drivers.create', 'drivers.edit', 'drivers.destroy',
-            'drivers.show', 'drivers.store', 'drivers.update', 'drivers.export'
+        $this->permissionNames = [
+            'trucks.view',
+            'trucks.create',
+            'trucks.show',
+            'trucks.edit',
+            'trucks.store',
+            'trucks.update',
+            'trucks.export',
+            'trucks.destroy',
+            'drivers.view',
+            'drivers.create',
+            'drivers.show',
+            'drivers.edit',
+            'drivers.export',
+            'drivers.destroy',
+            'maintenance.view',
+            'maintenance.show',
+            'maintenance.create',
+            'maintenance.store',
+            'maintenance.edit',
+            'maintenance.update',
+            'maintenance.destroy',
+            'maintenance.export',
+            'maintenance.complete',
+            'maintenance-types.view',
+            'maintenance-types.show',
+            'maintenance-types.create',
+            'maintenance-types.store',
+            'maintenance-types.edit',
+            'maintenance-types.update',
+            'maintenance-types.destroy',
+            'maintenance-types.export',
+            'fuel.view',
+            'financial.view',
+            'vehicletypes.view',
+            'customers.view',
+            'customers.destroy',
+            'users.view',
+            'roles.view',
+            'permissions.view',
         ];
 
-        foreach ($permissions as $permission) {
-            Permission::create(['name' => $permission, 'guard_name' => 'web']);
+        foreach ($this->permissionNames as $permission) {
+            Permission::firstOrCreate([
+                'name' => $permission,
+                'guard_name' => 'web',
+            ]);
         }
 
-        // Create role and assign permissions
-        $role = Role::create(['name' => 'admin', 'guard_name' => 'web']);
-        $role->givePermissionTo($permissions);
-        $this->user->assignRole($role);
+        $adminRole = Role::firstOrCreate([
+            'name' => 'admin',
+            'guard_name' => 'web',
+        ]);
+        $adminRole->syncPermissions($this->permissionNames);
+
+        $managerRole = Role::firstOrCreate([
+            'name' => 'manager',
+            'guard_name' => 'web',
+        ]);
+        $managerRole->syncPermissions(array_filter(
+            $this->permissionNames,
+            fn (string $permission): bool => ! str_contains($permission, '.destroy')
+        ));
+
+        $viewerPermissions = array_values(array_filter(
+            $this->permissionNames,
+            fn (string $permission): bool => str_contains($permission, '.view') || str_contains($permission, '.show')
+        ));
+
+        $userRole = Role::firstOrCreate([
+            'name' => 'user',
+            'guard_name' => 'web',
+        ]);
+        $userRole->syncPermissions($viewerPermissions);
+
+        $this->user = User::factory()->create();
+        $this->user->assignRole($adminRole);
     }
 
     /** @test */
@@ -200,7 +260,7 @@ class ComponentTest extends TestCase
             ->assertInertia(fn ($page) => $page
                 ->component('Maintenance/Index')
                 ->has('maintenanceRecords.data', 3)
-                ->has('statistics')
+                ->has('metrics')
             );
     }
 
@@ -357,8 +417,6 @@ class ComponentTest extends TestCase
     /** @test */
     public function roles_index_page_displays_correctly()
     {
-        \App\Models\Role::factory()->count(3)->create();
-
         $response = $this->actingAs($this->user)
             ->get(route('roles.index'));
 
@@ -372,15 +430,14 @@ class ComponentTest extends TestCase
     /** @test */
     public function permissions_index_page_displays_correctly()
     {
-        \App\Models\Permission::factory()->count(3)->create();
-
         $response = $this->actingAs($this->user)
             ->get(route('permissions.index'));
 
         $response->assertStatus(200)
             ->assertInertia(fn ($page) => $page
                 ->component('Permissions/Index')
-                ->has('permissions.data', 3)
+                ->has('permissions.data')
+                ->where('permissions.meta.total', count($this->permissionNames))
             );
     }
 
@@ -520,6 +577,7 @@ class ComponentTest extends TestCase
     /** @test */
     public function page_components_handle_permissions()
     {
+        /** @var User $userWithoutPermission */
         $userWithoutPermission = User::factory()->create();
         $truck = Truck::factory()->create();
 
@@ -544,7 +602,7 @@ class ComponentTest extends TestCase
         $truckData = [
             'plate' => 'FLASH-123',
             'vehicletype_id' => \App\Models\VehicleType::factory()->create()->id,
-            'status' => 'active'
+            'status' => 'active',
         ];
 
         $response = $this->actingAs($this->user)

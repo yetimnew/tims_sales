@@ -3,8 +3,8 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
 class CheckPermissionSeeder extends Seeder
 {
@@ -32,6 +32,12 @@ class CheckPermissionSeeder extends Seeder
         $maintenancePermissions = [
             'maintenance.view', 'maintenance.show', 'maintenance.create', 'maintenance.store', 'maintenance.edit',
             'maintenance.update', 'maintenance.destroy', 'maintenance.export', 'maintenance.complete',
+        ];
+
+        // ==================== MAINTENANCE TYPE PERMISSIONS ====================
+        $maintenanceTypePermissions = [
+            'maintenance-types.view', 'maintenance-types.show', 'maintenance-types.create', 'maintenance-types.store',
+            'maintenance-types.edit', 'maintenance-types.update', 'maintenance-types.destroy', 'maintenance-types.export',
         ];
 
         // ==================== VEHICLE TYPE PERMISSIONS ====================
@@ -207,6 +213,7 @@ class CheckPermissionSeeder extends Seeder
             $driverTruckPermissions,
             $driverPermissions,
             $maintenancePermissions,
+            $maintenanceTypePermissions,
             $vehicleTypePermissions,
             $fuelPermissions,
             $financialPermissions,
@@ -248,7 +255,7 @@ class CheckPermissionSeeder extends Seeder
         // MANAGER: All except destroy
         $managerPermissions = array_filter(
             $allPermissions,
-            fn($permission) => !str_contains($permission, '.destroy')
+            fn ($permission) => ! str_contains($permission, '.destroy')
         );
         $managerRole = Role::firstOrCreate(['name' => 'manager', 'guard_name' => 'web']);
         $managerRole->syncPermissions($managerPermissions);
@@ -256,7 +263,7 @@ class CheckPermissionSeeder extends Seeder
         // USER: Only view, show, export
         $userPermissions = array_filter(
             $allPermissions,
-            fn($permission) => str_contains($permission, '.view') ||
+            fn ($permission) => str_contains($permission, '.view') ||
                                str_contains($permission, '.show') ||
                                str_contains($permission, '.export')
         );
