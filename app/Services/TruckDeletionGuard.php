@@ -83,7 +83,9 @@ class TruckDeletionGuard
                 'insuranceRecords',
                 'routePlans',
                 'dailyStatuses',
-                'drivers as active_drivers_count' => fn ($query) => $query->wherePivot('status', 'active'),
+                'drivers as active_drivers_count' => fn ($query) => $query
+                    ->wherePivotIn('status', ['active'])
+                    ->wherePivotNull('deleted_at'),
             ]);
 
             return [

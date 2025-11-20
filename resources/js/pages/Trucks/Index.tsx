@@ -83,6 +83,16 @@ interface TrucksIndexProps {
     perPageOptions: number[];
 }
 
+type NavigateOverrides = {
+    search?: string;
+    status?: string;
+    vehicle_type?: string | number;
+    sort?: string;
+    direction?: 'asc' | 'desc';
+    page?: number;
+    per_page?: number;
+};
+
 const columns: Array<{ key: string; label: string }> = [
     { key: 'plate', label: 'Plate' },
     { key: 'vehicleType', label: 'Vehicle Type' },
@@ -100,8 +110,8 @@ export default function TrucksIndex({ trucks, metrics, filters, statusOptions, v
     const [selectedVehicleType, setSelectedVehicleType] = React.useState(
         filters?.vehicle_type ? String(filters.vehicle_type) : 'all',
     );
-    const [sortBy, setSortBy] = React.useState(filters?.sort ?? 'plate');
-    const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>(filters?.direction ?? 'asc');
+    const [sortBy, setSortBy] = React.useState(filters?.sort ?? 'created_at');
+    const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>(filters?.direction ?? 'desc');
     const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
     const [selectedTruck, setSelectedTruck] = React.useState<TruckData | null>(null);
     const [isDeleting, setIsDeleting] = React.useState(false);
@@ -127,30 +137,35 @@ export default function TrucksIndex({ trucks, metrics, filters, statusOptions, v
     const maintenanceCount = metrics?.maintenance ?? 0;
     const fleetValue = metrics?.fleet_value ?? 0;
 
-    const handleNavigate = React.useCallback((overrides: Partial<{ search?: string; status?: string; vehicle_type?: string | number; sort?: string; direction?: 'asc' | 'desc'; page?: number; per_page?: number }>) => {
-        const perPageValue = overrides.per_page !== undefined ? overrides.per_page : Number(perPage);
+    const handleNavigate = React.useCallback((overrides: NavigateOverrides = {}) => {
+        const hasOverride = (key: keyof NavigateOverrides) => Object.prototype.hasOwnProperty.call(overrides, key);
+
+        const nextSearch = hasOverride('search')
+            ? overrides.search
+            : (searchTerm.trim() ? searchTerm.trim() : undefined);
+        const nextStatus = hasOverride('status')
+            ? overrides.status
+            : (selectedStatus !== 'all' ? selectedStatus : undefined);
+        const nextVehicleType = hasOverride('vehicle_type')
+            ? overrides.vehicle_type
+            : (selectedVehicleType !== 'all' ? selectedVehicleType : undefined);
+        const nextSort = hasOverride('sort') ? overrides.sort ?? sortBy : sortBy;
+        const nextDirection = hasOverride('direction') ? overrides.direction ?? sortDirection : sortDirection;
+        const nextPerPage = hasOverride('per_page') ? overrides.per_page : Number(perPage);
+        const nextPage = hasOverride('page') ? overrides.page : undefined;
+
         const params: Record<string, string | number | undefined> = {
-            search: overrides.search !== undefined ? overrides.search : (searchTerm.trim() ? searchTerm.trim() : undefined),
-            status: overrides.status !== undefined ? overrides.status : (selectedStatus !== 'all' ? selectedStatus : undefined),
-            vehicle_type: overrides.vehicle_type !== undefined ? overrides.vehicle_type : (selectedVehicleType !== 'all' ? selectedVehicleType : undefined),
-            sort: overrides.sort ?? sortBy,
-            direction: overrides.direction ?? sortDirection,
-            page: overrides.page,
-            per_page: perPageValue,
+            search: nextSearch && nextSearch !== '' ? nextSearch : undefined,
+            status: nextStatus && nextStatus !== 'all' ? nextStatus : undefined,
+            vehicle_type: nextVehicleType && nextVehicleType !== 'all' ? nextVehicleType : undefined,
+            sort: nextSort,
+            direction: nextDirection,
+            page: nextPage,
+            per_page: typeof nextPerPage === 'number' && Number.isFinite(nextPerPage) && nextPerPage > 0 ? nextPerPage : undefined,
         };
 
-        if (params.search === '') params.search = undefined;
-        if (params.status === 'all') params.status = undefined;
-        if (params.vehicle_type === 'all') params.vehicle_type = undefined;
-
         Object.keys(params).forEach((key) => {
-            const value = params[key];
-            if (
-                value === undefined ||
-                value === null ||
-                value === '' ||
-                (key === 'per_page' && (typeof value !== 'number' || !Number.isFinite(value) || value <= 0))
-            ) {
+            if (params[key] === undefined) {
                 delete params[key];
             }
         });

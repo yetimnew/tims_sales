@@ -101,12 +101,16 @@ class TruckController extends Controller
             $trucksQuery->where('status', $status);
         }
 
-        $sort = $request->input('sort', 'plate');
-        $direction = $request->input('direction', 'asc');
+        $sort = $request->input('sort', 'created_at');
+        $direction = $request->input('direction', 'desc');
         $allowedSorts = ['plate', 'chasisNumber', 'engineNumber', 'serviceIntervalKM', 'purchasePrice', 'status', 'created_at'];
 
         if (! in_array($sort, $allowedSorts, true)) {
-            $sort = 'plate';
+            $sort = 'created_at';
+        }
+
+        if (! in_array(strtolower((string) $direction), ['asc', 'desc'], true)) {
+            $direction = 'desc';
         }
 
         $trucksQuery->orderBy($sort, $direction);
