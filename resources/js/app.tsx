@@ -8,6 +8,11 @@ import { initializeTheme } from './hooks/use-appearance';
 
 // Import routes to set up global Ziggy routes
 import './routes';
+import { configureEcho } from '@laravel/echo-react';
+
+configureEcho({
+    broadcaster: 'reverb',
+});
 
 // Global error handler
 window.addEventListener('error', (event) => {

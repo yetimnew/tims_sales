@@ -13,6 +13,7 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        $this->call(NotificationTypeSeeder::class);
         $this->call(CheckPermissionSeeder::class);
         $this->call(AdminUserSeeder::class);
 

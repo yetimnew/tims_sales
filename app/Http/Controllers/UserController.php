@@ -2,17 +2,21 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\UserCreated;
+use App\Events\UserDeleted;
+use App\Events\UserUpdated;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Models\User;
+use Carbon\CarbonInterface;
+use Exception;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
-use Inertia\Response;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
+use Inertia\Response;
 use Spatie\Permission\Models\Role;
-use Exception;
 
 class UserController extends Controller
 {
@@ -24,7 +28,7 @@ class UserController extends Controller
         $query = User::with('roles');
 
         // Handle search
-        if ($request->has('search') && !empty($request->input('search'))) {
+        if ($request->has('search') && ! empty($request->input('search'))) {
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
@@ -38,7 +42,7 @@ class UserController extends Controller
 
         // Validate sort column to prevent SQL injection
         $allowedSorts = ['name', 'email', 'created_at', 'email_verified_at'];
-        if (!in_array($sort, $allowedSorts)) {
+        if (! in_array($sort, $allowedSorts)) {
             $sort = 'name';
         }
 
@@ -99,6 +103,8 @@ class UserController extends Controller
                 'created_by' => Auth::id(),
             ]);
 
+            event(new UserCreated($user, Auth::user()));
+
             return redirect()->route('users.index')
                 ->with('success', 'User created successfully.');
 
@@ -154,7 +160,7 @@ class UserController extends Controller
         try {
             $validated = $request->validated();
 
-            if (!empty($validated['password'])) {
+            if (! empty($validated['password'])) {
                 $validated['password'] = Hash::make($validated['password']);
             } else {
                 unset($validated['password']);
@@ -163,6 +169,8 @@ class UserController extends Controller
             $oldRole = $user->roles->first()?->name;
             $newRole = $validated['role'];
 
+            $original = $this->normalizeAttributes($user->getOriginal());
+
             $user->update($validated);
 
             // Sync role
@@ -170,6 +178,8 @@ class UserController extends Controller
             if ($role) {
                 $user->syncRoles([$role]);
             }
+
+            $changes = $this->formatChanges($original, $this->normalizeAttributes($user->getChanges()));
 
             // Log activity
             activity()
@@ -191,6 +201,10 @@ class UserController extends Controller
                 'new_role' => $newRole,
                 'updated_by' => Auth::id(),
             ]);
+
+            if (! empty($changes)) {
+                event(new UserUpdated($user, $changes, Auth::user()));
+            }
 
             return redirect()->route('users.index')
                 ->with('success', 'User updated successfully.');
@@ -242,6 +256,16 @@ class UserController extends Controller
                 'deleted_by' => Auth::id(),
             ]);
 
+            event(new UserDeleted(
+                $userData['id'],
+                $userData['name'],
+                [
+                    'email' => $userData['email'] ?? null,
+                    'roles' => $userRoles,
+                ],
+                Auth::user(),
+            ));
+
             return redirect()->route('users.index')
                 ->with('success', 'User deleted successfully.');
 
@@ -265,7 +289,7 @@ class UserController extends Controller
             $query = User::with('roles');
 
             // Apply same search and sort as index
-            if ($request->has('search') && !empty($request->input('search'))) {
+            if ($request->has('search') && ! empty($request->input('search'))) {
                 $search = $request->input('search');
                 $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
@@ -283,7 +307,7 @@ class UserController extends Controller
             $users = $query->get();
 
             // Generate CSV
-            $filename = 'users_' . now()->format('Y-m-d_H-i-s') . '.csv';
+            $filename = 'users_'.now()->format('Y-m-d_H-i-s').'.csv';
             $handle = fopen('php://temp', 'r+');
 
             // Write header
@@ -294,7 +318,7 @@ class UserController extends Controller
                 'Roles',
                 'Email Verified',
                 'Created At',
-                'Updated At'
+                'Updated At',
             ]);
 
             // Write data
@@ -306,7 +330,7 @@ class UserController extends Controller
                     $user->roles->pluck('name')->join(', '),
                     $user->email_verified_at ? 'Yes' : 'No',
                     $user->created_at,
-                    $user->updated_at
+                    $user->updated_at,
                 ]);
             }
 
@@ -334,7 +358,53 @@ class UserController extends Controller
             return back()->withErrors(['error' => 'Failed to export users. Please try again.']);
         }
     }
+
+    /**
+     * @param  array<string, mixed>  $original
+     * @param  array<string, mixed>  $changes
+     * @return array<string, array{old: mixed, new: mixed}>
+     */
+    private function formatChanges(array $original, array $changes): array
+    {
+        $formatted = [];
+
+        foreach ($changes as $attribute => $newValue) {
+            $formatted[$attribute] = [
+                'old' => $original[$attribute] ?? null,
+                'new' => $newValue,
+            ];
+        }
+
+        return $formatted;
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     * @return array<string, mixed>
+     */
+    private function normalizeAttributes(array $attributes): array
+    {
+        foreach ($attributes as $key => $value) {
+            $attributes[$key] = $this->normalizeValue($value);
+        }
+
+        return $attributes;
+    }
+
+    private function normalizeValue(mixed $value): mixed
+    {
+        if (is_array($value)) {
+            foreach ($value as $key => $item) {
+                $value[$key] = $this->normalizeValue($item);
+            }
+
+            return $value;
+        }
+
+        if ($value instanceof CarbonInterface) {
+            return $value->toIso8601String();
+        }
+
+        return $value;
+    }
 }
-
-
-

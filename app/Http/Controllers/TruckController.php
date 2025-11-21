@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\TruckCreated;
+use App\Events\TruckDeleted;
+use App\Events\TruckUpdated;
 use App\Http\Requests\StoreTruckRequest;
 use App\Http\Requests\UpdateTruckRequest;
 use App\Models\DailyTruckStatus;
@@ -10,6 +13,7 @@ use App\Models\VehicleType;
 use App\Services\TruckAssignmentService;
 use App\Services\TruckDeletionGuard;
 use App\Services\TruckMetricsService;
+use Carbon\CarbonInterface;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -222,6 +226,8 @@ class TruckController extends Controller
 
             $this->truckMetrics->clearCache();
 
+            event(new TruckCreated($truck, Auth::user()));
+
             return redirect()->route('trucks.index')
                 ->with('success', 'Truck created successfully.');
 
@@ -326,9 +332,17 @@ class TruckController extends Controller
     public function update(UpdateTruckRequest $request, Truck $truck)
     {
         try {
+            $original = $this->normalizeAttributes($truck->getOriginal());
+
             $truck->update($request->validated());
 
+            $changes = $this->formatChanges($original, $this->normalizeAttributes($truck->getChanges()));
+
             $this->truckMetrics->clearCache();
+
+            if (! empty($changes)) {
+                event(new TruckUpdated($truck, $changes, Auth::user()));
+            }
 
             return redirect()->route('trucks.index')
                 ->with('success', 'Truck updated successfully.');
@@ -352,9 +366,15 @@ class TruckController extends Controller
                 ]);
             }
 
+            $attributes = $this->normalizeAttributes($truck->toArray());
+            $truckId = $truck->id;
+            $plate = $truck->plate;
+
             $truck->delete();
             $this->truckDeletionGuard->clearCache($truck);
             $this->truckMetrics->clearCache();
+
+            event(new TruckDeleted($truckId, $plate, $attributes, Auth::user()));
 
             return redirect()->route('trucks.index')
                 ->with('success', 'Truck deleted successfully.');
@@ -490,5 +510,54 @@ class TruckController extends Controller
         return response($csv, 200)
             ->header('Content-Type', 'text/csv')
             ->header('Content-Disposition', "attachment; filename=\"$filename\"");
+    }
+
+    /**
+     * @param  array<string, mixed>  $original
+     * @param  array<string, mixed>  $changes
+     * @return array<string, array{old: mixed, new: mixed}>
+     */
+    private function formatChanges(array $original, array $changes): array
+    {
+        $formatted = [];
+
+        foreach ($changes as $attribute => $newValue) {
+            $formatted[$attribute] = [
+                'old' => $original[$attribute] ?? null,
+                'new' => $newValue,
+            ];
+        }
+
+        return $formatted;
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     * @return array<string, mixed>
+     */
+    private function normalizeAttributes(array $attributes): array
+    {
+        foreach ($attributes as $key => $value) {
+            $attributes[$key] = $this->normalizeValue($value);
+        }
+
+        return $attributes;
+    }
+
+    private function normalizeValue(mixed $value): mixed
+    {
+        if (is_array($value)) {
+            foreach ($value as $key => $item) {
+                $value[$key] = $this->normalizeValue($item);
+            }
+
+            return $value;
+        }
+
+        if ($value instanceof CarbonInterface) {
+            return $value->toIso8601String();
+        }
+
+        return $value;
     }
 }

@@ -3,6 +3,7 @@
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DriverController;
 use App\Http\Controllers\FleetAnalyticsController;
+use App\Http\Controllers\NotificationPreferenceAdminController;
 use App\Http\Controllers\PerformanceController;
 use App\Http\Controllers\TruckController;
 use Illuminate\Support\Facades\Route;
@@ -661,6 +662,14 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('users/{user}', [\App\Http\Controllers\UserController::class, 'destroy'])
             ->middleware('can:users.destroy')
             ->name('users.destroy');
+
+        Route::get('notifications/preferences', [NotificationPreferenceAdminController::class, 'index'])
+            ->middleware('can:users.update')
+            ->name('notifications.preferences.index');
+
+        Route::patch('notifications/preferences/{user}', [NotificationPreferenceAdminController::class, 'update'])
+            ->middleware('can:users.update')
+            ->name('notifications.preferences.update');
 
         // Export route - highest priority
         Route::get('roles/export/csv', [\App\Http\Controllers\RoleController::class, 'export'])
