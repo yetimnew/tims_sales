@@ -9,6 +9,7 @@ use App\Exports\Reports\TruckPerformanceExport;
 use App\Http\Requests\Reports\CustomerProfitabilityRequest;
 use App\Http\Requests\Reports\FuelEfficiencyRequest;
 use App\Http\Requests\Reports\OperationalComparisonRequest;
+use App\Http\Requests\Reports\OutsourcePerformanceRequest;
 use App\Http\Requests\Reports\PerformanceByDriverRequest;
 use App\Http\Requests\Reports\PerformanceByOperationRequest;
 use App\Http\Requests\Reports\PerformanceByTruckRequest;
@@ -27,6 +28,7 @@ use App\Models\VehicleMaintenanceRecord;
 use App\Services\Reports\CustomerProfitabilityReport;
 use App\Services\Reports\FuelEfficiencyReport;
 use App\Services\Reports\OperationPerformanceReport;
+use App\Services\Reports\OutsourcePerformanceReport;
 use App\Services\Reports\TruckPerformanceReport;
 use Carbon\Carbon;
 use Dompdf\Dompdf;
@@ -48,6 +50,7 @@ class ReportController extends Controller
         private readonly OperationPerformanceReport $operationPerformanceReport,
         private readonly CustomerProfitabilityReport $customerProfitabilityReport,
         private readonly FuelEfficiencyReport $fuelEfficiencyReport,
+        private readonly OutsourcePerformanceReport $outsourcePerformanceReport,
     ) {}
 
     /**
@@ -715,86 +718,50 @@ class ReportController extends Controller
     /**
      * Display outsource vendor performance report (on-time %, cost differential, quality rate).
      */
-    public function outsourcePerformanceReport(Request $request): Response|RedirectResponse
+    public function outsourcePerformanceReport(OutsourcePerformanceRequest $request): Response|RedirectResponse
     {
         try {
-            $from = $request->input('from', now()->subMonths(6)->toDateString());
-            $to = $request->input('to', now()->toDateString());
+            $payload = $this->outsourcePerformanceReport->build($request->validated());
 
-            $ops = OutsourcePerformance::with('outsource')
-                ->whereBetween('dispatch_date', [$from, $to])
-                ->get();
+            $vendorOptions = Outsource::query()
+                ->select(['id', 'name', 'status'])
+                ->orderBy('name')
+                ->get()
+                ->map(static fn (Outsource $outsource) => [
+                    'id' => $outsource->id,
+                    'name' => $outsource->name,
+                    'status' => $outsource->status,
+                ])
+                ->values()
+                ->all();
 
-            // Internal baseline cost per km from Performance
-            $perfs = Performance::whereBetween('DateDispach', [$from, $to])->get();
-            $internalCost = $perfs->sum(fn ($p) => (float) ($p->fuelInBirr ?? 0) + (float) ($p->perdiem ?? 0) + (float) ($p->other ?? 0));
-            $internalKm = $perfs->sum(fn ($p) => (float) ($p->DistanceWCargo ?? 0) + (float) ($p->DistanceWOCargo ?? 0));
-            $internalCostPerKm = $internalKm > 0 ? $internalCost / $internalKm : null;
-
-            $vendors = [];
-            foreach ($ops as $op) {
-                $vid = $op->outsource_id;
-                if (! isset($vendors[$vid])) {
-                    $vendors[$vid] = [
-                        'outsource_id' => $vid,
-                        'name' => $op->outsource?->name ?? ('Vendor #'.$vid),
-                        'trips' => 0,
-                        'distance_km' => 0.0,
-                        'cost' => 0.0,
-                        'completed' => 0,
-                    ];
-                }
-                $vendors[$vid]['trips'] += 1;
-                $vendors[$vid]['distance_km'] += (float) ($op->distance_km ?? 0);
-                $vendors[$vid]['cost'] += (float) ($op->cost ?? 0);
-                if ($op->status === 'completed') {
-                    $vendors[$vid]['completed'] += 1;
-                }
-            }
-
-            $rows = [];
-            foreach ($vendors as $v) {
-                $costPerKm = $v['distance_km'] > 0 ? $v['cost'] / $v['distance_km'] : null;
-                $onTimePct = null; // Not available without timestamps; using completed rate as proxy
-                $completedRate = $v['trips'] > 0 ? round(($v['completed'] / $v['trips']) * 100, 2) : null;
-                $deltaVsInternal = ($internalCostPerKm !== null && $costPerKm !== null)
-                    ? round($costPerKm - $internalCostPerKm, 2)
-                    : null;
-                $rows[] = [
-                    'outsource_id' => $v['outsource_id'],
-                    'name' => $v['name'],
-                    'trips' => $v['trips'],
-                    'distance_km' => round($v['distance_km'], 2),
-                    'cost' => round($v['cost'], 2),
-                    'cost_per_km' => $costPerKm !== null ? round($costPerKm, 2) : null,
-                    'completed_rate_pct' => $completedRate,
-                    'delta_vs_internal_cost_per_km' => $deltaVsInternal,
-                ];
-            }
-
-            // Sort most expensive vs internal first
-            usort($rows, function ($a, $b) {
-                $ad = $a['delta_vs_internal_cost_per_km'];
-                $bd = $b['delta_vs_internal_cost_per_km'];
-                if ($ad === null && $bd === null) {
-                    return 0;
-                }
-                if ($ad === null) {
-                    return 1;
-                }
-                if ($bd === null) {
-                    return -1;
-                }
-
-                return $bd <=> $ad;
-            });
+            $statusOptions = OutsourcePerformance::query()
+                ->select('status')
+                ->whereNotNull('status')
+                ->distinct()
+                ->orderBy('status')
+                ->pluck('status')
+                ->filter()
+                ->values()
+                ->all();
 
             return Inertia::render('Reports/OutsourcePerformance', [
-                'filters' => ['from' => $from, 'to' => $to],
-                'internal' => [
-                    'costPerKm' => $internalCostPerKm ? round($internalCostPerKm, 2) : null,
+                'filters' => [
+                    'from' => $payload['resolved_from'],
+                    'to' => $payload['resolved_to'],
+                    'outsource_ids' => $payload['outsource_ids'],
+                    'statuses' => $payload['statuses'],
                 ],
-                'vendors' => $rows,
+                'options' => [
+                    'vendors' => $vendorOptions,
+                    'statuses' => $statusOptions,
+                ],
+                'baseline' => $payload['baseline'],
+                'totals' => $payload['totals'],
+                'summary' => $payload['summary'],
+                'breakdown' => $payload['breakdown'],
+                'trend' => $payload['trend'],
+                'highlights' => $payload['highlights'],
             ]);
 
         } catch (Exception $e) {
