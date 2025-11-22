@@ -2,19 +2,20 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Truck;
-use App\Models\MaintenanceType;
-use App\Models\VehicleMaintenanceRecord;
-use App\Services\MaintenanceService;
+use App\Http\Requests\Maintenance\CompleteMaintenanceRequest;
 use App\Http\Requests\Maintenance\StoreMaintenanceRequest;
 use App\Http\Requests\Maintenance\UpdateMaintenanceRequest;
-use App\Http\Requests\Maintenance\CompleteMaintenanceRequest;
+use App\Models\MaintenanceType;
+use App\Models\Truck;
+use App\Models\User;
+use App\Models\VehicleMaintenanceRecord;
+use App\Services\MaintenanceService;
+use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
-use Exception;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\DB;
 use Spatie\Activitylog\Models\Activity;
 
 class MaintenanceController extends Controller
@@ -51,10 +52,10 @@ class MaintenanceController extends Controller
             ->values();
 
         $costByType = VehicleMaintenanceRecord::select(
-                'maintenance_type_id',
-                DB::raw('COUNT(*) as total_records'),
-                DB::raw('SUM(cost) as total_cost')
-            )
+            'maintenance_type_id',
+            DB::raw('COUNT(*) as total_records'),
+            DB::raw('SUM(cost) as total_cost')
+        )
             ->groupBy('maintenance_type_id')
             ->with('maintenanceType:id,name')
             ->orderByDesc(DB::raw('SUM(cost)'))
@@ -107,16 +108,16 @@ class MaintenanceController extends Controller
         $perPageDefault = 15;
         $perPage = (int) $request->input('per_page', $perPageDefault);
 
-        if (!in_array($perPage, $perPageOptions, true)) {
+        if (! in_array($perPage, $perPageOptions, true)) {
             $perPage = $perPageDefault;
         }
 
-        if (!in_array($direction, ['asc', 'desc'], true)) {
+        if (! in_array($direction, ['asc', 'desc'], true)) {
             $direction = 'desc';
         }
 
         $allowedSorts = ['scheduled_date', 'completed_date', 'cost', 'status', 'created_at'];
-        if (!in_array($sort, $allowedSorts, true)) {
+        if (! in_array($sort, $allowedSorts, true)) {
             $sort = 'scheduled_date';
         }
 
@@ -141,11 +142,11 @@ class MaintenanceController extends Controller
             $applySearch($baseQuery);
         }
 
-        if (!empty($maintenanceTypeId)) {
+        if (! empty($maintenanceTypeId)) {
             $baseQuery->where('maintenance_type_id', $maintenanceTypeId);
         }
 
-        if (!empty($status) && $status !== 'all') {
+        if (! empty($status) && $status !== 'all') {
             $baseQuery->where('status', $status);
         }
 
@@ -240,7 +241,7 @@ class MaintenanceController extends Controller
         $query = VehicleMaintenanceRecord::with(['truck', 'maintenanceType', 'assignedMechanic']);
 
         // Apply search filter if provided
-        if ($request->has('search') && !empty($request->input('search'))) {
+        if ($request->has('search') && ! empty($request->input('search'))) {
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
                 $q->where('description', 'like', "%{$search}%")
@@ -278,7 +279,7 @@ class MaintenanceController extends Controller
         $csvData = "Truck Plate,Maintenance Type,Scheduled Date,Completed Date,Status,Cost,Description\n";
         foreach ($maintenanceRecords as $record) {
             $csvData .= sprintf(
-                '"%s","%s","%s","%s","%s","%.2f","%s"' . "\n",
+                '"%s","%s","%s","%s","%s","%.2f","%s"'."\n",
                 $record->truck->plate ?? 'N/A',
                 $record->maintenanceType->name ?? 'N/A',
                 $record->scheduled_date,
@@ -302,12 +303,59 @@ class MaintenanceController extends Controller
      */
     public function create(): Response
     {
-        $trucks = Truck::where('status', 'active')->get();
-        $maintenanceTypes = MaintenanceType::where('is_active', true)->get();
+        $trucks = Truck::query()
+            ->where('status', 'active')
+            ->orderBy('plate')
+            ->get()
+            ->map(fn (Truck $truck) => [
+                'id' => $truck->id,
+                'plate' => $truck->plate,
+                'model' => $truck->model,
+            ])
+            ->values();
+
+        $maintenanceTypes = MaintenanceType::query()
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get()
+            ->map(fn (MaintenanceType $type) => [
+                'id' => $type->id,
+                'name' => $type->name,
+                'category' => $type->category,
+            ])
+            ->values();
+
+        $mechanics = User::query()
+            ->whereHas('roles', fn ($query) => $query->where('name', 'mechanic'))
+            ->orderBy('name')
+            ->get(['id', 'name', 'email']);
+
+        if ($mechanics->isEmpty()) {
+            $mechanics = User::query()
+                ->orderBy('name')
+                ->get(['id', 'name', 'email']);
+        }
+
+        $mechanics = $mechanics
+            ->map(fn (User $user) => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+            ])
+            ->values();
+
+        $statusOptions = collect(['scheduled', 'in_progress', 'completed', 'overdue'])
+            ->map(fn (string $status) => [
+                'value' => $status,
+                'label' => Str::of($status)->replace('_', ' ')->headline(),
+            ])
+            ->values();
 
         return Inertia::render('Maintenance/Create', [
             'trucks' => $trucks,
             'maintenanceTypes' => $maintenanceTypes,
+            'mechanics' => $mechanics,
+            'statusOptions' => $statusOptions,
         ]);
     }
 
@@ -335,13 +383,60 @@ class MaintenanceController extends Controller
      */
     public function edit(VehicleMaintenanceRecord $maintenance): Response
     {
-        $trucks = Truck::where('status', 'active')->get();
-        $maintenanceTypes = MaintenanceType::where('is_active', true)->get();
+        $trucks = Truck::query()
+            ->where('status', 'active')
+            ->orderBy('plate')
+            ->get()
+            ->map(fn (Truck $truck) => [
+                'id' => $truck->id,
+                'plate' => $truck->plate,
+                'model' => $truck->model,
+            ])
+            ->values();
+
+        $maintenanceTypes = MaintenanceType::query()
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get()
+            ->map(fn (MaintenanceType $type) => [
+                'id' => $type->id,
+                'name' => $type->name,
+                'category' => $type->category,
+            ])
+            ->values();
+
+        $mechanics = User::query()
+            ->whereHas('roles', fn ($query) => $query->where('name', 'mechanic'))
+            ->orderBy('name')
+            ->get(['id', 'name', 'email']);
+
+        if ($mechanics->isEmpty()) {
+            $mechanics = User::query()
+                ->orderBy('name')
+                ->get(['id', 'name', 'email']);
+        }
+
+        $mechanics = $mechanics
+            ->map(fn (User $user) => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+            ])
+            ->values();
+
+        $statusOptions = collect(['scheduled', 'in_progress', 'completed', 'overdue'])
+            ->map(fn (string $status) => [
+                'value' => $status,
+                'label' => Str::of($status)->replace('_', ' ')->headline(),
+            ])
+            ->values();
 
         return Inertia::render('Maintenance/Edit', [
-            'maintenance' => $maintenance,
+            'maintenance' => $maintenance->loadMissing(['truck', 'maintenanceType', 'assignedMechanic']),
             'trucks' => $trucks,
             'maintenanceTypes' => $maintenanceTypes,
+            'mechanics' => $mechanics,
+            'statusOptions' => $statusOptions,
         ]);
     }
 
@@ -359,10 +454,40 @@ class MaintenanceController extends Controller
                 $validated
             );
 
+            $isInertiaRequest = (bool) $request->header('X-Inertia');
+
+            // Only return a plain JSON response when this is not an Inertia-driven request.
+            if (! $isInertiaRequest && ($request->wantsJson() || $request->expectsJson() || $request->isJson())) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Maintenance scheduled successfully.',
+                    'data' => $maintenance,
+                ], 201);
+            }
+
             return redirect()->route('maintenance.index')
                 ->with('success', 'Maintenance scheduled successfully.');
 
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $isInertiaRequest = (bool) $request->header('X-Inertia');
+            if (! $isInertiaRequest && ($request->wantsJson() || $request->expectsJson() || $request->isJson())) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed.',
+                    'errors' => $e->errors(),
+                ], 422);
+            }
+            throw $e;
         } catch (Exception $e) {
+            $isInertiaRequest = (bool) $request->header('X-Inertia');
+            if (! $isInertiaRequest && ($request->wantsJson() || $request->expectsJson() || $request->isJson())) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to schedule maintenance.',
+                    'error' => $e->getMessage(),
+                ], 500);
+            }
+
             return back()->withErrors(['error' => 'Failed to schedule maintenance. Please try again.']);
         }
     }
@@ -430,13 +555,13 @@ class MaintenanceController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $overdueMaintenance,
-                'count' => $overdueMaintenance->count()
+                'count' => $overdueMaintenance->count(),
             ]);
 
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to retrieve overdue maintenance'
+                'message' => 'Failed to retrieve overdue maintenance',
             ], 500);
         }
     }
@@ -453,13 +578,13 @@ class MaintenanceController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $upcomingMaintenance,
-                'count' => $upcomingMaintenance->count()
+                'count' => $upcomingMaintenance->count(),
             ]);
 
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to retrieve upcoming maintenance'
+                'message' => 'Failed to retrieve upcoming maintenance',
             ], 500);
         }
     }
@@ -494,6 +619,3 @@ class MaintenanceController extends Controller
         ];
     }
 }
-
-
-

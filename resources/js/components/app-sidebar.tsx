@@ -37,7 +37,8 @@ import {
     Package,
     ClipboardCheck,
     LineChart,
-    AlertTriangle
+    AlertTriangle,
+    Factory
 } from 'lucide-react';
 import AppLogo from './app-logo';
 
@@ -252,6 +253,11 @@ const getMainNavItems = (): NavItem[] => {
                         icon: Activity,
                     },
                     {
+                        title: 'Operational Comparison',
+                        href: '/reports/operational-comparison',
+                        icon: LineChart,
+                    },
+                    {
                         title: 'Financial Reports',
                         href: '/reports/financial',
                         icon: DollarSign,
@@ -300,6 +306,11 @@ const getMainNavItems = (): NavItem[] => {
                         title: 'Performance (All)',
                         href: '/reports/performance-all',
                         icon: Activity,
+                    },
+                    {
+                        title: 'Performance by Operation',
+                        href: '/reports/performance-by-operation',
+                        icon: Factory,
                     },
                     {
                         title: 'Performance by Driver',

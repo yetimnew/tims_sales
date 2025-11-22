@@ -622,8 +622,22 @@ Route::middleware(['auth'])->group(function () {
     Route::get('reports/capacity-load', [\App\Http\Controllers\ReportController::class, 'capacityLoadFactor'])->name('reports.capacity-load');
     Route::get('reports/geography-heatmaps', [\App\Http\Controllers\ReportController::class, 'geographyHeatmaps'])->name('reports.geography-heatmaps');
     Route::get('reports/performance-all', [\App\Http\Controllers\ReportController::class, 'performanceAll'])->name('reports.performance-all');
+    Route::get('reports/operational-comparison', [\App\Http\Controllers\ReportController::class, 'operationalComparison'])->name('reports.operational-comparison');
+    Route::get('reports/operational-comparison/export/{format}', [\App\Http\Controllers\ReportController::class, 'operationalComparisonExport'])
+        ->whereIn('format', ['csv', 'xlsx', 'pdf'])
+        ->name('reports.operational-comparison.export');
+    Route::get('reports/performance-by-operation', [\App\Http\Controllers\ReportController::class, 'performanceByOperation'])->name('reports.performance-by-operation');
+    Route::get('reports/performance-by-operation/export/{format}', [\App\Http\Controllers\ReportController::class, 'performanceByOperationExport'])
+        ->whereIn('format', ['csv', 'xlsx', 'pdf'])
+        ->name('reports.performance-by-operation.export');
     Route::get('reports/performance-by-driver', [\App\Http\Controllers\ReportController::class, 'performanceByDriver'])->name('reports.performance-by-driver');
+    Route::get('reports/performance-by-driver/export/{format}', [\App\Http\Controllers\ReportController::class, 'performanceByDriverExport'])
+        ->whereIn('format', ['csv', 'xlsx', 'pdf'])
+        ->name('reports.performance-by-driver.export');
     Route::get('reports/performance-by-truck', [\App\Http\Controllers\ReportController::class, 'performanceByTruck'])->name('reports.performance-by-truck');
+    Route::get('reports/performance-by-truck/export/{format}', [\App\Http\Controllers\ReportController::class, 'performanceByTruckExport'])
+        ->whereIn('format', ['csv', 'xlsx', 'pdf'])
+        ->name('reports.performance-by-truck.export');
     Route::get('reports/performance-by-model', [\App\Http\Controllers\ReportController::class, 'performanceByModel'])->name('reports.performance-by-model');
     Route::get('reports/performance-by-status', [\App\Http\Controllers\ReportController::class, 'performanceByStatus'])->name('reports.performance-by-status');
     Route::get('reports/driver-truck-attach-detach', [\App\Http\Controllers\ReportController::class, 'driverTruckAttachDetach'])->name('reports.attach-detach');

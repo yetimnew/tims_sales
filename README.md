@@ -2,6 +2,57 @@
 
 A comprehensive heavy truck management system built with Laravel 12, React 19, TypeScript, and modern web technologies.
 
+## 🚀 Quick Start & Login
+
+Once installed (see [Installation](#-installation)), you can log in with the following default accounts created by the seeder:
+
+| Role | Email | Password | Access Level |
+|------|-------|----------|--------------|
+| **Admin** | `admin@test.com` | `password123` | Full System Access |
+| **Manager** | `manager@test.com` | `password123` | Operational Management |
+| **User** | `user@test.com` | `password123` | Basic Viewing Rights |
+
+> [!IMPORTANT]
+> **Security Warning**: These are default development credentials. Please change these passwords immediately after deploying to a production environment.
+
+## 📖 User Manual & Usage Guide
+
+### 1. Dashboard Overview
+The dashboard provides a real-time snapshot of your logistics operations:
+- **Key Metrics**: Total trucks, active drivers, ongoing routes, and monthly revenue.
+- **Status Updates**: Quick view of trucks currently in transit, maintenance, or idle.
+- **Recent Activity**: Log of the latest system actions for audit purposes.
+
+### 2. Fleet Management (Trucks)
+Navigate to the **Trucks** section to manage your vehicle fleet.
+- **Add New Truck**: Click "Create Truck" and enter details like Plate Number, Model, and VIN.
+- **Status Tracking**: Manually update truck status (Active, Maintenance, Out of Service) or let the system update it based on Route Plans.
+- **Documents**: Upload and track expiry dates for insurance and registration documents.
+
+### 3. Driver Management
+Manage your workforce in the **Drivers** section.
+- **Profiles**: Store personal details, license numbers, and contact info.
+- **Assignment**: Assign drivers to specific trucks.
+- **Performance**: View safety records and trip history for each driver.
+
+### 4. Route Planning
+The **Route Plans** module is the core of logistics operations.
+- **Create Route**: Select an Operation, Truck, and Driver.
+- **Waypoints**: Add start, stop, and end points. The system calculates distances using stored geographic data.
+- **Optimization**: Use the "Optimize" feature to find the best route based on distance and road conditions.
+- **Tracking**: Update status from `Planned` -> `In Progress` -> `Completed`.
+
+### 5. Financial Management
+> [!NOTE]
+> This module is for **internal accounting** (Profit & Loss), not for customer billing or SaaS subscriptions.
+
+- **Record Revenue**: Log income from specific trips or contracts.
+- **Track Expenses**: Record fuel costs, maintenance fees, and driver salaries.
+- **Profit Analysis**: The system automatically calculates `Net Profit = Revenue - (Fuel + Maintenance + Salary + Other Costs)`.
+- **Reports**: Generate monthly financial statements for individual trucks or the entire fleet.
+
+---
+
 ## 🚀 Features
 
 ### Core Fleet Management

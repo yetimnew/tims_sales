@@ -24,25 +24,62 @@ import {
     Wrench,
 } from 'lucide-react';
 
+type MaintenanceStatus = 'scheduled' | 'in_progress' | 'completed' | 'overdue';
+
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Maintenance', href: '/maintenance' },
     { title: 'Schedule', href: '/maintenance/create' },
 ];
 
+interface MechanicOption {
+    id: number;
+    name: string;
+    email?: string | null;
+}
+
+interface StatusOption {
+    value: MaintenanceStatus;
+    label: string;
+}
+
+const fallbackStatusOptions: StatusOption[] = [
+    { value: 'scheduled', label: 'Scheduled' },
+    { value: 'in_progress', label: 'In Progress' },
+    { value: 'completed', label: 'Completed' },
+    { value: 'overdue', label: 'Overdue' },
+];
+
+const UNASSIGNED_MECHANIC_VALUE = '__unassigned__';
+
 interface MaintenanceCreateProps {
     trucks: Array<{ id: number; plate: string }>;
     maintenanceTypes: Array<{ id: number; name: string; category?: string | null }>;
+    mechanics: MechanicOption[];
+    statusOptions: StatusOption[];
 }
 
-type MaintenanceField = 'truck_id' | 'maintenance_type_id' | 'scheduled_date';
+type MaintenanceField = 'truck_id' | 'maintenance_type_id' | 'scheduled_date' | 'status';
 
-export default function MaintenanceCreate({ trucks, maintenanceTypes }: MaintenanceCreateProps) {
+export default function MaintenanceCreate({ trucks, maintenanceTypes, mechanics, statusOptions }: MaintenanceCreateProps) {
     const { toast } = useToast();
+    const resolvedStatusOptions: StatusOption[] =
+        Array.isArray(statusOptions) && statusOptions.length > 0
+            ? statusOptions
+            : fallbackStatusOptions;
+
+    const defaultStatus = (resolvedStatusOptions[0]?.value ?? 'scheduled') as MaintenanceStatus;
     const { data, setData, post, processing, errors, reset } = useForm({
         truck_id: '',
         maintenance_type_id: '',
         scheduled_date: '',
+        completed_date: '',
+        status: defaultStatus,
+        odometer_reading: '',
+        cost: '',
         description: '',
+        work_performed: '',
+        parts_replaced: '',
+        service_provider: '',
         assigned_mechanic_id: '',
     });
 
@@ -55,6 +92,8 @@ export default function MaintenanceCreate({ trucks, maintenanceTypes }: Maintena
 
     const safeTrucks = useMemo(() => (Array.isArray(trucks) ? trucks : []), [trucks]);
     const safeTypes = useMemo(() => (Array.isArray(maintenanceTypes) ? maintenanceTypes : []), [maintenanceTypes]);
+    const safeMechanics = useMemo(() => (Array.isArray(mechanics) ? mechanics : []), [mechanics]);
+    const safeStatusOptions = resolvedStatusOptions;
 
     const totalActiveTrucks = useMemo(() => safeTrucks.length, [safeTrucks]);
     const maintenanceCatalogSize = useMemo(() => safeTypes.length, [safeTypes]);
@@ -92,6 +131,11 @@ export default function MaintenanceCreate({ trucks, maintenanceTypes }: Maintena
         [safeTypes, data.maintenance_type_id],
     );
 
+    const selectedMechanic = useMemo(
+        () => safeMechanics.find((mechanic) => mechanic.id.toString() === data.assigned_mechanic_id) ?? null,
+        [safeMechanics, data.assigned_mechanic_id],
+    );
+
     useEffect(() => {
         const backendErrors = Object.values(errors).filter(Boolean).map((message) => String(message));
         if (backendErrors.length) {
@@ -116,6 +160,7 @@ export default function MaintenanceCreate({ trucks, maintenanceTypes }: Maintena
         truck_id: maintenanceValidation.truck_id,
         maintenance_type_id: maintenanceValidation.maintenance_type_id,
         scheduled_date: maintenanceValidation.scheduled_date,
+        status: maintenanceValidation.status,
     };
 
     const validateField = (field: MaintenanceField, value: string) => {
@@ -149,7 +194,7 @@ export default function MaintenanceCreate({ trucks, maintenanceTypes }: Maintena
         setIsDirty(true);
     };
 
-    const handleInputChange = (field: 'assigned_mechanic_id' | 'description', value: string) => {
+    const handleInputChange = (field: keyof typeof data, value: string) => {
         setData(field, value);
         setIsDirty(true);
     };
@@ -477,18 +522,171 @@ export default function MaintenanceCreate({ trucks, maintenanceTypes }: Maintena
                                     </div>
 
                                     <div className="space-y-2">
+                                        <Label htmlFor="status" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                            <span className="text-red-500">*</span> Status
+                                        </Label>
+                                        <Select value={data.status} onValueChange={(value) => handleSelectChange('status', value)}>
+                                            <SelectTrigger
+                                                id="status"
+                                                className={`transition-all duration-200 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 focus:ring-blue-500/20 focus:border-blue-500 ${getFieldError('status') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}
+                                            >
+                                                <SelectValue placeholder="Select status" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {safeStatusOptions.map((option) => (
+                                                    <SelectItem key={option.value} value={option.value}>
+                                                        {option.label}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        {getFieldError('status') && (
+                                            <p className="flex items-center gap-1 text-sm text-red-500">
+                                                <AlertCircle className="h-3 w-3" />
+                                                {getFieldError('status')}
+                                            </p>
+                                        )}
+                                        <p className="text-xs text-muted-foreground">Defaults to scheduled for new work orders.</p>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                                    <div className="space-y-2">
                                         <Label htmlFor="assigned_mechanic_id" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
                                             Assigned Mechanic (optional)
                                         </Label>
+                                        <Select
+                                            value={
+                                                data.assigned_mechanic_id === ''
+                                                    ? UNASSIGNED_MECHANIC_VALUE
+                                                    : data.assigned_mechanic_id
+                                            }
+                                            onValueChange={(value) =>
+                                                handleInputChange(
+                                                    'assigned_mechanic_id',
+                                                    value === UNASSIGNED_MECHANIC_VALUE ? '' : value,
+                                                )
+                                            }
+                                        >
+                                            <SelectTrigger
+                                                id="assigned_mechanic_id"
+                                                className={`transition-all duration-200 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 focus:ring-blue-500/20 focus:border-blue-500 ${errors.assigned_mechanic_id ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}
+                                            >
+                                                <SelectValue placeholder="Assign mechanic" />
+                                            </SelectTrigger>
+                                            <SelectContent className="max-h-72">
+                                                <SelectItem value={UNASSIGNED_MECHANIC_VALUE}>Unassigned</SelectItem>
+                                                {safeMechanics.map((mechanic) => (
+                                                    <SelectItem key={mechanic.id} value={mechanic.id.toString()}>
+                                                        <div className="flex flex-col">
+                                                            <span>{mechanic.name}</span>
+                                                            {mechanic.email && (
+                                                                <span className="text-xs text-muted-foreground">{mechanic.email}</span>
+                                                            )}
+                                                        </div>
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        {errors.assigned_mechanic_id && (
+                                            <p className="flex items-center gap-1 text-sm text-red-500">
+                                                <AlertCircle className="h-3 w-3" />
+                                                {errors.assigned_mechanic_id}
+                                            </p>
+                                        )}
+                                        <p className="text-xs text-muted-foreground">Leave blank to assign later.</p>
+
+                                        {selectedMechanic && (
+                                            <div className="rounded-lg border border-emerald-200/70 bg-emerald-50/70 p-4 text-sm shadow-sm dark:border-emerald-900/40 dark:bg-emerald-900/20">
+                                                <h4 className="mb-1 font-semibold text-emerald-800 dark:text-emerald-200">Selected Mechanic</h4>
+                                                <p className="text-emerald-800 dark:text-emerald-100">{selectedMechanic.name}</p>
+                                                {selectedMechanic.email && (
+                                                    <p className="text-xs text-emerald-700/80 dark:text-emerald-200/70">{selectedMechanic.email}</p>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="service_provider" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                            Service Provider (optional)
+                                        </Label>
                                         <Input
-                                            id="assigned_mechanic_id"
-                                            type="text"
-                                            value={data.assigned_mechanic_id}
-                                            onChange={(event) => handleInputChange('assigned_mechanic_id', event.target.value)}
-                                            placeholder="Mechanic user ID or name"
+                                            id="service_provider"
+                                            value={data.service_provider}
+                                            onChange={(event) => handleInputChange('service_provider', event.target.value)}
+                                            placeholder="External workshop or vendor"
                                             className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 focus:ring-blue-500/20 focus:border-blue-500"
                                         />
-                                        <p className="text-xs text-muted-foreground">Leave blank to assign later.</p>
+                                        {errors.service_provider && (
+                                            <p className="flex items-center gap-1 text-sm text-red-500">
+                                                <AlertCircle className="h-3 w-3" />
+                                                {errors.service_provider}
+                                            </p>
+                                        )}
+                                        <p className="text-xs text-muted-foreground">Record where the maintenance will be performed.</p>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="completed_date" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                            Completion Date (optional)
+                                        </Label>
+                                        <Input
+                                            id="completed_date"
+                                            type="date"
+                                            value={data.completed_date}
+                                            onChange={(event) => handleInputChange('completed_date', event.target.value)}
+                                            className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 focus:ring-blue-500/20 focus:border-blue-500"
+                                        />
+                                        {errors.completed_date && (
+                                            <p className="flex items-center gap-1 text-sm text-red-500">
+                                                <AlertCircle className="h-3 w-3" />
+                                                {errors.completed_date}
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="odometer_reading" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                            Odometer Reading (km)
+                                        </Label>
+                                        <Input
+                                            id="odometer_reading"
+                                            type="number"
+                                            min="0"
+                                            value={data.odometer_reading}
+                                            onChange={(event) => handleInputChange('odometer_reading', event.target.value)}
+                                            className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 focus:ring-blue-500/20 focus:border-blue-500"
+                                        />
+                                        {errors.odometer_reading && (
+                                            <p className="flex items-center gap-1 text-sm text-red-500">
+                                                <AlertCircle className="h-3 w-3" />
+                                                {errors.odometer_reading}
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="cost" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                            Estimated Cost (optional)
+                                        </Label>
+                                        <Input
+                                            id="cost"
+                                            type="number"
+                                            min="0"
+                                            step="0.01"
+                                            value={data.cost}
+                                            onChange={(event) => handleInputChange('cost', event.target.value)}
+                                            className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 focus:ring-blue-500/20 focus:border-blue-500"
+                                        />
+                                        {errors.cost && (
+                                            <p className="flex items-center gap-1 text-sm text-red-500">
+                                                <AlertCircle className="h-3 w-3" />
+                                                {errors.cost}
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
 
@@ -504,6 +702,46 @@ export default function MaintenanceCreate({ trucks, maintenanceTypes }: Maintena
                                         rows={4}
                                         className="resize-y bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 focus:ring-blue-500/20 focus:border-blue-500"
                                     />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="work_performed" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                        Planned Work (optional)
+                                    </Label>
+                                    <Textarea
+                                        id="work_performed"
+                                        rows={3}
+                                        value={data.work_performed}
+                                        onChange={(event) => handleInputChange('work_performed', event.target.value)}
+                                        placeholder="Describe the maintenance tasks that will be carried out."
+                                        className="resize-y bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 focus:ring-blue-500/20 focus:border-blue-500"
+                                    />
+                                    {errors.work_performed && (
+                                        <p className="flex items-center gap-1 text-sm text-red-500">
+                                            <AlertCircle className="h-3 w-3" />
+                                            {errors.work_performed}
+                                        </p>
+                                    )}
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="parts_replaced" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                        Parts Needed or Replaced (optional)
+                                    </Label>
+                                    <Textarea
+                                        id="parts_replaced"
+                                        rows={3}
+                                        value={data.parts_replaced}
+                                        onChange={(event) => handleInputChange('parts_replaced', event.target.value)}
+                                        placeholder="List parts or consumables to prepare."
+                                        className="resize-y bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 focus:ring-blue-500/20 focus:border-blue-500"
+                                    />
+                                    {errors.parts_replaced && (
+                                        <p className="flex items-center gap-1 text-sm text-red-500">
+                                            <AlertCircle className="h-3 w-3" />
+                                            {errors.parts_replaced}
+                                        </p>
+                                    )}
                                 </div>
 
                                 <div className="rounded-lg border border-dashed border-blue-300/70 bg-blue-50/60 p-4 text-sm text-blue-900 shadow-sm dark:border-blue-800/60 dark:bg-blue-900/20 dark:text-blue-100">
@@ -536,7 +774,14 @@ export default function MaintenanceCreate({ trucks, maintenanceTypes }: Maintena
                                     </Button>
                                     <Button
                                         type="submit"
-                                        disabled={processing || hasFrontendErrors || !data.truck_id || !data.maintenance_type_id || !data.scheduled_date}
+                                        disabled={
+                                            processing ||
+                                            hasFrontendErrors ||
+                                            !data.truck_id ||
+                                            !data.maintenance_type_id ||
+                                            !data.scheduled_date ||
+                                            !data.status
+                                        }
                                         className="min-w-[170px] bg-gradient-to-r from-amber-500 to-amber-600 px-6 text-white shadow-lg transition-all duration-200 hover:from-amber-600 hover:to-amber-700 hover:shadow-xl"
                                     >
                                         {processing ? (

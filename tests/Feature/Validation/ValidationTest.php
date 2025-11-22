@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Models\VehicleType;
 use App\Models\Woreda;
 use App\Models\Zone;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Validator;
 use Spatie\Permission\Models\Permission;
@@ -139,15 +140,24 @@ class ValidationTest extends TestCase
     public function maintenance_validation_rules_work()
     {
         $truck = Truck::factory()->create();
+        $mechanic = User::factory()->create();
+        $scheduledDate = Carbon::now()->addDays(7)->toDateString();
+        $completedDate = Carbon::now()->addDays(8)->toDateString();
 
         // Test valid data
         $validData = [
             'truck_id' => $truck->id,
             'maintenance_type_id' => \App\Models\MaintenanceType::factory()->create()->id,
-            'scheduled_date' => '2023-12-01',
+            'scheduled_date' => $scheduledDate,
+            'completed_date' => $completedDate,
             'status' => 'scheduled',
             'description' => 'Regular maintenance',
             'cost' => 1500.00,
+            'odometer_reading' => 123456,
+            'work_performed' => 'Inspection and oil change prepared.',
+            'parts_replaced' => 'Oil filter',
+            'service_provider' => 'Acme Workshop',
+            'assigned_mechanic_id' => $mechanic->id,
         ];
 
         $response = $this->actingAs($this->user)
@@ -158,17 +168,35 @@ class ValidationTest extends TestCase
 
         // Test invalid data
         $invalidData = [
-            'truck_id' => 99999, // Non-existent truck
-            'maintenance_type_id' => 99999, // Non-existent maintenance type
-            'scheduled_date' => 'invalid_date', // Invalid date format
-            'status' => 'invalid_status', // Invalid status
-            'cost' => 'invalid_cost', // Invalid cost format
+            'truck_id' => 99999,
+            'maintenance_type_id' => 99999,
+            'scheduled_date' => Carbon::now()->subDay()->toDateString(),
+            'completed_date' => Carbon::now()->subDays(5)->toDateString(),
+            'status' => 'invalid_status',
+            'cost' => 'invalid_cost',
+            'odometer_reading' => -10,
+            'service_provider' => str_repeat('X', 300),
+            'work_performed' => str_repeat('Y', 2501),
+            'parts_replaced' => str_repeat('Z', 2501),
+            'assigned_mechanic_id' => 999999,
         ];
 
         $response = $this->actingAs($this->user)
             ->post(route('maintenance.store'), $invalidData);
 
-        $response->assertSessionHasErrors(['truck_id', 'maintenance_type_id', 'scheduled_date', 'status', 'cost']);
+        $response->assertSessionHasErrors([
+            'truck_id',
+            'maintenance_type_id',
+            'scheduled_date',
+            'completed_date',
+            'status',
+            'cost',
+            'odometer_reading',
+            'service_provider',
+            'work_performed',
+            'parts_replaced',
+            'assigned_mechanic_id',
+        ]);
     }
 
     /** @test */

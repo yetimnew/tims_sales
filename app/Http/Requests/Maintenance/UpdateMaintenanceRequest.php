@@ -28,4 +28,21 @@ class UpdateMaintenanceRequest extends FormRequest
             'assigned_mechanic_id' => ['nullable', 'exists:users,id'],
         ];
     }
+
+    protected function prepareForValidation(): void
+    {
+        $assignedMechanic = $this->input('assigned_mechanic_id');
+        $normalizedMechanic = null;
+
+        if ($assignedMechanic !== null && $assignedMechanic !== '') {
+            $mechanicId = (int) $assignedMechanic;
+            if ($mechanicId > 0) {
+                $normalizedMechanic = $mechanicId;
+            }
+        }
+
+        $this->merge([
+            'assigned_mechanic_id' => $normalizedMechanic,
+        ]);
+    }
 }

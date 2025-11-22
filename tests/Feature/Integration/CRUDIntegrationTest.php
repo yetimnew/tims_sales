@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\VehicleType;
 use App\Models\Woreda;
 use App\Models\Zone;
+use Carbon\Carbon;
 use Database\Seeders\CheckPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -169,13 +170,15 @@ class CRUDIntegrationTest extends TestCase
     /** @test */
     public function it_can_perform_complete_maintenance_crud_workflow()
     {
-        $truck = Truck::factory()->create();
+        $truck = Truck::factory()->create(['status' => 'active']);
+        $scheduledDate = Carbon::now()->addDays(7)->toDateString();
+        $completedDate = Carbon::now()->addDays(8)->toDateString();
 
         // CREATE
         $maintenanceData = [
             'truck_id' => $truck->id,
             'maintenance_type_id' => \App\Models\MaintenanceType::factory()->create()->id,
-            'scheduled_date' => '2023-12-01',
+            'scheduled_date' => $scheduledDate,
             'status' => 'scheduled',
             'description' => 'Regular maintenance',
             'cost' => 1500.00,
@@ -196,15 +199,15 @@ class CRUDIntegrationTest extends TestCase
         $showResponse->assertStatus(200)
             ->assertInertia(fn ($page) => $page
                 ->component('Maintenance/Show')
-                ->where('maintenanceRecord.id', $maintenance->id)
+                ->where('maintenance.id', $maintenance->id)
             );
 
         // UPDATE
         $updateData = [
             'truck_id' => $truck->id,
             'maintenance_type_id' => $maintenance->maintenance_type_id,
-            'scheduled_date' => '2023-12-01',
-            'completed_date' => '2023-12-02',
+            'scheduled_date' => $scheduledDate,
+            'completed_date' => $completedDate,
             'status' => 'completed',
             'description' => 'Regular maintenance completed',
             'cost' => 1500.00,
@@ -213,7 +216,7 @@ class CRUDIntegrationTest extends TestCase
         $updateResponse = $this->actingAs($this->user)
             ->put(route('maintenance.update', $maintenance), $updateData);
 
-        $updateResponse->assertRedirect(route('maintenance.show', $maintenance));
+        $updateResponse->assertRedirect(route('maintenance.index'));
         $this->assertDatabaseHas('vehicle_maintenance_records', [
             'id' => $maintenance->id,
             'status' => 'completed',

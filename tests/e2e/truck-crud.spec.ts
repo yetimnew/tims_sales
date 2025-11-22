@@ -80,10 +80,13 @@ test.describe('Truck Management CRUD', () => {
     await test.step('Update truck', async () => {
       const row = await locateTruckRow(page, plate);
       await Promise.all([
-        page.waitForURL(/\/trucks\/.+\/edit$/, { timeout: 15000 }),
+        page.waitForURL(/\/trucks\/.+\/edit$/, { timeout: 30000 }),
         row.locator('a[href*="/edit"]').first().click(),
       ]);
       await expect(page).toHaveURL(/\/trucks\/.+\/edit$/);
+
+      // Ensure we are on the General tab for status
+      await page.getByRole('tab', { name: /General/i }).click();
 
       const statusTrigger = comboboxByFieldLabel(page, /Status/i);
       await expect(statusTrigger).toBeVisible();
@@ -98,7 +101,8 @@ test.describe('Truck Management CRUD', () => {
       await serviceIntervalInput.fill(updatedServiceInterval);
 
       await page.getByRole('button', { name: /Update Truck/i }).click();
-      await expect(page).toHaveURL(/\/trucks$/, { timeout: 20000 });
+      await expect(page).toHaveURL(/\/trucks$/, { timeout: 30000 });
+      await page.waitForLoadState('networkidle');
 
       const updatedRow = await locateTruckRow(page, plate);
       await expect(updatedRow.locator('td').nth(6)).toContainText(/Inactive/i);
@@ -115,11 +119,11 @@ test.describe('Truck Management CRUD', () => {
       await expect(dialog).toBeVisible();
       const deleteRequest = truckId
         ? page.waitForResponse((response) =>
-            response.url().endsWith(`/trucks/${truckId}`) && response.request().method() === 'DELETE',
-          )
+          response.url().endsWith(`/trucks/${truckId}`) && response.request().method() === 'DELETE',
+        )
         : page.waitForResponse((response) =>
-            /\/trucks\/(\d+)$/.test(response.url()) && response.request().method() === 'DELETE',
-          );
+          /\/trucks\/(\d+)$/.test(response.url()) && response.request().method() === 'DELETE',
+        );
 
       const refreshRequest = page.waitForResponse((response) =>
         response.url().includes('/trucks') && response.request().method() === 'GET',

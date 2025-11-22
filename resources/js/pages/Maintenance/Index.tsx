@@ -17,7 +17,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { InertiaPagination } from '@/components/ui/pagination';
 import { Input } from '@/components/ui/input';
 import * as React from 'react';
-import { AlertTriangle, ArrowUpDown, CheckCircle, Clock, DollarSign, Eye, FileDown, Plus, User, Wrench, Edit, Search } from 'lucide-react';
+import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
+import { AlertTriangle, ArrowUpDown, CheckCircle, Clock, DollarSign, Eye, FileDown, Plus, User, Wrench, Edit, Search, Trash2 } from 'lucide-react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -95,15 +96,31 @@ const columns: Array<{ key: string; label: string; sortable?: boolean; sortKey?:
     { key: 'mechanic', label: 'Mechanic' },
 ];
 
-const formatNumber = (value: number | null | undefined) => {
-    if (typeof value !== 'number' || Number.isNaN(value)) {
-        return '0';
+const toNumeric = (value: number | string | null | undefined): number | null => {
+    if (value === null || value === undefined) {
+        return null;
     }
-    return value.toLocaleString();
+
+    const numeric = typeof value === 'string' ? Number(value) : value;
+    if (!Number.isFinite(numeric)) {
+        return null;
+    }
+
+    return numeric;
 };
 
-const formatCurrency = (value: number | null | undefined) => {
-    if (typeof value !== 'number' || Number.isNaN(value)) {
+const formatNumber = (value: number | string | null | undefined) => {
+    const numeric = toNumeric(value);
+    if (numeric === null) {
+        return '0';
+    }
+
+    return numeric.toLocaleString();
+};
+
+const formatCurrency = (value: number | string | null | undefined) => {
+    const numeric = toNumeric(value);
+    if (numeric === null) {
         return '$0.00';
     }
 
@@ -112,7 +129,7 @@ const formatCurrency = (value: number | null | undefined) => {
         currency: 'USD',
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
-    }).format(value);
+    }).format(numeric);
 };
 
 const formatDate = (value?: string | null) => {
@@ -132,34 +149,34 @@ const getStatusBadge = (status: string) => {
     switch (status) {
         case 'scheduled':
             return (
-                <Badge variant="secondary" className="gap-1">
+                <Badge className="flex w-fit items-center gap-1 border border-amber-200 bg-amber-100 text-amber-800 hover:bg-amber-200">
                     <Clock className="h-3 w-3" />
                     Scheduled
                 </Badge>
             );
         case 'in_progress':
             return (
-                <Badge className="gap-1 bg-blue-600 text-white hover:bg-blue-700">
+                <Badge className="flex w-fit items-center gap-1 border border-blue-200 bg-blue-100 text-blue-800 hover:bg-blue-200">
                     <Wrench className="h-3 w-3" />
                     In Progress
                 </Badge>
             );
         case 'completed':
             return (
-                <Badge className="gap-1 bg-emerald-600 text-white hover:bg-emerald-700">
+                <Badge className="flex w-fit items-center gap-1 border border-emerald-200 bg-emerald-100 text-emerald-800 hover:bg-emerald-200">
                     <CheckCircle className="h-3 w-3" />
                     Completed
                 </Badge>
             );
         case 'overdue':
             return (
-                <Badge variant="destructive" className="gap-1">
+                <Badge className="flex w-fit items-center gap-1 border border-red-200 bg-red-100 text-red-800 hover:bg-red-200">
                     <AlertTriangle className="h-3 w-3" />
                     Overdue
                 </Badge>
             );
         default:
-            return <Badge variant="outline" className="capitalize">{status}</Badge>;
+            return <Badge className="w-fit capitalize" variant="outline">{status}</Badge>;
     }
 };
 
@@ -195,6 +212,9 @@ export default function MaintenanceIndex({ maintenanceRecords, metrics, filters,
         return availablePerPageOptions[0] ?? 15;
     }, [filters?.per_page, availablePerPageOptions]);
     const [perPage, setPerPage] = React.useState<string>(() => String(resolvedPerPage));
+    const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+    const [recordToDelete, setRecordToDelete] = React.useState<MaintenanceRecord | null>(null);
+    const [isDeleting, setIsDeleting] = React.useState(false);
 
     React.useEffect(() => {
         setPerPage(String(resolvedPerPage));
@@ -277,6 +297,46 @@ export default function MaintenanceIndex({ maintenanceRecords, metrics, filters,
         const queryString = params.toString();
         window.location.href = queryString ? `/maintenance/export/csv?${queryString}` : '/maintenance/export/csv';
     }, [searchTerm, selectedStatus, selectedType, sortColumn, sortDirection]);
+
+    const handleDeleteDialogChange = React.useCallback((open: boolean) => {
+        setDeleteDialogOpen(open);
+        if (!open) {
+            setRecordToDelete(null);
+        }
+    }, []);
+
+    const handleDeleteConfirm = React.useCallback(() => {
+        if (!recordToDelete) {
+            return;
+        }
+
+        setIsDeleting(true);
+        router.delete(`/maintenance/${recordToDelete.id}`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setDeleteDialogOpen(false);
+                setRecordToDelete(null);
+            },
+            onError: () => {
+                setIsDeleting(false);
+            },
+            onFinish: () => {
+                setIsDeleting(false);
+            },
+        });
+    }, [recordToDelete]);
+
+    const deleteDialogItemName = React.useMemo(() => {
+        if (!recordToDelete) {
+            return undefined;
+        }
+
+        const typeName = recordToDelete.maintenanceType?.name ?? 'Maintenance';
+        const truckPlate = recordToDelete.truck?.plate ?? 'Truck';
+        const scheduled = recordToDelete.scheduled_date ? formatDate(recordToDelete.scheduled_date) : null;
+
+        return scheduled ? `${typeName} for ${truckPlate} (${scheduled})` : `${typeName} for ${truckPlate}`;
+    }, [recordToDelete]);
 
     const headerActions = (
         <>
@@ -409,7 +469,7 @@ export default function MaintenanceIndex({ maintenanceRecords, metrics, filters,
 
         if (!sortable) {
             return (
-                <TableHead key={column.key} className="sticky top-0 z-20 bg-background">
+                <TableHead key={column.key} className="sticky top-0 z-20 bg-background text-muted-foreground">
                     {column.label}
                 </TableHead>
             );
@@ -429,18 +489,31 @@ export default function MaintenanceIndex({ maintenanceRecords, metrics, filters,
         );
     };
 
+    const rowOffset = React.useMemo(() => {
+        const firstRecordIndex = maintenanceRecords?.from ?? 0;
+        if (typeof firstRecordIndex !== 'number' || Number.isNaN(firstRecordIndex)) {
+            return 0;
+        }
+
+        return Math.max(firstRecordIndex - 1, 0);
+    }, [maintenanceRecords?.from]);
+
     const tableContent = (
         <Table>
             <TableHeader className="[&_tr]:sticky [&_tr]:top-0 [&_tr]:z-20 [&_tr]:bg-background [&_tr]:shadow-sm">
                 <TableRow className="border-b bg-background">
+                    <TableHead className="sticky top-0 z-20 w-12 bg-background text-center">#</TableHead>
                     {columns.map((column) => renderHeaderCell(column))}
                     <TableHead className="sticky top-0 z-20 bg-background text-center">Actions</TableHead>
                 </TableRow>
             </TableHeader>
             <TableBody>
                 {maintenanceData.length > 0 ? (
-                    maintenanceData.map((record) => (
+                    maintenanceData.map((record, index) => (
                         <TableRow key={record.id} className="hover:bg-muted/50">
+                            <TableCell className="text-center font-medium">
+                                {rowOffset + index + 1}
+                            </TableCell>
                             <TableCell className="font-mono font-medium">
                                 {record.truck?.plate || '—'}
                             </TableCell>
@@ -457,7 +530,7 @@ export default function MaintenanceIndex({ maintenanceRecords, metrics, filters,
                                 {formatDate(record.completed_date)}
                             </TableCell>
                             <TableCell className="font-medium">
-                                {formatCurrency(record.cost ?? 0)}
+                                {record.cost === null || record.cost === undefined ? '—' : formatCurrency(record.cost)}
                             </TableCell>
                             <TableCell>{getStatusBadge(record.status)}</TableCell>
                             <TableCell className="text-muted-foreground">
@@ -482,13 +555,29 @@ export default function MaintenanceIndex({ maintenanceRecords, metrics, filters,
                                             </Link>
                                         </Button>
                                     )}
+                                    {hasPermission('maintenance.delete') && (
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            variant="ghost"
+                                            className="text-destructive hover:bg-destructive/10"
+                                            onClick={() => {
+                                                setRecordToDelete(record);
+                                                setDeleteDialogOpen(true);
+                                            }}
+                                            disabled={isDeleting && recordToDelete?.id === record.id}
+                                            aria-label="Delete maintenance record"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    )}
                                 </div>
                             </TableCell>
                         </TableRow>
                     ))
                 ) : (
                     <TableRow>
-                        <TableCell colSpan={columns.length + 1} className="py-8 text-center text-muted-foreground">
+                        <TableCell colSpan={columns.length + 2} className="py-8 text-center text-muted-foreground">
                             No maintenance records found.
                             {hasPermission('maintenance.create') && (
                                 <Link href="/maintenance/create" className="ml-1 text-primary underline">
@@ -526,6 +615,15 @@ export default function MaintenanceIndex({ maintenanceRecords, metrics, filters,
             }
         >
             {tableContent}
+            <DeleteConfirmationDialog
+                open={deleteDialogOpen}
+                onOpenChange={handleDeleteDialogChange}
+                title="Delete Maintenance Record"
+                description="This action will permanently remove the maintenance record and its related details."
+                itemName={deleteDialogItemName}
+                onConfirm={handleDeleteConfirm}
+                isLoading={isDeleting}
+            />
         </ListPageLayout>
     );
 }

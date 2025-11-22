@@ -173,6 +173,35 @@ export const maintenanceValidation = {
     if (num < 0) return 'Cost cannot be negative'
     return ''
   },
+
+  odometer_reading: (value: string) => {
+    if (!value) return ''
+    const num = Number(value)
+    if (!Number.isFinite(num)) return 'Odometer must be a number'
+    if (!Number.isInteger(num)) return 'Odometer must be a whole number'
+    if (num < 0) return 'Odometer cannot be negative'
+    return ''
+  },
+
+  assigned_mechanic_id: (value: string) => {
+    if (!value) return ''
+    return /^\d+$/.test(value) ? '' : 'Select a valid mechanic'
+  },
+
+  service_provider: (value: string) => {
+    if (!value) return ''
+    return value.length <= 255 ? '' : 'Service provider cannot exceed 255 characters'
+  },
+
+  work_performed: (value: string) => {
+    if (!value) return ''
+    return value.length <= 2000 ? '' : 'Work performed cannot exceed 2000 characters'
+  },
+
+  parts_replaced: (value: string) => {
+    if (!value) return ''
+    return value.length <= 2000 ? '' : 'Parts replaced cannot exceed 2000 characters'
+  },
 }
 
 export const maintenanceTypeValidation = {
