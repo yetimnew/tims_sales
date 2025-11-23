@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type FormEventHandler } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEventHandler } from 'react'
 import { Head, Link, useForm } from '@inertiajs/react'
 import AppLayout from '@/layouts/app-layout'
 import { type BreadcrumbItem } from '@/types'
@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { validatePlace, type ValidationErrors } from '@/lib/validation'
+import { toast } from '@/hooks/use-toast'
 import {
   AlertCircle,
   ArrowLeft,
@@ -79,6 +80,10 @@ export default function PlacesCreate({ woredas }: PlacesCreateProps) {
   const [isDirty, setIsDirty] = useState(false)
   const [showScrollTop, setShowScrollTop] = useState(false)
   const scrollContainerRef = useRef<HTMLFormElement | null>(null)
+  const hasErrors = useMemo(
+    () => Object.keys(errors).length > 0 || Object.keys(frontendErrors).length > 0,
+    [errors, frontendErrors]
+  )
 
   useEffect(() => {
     const container = scrollContainerRef.current
@@ -95,6 +100,20 @@ export default function PlacesCreate({ woredas }: PlacesCreateProps) {
       container.removeEventListener('scroll', handleScroll)
     }
   }, [])
+
+  useEffect(() => {
+    const errorMessages = Object.values(errors)
+      .flatMap(message => (Array.isArray(message) ? message : message ? [message] : []))
+      .filter((message): message is string => Boolean(message))
+
+    if (errorMessages.length > 0) {
+      toast({
+        title: '⚠️ Validation Error',
+        description: errorMessages.join(', '),
+        variant: 'destructive',
+      })
+    }
+  }, [errors, toast])
 
   const setFieldError = useCallback((field: keyof PlaceFormData, message: string) => {
     setFrontendErrors(prev => {
@@ -149,6 +168,10 @@ export default function PlacesCreate({ woredas }: PlacesCreateProps) {
         setFrontendErrors({})
         setIsDirty(false)
         reset()
+        toast({
+          title: '✅ Place Created',
+          description: 'The place has been registered successfully.',
+        })
       },
     })
   }
@@ -211,6 +234,15 @@ export default function PlacesCreate({ woredas }: PlacesCreateProps) {
               style={{ minHeight: 0 }}
               noValidate
             >
+              {hasErrors && (
+                <div className="flex items-start gap-3 rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-destructive">
+                  <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0" />
+                  <div>
+                    <h3 className="font-semibold">Please review the highlighted fields</h3>
+                    <p className="text-sm opacity-80">Correct the validation errors before creating the place record.</p>
+                  </div>
+                </div>
+              )}
               <section className="space-y-4 rounded-xl border border-slate-200/60 bg-white/75 p-5 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/35">
                 <div className="flex items-center gap-2.5 text-sm">
                   <div className="rounded-md bg-rose-100 p-1.5 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400">

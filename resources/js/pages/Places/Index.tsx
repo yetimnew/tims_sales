@@ -224,6 +224,11 @@ export default function PlacesIndex({ places, metrics, filters, statusOptions, p
     const totalRecords = places?.total ?? 0
     const currentPage = places?.current_page ?? 1
     const lastPage = places?.last_page ?? 1
+    const perPageCountRaw = typeof places?.per_page === 'number' ? places.per_page : Number(perPage)
+    const perPageCount = Number.isFinite(perPageCountRaw) && perPageCountRaw > 0
+        ? perPageCountRaw
+        : placeData.length || 1
+    const rowOffset = (currentPage - 1) * perPageCount
 
     const statusFilterOptions = useMemo(() => {
         if (statusOptions?.length) {
@@ -554,19 +559,23 @@ export default function PlacesIndex({ places, metrics, filters, statusOptions, p
         <Table>
             <TableHeader className="[&_tr]:sticky [&_tr]:top-0 [&_tr]:z-20 [&_tr]:bg-background [&_tr]:shadow-sm">
                 <TableRow className="border-b bg-background">
+                    <TableHead className="sticky top-0 z-20 w-12 bg-background text-center">#</TableHead>
                     {columns.map(column => renderHeaderCell(column))}
                     <TableHead className="sticky top-0 z-20 bg-background text-center">Actions</TableHead>
                 </TableRow>
             </TableHeader>
             <TableBody>
                 {placeData.length > 0 ? (
-                    placeData.map(place => (
+                    placeData.map((place, index) => (
                         <TableRow key={place.id} className="hover:bg-muted/50">
+                            <TableCell className="text-center font-medium">
+                                {rowOffset + index + 1}
+                            </TableCell>
                             {columns.map(({ key }) => (
                                 <TableCell key={key}>{renderCell(place, key)}</TableCell>
                             ))}
-                            <TableCell className="text-right">
-                                <div className="flex justify-end gap-2">
+                            <TableCell className="text-center">
+                                <div className="flex justify-center gap-2">
                                     {hasPermission('places.show') && (
                                         <Button asChild size="sm" variant="ghost">
                                             <Link href={`/places/${place.id}`}>
@@ -585,7 +594,7 @@ export default function PlacesIndex({ places, metrics, filters, statusOptions, p
                                         <Button
                                             size="sm"
                                             variant="ghost"
-                                            className="text-destructive hover:bg-destructive/10"
+                                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
                                             onClick={() => {
                                                 setSelectedPlace(place)
                                                 setDeleteDialogOpen(true)
@@ -600,7 +609,7 @@ export default function PlacesIndex({ places, metrics, filters, statusOptions, p
                     ))
                 ) : (
                     <TableRow>
-                        <TableCell colSpan={columns.length + 1} className="py-8 text-center text-muted-foreground">
+                        <TableCell colSpan={columns.length + 2} className="py-8 text-center text-muted-foreground">
                             No places found.
                             {hasPermission('places.create') && (
                                 <Link href="/places/create" className="ml-1 text-primary underline">

@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { validateZone, type ValidationErrors } from '@/lib/validation'
+import { toast } from '@/hooks/use-toast'
 import {
   AlertCircle,
   ArrowLeft,
@@ -87,6 +88,20 @@ export default function ZonesCreate({ regions }: ZonesCreateProps) {
   )
 
   useEffect(() => {
+    const errorMessages = Object.values(errors)
+      .flatMap(message => (Array.isArray(message) ? message : message ? [message] : []))
+      .filter((message): message is string => Boolean(message))
+
+    if (errorMessages.length > 0) {
+      toast({
+        title: '⚠️ Validation Error',
+        description: errorMessages.join(', '),
+        variant: 'destructive',
+      })
+    }
+  }, [errors, toast])
+
+  useEffect(() => {
     const container = scrollContainerRef.current
     if (!container) return
 
@@ -147,6 +162,10 @@ export default function ZonesCreate({ regions }: ZonesCreateProps) {
         setFrontendErrors({})
         setIsDirty(false)
         reset()
+        toast({
+          title: '✅ Zone Created',
+          description: 'The zone has been registered successfully.',
+        })
       },
     })
   }

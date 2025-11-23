@@ -186,6 +186,11 @@ export default function RegionsIndex({ regions, metrics, filters, statusOptions,
     const totalRecords = metrics?.total ?? regions?.total ?? 0;
     const currentPage = regions?.current_page ?? 1;
     const lastPage = regions?.last_page ?? 1;
+    const perPageCountRaw = typeof regions?.per_page === 'number' ? regions.per_page : Number(perPage);
+    const perPageCount = Number.isFinite(perPageCountRaw) && perPageCountRaw > 0
+        ? perPageCountRaw
+        : regionData.length || 1;
+    const rowOffset = (currentPage - 1) * perPageCount;
 
     const statusFilterOptions = useMemo(() => {
         if (statusOptions?.length) {
@@ -475,19 +480,23 @@ export default function RegionsIndex({ regions, metrics, filters, statusOptions,
         <Table>
             <TableHeader className="[&_tr]:sticky [&_tr]:top-0 [&_tr]:z-20 [&_tr]:bg-background [&_tr]:shadow-sm">
                 <TableRow className="border-b bg-background">
+                    <TableHead className="sticky top-0 z-20 w-12 bg-background text-center">#</TableHead>
                     {columns.map((column) => renderHeaderCell(column))}
                     <TableHead className="sticky top-0 z-20 bg-background text-center">Actions</TableHead>
                 </TableRow>
             </TableHeader>
             <TableBody>
                 {regionData.length > 0 ? (
-                    regionData.map((region) => (
+                    regionData.map((region, index) => (
                         <TableRow key={region.id} className="hover:bg-muted/50">
+                            <TableCell className="text-center font-medium">
+                                {rowOffset + index + 1}
+                            </TableCell>
                             {columns.map(({ key }) => (
                                 <TableCell key={key}>{renderCell(region, key)}</TableCell>
                             ))}
-                            <TableCell className="text-right">
-                                <div className="flex justify-end gap-2">
+                            <TableCell className="text-center">
+                                <div className="flex justify-center gap-2">
                                     {hasPermission('regions.show') && (
                                         <Button asChild size="sm" variant="ghost">
                                             <Link href={`/regions/${region.id}`}>
@@ -506,7 +515,7 @@ export default function RegionsIndex({ regions, metrics, filters, statusOptions,
                                         <Button
                                             size="sm"
                                             variant="ghost"
-                                            className="text-destructive hover:bg-destructive/10"
+                                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
                                             onClick={() => {
                                                 setSelectedRegion(region);
                                                 setDeleteDialogOpen(true);
@@ -521,7 +530,7 @@ export default function RegionsIndex({ regions, metrics, filters, statusOptions,
                     ))
                 ) : (
                     <TableRow>
-                        <TableCell colSpan={columns.length + 1} className="py-8 text-center text-muted-foreground">
+                        <TableCell colSpan={columns.length + 2} className="py-8 text-center text-muted-foreground">
                             No regions found.
                             {hasPermission('regions.create') && (
                                 <Link href="/regions/create" className="ml-1 text-primary underline">

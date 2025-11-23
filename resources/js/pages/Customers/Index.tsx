@@ -119,6 +119,11 @@ export default function CustomersIndex({ customers, metrics, filters, statusOpti
     const customerCount = metrics?.total ?? customers.total;
     const currentPage = customers.current_page;
     const lastPage = customers.last_page;
+    const perPageCountRaw = customers.per_page ?? Number(perPage);
+    const perPageCount = Number.isFinite(perPageCountRaw) && perPageCountRaw > 0
+        ? perPageCountRaw
+        : customers.data?.length ?? 1;
+    const rowOffset = (currentPage - 1) * perPageCount;
 
     const statusFilterOptions = React.useMemo(() => {
         const base = statusOptions?.length ? statusOptions : [
@@ -387,14 +392,18 @@ export default function CustomersIndex({ customers, metrics, filters, statusOpti
         <Table>
             <TableHeader className="[&_tr]:sticky [&_tr]:top-0 [&_tr]:z-20 [&_tr]:bg-background [&_tr]:shadow-sm">
                 <TableRow className="border-b bg-background">
+                    <TableHead className="sticky top-0 z-20 w-12 bg-background text-center">#</TableHead>
                     {columns.map(({ key, label, sortable }) => renderHeaderCell(String(key), label, sortable))}
                     <TableHead className="sticky top-0 z-20 bg-background text-center">Actions</TableHead>
                 </TableRow>
             </TableHeader>
             <TableBody>
                 {customers?.data && customers.data.length > 0 ? (
-                    customers.data.map((customer) => (
+                    customers.data.map((customer, index) => (
                         <TableRow key={customer.id} className="hover:bg-muted/50">
+                            <TableCell className="text-center font-medium">
+                                {rowOffset + index + 1}
+                            </TableCell>
                             <TableCell className="font-medium text-foreground">{customer.name}</TableCell>
                             <TableCell className="text-muted-foreground text-sm">{customer.contact_person || 'N/A'}</TableCell>
                             <TableCell className="text-muted-foreground text-sm">{customer.phone || '—'}</TableCell>
@@ -420,8 +429,8 @@ export default function CustomersIndex({ customers, metrics, filters, statusOpti
                             <TableCell className="text-muted-foreground text-sm">
                                 {formatDate(customer.created_at)}
                             </TableCell>
-                            <TableCell className="text-right">
-                                <div className="flex justify-end gap-2">
+                            <TableCell className="text-center">
+                                <div className="flex justify-center gap-2">
                                     {hasPermission('customers.show') && (
                                         <Button asChild size="sm" variant="ghost">
                                             <Link href={`/customers/${customer.id}`}>
@@ -440,6 +449,7 @@ export default function CustomersIndex({ customers, metrics, filters, statusOpti
                                         <Button
                                             size="sm"
                                             variant="ghost"
+                                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
                                             onClick={() => {
                                                 setSelectedCustomer(customer);
                                                 setDeleteDialogOpen(true);
@@ -454,7 +464,7 @@ export default function CustomersIndex({ customers, metrics, filters, statusOpti
                     ))
                 ) : (
                     <TableRow>
-                        <TableCell colSpan={columns.length + 1} className="py-8 text-center text-muted-foreground">
+                        <TableCell colSpan={columns.length + 2} className="py-8 text-center text-muted-foreground">
                             No customers found.
                             {hasPermission('customers.create') && (
                                 <Link href="/customers/create" className="ml-1 text-primary underline">
@@ -473,6 +483,10 @@ export default function CustomersIndex({ customers, metrics, filters, statusOpti
         setIsDeleting(true);
         router.delete(`/customers/${selectedCustomer.id}`, {
             onSuccess: () => {
+                toast({
+                    title: 'Customer deleted',
+                    description: 'The customer was removed successfully.',
+                });
                 setDeleteDialogOpen(false);
                 setSelectedCustomer(null);
                 setIsDeleting(false);

@@ -200,6 +200,11 @@ export default function WoredasIndex({ woredas, metrics, filters, statusOptions,
     const totalRecords = woredas?.total ?? 0
     const currentPage = woredas?.current_page ?? 1
     const lastPage = woredas?.last_page ?? 1
+    const perPageCountRaw = typeof woredas?.per_page === 'number' ? woredas.per_page : Number(perPage)
+    const perPageCount = Number.isFinite(perPageCountRaw) && perPageCountRaw > 0
+        ? perPageCountRaw
+        : woredaData.length || 1
+    const rowOffset = (currentPage - 1) * perPageCount
 
     const statusFilterOptions = useMemo(() => {
         if (statusOptions?.length) {
@@ -501,19 +506,23 @@ export default function WoredasIndex({ woredas, metrics, filters, statusOptions,
         <Table>
             <TableHeader className="[&_tr]:sticky [&_tr]:top-0 [&_tr]:z-20 [&_tr]:bg-background [&_tr]:shadow-sm">
                 <TableRow className="border-b bg-background">
+                    <TableHead className="sticky top-0 z-20 w-12 bg-background text-center">#</TableHead>
                     {columns.map(column => renderHeaderCell(column))}
                     <TableHead className="sticky top-0 z-20 bg-background text-center">Actions</TableHead>
                 </TableRow>
             </TableHeader>
             <TableBody>
                 {woredaData.length > 0 ? (
-                    woredaData.map(woreda => (
+                    woredaData.map((woreda, index) => (
                         <TableRow key={woreda.id} className="hover:bg-muted/50">
+                            <TableCell className="text-center font-medium">
+                                {rowOffset + index + 1}
+                            </TableCell>
                             {columns.map(({ key }) => (
                                 <TableCell key={key}>{renderCell(woreda, key)}</TableCell>
                             ))}
-                            <TableCell className="text-right">
-                                <div className="flex justify-end gap-2">
+                            <TableCell className="text-center">
+                                <div className="flex justify-center gap-2">
                                     {hasPermission('woredas.show') && (
                                         <Button asChild size="sm" variant="ghost">
                                             <Link href={`/woredas/${woreda.id}`}>
@@ -532,7 +541,7 @@ export default function WoredasIndex({ woredas, metrics, filters, statusOptions,
                                         <Button
                                             size="sm"
                                             variant="ghost"
-                                            className="text-destructive hover:bg-destructive/10"
+                                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
                                             onClick={() => {
                                                 setSelectedWoreda(woreda)
                                                 setDeleteDialogOpen(true)
@@ -547,7 +556,7 @@ export default function WoredasIndex({ woredas, metrics, filters, statusOptions,
                     ))
                 ) : (
                     <TableRow>
-                        <TableCell colSpan={columns.length + 1} className="py-8 text-center text-muted-foreground">
+                        <TableCell colSpan={columns.length + 2} className="py-8 text-center text-muted-foreground">
                             No woredas found.
                             {hasPermission('woredas.create') && (
                                 <Link href="/woredas/create" className="ml-1 text-primary underline">
