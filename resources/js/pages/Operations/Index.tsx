@@ -202,6 +202,23 @@ export default function OperationsIndex({
     const currentPage = operations?.current_page ?? 1
     const lastPage = operations?.last_page ?? 1
 
+    const resolvedPerPageNumeric = React.useMemo(() => {
+        const numeric = Number(perPage)
+        if (!Number.isFinite(numeric) || numeric <= 0) {
+            return operationData.length || 1
+        }
+
+        return numeric
+    }, [perPage, operationData.length])
+
+    const rowOffset = React.useMemo(() => {
+        if (typeof operations?.from === 'number' && Number.isFinite(operations.from)) {
+            return Math.max(operations.from - 1, 0)
+        }
+
+        return Math.max((currentPage - 1) * resolvedPerPageNumeric, 0)
+    }, [operations?.from, currentPage, resolvedPerPageNumeric])
+
     const getStatusBadge = (status: string) => {
         switch (status) {
             case 'active':
@@ -480,16 +497,20 @@ export default function OperationsIndex({
 
     const tableContent = (
         <Table>
-            <TableHeader>
-                <TableRow className="sticky top-0 z-50 border-b bg-background">
+            <TableHeader className="[&_tr]:sticky [&_tr]:top-0 [&_tr]:z-20 [&_tr]:bg-background [&_tr]:shadow-sm">
+                <TableRow className="border-b bg-background">
+                    <TableHead className="sticky top-0 z-20 w-12 bg-background text-center">#</TableHead>
                     {columns.map((column) => renderHeaderCell(column))}
-                    <TableHead className="bg-background text-center">Actions</TableHead>
+                    <TableHead className="sticky top-0 z-20 bg-background text-center">Actions</TableHead>
                 </TableRow>
             </TableHeader>
             <TableBody>
                 {operationData.length > 0 ? (
-                    operationData.map((operation) => (
+                    operationData.map((operation, index) => (
                         <TableRow key={operation.id} className="hover:bg-muted/50">
+                            <TableCell className="text-center font-medium">
+                                {rowOffset + index + 1}
+                            </TableCell>
                             {columns.map(({ key }) => (
                                 <TableCell key={key}>{renderCell(operation, key)}</TableCell>
                             ))}
@@ -526,7 +547,7 @@ export default function OperationsIndex({
                     ))
                 ) : (
                     <TableRow>
-                        <TableCell colSpan={columns.length + 1} className="py-8 text-center text-muted-foreground">
+                        <TableCell colSpan={columns.length + 2} className="py-8 text-center text-muted-foreground">
                             No operations found.
                             {hasPermission('operations.create') && (
                                 <Link href="/operations/create" className="ml-1 text-primary underline">

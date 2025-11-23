@@ -8,6 +8,7 @@ use App\Exports\Reports\OperationPerformanceExport;
 use App\Exports\Reports\TruckPerformanceExport;
 use App\Http\Requests\Reports\CustomerProfitabilityRequest;
 use App\Http\Requests\Reports\FuelEfficiencyRequest;
+use App\Http\Requests\Reports\MaintenancePerformanceRequest;
 use App\Http\Requests\Reports\OperationalComparisonRequest;
 use App\Http\Requests\Reports\OutsourcePerformanceRequest;
 use App\Http\Requests\Reports\PerformanceByDriverRequest;
@@ -16,6 +17,7 @@ use App\Http\Requests\Reports\PerformanceByTruckRequest;
 use App\Models\Customer;
 use App\Models\Distance;
 use App\Models\Driver;
+use App\Models\MaintenanceType;
 use App\Models\Operation;
 use App\Models\Outsource;
 use App\Models\OutsourcePerformance;
@@ -27,6 +29,7 @@ use App\Models\TruckFinancialRecord;
 use App\Models\VehicleMaintenanceRecord;
 use App\Services\Reports\CustomerProfitabilityReport;
 use App\Services\Reports\FuelEfficiencyReport;
+use App\Services\Reports\MaintenancePerformanceReport;
 use App\Services\Reports\OperationPerformanceReport;
 use App\Services\Reports\OutsourcePerformanceReport;
 use App\Services\Reports\TruckPerformanceReport;
@@ -51,6 +54,7 @@ class ReportController extends Controller
         private readonly CustomerProfitabilityReport $customerProfitabilityReport,
         private readonly FuelEfficiencyReport $fuelEfficiencyReport,
         private readonly OutsourcePerformanceReport $outsourcePerformanceReport,
+        private readonly MaintenancePerformanceReport $maintenancePerformanceReport,
     ) {}
 
     /**
@@ -506,33 +510,78 @@ class ReportController extends Controller
     /**
      * Display maintenance reports.
      */
-    public function maintenance(): Response|RedirectResponse
+    public function maintenance(MaintenancePerformanceRequest $request): Response|RedirectResponse
     {
         try {
-            $maintenanceStats = [
-                'total_maintenance_records' => VehicleMaintenanceRecord::count(),
-                'scheduled_maintenance' => VehicleMaintenanceRecord::where('status', 'scheduled')->count(),
-                'completed_maintenance' => VehicleMaintenanceRecord::where('status', 'completed')->count(),
-                'overdue_maintenance' => VehicleMaintenanceRecord::where('status', 'scheduled')
-                    ->where('scheduled_date', '<', now())->count(),
-                'total_maintenance_cost' => VehicleMaintenanceRecord::sum('cost'),
-                'average_maintenance_cost' => VehicleMaintenanceRecord::avg('cost'),
-                'maintenance_by_type' => VehicleMaintenanceRecord::with('maintenanceType')
-                    ->select('maintenance_type_id', DB::raw('count(*) as count'))
-                    ->groupBy('maintenance_type_id')
-                    ->get(),
-            ];
+            $validated = $request->validated();
+            $result = $this->maintenancePerformanceReport->build($validated);
 
-            $maintenanceRecords = VehicleMaintenanceRecord::with(['truck', 'maintenanceType', 'assignedMechanic'])
-                ->orderBy('scheduled_date', 'desc')
-                ->paginate(15);
+            $truckOptions = Truck::query()
+                ->select('id', 'plate', 'status')
+                ->orderBy('plate')
+                ->get()
+                ->map(static fn (Truck $truck) => [
+                    'id' => $truck->id,
+                    'plate' => $truck->plate ?? 'Truck #'.$truck->id,
+                    'status' => $truck->status,
+                ])
+                ->values();
+
+            $maintenanceTypeOptions = MaintenanceType::query()
+                ->select('id', 'name', 'category')
+                ->orderBy('name')
+                ->get()
+                ->map(static fn (MaintenanceType $type) => [
+                    'id' => $type->id,
+                    'name' => $type->name,
+                    'category' => $type->category,
+                ])
+                ->values();
+
+            $statusOptions = VehicleMaintenanceRecord::query()
+                ->select('status')
+                ->whereNotNull('status')
+                ->distinct()
+                ->orderBy('status')
+                ->pluck('status')
+                ->filter()
+                ->values();
+
+            $serviceProviderOptions = VehicleMaintenanceRecord::query()
+                ->select('service_provider')
+                ->whereNotNull('service_provider')
+                ->distinct()
+                ->orderBy('service_provider')
+                ->pluck('service_provider')
+                ->filter()
+                ->values();
 
             return Inertia::render('Reports/Maintenance', [
-                'maintenanceStats' => $maintenanceStats,
-                'maintenanceRecords' => $maintenanceRecords,
+                'filters' => [
+                    'from' => $result['resolved_from'],
+                    'to' => $result['resolved_to'],
+                    'truck_ids' => $result['truck_ids'],
+                    'maintenance_type_ids' => $result['maintenance_type_ids'],
+                    'statuses' => $result['statuses'],
+                    'service_providers' => $result['service_providers'],
+                ],
+                'totals' => $result['totals'],
+                'summary' => $result['summary'],
+                'breakdown' => $result['breakdown'],
+                'type_breakdown' => $result['type_breakdown'],
+                'trend' => $result['trend'],
+                'upcoming' => $result['upcoming'],
+                'highlights' => $result['highlights'],
+                'options' => [
+                    'trucks' => $truckOptions,
+                    'maintenance_types' => $maintenanceTypeOptions,
+                    'statuses' => $statusOptions,
+                    'service_providers' => $serviceProviderOptions,
+                ],
             ]);
-
         } catch (Exception $e) {
+            report($e);
+
             return back()->withErrors(['error' => 'Failed to generate maintenance report.']);
         }
     }

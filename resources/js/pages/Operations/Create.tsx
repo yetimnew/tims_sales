@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { validateOperation, type ValidationErrors } from '@/lib/validation';
+import { toast } from '@/hooks/use-toast';
 import {
     AlertCircle,
     ArrowLeft,
@@ -135,6 +136,21 @@ export default function OperationsCreate({ customers, regions, zones, woredas, p
     const scrollContainerRef = useRef<HTMLFormElement | null>(null);
 
     const hasErrors = useMemo(() => Object.keys(errors).length > 0 || Object.keys(frontendErrors).length > 0, [errors, frontendErrors]);
+
+    useEffect(() => {
+        const errorMessages = Object.values(errors)
+            .flatMap(message => (Array.isArray(message) ? message : message ? [message] : []))
+            .filter((message): message is string => Boolean(message))
+            .map(message => (typeof message === 'string' ? message : String(message)));
+
+        if (errorMessages.length > 0) {
+            toast({
+                title: '⚠️ Validation Error',
+                description: errorMessages.join(', '),
+                variant: 'destructive',
+            });
+        }
+    }, [errors]);
 
     useEffect(() => {
         const container = scrollContainerRef.current;
@@ -282,12 +298,26 @@ export default function OperationsCreate({ customers, regions, zones, woredas, p
                 setData('destination_scope', 'region');
                 setData('destination_id', '');
                 setFieldError('destination_id', '');
+                toast({
+                    title: '✅ Operation Created',
+                    description: 'The operation has been registered successfully.',
+                });
             },
         });
     };
 
     const getFieldError = (field: keyof OperationFormData) => {
         return errors[field] || frontendErrors[field] || '';
+                                <div className="flex items-center gap-2.5 text-sm">
+                                    <div className="rounded-md bg-sky-100 p-1.5 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400">
+                                        <Calendar className="h-4 w-4" />
+                                    </div>
+                                    <div className="flex flex-col gap-1">
+                                        <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">Scheduling &amp; Cargo Profile</h2>
+                                        <p className="text-xs text-muted-foreground">Define timelines, service type, and planned throughput for this engagement.</p>
+                                    </div>
+                                </div>
+
     };
 
     const safeCustomers = useMemo(() => (Array.isArray(customers) ? customers : []), [customers]);
@@ -701,6 +731,16 @@ export default function OperationsCreate({ customers, regions, zones, woredas, p
                             </section>
 
                             <section className="space-y-4 rounded-xl border border-slate-200/60 bg-white/75 p-5 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/35">
+                                <div className="flex items-center gap-2.5 text-sm">
+                                    <div className="rounded-md bg-emerald-100 p-1.5 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
+                                        <CheckCircle className="h-4 w-4" />
+                                    </div>
+                                    <div className="flex flex-col gap-1">
+                                        <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">Commercial Parameters</h2>
+                                        <p className="text-xs text-muted-foreground">Set tariff assumptions and capture supporting notes for the ops &amp; finance teams.</p>
+                                    </div>
+                                </div>
+
                                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                     <div className="space-y-2">
                                         <Label htmlFor="tariff">Tariff (per ton-km) <span className="text-red-500">*</span></Label>
