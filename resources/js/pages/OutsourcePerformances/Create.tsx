@@ -175,13 +175,26 @@ export default function OutsourcePerformancesCreate({ outsources, operations, pl
         }
     }, [errors, toast]);
 
-    const updateTonKilometers = useCallback((nextState: OutsourcePerformanceFormData) => {
+    const recalculateTonKilometers = useCallback((nextState: OutsourcePerformanceFormData) => {
         const computed = computeTonKilometers(nextState.distance_km, nextState.cargo_volume_mt);
         setData('tonkm', computed);
     }, [setData]);
 
     const handleDistanceAutoFill = useCallback(async (originId: string, destinationId: string, nextState: OutsourcePerformanceFormData) => {
         if (!originId || !destinationId) {
+            setDistanceStatus(null);
+            setDistanceLoading(false);
+            return;
+        }
+
+        if (originId === destinationId) {
+            setData('distance_km', '');
+            recalculateTonKilometers({ ...nextState, distance_km: '' });
+            setDistanceStatus({
+                found: false,
+                message: 'Origin and destination are the same. Distance cleared for manual entry.',
+            });
+            setDistanceLoading(false);
             return;
         }
 
@@ -215,31 +228,34 @@ export default function OutsourcePerformancesCreate({ outsources, operations, pl
             const safeDistance = Number.isFinite(numericDistance) ? numericDistance : 0;
             const formattedDistance = safeDistance.toFixed(2);
 
-            setData('distance_km', formattedDistance);
-
-            const tonKm = computeTonKilometers(formattedDistance, nextState.cargo_volume_mt);
-            setData('tonkm', tonKm);
-
-            setDistanceStatus({
-                found: Boolean(result.found),
-                message: result.found
-                    ? `Distance auto-filled from registered route (${formattedDistance} km).`
-                    : result.note ?? 'Distance for this route is not registered yet. Value set to 0 km.',
-            });
+            if (result.found) {
+                setData('distance_km', formattedDistance);
+                recalculateTonKilometers({ ...nextState, distance_km: formattedDistance });
+                setDistanceStatus({
+                    found: true,
+                    message: `Distance auto-filled from registered route (${formattedDistance} km).`,
+                });
+            } else {
+                setData('distance_km', '');
+                recalculateTonKilometers({ ...nextState, distance_km: '' });
+                setDistanceStatus({
+                    found: false,
+                    message: result.note ?? 'No registered distance for this route. Please enter it manually.',
+                });
+            }
         } catch (error) {
             console.error('Distance auto-fill failed:', error);
-            setData('distance_km', '0.00');
-            const tonKm = computeTonKilometers('0.00', nextState.cargo_volume_mt);
-            setData('tonkm', tonKm);
+            setData('distance_km', '');
+            recalculateTonKilometers({ ...nextState, distance_km: '' });
             setDistanceStatus({
                 found: false,
-                message: 'Unable to resolve distance. Distance was set to 0 km.',
+                message: 'Unable to resolve distance automatically. Please enter it manually.',
             });
         }
         finally {
             setDistanceLoading(false);
         }
-    }, [setData]);
+    }, [recalculateTonKilometers, setData]);
 
     const setFieldError = useCallback((field: keyof OutsourcePerformanceFormData, message: string | undefined) => {
         setClientErrors(previous => {
@@ -263,7 +279,7 @@ export default function OutsourcePerformancesCreate({ outsources, operations, pl
         }
 
         if (field === 'distance_km' || field === 'cargo_volume_mt') {
-            updateTonKilometers(nextState);
+            recalculateTonKilometers(nextState);
         }
 
         if (field === 'outsource_id' && typeof value === 'string') {
@@ -293,17 +309,22 @@ export default function OutsourcePerformancesCreate({ outsources, operations, pl
         }
 
         if (field === 'from_place_id' || field === 'to_place_id') {
-            if (!nextState.from_place_id || !nextState.to_place_id) {
-                setDistanceStatus(null);
+            if (!nextState.from_place_id || !nextState.to_place_id || nextState.from_place_id === nextState.to_place_id) {
+                setDistanceStatus(nextState.from_place_id && nextState.to_place_id && nextState.from_place_id === nextState.to_place_id
+                    ? {
+                        found: false,
+                        message: 'Origin and destination match. Distance cleared for manual entry.',
+                    }
+                    : null);
                 setDistanceLoading(false);
                 setData('distance_km', '');
-                updateTonKilometers({ ...nextState, distance_km: '' });
+                recalculateTonKilometers({ ...nextState, distance_km: '' });
                 return;
             }
 
             void handleDistanceAutoFill(nextState.from_place_id, nextState.to_place_id, nextState);
         }
-    }, [clientErrors, data, handleDistanceAutoFill, setData, setFieldError, updateTonKilometers]);
+    }, [clientErrors, data, handleDistanceAutoFill, recalculateTonKilometers, setData, setFieldError]);
 
     const validateClient = useCallback((payload: OutsourcePerformanceFormData) => {
         const results = validateOutsourcePerformance(payload);

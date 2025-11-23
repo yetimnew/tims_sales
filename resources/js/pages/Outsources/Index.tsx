@@ -425,71 +425,79 @@ export default function OutsourcesIndex({
         <Table>
             <TableHeader className="[&_tr]:sticky [&_tr]:top-0 [&_tr]:z-20 [&_tr]:bg-background [&_tr]:shadow-sm">
                 <TableRow className="border-b bg-background">
+                    <TableHead className="sticky top-0 z-20 w-12 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">No.</TableHead>
                     {columns.map((column) => renderHeaderCell(column))}
                     <TableHead className="sticky top-0 z-20 bg-background text-center">Actions</TableHead>
                 </TableRow>
             </TableHeader>
             <TableBody>
                 {outsources?.data && outsources.data.length > 0 ? (
-                    outsources.data.map((outsource) => (
-                        <TableRow key={outsource.id} className="hover:bg-muted/50">
-                            <TableCell className="font-medium">
-                                <div className="flex flex-col">
-                                    <span>{outsource.name}</span>
-                                    {outsource.created_at && (
-                                        <span className="text-xs text-muted-foreground">
-                                            Joined {dateFormatter.format(new Date(outsource.created_at))}
-                                        </span>
-                                    )}
-                                </div>
-                            </TableCell>
-                            <TableCell className="text-sm text-muted-foreground">
-                                {outsource.service_type ? outsource.service_type : '—'}
-                            </TableCell>
-                            <TableCell className="text-sm text-muted-foreground">
-                                {outsource.contact_person || '—'}
-                            </TableCell>
-                            <TableCell className="text-sm text-muted-foreground">
-                                {outsource.phone || '—'}
-                            </TableCell>
-                            <TableCell className="text-sm text-muted-foreground">
-                                {outsource.email || '—'}
-                            </TableCell>
-                            <TableCell>{renderStatusBadge(outsource.status)}</TableCell>
-                            <TableCell className="font-semibold">
-                                {outsource.outsource_performances_count ?? 0}
-                            </TableCell>
-                            <TableCell className="text-center">
-                                <div className="flex justify-center gap-2">
-                                    <Button asChild size="sm" variant="ghost">
-                                        <Link href={`/outsources/${outsource.id}`}>
-                                            <Eye className="h-4 w-4" />
-                                        </Link>
-                                    </Button>
-                                    {hasPermission('outsources.edit') && (
+                    outsources.data.map((outsource, index) => {
+                        const rowNumber = (outsources.from ?? 1) + index;
+
+                        return (
+                            <TableRow key={outsource.id} className="hover:bg-muted/50">
+                                <TableCell className="w-12 text-center text-sm font-semibold text-muted-foreground">
+                                    {rowNumber}
+                                </TableCell>
+                                <TableCell className="font-medium">
+                                    <div className="flex flex-col">
+                                        <span>{outsource.name}</span>
+                                        {outsource.created_at && (
+                                            <span className="text-xs text-muted-foreground">
+                                                Joined {dateFormatter.format(new Date(outsource.created_at))}
+                                            </span>
+                                        )}
+                                    </div>
+                                </TableCell>
+                                <TableCell className="text-sm text-muted-foreground">
+                                    {outsource.service_type ? outsource.service_type : '—'}
+                                </TableCell>
+                                <TableCell className="text-sm text-muted-foreground">
+                                    {outsource.contact_person || '—'}
+                                </TableCell>
+                                <TableCell className="text-sm text-muted-foreground">
+                                    {outsource.phone || '—'}
+                                </TableCell>
+                                <TableCell className="text-sm text-muted-foreground">
+                                    {outsource.email || '—'}
+                                </TableCell>
+                                <TableCell>{renderStatusBadge(outsource.status)}</TableCell>
+                                <TableCell className="font-semibold">
+                                    {outsource.outsource_performances_count ?? 0}
+                                </TableCell>
+                                <TableCell className="text-center">
+                                    <div className="flex justify-center gap-2">
                                         <Button asChild size="sm" variant="ghost">
-                                            <Link href={`/outsources/${outsource.id}/edit`}>
-                                                <Edit className="h-4 w-4" />
+                                            <Link href={`/outsources/${outsource.id}`}>
+                                                <Eye className="h-4 w-4" />
                                             </Link>
                                         </Button>
-                                    )}
-                                    {hasPermission('outsources.destroy') && (
-                                        <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            className="text-destructive hover:bg-destructive/10"
-                                            onClick={() => handleDeleteClick(outsource)}
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                    )}
-                                </div>
-                            </TableCell>
-                        </TableRow>
-                    ))
+                                        {hasPermission('outsources.edit') && (
+                                            <Button asChild size="sm" variant="ghost">
+                                                <Link href={`/outsources/${outsource.id}/edit`}>
+                                                    <Edit className="h-4 w-4" />
+                                                </Link>
+                                            </Button>
+                                        )}
+                                        {hasPermission('outsources.destroy') && (
+                                            <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                className="text-destructive hover:bg-destructive/10"
+                                                onClick={() => handleDeleteClick(outsource)}
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        )}
+                                    </div>
+                                </TableCell>
+                            </TableRow>
+                        );
+                    })
                 ) : (
                     <TableRow>
-                        <TableCell colSpan={columns.length + 1} className="py-8 text-center text-muted-foreground">
+                        <TableCell colSpan={columns.length + 2} className="py-8 text-center text-muted-foreground">
                             No outsourcing vendors found.
                             {hasPermission('outsources.create') && (
                                 <Link href="/outsources/create" className="ml-1 text-primary underline">

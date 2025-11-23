@@ -238,7 +238,7 @@ export default function OutsourcesShow({ outsource, metrics, recentPerformances 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`Vendor Overview - ${outsource.name}`} />
-            <div className="flex h-full flex-1 flex-col gap-6 overflow-hidden rounded-xl p-4">
+            <div className="flex h-full flex-1 flex-col gap-6 overflow-y-auto rounded-xl p-4">
                 <div className="flex flex-col gap-6 rounded-2xl border border-slate-200/70 bg-white/95 p-6 shadow-lg backdrop-blur dark:border-slate-800/60 dark:bg-slate-900/75">
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                         <div className="flex flex-col gap-4">

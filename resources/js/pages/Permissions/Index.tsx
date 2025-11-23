@@ -177,6 +177,9 @@ export default function PermissionsIndex({ permissions }: PermissionsIndexProps)
             <Table>
               <TableHeader className="bg-muted/50">
                 <TableRow>
+                  <TableHead className="w-12 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    No.
+                  </TableHead>
                   <TableHead onClick={() => handleSort('name')} className="cursor-pointer select-none hover:bg-muted/70 transition-colors">
                     <div className="flex items-center">
                       Permission <SortIcon column="name" />
@@ -194,10 +197,14 @@ export default function PermissionsIndex({ permissions }: PermissionsIndexProps)
               </TableHeader>
               <TableBody>
                 {permissions?.data && permissions.data.length > 0 ? (
-                  permissions.data.map(permission => {
+                  permissions.data.map((permission, index) => {
+                    const rowNumber = (permissions.from ?? 1) + index
                     const [module, action] = permission.name.split('.')
                     return (
                       <TableRow key={permission.id}>
+                        <TableCell className="w-12 text-center text-sm font-semibold text-muted-foreground">
+                          {rowNumber}
+                        </TableCell>
                         <TableCell className="font-medium">{permission.name}</TableCell>
                         <TableCell>
                           <Badge variant="outline">{permission.guard_name}</Badge>
@@ -226,7 +233,7 @@ export default function PermissionsIndex({ permissions }: PermissionsIndexProps)
                   })
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={5} className="py-16">
+                    <TableCell colSpan={6} className="py-16">
                       <div className="flex flex-col items-center justify-center text-center">
                         <div className="h-20 w-20 bg-muted/50 rounded-full flex items-center justify-center mb-6">
                           <Shield className="h-10 w-10 text-muted-foreground" />

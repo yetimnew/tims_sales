@@ -190,6 +190,9 @@ export default function RolesIndex({ roles }: RolesIndexProps) {
               <Table>
                 <TableHeader>
                   <TableRow className="sticky top-0 z-50 bg-background border-b">
+                    <TableHead className="w-12 bg-background text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      No.
+                    </TableHead>
                     <TableHead
                       className="cursor-pointer select-none hover:bg-muted/70 transition-colors bg-background"
                       onClick={() => handleSort('name')}
@@ -213,69 +216,76 @@ export default function RolesIndex({ roles }: RolesIndexProps) {
                 </TableHeader>
                 <TableBody>
                   {roles?.data && roles.data.length > 0 ? (
-                    roles.data.map(role => (
-                      <TableRow key={role.id} className="hover:bg-muted/50">
-                        <TableCell className="font-medium">
-                          <Badge className={`flex items-center gap-1 w-fit ${getRoleBadgeColor(role.name)}`}>
-                            <Shield className="h-3 w-3" />
-                            {role.name.charAt(0).toUpperCase() + role.name.slice(1)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground text-sm">{role.guard_name}</TableCell>
-                        <TableCell>
-                          <div className="flex flex-wrap gap-1">
-                            {role.permissions && role.permissions.length > 0 ? (
-                              <>
-                                {role.permissions.slice(0, 3).map(permission => (
-                                  <Badge key={permission.name} variant="outline" className="text-xs">
-                                    {permission.name.split('.')[0]}
-                                  </Badge>
-                                ))}
-                                {role.permissions.length > 3 && (
-                                  <Badge variant="outline" className="text-xs">
-                                    +{role.permissions.length - 3} more
-                                  </Badge>
-                                )}
-                              </>
-                            ) : (
-                              <span className="text-muted-foreground text-sm">No permissions</span>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground text-sm">
-                          {role.created_at ? new Date(role.created_at).toLocaleDateString() : '—'}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <div className="flex justify-center gap-2">
-                            <Button asChild size="sm" variant="ghost">
-                              <Link href={`/roles/${role.id}`}>
-                                <Eye className="h-4 w-4" />
-                              </Link>
-                            </Button>
-                            {hasPermission('roles.edit') && (
+                    roles.data.map((role, index) => {
+                      const rowNumber = (roles.from ?? 1) + index
+
+                      return (
+                        <TableRow key={role.id} className="hover:bg-muted/50">
+                          <TableCell className="w-12 text-center text-sm font-semibold text-muted-foreground">
+                            {rowNumber}
+                          </TableCell>
+                          <TableCell className="font-medium">
+                            <Badge className={`flex items-center gap-1 w-fit ${getRoleBadgeColor(role.name)}`}>
+                              <Shield className="h-3 w-3" />
+                              {role.name.charAt(0).toUpperCase() + role.name.slice(1)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground text-sm">{role.guard_name}</TableCell>
+                          <TableCell>
+                            <div className="flex flex-wrap gap-1">
+                              {role.permissions && role.permissions.length > 0 ? (
+                                <>
+                                  {role.permissions.slice(0, 3).map(permission => (
+                                    <Badge key={permission.name} variant="outline" className="text-xs">
+                                      {permission.name.split('.')[0]}
+                                    </Badge>
+                                  ))}
+                                  {role.permissions.length > 3 && (
+                                    <Badge variant="outline" className="text-xs">
+                                      +{role.permissions.length - 3} more
+                                    </Badge>
+                                  )}
+                                </>
+                              ) : (
+                                <span className="text-muted-foreground text-sm">No permissions</span>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground text-sm">
+                            {role.created_at ? new Date(role.created_at).toLocaleDateString() : '—'}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <div className="flex justify-center gap-2">
                               <Button asChild size="sm" variant="ghost">
-                                <Link href={`/roles/${role.id}/edit`}>
-                                  <SquarePen className="h-4 w-4" />
+                                <Link href={`/roles/${role.id}`}>
+                                  <Eye className="h-4 w-4" />
                                 </Link>
                               </Button>
-                            )}
-                            {hasPermission('roles.destroy') && (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleDelete(role)}
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
+                              {hasPermission('roles.edit') && (
+                                <Button asChild size="sm" variant="ghost">
+                                  <Link href={`/roles/${role.id}/edit`}>
+                                    <SquarePen className="h-4 w-4" />
+                                  </Link>
+                                </Button>
+                              )}
+                              {hasPermission('roles.destroy') && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleDelete(role)}
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={5} className="py-16">
+                      <TableCell colSpan={6} className="py-16">
                         <div className="flex flex-col items-center justify-center text-center">
                           <div className="h-20 w-20 bg-muted/50 rounded-full flex items-center justify-center mb-6">
                             <Shield className="h-10 w-10 text-muted-foreground" />

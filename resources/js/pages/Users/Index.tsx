@@ -275,6 +275,9 @@ export default function UsersIndex({ users }: UsersIndexProps) {
                             <Table>
                                 <TableHeader>
                                     <TableRow className="sticky top-0 z-50 bg-background border-b">
+                                        <TableHead className="w-12 bg-background text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                            No.
+                                        </TableHead>
                                         <TableHead
                                             className="cursor-pointer select-none hover:bg-muted/70 transition-colors bg-background"
                                             onClick={() => handleSort('name')}
@@ -306,31 +309,37 @@ export default function UsersIndex({ users }: UsersIndexProps) {
                                 </TableHeader>
                                 <TableBody>
                                     {users?.data && users.data.length > 0 ? (
-                                        users.data.map((user) => (
-                                            <TableRow key={user.id} className="hover:bg-muted/50">
-                                                <TableCell className="font-medium">
-                                                    {user.name}
-                                                </TableCell>
-                                                <TableCell className="text-muted-foreground">
-                                                    {user.email}
-                                                </TableCell>
-                                                <TableCell>
-                                                    <div className="flex flex-wrap gap-1">
-                                                        {user.roles && user.roles.length > 0 ? (
-                                                            user.roles.map((role) => (
-                                                                <Badge
-                                                                    key={role.id}
-                                                                    className={`flex items-center gap-1 w-fit ${getRoleBadgeColor(role.name)}`}
-                                                                >
-                                                                    <Shield className="h-3 w-3" />
-                                                                    {role.name.charAt(0).toUpperCase() + role.name.slice(1)}
-                                                                </Badge>
-                                                            ))
-                                                        ) : (
-                                                            <span className="text-muted-foreground text-sm">No roles</span>
-                                                        )}
-                                                    </div>
-                                                </TableCell>
+                                        users.data.map((user, index) => {
+                                            const rowNumber = (users.from ?? 1) + index;
+
+                                            return (
+                                                <TableRow key={user.id} className="hover:bg-muted/50">
+                                                    <TableCell className="w-12 text-center text-sm font-semibold text-muted-foreground">
+                                                        {rowNumber}
+                                                    </TableCell>
+                                                    <TableCell className="font-medium">
+                                                        {user.name}
+                                                    </TableCell>
+                                                    <TableCell className="text-muted-foreground">
+                                                        {user.email}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {user.roles && user.roles.length > 0 ? (
+                                                                user.roles.map((role) => (
+                                                                    <Badge
+                                                                        key={role.id}
+                                                                        className={`flex items-center gap-1 w-fit ${getRoleBadgeColor(role.name)}`}
+                                                                    >
+                                                                        <Shield className="h-3 w-3" />
+                                                                        {role.name.charAt(0).toUpperCase() + role.name.slice(1)}
+                                                                    </Badge>
+                                                                ))
+                                                            ) : (
+                                                                <span className="text-muted-foreground text-sm">No roles</span>
+                                                            )}
+                                                        </div>
+                                                    </TableCell>
                                                 <TableCell>
                                                     <Badge
                                                         className={`flex items-center gap-1 w-fit ${
@@ -382,10 +391,11 @@ export default function UsersIndex({ users }: UsersIndexProps) {
                                                     </div>
                                                 </TableCell>
                                             </TableRow>
-                                        ))
+                                            );
+                                        })
                                     ) : (
                                         <TableRow>
-                                            <TableCell colSpan={6} className="py-16">
+                                            <TableCell colSpan={7} className="py-16">
                                                 <div className="flex flex-col items-center justify-center text-center">
                                                     <div className="h-20 w-20 bg-muted/50 rounded-full flex items-center justify-center mb-6">
                                                         <Users className="h-10 w-10 text-muted-foreground" />
