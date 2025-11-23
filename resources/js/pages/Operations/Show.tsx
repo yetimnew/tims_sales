@@ -39,6 +39,7 @@ import { Area, AreaChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContaine
 import { usePermissions } from '@/hooks/use-permissions';
 import { useState } from 'react';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
+import { toast } from '@/hooks/use-toast';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Operations', href: '/operations' },
@@ -165,8 +166,34 @@ export default function OperationsShow({ operation, activityLogs = [], performan
     const handleDelete = () => {
         setIsDeleting(true);
         router.delete(`/operations/${operation.id}`, {
-            onSuccess: () => { setDeleteDialogOpen(false); setIsDeleting(false); },
-            onError: () => { setIsDeleting(false); },
+            onSuccess: () => {
+                setDeleteDialogOpen(false);
+                setIsDeleting(false);
+            },
+            onError: (deleteErrors) => {
+                setIsDeleting(false);
+
+                if (deleteErrors && typeof deleteErrors === 'object') {
+                    const errorMessages = Object.values(deleteErrors)
+                        .flatMap((message) => (Array.isArray(message) ? message : message ? [message] : []))
+                        .filter((message): message is string => typeof message === 'string' && message.trim().length > 0);
+
+                    if (errorMessages.length > 0) {
+                        toast({
+                            title: '❌ Delete Failed',
+                            description: errorMessages.join('\n'),
+                            variant: 'destructive',
+                        });
+                        return;
+                    }
+                }
+
+                toast({
+                    title: '❌ Delete Failed',
+                    description: 'An unexpected error occurred while deleting the operation.',
+                    variant: 'destructive',
+                });
+            },
         });
     };
 
@@ -882,6 +909,72 @@ export default function OperationsShow({ operation, activityLogs = [], performan
 
     const stakeholderSummary = relationshipMatrix.filter((item) => item.label !== 'Lifecycle Status');
 
+    const actualRevenueValue = economics.actualRevenue ?? null;
+    const totalCostValue = transportExecution.totalCost ?? financials.totalCost ?? null;
+    const derivedMarginValue = actualRevenueValue !== null && totalCostValue !== null
+        ? Number((actualRevenueValue - totalCostValue).toFixed(2))
+        : null;
+    const grossMarginValue = economics.grossMarginValue ?? derivedMarginValue;
+    const grossMarginPercent = economics.grossMarginPercent ?? ((grossMarginValue !== null && actualRevenueValue !== null && actualRevenueValue !== 0)
+        ? Number(((grossMarginValue / actualRevenueValue) * 100).toFixed(1))
+        : null);
+    const grossMarginPercentLabel = grossMarginPercent === null ? 'N/A' : `${grossMarginPercent.toFixed(1)}%`;
+
+    const reportSnapshotRows: Array<{
+        label: string;
+        company: string;
+        vendor: string;
+        helper?: string;
+    }> = [
+        {
+            label: 'Trips',
+            company: formatNumber(transportExecution.companyTrips, 0),
+            vendor: formatNumber(transportExecution.vendorTrips, 0),
+            helper: `${companyTripShareLabel} company • ${vendorTripShareLabel} vendor`,
+        },
+        {
+            label: 'Tonnage (MT)',
+            company: formatNumber(transportExecution.companyTonnage),
+            vendor: formatNumber(transportExecution.vendorTonnage),
+            helper: `${companyTonnageShareLabel} company • ${vendorTonnageShareLabel} vendor`,
+        },
+        {
+            label: 'Ton-Km',
+            company: companyTonKmLabel,
+            vendor: vendorTonKmLabel,
+            helper: `${companyTonKmShareLabel} company • ${vendorTonKmShareLabel} vendor`,
+        },
+        {
+            label: 'Cost (Birr)',
+            company: companyCostLabel,
+            vendor: vendorCostLabel,
+            helper: `${companyCostShareLabel} company • ${vendorCostShareLabel} vendor`,
+        },
+        {
+            label: 'Cost / Ton-Km',
+            company: companyCostPerTonKmLabel,
+            vendor: vendorCostPerTonKmLabel,
+        },
+    ];
+
+    const reportSnapshotKpis: Array<{ label: string; value: string; helper: string }> = [
+        {
+            label: 'Revenue Recognised',
+            value: formatCurrency(actualRevenueValue),
+            helper: actualRevenueValue !== null ? 'Captured via ton-km performance' : 'No revenue recorded yet',
+        },
+        {
+            label: 'Total Operating Cost',
+            value: formatCurrency(totalCostValue),
+            helper: totalCostValue !== null ? 'Includes company + vendor execution' : 'Awaiting cost capture',
+        },
+        {
+            label: 'Gross Margin',
+            value: grossMarginValue !== null ? formatCurrency(grossMarginValue) : 'N/A',
+            helper: `Margin ${grossMarginPercentLabel}`,
+        },
+    ];
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`Operation: ${operation.operationid}`} />
@@ -946,32 +1039,40 @@ export default function OperationsShow({ operation, activityLogs = [], performan
                             </div>
                         </div>
 
-                        {(hasPermission('operations.edit') || hasPermission('operations.destroy')) && (
-                            <div className="flex flex-wrap items-center gap-2">
-                                {hasPermission('operations.edit') && (
-                                    <Button
-                                        variant="outline"
-                                        asChild
-                                        className="gap-2 border-slate-300 bg-white/70 hover:border-blue-300 hover:bg-blue-50 dark:border-slate-600 dark:bg-slate-900/50 dark:hover:border-blue-700 dark:hover:bg-slate-800"
-                                    >
-                                        <Link href={`/operations/${operation.id}/edit`}>
-                                            <Edit className="h-4 w-4" />
-                                            Edit Operation
-                                        </Link>
-                                    </Button>
-                                )}
-                                {hasPermission('operations.destroy') && (
-                                    <Button
-                                        variant="outline"
-                                        onClick={() => setDeleteDialogOpen(true)}
-                                        className="gap-2 border-red-200 text-red-600 hover:border-red-300 hover:bg-red-50 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-900/30"
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                        Delete
-                                    </Button>
-                                )}
-                            </div>
-                        )}
+                        <div className="flex flex-wrap items-center gap-2">
+                            <Button
+                                variant="outline"
+                                asChild
+                                className="gap-2 border-blue-200 text-blue-600 hover:border-blue-300 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-300 dark:hover:bg-blue-900/30"
+                            >
+                                <Link href="/reports/operations">
+                                    <BarChart3 className="h-4 w-4" />
+                                    Open Operations Report
+                                </Link>
+                            </Button>
+                            {hasPermission('operations.edit') && (
+                                <Button
+                                    variant="outline"
+                                    asChild
+                                    className="gap-2 border-slate-300 bg-white/70 hover:border-blue-300 hover:bg-blue-50 dark:border-slate-600 dark:bg-slate-900/50 dark:hover:border-blue-700 dark:hover:bg-slate-800"
+                                >
+                                    <Link href={`/operations/${operation.id}/edit`}>
+                                        <Edit className="h-4 w-4" />
+                                        Edit Operation
+                                    </Link>
+                                </Button>
+                            )}
+                            {hasPermission('operations.destroy') && (
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setDeleteDialogOpen(true)}
+                                    className="gap-2 border-red-200 text-red-600 hover:border-red-300 hover:bg-red-50 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-900/30"
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                    Delete
+                                </Button>
+                            )}
+                        </div>
                     </div>
                 </div>
 
@@ -1127,6 +1228,62 @@ export default function OperationsShow({ operation, activityLogs = [], performan
                                                 </div>
                                             </div>
                                         ))}
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            {/* Report Snapshot */}
+                            <Card className="border-0 bg-gradient-to-br from-background to-muted/25 shadow-lg">
+                                <CardHeader className="border-b bg-gradient-to-r from-blue-50 via-emerald-50 to-sky-50 dark:from-blue-950/20 dark:via-emerald-950/20 dark:to-sky-950/20">
+                                    <CardTitle className="flex items-center gap-2 text-xl">
+                                        <BarChart3 className="h-5 w-5 text-blue-600 dark:text-blue-300" />
+                                        Operations Report Snapshot
+                                    </CardTitle>
+                                    <CardDescription>Financial view aligned with the operations report mix</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-6 p-6">
+                                    <div className="grid gap-4 sm:grid-cols-3">
+                                        {reportSnapshotKpis.map((kpi) => (
+                                            <div
+                                                key={kpi.label}
+                                                className="rounded-xl border border-slate-200 bg-white/80 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/40"
+                                            >
+                                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">
+                                                    {kpi.label}
+                                                </p>
+                                                <p className="mt-2 text-lg font-semibold text-slate-900 dark:text-slate-100">
+                                                    {kpi.value}
+                                                </p>
+                                                <p className="mt-1 text-xs text-slate-500 dark:text-slate-300">
+                                                    {kpi.helper}
+                                                </p>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white/80 shadow-sm dark:border-slate-700 dark:bg-slate-900/40">
+                                        <div className="grid grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1fr)] items-center gap-4 border-b border-slate-200 bg-slate-50 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300">
+                                            <span>Metric</span>
+                                            <span className="text-emerald-600 dark:text-emerald-300">Company</span>
+                                            <span className="text-right text-sky-600 dark:text-sky-300">Vendor</span>
+                                        </div>
+                                        <div className="divide-y divide-slate-200 dark:divide-slate-800">
+                                            {reportSnapshotRows.map((row) => (
+                                                <div
+                                                    key={row.label}
+                                                    className="grid grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1fr)] items-start gap-4 px-4 py-3 text-sm"
+                                                >
+                                                    <div>
+                                                        <p className="font-semibold text-slate-900 dark:text-slate-100">{row.label}</p>
+                                                        {row.helper && (
+                                                            <p className="text-xs text-muted-foreground">{row.helper}</p>
+                                                        )}
+                                                    </div>
+                                                    <p className="font-medium text-emerald-700 dark:text-emerald-200">{row.company}</p>
+                                                    <p className="text-right font-medium text-sky-700 dark:text-sky-200">{row.vendor}</p>
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
                                 </CardContent>
                             </Card>
