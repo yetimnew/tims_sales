@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 use Spatie\Permission\Models\Role;
@@ -25,33 +26,102 @@ class UserController extends Controller
      */
     public function index(Request $request): Response
     {
-        $query = User::with('roles');
+        $perPageOptions = [10, 15, 25, 50];
 
-        // Handle search
-        if ($request->has('search') && ! empty($request->input('search'))) {
-            $search = $request->input('search');
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
+        $search = trim((string) $request->input('search', ''));
+        $role = trim((string) $request->input('role', ''));
+        $status = trim((string) $request->input('status', ''));
+
+        $usersQuery = User::query()
+            ->with('roles');
+
+        if ($search !== '') {
+            $usersQuery->where(function ($query) use ($search) {
+                $query->where('name', 'like', "%{$search}%")
                     ->orWhere('email', 'like', "%{$search}%");
             });
         }
 
-        // Handle sorting
+        if ($role !== '' && $role !== 'all') {
+            $usersQuery->whereHas('roles', static function ($roleQuery) use ($role) {
+                $roleQuery->where('name', $role);
+            });
+        }
+
+        if ($status !== '' && $status !== 'all') {
+            if ($status === 'verified') {
+                $usersQuery->whereNotNull('email_verified_at');
+            } elseif ($status === 'pending') {
+                $usersQuery->whereNull('email_verified_at');
+            }
+        }
+
         $sort = $request->input('sort', 'name');
         $direction = $request->input('direction', 'asc');
 
-        // Validate sort column to prevent SQL injection
         $allowedSorts = ['name', 'email', 'created_at', 'email_verified_at'];
-        if (! in_array($sort, $allowedSorts)) {
+        if (! in_array($sort, $allowedSorts, true)) {
             $sort = 'name';
         }
 
-        $query->orderBy($sort, $direction);
+        if (! in_array($direction, ['asc', 'desc'], true)) {
+            $direction = 'asc';
+        }
 
-        $users = $query->paginate(15);
+        $usersQuery->orderBy($sort, $direction);
+
+        $perPage = (int) $request->input('per_page', 15);
+        if (! in_array($perPage, $perPageOptions, true)) {
+            $perPage = 15;
+        }
+
+        $users = $usersQuery
+            ->paginate($perPage)
+            ->withQueryString();
+
+        $roleOptions = Role::query()
+            ->orderBy('name')
+            ->get(['name', 'guard_name'])
+            ->map(static fn (Role $roleModel) => [
+                'label' => Str::headline($roleModel->name),
+                'value' => $roleModel->name,
+                'guard' => $roleModel->guard_name,
+            ])
+            ->values()
+            ->all();
+
+        $statusOptions = [
+            ['label' => 'All statuses', 'value' => 'all'],
+            ['label' => 'Verified', 'value' => 'verified'],
+            ['label' => 'Pending', 'value' => 'pending'],
+        ];
+
+        $filteredQuery = clone $usersQuery;
+
+        $stats = [
+            'totalUsers' => (clone $filteredQuery)->count(),
+            'verifiedUsers' => (clone $filteredQuery)->whereNotNull('email_verified_at')->count(),
+            'pendingUsers' => (clone $filteredQuery)->whereNull('email_verified_at')->count(),
+            'adminUsers' => (clone $filteredQuery)->whereHas('roles', static fn ($query) => $query->where('name', 'admin'))->count(),
+            'managerUsers' => (clone $filteredQuery)->whereHas('roles', static fn ($query) => $query->where('name', 'manager'))->count(),
+        ];
+
+        $filters = [
+            'search' => $search !== '' ? $search : null,
+            'role' => $role !== '' ? $role : null,
+            'status' => $status !== '' ? $status : null,
+            'sort' => $sort,
+            'direction' => $direction,
+            'per_page' => $perPage,
+        ];
 
         return Inertia::render('Users/Index', [
             'users' => $users,
+            'filters' => $filters,
+            'roleOptions' => $roleOptions,
+            'statusOptions' => $statusOptions,
+            'perPageOptions' => $perPageOptions,
+            'stats' => $stats,
         ]);
     }
 
@@ -286,21 +356,44 @@ class UserController extends Controller
     public function export(Request $request)
     {
         try {
-            $query = User::with('roles');
+            $query = User::query()->with('roles');
 
-            // Apply same search and sort as index
-            if ($request->has('search') && ! empty($request->input('search'))) {
-                $search = $request->input('search');
-                $query->where(function ($q) use ($search) {
-                    $q->where('name', 'like', "%{$search}%")
+            $search = trim((string) $request->input('search', ''));
+            $role = trim((string) $request->input('role', ''));
+            $status = trim((string) $request->input('status', ''));
+
+            if ($search !== '') {
+                $query->where(function ($searchQuery) use ($search) {
+                    $searchQuery->where('name', 'like', "%{$search}%")
                         ->orWhere('email', 'like', "%{$search}%");
                 });
             }
 
-            // Apply sorting
+            if ($role !== '' && $role !== 'all') {
+                $query->whereHas('roles', static fn ($roleQuery) => $roleQuery->where('name', $role));
+            }
+
+            if ($status !== '' && $status !== 'all') {
+                if ($status === 'verified') {
+                    $query->whereNotNull('email_verified_at');
+                } elseif ($status === 'pending') {
+                    $query->whereNull('email_verified_at');
+                }
+            }
+
             if ($request->has('sort')) {
                 $sort = $request->input('sort', 'name');
                 $direction = $request->input('direction', 'asc');
+
+                $allowedSorts = ['name', 'email', 'created_at', 'email_verified_at'];
+                if (! in_array($sort, $allowedSorts, true)) {
+                    $sort = 'name';
+                }
+
+                if (! in_array($direction, ['asc', 'desc'], true)) {
+                    $direction = 'asc';
+                }
+
                 $query->orderBy($sort, $direction);
             }
 

@@ -2,15 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Auth;
-use Spatie\Permission\Models\Role;
-use Spatie\Permission\Models\Permission;
-use Exception;
 use Spatie\Activitylog\Models\Activity;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
 class RoleController extends Controller
 {
@@ -19,13 +20,26 @@ class RoleController extends Controller
      */
     public function index(Request $request): Response
     {
+        $perPageOptions = [10, 15, 25, 50];
+
+        $search = trim((string) $request->input('search', ''));
+        $permissionGroup = trim((string) $request->input('permission_group', ''));
+
         $query = Role::with('permissions');
 
         // Handle search
-        if ($request->has('search') && !empty($request->input('search'))) {
-            $search = $request->input('search');
+        if ($search !== '') {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%");
+            });
+        }
+
+        if ($permissionGroup !== '' && $permissionGroup !== 'all') {
+            $query->whereHas('permissions', static function ($permissionQuery) use ($permissionGroup) {
+                $permissionQuery->where(function ($subQuery) use ($permissionGroup) {
+                    $subQuery->where('name', 'like', "{$permissionGroup}.%")
+                        ->orWhere('name', $permissionGroup);
+                });
             });
         }
 
@@ -35,16 +49,58 @@ class RoleController extends Controller
 
         // Validate sort column
         $allowedSorts = ['name', 'created_at'];
-        if (!in_array($sort, $allowedSorts)) {
+        if (! in_array($sort, $allowedSorts, true)) {
             $sort = 'name';
+        }
+
+        if (! in_array($direction, ['asc', 'desc'], true)) {
+            $direction = 'asc';
         }
 
         $query->orderBy($sort, $direction);
 
-        $roles = $query->paginate(15);
+        $perPage = (int) $request->input('per_page', 15);
+        if (! in_array($perPage, $perPageOptions, true)) {
+            $perPage = 15;
+        }
+
+        $roles = $query
+            ->paginate($perPage)
+            ->withQueryString();
+
+        $permissionGroupOptions = Permission::query()
+            ->select('name')
+            ->get()
+            ->map(static function (Permission $permission): string {
+                if (Str::contains($permission->name, '.')) {
+                    return (string) Str::before($permission->name, '.');
+                }
+
+                return $permission->name;
+            })
+            ->filter(static fn ($group) => $group !== null && $group !== '')
+            ->unique()
+            ->sort()
+            ->values()
+            ->map(static fn ($group) => [
+                'label' => Str::headline((string) $group),
+                'value' => (string) $group,
+            ])
+            ->all();
+
+        $filters = [
+            'search' => $search !== '' ? $search : null,
+            'permission_group' => $permissionGroup !== '' ? $permissionGroup : null,
+            'sort' => $sort,
+            'direction' => $direction,
+            'per_page' => $perPage,
+        ];
 
         return Inertia::render('Roles/Index', [
             'roles' => $roles,
+            'filters' => $filters,
+            'permissionGroupOptions' => $permissionGroupOptions,
+            'perPageOptions' => $perPageOptions,
         ]);
     }
 
@@ -152,7 +208,7 @@ class RoleController extends Controller
     {
         try {
             $validated = $request->validate([
-                'name' => 'required|string|max:255|unique:roles,name,' . $role->id,
+                'name' => 'required|string|max:255|unique:roles,name,'.$role->id,
                 'permissions' => 'nullable|array',
                 'permissions.*' => 'exists:permissions,id',
             ]);
@@ -254,9 +310,19 @@ class RoleController extends Controller
             $query = Role::with('permissions');
 
             // Apply same search and sort as index
-            if ($request->has('search') && !empty($request->input('search'))) {
+            if ($request->has('search') && ! empty($request->input('search'))) {
                 $search = $request->input('search');
                 $query->where('name', 'like', "%{$search}%");
+            }
+
+            $permissionGroup = trim((string) $request->input('permission_group', ''));
+            if ($permissionGroup !== '' && $permissionGroup !== 'all') {
+                $query->whereHas('permissions', static function ($permissionQuery) use ($permissionGroup) {
+                    $permissionQuery->where(function ($subQuery) use ($permissionGroup) {
+                        $subQuery->where('name', 'like', "{$permissionGroup}.%")
+                            ->orWhere('name', $permissionGroup);
+                    });
+                });
             }
 
             if ($request->has('sort')) {
@@ -268,7 +334,7 @@ class RoleController extends Controller
             $roles = $query->get();
 
             // Generate CSV
-            $filename = 'roles_' . now()->format('Y-m-d_H-i-s') . '.csv';
+            $filename = 'roles_'.now()->format('Y-m-d_H-i-s').'.csv';
             $handle = fopen('php://temp', 'r+');
 
             // Write header
@@ -282,7 +348,7 @@ class RoleController extends Controller
                     $role->guard_name,
                     $role->permissions->pluck('name')->join(', '),
                     $role->created_at,
-                    $role->updated_at
+                    $role->updated_at,
                 ]);
             }
 

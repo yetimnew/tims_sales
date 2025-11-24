@@ -71,7 +71,12 @@ async function fillDriverForm(page: Page, driver: DriverInput): Promise<void> {
 }
 
 async function searchDrivers(page: Page, query: string): Promise<void> {
-  const searchInput = page.getByPlaceholder('Search drivers...');
+  // Robust placeholder selector: case‑insensitive & fallback
+  let searchInput = page.getByPlaceholder(/search drivers\.{3}/i);
+  if ((await searchInput.count()) === 0) {
+    // Fallback to any input containing "Search"
+    searchInput = page.locator('input[placeholder*="Search"]').first();
+  }
   await expect(searchInput).toBeVisible();
   await searchInput.fill('');
   if (query !== '') {
@@ -169,7 +174,12 @@ async function createDriverViaUI(page: Page, overrides: CreateDriverOptions = {}
   await page.waitForTimeout(2000);
 
   // Explicitly search for the driver and wait for it to appear in the table
-  const searchInput = page.getByPlaceholder('Search drivers...');
+  // Explicitly search for the driver and wait for it to appear in the table
+  let searchInput = page.getByPlaceholder(/search drivers\.{3}/i);
+  if ((await searchInput.count()) === 0) {
+    // Fallback to any input containing "Search"
+    searchInput = page.locator('input[placeholder*="Search"]').first();
+  }
   await expect(searchInput).toBeVisible({ timeout: 10000 });
   await searchInput.fill('');
   await page.waitForTimeout(300);

@@ -2,14 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Auth;
-use Spatie\Permission\Models\Permission;
-use Exception;
 use Spatie\Activitylog\Models\Activity;
+use Spatie\Permission\Models\Permission;
 
 class PermissionController extends Controller
 {
@@ -18,14 +19,25 @@ class PermissionController extends Controller
      */
     public function index(Request $request): Response
     {
+        $perPageOptions = [10, 15, 25, 50];
+
+        $search = trim((string) $request->input('search', ''));
+        $module = trim((string) $request->input('module', ''));
+
         $query = Permission::query();
 
         // Handle search
-        if ($request->has('search') && !empty($request->input('search'))) {
-            $search = $request->input('search');
+        if ($search !== '') {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                     ->orWhere('guard_name', 'like', "%{$search}%");
+            });
+        }
+
+        if ($module !== '' && $module !== 'all') {
+            $query->where(function ($builder) use ($module) {
+                $builder->where('name', 'like', "{$module}.%")
+                    ->orWhere('name', $module);
             });
         }
 
@@ -35,16 +47,58 @@ class PermissionController extends Controller
 
         // Validate sort column
         $allowedSorts = ['name', 'guard_name', 'created_at'];
-        if (!in_array($sort, $allowedSorts)) {
+        if (! in_array($sort, $allowedSorts, true)) {
             $sort = 'name';
+        }
+
+        if (! in_array($direction, ['asc', 'desc'], true)) {
+            $direction = 'asc';
         }
 
         $query->orderBy($sort, $direction);
 
-        $permissions = $query->paginate(20);
+        $perPage = (int) $request->input('per_page', 20);
+        if (! in_array($perPage, $perPageOptions, true)) {
+            $perPage = 15;
+        }
+
+        $permissions = $query
+            ->paginate($perPage)
+            ->withQueryString();
+
+        $moduleOptions = Permission::query()
+            ->select('name')
+            ->get()
+            ->map(static function (Permission $permission): string {
+                if (Str::contains($permission->name, '.')) {
+                    return (string) Str::before($permission->name, '.');
+                }
+
+                return $permission->name;
+            })
+            ->filter(static fn ($group) => $group !== null && $group !== '')
+            ->unique()
+            ->sort()
+            ->values()
+            ->map(static fn ($group) => [
+                'label' => Str::headline((string) $group),
+                'value' => (string) $group,
+            ])
+            ->all();
+
+        $filters = [
+            'search' => $search !== '' ? $search : null,
+            'module' => $module !== '' ? $module : null,
+            'sort' => $sort,
+            'direction' => $direction,
+            'per_page' => $perPage,
+        ];
 
         return Inertia::render('Permissions/Index', [
             'permissions' => $permissions,
+            'filters' => $filters,
+            'moduleOptions' => $moduleOptions,
+            'perPageOptions' => $perPageOptions,
         ]);
     }
 
@@ -80,11 +134,19 @@ class PermissionController extends Controller
             $query = Permission::query();
 
             // Apply same search and sort as index
-            if ($request->has('search') && !empty($request->input('search'))) {
+            if ($request->has('search') && ! empty($request->input('search'))) {
                 $search = $request->input('search');
                 $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
                         ->orWhere('guard_name', 'like', "%{$search}%");
+                });
+            }
+
+            $module = trim((string) $request->input('module', ''));
+            if ($module !== '' && $module !== 'all') {
+                $query->where(function ($builder) use ($module) {
+                    $builder->where('name', 'like', "{$module}.%")
+                        ->orWhere('name', $module);
                 });
             }
 
@@ -97,7 +159,7 @@ class PermissionController extends Controller
             $permissions = $query->get();
 
             // Generate CSV
-            $filename = 'permissions_' . now()->format('Y-m-d_H-i-s') . '.csv';
+            $filename = 'permissions_'.now()->format('Y-m-d_H-i-s').'.csv';
             $handle = fopen('php://temp', 'r+');
 
             // Write header
@@ -110,7 +172,7 @@ class PermissionController extends Controller
                     $permission->name,
                     $permission->guard_name,
                     $permission->created_at,
-                    $permission->updated_at
+                    $permission->updated_at,
                 ]);
             }
 
