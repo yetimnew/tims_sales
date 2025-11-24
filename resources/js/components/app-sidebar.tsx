@@ -233,29 +233,9 @@ const getMainNavItems = (): NavItem[] => {
                 isActive: currentUrl.startsWith('/reports'),
                 items: [
                     {
-                        title: 'Truck Reports',
-                        href: '/reports/trucks',
-                        icon: Truck,
-                    },
-                    {
-                        title: 'Driver Reports',
-                        href: '/reports/drivers',
-                        icon: Users,
-                    },
-                    {
-                        title: 'Performance Reports',
-                        href: '/reports/performances',
-                        icon: BarChart3,
-                    },
-                    {
                         title: 'Operation Reports',
                         href: '/reports/operations',
                         icon: Activity,
-                    },
-                    {
-                        title: 'Operational Comparison',
-                        href: '/reports/operational-comparison',
-                        icon: LineChart,
                     },
                     {
                         title: 'Financial Reports',
@@ -276,11 +256,6 @@ const getMainNavItems = (): NavItem[] => {
                         title: 'Customer Profitability',
                         href: '/reports/customer-profitability',
                         icon: DollarSign,
-                    },
-                    {
-                        title: 'Route & Distance Efficiency',
-                        href: '/reports/route-efficiency',
-                        icon: Navigation,
                     },
                     {
                         title: 'Outsource Performance',

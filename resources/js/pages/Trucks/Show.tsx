@@ -2,7 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AlertCircle, Wrench, BarChart3, History, CheckCircle, XCircle, DollarSign, Calendar, Clock, FileText, Activity, Settings, Hash } from 'lucide-react';
+import { AlertCircle, Wrench, BarChart3, History, CheckCircle, XCircle, DollarSign, Calendar, Clock, Activity, Settings, Hash } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { Head, Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
@@ -390,21 +390,6 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
                                                     <div className="text-center">
                                                         <p className="text-xs font-medium">View Performance</p>
                                                         <p className="text-xs text-muted-foreground">Analytics & reports</p>
-                                                    </div>
-                                                </Link>
-                                            </Button>
-                                            <Button
-                                                variant="outline"
-                                                asChild
-                                                className="h-auto p-3 flex flex-col items-center gap-2 hover:bg-orange-50 hover:border-orange-300 border-slate-300 dark:border-slate-600 dark:hover:bg-orange-950/20"
-                                            >
-                                                <Link href={`/reports/trucks?truck_id=${truck.id}`}>
-                                                    <div className="p-1.5 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-                                                        <FileText className="h-4 w-4 text-orange-600 dark:text-orange-400" />
-                                                    </div>
-                                                    <div className="text-center">
-                                                        <p className="text-xs font-medium">Generate Report</p>
-                                                        <p className="text-xs text-muted-foreground">Open truck reports</p>
                                                     </div>
                                                 </Link>
                                             </Button>

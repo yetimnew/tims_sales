@@ -608,24 +608,16 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('outsource-performances', \App\Http\Controllers\OutsourcePerformanceController::class);
 
     // Reports
-    Route::get('reports/trucks', [\App\Http\Controllers\ReportController::class, 'trucks'])->name('reports.trucks');
-    Route::get('reports/drivers', [\App\Http\Controllers\ReportController::class, 'drivers'])->name('reports.drivers');
-    Route::get('reports/performances', [\App\Http\Controllers\ReportController::class, 'performances'])->name('reports.performances');
     Route::get('reports/operations', [\App\Http\Controllers\ReportController::class, 'operations'])->name('reports.operations');
     Route::get('reports/financial', [\App\Http\Controllers\ReportController::class, 'financial'])->name('reports.financial');
     Route::get('reports/maintenance', [\App\Http\Controllers\ReportController::class, 'maintenance'])->name('reports.maintenance');
     Route::get('reports/fuel-efficiency', [\App\Http\Controllers\ReportController::class, 'fuelEfficiency'])->name('reports.fuel-efficiency');
     Route::get('reports/customer-profitability', [\App\Http\Controllers\ReportController::class, 'customerProfitability'])->name('reports.customer-profitability');
-    Route::get('reports/route-efficiency', [\App\Http\Controllers\ReportController::class, 'routeEfficiency'])->name('reports.route-efficiency');
     Route::get('reports/outsource-performance', [\App\Http\Controllers\ReportController::class, 'outsourcePerformanceReport'])->name('reports.outsource-performance');
     Route::get('reports/operation-profitability', [\App\Http\Controllers\ReportController::class, 'operationProfitability'])->name('reports.operation-profitability');
     Route::get('reports/capacity-load', [\App\Http\Controllers\ReportController::class, 'capacityLoadFactor'])->name('reports.capacity-load');
     Route::get('reports/geography-heatmaps', [\App\Http\Controllers\ReportController::class, 'geographyHeatmaps'])->name('reports.geography-heatmaps');
     Route::get('reports/performance-all', [\App\Http\Controllers\ReportController::class, 'performanceAll'])->name('reports.performance-all');
-    Route::get('reports/operational-comparison', [\App\Http\Controllers\ReportController::class, 'operationalComparison'])->name('reports.operational-comparison');
-    Route::get('reports/operational-comparison/export/{format}', [\App\Http\Controllers\ReportController::class, 'operationalComparisonExport'])
-        ->whereIn('format', ['csv', 'xlsx', 'pdf'])
-        ->name('reports.operational-comparison.export');
     Route::get('reports/performance-by-operation', [\App\Http\Controllers\ReportController::class, 'performanceByOperation'])->name('reports.performance-by-operation');
     Route::get('reports/performance-by-operation/export/{format}', [\App\Http\Controllers\ReportController::class, 'performanceByOperationExport'])
         ->whereIn('format', ['csv', 'xlsx', 'pdf'])

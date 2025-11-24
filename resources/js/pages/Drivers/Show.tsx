@@ -2,7 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AlertCircle, BarChart3, History, Activity, ShieldCheck, CheckCircle, XCircle, Calendar, User, ArrowLeft, Edit, Trash2, Hash, FileText, Settings, Truck } from 'lucide-react';
+import { AlertCircle, BarChart3, History, Activity, ShieldCheck, CheckCircle, XCircle, Calendar, User, ArrowLeft, Edit, Trash2, Hash, Settings, Truck } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { Head, Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
@@ -322,21 +322,6 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
                                                     <div className="text-center">
                                                         <p className="text-xs font-medium">Log Performance</p>
                                                         <p className="text-xs text-muted-foreground">Record metrics</p>
-                                                    </div>
-                                                </Link>
-                                            </Button>
-                                            <Button
-                                                variant="outline"
-                                                asChild
-                                                className="h-auto p-3 flex flex-col items-center gap-2 hover:bg-orange-50 hover:border-orange-300 border-slate-300 dark:border-slate-600 dark:hover:bg-orange-950/20"
-                                            >
-                                                <Link href={`/reports/drivers?driver_id=${driver.id}`}>
-                                                    <div className="p-1.5 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-                                                        <FileText className="h-4 w-4 text-orange-600 dark:text-orange-400" />
-                                                    </div>
-                                                    <div className="text-center">
-                                                        <p className="text-xs font-medium">Driver Reports</p>
-                                                        <p className="text-xs text-muted-foreground">Open analytics</p>
                                                     </div>
                                                 </Link>
                                             </Button>
