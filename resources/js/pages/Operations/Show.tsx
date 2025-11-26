@@ -1040,16 +1040,6 @@ export default function OperationsShow({ operation, activityLogs = [], performan
                         </div>
 
                         <div className="flex flex-wrap items-center gap-2">
-                            <Button
-                                variant="outline"
-                                asChild
-                                className="gap-2 border-blue-200 text-blue-600 hover:border-blue-300 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-300 dark:hover:bg-blue-900/30"
-                            >
-                                <Link href="/reports/operations">
-                                    <BarChart3 className="h-4 w-4" />
-                                    Open Operations Report
-                                </Link>
-                            </Button>
                             {hasPermission('operations.edit') && (
                                 <Button
                                     variant="outline"

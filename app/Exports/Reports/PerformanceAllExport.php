@@ -14,7 +14,7 @@ use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 
-class OperationPerformanceExport implements FromCollection, ShouldAutoSize, WithEvents, WithHeadings, WithMapping
+class PerformanceAllExport implements FromCollection, ShouldAutoSize, WithEvents, WithHeadings, WithMapping
 {
     public function __construct(private readonly Collection $rows) {}
 
@@ -26,26 +26,26 @@ class OperationPerformanceExport implements FromCollection, ShouldAutoSize, With
     public function headings(): array
     {
         return [
+            'FO Number',
+            'Dispatch Date',
+            'Driver',
+            'Truck Plate',
+            'Vehicle Type',
             'Operation',
             'Customer',
-            'Internal Trips',
-            'Outsource Trips',
-            'Total Trips',
-            'Internal Tonnage (MT)',
-            'Outsource Tonnage (MT)',
-            'Total Tonnage (MT)',
-            'Internal Ton-KM',
-            'Outsource Ton-KM',
-            'Total Ton-KM',
-            'Internal Distance (KM)',
-            'Outsource Distance (KM)',
+            'Origin',
+            'Destination',
+            'Tonnage (MT)',
+            'Ton-KM',
+            'Distance With Cargo (KM)',
+            'Distance Without Cargo (KM)',
             'Total Distance (KM)',
-            'Average Km/Trip',
-            'Cost per Km',
-            'Internal Expense',
-            'Outsource Cost',
-            'Total Cost',
-            'Tariff',
+            'Fuel (L)',
+            'Fuel Cost',
+            'Perdiem',
+            'Work Ongoing',
+            'Other Cost',
+            'Total Expense',
             'Revenue',
             'Profit',
             'Margin %',
@@ -57,26 +57,26 @@ class OperationPerformanceExport implements FromCollection, ShouldAutoSize, With
         $formatDecimal = static fn ($value) => $value === null ? null : round((float) $value, 2);
 
         return [
+            $row['fo_number'],
+            $row['dispatch_date'],
+            $row['driver_name'],
+            $row['truck_plate'],
+            $row['vehicle_type'],
             $row['operation_code'],
             $row['customer_name'],
-            $row['internal_trips'],
-            $row['outsource_trips'],
-            $row['total_trips'],
-            $formatDecimal($row['internal_tonnage']),
-            $formatDecimal($row['outsource_tonnage']),
-            $formatDecimal($row['total_tonnage']),
-            $formatDecimal($row['internal_ton_km']),
-            $formatDecimal($row['outsource_ton_km']),
-            $formatDecimal($row['total_ton_km']),
-            $formatDecimal($row['internal_distance']),
-            $formatDecimal($row['outsource_distance']),
-            $formatDecimal($row['total_distance']),
-            $formatDecimal($row['average_km_per_trip']),
-            $formatDecimal($row['cost_per_km']),
-            $formatDecimal($row['internal_expense']),
-            $formatDecimal($row['outsource_cost']),
-            $formatDecimal($row['total_cost']),
-            $formatDecimal($row['tariff']),
+            $row['origin_name'],
+            $row['destination_name'],
+            $formatDecimal($row['tonnage']),
+            $formatDecimal($row['ton_km']),
+            $formatDecimal($row['distance_wc']),
+            $formatDecimal($row['distance_wo']),
+            $formatDecimal($row['distance_total']),
+            $formatDecimal($row['fuel_litres']),
+            $formatDecimal($row['fuel_cost']),
+            $formatDecimal($row['perdiem']),
+            $formatDecimal($row['work_on_going']),
+            $formatDecimal($row['other_cost']),
+            $formatDecimal($row['expense']),
             $formatDecimal($row['revenue']),
             $formatDecimal($row['profit']),
             $row['margin_percent'] === null ? null : round((float) $row['margin_percent'], 2),
@@ -124,21 +124,22 @@ class OperationPerformanceExport implements FromCollection, ShouldAutoSize, With
                 $sheet->getStyle($totalRange)->applyFromArray($borderStyle);
 
                 if ($totalRowIndex > 1) {
-                    $sheet->getStyle("C2:{$lastColumn}{$totalRowIndex}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
-                    $sheet->getStyle("A2:B{$totalRowIndex}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
+                    $sheet->getStyle("B2:{$lastColumn}{$totalRowIndex}")
+                        ->getAlignment()
+                        ->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+                    $sheet->getStyle("A2:A{$totalRowIndex}")
+                        ->getAlignment()
+                        ->setHorizontal(Alignment::HORIZONTAL_LEFT);
                 }
 
                 if ($rowCount > 0) {
                     $dataStart = 2;
                     $dataEnd = $rowCount + 1;
 
-                    $sheet->getStyle("C{$dataStart}:E{$dataEnd}")
-                        ->getNumberFormat()
-                        ->setFormatCode('#,##0');
-                    $sheet->getStyle("F{$dataStart}:P{$dataEnd}")
+                    $sheet->getStyle("J{$dataStart}:T{$dataEnd}")
                         ->getNumberFormat()
                         ->setFormatCode('#,##0.00');
-                    $sheet->getStyle("Q{$dataStart}:V{$dataEnd}")
+                    $sheet->getStyle("U{$dataStart}:V{$dataEnd}")
                         ->getNumberFormat()
                         ->setFormatCode('#,##0.00');
                     $sheet->getStyle("W{$dataStart}:W{$dataEnd}")

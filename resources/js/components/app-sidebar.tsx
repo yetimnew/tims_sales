@@ -37,14 +37,12 @@ import {
     Package,
     ClipboardCheck,
     LineChart,
-    AlertTriangle,
-    Factory
+    AlertTriangle
 } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const getMainNavItems = (): NavItem[] => {
     try {
-        // Get current URL for active state detection
         const currentUrl = window.location.pathname;
 
         return [
@@ -56,7 +54,16 @@ const getMainNavItems = (): NavItem[] => {
             {
                 title: 'Fleet Management',
                 icon: Truck,
-                isActive: currentUrl.startsWith('/trucks') || currentUrl.startsWith('/drivers') || currentUrl.startsWith('/driver-trucks') || currentUrl.startsWith('/vehicletypes') || currentUrl.startsWith('/fuel') || currentUrl.startsWith('/driver-performance') || currentUrl.startsWith('/driver-safety') || currentUrl.startsWith('/cargo-types') || currentUrl.startsWith('/truck-status-board'),
+                isActive:
+                    currentUrl.startsWith('/trucks') ||
+                    currentUrl.startsWith('/drivers') ||
+                    currentUrl.startsWith('/driver-trucks') ||
+                    currentUrl.startsWith('/vehicletypes') ||
+                    currentUrl.startsWith('/fuel') ||
+                    currentUrl.startsWith('/driver-performance') ||
+                    currentUrl.startsWith('/driver-safety') ||
+                    currentUrl.startsWith('/cargo-types') ||
+                    currentUrl.startsWith('/truck-status-board'),
                 items: [
                     {
                         title: 'Trucks',
@@ -98,7 +105,10 @@ const getMainNavItems = (): NavItem[] => {
             {
                 title: 'Maintenance',
                 icon: Wrench,
-                isActive: currentUrl.startsWith('/maintenance') || currentUrl.startsWith('/maintenance-overview') || currentUrl.startsWith('/maintenance-types'),
+                isActive:
+                    currentUrl.startsWith('/maintenance') ||
+                    currentUrl.startsWith('/maintenance-overview') ||
+                    currentUrl.startsWith('/maintenance-types'),
                 items: [
                     {
                         title: 'Maintenance Records',
@@ -125,7 +135,8 @@ const getMainNavItems = (): NavItem[] => {
             {
                 title: 'Financial Management',
                 icon: DollarSign,
-                isActive: currentUrl.startsWith('/financial') || currentUrl.startsWith('/route-plans'),
+                isActive:
+                    currentUrl.startsWith('/financial') || currentUrl.startsWith('/route-plans'),
                 items: [
                     {
                         title: 'Financial Records',
@@ -142,7 +153,10 @@ const getMainNavItems = (): NavItem[] => {
             {
                 title: 'Operations',
                 icon: Activity,
-                isActive: currentUrl.startsWith('/operations') || currentUrl.startsWith('/performances') || currentUrl.startsWith('/customers'),
+                isActive:
+                    currentUrl.startsWith('/operations') ||
+                    currentUrl.startsWith('/performances') ||
+                    currentUrl.startsWith('/customers'),
                 items: [
                     {
                         title: 'Operations',
@@ -164,7 +178,12 @@ const getMainNavItems = (): NavItem[] => {
             {
                 title: 'Geographic Management',
                 icon: Globe,
-                isActive: currentUrl.startsWith('/regions') || currentUrl.startsWith('/zones') || currentUrl.startsWith('/woredas') || currentUrl.startsWith('/places') || currentUrl.startsWith('/distances'),
+                isActive:
+                    currentUrl.startsWith('/regions') ||
+                    currentUrl.startsWith('/zones') ||
+                    currentUrl.startsWith('/woredas') ||
+                    currentUrl.startsWith('/places') ||
+                    currentUrl.startsWith('/distances'),
                 items: [
                     {
                         title: 'Regions',
@@ -196,7 +215,9 @@ const getMainNavItems = (): NavItem[] => {
             {
                 title: 'Status Management',
                 icon: Settings,
-                isActive: currentUrl.startsWith('/statustypes') || currentUrl.startsWith('/truck-status-board'),
+                isActive:
+                    currentUrl.startsWith('/statustypes') ||
+                    currentUrl.startsWith('/truck-status-board'),
                 items: [
                     {
                         title: 'Status Type Registration',
@@ -213,7 +234,9 @@ const getMainNavItems = (): NavItem[] => {
             {
                 title: 'Outsourcing',
                 icon: UserCheck,
-                isActive: currentUrl.startsWith('/outsources') || currentUrl.startsWith('/outsource-performances'),
+                isActive:
+                    currentUrl.startsWith('/outsources') ||
+                    currentUrl.startsWith('/outsource-performances'),
                 items: [
                     {
                         title: 'Outsources',
@@ -232,16 +255,6 @@ const getMainNavItems = (): NavItem[] => {
                 icon: FileText,
                 isActive: currentUrl.startsWith('/reports'),
                 items: [
-                    {
-                        title: 'Operation Reports',
-                        href: '/reports/operations',
-                        icon: Activity,
-                    },
-                    {
-                        title: 'Financial Reports',
-                        href: '/reports/financial',
-                        icon: DollarSign,
-                    },
                     {
                         title: 'Maintenance Reports',
                         href: '/reports/maintenance',
@@ -268,11 +281,6 @@ const getMainNavItems = (): NavItem[] => {
                         icon: DollarSign,
                     },
                     {
-                        title: 'Capacity & Load Factor',
-                        href: '/reports/capacity-load',
-                        icon: Package,
-                    },
-                    {
                         title: 'Geographic Heatmaps',
                         href: '/reports/geography-heatmaps',
                         icon: Globe,
@@ -281,11 +289,6 @@ const getMainNavItems = (): NavItem[] => {
                         title: 'Performance (All)',
                         href: '/reports/performance-all',
                         icon: Activity,
-                    },
-                    {
-                        title: 'Performance by Operation',
-                        href: '/reports/performance-by-operation',
-                        icon: Factory,
                     },
                     {
                         title: 'Performance by Driver',
@@ -317,7 +320,10 @@ const getMainNavItems = (): NavItem[] => {
             {
                 title: 'User Management',
                 icon: Shield,
-                isActive: currentUrl.startsWith('/users') || currentUrl.startsWith('/roles') || currentUrl.startsWith('/permissions'),
+                isActive:
+                    currentUrl.startsWith('/users') ||
+                    currentUrl.startsWith('/roles') ||
+                    currentUrl.startsWith('/permissions'),
                 items: [
                     {
                         title: 'Users',

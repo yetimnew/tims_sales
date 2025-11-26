@@ -613,8 +613,6 @@ class TimsSystemTest extends TestCase
     public function user_can_view_reports()
     {
         $reports = [
-            'operations' => '/reports/operations',
-            'financial' => '/reports/financial',
             'maintenance' => '/reports/maintenance',
         ];
 

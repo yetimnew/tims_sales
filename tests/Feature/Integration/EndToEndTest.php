@@ -2,15 +2,15 @@
 
 namespace Tests\Feature\Integration;
 
-use App\Models\User;
-use App\Models\Truck;
 use App\Models\Driver;
+use App\Models\Truck;
+use App\Models\User;
 use App\Models\VehicleType;
-use App\Models\Zone;
 use App\Models\Woreda;
-use App\Models\Role;
-use App\Models\Permission;
+use App\Models\Zone;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class EndToEndTest extends TestCase
@@ -18,8 +18,11 @@ class EndToEndTest extends TestCase
     use RefreshDatabase;
 
     protected $user;
+
     protected $vehicleType;
+
     protected $zone;
+
     protected $woreda;
 
     protected function setUp(): void
@@ -40,7 +43,7 @@ class EndToEndTest extends TestCase
             'fuel.view', 'fuel.create', 'fuel.edit', 'fuel.destroy',
             'fuel.show', 'fuel.store', 'fuel.update', 'fuel.export',
             'financial.view', 'financial.create', 'financial.edit', 'financial.destroy',
-            'financial.show', 'financial.store', 'financial.update', 'financial.export'
+            'financial.show', 'financial.store', 'financial.update', 'financial.export',
         ];
 
         foreach ($permissions as $permission) {
@@ -72,7 +75,7 @@ class EndToEndTest extends TestCase
             'purchasePrice' => 500000,
             'productionDate' => '2023-01-01',
             'serviceStartDate' => '2023-02-01',
-            'status' => 'active'
+            'status' => 'active',
         ];
 
         $response = $this->actingAs($this->user)
@@ -95,7 +98,7 @@ class EndToEndTest extends TestCase
             'woreda_id' => $this->woreda->id,
             'kebele' => '01',
             'house_number' => '123',
-            'status' => 'active'
+            'status' => 'active',
         ];
 
         $response = $this->actingAs($this->user)
@@ -110,14 +113,14 @@ class EndToEndTest extends TestCase
         $response = $this->actingAs($this->user)
             ->post(route('drivers.assign-truck', $driver), [
                 'truck_id' => $truck->id,
-                'assigned_date' => now()->format('Y-m-d')
+                'assigned_date' => now()->format('Y-m-d'),
             ]);
 
         $response->assertRedirect();
         $this->assertDatabaseHas('driver_truck', [
             'driver_id' => $driver->id,
             'truck_id' => $truck->id,
-            'status' => 'active'
+            'status' => 'active',
         ]);
 
         // 4. Create maintenance record
@@ -127,7 +130,7 @@ class EndToEndTest extends TestCase
             'scheduled_date' => '2023-12-01',
             'status' => 'scheduled',
             'description' => 'Regular maintenance',
-            'cost' => 1500.00
+            'cost' => 1500.00,
         ];
 
         $response = $this->actingAs($this->user)
@@ -147,13 +150,13 @@ class EndToEndTest extends TestCase
                 'completed_date' => '2023-12-02',
                 'status' => 'completed',
                 'description' => 'Regular maintenance completed',
-                'cost' => 1500.00
+                'cost' => 1500.00,
             ]);
 
         $response->assertRedirect(route('maintenance.show', $maintenance));
         $this->assertDatabaseHas('vehicle_maintenance_records', [
             'id' => $maintenance->id,
-            'status' => 'completed'
+            'status' => 'completed',
         ]);
 
         // 6. Create fuel record
@@ -168,7 +171,7 @@ class EndToEndTest extends TestCase
             'fuel_station' => 'Shell Station',
             'receipt_number' => 'RCP001',
             'odometer_reading' => 100000,
-            'notes' => 'Regular fuel fill'
+            'notes' => 'Regular fuel fill',
         ];
 
         $response = $this->actingAs($this->user)
@@ -191,7 +194,7 @@ class EndToEndTest extends TestCase
             'insurance_cost' => 2000.00,
             'depreciation' => 3000.00,
             'other_costs' => 1000.00,
-            'notes' => 'Monthly financial record'
+            'notes' => 'Monthly financial record',
         ];
 
         $response = $this->actingAs($this->user)
@@ -253,31 +256,31 @@ class EndToEndTest extends TestCase
         $this->assertDatabaseHas('activity_log', [
             'description' => 'created',
             'subject_type' => 'App\Models\Truck',
-            'subject_id' => $truck->id
+            'subject_id' => $truck->id,
         ]);
 
         $this->assertDatabaseHas('activity_log', [
             'description' => 'created',
             'subject_type' => 'App\Models\Driver',
-            'subject_id' => $driver->id
+            'subject_id' => $driver->id,
         ]);
 
         $this->assertDatabaseHas('activity_log', [
             'description' => 'created',
             'subject_type' => 'App\Models\VehicleMaintenanceRecord',
-            'subject_id' => $maintenance->id
+            'subject_id' => $maintenance->id,
         ]);
 
         $this->assertDatabaseHas('activity_log', [
             'description' => 'created',
             'subject_type' => 'App\Models\FuelRecord',
-            'subject_id' => $fuel->id
+            'subject_id' => $fuel->id,
         ]);
 
         $this->assertDatabaseHas('activity_log', [
             'description' => 'created',
             'subject_type' => 'App\Models\TruckFinancialRecord',
-            'subject_id' => $financial->id
+            'subject_id' => $financial->id,
         ]);
     }
 
@@ -289,7 +292,7 @@ class EndToEndTest extends TestCase
             'name' => 'New User',
             'email' => 'newuser@example.com',
             'password' => 'password123',
-            'password_confirmation' => 'password123'
+            'password_confirmation' => 'password123',
         ];
 
         $response = $this->actingAs($this->user)
@@ -303,7 +306,7 @@ class EndToEndTest extends TestCase
         // 2. Create a role
         $roleData = [
             'name' => 'manager',
-            'guard_name' => 'web'
+            'guard_name' => 'web',
         ];
 
         $response = $this->actingAs($this->user)
@@ -319,7 +322,7 @@ class EndToEndTest extends TestCase
         foreach ($permissions as $permission) {
             $permissionData = [
                 'name' => $permission,
-                'guard_name' => 'web'
+                'guard_name' => 'web',
             ];
 
             $response = $this->actingAs($this->user)
@@ -363,7 +366,7 @@ class EndToEndTest extends TestCase
     {
         // 1. Create a region
         $regionData = [
-            'name' => 'Test Region'
+            'name' => 'Test Region',
         ];
 
         $response = $this->actingAs($this->user)
@@ -377,7 +380,7 @@ class EndToEndTest extends TestCase
         // 2. Create a zone in the region
         $zoneData = [
             'name' => 'Test Zone',
-            'region_id' => $region->id
+            'region_id' => $region->id,
         ];
 
         $response = $this->actingAs($this->user)
@@ -391,7 +394,7 @@ class EndToEndTest extends TestCase
         // 3. Create a woreda in the zone
         $woredaData = [
             'name' => 'Test Woreda',
-            'zone_id' => $zone->id
+            'zone_id' => $zone->id,
         ];
 
         $response = $this->actingAs($this->user)
@@ -405,7 +408,7 @@ class EndToEndTest extends TestCase
         // 4. Create a place in the woreda
         $placeData = [
             'name' => 'Test Place',
-            'woreda_id' => $woreda->id
+            'woreda_id' => $woreda->id,
         ];
 
         $response = $this->actingAs($this->user)
@@ -452,7 +455,7 @@ class EndToEndTest extends TestCase
             'category' => 'Construction',
             'weight_per_cubic_meter' => 2.5,
             'handling_requirements' => 'Handle with care',
-            'safety_requirements' => 'Wear safety equipment'
+            'safety_requirements' => 'Wear safety equipment',
         ];
 
         $response = $this->actingAs($this->user)
@@ -470,7 +473,7 @@ class EndToEndTest extends TestCase
             'phone' => '+251911234567',
             'email' => 'customer@example.com',
             'address' => 'Test Address',
-            'status' => 'active'
+            'status' => 'active',
         ];
 
         $response = $this->actingAs($this->user)
@@ -493,7 +496,7 @@ class EndToEndTest extends TestCase
             'tariff' => 50.0,
             'status' => 'open',
             'closed' => false,
-            'user_id' => $this->user->id
+            'user_id' => $this->user->id,
         ];
 
         $response = $this->actingAs($this->user)
@@ -537,7 +540,7 @@ class EndToEndTest extends TestCase
         // 1. Create a status type
         $statusTypeData = [
             'name' => 'Test Status Type',
-            'description' => 'Test description'
+            'description' => 'Test description',
         ];
 
         $response = $this->actingAs($this->user)
@@ -552,7 +555,7 @@ class EndToEndTest extends TestCase
         $statusData = [
             'name' => 'Test Status',
             'statustype_id' => $statusType->id,
-            'description' => 'Test status description'
+            'description' => 'Test status description',
         ];
 
         $response = $this->actingAs($this->user)
@@ -599,37 +602,39 @@ class EndToEndTest extends TestCase
         // Assign driver to truck
         $driver->trucks()->attach($truck->id, [
             'assigned_date' => now(),
-            'status' => 'active'
+            'status' => 'active',
         ]);
 
         // Create maintenance record
         \App\Models\VehicleMaintenanceRecord::factory()->create([
             'truck_id' => $truck->id,
-            'cost' => 1000.00
+            'cost' => 1000.00,
         ]);
 
         // Create fuel record
         \App\Models\FuelRecord::factory()->create([
             'truck_id' => $truck->id,
-            'total_cost' => 500.00
+            'total_cost' => 500.00,
         ]);
 
         // Create financial record
-        \App\Models\TruckFinancialRecord::factory()->create([
+        \App\Models\TruckFinancialRecord::query()->create([
             'truck_id' => $truck->id,
+            'record_date' => now(),
+            'period_type' => 'monthly',
             'revenue' => 10000.00,
-            'net_profit' => 8500.00
+            'net_profit' => 8500.00,
         ]);
 
         // 1. Test truck report
         $response = $this->actingAs($this->user)
-            ->get(route('reports.trucks'));
+            ->get(route('reports.performance-by-truck'));
 
         $response->assertStatus(200);
 
         // 2. Test driver report
         $response = $this->actingAs($this->user)
-            ->get(route('reports.drivers'));
+            ->get(route('reports.performance-by-driver'));
 
         $response->assertStatus(200);
 
@@ -639,13 +644,7 @@ class EndToEndTest extends TestCase
 
         $response->assertStatus(200);
 
-        // 4. Test financial report
-        $response = $this->actingAs($this->user)
-            ->get(route('reports.financial'));
-
-        $response->assertStatus(200);
-
-        // 5. Test dashboard with data
+        // 4. Test dashboard with data
         $response = $this->actingAs($this->user)
             ->get(route('dashboard'));
 

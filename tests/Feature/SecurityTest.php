@@ -141,8 +141,6 @@ class SecurityTest extends TestCase
             '/cargo-types',
             '/financial',
             '/route-plans',
-            '/reports/operations',
-            '/reports/financial',
             '/reports/maintenance',
         ];
 
