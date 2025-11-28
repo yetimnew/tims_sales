@@ -1,0 +1,100 @@
+[
+  {
+    "legacy_id": 1,
+    "name": "Cental",
+    "code": "CEN",
+    "description": "the central part of the countryy",
+    "status": 1
+  },
+  {
+    "legacy_id": 2,
+    "name": "OROMIA",
+    "code": "ORO",
+    "description": null,
+    "status": 1
+  },
+  {
+    "legacy_id": 11,
+    "name": "GAMBYLA",
+    "code": "GAM",
+    "description": "de",
+    "status": 1
+  },
+  {
+    "legacy_id": 23,
+    "name": "AFAR",
+    "code": "AFA",
+    "description": "DE",
+    "status": 1
+  },
+  {
+    "legacy_id": 44,
+    "name": "DIREDAWA",
+    "code": "DIR",
+    "description": "de",
+    "status": 1
+  },
+  {
+    "legacy_id": 48,
+    "name": "SOMALI",
+    "code": "SOM",
+    "description": "DE",
+    "status": 1
+  },
+  {
+    "legacy_id": 55,
+    "name": "TIGRAY",
+    "code": "TIG",
+    "description": null,
+    "status": 1
+  },
+  {
+    "legacy_id": 56,
+    "name": "HARERI",
+    "code": "HAR",
+    "description": null,
+    "status": 1
+  },
+  {
+    "legacy_id": 57,
+    "name": "SIDAMA",
+    "code": "SID",
+    "description": null,
+    "status": 1
+  },
+  {
+    "legacy_id": 59,
+    "name": "AMHARA",
+    "code": "AMH",
+    "description": null,
+    "status": 1
+  },
+  {
+    "legacy_id": 60,
+    "name": "ADDISE ABABA",
+    "code": "ADD",
+    "description": "CENTER",
+    "status": 1
+  },
+  {
+    "legacy_id": 62,
+    "name": "BENSHANGUL GUMUZ",
+    "code": "BGU",
+    "description": null,
+    "status": 1
+  },
+  {
+    "legacy_id": 64,
+    "name": "DJIBOUTI",
+    "code": "DJI",
+    "description": "FOR DJIBOUTI OPERATIONS",
+    "status": 1
+  },
+  {
+    "legacy_id": 65,
+    "name": "SOUTH WEST",
+    "code": "SOW",
+    "description": null,
+    "status": 1
+  }
+]

@@ -2,8 +2,10 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\Region;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
 
 class EthiopiaRegionsSeeder extends Seeder
 {
@@ -12,84 +14,50 @@ class EthiopiaRegionsSeeder extends Seeder
      */
     public function run(): void
     {
-        $regions = [
-            [
-                'name' => 'Addis Ababa',
-                'code' => 'AA',
-                'description' => 'Capital city and chartered city of Ethiopia'
-            ],
-            [
-                'name' => 'Afar',
-                'code' => 'AF',
-                'description' => 'Regional state in northeastern Ethiopia'
-            ],
-            [
-                'name' => 'Amhara',
-                'code' => 'AM',
-                'description' => 'Regional state in northern Ethiopia'
-            ],
-            [
-                'name' => 'Benishangul-Gumuz',
-                'code' => 'BG',
-                'description' => 'Regional state in western Ethiopia'
-            ],
-            [
-                'name' => 'Dire Dawa',
-                'code' => 'DD',
-                'description' => 'Chartered city in eastern Ethiopia'
-            ],
-            [
-                'name' => 'Gambela',
-                'code' => 'GA',
-                'description' => 'Regional state in western Ethiopia'
-            ],
-            [
-                'name' => 'Harari',
-                'code' => 'HA',
-                'description' => 'Regional state in eastern Ethiopia'
-            ],
-            [
-                'name' => 'Oromia',
-                'code' => 'OR',
-                'description' => 'Largest regional state in Ethiopia'
-            ],
-            [
-                'name' => 'Sidama',
-                'code' => 'SI',
-                'description' => 'Regional state in southern Ethiopia'
-            ],
-            [
-                'name' => 'Somali',
-                'code' => 'SO',
-                'description' => 'Regional state in eastern Ethiopia'
-            ],
-            [
-                'name' => 'South West Ethiopia',
-                'code' => 'SW',
-                'description' => 'Regional state in southwestern Ethiopia'
-            ],
-            [
-                'name' => 'Southern Nations, Nationalities, and Peoples',
-                'code' => 'SN',
-                'description' => 'Regional state in southern Ethiopia'
-            ],
-            [
-                'name' => 'Tigray',
-                'code' => 'TI',
-                'description' => 'Regional state in northern Ethiopia'
-            ],
-            [
-                'name' => 'Central Ethiopia',
-                'code' => 'CE',
-                'description' => 'Regional state in central Ethiopia'
-            ]
+        $defaults = [
+            'status' => 'active',
+            'capital' => null,
+            'area_km2' => null,
+            'population' => null,
+            'latitude' => null,
+            'longitude' => null,
+            'elevation_m' => null,
+            'accessibility_score' => null,
+            'last_surveyed_at' => null,
+            'infrastructure_notes' => null,
+            'climate_profile' => null,
         ];
 
-        foreach ($regions as $region) {
-            Region::updateOrCreate(
-                ['code' => $region['code']],
-                $region
-            );
+        $dataPath = database_path('seeders/data/legacy_regions.json');
+
+        if (! File::exists($dataPath)) {
+            throw new \RuntimeException('Legacy regions dataset missing.');
+        }
+
+        $regionDataset = collect(json_decode(File::get($dataPath), true, 512, JSON_THROW_ON_ERROR));
+
+        Region::query()->forceDelete();
+
+        foreach ($regionDataset as $region) {
+            $legacyId = (int) ($region['legacy_id'] ?? 0);
+            $name = Str::of($region['name'] ?? '')->trim()->squish();
+            $code = Str::of($region['code'] ?? '')->trim()->upper();
+
+            if ($legacyId === 0 || $name->isEmpty() || $code->length() !== 3) {
+                throw new \RuntimeException('Invalid legacy region payload encountered.');
+            }
+
+            $description = $region['description'] ?? null;
+            $status = (int) ($region['status'] ?? 1) === 1 ? 'active' : 'inactive';
+
+            $payload = array_merge($defaults, [
+                'name' => (string) $name,
+                'code' => (string) $code,
+                'description' => $description === null ? null : (string) Str::of($description)->trim()->squish(),
+                'status' => $status,
+            ]);
+
+            Region::create($payload);
         }
     }
 }

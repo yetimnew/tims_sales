@@ -23,6 +23,7 @@ use App\Models\Place;
 use App\Models\Status;
 use App\Models\Truck;
 use App\Models\VehicleMaintenanceRecord;
+use App\Models\VehicleType;
 use App\Services\Reports\CustomerProfitabilityReport;
 use App\Services\Reports\FuelEfficiencyReport;
 use App\Services\Reports\MaintenancePerformanceReport;
@@ -1036,17 +1037,42 @@ class ReportController extends Controller
                 ->map(static fn (Truck $truck) => [
                     'id' => $truck->id,
                     'plate' => $truck->plate,
-                ]);
+                ])
+                ->values();
+
+            $vehicleTypes = VehicleType::query()
+                ->select('id', 'name')
+                ->orderBy('name')
+                ->get()
+                ->map(static fn (VehicleType $type) => [
+                    'id' => $type->id,
+                    'name' => $type->name,
+                ])
+                ->values();
+
+            $statuses = Truck::query()
+                ->select('status')
+                ->whereNotNull('status')
+                ->distinct()
+                ->orderBy('status')
+                ->pluck('status')
+                ->filter(static fn ($status) => $status !== null && $status !== '')
+                ->values()
+                ->all();
 
             return Inertia::render('Reports/PerformanceByTruck', [
                 'filters' => [
                     'from' => $result['resolved_from'],
                     'to' => $result['resolved_to'],
                     'truck_ids' => $validated['truck_ids'] ?? [],
+                    'vehicle_type_ids' => $validated['vehicle_type_ids'] ?? [],
+                    'statuses' => $validated['statuses'] ?? [],
                 ],
                 'rows' => $rows,
                 'summary' => $result['summary'],
                 'trucks' => $trucks,
+                'vehicleTypes' => $vehicleTypes,
+                'statuses' => $statuses,
             ]);
         } catch (Exception $e) {
             report($e);

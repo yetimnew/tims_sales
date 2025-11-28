@@ -67,7 +67,7 @@ class ApiTest extends TestCase
             'name' => 'John Doe',
             'sex' => 'male',
             'status' => 'active',
-            'zone' => 'Addis Ababa',
+            'zone' => 'ADDISE ABABA',
             'mobile' => '+251911234567',
         ]);
 
@@ -80,7 +80,7 @@ class ApiTest extends TestCase
         ]);
 
         $this->region = Region::create([
-            'name' => 'Addis Ababa',
+            'name' => 'ADDISE ABABA',
             'description' => 'Capital city region',
         ]);
 

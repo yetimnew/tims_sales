@@ -23,6 +23,10 @@ class DatabaseSeeder extends Seeder
         $this->call(EthiopiaWoredasSeeder::class);
         $this->call(EthiopiaPlacesSeeder::class);
         $this->call(EthiopiaDistancesSeeder::class);
+        $this->call(VehicleTypesSeeder::class);
+        $this->call(TrucksSeeder::class);
+        $this->call(DriversSeeder::class);
+        $this->call(DriverTrucksSeeder::class);
 
         // Optionally import legacy data from old TIMS dump if configured
         if (config('database.connections.legacy.database')) {

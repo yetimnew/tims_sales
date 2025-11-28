@@ -113,11 +113,11 @@ class TimsSeeder extends Seeder
         $this->command->info('Creating regions...');
 
         $regions = collect([
-            ['name' => 'Addis Ababa', 'code' => 'AA', 'description' => 'Capital city'],
-            ['name' => 'Oromia', 'code' => 'OR', 'description' => 'Oromia region'],
-            ['name' => 'Amhara', 'code' => 'AM', 'description' => 'Amhara region'],
-            ['name' => 'SNNPR', 'code' => 'SN', 'description' => 'Southern Nations, Nationalities, and Peoples Region'],
-            ['name' => 'Tigray', 'code' => 'TI', 'description' => 'Tigray region'],
+            ['name' => 'ADDISE ABABA', 'code' => 'ADD', 'description' => 'Capital city'],
+            ['name' => 'OROMIA', 'code' => 'ORO', 'description' => 'Oromia region'],
+            ['name' => 'AMHARA', 'code' => 'AMH', 'description' => 'Amhara region'],
+            ['name' => 'SOUTH WEST', 'code' => 'SOW', 'description' => 'South West region'],
+            ['name' => 'TIGRAY', 'code' => 'TIG', 'description' => 'Tigray region'],
         ]);
 
         return $regions->map(function ($regionData) {
@@ -133,11 +133,11 @@ class TimsSeeder extends Seeder
         $this->command->info('Creating zones...');
 
         $zones = collect([
-            ['name' => 'Addis Ababa Zone', 'code' => 'AAZ', 'region_id' => $regions->where('code', 'AA')->first()->id],
-            ['name' => 'West Shewa', 'code' => 'WS', 'region_id' => $regions->where('code', 'OR')->first()->id],
-            ['name' => 'East Shewa', 'code' => 'ES', 'region_id' => $regions->where('code', 'OR')->first()->id],
-            ['name' => 'North Shewa', 'code' => 'NS', 'region_id' => $regions->where('code', 'AM')->first()->id],
-            ['name' => 'South Gondar', 'code' => 'SG', 'region_id' => $regions->where('code', 'AM')->first()->id],
+            ['name' => 'Addise Ababa Zone', 'code' => 'AAZ', 'region_id' => $regions->where('code', 'ADD')->first()->id],
+            ['name' => 'West Shewa', 'code' => 'WS', 'region_id' => $regions->where('code', 'ORO')->first()->id],
+            ['name' => 'East Shewa', 'code' => 'ES', 'region_id' => $regions->where('code', 'ORO')->first()->id],
+            ['name' => 'North Shewa', 'code' => 'NS', 'region_id' => $regions->where('code', 'AMH')->first()->id],
+            ['name' => 'South Gondar', 'code' => 'SG', 'region_id' => $regions->where('code', 'AMH')->first()->id],
         ]);
 
         return $zones->map(function ($zoneData) {
@@ -297,7 +297,7 @@ class TimsSeeder extends Seeder
                 'name' => 'Alemayehu Bekele',
                 'sex' => 'Male',
                 'birthdate' => now()->subYears(35),
-                'zone' => 'Addis Ababa',
+                'zone' => 'ADDISE ABABA',
                 'woreda' => 'Bole',
                 'kebele' => '01',
                 'housenumber' => '123',
@@ -310,7 +310,7 @@ class TimsSeeder extends Seeder
                 'name' => 'Tigist Hailu',
                 'sex' => 'Female',
                 'birthdate' => now()->subYears(28),
-                'zone' => 'Addis Ababa',
+                'zone' => 'ADDISE ABABA',
                 'woreda' => 'Kirkos',
                 'kebele' => '05',
                 'housenumber' => '456',
@@ -323,7 +323,7 @@ class TimsSeeder extends Seeder
                 'name' => 'Mengistu Tadesse',
                 'sex' => 'Male',
                 'birthdate' => now()->subYears(42),
-                'zone' => 'Oromia',
+                'zone' => 'OROMIA',
                 'woreda' => 'Ambo',
                 'kebele' => '03',
                 'housenumber' => '789',
@@ -336,7 +336,7 @@ class TimsSeeder extends Seeder
                 'name' => 'Sara Mohammed',
                 'sex' => 'Female',
                 'birthdate' => now()->subYears(31),
-                'zone' => 'Amhara',
+                'zone' => 'AMHARA',
                 'woreda' => 'Debre Berhan',
                 'kebele' => '02',
                 'housenumber' => '321',
@@ -349,7 +349,7 @@ class TimsSeeder extends Seeder
                 'name' => 'Yonas Assefa',
                 'sex' => 'Male',
                 'birthdate' => now()->subYears(38),
-                'zone' => 'Addis Ababa',
+                'zone' => 'ADDISE ABABA',
                 'woreda' => 'Addis Ketema',
                 'kebele' => '07',
                 'housenumber' => '654',
@@ -419,7 +419,7 @@ class TimsSeeder extends Seeder
                 'contact_person' => 'John Smith',
                 'phone' => '011-123-4567',
                 'email' => 'cargo@ethiopianairlines.com',
-                'address' => 'Bole Airport, Addis Ababa',
+                'address' => 'Bole Airport, Addise Ababa',
                 'status' => 'active',
             ],
             [
@@ -427,7 +427,7 @@ class TimsSeeder extends Seeder
                 'contact_person' => 'Sarah Johnson',
                 'phone' => '011-234-5678',
                 'email' => 'logistics@dashenbrewery.com',
-                'address' => 'Addis Ababa Industrial Zone',
+                'address' => 'Addise Ababa Industrial Zone',
                 'status' => 'active',
             ],
             [
@@ -468,7 +468,7 @@ class TimsSeeder extends Seeder
     {
         $this->command->info('Creating operations...');
 
-        $addisRegion = $regions->where('code', 'AA')->first();
+        $addisRegion = $regions->where('code', 'ADD')->first();
         $westShewaZone = $zones->where('code', 'WS')->first();
         $adamaWoreda = $woredas->where('code', 'ADA')->first();
         $bahirDarPlace = $places->where('code', 'BHD')->first();
@@ -971,7 +971,7 @@ class TimsSeeder extends Seeder
                 'severity' => 'Low',
                 'damage_cost' => 5000.00,
                 'injuries' => 'None',
-                'location' => 'Addis Ababa',
+                'location' => 'Addise Ababa',
                 'weather_conditions' => 'Clear',
                 'road_conditions' => 'Good',
                 'resolution' => 'Insurance claim processed',
@@ -1108,7 +1108,7 @@ class TimsSeeder extends Seeder
             [
                 'truck_id' => $trucks->first()->id,
                 'user_id' => $users->first()->id,
-                'route_name' => 'Addis Ababa to Adama',
+                'route_name' => 'Addise Ababa to Adama',
                 'origin_place_id' => $places->where('code', 'BOL-AIR')->first()->id,
                 'destination_place_id' => $places->where('code', 'ADA')->first()->id,
                 'planned_departure_time' => now()->addDays(1)->setTime(8, 0),
@@ -1126,7 +1126,7 @@ class TimsSeeder extends Seeder
             [
                 'truck_id' => $trucks->skip(1)->first()->id,
                 'user_id' => $users->first()->id,
-                'route_name' => 'Addis Ababa to Bahir Dar',
+                'route_name' => 'Addise Ababa to Bahir Dar',
                 'origin_place_id' => $places->where('code', 'MER')->first()->id,
                 'destination_place_id' => $places->where('code', 'BHD')->first()->id,
                 'planned_departure_time' => now()->addDays(2)->setTime(6, 0),

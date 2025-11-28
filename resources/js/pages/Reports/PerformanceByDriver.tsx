@@ -3,7 +3,7 @@ import { Head, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -12,7 +12,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
-import { Activity, Award, Download, FileDigit, FileSpreadsheet, FileType2, Filter, GaugeCircle, RefreshCcw, Search, User } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Activity, Award, Download, FileDigit, FileSpreadsheet, FileType2, Filter, GaugeCircle, RefreshCcw, Search, User, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface DriverOption {
     id: number;
@@ -85,6 +86,7 @@ export default function PerformanceByDriver({ filters, rows = [], summary, drive
     const [selectedDrivers, setSelectedDrivers] = useState<number[]>(filters?.driver_ids ?? []);
     const [driverSearch, setDriverSearch] = useState('');
     const [driverSelectorOpen, setDriverSelectorOpen] = useState(false);
+    const [filtersOpen, setFiltersOpen] = useState(false);
 
     const noDriverFilter = selectedDrivers.length === 0;
 
@@ -102,6 +104,16 @@ export default function PerformanceByDriver({ filters, rows = [], summary, drive
         return drivers.filter((option) => (option.name ?? '').toLowerCase().includes(term));
     }, [driverSearch, drivers]);
 
+    const activeFilterCount = useMemo(() => {
+        let count = 0;
+
+        if (from && from !== (filters?.from ?? '')) count += 1;
+        if (to && to !== (filters?.to ?? '')) count += 1;
+        if (selectedDrivers.length > 0) count += 1;
+
+        return count;
+    }, [from, to, selectedDrivers, filters?.from, filters?.to]);
+
     const handleToggleDriver = (id: number) => {
         setSelectedDrivers((current) => (current.includes(id) ? current.filter((driverId) => driverId !== id) : [...current, id]));
     };
@@ -118,6 +130,7 @@ export default function PerformanceByDriver({ filters, rows = [], summary, drive
 
     const handleApplyFilters = () => {
         setDriverSelectorOpen(false);
+        setFiltersOpen(false);
         const params: Record<string, unknown> = {
             from,
             to,
@@ -138,6 +151,7 @@ export default function PerformanceByDriver({ filters, rows = [], summary, drive
         setTo(filters?.to ?? '');
         setSelectedDrivers(filters?.driver_ids ?? []);
         setDriverSelectorOpen(false);
+        setFiltersOpen(false);
         router.get('/reports/performance-by-driver', {}, { preserveState: false, preserveScroll: true });
     };
 
@@ -211,6 +225,129 @@ export default function PerformanceByDriver({ filters, rows = [], summary, drive
                                 </p>
                             </div>
                             <div className="flex flex-wrap items-center gap-2">
+                                <Dialog open={filtersOpen} onOpenChange={setFiltersOpen}>
+                                    <DialogTrigger asChild>
+                                        <Button type="button" variant="outline" className="gap-2">
+                                            <Filter className="h-4 w-4" />
+                                            Filters
+                                            {activeFilterCount > 0 && (
+                                                <Badge variant="secondary" className="h-5 min-w-[2rem] justify-center px-2 text-xs font-semibold">
+                                                    {activeFilterCount}
+                                                </Badge>
+                                            )}
+                                            {filtersOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                                        </Button>
+                                    </DialogTrigger>
+                                    <DialogContent className="w-full sm:max-w-4xl lg:max-w-5xl sm:rounded-2xl">
+                                        <DialogHeader className="text-left">
+                                            <DialogTitle>Filter performance by driver</DialogTitle>
+                                            <DialogDescription>Adjust the reporting window and focus on specific drivers before generating the report.</DialogDescription>
+                                        </DialogHeader>
+                                        <div className="grid gap-6">
+                                            <div className="grid gap-6 rounded-xl border border-slate-200 bg-white/95 p-6 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
+                                                <div className="grid gap-6 lg:grid-cols-3">
+                                                    <div className="flex flex-col gap-3">
+                                                        <span className="text-sm font-medium text-slate-700 dark:text-slate-200">From date</span>
+                                                        <div className="flex flex-col gap-2">
+                                                            <Input type="date" value={from} onChange={(event) => setFrom(event.target.value)} />
+                                                            <p className="text-xs text-muted-foreground">Beginning of the reporting window.</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex flex-col gap-3">
+                                                        <span className="text-sm font-medium text-slate-700 dark:text-slate-200">To date</span>
+                                                        <div className="flex flex-col gap-2">
+                                                            <Input type="date" value={to} onChange={(event) => setTo(event.target.value)} />
+                                                            <p className="text-xs text-muted-foreground">End of the reporting window.</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex flex-col gap-3">
+                                                        <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Drivers</span>
+                                                        <Popover open={driverSelectorOpen} onOpenChange={setDriverSelectorOpen}>
+                                                            <PopoverTrigger asChild>
+                                                                <Button type="button" variant="outline" className="w-full justify-between">
+                                                                    <span className="flex items-center gap-2 text-sm">
+                                                                        <User className="h-4 w-4 text-slate-500" />
+                                                                        {noDriverFilter ? 'All drivers' : `${selectedDrivers.length} selected`}
+                                                                    </span>
+                                                                    <Filter className="h-3.5 w-3.5 text-slate-400" />
+                                                                </Button>
+                                                            </PopoverTrigger>
+                                                            <PopoverContent className="w-80 p-0" align="start">
+                                                                <div className="flex items-center justify-between px-3 py-2">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <Button type="button" variant="ghost" size="sm" onClick={handleSelectAllDrivers}>
+                                                                            {selectedDrivers.length === drivers.length && drivers.length > 0 ? 'Unselect all' : 'Select all'}
+                                                                        </Button>
+                                                                        <Button type="button" variant="ghost" size="sm" onClick={handleClearDrivers}>
+                                                                            Clear
+                                                                        </Button>
+                                                                    </div>
+                                                                </div>
+                                                                <Separator />
+                                                                <Command>
+                                                                    <div className="flex items-center px-3 py-2">
+                                                                        <Search className="mr-2 h-4 w-4 text-muted-foreground" />
+                                                                        <CommandInput placeholder="Search driver..." value={driverSearch} onValueChange={setDriverSearch} />
+                                                                    </div>
+                                                                    <CommandList className="max-h-64">
+                                                                        <CommandEmpty>No drivers found.</CommandEmpty>
+                                                                        <CommandGroup heading="Drivers">
+                                                                            <CommandItem onSelect={() => setSelectedDrivers([])} className="flex items-center gap-2">
+                                                                                <Checkbox checked={noDriverFilter} />
+                                                                                <span className="font-medium">All drivers</span>
+                                                                                {noDriverFilter && <Badge variant="secondary" className="ml-auto">Active</Badge>}
+                                                                            </CommandItem>
+                                                                            {filteredDriverOptions.map((option) => {
+                                                                                const checked = selectedDrivers.includes(option.id);
+
+                                                                                return (
+                                                                                    <CommandItem
+                                                                                        key={option.id}
+                                                                                        onSelect={() => handleToggleDriver(option.id)}
+                                                                                        className="flex items-center gap-2"
+                                                                                    >
+                                                                                        <Checkbox checked={checked} />
+                                                                                        <span className="font-medium">{option.name ?? 'Unassigned'}</span>
+                                                                                        {checked && <Badge variant="secondary" className="ml-auto">Included</Badge>}
+                                                                                    </CommandItem>
+                                                                                );
+                                                                            })}
+                                                                        </CommandGroup>
+                                                                    </CommandList>
+                                                                </Command>
+                                                            </PopoverContent>
+                                                        </Popover>
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {noDriverFilter && (
+                                                                <Badge variant="outline" className="border-dashed text-muted-foreground">
+                                                                    All drivers included
+                                                                </Badge>
+                                                            )}
+                                                            {!noDriverFilter && visibleDriverBadges.map((name) => (
+                                                                <Badge key={name} variant="secondary" className="bg-slate-100 text-slate-700">
+                                                                    {name}
+                                                                </Badge>
+                                                            ))}
+                                                            {!noDriverFilter && extraDriverCount > 0 && (
+                                                                <Badge variant="outline" className="border-dashed text-muted-foreground">
+                                                                    +{extraDriverCount} more
+                                                                </Badge>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <DialogFooter>
+                                            <Button type="button" variant="outline" onClick={handleReset}>
+                                                Reset
+                                            </Button>
+                                            <Button type="button" onClick={handleApplyFilters}>
+                                                Generate report
+                                            </Button>
+                                        </DialogFooter>
+                                    </DialogContent>
+                                </Dialog>
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
                                         <Button type="button" variant="secondary" className="gap-2">
@@ -241,134 +378,21 @@ export default function PerformanceByDriver({ filters, rows = [], summary, drive
                         </div>
                     </header>
 
-                    <section className="grid gap-6 lg:grid-cols-[360px_1fr]">
-                        <Card className="flex h-full flex-col border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
-                            <CardHeader className="space-y-2">
-                                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50">Filters</CardTitle>
-                                <CardDescription className="text-sm">Target a timeframe, then narrow to specific drivers or teams.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="flex-1 space-y-6">
-                                <div className="space-y-2">
-                                    <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Date range</span>
-                                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                        <Input type="date" value={from} onChange={(event) => setFrom(event.target.value)} />
-                                        <Input type="date" value={to} onChange={(event) => setTo(event.target.value)} />
+                    <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                        {summaryCards.map((card) => (
+                            <Card key={card.title} className="border border-slate-200 bg-white/95 shadow-sm transition dark:border-slate-800/70 dark:bg-slate-900/70">
+                                <CardContent className="flex items-start gap-4 p-4">
+                                    <span className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 dark:bg-slate-800/60 dark:text-slate-200">
+                                        {card.icon}
+                                    </span>
+                                    <div className="space-y-1">
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{card.title}</p>
+                                        <p className={`text-lg font-semibold text-slate-900 dark:text-slate-50 ${card.valueClassName ?? ''}`}>{card.value}</p>
+                                        <p className="text-xs text-muted-foreground">{card.helper}</p>
                                     </div>
-                                </div>
-                                <div className="space-y-3">
-                                    <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Drivers</span>
-                                    <Popover open={driverSelectorOpen} onOpenChange={setDriverSelectorOpen}>
-                                        <PopoverTrigger asChild>
-                                            <Button type="button" variant="outline" className="w-full justify-between">
-                                                <span className="flex items-center gap-2 text-sm">
-                                                    <User className="h-4 w-4 text-slate-500" />
-                                                    {noDriverFilter ? 'All drivers' : `${selectedDrivers.length} selected`}
-                                                </span>
-                                                <Filter className="h-3.5 w-3.5 text-slate-400" />
-                                            </Button>
-                                        </PopoverTrigger>
-                                        <PopoverContent className="w-80 p-0" align="start">
-                                            <div className="flex items-center justify-between px-3 py-2">
-                                                <div className="flex items-center gap-2">
-                                                    <Button type="button" variant="ghost" size="sm" onClick={handleSelectAllDrivers}>
-                                                        {selectedDrivers.length === drivers.length && drivers.length > 0 ? 'Unselect all' : 'Select all'}
-                                                    </Button>
-                                                    <Button type="button" variant="ghost" size="sm" onClick={handleClearDrivers}>
-                                                        Clear
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                            <Separator />
-                                            <Command>
-                                                <div className="flex items-center px-3 py-2">
-                                                    <Search className="mr-2 h-4 w-4 text-muted-foreground" />
-                                                    <CommandInput placeholder="Search driver..." value={driverSearch} onValueChange={setDriverSearch} />
-                                                </div>
-                                                <CommandList className="max-h-64">
-                                                    <CommandEmpty>No drivers found.</CommandEmpty>
-                                                    <CommandGroup heading="Drivers">
-                                                        <CommandItem onSelect={() => setSelectedDrivers([])} className="flex items-center gap-2">
-                                                            <Checkbox checked={noDriverFilter} />
-                                                            <span className="font-medium">All drivers</span>
-                                                            {noDriverFilter && <Badge variant="secondary" className="ml-auto">Active</Badge>}
-                                                        </CommandItem>
-                                                        {filteredDriverOptions.map((option) => {
-                                                            const checked = selectedDrivers.includes(option.id);
-
-                                                            return (
-                                                                <CommandItem
-                                                                    key={option.id}
-                                                                    onSelect={() => handleToggleDriver(option.id)}
-                                                                    className="flex items-center gap-2"
-                                                                >
-                                                                    <Checkbox checked={checked} />
-                                                                    <span className="font-medium">{option.name ?? 'Unassigned'}</span>
-                                                                    {checked && <Badge variant="secondary" className="ml-auto">Included</Badge>}
-                                                                </CommandItem>
-                                                            );
-                                                        })}
-                                                    </CommandGroup>
-                                                </CommandList>
-                                            </Command>
-                                        </PopoverContent>
-                                    </Popover>
-                                    <div className="flex flex-wrap gap-2">
-                                        {noDriverFilter && (
-                                            <Badge variant="outline" className="border-dashed text-muted-foreground">
-                                                All drivers included
-                                            </Badge>
-                                        )}
-                                        {!noDriverFilter && visibleDriverBadges.map((name) => (
-                                            <Badge key={name} variant="secondary" className="bg-slate-100 text-slate-700">
-                                                {name}
-                                            </Badge>
-                                        ))}
-                                        {!noDriverFilter && extraDriverCount > 0 && (
-                                            <Badge variant="outline" className="border-dashed text-muted-foreground">
-                                                +{extraDriverCount} more
-                                            </Badge>
-                                        )}
-                                    </div>
-                                </div>
-                            </CardContent>
-                            <CardFooter className="flex flex-col gap-3 sm:flex-row sm:justify-between">
-                                <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={handleReset}>
-                                    Reset
-                                </Button>
-                                <Button type="button" className="w-full sm:w-auto" onClick={handleApplyFilters}>
-                                    Generate report
-                                </Button>
-                            </CardFooter>
-                        </Card>
-
-                        <Card className="flex h-full flex-col border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
-                            <CardHeader className="space-y-2">
-                                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50">Key Metrics</CardTitle>
-                                <CardDescription className="text-sm">Monitor throughput and profitability at a glance.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                                {summaryCards.map((card) => (
-                                    <Card key={card.title} className="border border-slate-200/80 bg-white/90 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800/70 dark:bg-slate-950/60">
-                                        <CardHeader className="flex flex-row items-start justify-between space-y-0 p-4">
-                                            <div className="space-y-1">
-                                                <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                                                    {card.title}
-                                                </CardTitle>
-                                                <div className={`text-xl font-semibold text-slate-900 dark:text-slate-50 ${card.valueClassName ?? ''}`}>
-                                                    {card.value}
-                                                </div>
-                                            </div>
-                                            {card.icon}
-                                        </CardHeader>
-                                        <CardContent className="px-4 pb-4 pt-0">
-                                            <CardDescription className="text-xs text-muted-foreground">
-                                                {card.helper}
-                                            </CardDescription>
-                                        </CardContent>
-                                    </Card>
-                                ))}
-                            </CardContent>
-                        </Card>
+                                </CardContent>
+                            </Card>
+                        ))}
                     </section>
 
                     <Card className="border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">

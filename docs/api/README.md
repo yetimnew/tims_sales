@@ -642,7 +642,7 @@ GET /drivers
       "name": "John Doe",
       "sex": "male",
       "birthdate": "1990-01-01T00:00:00Z",
-      "zone": "Addis Ababa",
+      "zone": "Addise Ababa",
       "woreda": "Bole",
       "kebele": "01",
       "housenumber": "123",
@@ -684,7 +684,7 @@ POST /drivers
   "name": "John Doe",
   "sex": "male",
   "birthdate": "1990-01-01",
-  "zone": "Addis Ababa",
+  "zone": "Addise Ababa",
   "woreda": "Bole",
   "kebele": "01",
   "housenumber": "123",
@@ -726,7 +726,7 @@ GET /drivers/{id}
     "name": "John Doe",
     "sex": "male",
     "birthdate": "1990-01-01T00:00:00Z",
-    "zone": "Addis Ababa",
+    "zone": "Addise Ababa",
     "woreda": "Bole",
     "kebele": "01",
     "housenumber": "123",
@@ -755,7 +755,7 @@ GET /drivers/{id}
         "description": "Minor collision",
         "severity": "low",
         "damage_cost": 5000,
-        "location": "Addis Ababa",
+        "location": "Addise Ababa",
         "resolution": "Repaired"
       }
     ],
@@ -876,7 +876,7 @@ GET /performances
       },
       "DateDispach": "2024-01-01T00:00:00Z",
       "origin": {
-        "name": "Addis Ababa",
+        "name": "Addise Ababa",
         "code": "ADD"
       },
       "destination": {
@@ -1146,9 +1146,9 @@ GET /regions
   "data": [
     {
       "id": "uuid",
-      "name": "Addis Ababa",
-      "code": "AA",
-      "description": "Addis Ababa Region",
+      "name": "ADDISE ABABA",
+      "code": "ADD",
+      "description": "ADDISE ABABA REGION",
       "zones": [
         {
           "id": "uuid",

@@ -81,7 +81,7 @@ class SecurityTest extends TestCase
             'name' => 'John Doe',
             'sex' => 'male',
             'status' => 'active',
-            'zone' => 'Addis Ababa',
+            'zone' => 'ADDISE ABABA',
             'mobile' => '+251911234567',
         ]);
 
@@ -94,7 +94,7 @@ class SecurityTest extends TestCase
         ]);
 
         $this->region = Region::create([
-            'name' => 'Addis Ababa',
+            'name' => 'ADDISE ABABA',
             'description' => 'Capital city region',
         ]);
 
@@ -217,7 +217,7 @@ class SecurityTest extends TestCase
                 'name' => $xssPayload,
                 'sex' => 'male',
                 'status' => 'active',
-                'zone' => 'Addis Ababa',
+                'zone' => 'ADDISE ABABA',
                 'mobile' => '+251911234568',
             ]);
 
@@ -317,7 +317,7 @@ class SecurityTest extends TestCase
                 'name' => $longString,
                 'sex' => 'male',
                 'status' => 'active',
-                'zone' => 'Addis Ababa',
+                'zone' => 'ADDISE ABABA',
                 'mobile' => '+251911234568',
             ]);
 
@@ -488,7 +488,7 @@ class SecurityTest extends TestCase
                 'name' => 'Test Driver',
                 'sex' => 'male',
                 'status' => 'active',
-                'zone' => 'Addis Ababa',
+                'zone' => 'ADDISE ABABA',
                 'mobile' => '+251911234568',
                 'password' => 'secret-password', // Should not be logged
             ]);

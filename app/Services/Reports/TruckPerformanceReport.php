@@ -17,8 +17,10 @@ class TruckPerformanceReport
     {
         [$from, $to] = $this->resolveDateRange($filters);
         $truckIds = $this->resolveTruckIds($filters);
+        $vehicleTypeIds = $this->resolveVehicleTypeIds($filters);
+        $statuses = $this->resolveStatuses($filters);
 
-        $rows = $this->runQuery($from, $to, $truckIds);
+        $rows = $this->runQuery($from, $to, $truckIds, $vehicleTypeIds, $statuses);
 
         $summary = $this->summarise($rows);
 
@@ -58,11 +60,13 @@ class TruckPerformanceReport
             ->all();
     }
 
-    private function runQuery(CarbonInterface $from, CarbonInterface $to, array $truckIds): Collection
+    private function runQuery(CarbonInterface $from, CarbonInterface $to, array $truckIds, array $vehicleTypeIds, array $statuses): Collection
     {
         $query = DB::table('performances')
             ->selectRaw('driver_truck.truck_id as truck_id')
             ->selectRaw('MAX(trucks.plate) as plate')
+            ->selectRaw('MAX(trucks.status) as status')
+            ->selectRaw('MAX(vehicletypes.name) as vehicle_type')
             ->selectRaw('COUNT(performances.FOnumber) as trips')
             ->selectRaw('SUM(COALESCE(performances.CargoVolumMT, 0)) as tonnage')
             ->selectRaw('SUM(COALESCE(performances.tonkm, 0)) as ton_km')
@@ -76,12 +80,21 @@ class TruckPerformanceReport
             ->selectRaw('SUM(COALESCE(performances.tonkm, 0) * COALESCE(operations.tariff, 0)) as revenue')
             ->leftJoin('driver_truck', 'driver_truck.id', '=', 'performances.driver_truck_id')
             ->leftJoin('trucks', 'trucks.id', '=', 'driver_truck.truck_id')
+            ->leftJoin('vehicletypes', 'vehicletypes.id', '=', 'trucks.vehicletype_id')
             ->leftJoin('operations', 'operations.id', '=', 'performances.operation_id')
             ->whereBetween('performances.DateDispach', [$from->toDateTimeString(), $to->toDateTimeString()])
             ->groupBy('driver_truck.truck_id');
 
         if (! empty($truckIds)) {
             $query->whereIn('driver_truck.truck_id', $truckIds);
+        }
+
+        if (! empty($vehicleTypeIds)) {
+            $query->whereIn('trucks.vehicletype_id', $vehicleTypeIds);
+        }
+
+        if (! empty($statuses)) {
+            $query->whereIn('trucks.status', $statuses);
         }
 
         return collect($query->orderByDesc('trips')->get())->map(function ($row) {
@@ -108,8 +121,35 @@ class TruckPerformanceReport
                 'revenue' => round((float) $row->revenue, 2),
                 'profit' => round($profit, 2),
                 'margin_percent' => $margin,
+                'truck_status' => $row->status ? (string) $row->status : null,
+                'vehicle_type' => $row->vehicle_type ? (string) $row->vehicle_type : null,
             ];
         });
+    }
+
+    private function resolveVehicleTypeIds(array $filters): array
+    {
+        $ids = Arr::wrap($filters['vehicle_type_ids'] ?? []);
+
+        return collect($ids)
+            ->filter(static fn ($value) => $value !== null && $value !== '')
+            ->map(static fn ($value) => (int) $value)
+            ->filter(static fn ($value) => $value > 0)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    private function resolveStatuses(array $filters): array
+    {
+        $statuses = Arr::wrap($filters['statuses'] ?? []);
+
+        return collect($statuses)
+            ->map(static fn ($value) => trim((string) $value))
+            ->filter(static fn ($value) => $value !== '')
+            ->unique()
+            ->values()
+            ->all();
     }
 
     private function summarise(Collection $rows): array

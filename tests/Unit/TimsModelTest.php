@@ -108,7 +108,7 @@ class TimsModelTest extends TestCase
             'name' => 'John Doe',
             'sex' => 'male',
             'status' => 'active',
-            'zone' => 'Addis Ababa',
+            'zone' => 'ADDISE ABABA',
             'mobile' => '+251911234567',
         ]);
 
@@ -137,12 +137,12 @@ class TimsModelTest extends TestCase
     public function region_can_be_created()
     {
         $region = Region::create([
-            'name' => 'Addis Ababa',
+            'name' => 'ADDISE ABABA',
             'description' => 'Capital city region',
         ]);
 
         $this->assertInstanceOf(Region::class, $region);
-        $this->assertEquals('Addis Ababa', $region->name);
+        $this->assertEquals('ADDISE ABABA', $region->name);
     }
 
     /** @test */
@@ -157,7 +157,7 @@ class TimsModelTest extends TestCase
             'status' => 'active',
         ]);
         $region = Region::create([
-            'name' => 'Addis Ababa',
+            'name' => 'ADDISE ABABA',
             'description' => 'Capital city region',
         ]);
 
@@ -205,7 +205,7 @@ class TimsModelTest extends TestCase
             'status' => 'active',
         ]);
         $region = Region::create([
-            'name' => 'Addis Ababa',
+            'name' => 'ADDISE ABABA',
             'description' => 'Capital city region',
         ]);
 
@@ -315,7 +315,7 @@ class TimsModelTest extends TestCase
             'name' => 'John Doe',
             'sex' => 'male',
             'status' => 'active',
-            'zone' => 'Addis Ababa',
+            'zone' => 'ADDISE ABABA',
             'mobile' => '+251911234567',
         ]);
 
@@ -330,7 +330,7 @@ class TimsModelTest extends TestCase
             'odometer_reading' => 50000,
             'fuel_station' => 'Shell Station',
             'receipt_number' => 'RCPT-9000',
-            'notes' => 'Addis Ababa',
+            'notes' => 'ADDISE ABABA',
             'user_id' => $user->id,
         ]);
 
@@ -401,7 +401,7 @@ class TimsModelTest extends TestCase
             'status' => 'active',
         ]);
         $region = Region::create([
-            'name' => 'Addis Ababa',
+            'name' => 'ADDISE ABABA',
             'description' => 'Capital city region',
         ]);
 
@@ -448,7 +448,7 @@ class TimsModelTest extends TestCase
             'name' => 'John Doe',
             'sex' => 'male',
             'status' => 'active',
-            'zone' => 'Addis Ababa',
+            'zone' => 'ADDISE ABABA',
             'mobile' => '+251911234567',
         ]);
 
@@ -460,13 +460,13 @@ class TimsModelTest extends TestCase
             'planned_departure_time' => '08:00:00',
             'planned_arrival_time' => '16:00:00',
             'route_waypoints' => json_encode([
-                ['name' => 'Addis Ababa'],
+                ['name' => 'ADDISE ABABA'],
                 ['name' => 'Dire Dawa'],
             ]),
             'total_distance_km' => 500.00,
             'total_travel_time_minutes' => 480,
             'estimated_fuel_cost' => 2500.00,
-            'origin' => 'Addis Ababa',
+            'origin' => 'ADDISE ABABA',
             'destination' => 'Dire Dawa',
             'estimated_distance_km' => 500.00,
             'estimated_travel_time_hours' => 8,

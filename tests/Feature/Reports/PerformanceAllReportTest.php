@@ -31,7 +31,7 @@ class PerformanceAllReportTest extends TestCase
             ->state(['status' => 'active'])
             ->create();
 
-        $origin = Place::factory()->create(['status' => 'active', 'name' => 'Addis Ababa']);
+        $origin = Place::factory()->create(['status' => 'active', 'name' => 'Addise Ababa']);
         $destination = Place::factory()->create(['status' => 'active', 'name' => 'Dire Dawa']);
 
         $customer = Customer::factory()->create(['name' => 'Acme Logistics']);

@@ -229,7 +229,7 @@ export default function FuelRecordsEdit({ fuelRecord, driverTrucks }: FuelRecord
                                             type="text"
                                             value={data.fuel_station}
                                             onChange={(e) => handleFieldChange('fuel_station', e.target.value)}
-                                            placeholder="e.g., Total Station Bole, Shell Station Addis Ababa"
+                                            placeholder="e.g., Total Station Bole, Shell Station Addise Ababa"
                                             className={`transition-colors focus:ring-2 focus:ring-orange-500 ${allErrors.fuel_station ? 'border-red-500 focus:ring-red-500' : ''}`}
                                         />
                                         {allErrors.fuel_station && (

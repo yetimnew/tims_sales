@@ -497,7 +497,7 @@ export default function DriverSafetyCreate({ drivers }: DriverSafetyCreateProps)
                                                 type="text"
                                                 value={data.location}
                                                 onChange={(event) => handleFieldChange('location', event.target.value, false)}
-                                                placeholder="e.g., Addis Ababa - Ring Road"
+                                                placeholder="e.g., Addise Ababa - Ring Road"
                                                 className={`bg-white pl-10 transition-all duration-200 focus:border-rose-500 focus:ring-rose-500/20 dark:bg-slate-800 ${getFieldError('location') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20 dark:border-red-500' : 'border-slate-300 hover:border-slate-400 dark:border-slate-600 dark:hover:border-slate-500'}`}
                                             />
                                         </div>

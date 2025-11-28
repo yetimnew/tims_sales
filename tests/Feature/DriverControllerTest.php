@@ -121,7 +121,7 @@ class DriverControllerTest extends TestCase
             'name' => 'John Doe',
             'sex' => 'male',
             'birthdate' => '1990-05-15',
-            'zone' => 'Addis Ababa',
+            'zone' => 'ADDISE ABABA',
             'woreda' => 'Bole',
             'kebele' => '01',
             'housenumber' => '123',

@@ -907,7 +907,7 @@ class TimsSeeder extends Seeder
 
         // Create regions
         $regions = [
-            ['name' => 'Addis Ababa', 'code' => 'AA', 'description' => 'Capital city'],
+            ['name' => 'Addise Ababa', 'code' => 'ADD', 'description' => 'Capital city'],
             ['name' => 'Oromia', 'code' => 'OR', 'description' => 'Oromia region'],
             ['name' => 'Amhara', 'code' => 'AM', 'description' => 'Amhara region'],
             ['name' => 'SNNP', 'code' => 'SN', 'description' => 'Southern Nations region'],
@@ -917,7 +917,7 @@ class TimsSeeder extends Seeder
             Region::create($region);
         }
 
-        // Create zones for Addis Ababa
+        // Create zones for Addise Ababa
         $zones = [
             ['name' => 'Central Zone', 'code' => 'CZ', 'region_id' => 1],
             ['name' => 'East Zone', 'code' => 'EZ', 'region_id' => 1],
@@ -958,7 +958,7 @@ class TimsSeeder extends Seeder
                 'email' => 'john@ethiopianairlines.com',
                 'phone' => '+251911234567',
                 'address' => 'Bole Airport',
-                'city' => 'Addis Ababa',
+                'city' => 'Addise Ababa',
                 'country' => 'Ethiopia'
             ],
             [
@@ -967,7 +967,7 @@ class TimsSeeder extends Seeder
                 'email' => 'jane@dhl.com',
                 'phone' => '+251922345678',
                 'address' => 'Meskel Square',
-                'city' => 'Addis Ababa',
+                'city' => 'Addise Ababa',
                 'country' => 'Ethiopia'
             ],
         ];
@@ -1015,7 +1015,7 @@ class TimsSeeder extends Seeder
                 'name' => 'Alemayehu Bekele',
                 'sex' => 'male',
                 'birthdate' => '1985-01-01',
-                'zone' => 'Addis Ababa',
+                'zone' => 'Addise Ababa',
                 'woreda' => 'Bole',
                 'kebele' => '01',
                 'housenumber' => '123',
@@ -1028,7 +1028,7 @@ class TimsSeeder extends Seeder
                 'name' => 'Tigist Hailu',
                 'sex' => 'female',
                 'birthdate' => '1990-01-01',
-                'zone' => 'Addis Ababa',
+                'zone' => 'Addise Ababa',
                 'woreda' => 'Kirkos',
                 'kebele' => '02',
                 'housenumber' => '456',

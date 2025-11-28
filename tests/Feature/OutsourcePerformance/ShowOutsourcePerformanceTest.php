@@ -32,7 +32,7 @@ class ShowOutsourcePerformanceTest extends TestCase
 
         /** @var Place $origin */
         $origin = Place::factory()->create([
-            'name' => 'Addis Ababa',
+            'name' => 'Addise Ababa',
         ]);
 
         /** @var Place $destination */
@@ -97,7 +97,7 @@ class ShowOutsourcePerformanceTest extends TestCase
                 ->where('performance.trip_number', 'OUT-0001')
                 ->where('performance.outsource.name', 'Atlas Logistics')
                 ->where('performance.operation.label', 'OP-1001')
-                ->where('performance.from_place.name', 'Addis Ababa')
+                ->where('performance.from_place.name', 'Addise Ababa')
                 ->where('performance.to_place.name', 'Dire Dawa')
                 ->where('metrics.vendorTripCount', 3)
                 ->where('metrics.vendorTotalDistance', 750)

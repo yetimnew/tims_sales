@@ -2,9 +2,11 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\Distance;
 use App\Models\Place;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
 
 class EthiopiaDistancesSeeder extends Seeder
 {
@@ -13,99 +15,106 @@ class EthiopiaDistancesSeeder extends Seeder
      */
     public function run(): void
     {
-        $distances = [
-            // Addis Ababa to major cities
-            ['from' => 'AA-BA', 'to' => 'OR-AC', 'distance_km' => 99.5, 'estimated_time_hours' => 1.5],
-            ['from' => 'AA-BA', 'to' => 'AM-BU', 'distance_km' => 565.0, 'estimated_time_hours' => 8.0],
-            ['from' => 'AA-BA', 'to' => 'TI-MU', 'distance_km' => 783.0, 'estimated_time_hours' => 12.0],
-            ['from' => 'AA-BA', 'to' => 'SO-JU', 'distance_km' => 635.0, 'estimated_time_hours' => 10.0],
-            ['from' => 'AA-BA', 'to' => 'HA-HU', 'distance_km' => 525.0, 'estimated_time_hours' => 8.5],
-            ['from' => 'AA-BA', 'to' => 'DD-DA', 'distance_km' => 515.0, 'estimated_time_hours' => 8.0],
-            ['from' => 'AA-BA', 'to' => 'GA-GU', 'distance_km' => 557.0, 'estimated_time_hours' => 9.0],
-            ['from' => 'AA-BA', 'to' => 'SI-HU', 'distance_km' => 275.0, 'estimated_time_hours' => 4.5],
+        $dataPath = database_path('seeders/data/legacy_distances.json');
 
-            // Addis Ababa to industrial zones
-            ['from' => 'AA-BA', 'to' => 'OR-AI', 'distance_km' => 99.5, 'estimated_time_hours' => 1.5],
-            ['from' => 'AA-BA', 'to' => 'OR-BI', 'distance_km' => 47.0, 'estimated_time_hours' => 1.0],
-            ['from' => 'AA-BA', 'to' => 'OR-MD', 'distance_km' => 70.0, 'estimated_time_hours' => 1.2],
-            ['from' => 'AA-BA', 'to' => 'SI-HI', 'distance_km' => 275.0, 'estimated_time_hours' => 4.5],
+        if (! File::exists($dataPath)) {
+            throw new \RuntimeException('Legacy distances dataset missing.');
+        }
 
-            // Regional capitals to nearby cities
-            ['from' => 'AM-BU', 'to' => 'AM-DU', 'distance_km' => 180.0, 'estimated_time_hours' => 3.0],
-            ['from' => 'AM-BU', 'to' => 'AM-GU', 'distance_km' => 180.0, 'estimated_time_hours' => 3.0],
-            ['from' => 'TI-MU', 'to' => 'TI-AU', 'distance_km' => 120.0, 'estimated_time_hours' => 2.0],
-            ['from' => 'TI-MU', 'to' => 'TI-WM', 'distance_km' => 50.0, 'estimated_time_hours' => 1.0],
+        $distanceDataset = collect(json_decode(File::get($dataPath), true, 512, JSON_THROW_ON_ERROR));
 
-            // Industrial zones connections
-            ['from' => 'OR-AI', 'to' => 'OR-BI', 'distance_km' => 52.5, 'estimated_time_hours' => 1.0],
-            ['from' => 'OR-AI', 'to' => 'OR-MD', 'distance_km' => 29.5, 'estimated_time_hours' => 0.5],
-            ['from' => 'OR-BI', 'to' => 'AA-BA', 'distance_km' => 47.0, 'estimated_time_hours' => 1.0],
-
-            // Port connections
-            ['from' => 'AM-BP', 'to' => 'AM-BU', 'distance_km' => 5.0, 'estimated_time_hours' => 0.2],
-            ['from' => 'GA-GP', 'to' => 'GA-GU', 'distance_km' => 3.0, 'estimated_time_hours' => 0.1],
-            ['from' => 'DD-DR', 'to' => 'DD-DA', 'distance_km' => 8.0, 'estimated_time_hours' => 0.3],
-
-            // University connections
-            ['from' => 'AM-GU', 'to' => 'AM-GC', 'distance_km' => 2.0, 'estimated_time_hours' => 0.1],
-            ['from' => 'TI-MU', 'to' => 'TI-MI', 'distance_km' => 15.0, 'estimated_time_hours' => 0.5],
-            ['from' => 'SN-WU', 'to' => 'SN-WO', 'distance_km' => 1.0, 'estimated_time_hours' => 0.1],
-
-            // Market connections
-            ['from' => 'AA-ME', 'to' => 'AA-PI', 'distance_km' => 3.0, 'estimated_time_hours' => 0.2],
-            ['from' => 'AA-ME', 'to' => 'AA-MS', 'distance_km' => 2.0, 'estimated_time_hours' => 0.1],
-            ['from' => 'SO-JM', 'to' => 'SO-JU', 'distance_km' => 1.0, 'estimated_time_hours' => 0.1],
-
-            // Airport connections
-            ['from' => 'AA-BA', 'to' => 'AA-ME', 'distance_km' => 8.0, 'estimated_time_hours' => 0.5],
-            ['from' => 'AA-BA', 'to' => 'AA-PI', 'distance_km' => 12.0, 'estimated_time_hours' => 0.8],
-            ['from' => 'DD-DA', 'to' => 'DD-DI', 'distance_km' => 15.0, 'estimated_time_hours' => 0.5],
-
-            // Cross-regional connections
-            ['from' => 'AM-BU', 'to' => 'TI-MU', 'distance_km' => 218.0, 'estimated_time_hours' => 4.0],
-            ['from' => 'TI-MU', 'to' => 'SO-JU', 'distance_km' => 152.0, 'estimated_time_hours' => 2.5],
-            ['from' => 'SO-JU', 'to' => 'HA-HU', 'distance_km' => 110.0, 'estimated_time_hours' => 1.8],
-            ['from' => 'HA-HU', 'to' => 'DD-DA', 'distance_km' => 10.0, 'estimated_time_hours' => 0.3],
-
-            // Industrial zone connections
-            ['from' => 'AA-KI', 'to' => 'OR-AI', 'distance_km' => 91.5, 'estimated_time_hours' => 1.3],
-            ['from' => 'OR-AI', 'to' => 'OR-WI', 'distance_km' => 45.0, 'estimated_time_hours' => 0.8],
-            ['from' => 'SI-HI', 'to' => 'SI-YM', 'distance_km' => 30.0, 'estimated_time_hours' => 0.5],
-
-            // University to university connections
-            ['from' => 'AM-BU', 'to' => 'AM-DU', 'distance_km' => 180.0, 'estimated_time_hours' => 3.0],
-            ['from' => 'TI-MU', 'to' => 'TI-AU', 'distance_km' => 120.0, 'estimated_time_hours' => 2.0],
-            ['from' => 'SN-WU', 'to' => 'SN-SU', 'distance_km' => 150.0, 'estimated_time_hours' => 2.5],
-            ['from' => 'SN-SU', 'to' => 'SN-AU', 'distance_km' => 120.0, 'estimated_time_hours' => 2.0],
-
-            // Return routes (reverse distances)
-            ['from' => 'OR-AC', 'to' => 'AA-BA', 'distance_km' => 99.5, 'estimated_time_hours' => 1.5],
-            ['from' => 'AM-BU', 'to' => 'AA-BA', 'distance_km' => 565.0, 'estimated_time_hours' => 8.0],
-            ['from' => 'TI-MU', 'to' => 'AA-BA', 'distance_km' => 783.0, 'estimated_time_hours' => 12.0],
-            ['from' => 'SO-JU', 'to' => 'AA-BA', 'distance_km' => 635.0, 'estimated_time_hours' => 10.0],
-            ['from' => 'HA-HU', 'to' => 'AA-BA', 'distance_km' => 525.0, 'estimated_time_hours' => 8.5],
-            ['from' => 'DD-DA', 'to' => 'AA-BA', 'distance_km' => 515.0, 'estimated_time_hours' => 8.0],
-            ['from' => 'GA-GU', 'to' => 'AA-BA', 'distance_km' => 557.0, 'estimated_time_hours' => 9.0],
-            ['from' => 'SI-HU', 'to' => 'AA-BA', 'distance_km' => 275.0, 'estimated_time_hours' => 4.5],
+        $defaults = [
+            'status' => 'active',
+            'estimated_time_hours' => null,
+            'route_description' => null,
+            'route_type' => 'primary',
+            'estimated_travel_time_minutes' => null,
+            'road_condition_factor' => 1.0,
+            'toll_road' => false,
+            'toll_cost' => null,
+            'restricted_for_heavy_vehicles' => false,
+            'route_notes' => null,
+            'average_speed_kmph' => null,
+            'typical_delay_minutes' => null,
+            'road_quality_index' => null,
+            'seasonality_notes' => null,
+            'safety_notes' => null,
         ];
 
-        foreach ($distances as $distanceData) {
-            $fromPlace = Place::where('code', $distanceData['from'])->first();
-            $toPlace = Place::where('code', $distanceData['to'])->first();
+        $placesByLegacyId = Place::query()
+            ->get()
+            ->mapWithKeys(static function (Place $place): array {
+                if (preg_match('/^LEGACY_PLACE_(\d+)$/', $place->code, $matches) !== 1) {
+                    return [];
+                }
 
-            if ($fromPlace && $toPlace) {
-                Distance::updateOrCreate(
-                    [
-                        'from_place_id' => $fromPlace->id,
-                        'to_place_id' => $toPlace->id,
-                    ],
-                    [
-                        'distance_km' => $distanceData['distance_km'],
-                        'estimated_time_hours' => $distanceData['estimated_time_hours'],
-                        'route_description' => "Route from {$fromPlace->name} to {$toPlace->name}"
-                    ]
-                );
+                return [(int) $matches[1] => $place];
+            });
+
+        Distance::query()->delete();
+
+        foreach ($distanceDataset as $distance) {
+            $legacyId = (int) ($distance['legacy_id'] ?? 0);
+            $originLegacyId = $distance['origin_legacy_place_id'] ?? null;
+            $destinationLegacyId = $distance['destination_legacy_place_id'] ?? null;
+
+            if ($legacyId === 0 || $originLegacyId === null || $destinationLegacyId === null) {
+                throw new \RuntimeException('Invalid legacy distance payload encountered.');
             }
+
+            $origin = $placesByLegacyId->get((int) $originLegacyId);
+            $destination = $placesByLegacyId->get((int) $destinationLegacyId);
+
+            if ($origin === null) {
+                throw new \RuntimeException("Origin place LEGACY_PLACE_{$originLegacyId} not found for distance {$legacyId}");
+            }
+
+            if ($destination === null) {
+                throw new \RuntimeException("Destination place LEGACY_PLACE_{$destinationLegacyId} not found for distance {$legacyId}");
+            }
+
+            $originName = (string) Str::of($distance['origin_name'] ?? $origin->name)->trim()->squish();
+            $destinationName = (string) Str::of($distance['destination_name'] ?? $destination->name)->trim()->squish();
+            $status = (int) ($distance['status'] ?? 1) === 1 ? 'active' : 'inactive';
+            $routeType = (string) Str::of($distance['route_type'] ?? 'primary')->trim()->lower();
+
+            if ($routeType === '') {
+                $routeType = 'primary';
+            }
+
+            $roadCondition = array_key_exists('road_condition_factor', $distance)
+                ? (float) $distance['road_condition_factor']
+                : 1.0;
+
+            if ($roadCondition <= 0) {
+                $roadCondition = 1.0;
+            }
+
+            $attributes = [
+                'from_place_id' => $origin->id,
+                'to_place_id' => $destination->id,
+            ];
+
+            $values = array_merge($defaults, [
+                'distance_km' => (float) ($distance['distance_km'] ?? 0),
+                'status' => $status,
+                'route_type' => $routeType,
+                'road_condition_factor' => $roadCondition,
+                'route_description' => sprintf('%s to %s', $originName, $destinationName),
+                'estimated_time_hours' => array_key_exists('estimated_time_hours', $distance) ? (float) $distance['estimated_time_hours'] : null,
+                'estimated_travel_time_minutes' => array_key_exists('estimated_travel_time_minutes', $distance) ? (int) $distance['estimated_travel_time_minutes'] : null,
+                'average_speed_kmph' => array_key_exists('average_speed_kmph', $distance) ? (float) $distance['average_speed_kmph'] : null,
+                'typical_delay_minutes' => array_key_exists('typical_delay_minutes', $distance) ? (int) $distance['typical_delay_minutes'] : null,
+                'road_quality_index' => array_key_exists('road_quality_index', $distance) ? (float) $distance['road_quality_index'] : null,
+                'seasonality_notes' => $distance['seasonality_notes'] ?? null,
+                'safety_notes' => $distance['safety_notes'] ?? null,
+                'route_notes' => $distance['route_notes'] ?? null,
+                'toll_road' => array_key_exists('toll_road', $distance) ? (bool) $distance['toll_road'] : false,
+                'toll_cost' => array_key_exists('toll_cost', $distance) ? (float) $distance['toll_cost'] : null,
+                'restricted_for_heavy_vehicles' => array_key_exists('restricted_for_heavy_vehicles', $distance) ? (bool) $distance['restricted_for_heavy_vehicles'] : false,
+            ]);
+
+            Distance::updateOrCreate($attributes, $values);
         }
     }
 }
