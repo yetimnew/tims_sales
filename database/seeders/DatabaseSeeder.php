@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call(NotificationTypeSeeder::class);
         $this->call(CheckPermissionSeeder::class);
+        $this->call(UsersSeeder::class);
         $this->call(AdminUserSeeder::class);
 
         // Seed Ethiopia's geographic structure
@@ -24,16 +25,19 @@ class DatabaseSeeder extends Seeder
         $this->call(EthiopiaPlacesSeeder::class);
         $this->call(EthiopiaDistancesSeeder::class);
         $this->call(VehicleTypesSeeder::class);
+        $this->call(CargoTypesSeeder::class);
         $this->call(TrucksSeeder::class);
         $this->call(DriversSeeder::class);
         $this->call(DriverTrucksSeeder::class);
+        $this->call(CustomersSeeder::class);
+        $this->call(OutsourcesSeeder::class);
+        $this->call(OperationsSeeder::class);
+        $this->call(PerformancesSeeder::class);
+        $this->call(OutsourcePerformancesSeeder::class);
 
         // Optionally import legacy data from old TIMS dump if configured
         if (config('database.connections.legacy.database')) {
             $this->call(\Database\Seeders\Legacy\LegacyImportSeeder::class);
-        } else {
-            // Seed sample TIMS data (trucks, drivers, customers, operations, performances)
-            $this->call(TimsSeeder::class);
         }
 
         // Seed truck statuses

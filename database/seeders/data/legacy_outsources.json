@@ -1,0 +1,74 @@
+[
+  {
+    "legacy_id": 1,
+    "name": "Million Transport",
+    "address": "Natherath",
+    "office_number": "12",
+    "mobile": "12",
+    "remark": "made by yetim",
+    "status": 1,
+    "deleted_at": null,
+    "created_at": "2020-05-27 12:18:45",
+    "updated_at": "2020-05-27 12:18:45"
+  },
+  {
+    "legacy_id": 2,
+    "name": "Nuredin Trasport",
+    "address": "Natherath",
+    "office_number": "1212121212",
+    "mobile": "1212121212",
+    "remark": "made by yetim",
+    "status": 1,
+    "deleted_at": null,
+    "created_at": "2020-05-27 12:19:35",
+    "updated_at": "2020-05-27 12:19:35"
+  },
+  {
+    "legacy_id": 4,
+    "name": "Shikur Abubeker",
+    "address": "Adama",
+    "office_number": "123123123",
+    "mobile": "123123123",
+    "remark": "1",
+    "status": 1,
+    "deleted_at": null,
+    "created_at": "2020-08-07 08:20:40",
+    "updated_at": "2020-08-07 08:20:40"
+  },
+  {
+    "legacy_id": 5,
+    "name": "HAILEMARIAM  TRANSPORT",
+    "address": "NAZRETH",
+    "office_number": "1212",
+    "mobile": "0911116565",
+    "remark": "OSC",
+    "status": 1,
+    "deleted_at": null,
+    "created_at": "2020-08-13 10:03:05",
+    "updated_at": "2020-08-13 10:03:05"
+  },
+  {
+    "legacy_id": 6,
+    "name": "NABIL NUREDIN",
+    "address": "ADISS ABEBA",
+    "office_number": "NO",
+    "mobile": "0960383838",
+    "remark": "NO OFFICE NO AND DIFER FROM NURADIN",
+    "status": 1,
+    "deleted_at": null,
+    "created_at": "2021-05-26 07:11:03",
+    "updated_at": "2021-05-26 07:11:03"
+  },
+  {
+    "legacy_id": 7,
+    "name": "ABEL SOLOMON",
+    "address": "Ethiopia.Addis Abeba",
+    "office_number": null,
+    "mobile": "0911840659",
+    "remark": "DE",
+    "status": 1,
+    "deleted_at": null,
+    "created_at": "2023-06-24 14:32:52",
+    "updated_at": "2023-06-24 14:39:07"
+  }
+]

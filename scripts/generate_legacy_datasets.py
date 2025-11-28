@@ -15,18 +15,49 @@ def main() -> None:
     trucks_rows = parse_inserts(sql, "trucks")
     drivers_rows = parse_inserts(sql, "drivers")
     assignments_rows = parse_inserts(sql, "driver_truck")
+    customers_rows = parse_inserts(sql, "customers")
+    operations_rows = parse_inserts(sql, "operations")
+    performances_rows = parse_inserts(sql, "performances")
+    outsources_rows = parse_inserts(sql, "outsources")
+    outsource_performances_rows = parse_inserts(sql, "outsource_performances")
+    users_rows = parse_inserts(sql, "users")
 
     trucks_payload = [transform_truck(row) for row in trucks_rows]
     drivers_payload = [transform_driver(row) for row in drivers_rows]
     assignments_payload = [transform_driver_truck(row) for row in assignments_rows]
+    customers_payload = [transform_customer(row) for row in customers_rows]
+    operation_id_map = build_operation_id_map(operations_rows)
+    operations_payload = deduplicate_operations(
+        [transform_operation(row) for row in operations_rows]
+    )
+    performances_payload = [
+        transform_performance(row, operation_id_map) for row in performances_rows
+    ]
+    outsources_payload = [transform_outsource(row) for row in outsources_rows]
+    outsource_performances_payload = [
+        transform_outsource_performance(row) for row in outsource_performances_rows
+    ]
+    users_payload = [transform_user(row) for row in users_rows]
 
     write_json("legacy_trucks.json", trucks_payload)
     write_json("legacy_drivers.json", drivers_payload)
     write_json("legacy_driver_trucks.json", assignments_payload)
+    write_json("legacy_customers.json", customers_payload)
+    write_json("legacy_operations.json", operations_payload)
+    write_json("legacy_performances.json", performances_payload)
+    write_json("legacy_users.json", users_payload)
+    write_json("legacy_outsources.json", outsources_payload)
+    write_json("legacy_outsource_performances.json", outsource_performances_payload)
 
     print(f"Exported {len(trucks_payload)} trucks")
     print(f"Exported {len(drivers_payload)} drivers")
     print(f"Exported {len(assignments_payload)} driver-truck assignments")
+    print(f"Exported {len(customers_payload)} customers")
+    print(f"Exported {len(operations_payload)} operations")
+    print(f"Exported {len(performances_payload)} performances")
+    print(f"Exported {len(users_payload)} users")
+    print(f"Exported {len(outsources_payload)} outsources")
+    print(f"Exported {len(outsource_performances_payload)} outsource performances")
 
 
 def parse_inserts(sql: str, table: str) -> List[Dict[str, Any]]:
@@ -150,6 +181,165 @@ def transform_driver_truck(row: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+def transform_customer(row: Dict[str, Any]) -> Dict[str, Any]:
+    return {
+        "legacy_id": row["id"],
+        "name": normalize_string(row.get("name"), strict=False),
+        "address": normalize_string(row.get("address"), strict=False),
+        "office_number": to_optional_string(row.get("officenumber")),
+        "mobile": to_optional_string(row.get("mobile")),
+        "remark": normalize_string(row.get("remark"), strict=False),
+        "status": row.get("status"),
+        "deleted_at": normalize_timestamp(row.get("deleted_at")),
+        "created_at": normalize_timestamp(row.get("created_at")),
+        "updated_at": normalize_timestamp(row.get("updated_at")),
+    }
+
+
+def transform_operation(row: Dict[str, Any]) -> Dict[str, Any]:
+    return {
+        "legacy_id": row["id"],
+        "operationid": normalize_string(row.get("operationid"), strict=False),
+        "customer_id": row.get("customer_id"),
+        "startdate": normalize_date(row.get("startdate")),
+        "region_id": row.get("region_id"),
+        "volume": to_decimal_string(row.get("volume")),
+        "cargotype": row.get("cargotype"),
+        "km": to_decimal_string(row.get("km")),
+        "tariff": to_decimal_string(row.get("tariff")),
+        "status": row.get("status"),
+        "closed": row.get("closed"),
+        "enddate": normalize_date(row.get("enddate")),
+        "remark": normalize_string(row.get("remark"), strict=False),
+        "user_id": row.get("user_id"),
+        "deleted_at": normalize_timestamp(row.get("deleted_at")),
+        "created_at": normalize_timestamp(row.get("created_at")),
+        "updated_at": normalize_timestamp(row.get("updated_at")),
+    }
+
+
+def build_operation_id_map(rows: List[Dict[str, Any]]) -> Dict[int, int]:
+    mapping: Dict[int, int] = {}
+    canonical_by_code: Dict[str, int] = {}
+
+    for row in rows:
+        legacy_id = int(row["id"])
+        operation_code = normalize_string(row.get("operationid"), strict=False)
+
+        if not operation_code:
+            mapping[legacy_id] = legacy_id
+            continue
+
+        normalized = str(operation_code).strip().upper()
+
+        if normalized not in canonical_by_code:
+            canonical_by_code[normalized] = legacy_id
+
+        mapping[legacy_id] = canonical_by_code[normalized]
+
+    return mapping
+
+
+def transform_performance(row: Dict[str, Any], operation_id_map: Dict[int, int]) -> Dict[str, Any]:
+    load_phase = None
+    trip = row.get("trip")
+    if trip in {1, "1", True}:
+        load_phase = "main"
+    elif trip in {0, "0", False}:
+        load_phase = "return"
+
+    load_completion = None
+    load_type = row.get("LoadType")
+    if load_type in {1, "1", True}:
+        load_completion = "full"
+    elif load_type in {0, "0", False}:
+        load_completion = "partial"
+
+    return {
+        "legacy_id": row["id"],
+        "load_phase": load_phase,
+        "load_completion": load_completion,
+        "fo_number": normalize_string(row.get("FOnumber"), strict=False),
+        "operation_id": operation_id_map.get(int(row.get("operation_id") or 0), row.get("operation_id")),
+        "driver_truck_id": row.get("driver_truck_id"),
+        "dispatch_date": normalize_date(row.get("DateDispach")),
+        "origin_id": row.get("orgion_id"),
+        "destination_id": row.get("destination_id"),
+        "distance_with_cargo": to_decimal_string(row.get("DistanceWCargo")),
+        "tonkm": to_decimal_string(row.get("tonkm")),
+        "distance_without_cargo": to_decimal_string(row.get("DistanceWOCargo")),
+        "cargo_volume_mt": to_decimal_string(row.get("CargoVolumMT")),
+        "fuel_in_liter": to_decimal_string(row.get("fuelInLitter")),
+        "fuel_in_birr": to_decimal_string(row.get("fuelInBirr")),
+        "perdiem": to_decimal_string(row.get("perdiem")),
+        "work_on_going": to_decimal_string(row.get("workOnGoing")),
+        "other": to_decimal_string(row.get("other")),
+        "comment": normalize_string(row.get("comment"), strict=False),
+        "status": row.get("satus"),
+        "is_returned": to_bool(row.get("is_returned")),
+        "returned_date": normalize_date(row.get("returned_date")),
+        "user_id": row.get("user_id"),
+        "deleted_at": normalize_timestamp(row.get("deleted_at")),
+        "created_at": normalize_timestamp(row.get("created_at")),
+        "updated_at": normalize_timestamp(row.get("updated_at")),
+    }
+
+
+def transform_outsource(row: Dict[str, Any]) -> Dict[str, Any]:
+    return {
+        "legacy_id": row["id"],
+        "name": normalize_string(row.get("name"), strict=False),
+        "address": normalize_string(row.get("address"), strict=False),
+        "office_number": to_optional_string(row.get("officenumber")),
+        "mobile": to_optional_string(row.get("mobile")),
+        "remark": normalize_string(row.get("remark"), strict=False),
+        "status": row.get("status"),
+        "deleted_at": normalize_timestamp(row.get("deleted_at")),
+        "created_at": normalize_timestamp(row.get("created_at")),
+        "updated_at": normalize_timestamp(row.get("updated_at")),
+    }
+
+
+def transform_outsource_performance(row: Dict[str, Any]) -> Dict[str, Any]:
+    return {
+        "legacy_id": row["id"],
+        "outsource_id": row.get("outsource_id"),
+        "trip": row.get("trip"),
+        "load_type": row.get("LoadType"),
+        "fo_number": normalize_string(row.get("fonumber"), strict=False),
+        "operation_id": row.get("operation_id"),
+        "driver_name": normalize_string(row.get("driver_name"), strict=False),
+        "plate_number": normalize_string(row.get("plate_number"), strict=False),
+        "dispatch_date": normalize_date(row.get("DateDispach")),
+        "origin_id": row.get("orgion_id"),
+        "destination_id": row.get("destination_id"),
+        "tonkm": to_decimal_string(row.get("tonkm")),
+        "tariff": to_decimal_string(row.get("tariff")),
+        "distance_with_cargo": to_decimal_string(row.get("DistanceWCargo")),
+        "distance_without_cargo": to_decimal_string(row.get("DistanceWOCargo")),
+        "cargo_volume_mt": to_decimal_string(row.get("CargoVolumMT")),
+        "comment": normalize_string(row.get("comment"), strict=False),
+        "status": row.get("satus"),
+        "user_id": row.get("user_id"),
+        "deleted_at": normalize_timestamp(row.get("deleted_at")),
+        "created_at": normalize_timestamp(row.get("created_at")),
+        "updated_at": normalize_timestamp(row.get("updated_at")),
+    }
+
+
+def transform_user(row: Dict[str, Any]) -> Dict[str, Any]:
+    return {
+        "legacy_id": row["id"],
+        "name": normalize_string(row.get("name"), strict=False),
+        "email": normalize_string(row.get("email")),
+        "email_verified_at": normalize_timestamp(row.get("email_verified_at")),
+        "password": row.get("password"),
+        "remember_token": to_optional_string(row.get("remember_token")),
+        "created_at": normalize_timestamp(row.get("created_at")),
+        "updated_at": normalize_timestamp(row.get("updated_at")),
+    }
+
+
 def normalize_string(value: Any, *, strict: bool = True) -> Any:
     if value in (None, ""):
         return None
@@ -235,7 +425,39 @@ def to_bool(value: Any) -> bool:
 
 def write_json(filename: str, payload: List[Dict[str, Any]]) -> None:
     path = OUTPUT_DIR / filename
-    path.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+    formatted = json.dumps(payload, indent=2, ensure_ascii=False)
+    path.write_text(f"{formatted}\n", encoding="utf-8")
+
+
+def deduplicate_operations(operations: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    seen: set[str] = set()
+    deduped: List[Dict[str, Any]] = []
+    duplicates: List[str] = []
+
+    for operation in operations:
+        raw_operation_id = operation.get("operationid")
+        operation_id = (raw_operation_id or "").strip()
+
+        if not operation_id:
+            deduped.append(operation)
+            continue
+
+        normalized = operation_id.upper()
+
+        if normalized in seen:
+            duplicates.append(f"{operation_id}#{operation.get('legacy_id')}")
+            continue
+
+        seen.add(normalized)
+        deduped.append(operation)
+
+    if duplicates:
+        print(
+            "Skipped"
+            f" {len(duplicates)} duplicate operations based on operationid: {', '.join(duplicates)}"
+        )
+
+    return deduped
 
 
 if __name__ == "__main__":

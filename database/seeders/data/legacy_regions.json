@@ -14,6 +14,13 @@
     "status": 1
   },
   {
+    "legacy_id": 3,
+    "name": "SNNPR",
+    "code": "SNN",
+    "description": "it includes all southern cities",
+    "status": 1
+  },
+  {
     "legacy_id": 11,
     "name": "GAMBYLA",
     "code": "GAM",
@@ -21,9 +28,30 @@
     "status": 1
   },
   {
+    "legacy_id": 19,
+    "name": "ADDISABEBA",
+    "code": "ADB",
+    "description": "DE",
+    "status": 1
+  },
+  {
     "legacy_id": 23,
     "name": "AFAR",
     "code": "AFA",
+    "description": "DE",
+    "status": 1
+  },
+  {
+    "legacy_id": 27,
+    "name": "AMARA",
+    "code": "AMA",
+    "description": "DE",
+    "status": 1
+  },
+  {
+    "legacy_id": 42,
+    "name": "BENESHANGUL",
+    "code": "BEN",
     "description": "DE",
     "status": 1
   },
@@ -63,6 +91,13 @@
     "status": 1
   },
   {
+    "legacy_id": 58,
+    "name": "Addis Abeba",
+    "code": "ADA",
+    "description": "CENTER",
+    "status": 1
+  },
+  {
     "legacy_id": 59,
     "name": "AMHARA",
     "code": "AMH",
@@ -81,6 +116,13 @@
     "name": "BENSHANGUL GUMUZ",
     "code": "BGU",
     "description": null,
+    "status": 1
+  },
+  {
+    "legacy_id": 63,
+    "name": "BORENA",
+    "code": "BOR",
+    "description": "DE",
     "status": 1
   },
   {
