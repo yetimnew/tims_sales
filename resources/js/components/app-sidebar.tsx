@@ -318,6 +318,18 @@ const getMainNavItems = (): NavItem[] => {
                 ],
             },
             {
+                title: 'Grading',
+                icon: LineChart,
+                isActive: currentUrl.startsWith('/settings/truck-grading'),
+                items: [
+                    {
+                        title: 'Truck Grading',
+                        href: '/settings/truck-grading',
+                        icon: BarChart3,
+                    },
+                ],
+            },
+            {
                 title: 'User Management',
                 icon: Shield,
                 isActive:

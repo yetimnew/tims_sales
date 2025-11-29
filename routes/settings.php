@@ -3,6 +3,7 @@
 use App\Http\Controllers\Settings\NotificationPreferenceController;
 use App\Http\Controllers\Settings\PasswordController;
 use App\Http\Controllers\Settings\ProfileController;
+use App\Http\Controllers\Settings\TruckGradingSettingsController;
 use App\Http\Controllers\Settings\TwoFactorAuthenticationController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -32,4 +33,10 @@ Route::middleware('auth')->group(function () {
 
     Route::patch('settings/notifications', [NotificationPreferenceController::class, 'update'])
         ->name('notification-preferences.update');
+
+    Route::get('settings/truck-grading', [TruckGradingSettingsController::class, 'edit'])
+        ->name('settings.truck-grading.edit');
+
+    Route::patch('settings/truck-grading', [TruckGradingSettingsController::class, 'update'])
+        ->name('settings.truck-grading.update');
 });

@@ -8,10 +8,14 @@ use App\Events\TruckUpdated;
 use App\Http\Requests\StoreTruckRequest;
 use App\Http\Requests\UpdateTruckRequest;
 use App\Models\DailyTruckStatus;
+use App\Models\DriverTruck;
+use App\Models\Performance;
 use App\Models\Truck;
+use App\Models\VehicleMaintenanceRecord;
 use App\Models\VehicleType;
 use App\Services\TruckAssignmentService;
 use App\Services\TruckDeletionGuard;
+use App\Services\TruckGradeService;
 use App\Services\TruckMetricsService;
 use Carbon\CarbonInterface;
 use Exception;
@@ -28,6 +32,7 @@ class TruckController extends Controller
     public function __construct(
         private TruckDeletionGuard $truckDeletionGuard,
         private TruckMetricsService $truckMetrics,
+        private TruckGradeService $truckGrade,
     ) {}
 
     /**
@@ -241,20 +246,149 @@ class TruckController extends Controller
      */
     public function show(Truck $truck): Response
     {
-        // Eager load required relationships (order driver assignments by received date)
-        $truck->load([
-            'vehicleType',
-            'drivers',
-            'performances',
-            'maintenanceRecords' => function ($query) {
-                $query->orderByDesc('scheduled_date')->orderByDesc('created_at');
-            },
-            'driverTrucks' => function ($query) {
-                $query->with('driver')->orderBy('date_recived', 'desc');
-            },
-        ]);
+        $truck->load(['vehicleType:id,name']);
 
-        // Limit activity logs to most recent 50 for payload efficiency, then normalize for the UI
+        $driverAssignmentsQuery = $truck->driverTrucks();
+
+        $recentDriverAssignments = (clone $driverAssignmentsQuery)
+            ->with(['driver:id,name,driverid'])
+            ->orderByDesc('date_recived')
+            ->orderByDesc('created_at')
+            ->limit(5)
+            ->get([
+                'id',
+                'driver_id',
+                'driverid',
+                'truck_id',
+                'date_recived',
+                'date_detach',
+                'is_attached',
+                'status',
+            ])
+            ->map(function (DriverTruck $assignment): array {
+                return [
+                    'id' => $assignment->id,
+                    'driver_id' => $assignment->driver_id,
+                    'driverid' => $assignment->driverid,
+                    'date_recived' => $assignment->date_recived?->toDateString(),
+                    'date_detach' => $assignment->date_detach?->toDateString(),
+                    'is_attached' => (bool) $assignment->is_attached,
+                    'status' => $assignment->status,
+                    'driver' => $assignment->driver ? [
+                        'id' => $assignment->driver->id,
+                        'name' => $assignment->driver->name,
+                        'driverid' => $assignment->driver->driverid,
+                    ] : null,
+                ];
+            })
+            ->values()
+            ->all();
+
+        $driverAssignmentsCount = (clone $driverAssignmentsQuery)->count();
+
+        $maintenanceQuery = $truck->maintenanceRecords();
+
+        $recentMaintenanceRecords = (clone $maintenanceQuery)
+            ->orderByDesc('scheduled_date')
+            ->orderByDesc('created_at')
+            ->limit(10)
+            ->get([
+                'id',
+                'maintenance_type_id',
+                'scheduled_date',
+                'completed_date',
+                'odometer_reading',
+                'cost',
+                'description',
+                'service_provider',
+                'status',
+            ])
+            ->map(function (VehicleMaintenanceRecord $record): array {
+                return [
+                    'id' => $record->id,
+                    'maintenance_type_id' => $record->maintenance_type_id,
+                    'scheduled_date' => $record->scheduled_date?->toDateString(),
+                    'completed_date' => $record->completed_date?->toDateString(),
+                    'odometer_reading' => $record->odometer_reading,
+                    'cost' => $record->cost !== null ? (float) $record->cost : null,
+                    'description' => $record->description,
+                    'service_provider' => $record->service_provider,
+                    'status' => $record->status,
+                    'is_overdue' => $record->is_overdue,
+                ];
+            })
+            ->values()
+            ->all();
+
+        $maintenanceSummary = [
+            'total_records' => (clone $maintenanceQuery)->count(),
+            'completed' => (clone $maintenanceQuery)->where('status', 'completed')->count(),
+            'scheduled' => (clone $maintenanceQuery)->where('status', 'scheduled')->count(),
+            'overdue' => (clone $maintenanceQuery)->where('status', 'scheduled')->where('scheduled_date', '<', now())->count(),
+            'total_cost' => (float) ((clone $maintenanceQuery)->sum('cost') ?? 0),
+        ];
+
+        $performanceQuery = $truck->performances();
+
+        $recentPerformanceRecords = (clone $performanceQuery)
+            ->orderByDesc('performances.DateDispach')
+            ->orderByDesc('performances.created_at')
+            ->limit(10)
+            ->get([
+                'performances.id',
+                'performances.driver_truck_id',
+                'performances.DateDispach',
+                'performances.DistanceWCargo',
+                'performances.DistanceWOCargo',
+                'performances.fuelInLitter',
+                'performances.fuelInBirr',
+                'performances.load_phase',
+                'performances.comment',
+                'performances.satus',
+            ])
+            ->map(function (Performance $performance): array {
+                $distanceWithCargo = $performance->DistanceWCargo !== null ? (float) $performance->DistanceWCargo : null;
+                $distanceWithoutCargo = $performance->DistanceWOCargo !== null ? (float) $performance->DistanceWOCargo : null;
+
+                return [
+                    'id' => $performance->id,
+                    'driver_truck_id' => $performance->driver_truck_id,
+                    'DateDispach' => $performance->DateDispach?->toDateString(),
+                    'DistanceWCargo' => $distanceWithCargo,
+                    'DistanceWOCargo' => $distanceWithoutCargo,
+                    'fuelInLitter' => $performance->fuelInLitter !== null ? (float) $performance->fuelInLitter : null,
+                    'fuelInBirr' => $performance->fuelInBirr !== null ? (float) $performance->fuelInBirr : null,
+                    'load_phase' => $performance->load_phase,
+                    'comment' => $performance->comment,
+                    'satus' => $performance->satus,
+                ];
+            })
+            ->values()
+            ->all();
+
+        $distanceWithCargoSum = (float) ((clone $performanceQuery)->sum('DistanceWCargo') ?? 0);
+        $distanceWithoutCargoSum = (float) ((clone $performanceQuery)->sum('DistanceWOCargo') ?? 0);
+        $totalDistance = round($distanceWithCargoSum + $distanceWithoutCargoSum, 2);
+        $totalFuel = (float) ((clone $performanceQuery)->sum('fuelInLitter') ?? 0);
+        $totalFuelCost = (float) ((clone $performanceQuery)->sum('fuelInBirr') ?? 0);
+        $totalPerformanceRecords = (clone $performanceQuery)->count();
+
+        $performanceSummary = [
+            'total_records' => $totalPerformanceRecords,
+            'total_distance_km' => $totalDistance,
+            'total_fuel_liters' => round($totalFuel, 2),
+            'fuel_cost_birr' => round($totalFuelCost, 2),
+            'avg_distance_per_record' => $totalPerformanceRecords > 0 ? round($totalDistance / $totalPerformanceRecords, 2) : 0.0,
+            'avg_fuel_efficiency_km_per_liter' => $totalFuel > 0 ? round($totalDistance / $totalFuel, 2) : null,
+        ];
+
+        $counts = [
+            'drivers' => $truck->drivers()->distinct('drivers.id')->count('drivers.id'),
+            'performances' => $performanceSummary['total_records'],
+            'driverAssignments' => $driverAssignmentsCount,
+            'maintenance' => $maintenanceSummary['total_records'],
+        ];
+
         $rawActivityLogs = Activity::forSubject($truck)
             ->with('causer')
             ->latest()
@@ -263,41 +397,37 @@ class TruckController extends Controller
 
         $activityLogs = $this->transformActivityLogs($rawActivityLogs);
 
-        // Performance summary metrics
-        $totalDistance = ($truck->performances->sum('DistanceWCargo') ?? 0) + ($truck->performances->sum('DistanceWOCargo') ?? 0);
-        $totalFuel = $truck->performances->sum('fuelInLitter') ?? 0;
-        $performanceSummary = [
-            'total_records' => $truck->performances->count(),
-            'total_distance_km' => (float) $totalDistance,
-            'total_fuel_liters' => (float) $totalFuel,
-            'fuel_cost_birr' => (float) ($truck->performances->sum('fuelInBirr') ?? 0),
-            'avg_distance_per_record' => $truck->performances->count() > 0 ? (float) round($totalDistance / $truck->performances->count(), 2) : 0.0,
-            'avg_fuel_efficiency_km_per_liter' => $totalFuel > 0 ? (float) round($totalDistance / $totalFuel, 2) : null,
-        ];
-
-        // Maintenance summary metrics
-        $maintenanceSummary = [
-            'total_records' => $truck->maintenanceRecords->count(),
-            'completed' => $truck->maintenanceRecords->where('status', 'completed')->count(),
-            'scheduled' => $truck->maintenanceRecords->where('status', 'scheduled')->count(),
-            'overdue' => $truck->maintenanceRecords->filter(fn ($r) => $r->is_overdue)->count(),
-            'total_cost' => (float) ($truck->maintenanceRecords->sum('cost') ?? 0),
-        ];
-
-        // Related counts for quick frontend display
-        $counts = [
-            'drivers' => $truck->drivers->count(),
-            'performances' => $truck->performances->count(),
-            'driverAssignments' => $truck->driverTrucks->count(),
-            'maintenance' => $truck->maintenanceRecords->count(),
+        $truckData = [
+            'id' => $truck->id,
+            'plate' => $truck->plate,
+            'vehicletype_id' => $truck->vehicletype_id,
+            'chasisNumber' => $truck->chasisNumber,
+            'engineNumber' => $truck->engineNumber,
+            'tyreSyze' => $truck->tyreSyze,
+            'serviceIntervalKM' => $truck->serviceIntervalKM,
+            'purchasePrice' => $truck->purchasePrice !== null ? (float) $truck->purchasePrice : null,
+            'productionDate' => $truck->productionDate?->toDateString(),
+            'serviceStartDate' => $truck->serviceStartDate?->toDateString(),
+            'status' => $truck->status,
+            'created_at' => $truck->created_at?->toIso8601String(),
+            'updated_at' => $truck->updated_at?->toIso8601String(),
+            'vehicleType' => $truck->vehicleType ? [
+                'id' => $truck->vehicleType->id,
+                'name' => $truck->vehicleType->name,
+            ] : null,
+            'drivers' => [],
+            'driverTrucks' => $recentDriverAssignments,
+            'maintenanceRecords' => $recentMaintenanceRecords,
+            'performances' => $recentPerformanceRecords,
         ];
 
         return Inertia::render('Trucks/Show', [
-            'truck' => $truck,
+            'truck' => $truckData,
             'activityLogs' => $activityLogs,
             'counts' => $counts,
             'performanceSummary' => $performanceSummary,
             'maintenanceSummary' => $maintenanceSummary,
+            'gradeReport' => $this->truckGrade->grade($truck),
         ]);
     }
 
@@ -478,6 +608,11 @@ class TruckController extends Controller
 
         // Write data
         foreach ($trucks as $truck) {
+            $purchasePrice = $truck->purchasePrice;
+            $purchasePriceDisplay = $purchasePrice !== null && $purchasePrice !== '' && is_numeric($purchasePrice)
+                ? 'ETB '.number_format((float) $purchasePrice, 2, '.', ',')
+                : 'N/A';
+
             fputcsv($handle, [
                 $truck->id,
                 $truck->plate,
@@ -486,7 +621,7 @@ class TruckController extends Controller
                 $truck->engineNumber ?? 'N/A',
                 $truck->tyreSyze ?? 'N/A',
                 $truck->serviceIntervalKM ?? 'N/A',
-                $truck->purchasePrice ?? 'N/A',
+                $purchasePriceDisplay,
                 $truck->productionDate ?? 'N/A',
                 $truck->serviceStartDate ?? 'N/A',
                 $truck->status,

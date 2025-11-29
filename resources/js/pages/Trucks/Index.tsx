@@ -103,6 +103,29 @@ const columns: Array<{ key: string; label: string }> = [
     { key: 'status', label: 'Status' },
 ];
 
+const etbCurrencyFormatter = new Intl.NumberFormat('en-ET', {
+    style: 'currency',
+    currency: 'ETB',
+    maximumFractionDigits: 2,
+});
+
+const formatETBCurrency = (value?: number | null, options?: Intl.NumberFormatOptions): string => {
+    if (value === null || value === undefined || Number.isNaN(Number(value))) {
+        return '—';
+    }
+
+    if (options) {
+        return new Intl.NumberFormat('en-ET', {
+            style: 'currency',
+            currency: 'ETB',
+            maximumFractionDigits: 2,
+            ...options,
+        }).format(value);
+    }
+
+    return etbCurrencyFormatter.format(value);
+};
+
 export default function TrucksIndex({ trucks, metrics, filters, statusOptions, vehicleTypes, perPageOptions }: TrucksIndexProps) {
     const { hasPermission } = usePermissions();
     const [searchTerm, setSearchTerm] = React.useState(filters?.search ?? '');
@@ -279,7 +302,10 @@ export default function TrucksIndex({ trucks, metrics, filters, statusOptions, v
         </>
     );
 
-    const fleetValueDisplay = fleetValue > 0 ? `${(fleetValue / 1_000_000).toFixed(1)}M` : '0.0M';
+    const fleetValueDisplay = formatETBCurrency(fleetValue, {
+        notation: 'compact',
+        maximumFractionDigits: 2,
+    });
 
     const statsCards = [
         {
@@ -441,14 +467,7 @@ export default function TrucksIndex({ trucks, metrics, filters, statusOptions, v
                                 }
                             </TableCell>
                             <TableCell className="font-medium">
-                                {truck.purchasePrice
-                                    ? new Intl.NumberFormat('en-US', {
-                                        style: 'currency',
-                                        currency: 'USD',
-                                        maximumFractionDigits: 0,
-                                    }).format(Number(truck.purchasePrice))
-                                    : '—'
-                                }
+                                {formatETBCurrency(truck.purchasePrice)}
                             </TableCell>
                             <TableCell>
                                 <Badge

@@ -5,6 +5,10 @@ namespace Tests\Feature;
 use App\Models\DailyTruckStatus;
 use App\Models\Driver;
 use App\Models\DriverTruck;
+use App\Models\MaintenanceType;
+use App\Models\Operation;
+use App\Models\Performance;
+use App\Models\Place;
 use App\Models\Status;
 use App\Models\StatusType;
 use App\Models\Truck;
@@ -13,6 +17,7 @@ use App\Models\VehicleMaintenanceRecord;
 use App\Models\VehicleType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
+use Illuminate\Support\Carbon;
 use PHPUnit\Framework\Attributes\Test;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -201,6 +206,119 @@ class TruckControllerTest extends TestCase
                 ->where('truck.serviceIntervalKM', 10000)
                 ->where('truck.status', 'active')
             );
+    }
+
+    #[Test]
+    public function show_page_limits_related_payloads_and_returns_summaries()
+    {
+        Carbon::setTestNow(Carbon::create(2024, 1, 10, 0, 0, 0));
+
+        try {
+            $truck = Truck::factory()->create([
+                'vehicletype_id' => $this->vehicleType->id,
+                'status' => 'active',
+            ]);
+
+            $operation = Operation::factory()->create();
+            $origin = Place::factory()->create();
+            $destination = Place::factory()->create();
+            $maintenanceType = MaintenanceType::factory()->create();
+
+            $driverAssignments = DriverTruck::factory()
+                ->for($truck)
+                ->count(6)
+                ->sequence(fn ($sequence) => [
+                    'date_recived' => Carbon::now()->subDays($sequence->index),
+                ])
+                ->create();
+
+            $primaryAssignment = $driverAssignments->first();
+
+            Performance::factory()
+                ->for($primaryAssignment, 'driverTruck')
+                ->for($operation)
+                ->for($origin, 'origin')
+                ->for($destination, 'destination')
+                ->for($this->user, 'user')
+                ->count(12)
+                ->sequence(fn ($sequence) => [
+                    'DistanceWCargo' => 100,
+                    'DistanceWOCargo' => 20,
+                    'fuelInLitter' => 10,
+                    'fuelInBirr' => 100,
+                    'DateDispach' => Carbon::now()->subDays($sequence->index),
+                    'satus' => 'completed',
+                ])
+                ->create();
+
+            foreach (range(1, 5) as $index) {
+                VehicleMaintenanceRecord::factory()
+                    ->for($truck)
+                    ->for($maintenanceType, 'maintenanceType')
+                    ->create([
+                        'status' => 'completed',
+                        'scheduled_date' => Carbon::now()->subDays(10 + $index),
+                        'completed_date' => Carbon::now()->subDays(5 + $index),
+                        'cost' => 100,
+                    ]);
+            }
+
+            foreach (range(1, 4) as $index) {
+                VehicleMaintenanceRecord::factory()
+                    ->for($truck)
+                    ->for($maintenanceType, 'maintenanceType')
+                    ->create([
+                        'status' => 'scheduled',
+                        'scheduled_date' => Carbon::now()->addDays($index),
+                        'completed_date' => null,
+                        'cost' => 100,
+                    ]);
+            }
+
+            foreach (range(1, 3) as $index) {
+                VehicleMaintenanceRecord::factory()
+                    ->for($truck)
+                    ->for($maintenanceType, 'maintenanceType')
+                    ->create([
+                        'status' => 'scheduled',
+                        'scheduled_date' => Carbon::now()->subDays($index),
+                        'completed_date' => null,
+                        'cost' => 100,
+                    ]);
+            }
+
+            $response = $this->actingAs($this->user)
+                ->get(route('trucks.show', $truck));
+
+            $expectedTotalDistance = 12 * 120;
+            $expectedTotalFuel = 12 * 10;
+            $expectedFuelCost = 12 * 100;
+
+            $response->assertStatus(200)
+                ->assertInertia(fn ($page) => $page
+                    ->component('Trucks/Show')
+                    ->where('truck.driverTrucks', fn ($assignments) => count($assignments) === 5)
+                    ->where('truck.performances', fn ($records) => count($records) === 10)
+                    ->where('truck.maintenanceRecords', fn ($records) => count($records) === 10)
+                    ->where('counts.driverAssignments', 6)
+                    ->where('counts.performances', 12)
+                    ->where('counts.maintenance', 12)
+                    ->where('counts.drivers', 6)
+                    ->where('performanceSummary.total_records', 12)
+                    ->where('performanceSummary.total_distance_km', fn ($value) => abs($value - $expectedTotalDistance) < 0.01)
+                    ->where('performanceSummary.total_fuel_liters', fn ($value) => abs($value - $expectedTotalFuel) < 0.01)
+                    ->where('performanceSummary.fuel_cost_birr', fn ($value) => abs($value - $expectedFuelCost) < 0.01)
+                    ->where('performanceSummary.avg_distance_per_record', fn ($value) => abs($value - ($expectedTotalDistance / 12)) < 0.01)
+                    ->where('performanceSummary.avg_fuel_efficiency_km_per_liter', fn ($value) => abs($value - ($expectedTotalDistance / $expectedTotalFuel)) < 0.01)
+                    ->where('maintenanceSummary.total_records', 12)
+                    ->where('maintenanceSummary.completed', 5)
+                    ->where('maintenanceSummary.scheduled', 7)
+                    ->where('maintenanceSummary.overdue', 3)
+                    ->where('maintenanceSummary.total_cost', fn ($value) => abs($value - 1200) < 0.01)
+                );
+        } finally {
+            Carbon::setTestNow();
+        }
     }
 
     #[Test]
