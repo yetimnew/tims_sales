@@ -47,6 +47,11 @@ Route::middleware(['auth'])->group(function () {
             ->middleware('can:trucks.show')
             ->name('trucks.show');
 
+        Route::get('trucks/{truck}/assignments/{driverTruck}/performances', [TruckController::class, 'assignmentPerformances'])
+            ->middleware('can:trucks.show')
+            ->whereNumber('driverTruck')
+            ->name('trucks.assignments.performances');
+
         Route::get('trucks/{truck}/edit', [TruckController::class, 'edit'])
             ->middleware('can:trucks.edit')
             ->name('trucks.edit');
@@ -138,6 +143,11 @@ Route::middleware(['auth'])->group(function () {
         Route::get('drivers/{driver}', [DriverController::class, 'show'])
             ->middleware('can:drivers.show')
             ->name('drivers.show');
+
+        Route::get('drivers/{driver}/assignments/{driverTruck}/performances', [DriverController::class, 'assignmentPerformances'])
+            ->middleware('can:drivers.show')
+            ->whereNumber('driverTruck')
+            ->name('drivers.assignments.performances');
 
         Route::get('drivers/{driver}/edit', [DriverController::class, 'edit'])
             ->middleware('can:drivers.edit')
@@ -614,6 +624,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('reports/outsource-performance', [\App\Http\Controllers\ReportController::class, 'outsourcePerformanceReport'])->name('reports.outsource-performance');
     Route::get('reports/operation-profitability', [\App\Http\Controllers\ReportController::class, 'operationProfitability'])->name('reports.operation-profitability');
     Route::get('reports/geography-heatmaps', [\App\Http\Controllers\ReportController::class, 'geographyHeatmaps'])->name('reports.geography-heatmaps');
+    Route::get('reports/truck-grading', [\App\Http\Controllers\ReportController::class, 'truckGrading'])->name('reports.truck-grading');
     Route::get('reports/performance-all', [\App\Http\Controllers\ReportController::class, 'performanceAll'])->name('reports.performance-all');
     Route::get('reports/performance-all/export/{format}', [\App\Http\Controllers\ReportController::class, 'performanceAllExport'])
         ->whereIn('format', ['csv', 'xlsx', 'pdf'])

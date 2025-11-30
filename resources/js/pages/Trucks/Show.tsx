@@ -1,15 +1,31 @@
+import { useState } from 'react';
+import { Head, Link, router } from '@inertiajs/react';
+import AppLayout from '@/layouts/app-layout';
+import { type BreadcrumbItem } from '@/types';
+import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
+import { ActivityLogTable } from '@/components/activity-log-table';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AlertCircle, Wrench, BarChart3, History, CheckCircle, XCircle, DollarSign, Calendar, Clock, Activity, Hash } from 'lucide-react';
-import AppLayout from '@/layouts/app-layout';
-import { Head, Link, router } from '@inertiajs/react';
-import { type BreadcrumbItem } from '@/types';
-import { Edit, Trash2, ArrowLeft } from 'lucide-react';
-import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
-import { ActivityLogTable } from '@/components/activity-log-table';
-import { useState } from 'react';
+import {
+    Activity,
+    ArrowLeft,
+    ArrowUpRight,
+    BarChart3,
+    Calendar,
+    CheckCircle,
+    DollarSign,
+    Hash,
+    History,
+    Truck,
+    Wrench,
+    XCircle,
+    Edit,
+    Trash2,
+    Clock,
+    User,
+} from 'lucide-react';
 
 type VehicleType = {
     id: number;
@@ -52,6 +68,22 @@ type PerformanceRecord = {
     load_phase?: string | null;
     comment?: string | null;
     satus?: string | null;
+    tonkm?: number | null;
+    cargo_volume_mt?: number | null;
+    cargo_weight_kg?: number | null;
+    cargo_weight_tons?: number | null;
+    is_returned?: boolean;
+    returned_date?: string | null;
+    total_distance_km?: number | null;
+    trip_duration_days?: number | null;
+    origin?: {
+        id: number;
+        name: string;
+    } | null;
+    destination?: {
+        id: number;
+        name: string;
+    } | null;
 };
 
 type MaintenanceRecord = {
@@ -128,11 +160,27 @@ interface TrucksShowProps {
     };
     performanceSummary?: {
         total_records: number;
+        main_trip_records: number;
+        completed_trips: number;
+        open_trips: number;
         total_distance_km: number;
+        total_loaded_distance_km: number;
+        total_empty_distance_km: number;
         total_fuel_liters: number;
         fuel_cost_birr: number;
         avg_distance_per_record: number;
+        avg_trip_distance_km: number;
+        avg_loaded_distance_km: number | null;
+        avg_empty_distance_km: number | null;
         avg_fuel_efficiency_km_per_liter: number | null;
+        avg_trip_duration_days: number | null;
+        total_ton_km: number;
+        avg_ton_km_per_trip: number | null;
+        total_payload_tons: number;
+        avg_payload_tons_per_trip: number | null;
+        total_cargo_volume_mt: number;
+        avg_cargo_volume_mt_per_trip: number | null;
+        trip_completion_rate: number | null;
     };
     maintenanceSummary?: {
         total_records: number;
@@ -144,24 +192,22 @@ interface TrucksShowProps {
     gradeReport?: GradeReport;
 }
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Trucks',
-        href: '/trucks',
-    },
-];
+const breadcrumbs: BreadcrumbItem[] = [{ title: 'Trucks', href: '/trucks' }];
 
 const numberFormatter = new Intl.NumberFormat('en-ET');
+
 const currencyFormatter = new Intl.NumberFormat('en-ET', {
     style: 'currency',
     currency: 'ETB',
     maximumFractionDigits: 2,
 });
+
 const longDateFormatter = new Intl.DateTimeFormat('en-US', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
 });
+
 const shortDateFormatter = new Intl.DateTimeFormat('en-US', {
     year: 'numeric',
     month: 'short',
@@ -169,7 +215,7 @@ const shortDateFormatter = new Intl.DateTimeFormat('en-US', {
 });
 
 const formatNumber = (value?: number | null, options?: Intl.NumberFormatOptions): string => {
-    if (value === null || value === undefined) {
+    if (value === null || value === undefined || Number.isNaN(Number(value))) {
         return 'N/A';
     }
 
@@ -233,10 +279,53 @@ const formatShortDate = (value?: string | null): string => {
     return shortDateFormatter.format(parsed);
 };
 
-const formatKilometers = (value?: number | null): string => {
-    const formatted = formatNumber(value);
+const formatKilometers = (value?: number | null, maximumFractionDigits = 0): string => {
+    if (value === null || value === undefined || Number.isNaN(Number(value))) {
+        return 'N/A';
+    }
 
-    return formatted === 'N/A' ? formatted : `${formatted} KM`;
+    return `${formatNumber(value, {
+        minimumFractionDigits: maximumFractionDigits,
+        maximumFractionDigits,
+    })} KM`;
+};
+
+const formatKilometersWithPrecision = (value?: number | null, maximumFractionDigits = 2): string => {
+    if (value === null || value === undefined || Number.isNaN(Number(value))) {
+        return 'N/A';
+    }
+
+    return `${formatNumber(value, {
+        minimumFractionDigits: maximumFractionDigits,
+        maximumFractionDigits,
+    })} KM`;
+};
+
+const formatTons = (value?: number | null, maximumFractionDigits = 1): string => {
+    if (value === null || value === undefined || Number.isNaN(Number(value))) {
+        return 'N/A';
+    }
+
+    return `${formatNumber(value, {
+        minimumFractionDigits: value > 0 && value < 1 ? maximumFractionDigits : 0,
+        maximumFractionDigits,
+    })} t`;
+};
+
+const formatDays = (value?: number | null, maximumFractionDigits = 0): string => {
+    if (value === null || value === undefined || Number.isNaN(Number(value))) {
+        return 'N/A';
+    }
+
+    const rounded = Number(value.toFixed(maximumFractionDigits));
+
+    if (rounded === 1) {
+        return '1 day';
+    }
+
+    const formatted = rounded % 1 === 0 ? `${rounded}` : rounded.toFixed(maximumFractionDigits);
+
+    return `${formatted} days`;
 };
 
 const gradeCategoryConfig: Record<GradeCategoryKey, {
@@ -351,9 +440,24 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
     const performanceRecords = truck.performances ?? [];
 
     const totalDistanceKm = performanceSummary?.total_distance_km ?? null;
+    const totalLoadedDistanceKm = performanceSummary?.total_loaded_distance_km ?? null;
+    const totalEmptyDistanceKm = performanceSummary?.total_empty_distance_km ?? null;
     const totalFuelCost = performanceSummary?.fuel_cost_birr ?? null;
     const maintenanceCost = maintenanceSummary?.total_cost ?? null;
     const avgFuelEfficiency = performanceSummary?.avg_fuel_efficiency_km_per_liter ?? null;
+    const totalTrips = performanceSummary?.total_records ?? 0;
+    const completedTrips = performanceSummary?.completed_trips ?? 0;
+    const openTrips = performanceSummary?.open_trips ?? 0;
+    const mainTripRecords = performanceSummary?.main_trip_records ?? 0;
+    const avgTripDistanceKm = performanceSummary?.avg_trip_distance_km ?? null;
+    const avgLoadedDistanceKm = performanceSummary?.avg_loaded_distance_km ?? null;
+    const avgEmptyDistanceKm = performanceSummary?.avg_empty_distance_km ?? null;
+    const avgTripDurationDays = performanceSummary?.avg_trip_duration_days ?? null;
+    const totalTonKm = performanceSummary?.total_ton_km ?? null;
+    const avgTonKmPerTrip = performanceSummary?.avg_ton_km_per_trip ?? null;
+    const totalPayloadTons = performanceSummary?.total_payload_tons ?? null;
+    const avgPayloadTonsPerTrip = performanceSummary?.avg_payload_tons_per_trip ?? null;
+    const tripCompletionRate = performanceSummary?.trip_completion_rate ?? null;
 
     const vehicleHighlights = [
         {
@@ -365,8 +469,24 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
             value: formatKilometers(truck.serviceIntervalKM),
         },
         {
+            label: 'Trips Logged',
+            value: formatNumber(totalTrips || null),
+        },
+        {
+            label: 'Trips Completed',
+            value: formatNumber(completedTrips || null),
+        },
+        {
+            label: 'Trip Completion Rate',
+            value: formatPercent(tripCompletionRate, 0),
+        },
+        {
             label: 'Total Distance',
             value: formatKilometers(totalDistanceKm),
+        },
+        {
+            label: 'Loaded Distance',
+            value: formatKilometers(totalLoadedDistanceKm),
         },
         {
             label: 'Fuel Cost To Date',
@@ -374,13 +494,161 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
         },
         {
             label: 'Avg Fuel Efficiency',
-            value: avgFuelEfficiency !== null
-                ? `${formatNumber(avgFuelEfficiency, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} KM/L`
-                : 'N/A',
+            value:
+                avgFuelEfficiency !== null
+                    ? `${formatNumber(avgFuelEfficiency, {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                      })} KM/L`
+                    : 'N/A',
         },
         {
             label: 'Maintenance Spend',
             value: formatCurrency(maintenanceCost),
+        },
+    ];
+
+    const overviewSummaryCards = [
+        {
+            label: 'Trips Completed',
+            value: formatNumber(completedTrips || null),
+            helper: 'Confirmed round trips',
+        },
+        {
+            label: 'Trip Completion Rate',
+            value: formatPercent(tripCompletionRate, 0),
+            helper: 'Closed vs. dispatched',
+        },
+        {
+            label: 'Total Distance',
+            value: formatKilometers(totalDistanceKm),
+            helper: 'Lifetime distance logged',
+        },
+        {
+            label: 'Avg Fuel Efficiency',
+            value:
+                avgFuelEfficiency !== null
+                    ? `${formatNumber(avgFuelEfficiency, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} KM/L`
+                    : 'N/A',
+            helper: 'Across recorded trips',
+        },
+    ];
+
+    const performanceOverviewCards = [
+        {
+            label: 'Trips Logged',
+            value: formatNumber(totalTrips),
+            className: 'bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700',
+        },
+        {
+            label: 'Trips Completed',
+            value: formatNumber(completedTrips),
+            className: 'bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700',
+        },
+        {
+            label: 'Trips In Progress',
+            value: formatNumber(openTrips),
+            className: 'bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700',
+        },
+        {
+            label: 'Main Trip Legs',
+            value: formatNumber(mainTripRecords),
+            className: 'bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700',
+        },
+    ];
+
+    const distanceOverviewCards = [
+        {
+            label: 'Total Distance (KM)',
+            value: formatKilometers(totalDistanceKm),
+            className: 'bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700',
+        },
+        {
+            label: 'Loaded Distance (KM)',
+            value: formatKilometers(totalLoadedDistanceKm),
+            className: 'bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700',
+        },
+        {
+            label: 'Empty Distance (KM)',
+            value: formatKilometers(totalEmptyDistanceKm),
+            className: 'bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700',
+        },
+        {
+            label: 'Fuel Used (L)',
+            value: formatNumber(performanceSummary?.total_fuel_liters ?? null),
+            className: 'bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700',
+        },
+    ];
+
+    const efficiencyOverviewCards = [
+        {
+            label: 'Fuel Cost',
+            value: formatCurrency(performanceSummary?.fuel_cost_birr ?? null),
+            className: 'bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700',
+        },
+        {
+            label: 'Avg Distance / Trip',
+            value: formatKilometersWithPrecision(avgTripDistanceKm, 2),
+            className: 'bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700',
+        },
+        {
+            label: 'KM per Liter',
+            value: avgFuelEfficiency !== null
+                ? `${formatNumber(avgFuelEfficiency, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} KM/L`
+                : 'N/A',
+            className: 'bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700',
+        },
+        {
+            label: 'Trip Completion',
+            value: formatPercent(tripCompletionRate, 0),
+            className: 'bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700',
+        },
+        {
+            label: 'Avg Trip Duration',
+            value: formatDays(avgTripDurationDays),
+            className: 'bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700',
+        },
+        {
+            label: 'Avg Payload',
+            value: formatTons(avgPayloadTonsPerTrip),
+            className: 'bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700',
+        },
+    ];
+
+    const tripInsightCards = [
+        {
+            label: 'Avg Loaded Distance',
+            value: formatKilometersWithPrecision(avgLoadedDistanceKm, 2),
+            className: 'bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700',
+        },
+        {
+            label: 'Avg Empty Distance',
+            value: formatKilometersWithPrecision(avgEmptyDistanceKm, 2),
+            className: 'bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700',
+        },
+        {
+            label: 'Avg Ton-KM / Trip',
+            value: avgTonKmPerTrip !== null
+                ? formatNumber(avgTonKmPerTrip, { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+                : 'N/A',
+            className: 'bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700',
+        },
+        {
+            label: 'Total Ton-KM',
+            value: formatNumber(totalTonKm ?? null, { minimumFractionDigits: 0, maximumFractionDigits: 0 }),
+            className: 'bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700',
+        },
+        {
+            label: 'Total Payload',
+            value: formatTons(totalPayloadTons, 2),
+            className: 'bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700',
+        },
+        {
+            label: 'Avg Cargo Volume',
+            value: performanceSummary?.avg_cargo_volume_mt_per_trip !== undefined && performanceSummary?.avg_cargo_volume_mt_per_trip !== null
+                ? `${formatNumber(performanceSummary.avg_cargo_volume_mt_per_trip, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} m³`
+                : 'N/A',
+            className: 'bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700',
         },
     ];
 
@@ -455,8 +723,8 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`View Truck - ${truck.plate}`} />
             <div className="flex flex-1 min-h-0 flex-col gap-6 rounded-xl p-4">
-                {/* Enhanced Professional Header */}
-                <div className="bg-gradient-to-r from-slate-50 to-blue-50 dark:from-slate-900 dark:to-blue-950/20 rounded-lg p-6 border border-slate-200 dark:border-slate-700">
+                {/* Header */}
+                <div className="bg-gradient-to-r from-slate-50 to-indigo-50 dark:from-slate-900 dark:to-indigo-950/30 rounded-lg p-6 border border-slate-200 dark:border-slate-700">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
                             <Button
@@ -469,36 +737,34 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
                                 Back to Trucks
                             </Button>
                             <div className="flex items-center gap-4">
-                                <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
-                                    <CheckCircle className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                                <div className="p-3 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl">
+                                    <Truck className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
                                 </div>
                                 <div>
                                     <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{truck.plate}</h1>
-                                    <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Comprehensive truck details and management</p>
+                                    <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Comprehensive truck profile and fleet insights</p>
                                 </div>
                             </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                            <div className="flex items-center gap-2 px-3 py-1.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full text-sm font-medium">
-                                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                                Fleet Management
-                            </div>
-                            <div className="flex gap-2">
-                                <Button variant="outline" asChild className="hover:bg-blue-50 hover:border-blue-300 border-slate-300 dark:border-slate-600">
-                                    <Link href={`/trucks/${truck.id}/edit`}>
-                                        <Edit className="mr-2 h-4 w-4" />
-                                        Edit Truck
-                                    </Link>
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    onClick={() => setDeleteDialogOpen(true)}
-                                    className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300"
-                                >
-                                    <Trash2 className="mr-2 h-4 w-4" />
-                                    Delete Truck
-                                </Button>
-                            </div>
+                        <div className="flex gap-2">
+                            <Button
+                                variant="outline"
+                                asChild
+                                className="hover:bg-indigo-50 hover:border-indigo-300 border-slate-300 dark:border-slate-600"
+                            >
+                                <Link href={`/trucks/${truck.id}/edit`}>
+                                    <Edit className="mr-2 h-4 w-4" />
+                                    Edit Truck
+                                </Link>
+                            </Button>
+                            <Button
+                                variant="outline"
+                                onClick={() => setDeleteDialogOpen(true)}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300"
+                            >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete Truck
+                            </Button>
                         </div>
                     </div>
                 </div>
@@ -524,14 +790,26 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
                     </TabsList>
 
                     <TabsContent value="overview" className="space-y-6 h-full overflow-y-auto">
+                        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                            {overviewSummaryCards.map(card => (
+                                <div
+                                    key={card.label}
+                                    className="rounded-xl border-0 bg-gradient-to-br from-white to-indigo-50 dark:from-slate-900 dark:to-indigo-950/20 p-5 shadow-lg"
+                                >
+                                    <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">{card.label}</p>
+                                    <p className="mt-2 text-2xl font-bold text-slate-900 dark:text-slate-100">{card.value}</p>
+                                    <p className="mt-1 text-xs text-muted-foreground">{card.helper}</p>
+                                </div>
+                            ))}
+                        </div>
                         <div className="flex flex-col lg:flex-row gap-6">
                             {/* Main Details */}
                             <div className="flex-1 space-y-6">
                                 {/* Enhanced Basic Information */}
                                 <Card className="shadow-lg border-0 bg-gradient-to-br from-background to-muted/20">
-                                    <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-b">
+                                    <CardHeader className="bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-950/20 dark:to-blue-950/20 border-b">
                                         <CardTitle className="flex items-center gap-2 text-xl">
-                                            <CheckCircle className="h-5 w-5 text-blue-600" />
+                                            <Truck className="h-5 w-5 text-indigo-600" />
                                             Basic Information
                                         </CardTitle>
                                         <CardDescription className="text-base">
@@ -556,7 +834,7 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
                                                 </div>
                                             </div>
 
-                                            <div className="border-t pt-4">
+                                            <div className="border-t border-slate-200 dark:border-slate-700 pt-4">
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div>
                                                         <p className="text-sm font-medium text-muted-foreground">Chassis Number</p>
@@ -569,7 +847,7 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
                                                 </div>
                                             </div>
 
-                                            <div className="border-t pt-4">
+                                            <div className="border-t border-slate-200 dark:border-slate-700 pt-4">
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div>
                                                         <p className="text-sm font-medium text-muted-foreground">Tyre Size</p>
@@ -585,52 +863,175 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
                                     </CardContent>
                                 </Card>
 
-                                {/* Financial Information */}
                                 <Card className="shadow-lg border-0 bg-gradient-to-br from-background to-muted/20">
-                                    <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border-b">
-                                        <CardTitle className="flex items-center gap-2 text-xl">
-                                            <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                                                <DollarSign className="h-5 w-5 text-green-600 dark:text-green-400" />
+                                    <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-b">
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div>
+                                                <CardTitle className="flex items-center gap-2 text-xl">
+                                                    <User className="h-5 w-5 text-indigo-600" />
+                                                    Driver Assignments
+                                                </CardTitle>
+                                                <CardDescription className="text-base">
+                                                    Current and past driver assignments for this truck
+                                                </CardDescription>
                                             </div>
-                                            Financial Information
-                                        </CardTitle>
-                                        <CardDescription className="text-base">
-                                            Purchase and pricing details
-                                        </CardDescription>
-                                    </CardHeader>
-                                    <CardContent className="p-6">
-                                        <div className="space-y-6">
-                                            {/* Purchase Price */}
-                                            <div className="flex items-center justify-between p-4 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
-                                                <div>
-                                                    <p className="text-sm font-medium text-green-700 dark:text-green-300">Purchase Price</p>
-                                                    <p className="mt-1 text-2xl font-bold text-green-800 dark:text-green-200">{formatCurrency(truck.purchasePrice)}</p>
-                                                </div>
-                                                <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                                                    <DollarSign className="h-6 w-6 text-green-600 dark:text-green-400" />
-                                                </div>
-                                            </div>
-
-                                            {/* Dates Grid */}
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
-                                                    <div className="flex items-center gap-2 mb-2">
-                                                        <Calendar className="h-4 w-4 text-slate-600 dark:text-slate-400" />
-                                                        <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Production Date</p>
-                                                    </div>
-                                                    <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{formatDate(truck.productionDate)}</p>
-                                                </div>
-                                                <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
-                                                    <div className="flex items-center gap-2 mb-2">
-                                                        <Clock className="h-4 w-4 text-slate-600 dark:text-slate-400" />
-                                                        <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Service Start</p>
-                                                    </div>
-                                                    <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{formatDate(truck.serviceStartDate)}</p>
-                                                </div>
-                                            </div>
+                                            {driverAssignments.length > 0 && (
+                                                <Button variant="link" size="sm" className="px-0" asChild>
+                                                    <Link
+                                                        href={`/driver-trucks?truck_id=${truck.id}`}
+                                                        className="flex items-center gap-1 text-blue-600 dark:text-blue-300"
+                                                    >
+                                                        View all
+                                                        <ArrowUpRight className="h-4 w-4" />
+                                                    </Link>
+                                                </Button>
+                                            )}
                                         </div>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4 p-4">
+                                        {driverAssignments.length > 0 ? (
+                                            driverAssignments.map((assignment) => {
+                                                const driverName = assignment.driver?.name ?? 'Unknown driver';
+                                                const driverCode = assignment.driver?.driverid ?? assignment.driverid ?? 'N/A';
+                                                const assignmentStatusLabel = assignment.status
+                                                    ? `${assignment.status.charAt(0).toUpperCase()}${assignment.status.slice(1)}`
+                                                    : assignment.is_attached
+                                                        ? 'Active'
+                                                        : 'Detached';
+                                                const assignedOn = formatShortDate(assignment.date_recived);
+                                                const detachedOn = assignment.date_detach ? formatShortDate(assignment.date_detach) : '—';
+
+                                                return (
+                                                    <div
+                                                        key={assignment.id}
+                                                        className="rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50/60 dark:bg-blue-950/10 p-4 space-y-3"
+                                                    >
+                                                        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                                                            <div>
+                                                                <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">{driverName}</p>
+                                                                <p className="text-xs text-muted-foreground">Assignment #{assignment.id}</p>
+                                                            </div>
+                                                            <div className="flex flex-wrap items-center gap-2">
+                                                                <Badge variant={assignment.is_attached ? 'default' : 'secondary'}>
+                                                                    {assignment.is_attached ? 'Attached' : 'Detached'}
+                                                                </Badge>
+                                                                <Badge variant="outline" className="text-xs">
+                                                                    {assignmentStatusLabel}
+                                                                </Badge>
+                                                            </div>
+                                                        </div>
+                                                        <div className="grid gap-3 text-xs text-muted-foreground md:grid-cols-2">
+                                                            <div>
+                                                                <span className="font-medium">Driver ID:</span> {driverCode}
+                                                            </div>
+                                                            <div>
+                                                                <span className="font-medium">Assigned:</span> {assignedOn}
+                                                            </div>
+                                                            <div>
+                                                                <span className="font-medium">Detached:</span> {detachedOn}
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                                                            <span className="text-xs text-muted-foreground">Status note: {assignmentStatusLabel}</span>
+                                                            <Button variant="link" size="sm" className="px-0" asChild>
+                                                                <Link
+                                                                    href={`/trucks/${truck.id}/assignments/${assignment.id}/performances`}
+                                                                    className="flex items-center gap-1"
+                                                                >
+                                                                    View assignment
+                                                                    <ArrowUpRight className="h-4 w-4" />
+                                                                </Link>
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })
+                                        ) : (
+                                            <div className="text-center py-8 text-sm text-muted-foreground">
+                                                <User className="mx-auto mb-3 h-10 w-10 opacity-60" />
+                                                <p>No driver assignments recorded for this truck yet.</p>
+                                            </div>
+                                        )}
                                     </CardContent>
                                 </Card>
+
+                                {/* Financial Information & Vehicle Highlights */}
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                    <Card className="shadow-lg border-0 bg-gradient-to-br from-background to-muted/20">
+                                        <CardHeader className="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20 border-b">
+                                            <CardTitle className="flex items-center gap-2 text-xl">
+                                                <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
+                                                    <DollarSign className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                                                </div>
+                                                Financial Information
+                                            </CardTitle>
+                                            <CardDescription className="text-base">
+                                                Purchase and pricing details
+                                            </CardDescription>
+                                        </CardHeader>
+                                        <CardContent className="p-6 space-y-6">
+                                            <div className="space-y-6">
+                                                {/* Purchase Price */}
+                                                <div className="flex items-center justify-between p-4 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/20">
+                                                    <div>
+                                                        <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">Purchase Price</p>
+                                                        <p className="mt-1 text-2xl font-semibold text-emerald-900 dark:text-emerald-200">{formatCurrency(truck.purchasePrice)}</p>
+                                                    </div>
+                                                    <div className="p-3 bg-white/70 dark:bg-emerald-900/40 rounded-lg">
+                                                        <DollarSign className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+                                                    </div>
+                                                </div>
+
+                                                {/* Dates Grid */}
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
+                                                        <div className="flex items-center gap-2 mb-2">
+                                                            <Calendar className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+                                                            <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Production Date</p>
+                                                        </div>
+                                                        <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{formatDate(truck.productionDate)}</p>
+                                                    </div>
+                                                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
+                                                        <div className="flex items-center gap-2 mb-2">
+                                                            <Clock className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+                                                            <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Service Start</p>
+                                                        </div>
+                                                        <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{formatDate(truck.serviceStartDate)}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+
+                                    <Card className="shadow-lg border-0 bg-gradient-to-br from-background to-muted/20">
+                                        <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-b">
+                                            <CardTitle className="flex items-center gap-2 text-lg">
+                                                <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
+                                                    <Activity className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                                                </div>
+                                                Vehicle Highlights
+                                            </CardTitle>
+                                            <CardDescription>Key operating metrics</CardDescription>
+                                        </CardHeader>
+                                        <CardContent className="p-6">
+                                            <div className="grid grid-cols-1 gap-4 text-sm">
+                                                {vehicleHighlights.map(item => (
+                                                    <div
+                                                        key={item.label}
+                                                        className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/40 p-4"
+                                                    >
+                                                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                                            {item.label}
+                                                        </p>
+                                                        <p className="mt-1 text-base font-semibold text-slate-900 dark:text-slate-100">
+                                                            {item.value}
+                                                        </p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                </div>
 
                                 {/* Timestamps */}
                                 <Card>
@@ -693,7 +1094,7 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
                                                 {gradeCategories.map(category => (
                                                     <div
                                                         key={category.key}
-                                                        className="rounded-lg border border-indigo-100 bg-white/70 p-3 dark:border-indigo-900/40 dark:bg-indigo-900/10"
+                                                        className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/40 p-3"
                                                     >
                                                         <div className="flex items-start justify-between gap-3">
                                                             <div>
@@ -742,38 +1143,10 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
                                         </CardContent>
                                     </Card>
                                 )}
-                                <Card className="shadow-lg border-0 bg-gradient-to-br from-background to-muted/20">
-                                    <CardHeader className="bg-gradient-to-r from-emerald-50 to-cyan-50 dark:from-emerald-950/20 dark:to-cyan-950/20 border-b">
-                                        <CardTitle className="flex items-center gap-2 text-lg">
-                                            <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
-                                                <Activity className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                                            </div>
-                                            Vehicle Highlights
-                                        </CardTitle>
-                                        <CardDescription>Key operating metrics</CardDescription>
-                                    </CardHeader>
-                                    <CardContent className="p-4">
-                                        <div className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
-                                            {vehicleHighlights.map((item) => (
-                                                <div
-                                                    key={item.label}
-                                                    className="rounded-lg border border-emerald-100 bg-white/60 p-3 dark:border-emerald-900/40 dark:bg-emerald-900/10"
-                                                >
-                                                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                                                        {item.label}
-                                                    </p>
-                                                    <p className="mt-1 text-base font-semibold text-slate-900 dark:text-slate-100">
-                                                        {item.value}
-                                                    </p>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </CardContent>
-                                </Card>
                                 {/* Status Card */}
-                                <Card className="shadow-lg border-0 bg-gradient-to-br from-background to-muted/20">
-                                    <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-b">
-                                        <CardTitle className="flex items-center gap-2 text-lg">
+                                <Card className="shadow-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/60">
+                                    <CardHeader className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40">
+                                        <CardTitle className="flex items-center gap-2 text-lg text-slate-900 dark:text-slate-100">
                                             <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
                                                 <CheckCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                                             </div>
@@ -800,9 +1173,9 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
                                 </Card>
 
                                 {counts && (
-                                    <Card className="shadow-lg border-0 bg-gradient-to-br from-background to-muted/20">
-                                        <CardHeader className="bg-gradient-to-r from-indigo-50 to-violet-50 dark:from-indigo-950/20 dark:to-violet-950/20 border-b">
-                                            <CardTitle className="flex items-center gap-2 text-lg">
+                                    <Card className="shadow-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/60">
+                                        <CardHeader className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40">
+                                            <CardTitle className="flex items-center gap-2 text-lg text-slate-900 dark:text-slate-100">
                                                 <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
                                                     <Hash className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
                                                 </div>
@@ -831,70 +1204,11 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
                                     </Card>
                                 )}
 
-                                {/* Driver Assignments */}
-                                {driverAssignments.length > 0 && (
-                                    <Card className="shadow-lg border-0 bg-gradient-to-br from-background to-muted/20">
-                                        <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-b">
-                                            <CardTitle className="flex items-center gap-2 text-lg">
-                                                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                                                    <CheckCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                                                </div>
-                                                Driver Assignments
-                                            </CardTitle>
-                                            <CardDescription>Current and past driver assignments for this truck</CardDescription>
-                                        </CardHeader>
-                                        <CardContent className="p-4">
-                                            <div className="space-y-3">
-                                                {driverAssignments.map((assignment) => {
-                                                    const driverName = assignment.driver?.name ?? 'Unknown driver';
-                                                    const driverCode = assignment.driver?.driverid ?? assignment.driverid ?? 'N/A';
-                                                    const assignedOn = formatShortDate(assignment.date_recived);
-                                                    const detachedOn = assignment.date_detach ? formatShortDate(assignment.date_detach) : '—';
-
-                                                    return (
-                                                        <div
-                                                            key={assignment.id}
-                                                            className="rounded-lg border border-blue-200 dark:border-blue-800 p-3 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-colors duration-200"
-                                                        >
-                                                            <div className="flex items-center justify-between">
-                                                                <div className="flex items-center gap-3">
-                                                                    <div>
-                                                                        <p className="font-medium text-sm text-blue-800 dark:text-blue-200">{driverName}</p>
-                                                                        <p className="text-xs text-muted-foreground">ID: {driverCode}</p>
-                                                                    </div>
-                                                                </div>
-                                                                <Badge variant={assignment.is_attached ? 'default' : 'secondary'}>
-                                                                    {assignment.is_attached ? 'Active' : 'Detached'}
-                                                                </Badge>
-                                                            </div>
-                                                            <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-                                                                <div>
-                                                                    <span className="font-medium">Assigned:</span> {assignedOn}
-                                                                </div>
-                                                                {assignment.date_detach && (
-                                                                    <div>
-                                                                        <span className="font-medium">Detached:</span> {detachedOn}
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                            <div className="mt-4 pt-3 border-t border-blue-200 dark:border-blue-800">
-                                                <Link href="/driver-trucks" className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 hover:underline">
-                                                    View all assignments →
-                                                </Link>
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-                                )}
-
                                 {/* Recent Performances */}
                                 {performanceRecords.length > 0 && (
-                                    <Card className="shadow-lg border-0 bg-gradient-to-br from-background to-muted/20">
-                                        <CardHeader className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20 border-b">
-                                            <CardTitle className="flex items-center gap-2 text-lg">
+                                    <Card className="shadow-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/60">
+                                        <CardHeader className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40">
+                                            <CardTitle className="flex items-center gap-2 text-lg text-slate-900 dark:text-slate-100">
                                                 <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
                                                     <Activity className="h-4 w-4 text-orange-600 dark:text-orange-400" />
                                                 </div>
@@ -919,9 +1233,9 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
                     </TabsContent>
 
                     <TabsContent value="maintenance" className="space-y-6 h-full overflow-y-auto">
-                        <Card className="shadow-lg border-0 bg-gradient-to-br from-background to-muted/10">
-                            <CardHeader className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/20 dark:to-indigo-950/20 border-b">
-                                <CardTitle className="flex items-center gap-2 text-lg">
+                        <Card className="shadow-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/60">
+                            <CardHeader className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40">
+                                <CardTitle className="flex items-center gap-2 text-lg text-slate-900 dark:text-slate-100">
                                     <Wrench className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                                     Maintenance Overview
                                 </CardTitle>
@@ -1005,9 +1319,9 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
                         <div className="flex flex-col lg:flex-row gap-6">
                             {/* Metrics Summary */}
                             <div className="flex-1 space-y-6">
-                                <Card className="shadow-lg border-0 bg-gradient-to-br from-background to-muted/20">
-                                    <CardHeader className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20 border-b">
-                                        <CardTitle className="flex items-center gap-2 text-xl">
+                                <Card className="shadow-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/60">
+                                    <CardHeader className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40">
+                                        <CardTitle className="flex items-center gap-2 text-xl text-slate-900 dark:text-slate-100">
                                             <BarChart3 className="h-5 w-5 text-orange-600 dark:text-orange-400" />
                                             Performance Overview
                                         </CardTitle>
@@ -1015,32 +1329,30 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
                                     </CardHeader>
                                     <CardContent>
                                         {performanceSummary ? (
-                                            <div className="grid gap-4 md:grid-cols-3">
-                                                <div className="p-4 rounded-lg bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-800">
-                                                    <p className="text-xs text-muted-foreground">Records</p>
-                                                    <p className="mt-1 text-2xl font-bold">{performanceSummary.total_records}</p>
+                                            <div className="space-y-6">
+                                                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                                                    {performanceOverviewCards.map(({ label, value, className }) => (
+                                                        <div key={label} className={`p-4 rounded-lg ${className}`}>
+                                                            <p className="text-xs text-muted-foreground">{label}</p>
+                                                            <p className="mt-1 text-2xl font-bold">{value}</p>
+                                                        </div>
+                                                    ))}
                                                 </div>
-                                                <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800">
-                                                    <p className="text-xs text-muted-foreground">Distance (KM)</p>
-                                                    <p className="mt-1 text-2xl font-bold">{formatNumber(performanceSummary.total_distance_km)}</p>
+                                                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                                                    {distanceOverviewCards.map(({ label, value, className }) => (
+                                                        <div key={label} className={`p-4 rounded-lg ${className}`}>
+                                                            <p className="text-xs text-muted-foreground">{label}</p>
+                                                            <p className="mt-1 text-2xl font-bold">{value}</p>
+                                                        </div>
+                                                    ))}
                                                 </div>
-                                                <div className="p-4 rounded-lg bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800">
-                                                    <p className="text-xs text-muted-foreground">Fuel (L)</p>
-                                                    <p className="mt-1 text-2xl font-bold">{formatNumber(performanceSummary.total_fuel_liters)}</p>
-                                                </div>
-                                                <div className="p-4 rounded-lg bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800">
-                                                    <p className="text-xs text-muted-foreground">Fuel Cost</p>
-                                                    <p className="mt-1 text-2xl font-bold">{formatCurrency(performanceSummary.fuel_cost_birr)}</p>
-                                                </div>
-                                                <div className="p-4 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800">
-                                                    <p className="text-xs text-muted-foreground">Avg Dist/Record</p>
-                                                    <p className="mt-1 text-2xl font-bold">{formatNumber(performanceSummary.avg_distance_per_record, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                                                </div>
-                                                <div className="p-4 rounded-lg bg-teal-50 dark:bg-teal-900/30 border border-teal-200 dark:border-teal-800">
-                                                    <p className="text-xs text-muted-foreground">KM / Liter</p>
-                                                    <p className="mt-1 text-2xl font-bold">{performanceSummary.avg_fuel_efficiency_km_per_liter !== null
-                                                        ? formatNumber(performanceSummary.avg_fuel_efficiency_km_per_liter, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                                                        : 'N/A'}</p>
+                                                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                                                    {efficiencyOverviewCards.map(({ label, value, className }) => (
+                                                        <div key={label} className={`p-4 rounded-lg ${className}`}>
+                                                            <p className="text-xs text-muted-foreground">{label}</p>
+                                                            <p className="mt-1 text-2xl font-bold">{value}</p>
+                                                        </div>
+                                                    ))}
                                                 </div>
                                             </div>
                                         ) : (
@@ -1053,10 +1365,38 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
                                     </CardContent>
                                 </Card>
 
+                                <Card className="shadow-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/60">
+                                    <CardHeader className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40">
+                                        <CardTitle className="flex items-center gap-2 text-lg text-slate-900 dark:text-slate-100">
+                                            <Activity className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                                            Trip Insights
+                                        </CardTitle>
+                                        <CardDescription>Distance mix, payload, and productivity per trip</CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        {performanceSummary ? (
+                                            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                                                {tripInsightCards.map(({ label, value, className }) => (
+                                                    <div key={label} className={`p-4 rounded-lg ${className}`}>
+                                                        <p className="text-xs text-muted-foreground">{label}</p>
+                                                        <p className="mt-1 text-2xl font-bold">{value}</p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="text-center py-8">
+                                                <Activity className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                                                <h3 className="text-lg font-semibold mb-2">No trip statistics yet</h3>
+                                                <p className="text-muted-foreground mb-4">Trip insights will appear once performance records are captured.</p>
+                                            </div>
+                                        )}
+                                    </CardContent>
+                                </Card>
+
                                 {/* Recent Performance Records */}
-                                <Card className="shadow-lg border-0 bg-gradient-to-br from-background to-muted/20">
-                                    <CardHeader className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20 border-b">
-                                        <CardTitle className="flex items-center gap-2 text-lg">
+                                <Card className="shadow-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/60">
+                                    <CardHeader className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40">
+                                        <CardTitle className="flex items-center gap-2 text-lg text-slate-900 dark:text-slate-100">
                                             <Activity className="h-4 w-4 text-orange-600 dark:text-orange-400" />
                                             Recent Performance Records
                                         </CardTitle>
@@ -1067,21 +1407,58 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
                                             <div className="space-y-3">
                                                 {performanceRecords.map((perf) => {
                                                     const dispatchDate = perf.DateDispach ? formatShortDate(perf.DateDispach) : null;
+                                                    const returnedDate = perf.returned_date ? formatShortDate(perf.returned_date) : null;
+                                                    const routeLabel = [perf.origin?.name, perf.destination?.name]
+                                                        .filter(Boolean)
+                                                        .join(' → ');
+                                                    const totalTripDistance = perf.total_distance_km !== null && perf.total_distance_km !== undefined
+                                                        ? formatKilometersWithPrecision(perf.total_distance_km, 2)
+                                                        : 'N/A';
+                                                    const loadedDistance = formatKilometersWithPrecision(perf.DistanceWCargo ?? null, 1);
+                                                    const emptyDistance = formatKilometersWithPrecision(perf.DistanceWOCargo ?? null, 1);
+                                                    const fuelLiters = perf.fuelInLitter !== null && perf.fuelInLitter !== undefined
+                                                        ? `${formatNumber(perf.fuelInLitter, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} L`
+                                                        : 'N/A';
+                                                    const fuelBirr = formatCurrency(perf.fuelInBirr);
+                                                    const payloadTons = formatTons(perf.cargo_weight_tons, 2);
+                                                    const tonKm = perf.tonkm !== null && perf.tonkm !== undefined
+                                                        ? formatNumber(perf.tonkm, { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+                                                        : 'N/A';
+                                                    const tripDuration = formatDays(perf.trip_duration_days);
+                                                    const tripStatus = perf.is_returned ? 'Completed' : 'In Progress';
 
                                                     return (
                                                         <div key={perf.id} className="p-4 rounded-lg border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/20 flex flex-col gap-2">
                                                             <div className="flex items-center justify-between">
-                                                                <div className="flex flex-col">
-                                                                    <span className="text-sm font-medium">Performance #{perf.id}</span>
-                                                                    {dispatchDate && <span className="text-xs text-muted-foreground">{dispatchDate}</span>}
+                                                                <div className="flex flex-col gap-1">
+                                                                    <span className="text-sm font-medium">Trip #{perf.id}</span>
+                                                                    {dispatchDate && (
+                                                                        <span className="text-xs text-muted-foreground">Dispatched {dispatchDate}</span>
+                                                                    )}
+                                                                    {routeLabel && (
+                                                                        <span className="text-xs text-muted-foreground">{routeLabel}</span>
+                                                                    )}
                                                                 </div>
-                                                                <Badge variant="secondary" className="text-xs">{perf.load_phase ?? 'N/A'}</Badge>
+                                                                <div className="flex items-center gap-2">
+                                                                    <Badge variant={perf.is_returned ? 'default' : 'secondary'} className="text-xs">
+                                                                        {tripStatus}
+                                                                    </Badge>
+                                                                    {perf.load_phase && (
+                                                                        <Badge variant="outline" className="text-xs capitalize">
+                                                                            {perf.load_phase}
+                                                                        </Badge>
+                                                                    )}
+                                                                </div>
                                                             </div>
-                                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs text-muted-foreground">
-                                                                <div><span className="font-medium">Distance WCargo:</span> {formatNumber(perf.DistanceWCargo)}</div>
-                                                                <div><span className="font-medium">Distance WOCargo:</span> {formatNumber(perf.DistanceWOCargo)}</div>
-                                                                <div><span className="font-medium">Fuel (L):</span> {formatNumber(perf.fuelInLitter, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                                                                <div><span className="font-medium">Fuel (Birr):</span> {formatCurrency(perf.fuelInBirr)}</div>
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2 text-xs text-muted-foreground">
+                                                                <div><span className="font-medium">Total Distance:</span> {totalTripDistance}</div>
+                                                                <div><span className="font-medium">Loaded / Empty:</span> {loadedDistance} · {emptyDistance}</div>
+                                                                <div><span className="font-medium">Fuel:</span> {fuelLiters}</div>
+                                                                <div><span className="font-medium">Fuel Cost:</span> {fuelBirr}</div>
+                                                                <div><span className="font-medium">Payload:</span> {payloadTons}</div>
+                                                                <div><span className="font-medium">Ton-KM:</span> {tonKm}</div>
+                                                                <div><span className="font-medium">Duration:</span> {tripDuration}</div>
+                                                                <div><span className="font-medium">Returned:</span> {returnedDate ?? '—'}</div>
                                                             </div>
                                                             {perf.comment && <p className="text-xs line-clamp-3">{perf.comment}</p>}
                                                         </div>
@@ -1101,9 +1478,9 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
 
                             {/* Sidebar mimic for consistency (optional quick stats) */}
                             <div className="w-full lg:w-80 space-y-4">
-                                <Card className="shadow-lg border-0 bg-gradient-to-br from-background to-muted/20">
-                                    <CardHeader className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20 border-b">
-                                        <CardTitle className="flex items-center gap-2 text-lg">
+                                <Card className="shadow-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/60">
+                                    <CardHeader className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40">
+                                        <CardTitle className="flex items-center gap-2 text-lg text-slate-900 dark:text-slate-100">
                                             <BarChart3 className="h-4 w-4 text-orange-600 dark:text-orange-400" />
                                             Quick Metrics
                                         </CardTitle>
@@ -1129,9 +1506,9 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
                     </TabsContent>
 
                     <TabsContent value="history" className="space-y-6 h-full overflow-y-auto">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
+                        <Card className="shadow-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/60">
+                            <CardHeader className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40">
+                                <CardTitle className="flex items-center gap-2 text-slate-900 dark:text-slate-100">
                                     <History className="h-5 w-5" />
                                     Activity History
                                 </CardTitle>

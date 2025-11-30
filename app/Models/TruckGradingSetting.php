@@ -17,6 +17,7 @@ class TruckGradingSetting extends Model
         'financial_weight',
         'compliance_weight',
         'peer_sample_size',
+        'grade_thresholds',
         'updated_by',
     ];
 
@@ -27,19 +28,67 @@ class TruckGradingSetting extends Model
         'financial_weight' => 'integer',
         'compliance_weight' => 'integer',
         'peer_sample_size' => 'integer',
+        'grade_thresholds' => 'array',
         'updated_by' => 'integer',
     ];
 
     public static function defaultWeights(): array
     {
         return [
-            'utilization_weight' => 25,
-            'efficiency_weight' => 25,
-            'reliability_weight' => 30,
-            'financial_weight' => 15,
+            'utilization_weight' => 35,
+            'efficiency_weight' => 35,
+            'reliability_weight' => 5,
+            'financial_weight' => 20,
             'compliance_weight' => 5,
             'peer_sample_size' => 10,
         ];
+    }
+
+    public static function defaultGradeThresholds(): array
+    {
+        return [
+            'A' => 90,
+            'B' => 80,
+            'C' => 70,
+            'D' => 60,
+            'E' => 0,
+        ];
+    }
+
+    public static function normalizeGradeThresholds(?array $candidate, ?array $fallback = null): array
+    {
+        $fallback ??= self::defaultGradeThresholds();
+
+        $letters = ['A', 'B', 'C', 'D', 'E'];
+        $normalized = [];
+
+        foreach ($letters as $letter) {
+            $value = $candidate[$letter] ?? $candidate[strtolower($letter)] ?? null;
+
+            if (! is_numeric($value)) {
+                $value = $fallback[$letter] ?? null;
+            }
+
+            $normalized[$letter] = $value !== null
+                ? max(min((float) $value, 100), 0)
+                : ($fallback[$letter] ?? 0);
+        }
+
+        $previous = 100.0;
+
+        foreach ($letters as $letter) {
+            $current = $normalized[$letter];
+
+            if ($current > $previous) {
+                $normalized[$letter] = $previous;
+            }
+
+            $previous = $normalized[$letter];
+        }
+
+        $normalized['E'] = 0.0;
+
+        return $normalized;
     }
 
     public function updatedBy(): BelongsTo

@@ -2,7 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AlertCircle, BarChart3, History, Activity, ShieldCheck, CheckCircle, XCircle, Calendar, User, ArrowLeft, Edit, Trash2, Hash, Settings, Truck } from 'lucide-react';
+import { AlertCircle, BarChart3, History, ShieldCheck, CheckCircle, XCircle, Calendar, User, ArrowLeft, Edit, Trash2, Hash, Activity, Truck, ArrowUpRight } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { Head, Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
@@ -18,35 +18,94 @@ interface ActivityLog {
     properties?: Record<string, any>;
 }
 
-interface DriverTruck {
+type DriverAssignment = {
     id: number;
-    truck_id: number;
-    plate?: string;
-    date_recived: string;
-    date_detach?: string;
-    is_attached: boolean | number;
-    status: string | number;
-    truck?: { id: number; plate: string };
-}
+    driver_id?: number | null;
+    driverid?: string | null;
+    truck_id?: number | null;
+    plate?: string | null;
+    date_recived?: string | null;
+    date_detach?: string | null;
+    is_attached: boolean;
+    status?: string | null;
+    truck?: {
+        id: number;
+        plate: string;
+    } | null;
+};
+
+type DriverPerformance = {
+    id: number;
+    driver_truck_id?: number | null;
+    DateDispach?: string | null;
+    DistanceWCargo?: number | null;
+    DistanceWOCargo?: number | null;
+    fuelInLitter?: number | null;
+    fuelInBirr?: number | null;
+    comment?: string | null;
+    load_phase?: string | null;
+    satus?: string | null;
+    tonkm?: number | null;
+    cargo_volume_mt?: number | null;
+    cargo_weight_kg?: number | null;
+    cargo_weight_tons?: number | null;
+    is_returned?: boolean;
+    returned_date?: string | null;
+    total_distance_km?: number | null;
+    trip_duration_days?: number | null;
+    driver_truck?: {
+        id: number;
+        plate?: string | null;
+        status?: string | null;
+        is_attached?: boolean;
+        date_recived?: string | null;
+        date_detach?: string | null;
+    } | null;
+    origin?: {
+        id: number;
+        name: string;
+    } | null;
+    destination?: {
+        id: number;
+        name: string;
+    } | null;
+    operation?: {
+        id: number;
+        number?: string | null;
+        status?: string | null;
+    } | null;
+};
+
+type DriverSafety = {
+    id: number;
+    incident_date?: string | null;
+    incident_type?: string | null;
+    description?: string | null;
+    severity?: string | null;
+    damage_cost?: number | null;
+    location?: string | null;
+    resolution?: string | null;
+    reported_by?: number | null;
+};
 
 interface Driver {
     id: number;
     driverid: string;
     name: string;
-    sex: string;
-    birthdate?: string;
-    zone?: string;
-    woreda?: string;
-    kebele?: string;
-    housenumber?: string;
-    mobile?: string;
-    hireddate?: string;
-    status: string;
-    created_at?: string;
-    updated_at?: string;
-    performances?: any[];
-    driverTrucks?: DriverTruck[];
-    safetyRecords?: any[];
+    sex?: string | null;
+    birthdate?: string | null;
+    zone?: string | null;
+    woreda?: string | null;
+    kebele?: string | null;
+    housenumber?: string | null;
+    mobile?: string | null;
+    hireddate?: string | null;
+    status?: string | null;
+    created_at?: string | null;
+    updated_at?: string | null;
+    performances?: DriverPerformance[];
+    driverTrucks?: DriverAssignment[];
+    safetyRecords?: DriverSafety[];
 }
 
 interface DriversShowProps {
@@ -60,6 +119,8 @@ interface DriversShowProps {
         avg_fuel_efficiency: number | null;
         avg_customer_rating: number | null;
         safety_incidents: number;
+        total_fuel_liters?: number;
+        total_fuel_cost?: number;
     };
     safetySummary?: {
         total_records: number;
@@ -79,15 +140,326 @@ interface DriversShowProps {
         safety_records: number;
         fuel_records: number;
     };
+    gradeReport?: GradeReport;
 }
+
+type GradeCategoryKey = 'performance' | 'efficiency' | 'safety' | 'compliance' | 'engagement';
+
+type GradeCategoryDetails = {
+    score: number;
+    metrics: Record<string, number | null>;
+};
+
+type GradeWeights = {
+    performance_weight: number;
+    efficiency_weight: number;
+    safety_weight: number;
+    compliance_weight: number;
+    engagement_weight: number;
+};
+
+interface GradeReport {
+    overall: {
+        score: number;
+        letter: string;
+    };
+    weights: GradeWeights;
+    categories: Partial<Record<GradeCategoryKey, GradeCategoryDetails>>;
+    metrics?: {
+        driver?: Record<string, number | null>;
+        peer_averages?: Record<string, number | null>;
+    };
+}
+
+type GradeCategoryConfigEntry = {
+    label: string;
+    description: string;
+    metrics: Array<{
+        key: string;
+        label: string;
+        formatter: (value: number | null | undefined) => string;
+    }>;
+};
+
+type GradeCategoryView = {
+    key: GradeCategoryKey;
+    label: string;
+    description: string;
+    score: number;
+    weight: number | null;
+    metrics: Array<{ label: string; value: string }>;
+};
+
+const numberFormatter = new Intl.NumberFormat('en-ET');
+
+const currencyFormatter = new Intl.NumberFormat('en-ET', {
+    style: 'currency',
+    currency: 'ETB',
+    maximumFractionDigits: 2,
+});
+
+const formatNumber = (value?: number | null, options?: Intl.NumberFormatOptions): string => {
+    if (value === null || value === undefined || Number.isNaN(Number(value))) {
+        return 'N/A';
+    }
+
+    if (options) {
+        return new Intl.NumberFormat('en-ET', options).format(value);
+    }
+
+    return numberFormatter.format(value);
+};
+
+const formatKilometers = (value?: number | null, maximumFractionDigits = 0): string => {
+    const formatted = formatNumber(value, {
+        minimumFractionDigits: maximumFractionDigits,
+        maximumFractionDigits,
+    });
+
+    return formatted === 'N/A' ? formatted : `${formatted} KM`;
+};
+
+const formatTons = (value?: number | null, maximumFractionDigits = 1): string => {
+    if (value === null || value === undefined || Number.isNaN(Number(value))) {
+        return 'N/A';
+    }
+
+    return `${formatNumber(value, {
+        minimumFractionDigits: value > 0 && value < 1 ? maximumFractionDigits : 0,
+        maximumFractionDigits,
+    })} t`;
+};
+
+const formatFuelEfficiency = (value?: number | null): string => {
+    if (value === null || value === undefined || Number.isNaN(Number(value))) {
+        return 'N/A';
+    }
+
+    return `${formatNumber(value, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} KM/L`;
+};
+
+const formatCurrency = (value?: number | null, options?: Intl.NumberFormatOptions): string => {
+    if (value === null || value === undefined || Number.isNaN(Number(value))) {
+        return 'N/A';
+    }
+
+    if (options) {
+        return new Intl.NumberFormat('en-ET', {
+            style: 'currency',
+            currency: 'ETB',
+            maximumFractionDigits: 2,
+            ...options,
+        }).format(value);
+    }
+
+    return currencyFormatter.format(value);
+};
+
+const formatCurrencyPerKilometer = (value?: number | null): string => {
+    const formatted = formatCurrency(value, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    });
+
+    return formatted === 'N/A' ? formatted : `${formatted} / KM`;
+};
+
+const formatRating = (value?: number | null): string => {
+    if (value === null || value === undefined || Number.isNaN(Number(value))) {
+        return 'N/A';
+    }
+
+    return `${formatNumber(value, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} / 5`;
+};
+
+const formatPercentFromRatio = (value?: number | null, maximumFractionDigits = 0): string => {
+    if (value === null || value === undefined || Number.isNaN(Number(value))) {
+        return 'N/A';
+    }
+
+    return `${(value * 100).toFixed(maximumFractionDigits)}%`;
+};
+
+const formatDaysValue = (value?: number | null, maximumFractionDigits = 1): string => {
+    if (value === null || value === undefined || Number.isNaN(Number(value))) {
+        return 'N/A';
+    }
+
+    const rounded = Number(value.toFixed(maximumFractionDigits));
+
+    if (rounded === 1) {
+        return '1 day';
+    }
+
+    const formatted = rounded % 1 === 0 ? `${rounded}` : rounded.toFixed(maximumFractionDigits);
+
+    return `${formatted} days`;
+};
+
+const gradeCategoryConfig: Record<GradeCategoryKey, GradeCategoryConfigEntry> = {
+    performance: {
+        label: 'Performance',
+        description: 'Trips completed and distance delivered.',
+        metrics: [
+            {
+                key: 'total_trips',
+                label: 'Trips',
+                formatter: value => formatNumber(value, { maximumFractionDigits: 0 }),
+            },
+            {
+                key: 'total_distance_km',
+                label: 'Distance',
+                formatter: value => formatKilometers(value, 0),
+            },
+            {
+                key: 'total_cargo_tonnage',
+                label: 'Cargo',
+                formatter: value => formatTons(value, 1),
+            },
+            {
+                key: 'performance_records',
+                label: 'Performance Records',
+                formatter: value => formatNumber(value, { maximumFractionDigits: 0 }),
+            },
+        ],
+    },
+    efficiency: {
+        label: 'Efficiency',
+        description: 'Fuel economy and customer feedback.',
+        metrics: [
+            {
+                key: 'avg_fuel_efficiency',
+                label: 'Fuel Efficiency',
+                formatter: formatFuelEfficiency,
+            },
+            {
+                key: 'avg_customer_rating',
+                label: 'Rating',
+                formatter: formatRating,
+            },
+            {
+                key: 'fuel_cost_per_km',
+                label: 'Fuel Cost / KM',
+                formatter: formatCurrencyPerKilometer,
+            },
+        ],
+    },
+    safety: {
+        label: 'Safety',
+        description: 'Incidents, accidents, and risk exposure.',
+        metrics: [
+            {
+                key: 'safety_incidents',
+                label: 'Incidents',
+                formatter: value => formatNumber(value, { maximumFractionDigits: 0 }),
+            },
+            {
+                key: 'accidents',
+                label: 'Accidents',
+                formatter: value => formatNumber(value, { maximumFractionDigits: 0 }),
+            },
+            {
+                key: 'safety_damage_cost',
+                label: 'Damage Cost',
+                formatter: formatCurrency,
+            },
+            {
+                key: 'safety_risk_score',
+                label: 'Risk Score',
+                formatter: value => formatNumber(value, { minimumFractionDigits: 1, maximumFractionDigits: 1 }),
+            },
+        ],
+    },
+    compliance: {
+        label: 'Compliance',
+        description: 'Policy adherence and recorded violations.',
+        metrics: [
+            {
+                key: 'violations',
+                label: 'Violations',
+                formatter: value => formatNumber(value, { maximumFractionDigits: 0 }),
+            },
+            {
+                key: 'warnings',
+                label: 'Warnings',
+                formatter: value => formatNumber(value, { maximumFractionDigits: 0 }),
+            },
+            {
+                key: 'recorded_violations',
+                label: 'Logged Violations',
+                formatter: value => formatNumber(value, { maximumFractionDigits: 0 }),
+            },
+        ],
+    },
+    engagement: {
+        label: 'Engagement',
+        description: 'Assignments and tenure within the fleet.',
+        metrics: [
+            {
+                key: 'active_assignments',
+                label: 'Active Assignments',
+                formatter: value => formatNumber(value, { maximumFractionDigits: 0 }),
+            },
+            {
+                key: 'total_assignments',
+                label: 'Total Assignments',
+                formatter: value => formatNumber(value, { maximumFractionDigits: 0 }),
+            },
+            {
+                key: 'avg_assignment_duration_days',
+                label: 'Avg Assignment Duration',
+                formatter: value => formatDaysValue(value ?? null, 1),
+            },
+            {
+                key: 'active_assignment_ratio',
+                label: 'Active Ratio',
+                formatter: value => formatPercentFromRatio(value ?? null, 0),
+            },
+            {
+                key: 'days_employed',
+                label: 'Days Employed',
+                formatter: value => formatDaysValue(value ?? null, 0),
+            },
+        ],
+    },
+};
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Drivers', href: '/drivers' },
 ];
 
-export default function DriversShow({ driver, activityLogs = [], performanceSummary, safetySummary, counts }: DriversShowProps) {
+export default function DriversShow({ driver, activityLogs = [], performanceSummary, safetySummary, counts, gradeReport }: DriversShowProps) {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+
+    const overallGrade = gradeReport?.overall ?? null;
+    const gradeWeights = gradeReport?.weights ?? null;
+    const gradeCategories: GradeCategoryView[] = gradeReport
+        ? (Object.entries(gradeCategoryConfig) as Array<[GradeCategoryKey, GradeCategoryConfigEntry]>)
+              .map(([key, config]) => {
+                  const category = gradeReport.categories?.[key];
+
+                  if (!category) {
+                      return null;
+                  }
+
+                  const metricsSource = category.metrics ?? {};
+                  const weightKey = `${key}_weight` as keyof GradeWeights;
+
+                  return {
+                      key,
+                      label: config.label,
+                      description: config.description,
+                      score: category.score,
+                      weight: gradeWeights ? gradeWeights[weightKey] : null,
+                      metrics: config.metrics.map(metric => ({
+                          label: metric.label,
+                          value: metric.formatter((metricsSource as Record<string, number | null | undefined>)[metric.key]),
+                      })),
+                  } satisfies GradeCategoryView;
+              })
+              .filter((category): category is GradeCategoryView => Boolean(category))
+        : [];
 
     const handleDeleteConfirm = () => {
         setIsDeleting(true);
@@ -100,13 +472,24 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
         });
     };
 
-    const formatDate = (date?: string) => {
-        if (!date) return 'N/A';
-        return new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    const formatDateDisplay = (value?: string | null) => {
+        if (!value) {
+            return 'N/A';
+        }
+
+        return new Date(value).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+        });
     };
 
-    const getStatusBadgeColor = (status: string) => {
-        switch (status) {
+    const getStatusBadgeColor = (status?: string | null) => {
+        if (!status) {
+            return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
+        }
+
+        switch (status.toLowerCase()) {
             case 'active':
                 return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
             case 'inactive':
@@ -116,8 +499,13 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
         }
     };
 
-    const getSexBadgeColor = (sex: string) => {
+    const getSexBadgeColor = (sex?: string | null) => {
+        if (!sex) {
+            return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
+        }
+
         const value = sex.toLowerCase();
+
         switch (value) {
             case 'male':
                 return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
@@ -127,6 +515,9 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
                 return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
         }
     };
+
+    const statusLabel = driver.status ? driver.status.charAt(0).toUpperCase() + driver.status.slice(1) : 'Unknown';
+    const sexLabel = driver.sex ? driver.sex.charAt(0).toUpperCase() + driver.sex.slice(1) : 'Unknown';
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -199,11 +590,11 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div>
                                                     <p className="text-sm font-medium text-muted-foreground">Status</p>
-                                                    <Badge className={`mt-1 flex items-center gap-1 w-fit ${getStatusBadgeColor(driver.status)}`}>{driver.status}</Badge>
+                                                    <Badge className={`mt-1 flex items-center gap-1 w-fit ${getStatusBadgeColor(driver.status)}`}>{statusLabel}</Badge>
                                                 </div>
                                                 <div>
                                                     <p className="text-sm font-medium text-muted-foreground">Gender</p>
-                                                    <Badge className={`mt-1 flex items-center gap-1 w-fit ${getSexBadgeColor(driver.sex)}`}>{driver.sex}</Badge>
+                                                    <Badge className={`mt-1 flex items-center gap-1 w-fit ${getSexBadgeColor(driver.sex)}`}>{sexLabel}</Badge>
                                                 </div>
                                             </div>
                                             <div className="border-t pt-4">
@@ -246,6 +637,72 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
                                     </CardContent>
                                 </Card>
                                 <Card className="shadow-lg border-0 bg-gradient-to-br from-background to-muted/20">
+                                    <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-b">
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div>
+                                                <CardTitle className="flex items-center gap-2 text-xl"><Truck className="h-5 w-5 text-blue-600" /> Truck Assignments</CardTitle>
+                                                <CardDescription className="text-base">Recent vehicles paired with this driver</CardDescription>
+                                            </div>
+                                            {driver.driverTrucks && driver.driverTrucks.length > 0 && (
+                                                <Button variant="link" size="sm" className="px-0" asChild>
+                                                    <Link href={`/driver-trucks?driver_id=${driver.id}`} className="flex items-center gap-1 text-blue-600 dark:text-blue-300">
+                                                        View all
+                                                        <ArrowUpRight className="h-4 w-4" />
+                                                    </Link>
+                                                </Button>
+                                            )}
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4 p-4">
+                                        {driver.driverTrucks && driver.driverTrucks.length > 0 ? (
+                                            driver.driverTrucks.map((assignment) => {
+                                                const plate = assignment.truck?.plate ?? assignment.plate ?? 'N/A';
+                                                const assignmentStatusLabel = assignment.status
+                                                    ? `${assignment.status.charAt(0).toUpperCase()}${assignment.status.slice(1)}`
+                                                    : assignment.is_attached
+                                                        ? 'Active'
+                                                        : 'Detached';
+
+                                                return (
+                                                    <div key={assignment.id} className="rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50/60 dark:bg-blue-950/10 p-4 space-y-3">
+                                                        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                                                            <div>
+                                                                <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">{plate}</p>
+                                                                <p className="text-xs text-muted-foreground">Assignment #{assignment.id}</p>
+                                                            </div>
+                                                            <div className="flex flex-wrap items-center gap-2">
+                                                                <Badge variant={assignment.is_attached ? 'default' : 'secondary'}>{assignment.is_attached ? 'Attached' : 'Detached'}</Badge>
+                                                                <Badge variant="outline" className="text-xs">{assignmentStatusLabel}</Badge>
+                                                            </div>
+                                                        </div>
+                                                        <div className="grid gap-3 text-xs text-muted-foreground md:grid-cols-2">
+                                                            <div><span className="font-medium">Assigned:</span> {formatDateDisplay(assignment.date_recived)}</div>
+                                                            <div><span className="font-medium">Detached:</span> {formatDateDisplay(assignment.date_detach)}</div>
+                                                        </div>
+                                                        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                                                            <span className="text-xs text-muted-foreground">Status note: {assignmentStatusLabel}</span>
+                                                            <Button variant="link" size="sm" className="px-0" asChild>
+                                                                <Link
+                                                                    href={`/drivers/${driver.id}/assignments/${assignment.id}/performances`}
+                                                                    className="flex items-center gap-1"
+                                                                >
+                                                                    View assignment
+                                                                    <ArrowUpRight className="h-4 w-4" />
+                                                                </Link>
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })
+                                        ) : (
+                                            <div className="text-center py-8 text-sm text-muted-foreground">
+                                                <Truck className="mx-auto mb-3 h-10 w-10 opacity-60" />
+                                                <p>No truck assignments recorded for this driver yet.</p>
+                                            </div>
+                                        )}
+                                    </CardContent>
+                                </Card>
+                                <Card className="shadow-lg border-0 bg-gradient-to-br from-background to-muted/20">
                                     <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border-b">
                                         <CardTitle className="flex items-center gap-2 text-xl"><Calendar className="h-5 w-5 text-green-600" /> Employment Information</CardTitle>
                                         <CardDescription className="text-base">Hiring and employment details</CardDescription>
@@ -254,11 +711,11 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
                                         <div className="grid gap-4">
                                             <div>
                                                 <p className="text-sm font-medium text-muted-foreground">Birthdate</p>
-                                                <p className="mt-1 text-sm">{formatDate(driver.birthdate)}</p>
+                                                <p className="mt-1 text-sm">{formatDateDisplay(driver.birthdate)}</p>
                                             </div>
                                             <div>
                                                 <p className="text-sm font-medium text-muted-foreground">Hired Date</p>
-                                                <p className="mt-1 text-sm">{formatDate(driver.hireddate)}</p>
+                                                <p className="mt-1 text-sm">{formatDateDisplay(driver.hireddate)}</p>
                                             </div>
                                         </div>
                                     </CardContent>
@@ -272,77 +729,80 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
                                         <div className="grid gap-4 text-sm">
                                             <div>
                                                 <p className="font-medium text-muted-foreground">Created</p>
-                                                <p className="mt-1">{formatDate(driver.created_at)}</p>
+                                                <p className="mt-1">{formatDateDisplay(driver.created_at)}</p>
                                             </div>
                                             <div>
                                                 <p className="font-medium text-muted-foreground">Last Updated</p>
-                                                <p className="mt-1">{formatDate(driver.updated_at)}</p>
+                                                <p className="mt-1">{formatDateDisplay(driver.updated_at)}</p>
                                             </div>
                                         </div>
                                     </CardContent>
                                 </Card>
                             </div>
                             <div className="w-full lg:w-80 space-y-4">
-                                <Card className="shadow-lg border-0 bg-gradient-to-br from-background to-muted/20">
-                                    <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border-b">
-                                        <CardTitle className="flex items-center gap-2 text-lg">
-                                            <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                                                <Activity className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                                {overallGrade && gradeCategories.length > 0 && (
+                                    <Card className="shadow-lg border-0 bg-gradient-to-br from-background to-muted/30">
+                                        <CardHeader className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/20 dark:to-indigo-950/20 border-b">
+                                            <CardTitle className="flex items-center gap-2 text-lg">
+                                                <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
+                                                    <BarChart3 className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                                                </div>
+                                                Driver Grade
+                                            </CardTitle>
+                                            <CardDescription>Weighted comparison against peer drivers</CardDescription>
+                                        </CardHeader>
+                                        <CardContent className="space-y-4 p-4">
+                                            <div className="flex items-center justify-between rounded-lg border border-indigo-100 bg-white/70 p-4 dark:border-indigo-900/40 dark:bg-indigo-900/10">
+                                                <div>
+                                                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Overall grade</p>
+                                                    <p className="mt-1 text-4xl font-bold text-slate-900 dark:text-slate-100">{overallGrade.letter}</p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-xs uppercase tracking-wide text-muted-foreground">Score</p>
+                                                    <p className="mt-1 text-3xl font-semibold text-slate-900 dark:text-slate-100">
+                                                        {formatNumber(overallGrade.score, {
+                                                            minimumFractionDigits: 1,
+                                                            maximumFractionDigits: 1,
+                                                        })}
+                                                    </p>
+                                                </div>
                                             </div>
-                                            Quick Actions
-                                        </CardTitle>
-                                        <CardDescription className="text-base">Common driver operations</CardDescription>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <Button
-                                                variant="outline"
-                                                asChild
-                                                className="h-auto p-3 flex flex-col items-center gap-2 hover:bg-blue-50 hover:border-blue-300 border-slate-300 dark:border-slate-600 dark:hover:bg-blue-950/20"
-                                            >
-                                                <Link href={`/driver-trucks/create?driver_id=${driver.id}`}>
-                                                    <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                                                        <Truck className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+
+                                            <div className="space-y-4">
+                                                {gradeCategories.map(category => (
+                                                    <div key={category.key} className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/40 p-3">
+                                                        <div className="flex items-start justify-between gap-3">
+                                                            <div>
+                                                                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{category.label}</p>
+                                                                <p className="text-xs text-muted-foreground">{category.description}</p>
+                                                            </div>
+                                                            <div className="text-right">
+                                                                <p className="text-xl font-semibold text-slate-900 dark:text-slate-100">{formatNumber(category.score, { maximumFractionDigits: 0 })}%</p>
+                                                                {category.weight !== null && (
+                                                                    <p className="text-xs text-muted-foreground">Weight {category.weight}%</p>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                        <div className="mt-3 h-2 rounded-full bg-muted">
+                                                            <div
+                                                                className="h-full rounded-full bg-indigo-500"
+                                                                style={{ width: `${Math.min(Math.max(category.score, 0), 100)}%` }}
+                                                            />
+                                                        </div>
+                                                        <div className="mt-3 grid gap-2 text-xs">
+                                                            {category.metrics.map(metric => (
+                                                                <div key={`${category.key}-${metric.label}`} className="flex items-center justify-between text-muted-foreground">
+                                                                    <span>{metric.label}</span>
+                                                                    <span className="font-semibold text-slate-900 dark:text-slate-100">{metric.value}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
                                                     </div>
-                                                    <div className="text-center">
-                                                        <p className="text-xs font-medium">Assign To Truck</p>
-                                                        <p className="text-xs text-muted-foreground">Manage deployments</p>
-                                                    </div>
-                                                </Link>
-                                            </Button>
-                                            <Button
-                                                variant="outline"
-                                                asChild
-                                                className="h-auto p-3 flex flex-col items-center gap-2 hover:bg-green-50 hover:border-green-300 border-slate-300 dark:border-slate-600 dark:hover:bg-green-950/20"
-                                            >
-                                                <Link href={`/driver-performance/create?driver_id=${driver.id}`}>
-                                                    <div className="p-1.5 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                                                        <BarChart3 className="h-4 w-4 text-green-600 dark:text-green-400" />
-                                                    </div>
-                                                    <div className="text-center">
-                                                        <p className="text-xs font-medium">Log Performance</p>
-                                                        <p className="text-xs text-muted-foreground">Record metrics</p>
-                                                    </div>
-                                                </Link>
-                                            </Button>
-                                            <Button
-                                                variant="outline"
-                                                asChild
-                                                className="h-auto p-3 flex flex-col items-center gap-2 hover:bg-purple-50 hover:border-purple-300 border-slate-300 dark:border-slate-600 dark:hover:bg-purple-950/20"
-                                            >
-                                                <Link href={`/drivers/${driver.id}/edit`}>
-                                                    <div className="p-1.5 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                                                        <Settings className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                                                    </div>
-                                                    <div className="text-center">
-                                                        <p className="text-xs font-medium">Driver Settings</p>
-                                                        <p className="text-xs text-muted-foreground">Adjust profile</p>
-                                                    </div>
-                                                </Link>
-                                            </Button>
-                                        </div>
-                                    </CardContent>
-                                </Card>
+                                                ))}
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                )}
                                 <Card className="shadow-lg border-0 bg-gradient-to-br from-background to-muted/20">
                                     <CardHeader className="bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-950/20 dark:to-blue-950/20 border-b">
                                         <CardTitle className="flex items-center gap-2 text-lg"><CheckCircle className="h-4 w-4 text-indigo-600" /> Quick Status</CardTitle>
@@ -350,7 +810,7 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
                                     <CardContent className="p-4 space-y-4">
                                         <div className="rounded-lg bg-indigo-50 dark:bg-indigo-950/20 p-4 border border-indigo-200 dark:border-indigo-800">
                                             <p className="text-sm font-medium text-indigo-700 dark:text-indigo-300">Current Status</p>
-                                            <Badge className={`mt-2 flex items-center gap-1 w-fit ${getStatusBadgeColor(driver.status)}`}>{driver.status}</Badge>
+                                            <Badge className={`mt-2 flex items-center gap-1 w-fit ${getStatusBadgeColor(driver.status)}`}>{statusLabel}</Badge>
                                         </div>
                                         <div className="rounded-lg bg-slate-50 dark:bg-slate-800/50 p-4 border border-slate-200 dark:border-slate-700">
                                             <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Driver Name</p>
@@ -397,27 +857,6 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
                                         </CardContent>
                                     </Card>
                                 )}
-                                {driver.driverTrucks && driver.driverTrucks.length > 0 && (
-                                    <Card className="shadow-lg border-0 bg-gradient-to-br from-background to-muted/20">
-                                        <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-b">
-                                            <CardTitle className="flex items-center gap-2 text-lg"><Hash className="h-4 w-4 text-blue-600" /> Truck Assignments</CardTitle>
-                                            <CardDescription>Recent assignments</CardDescription>
-                                        </CardHeader>
-                                        <CardContent className="p-4 space-y-3 max-h-[360px] overflow-y-auto pr-2">
-                                            {driver.driverTrucks.slice(0, 10).map((assignment: any) => (
-                                                <div key={assignment.id} className="rounded-lg border border-blue-200 dark:border-blue-800 p-3 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors">
-                                                    <div className="flex items-center justify-between">
-                                                        <div>
-                                                            <p className="font-medium text-sm text-blue-800 dark:text-blue-200">{assignment.truck?.plate || assignment.plate || 'N/A'}</p>
-                                                            <p className="text-xs text-muted-foreground">Status: {assignment.status}</p>
-                                                        </div>
-                                                        <Badge variant={assignment.is_attached ? 'default' : 'secondary'}>{assignment.is_attached ? 'Active' : 'Detached'}</Badge>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </CardContent>
-                                    </Card>
-                                )}
                             </div>
                         </div>
                     </TabsContent>
@@ -434,12 +873,30 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
                                     <CardContent>
                                         {performanceSummary ? (
                                             <div className="grid gap-4 md:grid-cols-3">
-                                                <div className="p-4 rounded-lg bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-800"><p className="text-xs text-muted-foreground">Records</p><p className="mt-1 text-2xl font-bold">{performanceSummary.total_records}</p></div>
-                                                <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800"><p className="text-xs text-muted-foreground">Distance (KM)</p><p className="mt-1 text-2xl font-bold">{performanceSummary.total_distance_km.toLocaleString()}</p></div>
-                                                <div className="p-4 rounded-lg bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800"><p className="text-xs text-muted-foreground">Trips</p><p className="mt-1 text-2xl font-bold">{performanceSummary.total_trips}</p></div>
-                                                <div className="p-4 rounded-lg bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800"><p className="text-xs text-muted-foreground">Cargo (T)</p><p className="mt-1 text-2xl font-bold">{performanceSummary.total_cargo_tonnage.toLocaleString()}</p></div>
-                                                <div className="p-4 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800"><p className="text-xs text-muted-foreground">Fuel Eff (KM/L)</p><p className="mt-1 text-2xl font-bold">{performanceSummary.avg_fuel_efficiency ?? 'N/A'}</p></div>
-                                                <div className="p-4 rounded-lg bg-teal-50 dark:bg-teal-900/30 border border-teal-200 dark:border-teal-800"><p className="text-xs text-muted-foreground">Avg Rating</p><p className="mt-1 text-2xl font-bold">{performanceSummary.avg_customer_rating ?? 'N/A'}</p></div>
+                                                <div className="p-4 rounded-lg bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-800">
+                                                    <p className="text-xs text-muted-foreground">Records</p>
+                                                    <p className="mt-1 text-2xl font-bold">{formatNumber(performanceSummary.total_records)}</p>
+                                                </div>
+                                                <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800">
+                                                    <p className="text-xs text-muted-foreground">Distance (KM)</p>
+                                                    <p className="mt-1 text-2xl font-bold">{formatKilometers(performanceSummary.total_distance_km, 0)}</p>
+                                                </div>
+                                                <div className="p-4 rounded-lg bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800">
+                                                    <p className="text-xs text-muted-foreground">Trips</p>
+                                                    <p className="mt-1 text-2xl font-bold">{formatNumber(performanceSummary.total_trips)}</p>
+                                                </div>
+                                                <div className="p-4 rounded-lg bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800">
+                                                    <p className="text-xs text-muted-foreground">Cargo (T)</p>
+                                                    <p className="mt-1 text-2xl font-bold">{formatTons(performanceSummary.total_cargo_tonnage, 1)}</p>
+                                                </div>
+                                                <div className="p-4 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800">
+                                                    <p className="text-xs text-muted-foreground">Fuel Eff (KM/L)</p>
+                                                    <p className="mt-1 text-2xl font-bold">{formatFuelEfficiency(performanceSummary.avg_fuel_efficiency)}</p>
+                                                </div>
+                                                <div className="p-4 rounded-lg bg-teal-50 dark:bg-teal-900/30 border border-teal-200 dark:border-teal-800">
+                                                    <p className="text-xs text-muted-foreground">Avg Rating</p>
+                                                    <p className="mt-1 text-2xl font-bold">{formatRating(performanceSummary.avg_customer_rating)}</p>
+                                                </div>
                                             </div>
                                         ) : (
                                             <div className="text-center py-8"><BarChart3 className="h-12 w-12 text-muted-foreground mx-auto mb-4" /><h3 className="text-lg font-semibold mb-2">No performance data</h3><p className="text-muted-foreground mb-4">Performance metrics will be displayed here when available.</p></div>
@@ -454,14 +911,33 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
                                     <CardContent>
                                         {driver.performances && driver.performances.length > 0 ? (
                                             <div className="space-y-3">
-                                                {driver.performances.slice(0, 10).map((perf: any) => (
+                                                {driver.performances.slice(0, 10).map((perf) => (
                                                     <div key={perf.id} className="p-4 rounded-lg border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/20 flex flex-col gap-2">
-                                                        <div className="flex items-center justify-between"><span className="text-sm font-medium">Performance #{perf.id}</span><Badge variant="secondary" className="text-xs">{perf.load_phase || 'N/A'}</Badge></div>
+                                                        <div className="flex items-center justify-between">
+                                                            <span className="text-sm font-medium">Performance #{perf.id}</span>
+                                                            <Badge variant="secondary" className="text-xs">{perf.load_phase || 'N/A'}</Badge>
+                                                        </div>
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-muted-foreground">
+                                                            <div><span className="font-medium">Route:</span> {[perf.origin?.name, perf.destination?.name].filter(Boolean).join(' → ') || 'N/A'}</div>
+                                                            <div><span className="font-medium">Assignment:</span> {perf.driver_truck?.plate || 'N/A'}</div>
+                                                            <div><span className="font-medium">Operation:</span> {perf.operation?.number || 'N/A'}</div>
+                                                            <div><span className="font-medium">Status:</span> {perf.is_returned ? 'Returned' : 'In Transit'}</div>
+                                                        </div>
                                                         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs text-muted-foreground">
-                                                            <div><span className="font-medium">Distance WCargo:</span> {perf.DistanceWCargo ?? '0'}</div>
-                                                            <div><span className="font-medium">Distance WOCargo:</span> {perf.DistanceWOCargo ?? '0'}</div>
-                                                            <div><span className="font-medium">Fuel (L):</span> {perf.fuelInLitter ?? '0'}</div>
-                                                            <div><span className="font-medium">Fuel (Birr):</span> {perf.fuelInBirr ?? '0'}</div>
+                                                            <div><span className="font-medium">Total Distance:</span> {formatKilometers(perf.total_distance_km ?? null, 1)}</div>
+                                                            <div><span className="font-medium">Distance WCargo:</span> {formatKilometers(perf.DistanceWCargo ?? null, 1)}</div>
+                                                            <div><span className="font-medium">Distance WOCargo:</span> {formatKilometers(perf.DistanceWOCargo ?? null, 1)}</div>
+                                                            <div><span className="font-medium">Ton-KM:</span> {formatNumber(perf.tonkm ?? null, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                                                        </div>
+                                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs text-muted-foreground">
+                                                            <div><span className="font-medium">Fuel (L):</span> {formatNumber(perf.fuelInLitter ?? null, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                                                            <div><span className="font-medium">Fuel (Birr):</span> {formatCurrency(perf.fuelInBirr ?? null)}</div>
+                                                            <div><span className="font-medium">Cargo (T):</span> {formatTons(perf.cargo_weight_tons ?? perf.cargo_volume_mt ?? null, 1)}</div>
+                                                            <div><span className="font-medium">Trip Duration:</span> {perf.trip_duration_days !== null && perf.trip_duration_days !== undefined ? formatDaysValue(perf.trip_duration_days, 0) : 'N/A'}</div>
+                                                        </div>
+                                                        <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                                                            <div><span className="font-medium">Returned Date:</span> {formatDateDisplay(perf.returned_date)}</div>
+                                                            <div><span className="font-medium">Assignment Status:</span> {perf.driver_truck?.is_attached ? 'Active' : 'Detached'}</div>
                                                         </div>
                                                         {perf.comment && <p className="text-xs line-clamp-3">{perf.comment}</p>}
                                                     </div>
@@ -481,12 +957,14 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
                                     <CardContent className="p-4 space-y-3 text-sm">
                                         {performanceSummary ? (
                                             <>
-                                                <div className="flex items-center justify-between"><span className="text-muted-foreground">Distance (KM)</span><span className="font-semibold">{performanceSummary.total_distance_km.toLocaleString()}</span></div>
-                                                <div className="flex items-center justify-between"><span className="text-muted-foreground">Trips</span><span className="font-semibold">{performanceSummary.total_trips}</span></div>
-                                                <div className="flex items-center justify-between"><span className="text-muted-foreground">Cargo (T)</span><span className="font-semibold">{performanceSummary.total_cargo_tonnage.toLocaleString()}</span></div>
-                                                <div className="flex items-center justify-between"><span className="text-muted-foreground">Fuel Eff</span><span className="font-semibold">{performanceSummary.avg_fuel_efficiency ?? 'N/A'}</span></div>
-                                                <div className="flex items-center justify-between"><span className="text-muted-foreground">Avg Rating</span><span className="font-semibold">{performanceSummary.avg_customer_rating ?? 'N/A'}</span></div>
-                                                <div className="flex items-center justify-between"><span className="text-muted-foreground">Safety Incidents</span><span className="font-semibold">{performanceSummary.safety_incidents}</span></div>
+                                                <div className="flex items-center justify-between"><span className="text-muted-foreground">Distance (KM)</span><span className="font-semibold">{formatKilometers(performanceSummary.total_distance_km, 0)}</span></div>
+                                                <div className="flex items-center justify-between"><span className="text-muted-foreground">Trips</span><span className="font-semibold">{formatNumber(performanceSummary.total_trips)}</span></div>
+                                                <div className="flex items-center justify-between"><span className="text-muted-foreground">Cargo (T)</span><span className="font-semibold">{formatTons(performanceSummary.total_cargo_tonnage, 1)}</span></div>
+                                                <div className="flex items-center justify-between"><span className="text-muted-foreground">Fuel Eff</span><span className="font-semibold">{formatFuelEfficiency(performanceSummary.avg_fuel_efficiency)}</span></div>
+                                                <div className="flex items-center justify-between"><span className="text-muted-foreground">Avg Rating</span><span className="font-semibold">{formatRating(performanceSummary.avg_customer_rating)}</span></div>
+                                                <div className="flex items-center justify-between"><span className="text-muted-foreground">Safety Incidents</span><span className="font-semibold">{formatNumber(performanceSummary.safety_incidents)}</span></div>
+                                                <div className="flex items-center justify-between"><span className="text-muted-foreground">Fuel Used (L)</span><span className="font-semibold">{formatNumber(performanceSummary.total_fuel_liters ?? null, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
+                                                <div className="flex items-center justify-between"><span className="text-muted-foreground">Fuel Cost</span><span className="font-semibold">{formatCurrency(performanceSummary.total_fuel_cost ?? null)}</span></div>
                                             </>
                                         ) : <p className="text-muted-foreground">No metrics available.</p>}
                                     </CardContent>
@@ -518,24 +996,28 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
                                 )}
                                 {driver.safetyRecords && driver.safetyRecords.length > 0 ? (
                                     <div className="space-y-3 max-h-[480px] overflow-y-auto pr-2 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600">
-                                        {driver.safetyRecords.slice(0, 15).map((rec: any) => (
-                                            <div key={rec.id} className="p-4 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/40 flex flex-col gap-2">
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex items-center gap-2">
-                                                        <Badge className="text-xs" variant="secondary">{rec.incident_type}</Badge>
-                                                        <span className="text-sm font-medium capitalize">{rec.severity} severity</span>
+                                        {driver.safetyRecords.slice(0, 15).map((rec) => {
+                                            const severityLabel = rec.severity ? `${rec.severity.charAt(0).toUpperCase()}${rec.severity.slice(1)} severity` : 'Severity unknown';
+
+                                            return (
+                                                <div key={rec.id} className="p-4 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/40 flex flex-col gap-2">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-2">
+                                                            <Badge className="text-xs" variant="secondary">{rec.incident_type ?? 'Incident'}</Badge>
+                                                            <span className="text-sm font-medium capitalize">{severityLabel}</span>
+                                                        </div>
+                                                        <span className="text-xs text-muted-foreground">Date: {formatDateDisplay(rec.incident_date)}</span>
                                                     </div>
-                                                    <span className="text-xs text-muted-foreground">Date: {rec.incident_date || 'N/A'}</span>
+                                                    {rec.description && <p className="text-xs line-clamp-3">{rec.description}</p>}
+                                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs text-muted-foreground">
+                                                        <div><span className="font-medium">Location:</span> {rec.location || 'N/A'}</div>
+                                                        <div><span className="font-medium">Damage:</span> {formatCurrency(rec.damage_cost ?? null)}</div>
+                                                        <div><span className="font-medium">Reported By:</span> {rec.reported_by ?? 'N/A'}</div>
+                                                        <div><span className="font-medium">Resolution:</span> {rec.resolution || '—'}</div>
+                                                    </div>
                                                 </div>
-                                                {rec.description && <p className="text-xs line-clamp-3">{rec.description}</p>}
-                                                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs text-muted-foreground">
-                                                    <div><span className="font-medium">Location:</span> {rec.location || 'N/A'}</div>
-                                                    <div><span className="font-medium">Damage:</span> {rec.damage_cost ? rec.damage_cost.toLocaleString() : '0'}</div>
-                                                    <div><span className="font-medium">Reported By:</span> {rec.reported_by || 'N/A'}</div>
-                                                    <div><span className="font-medium">Resolution:</span> {rec.resolution || '—'}</div>
-                                                </div>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 ) : (
                                     <div className="text-center py-8"><AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" /><h3 className="text-lg font-semibold mb-2">No safety records</h3><p className="text-muted-foreground mb-4">Safety incidents will appear here when logged.</p></div>

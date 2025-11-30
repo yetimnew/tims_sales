@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\TruckGradingSetting;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
@@ -29,6 +30,12 @@ class UpdateTruckGradingSettingsRequest extends FormRequest
             'financial_weight' => ['required', 'integer', 'min:0', 'max:100'],
             'compliance_weight' => ['required', 'integer', 'min:0', 'max:100'],
             'peer_sample_size' => ['required', 'integer', 'min:1', 'max:100'],
+            'grade_thresholds' => ['required', 'array'],
+            'grade_thresholds.A' => ['required', 'numeric', 'min:0', 'max:100'],
+            'grade_thresholds.B' => ['required', 'numeric', 'min:0', 'max:100'],
+            'grade_thresholds.C' => ['required', 'numeric', 'min:0', 'max:100'],
+            'grade_thresholds.D' => ['required', 'numeric', 'min:0', 'max:100'],
+            'grade_thresholds.E' => ['nullable', 'numeric', 'min:0', 'max:100'],
         ];
     }
 
@@ -52,6 +59,43 @@ class UpdateTruckGradingSettingsRequest extends FormRequest
                 if ($sum !== 100) {
                     $validator->errors()->add('weights', 'The combined weights must equal 100%.');
                 }
+
+                $thresholds = $this->input('grade_thresholds');
+
+                if (! is_array($thresholds)) {
+                    $validator->errors()->add('grade_thresholds', 'Provide thresholds for each grade.');
+
+                    return;
+                }
+
+                $letters = ['A', 'B', 'C', 'D'];
+                $previous = 100.0;
+
+                foreach ($letters as $letter) {
+                    $value = $thresholds[$letter] ?? null;
+
+                    if ($value === null || $value === '') {
+                        $validator->errors()->add("grade_thresholds.$letter", sprintf('Grade %s threshold is required.', $letter));
+
+                        return;
+                    }
+
+                    $numeric = (float) $value;
+
+                    if ($numeric > $previous) {
+                        $validator->errors()->add('grade_thresholds', 'Each grade threshold must be less than or equal to the one before it.');
+
+                        return;
+                    }
+
+                    $previous = $numeric;
+                }
+
+                $gradeE = $thresholds['E'] ?? null;
+
+                if ($gradeE !== null && (float) $gradeE !== 0.0) {
+                    $validator->errors()->add('grade_thresholds.E', 'Grade E threshold must be 0.');
+                }
             },
         ];
     }
@@ -69,5 +113,15 @@ class UpdateTruckGradingSettingsRequest extends FormRequest
             'compliance_weight' => (int) $this->input('compliance_weight'),
             'peer_sample_size' => (int) $this->input('peer_sample_size'),
         ];
+    }
+
+    /**
+     * @return array<string, float>
+     */
+    public function gradeThresholds(): array
+    {
+        return TruckGradingSetting::normalizeGradeThresholds(
+            $this->input('grade_thresholds') ?? [],
+        );
     }
 }

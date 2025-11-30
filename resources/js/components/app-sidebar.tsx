@@ -286,6 +286,11 @@ const getMainNavItems = (): NavItem[] => {
                         icon: Globe,
                     },
                     {
+                        title: 'Truck Grading',
+                        href: '/reports/truck-grading',
+                        icon: BarChart3,
+                    },
+                    {
                         title: 'Performance (All)',
                         href: '/reports/performance-all',
                         icon: Activity,

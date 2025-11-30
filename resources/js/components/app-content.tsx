@@ -11,7 +11,14 @@ export function AppContent({
     ...props
 }: AppContentProps) {
     if (variant === 'sidebar') {
-        return <SidebarInset {...props} className="flex h-[calc(100vh-64px)] flex-1 flex-col overflow-hidden">{children}</SidebarInset>;
+        return (
+            <SidebarInset
+                {...props}
+                className="flex min-h-[calc(100vh-64px)] flex-1 flex-col overflow-x-hidden overflow-y-auto"
+            >
+                {children}
+            </SidebarInset>
+        );
     }
 
     return (

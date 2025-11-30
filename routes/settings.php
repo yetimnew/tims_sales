@@ -37,6 +37,9 @@ Route::middleware('auth')->group(function () {
     Route::get('settings/truck-grading', [TruckGradingSettingsController::class, 'edit'])
         ->name('settings.truck-grading.edit');
 
+    Route::post('settings/truck-grading/recalculate', [TruckGradingSettingsController::class, 'recalculate'])
+        ->name('settings.truck-grading.recalculate');
+
     Route::patch('settings/truck-grading', [TruckGradingSettingsController::class, 'update'])
         ->name('settings.truck-grading.update');
 });

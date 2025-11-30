@@ -87,7 +87,7 @@ class TruckGradeService
         return [
             'overall' => [
                 'score' => $aggregateScore,
-                'letter' => $this->scoreToLetter($aggregateScore),
+                'letter' => $this->scoreToLetter($aggregateScore, $settings['grade_thresholds']),
             ],
             'weights' => Arr::only($settings, [
                 'utilization_weight',
@@ -96,6 +96,7 @@ class TruckGradeService
                 'financial_weight',
                 'compliance_weight',
             ]),
+            'grade_thresholds' => $settings['grade_thresholds'],
             'categories' => $categories,
             'metrics' => [
                 'truck' => $targetMetrics,
@@ -106,23 +107,37 @@ class TruckGradeService
 
     private function resolveSettings(): array
     {
+        $defaults = array_merge(
+            TruckGradingSetting::defaultWeights(),
+            [
+                'grade_thresholds' => TruckGradingSetting::defaultGradeThresholds(),
+            ],
+        );
+
         $latest = TruckGradingSetting::query()->latest('created_at')->first();
 
         if (! $latest) {
-            return TruckGradingSetting::defaultWeights();
+            return $defaults;
         }
 
-        return array_merge(
-            TruckGradingSetting::defaultWeights(),
-            $latest->only([
+        $settings = array_merge(
+            $defaults,
+            array_filter($latest->only([
                 'utilization_weight',
                 'efficiency_weight',
                 'reliability_weight',
                 'financial_weight',
                 'compliance_weight',
                 'peer_sample_size',
-            ]),
+            ]), static fn ($value) => $value !== null),
         );
+
+        $settings['grade_thresholds'] = TruckGradingSetting::normalizeGradeThresholds(
+            $latest->grade_thresholds,
+            $defaults['grade_thresholds'],
+        );
+
+        return $settings;
     }
 
     private function determinePeerTruckIds(Truck $truck, int $sampleSize): Collection
@@ -485,14 +500,14 @@ class TruckGradeService
         return round(max(min($score, 100), 0), 1);
     }
 
-    private function scoreToLetter(float $score): string
+    private function scoreToLetter(float $score, array $thresholds): string
     {
-        return match (true) {
-            $score >= 90 => 'A',
-            $score >= 80 => 'B',
-            $score >= 70 => 'C',
-            $score >= 60 => 'D',
-            default => 'E',
-        };
+        foreach ($thresholds as $letter => $minimum) {
+            if ($score >= $minimum) {
+                return $letter;
+            }
+        }
+
+        return 'E';
     }
 }

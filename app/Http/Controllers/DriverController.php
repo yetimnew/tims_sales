@@ -3,10 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Models\Driver;
+use App\Models\DriverSafetyRecord;
+use App\Models\DriverTruck;
+use App\Models\Performance;
+use App\Services\DriverGradeService;
 use App\Services\DriverMetricsService;
+use App\Support\PerformanceRecordPresenter;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -15,7 +21,10 @@ use Spatie\Activitylog\Models\Activity;
 
 class DriverController extends Controller
 {
-    public function __construct(private DriverMetricsService $driverMetrics) {}
+    public function __construct(
+        private DriverMetricsService $driverMetrics,
+        private DriverGradeService $driverGrade,
+    ) {}
 
     /**
      * Display a listing of the resource.
@@ -158,6 +167,23 @@ class DriverController extends Controller
         ];
     }
 
+    private function toCarbon(null|string|Carbon $value): ?Carbon
+    {
+        if ($value instanceof Carbon) {
+            return $value;
+        }
+
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        try {
+            return Carbon::parse($value);
+        } catch (Exception) {
+            return null;
+        }
+    }
+
     /**
      * Show the form for creating a new resource.
      */
@@ -205,12 +231,11 @@ class DriverController extends Controller
     {
         $driver->load([
             'trucks',
-            'performances',
             'performanceRecords',
             'safetyRecords',
             'fuelRecords',
             'driverTrucks' => function ($query) {
-                $query->with('truck')->orderBy('date_recived', 'desc');
+                $query->with(['truck:id,plate'])->orderBy('date_recived', 'desc');
             },
         ]);
 
@@ -223,9 +248,9 @@ class DriverController extends Controller
 
         $activityLogs = $this->transformActivityLogs($rawActivityLogs);
 
-        // Aggregated performance summary from performanceRecords (higher-level records)
+        // Aggregated performance metrics from periodic performanceRecords
         $performanceRecords = $driver->performanceRecords;
-        $performanceSummary = [
+        $performanceRecordSummary = [
             'total_records' => $performanceRecords->count(),
             'total_distance_km' => (float) $performanceRecords->sum('total_distance_km'),
             'total_trips' => (int) $performanceRecords->sum('total_trips'),
@@ -248,22 +273,286 @@ class DriverController extends Controller
             'total_damage_cost' => (float) $safetyRecords->sum('damage_cost'),
         ];
 
+        // Recent operational performance data and real-time aggregates
+        $performanceBaseQuery = Performance::query()
+            ->whereHas('driverTruck', static function ($query) use ($driver) {
+                $query->where('driver_id', $driver->id);
+            });
+
+        $recentPerformanceRecords = (clone $performanceBaseQuery)
+            ->with([
+                'origin:id,name',
+                'destination:id,name',
+                'driverTruck:id,driver_id,truck_id,driverid,plate,date_recived,date_detach,is_attached,status',
+                'driverTruck.truck:id,plate',
+                'driverTruck.driver:id,name,driverid',
+                'operation:id,operationid,status',
+            ])
+            ->orderByDesc('DateDispach')
+            ->orderByDesc('created_at')
+            ->limit(15)
+            ->get([
+                'id',
+                'driver_truck_id',
+                'DateDispach',
+                'DistanceWCargo',
+                'DistanceWOCargo',
+                'fuelInLitter',
+                'fuelInBirr',
+                'comment',
+                'load_phase',
+                'satus',
+                'tonkm',
+                'CargoVolumMT',
+                'cargo_weight_kg',
+                'is_returned',
+                'returned_date',
+            ])
+            ->map(fn (Performance $performance) => PerformanceRecordPresenter::present($performance))
+            ->values()
+            ->all();
+
+        $distanceWithCargoSum = (float) ((clone $performanceBaseQuery)->sum('DistanceWCargo') ?? 0);
+        $distanceWithoutCargoSum = (float) ((clone $performanceBaseQuery)->sum('DistanceWOCargo') ?? 0);
+        $totalDistanceKm = round($distanceWithCargoSum + $distanceWithoutCargoSum, 2);
+        $fuelLitersSum = (float) ((clone $performanceBaseQuery)->sum('fuelInLitter') ?? 0);
+        $fuelCostSum = (float) ((clone $performanceBaseQuery)->sum('fuelInBirr') ?? 0);
+        $totalPerformanceRecords = (clone $performanceBaseQuery)->count();
+        $cargoWeightKgSum = (float) ((clone $performanceBaseQuery)->sum('cargo_weight_kg') ?? 0);
+        $cargoVolumeTonSum = (float) ((clone $performanceBaseQuery)->sum('CargoVolumMT') ?? 0);
+
+        $operationalCargoTons = 0.0;
+
+        if ($cargoWeightKgSum > 0) {
+            $operationalCargoTons = round($cargoWeightKgSum / 1000, 2);
+        } elseif ($cargoVolumeTonSum > 0) {
+            $operationalCargoTons = round($cargoVolumeTonSum, 2);
+        }
+
+        $operationalSummary = [
+            'total_records' => $totalPerformanceRecords,
+            'total_distance_km' => $totalDistanceKm,
+            'total_trips' => $totalPerformanceRecords,
+            'total_cargo_tonnage' => $operationalCargoTons,
+            'avg_fuel_efficiency' => $fuelLitersSum > 0 ? round($totalDistanceKm / max($fuelLitersSum, 1), 2) : null,
+            'avg_customer_rating' => null,
+            'safety_incidents' => $safetySummary['total_records'],
+            'total_fuel_liters' => round($fuelLitersSum, 2),
+            'total_fuel_cost' => round($fuelCostSum, 2),
+        ];
+
+        $performanceSummary = $operationalSummary;
+
+        // Blend periodic summaries where available for richer context
+        if ($performanceRecordSummary['total_records'] > 0) {
+            $performanceSummary = array_merge($performanceSummary, [
+                'total_trips' => max($performanceSummary['total_trips'], $performanceRecordSummary['total_trips']),
+                'total_distance_km' => max($performanceSummary['total_distance_km'], round($performanceRecordSummary['total_distance_km'], 2)),
+                'total_cargo_tonnage' => max($performanceSummary['total_cargo_tonnage'], round($performanceRecordSummary['total_cargo_tonnage'], 2)),
+                'avg_customer_rating' => $performanceRecordSummary['avg_customer_rating'],
+                'avg_fuel_efficiency' => $performanceSummary['avg_fuel_efficiency'] ?? $performanceRecordSummary['avg_fuel_efficiency'],
+                'safety_incidents' => max($performanceSummary['safety_incidents'], $performanceRecordSummary['safety_incidents']),
+            ]);
+        }
+
+        if ($performanceSummary['total_records'] === 0 && $performanceRecordSummary['total_records'] > 0) {
+            $performanceSummary = array_merge($performanceSummary, [
+                'total_records' => $performanceRecordSummary['total_records'],
+                'total_trips' => $performanceRecordSummary['total_trips'],
+                'total_distance_km' => round($performanceRecordSummary['total_distance_km'], 2),
+                'total_cargo_tonnage' => round($performanceRecordSummary['total_cargo_tonnage'], 2),
+                'avg_fuel_efficiency' => $performanceRecordSummary['avg_fuel_efficiency'],
+                'avg_customer_rating' => $performanceRecordSummary['avg_customer_rating'],
+                'safety_incidents' => $performanceRecordSummary['safety_incidents'],
+            ]);
+        }
+
         // General counts similar to truck counts
         $counts = [
             'trucks' => $driver->trucks->count(),
             'assignments' => $driver->driverTrucks->count(),
-            'performances' => $driver->performances->count(),
-            'performance_records' => $performanceRecords->count(),
+            'performances' => $performanceSummary['total_records'],
+            'performance_records' => $performanceRecordSummary['total_records'],
             'safety_records' => $safetyRecords->count(),
             'fuel_records' => $driver->fuelRecords->count(),
         ];
 
+        $driverData = [
+            'id' => $driver->id,
+            'driverid' => $driver->driverid,
+            'name' => $driver->name,
+            'sex' => strtolower((string) ($driver->getRawOriginal('sex') ?? $driver->sex ?? '')),
+            'birthdate' => $driver->birthdate?->toDateString(),
+            'zone' => $driver->zone,
+            'woreda' => $driver->woreda,
+            'kebele' => $driver->kebele,
+            'housenumber' => $driver->housenumber,
+            'mobile' => $driver->mobile,
+            'hireddate' => $driver->hireddate?->toDateString(),
+            'status' => strtolower((string) ($driver->getRawOriginal('status') ?? $driver->status ?? '')),
+            'created_at' => $driver->created_at?->toIso8601String(),
+            'updated_at' => $driver->updated_at?->toIso8601String(),
+            'driverTrucks' => $driver->driverTrucks
+                ->sortByDesc(static fn (DriverTruck $assignment) => $assignment->date_recived ?? $assignment->created_at)
+                ->take(15)
+                ->values()
+                ->map(static function (DriverTruck $assignment): array {
+                    return [
+                        'id' => $assignment->id,
+                        'driver_id' => $assignment->driver_id,
+                        'driverid' => $assignment->driverid,
+                        'truck_id' => $assignment->truck_id,
+                        'plate' => $assignment->plate,
+                        'date_recived' => $assignment->date_recived?->toDateString(),
+                        'date_detach' => $assignment->date_detach?->toDateString(),
+                        'is_attached' => (bool) $assignment->is_attached,
+                        'status' => $assignment->status,
+                        'truck' => $assignment->truck ? [
+                            'id' => $assignment->truck->id,
+                            'plate' => $assignment->truck->plate,
+                        ] : null,
+                    ];
+                })
+                ->all(),
+            'performances' => $recentPerformanceRecords,
+            'safetyRecords' => $driver->safetyRecords
+                ->sortByDesc(static fn (DriverSafetyRecord $record) => $record->incident_date ?? $record->created_at)
+                ->take(15)
+                ->values()
+                ->map(static function (DriverSafetyRecord $record): array {
+                    return [
+                        'id' => $record->id,
+                        'incident_date' => $record->incident_date?->toDateString(),
+                        'incident_type' => $record->incident_type,
+                        'description' => $record->description,
+                        'severity' => $record->severity,
+                        'damage_cost' => $record->damage_cost !== null ? (float) $record->damage_cost : null,
+                        'location' => $record->location,
+                        'resolution' => $record->resolution,
+                        'reported_by' => $record->reported_by,
+                    ];
+                })
+                ->all(),
+        ];
+
         return Inertia::render('Drivers/Show', [
-            'driver' => $driver,
+            'driver' => $driverData,
             'activityLogs' => $activityLogs,
             'performanceSummary' => $performanceSummary,
             'safetySummary' => $safetySummary,
             'counts' => $counts,
+            'gradeReport' => $this->driverGrade->grade($driver),
+        ]);
+    }
+
+    /**
+     * Display performances for a specific driver-truck assignment pairing.
+     */
+    public function assignmentPerformances(Request $request, Driver $driver, DriverTruck $driverTruck): Response
+    {
+        if ((int) $driverTruck->driver_id !== $driver->id) {
+            abort(404);
+        }
+
+        $driverTruck->loadMissing(['truck:id,plate,status,vehicletype_id']);
+
+        $perPageOptions = [15, 25, 50, 100];
+        $perPageDefault = 25;
+        $perPage = (int) $request->input('per_page', $perPageDefault);
+
+        if (! in_array($perPage, $perPageOptions, true)) {
+            $perPage = $perPageDefault;
+        }
+
+        $performanceBaseQuery = Performance::query()
+            ->where('driver_truck_id', $driverTruck->id);
+
+        $performancesPaginator = (clone $performanceBaseQuery)
+            ->with([
+                'origin:id,name',
+                'destination:id,name',
+                'operation:id,operationid,status',
+                'driverTruck:id,driver_id,truck_id,driverid,plate,date_recived,date_detach,is_attached,status',
+                'driverTruck.truck:id,plate',
+                'driverTruck.driver:id,name,driverid',
+            ])
+            ->orderByDesc('DateDispach')
+            ->orderByDesc('created_at')
+            ->paginate($perPage)
+            ->withQueryString();
+
+        $performancesPaginator->setCollection(
+            $performancesPaginator->getCollection()->map(fn (Performance $performance) => PerformanceRecordPresenter::present($performance))
+        );
+
+        $performances = $this->trimPagination($performancesPaginator);
+
+        $distanceWithCargoSum = (float) ((clone $performanceBaseQuery)->sum('DistanceWCargo') ?? 0);
+        $distanceWithoutCargoSum = (float) ((clone $performanceBaseQuery)->sum('DistanceWOCargo') ?? 0);
+        $fuelLitersSum = (float) ((clone $performanceBaseQuery)->sum('fuelInLitter') ?? 0);
+        $fuelCostSum = (float) ((clone $performanceBaseQuery)->sum('fuelInBirr') ?? 0);
+        $cargoWeightKgSum = (float) ((clone $performanceBaseQuery)->sum('cargo_weight_kg') ?? 0);
+        $cargoVolumeTonSum = (float) ((clone $performanceBaseQuery)->sum('CargoVolumMT') ?? 0);
+        $tonKmSum = (float) ((clone $performanceBaseQuery)->sum('tonkm') ?? 0);
+        $totalRecords = (clone $performanceBaseQuery)->count();
+        $returnedTrips = (clone $performanceBaseQuery)->where('is_returned', 1)->count();
+
+        $totalDistanceKm = round($distanceWithCargoSum + $distanceWithoutCargoSum, 2);
+
+        $operationalCargoTons = 0.0;
+
+        if ($cargoWeightKgSum > 0) {
+            $operationalCargoTons = round($cargoWeightKgSum / 1000, 2);
+        } elseif ($cargoVolumeTonSum > 0) {
+            $operationalCargoTons = round($cargoVolumeTonSum, 2);
+        }
+
+        $avgFuelEfficiency = $fuelLitersSum > 0 ? round($totalDistanceKm / max($fuelLitersSum, 1), 2) : null;
+
+        $firstDispatchRaw = (clone $performanceBaseQuery)->min('DateDispach');
+        $lastDispatchRaw = (clone $performanceBaseQuery)->max('DateDispach');
+
+        $summary = [
+            'total_records' => $totalRecords,
+            'returned_trips' => $returnedTrips,
+            'active_trips' => max($totalRecords - $returnedTrips, 0),
+            'total_distance_km' => $totalDistanceKm,
+            'distance_with_cargo' => round($distanceWithCargoSum, 2),
+            'distance_without_cargo' => round($distanceWithoutCargoSum, 2),
+            'total_cargo_tonnage' => $operationalCargoTons,
+            'total_ton_km' => round($tonKmSum, 2),
+            'avg_fuel_efficiency' => $avgFuelEfficiency,
+            'total_fuel_liters' => round($fuelLitersSum, 2),
+            'total_fuel_cost' => round($fuelCostSum, 2),
+            'first_dispatch' => $this->toCarbon($firstDispatchRaw)?->toDateString(),
+            'last_dispatch' => $this->toCarbon($lastDispatchRaw)?->toDateString(),
+        ];
+
+        return Inertia::render('Drivers/AssignmentPerformances', [
+            'driver' => [
+                'id' => $driver->id,
+                'name' => $driver->name,
+                'driverid' => $driver->driverid,
+            ],
+            'assignment' => [
+                'id' => $driverTruck->id,
+                'driver_id' => $driverTruck->driver_id,
+                'driverid' => $driverTruck->driverid,
+                'truck_id' => $driverTruck->truck_id,
+                'plate' => $driverTruck->truck?->plate ?? $driverTruck->plate,
+                'status' => $driverTruck->status,
+                'is_attached' => (bool) $driverTruck->is_attached,
+                'date_recived' => $this->toCarbon($driverTruck->date_recived)?->toDateString(),
+                'date_detach' => $this->toCarbon($driverTruck->date_detach)?->toDateString(),
+                'truck' => $driverTruck->truck ? [
+                    'id' => $driverTruck->truck->id,
+                    'plate' => $driverTruck->truck->plate,
+                ] : null,
+            ],
+            'summary' => $summary,
+            'performances' => $performances,
+            'perPage' => $perPage,
+            'perPageOptions' => $perPageOptions,
         ]);
     }
 

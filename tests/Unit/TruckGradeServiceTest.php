@@ -225,6 +225,11 @@ class TruckGradeServiceTest extends TestCase
             'compliance_weight' => 5,
         ], $report['weights']);
 
+        $this->assertEquals(
+            array_map(static fn ($value) => (float) $value, TruckGradingSetting::defaultGradeThresholds()),
+            $report['grade_thresholds'],
+        );
+
         $this->assertSame(2, $collectionReports->count());
         $this->assertEquals($report, $collectionReports->get($targetTruck->id));
         $this->assertEquals($peerReport, $collectionReports->get($peerTruck->id));

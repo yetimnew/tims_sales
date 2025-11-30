@@ -8,6 +8,7 @@ use App\Models\DriverTruck;
 use App\Models\Performance;
 use App\Models\Truck;
 use App\Services\DriverTruckDeletionGuard;
+use App\Services\DriverTruckGradeService;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -19,7 +20,10 @@ use Spatie\Activitylog\Models\Activity;
 
 class DriverTruckController extends Controller
 {
-    public function __construct(private DriverTruckDeletionGuard $driverTruckDeletionGuard) {}
+    public function __construct(
+        private DriverTruckDeletionGuard $driverTruckDeletionGuard,
+        private DriverTruckGradeService $driverTruckGrade,
+    ) {}
 
     /**
      * Display a listing of driver-truck assignments.
@@ -229,6 +233,7 @@ class DriverTruckController extends Controller
             'performances' => $performances,
             'dateDifference' => $dateDifference,
             'activityLogs' => $activityLogs,
+            'gradeReport' => $this->driverTruckGrade->grade($driverTruck),
         ]);
     }
 

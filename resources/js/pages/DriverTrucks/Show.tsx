@@ -20,6 +20,8 @@ import {
     Activity,
     AlertCircle,
     ArrowLeft,
+    ArrowUpRight,
+    Award,
     BarChart3,
     Calendar,
     CheckCircle,
@@ -58,20 +60,20 @@ interface DriverTruck {
 
 interface Performance {
     id: number;
-    trip: string;
-    DateDispach: string;
-    CargoVolumMT: number;
-    operation: {
-        customer: {
-            name: string;
-        };
-    };
+    trip?: string | null;
+    DateDispach?: string | null;
+    CargoVolumMT?: number | null;
+    operation?: {
+        customer?: {
+            name?: string | null;
+        } | null;
+    } | null;
     origin?: {
-        name: string;
-    };
+        name?: string | null;
+    } | null;
     destination?: {
-        name: string;
-    };
+        name?: string | null;
+    } | null;
 }
 
 interface ActivityLog {
@@ -88,9 +90,229 @@ interface Props {
     performances: Performance[];
     dateDifference?: string;
     activityLogs: ActivityLog[];
+    gradeReport?: GradeReport;
 }
 
-export default function Show({ driverTruck, performances, dateDifference, activityLogs }: Props) {
+type GradeCategoryKey = 'performance' | 'efficiency' | 'consistency';
+
+type GradeCategoryDetails = {
+    score: number;
+    metrics: Record<string, number | null>;
+};
+
+type GradeWeights = {
+    performance_weight: number;
+    efficiency_weight: number;
+    consistency_weight: number;
+};
+
+interface GradeReport {
+    overall: {
+        score: number;
+        letter: string;
+    };
+    weights: GradeWeights;
+    categories: Partial<Record<GradeCategoryKey, GradeCategoryDetails>>;
+    metrics?: {
+        assignment?: Record<string, number | null>;
+        peer_averages?: Record<string, number | null>;
+    };
+}
+
+type GradeCategoryConfigEntry = {
+    label: string;
+    description: string;
+    metrics: Array<{
+        key: string;
+        label: string;
+        formatter: (value: number | null | undefined) => string;
+    }>;
+};
+
+type GradeCategoryView = {
+    key: GradeCategoryKey;
+    label: string;
+    description: string;
+    score: number;
+    weight: number | null;
+    metrics: Array<{
+        label: string;
+        value: string;
+    }>;
+};
+
+const gradeCategoryOrder: GradeCategoryKey[] = ['performance', 'efficiency', 'consistency'];
+
+const numberFormatter = new Intl.NumberFormat('en-ET');
+
+const formatNumber = (value?: number | null, options?: Intl.NumberFormatOptions): string => {
+    if (value === null || value === undefined || Number.isNaN(Number(value))) {
+        return 'N/A';
+    }
+
+    if (options) {
+        return new Intl.NumberFormat('en-ET', options).format(value);
+    }
+
+    return numberFormatter.format(value);
+};
+
+const formatPercentFromRatio = (value?: number | null, maximumFractionDigits = 0): string => {
+    if (value === null || value === undefined || Number.isNaN(Number(value))) {
+        return 'N/A';
+    }
+
+    return `${(value * 100).toFixed(maximumFractionDigits)}%`;
+};
+
+const formatKilometers = (value?: number | null, maximumFractionDigits = 0): string => {
+    if (value === null || value === undefined || Number.isNaN(Number(value))) {
+        return 'N/A';
+    }
+
+    return `${formatNumber(value, {
+        minimumFractionDigits: maximumFractionDigits,
+        maximumFractionDigits,
+    })} KM`;
+};
+
+const formatCurrencyPerKm = (value?: number | null): string => {
+    if (value === null || value === undefined || Number.isNaN(Number(value))) {
+        return 'N/A';
+    }
+
+    return `${formatNumber(value, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    })} / KM`;
+};
+
+const formatDays = (value?: number | null): string => {
+    if (value === null || value === undefined || Number.isNaN(Number(value))) {
+        return 'N/A';
+    }
+
+    const rounded = Number(value.toFixed(1));
+
+    if (rounded === 1) {
+        return '1 day';
+    }
+
+    const formatted = rounded % 1 === 0 ? `${rounded}` : rounded.toFixed(1);
+
+    return `${formatted} days`;
+};
+
+const formatScore = (value?: number | null, maximumFractionDigits = 1): string => {
+    if (value === null || value === undefined || Number.isNaN(Number(value))) {
+        return 'N/A';
+    }
+
+    return Number(value).toFixed(maximumFractionDigits);
+};
+
+const formatWeight = (value?: number | null): string => {
+    if (value === null || value === undefined || Number.isNaN(Number(value))) {
+        return 'N/A';
+    }
+
+    return `${Number(value).toFixed(0)}%`;
+};
+
+const buildTripLabel = (performance: Performance): string => {
+    if (performance.trip && performance.trip.trim().length > 0) {
+        return performance.trip.trim();
+    }
+
+    return `Trip #${performance.id}`;
+};
+
+const formatVolume = (value?: number | null): string => {
+    if (value === null || value === undefined || Number.isNaN(Number(value))) {
+        return 'N/A';
+    }
+
+    return `${formatNumber(value, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MT`;
+};
+
+const buildRouteLabel = (performance: Performance): string => {
+    const origin = performance.origin?.name?.trim();
+    const destination = performance.destination?.name?.trim();
+
+    if (!origin && !destination) {
+        return 'N/A';
+    }
+
+    return `${origin ?? 'Unknown origin'} → ${destination ?? 'Unknown destination'}`;
+};
+
+const gradeCategoryConfig: Record<GradeCategoryKey, GradeCategoryConfigEntry> = {
+    performance: {
+        label: 'Performance',
+        description: 'Trips completed, distance covered, and ton-kilometres delivered.',
+        metrics: [
+            {
+                key: 'total_trips',
+                label: 'Trips',
+                formatter: value => formatNumber(value, { maximumFractionDigits: 0 }),
+            },
+            {
+                key: 'total_distance_km',
+                label: 'Distance',
+                formatter: value => formatKilometers(value, 0),
+            },
+            {
+                key: 'avg_trip_distance_km',
+                label: 'Avg Trip Distance',
+                formatter: value => formatKilometers(value, 1),
+            },
+            {
+                key: 'ton_km_per_trip',
+                label: 'Ton-KM / Trip',
+                formatter: value => formatNumber(value, { maximumFractionDigits: 1 }),
+            },
+        ],
+    },
+    efficiency: {
+        label: 'Efficiency',
+        description: 'Fuel usage and cost efficiency across trips.',
+        metrics: [
+            {
+                key: 'km_per_liter',
+                label: 'KM per Liter',
+                formatter: value => formatNumber(value, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+            },
+            {
+                key: 'fuel_cost_per_km',
+                label: 'Fuel Cost / KM',
+                formatter: formatCurrencyPerKm,
+            },
+            {
+                key: 'avg_trip_distance_km',
+                label: 'Avg Trip Distance',
+                formatter: value => formatKilometers(value, 1),
+            },
+        ],
+    },
+    consistency: {
+        label: 'Consistency',
+        description: 'Trip completion and turnaround performance.',
+        metrics: [
+            {
+                key: 'trip_completion_rate',
+                label: 'Completion Rate',
+                formatter: value => formatPercentFromRatio(value, 0),
+            },
+            {
+                key: 'avg_trip_duration_days',
+                label: 'Avg Trip Duration',
+                formatter: formatDays,
+            },
+        ],
+    },
+};
+
+export default function Show({ driverTruck, performances, dateDifference, activityLogs, gradeReport }: Props) {
     if (!driverTruck || !driverTruck.driver || !driverTruck.truck) {
         return (
             <AppLayout breadcrumbs={[]}>
@@ -148,6 +370,39 @@ export default function Show({ driverTruck, performances, dateDifference, activi
     const assignmentStatusTone = driverTruck.is_attached
         ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200'
         : 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200';
+
+    const overallGrade = gradeReport?.overall ?? null;
+    const gradeWeights = gradeReport?.weights ?? null;
+
+    const gradeCategories: GradeCategoryView[] = useMemo(() => {
+        if (!gradeReport?.categories) {
+            return [];
+        }
+
+        return (Object.entries(gradeCategoryConfig) as Array<[GradeCategoryKey, GradeCategoryConfigEntry]>)
+            .map(([key, config]) => {
+                const category = gradeReport.categories?.[key];
+
+                if (!category) {
+                    return null;
+                }
+
+                const weightKey = `${key}_weight` as keyof GradeWeights;
+
+                return {
+                    key,
+                    label: config.label,
+                    description: config.description,
+                    score: category.score,
+                    weight: gradeWeights ? gradeWeights[weightKey] : null,
+                    metrics: config.metrics.map(metric => ({
+                        label: metric.label,
+                        value: metric.formatter(category.metrics?.[metric.key] ?? null),
+                    })),
+                } satisfies GradeCategoryView;
+            })
+            .filter((category): category is GradeCategoryView => Boolean(category));
+    }, [gradeReport, gradeWeights]);
 
     const quickMetrics = useMemo(
         () => [
@@ -400,6 +655,117 @@ export default function Show({ driverTruck, performances, dateDifference, activi
                             </div>
 
                             <div className="w-full space-y-4 lg:w-80">
+                                {gradeReport ? (
+                                    <Card className="border-0 bg-gradient-to-br from-background to-muted/30 shadow-lg">
+                                        <CardHeader className="border-b bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20">
+                                            <CardTitle className="flex items-center gap-2 text-lg">
+                                                <Award className="h-5 w-5 text-amber-600" />
+                                                Assignment Grade
+                                            </CardTitle>
+                                            <CardDescription>Relative performance compared with similar pairings</CardDescription>
+                                        </CardHeader>
+                                        <CardContent className="space-y-4">
+                                            <div className="flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50/80 p-3 dark:border-amber-800/60 dark:bg-amber-950/40">
+                                                <div>
+                                                    <p className="text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">
+                                                        Overall Score
+                                                    </p>
+                                                    <div className="mt-1 flex items-baseline gap-3">
+                                                        <span className="text-3xl font-bold text-amber-800 dark:text-amber-100">
+                                                            {overallGrade ? formatScore(overallGrade.score) : 'N/A'}
+                                                        </span>
+                                                        <span className="text-sm text-muted-foreground">
+                                                            {overallGrade ? `${formatScore(overallGrade.score)} / 100` : 'Waiting for data'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-amber-500/10 text-2xl font-semibold text-amber-700 dark:bg-amber-500/20 dark:text-amber-200">
+                                                    {overallGrade?.letter ?? '—'}
+                                                </div>
+                                            </div>
+
+                                            {gradeWeights && (
+                                                <div className="grid grid-cols-3 gap-2 text-xs">
+                                                    {gradeCategoryOrder.map((key) => {
+                                                        const weightKey = `${key}_weight` as keyof GradeWeights;
+                                                        const weightValue = gradeWeights[weightKey];
+                                                        const config = gradeCategoryConfig[key];
+
+                                                        return (
+                                                            <div
+                                                                key={`weight-${key}`}
+                                                                className="rounded-md border border-amber-200 bg-white/70 p-2 text-center dark:border-amber-800/50 dark:bg-amber-950/30"
+                                                            >
+                                                                <p className="text-xs font-semibold text-amber-700 dark:text-amber-200">{config.label}</p>
+                                                                <p className="mt-1 font-medium text-slate-800 dark:text-slate-100">
+                                                                    {formatWeight(weightValue)}
+                                                                </p>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
+
+                                            {gradeCategories.length > 0 ? (
+                                                <div className="space-y-3">
+                                                    {gradeCategories.map((category) => (
+                                                        <div
+                                                            key={`grade-${category.key}`}
+                                                            className="rounded-lg border border-slate-200 bg-white/80 p-3 dark:border-slate-700 dark:bg-slate-900/50"
+                                                        >
+                                                            <div className="flex items-start justify-between gap-3">
+                                                                <div>
+                                                                    <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                                                                        {category.label}
+                                                                    </p>
+                                                                    <p className="text-xs text-muted-foreground">{category.description}</p>
+                                                                </div>
+                                                                <div className="text-right">
+                                                                    <p className="text-sm font-semibold text-amber-700 dark:text-amber-300">
+                                                                        {formatScore(category.score)}
+                                                                    </p>
+                                                                    {category.weight !== null && (
+                                                                        <p className="text-xs text-muted-foreground">Weight {formatWeight(category.weight)}</p>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                            <div className="mt-3 grid grid-cols-1 gap-2">
+                                                                {category.metrics.map((metric) => (
+                                                                    <div
+                                                                        key={`${category.key}-${metric.label}`}
+                                                                        className="flex items-center justify-between rounded-md bg-slate-100/70 px-2 py-1 text-xs dark:bg-slate-900/60"
+                                                                    >
+                                                                        <span className="text-muted-foreground">{metric.label}</span>
+                                                                        <span className="font-medium text-slate-900 dark:text-slate-100">{metric.value}</span>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <p className="text-sm text-muted-foreground">
+                                                    Grade insights will appear once enough performance data has been recorded for this assignment.
+                                                </p>
+                                            )}
+                                        </CardContent>
+                                    </Card>
+                                ) : (
+                                    <Card className="border-0 bg-gradient-to-br from-background to-muted/30 shadow-lg">
+                                        <CardHeader className="border-b bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20">
+                                            <CardTitle className="flex items-center gap-2 text-lg">
+                                                <Award className="h-5 w-5 text-amber-600" />
+                                                Assignment Grade
+                                            </CardTitle>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <p className="text-sm text-muted-foreground">
+                                                Grade analytics will become available after more performance data is captured for this driver-truck pairing.
+                                            </p>
+                                        </CardContent>
+                                    </Card>
+                                )}
+
                                 <Card className="border-0 bg-gradient-to-br from-background to-muted/20 shadow-lg">
                                     <CardHeader className="border-b bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20">
                                         <CardTitle className="flex items-center gap-2 text-lg">
@@ -486,13 +852,19 @@ export default function Show({ driverTruck, performances, dateDifference, activi
                                             <TableBody>
                                                 {performances.map((performance) => (
                                                     <TableRow key={performance.id}>
-                                                        <TableCell className="font-medium">{performance.trip}</TableCell>
-                                                        <TableCell>{formatDate(performance.DateDispach)}</TableCell>
-                                                        <TableCell>{performance.operation?.customer?.name ?? 'N/A'}</TableCell>
-                                                        <TableCell>
-                                                            {performance.origin?.name ?? 'N/A'} → {performance.destination?.name ?? 'N/A'}
+                                                        <TableCell className="font-medium">
+                                                            <Link
+                                                                href={`/performances/${performance.id}`}
+                                                                className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 dark:text-blue-300 hover:underline"
+                                                            >
+                                                                {buildTripLabel(performance)}
+                                                                <ArrowUpRight className="h-3.5 w-3.5" />
+                                                            </Link>
                                                         </TableCell>
-                                                        <TableCell className="text-right font-medium">{performance.CargoVolumMT} MT</TableCell>
+                                                        <TableCell>{formatDate(performance.DateDispach ?? undefined)}</TableCell>
+                                                        <TableCell>{performance.operation?.customer?.name?.trim() || 'N/A'}</TableCell>
+                                                        <TableCell>{buildRouteLabel(performance)}</TableCell>
+                                                        <TableCell className="text-right font-medium">{formatVolume(performance.CargoVolumMT)}</TableCell>
                                                     </TableRow>
                                                 ))}
                                             </TableBody>

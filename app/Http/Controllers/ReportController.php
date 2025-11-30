@@ -12,6 +12,7 @@ use App\Http\Requests\Reports\OutsourcePerformanceRequest;
 use App\Http\Requests\Reports\PerformanceAllRequest;
 use App\Http\Requests\Reports\PerformanceByDriverRequest;
 use App\Http\Requests\Reports\PerformanceByTruckRequest;
+use App\Http\Requests\Reports\TruckGradingReportRequest;
 use App\Models\Customer;
 use App\Models\Driver;
 use App\Models\MaintenanceType;
@@ -29,6 +30,7 @@ use App\Services\Reports\FuelEfficiencyReport;
 use App\Services\Reports\MaintenancePerformanceReport;
 use App\Services\Reports\OutsourcePerformanceReport;
 use App\Services\Reports\PerformanceAllReport;
+use App\Services\Reports\TruckGradingReport;
 use App\Services\Reports\TruckPerformanceReport;
 use Dompdf\Dompdf;
 use Dompdf\Options;
@@ -51,6 +53,7 @@ class ReportController extends Controller
         private readonly FuelEfficiencyReport $fuelEfficiencyReport,
         private readonly OutsourcePerformanceReport $outsourcePerformanceReport,
         private readonly MaintenancePerformanceReport $maintenancePerformanceReport,
+        private readonly TruckGradingReport $truckGradingReport,
     ) {}
 
     /**
@@ -204,6 +207,28 @@ class ReportController extends Controller
             report($e);
 
             return back()->withErrors(['error' => 'Failed to generate customer profitability report.']);
+        }
+    }
+
+    /**
+     * Display truck grading leaderboard report.
+     */
+    public function truckGrading(TruckGradingReportRequest $request): Response|RedirectResponse
+    {
+        try {
+            $result = $this->truckGradingReport->build($request->validated());
+
+            return Inertia::render('Reports/TruckGrading', [
+                'filters' => $result['filters'],
+                'filterOptions' => $result['filter_options'],
+                'paginator' => $result['paginator'],
+                'latestCalculation' => $result['latest_calculation'],
+                'perPageOptions' => $result['per_page_options'],
+            ]);
+        } catch (Exception $e) {
+            report($e);
+
+            return back()->withErrors(['error' => 'Failed to generate truck grading report.']);
         }
     }
 
