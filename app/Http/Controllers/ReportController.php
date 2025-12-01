@@ -224,6 +224,9 @@ class ReportController extends Controller
                 'paginator' => $result['paginator'],
                 'latestCalculation' => $result['latest_calculation'],
                 'perPageOptions' => $result['per_page_options'],
+                'can' => [
+                    'recalculate' => $request->user()?->can('trucks.update') ?? false,
+                ],
             ]);
         } catch (Exception $e) {
             report($e);

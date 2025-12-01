@@ -42,4 +42,10 @@ Route::middleware('auth')->group(function () {
 
     Route::patch('settings/truck-grading', [TruckGradingSettingsController::class, 'update'])
         ->name('settings.truck-grading.update');
+
+    Route::patch('settings/truck-grading/weights', [TruckGradingSettingsController::class, 'updateWeights'])
+        ->name('settings.truck-grading.weights.update');
+
+    Route::patch('settings/truck-grading/grade-thresholds', [TruckGradingSettingsController::class, 'updateGradeThresholds'])
+        ->name('settings.truck-grading.grade-thresholds.update');
 });

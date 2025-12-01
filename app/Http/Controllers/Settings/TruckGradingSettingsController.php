@@ -5,25 +5,27 @@ namespace App\Http\Controllers\Settings;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\RecalculateTruckGradesRequest;
 use App\Http\Requests\UpdateTruckGradingSettingsRequest;
+use App\Jobs\RecalculateTruckGradeSnapshots;
 use App\Models\Truck;
 use App\Models\TruckGradeSnapshot;
 use App\Models\TruckGradingSetting;
 use App\Models\VehicleType;
-use App\Services\TruckGradeService;
+use App\Rules\ValidGradeThresholds;
+use App\Services\TruckGradeSnapshotService;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use Inertia\Inertia;
 use Inertia\Response;
-use JsonException;
 
 class TruckGradingSettingsController extends Controller
 {
-    public function __construct(private TruckGradeService $truckGrade) {}
+    public function __construct(private readonly TruckGradeSnapshotService $snapshots) {}
 
     public function edit(Request $request): Response
     {
@@ -202,26 +204,110 @@ class TruckGradingSettingsController extends Controller
 
     public function update(UpdateTruckGradingSettingsRequest $request): RedirectResponse
     {
-        $weights = $request->weights();
+        $payload = array_merge(
+            $request->weights(),
+            [
+                'grade_thresholds' => $request->gradeThresholds(),
+                'updated_by' => $request->user()?->id,
+            ],
+        );
 
-        $payload = array_merge($weights, [
-            'grade_thresholds' => $request->gradeThresholds(),
-            'updated_by' => $request->user()?->id,
-        ]);
-
-        $setting = TruckGradingSetting::query()->latest('updated_at')->first();
-
-        if ($setting) {
-            $setting->forceFill($payload)->save();
-        } else {
-            TruckGradingSetting::create($payload);
-        }
+        $this->saveSettingAttributes($payload);
+        $this->queueSnapshotRefresh($request->user()?->id);
 
         return to_route('settings.truck-grading.edit')
-            ->with('success', 'Truck grading settings updated successfully.');
+            ->with('success', 'Truck grading settings updated. Snapshot recalculation queued.');
     }
 
-    public function recalculate(RecalculateTruckGradesRequest $request): RedirectResponse
+    public function updateWeights(Request $request): RedirectResponse
+    {
+        abort_unless($request->user()?->can('trucks.update') ?? false, 403);
+
+        $weightKeys = [
+            'utilization_weight',
+            'efficiency_weight',
+            'reliability_weight',
+            'financial_weight',
+            'compliance_weight',
+        ];
+
+        $validator = Validator::make(
+            $request->all(),
+            [
+                'utilization_weight' => ['required', 'integer', 'min:0', 'max:100'],
+                'efficiency_weight' => ['required', 'integer', 'min:0', 'max:100'],
+                'reliability_weight' => ['required', 'integer', 'min:0', 'max:100'],
+                'financial_weight' => ['required', 'integer', 'min:0', 'max:100'],
+                'compliance_weight' => ['required', 'integer', 'min:0', 'max:100'],
+                'peer_sample_size' => ['required', 'integer', 'min:1', 'max:100'],
+            ],
+        );
+
+        $validator->after(static function ($validator) use ($weightKeys): void {
+            if ($validator->errors()->isNotEmpty()) {
+                return;
+            }
+
+            $sum = 0;
+
+            foreach ($weightKeys as $key) {
+                $value = $validator->getData()[$key] ?? null;
+
+                if ($value === null || $value === '') {
+                    return;
+                }
+
+                $sum += (int) $value;
+            }
+
+            if ($sum !== 100) {
+                $validator->errors()->add('weights', 'The combined weights must equal 100%.');
+            }
+        });
+
+        $validated = $validator->validate();
+
+        $payload = [
+            'utilization_weight' => (int) $validated['utilization_weight'],
+            'efficiency_weight' => (int) $validated['efficiency_weight'],
+            'reliability_weight' => (int) $validated['reliability_weight'],
+            'financial_weight' => (int) $validated['financial_weight'],
+            'compliance_weight' => (int) $validated['compliance_weight'],
+            'peer_sample_size' => (int) $validated['peer_sample_size'],
+            'updated_by' => $request->user()?->id,
+        ];
+
+        $this->saveSettingAttributes($payload);
+        $this->queueSnapshotRefresh($request->user()?->id);
+
+        return to_route('settings.truck-grading.edit')
+            ->with('success', 'Truck grading weights updated. Snapshot recalculation queued.');
+    }
+
+    public function updateGradeThresholds(Request $request): RedirectResponse
+    {
+        abort_unless($request->user()?->can('trucks.update') ?? false, 403);
+
+        $validated = Validator::make(
+            $request->all(),
+            ['grade_thresholds' => ['required', 'array', new ValidGradeThresholds]],
+        )->validate();
+
+        $payload = [
+            'grade_thresholds' => TruckGradingSetting::normalizeGradeThresholds(
+                $validated['grade_thresholds'] ?? [],
+            ),
+            'updated_by' => $request->user()?->id,
+        ];
+
+        $this->saveSettingAttributes($payload);
+        $this->queueSnapshotRefresh($request->user()?->id);
+
+        return to_route('settings.truck-grading.edit')
+            ->with('success', 'Truck grading grade thresholds updated. Snapshot recalculation queued.');
+    }
+
+    public function recalculate(RecalculateTruckGradesRequest $request): RedirectResponse|JsonResponse
     {
         $filters = $request->filters();
 
@@ -229,75 +315,12 @@ class TruckGradingSettingsController extends Controller
         $vehicleTypeId = $filters['vehicle_type_id'];
         $status = $filters['status'];
 
-        $userId = $request->user()?->id;
-        $calculatedAt = Carbon::now();
-
-        $truckQuery = Truck::query()
-            ->select(['id', 'vehicletype_id', 'status'])
-            ->when($vehicleTypeId, static fn (Builder $query, int $id) => $query->where('vehicletype_id', $id))
-            ->when($status, static fn (Builder $query, string $value) => $query->where('status', $value))
-            ->orderBy('id');
-
-        $inserted = 0;
-
-        DB::transaction(function () use ($truckQuery, $snapshotDate, $vehicleTypeId, $status, $userId, $calculatedAt, &$inserted) {
-            $deleteQuery = $this->applySnapshotFilters(
-                TruckGradeSnapshot::query(),
-                $snapshotDate,
-                $vehicleTypeId,
-                $status,
-            );
-
-            $deleteQuery->delete();
-
-            $truckQuery->chunkById(100, function ($chunk) use ($snapshotDate, $vehicleTypeId, $status, $userId, $calculatedAt, &$inserted) {
-                $grades = $this->truckGrade->gradeMany($chunk);
-
-                $batch = [];
-
-                foreach ($chunk as $truck) {
-                    $grade = $grades->get($truck->id);
-
-                    if (! $grade) {
-                        continue;
-                    }
-
-                    $batch[] = [
-                        'snapshot_date' => $snapshotDate,
-                        'truck_id' => $truck->id,
-                        'vehicle_type_id' => $truck->vehicletype_id,
-                        'status' => $truck->status,
-                        'filter_vehicle_type_id' => $vehicleTypeId,
-                        'filter_status' => $status,
-                        'overall_score' => $grade['overall']['score'] ?? 0,
-                        'overall_letter' => $grade['overall']['letter'] ?? 'E',
-                        'weights' => $grade['weights'] ?? [],
-                        'categories' => $grade['categories'] ?? null,
-                        'metrics' => $grade['metrics'] ?? null,
-                        'grade_thresholds' => $grade['grade_thresholds'] ?? null,
-                        'calculated_at' => $calculatedAt,
-                        'calculated_by' => $userId,
-                        'created_at' => $calculatedAt,
-                        'updated_at' => $calculatedAt,
-                    ];
-
-                    if (count($batch) >= 200) {
-                        TruckGradeSnapshot::query()->insert(
-                            array_map(fn (array $payload) => $this->normalizeSnapshotPayload($payload), $batch),
-                        );
-                        $inserted += count($batch);
-                        $batch = [];
-                    }
-                }
-
-                if ($batch !== []) {
-                    TruckGradeSnapshot::query()->insert(
-                        array_map(fn (array $payload) => $this->normalizeSnapshotPayload($payload), $batch),
-                    );
-                    $inserted += count($batch);
-                }
-            });
-        });
+        $inserted = $this->snapshots->recalculateSnapshot(
+            $snapshotDate,
+            $vehicleTypeId,
+            $status,
+            $request->user()?->id,
+        );
 
         $redirectParams = array_filter([
             'snapshot_date' => $snapshotDate,
@@ -308,6 +331,18 @@ class TruckGradingSettingsController extends Controller
         $message = $inserted > 0
             ? sprintf('Stored %d truck grade snapshots for %s.', $inserted, Carbon::parse($snapshotDate)->toFormattedDateString())
             : 'No trucks matched the selected filters, so no snapshot was stored.';
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => $message,
+                'inserted' => $inserted,
+                'filters' => [
+                    'snapshot_date' => $snapshotDate,
+                    'vehicle_type_id' => $vehicleTypeId,
+                    'status' => $status,
+                ],
+            ]);
+        }
 
         return to_route('settings.truck-grading.edit', $redirectParams)
             ->with('success', $message);
@@ -362,26 +397,27 @@ class TruckGradingSettingsController extends Controller
         return $query;
     }
 
-    private function normalizeSnapshotPayload(array $payload): array
+    private function queueSnapshotRefresh(?int $userId): void
     {
-        foreach (['weights', 'categories', 'metrics', 'grade_thresholds'] as $jsonKey) {
-            if (! array_key_exists($jsonKey, $payload)) {
-                continue;
-            }
+        $filterSets = $this->snapshots->distinctFilterSets()->all();
 
-            $value = $payload[$jsonKey];
+        RecalculateTruckGradeSnapshots::dispatch($filterSets, $userId);
+    }
 
-            if ($value === null || is_string($value)) {
-                continue;
-            }
+    private function saveSettingAttributes(array $attributes): void
+    {
+        $setting = TruckGradingSetting::query()->latest('updated_at')->first();
 
-            try {
-                $payload[$jsonKey] = json_encode($value, JSON_THROW_ON_ERROR);
-            } catch (JsonException) {
-                $payload[$jsonKey] = json_encode($value);
-            }
+        if ($setting) {
+            $setting->forceFill($attributes)->save();
+
+            return;
         }
 
-        return $payload;
+        TruckGradingSetting::create(array_merge(
+            TruckGradingSetting::defaultWeights(),
+            ['grade_thresholds' => TruckGradingSetting::defaultGradeThresholds()],
+            $attributes,
+        ));
     }
 }

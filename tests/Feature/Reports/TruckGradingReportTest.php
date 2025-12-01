@@ -82,6 +82,9 @@ class TruckGradingReportTest extends TestCase
                         ->where('snapshot_date', $snapshotDate)
                         ->etc()
                     )
+                    ->has('can', fn (AssertableInertia $assert) => $assert
+                        ->where('recalculate', false)
+                    )
                     ->has('paginator.data', 1)
                     ->where('paginator.data.0.plate', $truck->plate)
                     ->where('paginator.data.0.grade.overall.letter', 'A')
