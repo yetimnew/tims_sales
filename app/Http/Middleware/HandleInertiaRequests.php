@@ -44,6 +44,9 @@ class HandleInertiaRequests extends Middleware
         $userPayload = $this->resolveUserPayload($user);
         $permissions = $user ? $this->resolvePermissions($user, $request) : [];
 
+        // Resolve notifications summary for header bell
+        $notifications = $this->resolveNotificationsSummary($user);
+
         return [
             ...parent::share($request),
             'name' => config('app.name'),
@@ -52,6 +55,7 @@ class HandleInertiaRequests extends Middleware
                 'user' => $userPayload,
                 'permissions' => $permissions,
             ],
+            'notifications' => $notifications,
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             // Add flash messages and errors
             'flash' => [
@@ -115,5 +119,41 @@ class HandleInertiaRequests extends Middleware
         ];
 
         return $map[$routeName] ?? null;
+    }
+
+    /**
+     * @return array{unread_count:int, recent: array<int, array<string, mixed>>}
+     */
+    private function resolveNotificationsSummary(?User $user): array
+    {
+        if ($user === null) {
+            return [
+                'unread_count' => 0,
+                'recent' => [],
+            ];
+        }
+
+        $unreadCount = (int) $user->unreadNotifications()->count();
+
+        $recent = $user->notifications()
+            ->latest()
+            ->limit(8)
+            ->get()
+            ->map(function ($notification) {
+                return [
+                    'id' => $notification->id,
+                    'type' => class_basename($notification->type),
+                    'read_at' => $notification->read_at?->toIso8601String(),
+                    'created_at' => $notification->created_at?->toIso8601String(),
+                    'data' => $notification->data,
+                ];
+            })
+            ->values()
+            ->all();
+
+        return [
+            'unread_count' => $unreadCount,
+            'recent' => $recent,
+        ];
     }
 }

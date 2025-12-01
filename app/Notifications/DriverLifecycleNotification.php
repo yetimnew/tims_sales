@@ -10,7 +10,7 @@ use Illuminate\Notifications\Messages\BroadcastMessage;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class TruckLifecycleNotification extends Notification implements ChannelAwareNotification, ShouldQueue
+class DriverLifecycleNotification extends Notification implements ChannelAwareNotification, ShouldQueue
 {
     use Queueable;
 
@@ -31,9 +31,6 @@ class TruckLifecycleNotification extends Notification implements ChannelAwareNot
      */
     private array $channels = [];
 
-    /**
-     * Specify the channels that should be used for delivery.
-     */
     public function withChannels(array $channels): static
     {
         $this->channels = array_values(array_unique($channels));
@@ -52,8 +49,15 @@ class TruckLifecycleNotification extends Notification implements ChannelAwareNot
             ->subject($this->title)
             ->line($this->message);
 
-        if (isset($this->payload['plate'])) {
-            $mail->line('Truck: '.$this->payload['plate']);
+        $driverName = $this->payload['name'] ?? null;
+        $driverCode = $this->payload['driver_code'] ?? $this->payload['driverid'] ?? null;
+
+        if ($driverName !== null || $driverCode !== null) {
+            $identifier = trim(implode(' ', array_filter([$driverName, $driverCode], static fn ($value) => $value !== null)));
+
+            if ($identifier !== '') {
+                $mail->line('Driver: '.$identifier);
+            }
         }
 
         $actorName = $this->payload['actor']['name'] ?? null;

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Settings\DriverGradingSettingsController;
 use App\Http\Controllers\Settings\NotificationPreferenceController;
 use App\Http\Controllers\Settings\PasswordController;
 use App\Http\Controllers\Settings\ProfileController;
@@ -48,4 +49,11 @@ Route::middleware('auth')->group(function () {
 
     Route::patch('settings/truck-grading/grade-thresholds', [TruckGradingSettingsController::class, 'updateGradeThresholds'])
         ->name('settings.truck-grading.grade-thresholds.update');
+
+    // Driver grading settings
+    Route::get('settings/driver-grading', [DriverGradingSettingsController::class, 'edit'])
+        ->name('settings.driver-grading.edit');
+
+    Route::post('settings/driver-grading/recalculate', [DriverGradingSettingsController::class, 'recalculate'])
+        ->name('settings.driver-grading.recalculate');
 });

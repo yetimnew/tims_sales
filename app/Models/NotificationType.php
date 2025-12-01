@@ -22,6 +22,12 @@ class NotificationType extends Model
 
     public const USER_DELETED = 'user.deleted';
 
+    public const DRIVER_CREATED = 'driver.created';
+
+    public const DRIVER_UPDATED = 'driver.updated';
+
+    public const DRIVER_DELETED = 'driver.deleted';
+
     /**
      * @var array<int, string>
      */

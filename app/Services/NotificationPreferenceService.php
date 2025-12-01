@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\NotificationType;
 use App\Models\User;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 
 class NotificationPreferenceService
 {
@@ -13,7 +14,9 @@ class NotificationPreferenceService
      */
     public function resolveType(string $key): ?NotificationType
     {
-        return NotificationType::query()->where('key', $key)->first();
+        $cacheKey = sprintf('notifications.types.%s', $key);
+
+        return Cache::remember($cacheKey, now()->addMinutes(10), fn () => NotificationType::query()->where('key', $key)->first());
     }
 
     /**
@@ -48,14 +51,27 @@ class NotificationPreferenceService
             ->firstWhere('notification_type_id', $type->id);
 
         if ($setting === null) {
+            // Fallback: if no explicit setting exists, default to database channel for core managers
+            if (
+                $user->hasRole('admin')
+                || $user->can('trucks.view')
+                || $user->can('drivers.view')
+            ) {
+                return ['database'];
+            }
+
             return [];
         }
 
         $channels = [];
 
         if ($setting->in_app_enabled) {
-            $channels[] = 'broadcast';
+            // In-app experiences rely on stored notifications; broadcast is optional
             $channels[] = 'database';
+
+            if (in_array(config('broadcasting.default'), ['pusher', 'reverb'], true)) {
+                $channels[] = 'broadcast';
+            }
         }
 
         if ($setting->email_enabled) {

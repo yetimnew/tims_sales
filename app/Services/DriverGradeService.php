@@ -88,7 +88,7 @@ class DriverGradeService
         return [
             'overall' => [
                 'score' => $aggregateScore,
-                'letter' => $this->scoreToLetter($aggregateScore),
+                'letter' => $this->scoreToLetter($aggregateScore, $settings['grade_thresholds']),
             ],
             'weights' => Arr::only($settings, [
                 'performance_weight',
@@ -97,6 +97,7 @@ class DriverGradeService
                 'compliance_weight',
                 'engagement_weight',
             ]),
+            'grade_thresholds' => $settings['grade_thresholds'],
             'categories' => $categories,
             'metrics' => [
                 'driver' => $targetMetrics,
@@ -109,21 +110,33 @@ class DriverGradeService
     {
         $latest = DriverGradingSetting::query()->latest('created_at')->first();
 
+        $defaults = array_merge(
+            DriverGradingSetting::defaultWeights(),
+            ['grade_thresholds' => DriverGradingSetting::defaultGradeThresholds()],
+        );
+
         if (! $latest) {
-            return DriverGradingSetting::defaultWeights();
+            return $defaults;
         }
 
-        return array_merge(
-            DriverGradingSetting::defaultWeights(),
-            $latest->only([
+        $settings = array_merge(
+            $defaults,
+            array_filter($latest->only([
                 'performance_weight',
                 'efficiency_weight',
                 'safety_weight',
                 'compliance_weight',
                 'engagement_weight',
                 'peer_sample_size',
-            ]),
+            ]), static fn ($value) => $value !== null),
         );
+
+        $settings['grade_thresholds'] = DriverGradingSetting::normalizeGradeThresholds(
+            $latest->grade_thresholds,
+            $defaults['grade_thresholds'],
+        );
+
+        return $settings;
     }
 
     private function determinePeerDriverIds(Driver $driver, int $sampleSize): Collection
@@ -580,14 +593,14 @@ class DriverGradeService
         return round(max(min($score, 100), 0), 1);
     }
 
-    private function scoreToLetter(float $score): string
+    private function scoreToLetter(float $score, array $thresholds): string
     {
-        return match (true) {
-            $score >= 90 => 'A',
-            $score >= 80 => 'B',
-            $score >= 70 => 'C',
-            $score >= 60 => 'D',
-            default => 'E',
-        };
+        foreach ($thresholds as $letter => $minimum) {
+            if ($score >= $minimum) {
+                return $letter;
+            }
+        }
+
+        return 'E';
     }
 }

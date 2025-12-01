@@ -625,6 +625,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('reports/operation-profitability', [\App\Http\Controllers\ReportController::class, 'operationProfitability'])->name('reports.operation-profitability');
     Route::get('reports/geography-heatmaps', [\App\Http\Controllers\ReportController::class, 'geographyHeatmaps'])->name('reports.geography-heatmaps');
     Route::get('reports/truck-grading', [\App\Http\Controllers\ReportController::class, 'truckGrading'])->name('reports.truck-grading');
+    Route::get('reports/driver-grading', [\App\Http\Controllers\ReportController::class, 'driverGrading'])->name('reports.driver-grading');
     Route::get('reports/performance-all', [\App\Http\Controllers\ReportController::class, 'performanceAll'])->name('reports.performance-all');
     Route::get('reports/performance-all/export/{format}', [\App\Http\Controllers\ReportController::class, 'performanceAllExport'])
         ->whereIn('format', ['csv', 'xlsx', 'pdf'])
@@ -730,6 +731,15 @@ Route::middleware(['auth'])->group(function () {
             ->middleware('can:permissions.show')
             ->name('permissions.show');
     });
+
+    // In-app notifications list and actions
+    Route::get('notifications', [\App\Http\Controllers\NotificationController::class, 'index'])
+        ->name('notifications.index');
+    Route::post('notifications/{notification}/read', [\App\Http\Controllers\NotificationController::class, 'markAsRead'])
+        ->whereUuid('notification')
+        ->name('notifications.read');
+    Route::post('notifications/read-all', [\App\Http\Controllers\NotificationController::class, 'markAllAsRead'])
+        ->name('notifications.read-all');
 });
 
 require __DIR__.'/settings.php';

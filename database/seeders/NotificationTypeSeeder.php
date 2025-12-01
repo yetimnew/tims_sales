@@ -55,6 +55,27 @@ class NotificationTypeSeeder extends Seeder
                 'default_in_app' => true,
                 'default_email' => true,
             ],
+            [
+                'key' => NotificationType::DRIVER_CREATED,
+                'name' => 'Driver Created',
+                'description' => 'Triggered when a driver is added to the system.',
+                'default_in_app' => true,
+                'default_email' => false,
+            ],
+            [
+                'key' => NotificationType::DRIVER_UPDATED,
+                'name' => 'Driver Updated',
+                'description' => 'Triggered when a driver record is updated.',
+                'default_in_app' => true,
+                'default_email' => false,
+            ],
+            [
+                'key' => NotificationType::DRIVER_DELETED,
+                'name' => 'Driver Deleted',
+                'description' => 'Triggered when a driver is removed from the system.',
+                'default_in_app' => true,
+                'default_email' => true,
+            ],
         ];
 
         NotificationType::query()->upsert(

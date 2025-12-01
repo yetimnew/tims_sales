@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\DriverCreated;
+use App\Events\DriverDeleted;
+use App\Events\DriverUpdated;
 use App\Models\Driver;
 use App\Models\DriverSafetyRecord;
 use App\Models\DriverTruck;
@@ -213,6 +216,8 @@ class DriverController extends Controller
             ]);
 
             $driver = Driver::create($validated);
+
+            event(new DriverCreated($driver, Auth::user()));
 
             $this->driverMetrics->clearCache();
 
@@ -601,7 +606,24 @@ class DriverController extends Controller
                 'status' => 'required|string|in:active,inactive',
             ]);
 
-            $driver->update($validated);
+            $driver->fill($validated);
+
+            $dirty = $driver->getDirty();
+
+            $changes = [];
+
+            foreach ($dirty as $attribute => $newValue) {
+                $changes[$attribute] = [
+                    'old' => $driver->getOriginal($attribute),
+                    'new' => $newValue,
+                ];
+            }
+
+            $driver->save();
+
+            if ($changes !== []) {
+                event(new DriverUpdated($driver->fresh(), $changes, Auth::user()));
+            }
 
             $this->driverMetrics->clearCache();
 
@@ -656,7 +678,14 @@ class DriverController extends Controller
                 ]);
             }
 
+            $attributes = $driver->getAttributes();
+            $driverId = $driver->getKey();
+            $driverCode = $driver->driverid;
+            $driverName = $driver->name;
+
             $driver->delete();
+
+            event(new DriverDeleted($driverId, $driverCode, $driverName, $attributes, Auth::user()));
 
             $this->driverMetrics->clearCache();
 

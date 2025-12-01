@@ -54,6 +54,7 @@ class ReportController extends Controller
         private readonly OutsourcePerformanceReport $outsourcePerformanceReport,
         private readonly MaintenancePerformanceReport $maintenancePerformanceReport,
         private readonly TruckGradingReport $truckGradingReport,
+        private readonly \App\Services\Reports\DriverGradingReport $driverGradingReport,
     ) {}
 
     /**
@@ -232,6 +233,31 @@ class ReportController extends Controller
             report($e);
 
             return back()->withErrors(['error' => 'Failed to generate truck grading report.']);
+        }
+    }
+
+    /**
+     * Display driver grading leaderboard report.
+     */
+    public function driverGrading(\App\Http\Requests\Reports\DriverGradingReportRequest $request): Response|RedirectResponse
+    {
+        try {
+            $result = $this->driverGradingReport->build($request->validated());
+
+            return Inertia::render('Reports/DriverGrading', [
+                'filters' => $result['filters'],
+                'filterOptions' => $result['filter_options'],
+                'paginator' => $result['paginator'],
+                'latestCalculation' => $result['latest_calculation'],
+                'perPageOptions' => $result['per_page_options'],
+                'can' => [
+                    'recalculate' => $request->user()?->can('drivers.update') ?? false,
+                ],
+            ]);
+        } catch (Exception $e) {
+            report($e);
+
+            return back()->withErrors(['error' => 'Failed to generate driver grading report.']);
         }
     }
 
