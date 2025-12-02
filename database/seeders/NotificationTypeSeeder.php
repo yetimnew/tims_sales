@@ -286,6 +286,48 @@ class NotificationTypeSeeder extends Seeder
                 'default_in_app' => true,
                 'default_email' => true,
             ],
+            [
+                'key' => NotificationType::OUTSOURCE_CREATED,
+                'name' => 'Outsource Created',
+                'description' => 'Triggered when an outsource vendor is added.',
+                'default_in_app' => true,
+                'default_email' => false,
+            ],
+            [
+                'key' => NotificationType::OUTSOURCE_UPDATED,
+                'name' => 'Outsource Updated',
+                'description' => 'Triggered when an outsource vendor is updated.',
+                'default_in_app' => true,
+                'default_email' => false,
+            ],
+            [
+                'key' => NotificationType::OUTSOURCE_DELETED,
+                'name' => 'Outsource Deleted',
+                'description' => 'Triggered when an outsource vendor is removed.',
+                'default_in_app' => true,
+                'default_email' => true,
+            ],
+            [
+                'key' => NotificationType::OUTSOURCE_PERFORMANCE_CREATED,
+                'name' => 'Outsource Performance Created',
+                'description' => 'Triggered when an outsource performance record is added.',
+                'default_in_app' => true,
+                'default_email' => false,
+            ],
+            [
+                'key' => NotificationType::OUTSOURCE_PERFORMANCE_UPDATED,
+                'name' => 'Outsource Performance Updated',
+                'description' => 'Triggered when an outsource performance record is updated.',
+                'default_in_app' => true,
+                'default_email' => false,
+            ],
+            [
+                'key' => NotificationType::OUTSOURCE_PERFORMANCE_DELETED,
+                'name' => 'Outsource Performance Deleted',
+                'description' => 'Triggered when an outsource performance record is removed.',
+                'default_in_app' => true,
+                'default_email' => true,
+            ],
         ];
 
         NotificationType::query()->upsert(

@@ -20,6 +20,12 @@ use App\Events\DriverUpdated;
 use App\Events\FuelRecordCreated;
 use App\Events\FuelRecordDeleted;
 use App\Events\FuelRecordUpdated;
+use App\Events\OutsourceCreated;
+use App\Events\OutsourceDeleted;
+use App\Events\OutsourcePerformanceCreated;
+use App\Events\OutsourcePerformanceDeleted;
+use App\Events\OutsourcePerformanceUpdated;
+use App\Events\OutsourceUpdated;
 use App\Events\PlaceCreated;
 use App\Events\PlaceDeleted;
 use App\Events\PlaceUpdated;
@@ -44,6 +50,8 @@ use App\Listeners\SendDriverLifecycleNotification;
 use App\Listeners\SendDriverSafetyLifecycleNotification;
 use App\Listeners\SendDriverTruckLifecycleNotification;
 use App\Listeners\SendFuelRecordLifecycleNotification;
+use App\Listeners\SendOutsourceLifecycleNotification;
+use App\Listeners\SendOutsourcePerformanceLifecycleNotification;
 use App\Listeners\SendPlaceLifecycleNotification;
 use App\Listeners\SendRegionLifecycleNotification;
 use App\Listeners\SendTruckLifecycleNotification;
@@ -127,5 +135,15 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(DistanceCreated::class, [SendDistanceLifecycleNotification::class, 'handle']);
         Event::listen(DistanceUpdated::class, [SendDistanceLifecycleNotification::class, 'handle']);
         Event::listen(DistanceDeleted::class, [SendDistanceLifecycleNotification::class, 'handle']);
+
+        // Outsources
+        Event::listen(OutsourceCreated::class, [SendOutsourceLifecycleNotification::class, 'handle']);
+        Event::listen(OutsourceUpdated::class, [SendOutsourceLifecycleNotification::class, 'handle']);
+        Event::listen(OutsourceDeleted::class, [SendOutsourceLifecycleNotification::class, 'handle']);
+
+        // Outsource performances
+        Event::listen(OutsourcePerformanceCreated::class, [SendOutsourcePerformanceLifecycleNotification::class, 'handle']);
+        Event::listen(OutsourcePerformanceUpdated::class, [SendOutsourcePerformanceLifecycleNotification::class, 'handle']);
+        Event::listen(OutsourcePerformanceDeleted::class, [SendOutsourcePerformanceLifecycleNotification::class, 'handle']);
     }
 }

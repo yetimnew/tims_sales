@@ -66,6 +66,8 @@ class NotificationPreferenceService
                 || $user->can('woredas.view')
                 || $user->can('places.view')
                 || $user->can('distances.view')
+                || $user->can('outsources.view')
+                || $user->can('outsource-performances.view')
             ) {
                 return ['database'];
             }

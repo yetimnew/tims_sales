@@ -88,6 +88,18 @@ class NotificationType extends Model
 
     public const DISTANCE_DELETED = 'distance.deleted';
 
+    public const OUTSOURCE_CREATED = 'outsource.created';
+
+    public const OUTSOURCE_UPDATED = 'outsource.updated';
+
+    public const OUTSOURCE_DELETED = 'outsource.deleted';
+
+    public const OUTSOURCE_PERFORMANCE_CREATED = 'outsource_performance.created';
+
+    public const OUTSOURCE_PERFORMANCE_UPDATED = 'outsource_performance.updated';
+
+    public const OUTSOURCE_PERFORMANCE_DELETED = 'outsource_performance.deleted';
+
     /**
      * @var array<int, string>
      */

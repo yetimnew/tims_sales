@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\OutsourcePerformanceCreated;
+use App\Events\OutsourcePerformanceDeleted;
+use App\Events\OutsourcePerformanceUpdated;
 use App\Models\Operation;
 use App\Models\Outsource;
 use App\Models\OutsourcePerformance;
@@ -220,6 +223,8 @@ class OutsourcePerformanceController extends Controller
             $payload = $this->preparePayload($validated);
             $payload['user_id'] = Auth::id();
 
+            $actor = Auth::user();
+
             $outsourcePerformance = OutsourcePerformance::create($payload);
 
             Log::info('Outsource performance created', [
@@ -228,6 +233,8 @@ class OutsourcePerformanceController extends Controller
                 'trip_number' => $outsourcePerformance->trip_number,
                 'user_id' => Auth::id(),
             ]);
+
+            event(new OutsourcePerformanceCreated($outsourcePerformance->fresh(), $actor));
 
             return redirect()->route('outsource-performances.index')
                 ->with('success', 'Outsource performance created successfully.');
@@ -447,7 +454,23 @@ class OutsourcePerformanceController extends Controller
             $payload = $this->preparePayload($validated);
             $payload['user_id'] = Auth::id();
 
-            $outsourcePerformance->update($payload);
+            $actor = Auth::user();
+
+            $original = $outsourcePerformance->getOriginal();
+            $outsourcePerformance->fill($payload);
+
+            $changes = [];
+
+            foreach ($outsourcePerformance->getDirty() as $attribute => $newValue) {
+                $changes[$attribute] = [
+                    'old' => $original[$attribute] ?? null,
+                    'new' => $newValue,
+                ];
+            }
+
+            if ($changes !== []) {
+                $outsourcePerformance->save();
+            }
 
             Log::info('Outsource performance updated', [
                 'outsource_performance_id' => $outsourcePerformance->id,
@@ -455,6 +478,10 @@ class OutsourcePerformanceController extends Controller
                 'trip_number' => $outsourcePerformance->trip_number,
                 'user_id' => Auth::id(),
             ]);
+
+            if ($changes !== []) {
+                event(new OutsourcePerformanceUpdated($outsourcePerformance->fresh(), $changes, $actor));
+            }
 
             return redirect()->route('outsource-performances.index')
                 ->with('success', 'Outsource performance updated successfully.');
@@ -477,7 +504,12 @@ class OutsourcePerformanceController extends Controller
     public function destroy(OutsourcePerformance $outsourcePerformance)
     {
         try {
+            $actor = Auth::user();
+
             $outsourcePerformanceData = $outsourcePerformance->toArray();
+            $performanceId = $outsourcePerformance->getKey();
+            $tripNumber = $outsourcePerformanceData['trip_number'] ?? null;
+
             $outsourcePerformance->delete();
 
             Log::info('Outsource performance deleted', [
@@ -485,6 +517,8 @@ class OutsourcePerformanceController extends Controller
                 'trip_number' => $outsourcePerformanceData['trip_number'] ?? null,
                 'user_id' => Auth::id(),
             ]);
+
+            event(new OutsourcePerformanceDeleted($performanceId, $tripNumber, $outsourcePerformanceData, $actor));
 
             return redirect()->route('outsource-performances.index')
                 ->with('success', 'Outsource performance deleted successfully.');

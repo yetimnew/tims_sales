@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\OutsourceCreated;
+use App\Events\OutsourceDeleted;
+use App\Events\OutsourceUpdated;
 use App\Models\Outsource;
 use App\Models\OutsourcePerformance;
 use Exception;
@@ -201,6 +204,8 @@ class OutsourceController extends Controller
 
             $validated['status'] = $validated['status'] ?? 'active';
 
+            $actor = Auth::user();
+
             $outsource = Outsource::create($validated);
 
             Log::info('Outsource created', [
@@ -208,6 +213,8 @@ class OutsourceController extends Controller
                 'name' => $outsource->name,
                 'user_id' => Auth::id(),
             ]);
+
+            event(new OutsourceCreated($outsource->fresh(), $actor));
 
             return redirect()->route('outsources.index')
                 ->with('success', 'Outsource created successfully.');
@@ -350,13 +357,33 @@ class OutsourceController extends Controller
 
             $validated['status'] = $validated['status'] ?? $outsource->status ?? 'active';
 
-            $outsource->update($validated);
+            $actor = Auth::user();
+
+            $original = $outsource->getOriginal();
+            $outsource->fill($validated);
+
+            $changes = [];
+
+            foreach ($outsource->getDirty() as $attribute => $newValue) {
+                $changes[$attribute] = [
+                    'old' => $original[$attribute] ?? null,
+                    'new' => $newValue,
+                ];
+            }
+
+            if ($changes !== []) {
+                $outsource->save();
+            }
 
             Log::info('Outsource updated', [
                 'outsource_id' => $outsource->id,
                 'name' => $outsource->name,
                 'user_id' => Auth::id(),
             ]);
+
+            if ($changes !== []) {
+                event(new OutsourceUpdated($outsource->fresh(), $changes, $actor));
+            }
 
             return redirect()->route('outsources.index')
                 ->with('success', 'Outsource updated successfully.');
@@ -384,7 +411,12 @@ class OutsourceController extends Controller
                 return back()->withErrors(['error' => 'Cannot delete outsource that has performances.']);
             }
 
+            $actor = Auth::user();
+
             $outsourceData = $outsource->toArray();
+            $outsourceId = $outsource->getKey();
+            $outsourceName = $outsource->name;
+
             $outsource->delete();
 
             Log::info('Outsource deleted', [
@@ -392,6 +424,8 @@ class OutsourceController extends Controller
                 'name' => $outsourceData['name'],
                 'user_id' => Auth::id(),
             ]);
+
+            event(new OutsourceDeleted($outsourceId, $outsourceName, $outsourceData, $actor));
 
             return redirect()->route('outsources.index')
                 ->with('success', 'Outsource deleted successfully.');
