@@ -58,6 +58,36 @@ class NotificationType extends Model
 
     public const CARGO_TYPE_DELETED = 'cargo_type.deleted';
 
+    public const REGION_CREATED = 'region.created';
+
+    public const REGION_UPDATED = 'region.updated';
+
+    public const REGION_DELETED = 'region.deleted';
+
+    public const ZONE_CREATED = 'zone.created';
+
+    public const ZONE_UPDATED = 'zone.updated';
+
+    public const ZONE_DELETED = 'zone.deleted';
+
+    public const WOREDA_CREATED = 'woreda.created';
+
+    public const WOREDA_UPDATED = 'woreda.updated';
+
+    public const WOREDA_DELETED = 'woreda.deleted';
+
+    public const PLACE_CREATED = 'place.created';
+
+    public const PLACE_UPDATED = 'place.updated';
+
+    public const PLACE_DELETED = 'place.deleted';
+
+    public const DISTANCE_CREATED = 'distance.created';
+
+    public const DISTANCE_UPDATED = 'distance.updated';
+
+    public const DISTANCE_DELETED = 'distance.deleted';
+
     /**
      * @var array<int, string>
      */

@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\RegionCreated;
+use App\Events\RegionDeleted;
+use App\Events\RegionUpdated;
 use App\Models\Region;
 use Exception;
 use Illuminate\Http\Request;
@@ -144,6 +147,8 @@ class RegionController extends Controller
                 ->causedBy(Auth::user())
                 ->log('created');
 
+            event(new RegionCreated($region, Auth::user()));
+
             return redirect()->route('regions.index')
                 ->with('success', 'Region created successfully.');
         } catch (Exception $e) {
@@ -215,13 +220,30 @@ class RegionController extends Controller
         $validated['status'] = $validated['status'] ?? $region->status ?? 'active';
 
         try {
-            $oldData = $region->toArray();
-            $region->update($validated);
+            $original = $region->getOriginal();
+
+            $region->fill($validated);
+
+            $dirty = $region->getDirty();
+            $changes = [];
+
+            foreach ($dirty as $attribute => $newValue) {
+                $changes[$attribute] = [
+                    'old' => $original[$attribute] ?? null,
+                    'new' => $newValue,
+                ];
+            }
+
+            $region->save();
 
             ActivityLogger::performedOn($region)
                 ->causedBy(Auth::user())
-                ->withProperties(['old' => $oldData, 'new' => $region->toArray()])
+                ->withProperties(['old' => $original, 'new' => $region->toArray()])
                 ->log('updated');
+
+            if ($changes !== []) {
+                event(new RegionUpdated($region->fresh(), $changes, Auth::user()));
+            }
 
             return redirect()->route('regions.index')
                 ->with('success', 'Region updated successfully.');
@@ -248,6 +270,8 @@ class RegionController extends Controller
                 return back()->withErrors(['error' => 'Cannot delete region that has zones.']);
             }
 
+            $regionId = $region->getKey();
+            $regionName = $region->name;
             $regionData = $region->toArray();
             $region->delete();
 
@@ -255,6 +279,8 @@ class RegionController extends Controller
                 ->causedBy(Auth::user())
                 ->withProperties(['deleted' => $regionData])
                 ->log('deleted');
+
+            event(new RegionDeleted($regionId, $regionName, $regionData, Auth::user()));
 
             return redirect()->route('regions.index')
                 ->with('success', 'Region deleted successfully.');

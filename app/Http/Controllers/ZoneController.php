@@ -2,15 +2,18 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Zone;
+use App\Events\ZoneCreated;
+use App\Events\ZoneDeleted;
+use App\Events\ZoneUpdated;
 use App\Models\Region;
+use App\Models\Zone;
+use Exception;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
-use Inertia\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
-use Exception;
+use Inertia\Inertia;
+use Inertia\Response;
 use Spatie\Activitylog\Facades\Activity as ActivityLogger;
 use Spatie\Activitylog\Models\Activity;
 
@@ -24,7 +27,7 @@ class ZoneController extends Controller
         $query = Zone::with(['region'])->withCount('woredas');
 
         // Handle search
-        if ($request->has('search') && !empty($request->input('search'))) {
+        if ($request->has('search') && ! empty($request->input('search'))) {
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
@@ -42,7 +45,7 @@ class ZoneController extends Controller
 
         // Validate sort column to prevent SQL injection
         $allowedSorts = ['name', 'code', 'woredas_count', 'created_at', 'population', 'accessibility_score', 'area_km2'];
-        if (!in_array($sort, $allowedSorts)) {
+        if (! in_array($sort, $allowedSorts)) {
             $sort = 'name';
         }
 
@@ -109,6 +112,8 @@ class ZoneController extends Controller
             ActivityLogger::performedOn($zone)
                 ->causedBy(Auth::user())
                 ->log('created');
+
+            event(new ZoneCreated($zone, Auth::user()));
 
             return redirect()->route('zones.index')
                 ->with('success', 'Zone created successfully.');
@@ -183,13 +188,29 @@ class ZoneController extends Controller
                 'climate_profile' => 'nullable|string|max:2000',
             ]);
 
-            $oldData = $zone->toArray();
-            $zone->update($validated);
+            $original = $zone->getOriginal();
+            $zone->fill($validated);
+
+            $dirty = $zone->getDirty();
+            $changes = [];
+
+            foreach ($dirty as $attribute => $newValue) {
+                $changes[$attribute] = [
+                    'old' => $original[$attribute] ?? null,
+                    'new' => $newValue,
+                ];
+            }
+
+            $zone->save();
 
             ActivityLogger::performedOn($zone)
                 ->causedBy(Auth::user())
-                ->withProperties(['old' => $oldData, 'new' => $zone->toArray()])
+                ->withProperties(['old' => $original, 'new' => $zone->toArray()])
                 ->log('updated');
+
+            if ($changes !== []) {
+                event(new ZoneUpdated($zone->fresh('region'), $changes, Auth::user()));
+            }
 
             return redirect()->route('zones.index')
                 ->with('success', 'Zone updated successfully.');
@@ -217,6 +238,9 @@ class ZoneController extends Controller
                 return back()->withErrors(['error' => 'Cannot delete zone that has woredas.']);
             }
 
+            $zoneId = $zone->getKey();
+            $zoneName = $zone->name;
+            $regionId = $zone->region_id;
             $zoneData = $zone->toArray();
             $zone->delete();
 
@@ -224,6 +248,8 @@ class ZoneController extends Controller
                 ->causedBy(Auth::user())
                 ->withProperties(['deleted' => $zoneData])
                 ->log('deleted');
+
+            event(new ZoneDeleted($zoneId, $zoneName, $regionId, $zoneData, Auth::user()));
 
             return redirect()->route('zones.index')
                 ->with('success', 'Zone deleted successfully.');
@@ -247,7 +273,7 @@ class ZoneController extends Controller
         $query = Zone::with(['region'])->withCount('woredas');
 
         // Apply same search and sort as index
-        if ($request->has('search') && !empty($request->input('search'))) {
+        if ($request->has('search') && ! empty($request->input('search'))) {
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
@@ -263,7 +289,7 @@ class ZoneController extends Controller
         $direction = $request->input('direction', 'asc');
 
         $allowedSorts = ['name', 'code', 'woredas_count', 'created_at'];
-        if (!in_array($sort, $allowedSorts)) {
+        if (! in_array($sort, $allowedSorts)) {
             $sort = 'name';
         }
 
@@ -272,7 +298,7 @@ class ZoneController extends Controller
         $zones = $query->get();
 
         // Generate CSV
-        $filename = 'zones-' . date('Y-m-d-H-i-s') . '.csv';
+        $filename = 'zones-'.date('Y-m-d-H-i-s').'.csv';
         $headers = [
             'Content-Type' => 'text/csv',
             'Content-Disposition' => "attachment; filename=\"{$filename}\"",
@@ -302,7 +328,7 @@ class ZoneController extends Controller
                 'Infrastructure Notes',
                 'Climate Profile',
                 'Woredas Count',
-                'Created At'
+                'Created At',
             ]);
 
             // Data rows
@@ -369,17 +395,14 @@ class ZoneController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $activeZones,
-                'count' => $activeZones->count()
+                'count' => $activeZones->count(),
             ]);
 
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to retrieve active zones'
+                'message' => 'Failed to retrieve active zones',
             ], 500);
         }
     }
 }
-
-
-

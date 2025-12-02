@@ -61,6 +61,11 @@ class NotificationPreferenceService
                 || $user->can('fuel.view')
                 || $user->can('driver-safety.view')
                 || $user->can('cargotypes.view')
+                || $user->can('regions.view')
+                || $user->can('zones.view')
+                || $user->can('woredas.view')
+                || $user->can('places.view')
+                || $user->can('distances.view')
             ) {
                 return ['database'];
             }

@@ -2,15 +2,18 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\WoredaCreated;
+use App\Events\WoredaDeleted;
+use App\Events\WoredaUpdated;
 use App\Models\Woreda;
 use App\Models\Zone;
+use Exception;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
-use Inertia\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
-use Exception;
+use Inertia\Inertia;
+use Inertia\Response;
 use Spatie\Activitylog\Facades\Activity as ActivityLogger;
 use Spatie\Activitylog\Models\Activity;
 
@@ -24,7 +27,7 @@ class WoredaController extends Controller
         $query = Woreda::with(['zone'])->withCount('places');
 
         // Handle search
-        if ($request->has('search') && !empty($request->input('search'))) {
+        if ($request->has('search') && ! empty($request->input('search'))) {
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
@@ -42,7 +45,7 @@ class WoredaController extends Controller
 
         // Validate sort column to prevent SQL injection
         $allowedSorts = ['name', 'code', 'places_count', 'created_at', 'population', 'accessibility_score', 'area_km2'];
-        if (!in_array($sort, $allowedSorts)) {
+        if (! in_array($sort, $allowedSorts)) {
             $sort = 'name';
         }
 
@@ -109,6 +112,8 @@ class WoredaController extends Controller
             ActivityLogger::performedOn($woreda)
                 ->causedBy(Auth::user())
                 ->log('created');
+
+            event(new WoredaCreated($woreda, Auth::user()));
 
             return redirect()->route('woredas.index')
                 ->with('success', 'Woreda created successfully.');
@@ -183,13 +188,29 @@ class WoredaController extends Controller
                 'road_quality_notes' => 'nullable|string|max:2000',
             ]);
 
-            $oldData = $woreda->toArray();
-            $woreda->update($validated);
+            $original = $woreda->getOriginal();
+            $woreda->fill($validated);
+
+            $dirty = $woreda->getDirty();
+            $changes = [];
+
+            foreach ($dirty as $attribute => $newValue) {
+                $changes[$attribute] = [
+                    'old' => $original[$attribute] ?? null,
+                    'new' => $newValue,
+                ];
+            }
+
+            $woreda->save();
 
             ActivityLogger::performedOn($woreda)
                 ->causedBy(Auth::user())
-                ->withProperties(['old' => $oldData, 'new' => $woreda->toArray()])
+                ->withProperties(['old' => $original, 'new' => $woreda->toArray()])
                 ->log('updated');
+
+            if ($changes !== []) {
+                event(new WoredaUpdated($woreda->fresh('zone'), $changes, Auth::user()));
+            }
 
             return redirect()->route('woredas.index')
                 ->with('success', 'Woreda updated successfully.');
@@ -217,6 +238,9 @@ class WoredaController extends Controller
                 return back()->withErrors(['error' => 'Cannot delete woreda that has places.']);
             }
 
+            $woredaId = $woreda->getKey();
+            $woredaName = $woreda->name;
+            $zoneId = $woreda->zone_id;
             $woredaData = $woreda->toArray();
             $woreda->delete();
 
@@ -224,6 +248,8 @@ class WoredaController extends Controller
                 ->causedBy(Auth::user())
                 ->withProperties(['deleted' => $woredaData])
                 ->log('deleted');
+
+            event(new WoredaDeleted($woredaId, $woredaName, $zoneId, $woredaData, Auth::user()));
 
             return redirect()->route('woredas.index')
                 ->with('success', 'Woreda deleted successfully.');
@@ -247,7 +273,7 @@ class WoredaController extends Controller
         $query = Woreda::with(['zone'])->withCount('places');
 
         // Apply same search and sort as index
-        if ($request->has('search') && !empty($request->input('search'))) {
+        if ($request->has('search') && ! empty($request->input('search'))) {
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
@@ -263,7 +289,7 @@ class WoredaController extends Controller
         $direction = $request->input('direction', 'asc');
 
         $allowedSorts = ['name', 'code', 'places_count', 'created_at'];
-        if (!in_array($sort, $allowedSorts)) {
+        if (! in_array($sort, $allowedSorts)) {
             $sort = 'name';
         }
 
@@ -272,7 +298,7 @@ class WoredaController extends Controller
         $woredas = $query->get();
 
         // Generate CSV
-        $filename = 'woredas-' . date('Y-m-d-H-i-s') . '.csv';
+        $filename = 'woredas-'.date('Y-m-d-H-i-s').'.csv';
         $headers = [
             'Content-Type' => 'text/csv',
             'Content-Disposition' => "attachment; filename=\"{$filename}\"",
@@ -302,7 +328,7 @@ class WoredaController extends Controller
                 'Infrastructure Notes',
                 'Road Quality Notes',
                 'Places Count',
-                'Created At'
+                'Created At',
             ]);
 
             // Data rows
@@ -369,17 +395,14 @@ class WoredaController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $activeWoredas,
-                'count' => $activeWoredas->count()
+                'count' => $activeWoredas->count(),
             ]);
 
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to retrieve active woredas'
+                'message' => 'Failed to retrieve active woredas',
             ], 500);
         }
     }
 }
-
-
-

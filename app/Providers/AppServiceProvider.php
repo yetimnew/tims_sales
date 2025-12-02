@@ -5,6 +5,9 @@ namespace App\Providers;
 use App\Events\CargoTypeCreated;
 use App\Events\CargoTypeDeleted;
 use App\Events\CargoTypeUpdated;
+use App\Events\DistanceCreated;
+use App\Events\DistanceDeleted;
+use App\Events\DistanceUpdated;
 use App\Events\DriverCreated;
 use App\Events\DriverDeleted;
 use App\Events\DriverSafetyRecordCreated;
@@ -17,19 +20,36 @@ use App\Events\DriverUpdated;
 use App\Events\FuelRecordCreated;
 use App\Events\FuelRecordDeleted;
 use App\Events\FuelRecordUpdated;
+use App\Events\PlaceCreated;
+use App\Events\PlaceDeleted;
+use App\Events\PlaceUpdated;
+use App\Events\RegionCreated;
+use App\Events\RegionDeleted;
+use App\Events\RegionUpdated;
 use App\Events\TruckCreated;
 use App\Events\TruckDeleted;
 use App\Events\TruckUpdated;
 use App\Events\VehicleTypeCreated;
 use App\Events\VehicleTypeDeleted;
 use App\Events\VehicleTypeUpdated;
+use App\Events\WoredaCreated;
+use App\Events\WoredaDeleted;
+use App\Events\WoredaUpdated;
+use App\Events\ZoneCreated;
+use App\Events\ZoneDeleted;
+use App\Events\ZoneUpdated;
 use App\Listeners\SendCargoTypeLifecycleNotification;
+use App\Listeners\SendDistanceLifecycleNotification;
 use App\Listeners\SendDriverLifecycleNotification;
 use App\Listeners\SendDriverSafetyLifecycleNotification;
 use App\Listeners\SendDriverTruckLifecycleNotification;
 use App\Listeners\SendFuelRecordLifecycleNotification;
+use App\Listeners\SendPlaceLifecycleNotification;
+use App\Listeners\SendRegionLifecycleNotification;
 use App\Listeners\SendTruckLifecycleNotification;
 use App\Listeners\SendVehicleTypeLifecycleNotification;
+use App\Listeners\SendWoredaLifecycleNotification;
+use App\Listeners\SendZoneLifecycleNotification;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 
@@ -82,5 +102,30 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(CargoTypeCreated::class, [SendCargoTypeLifecycleNotification::class, 'handle']);
         Event::listen(CargoTypeUpdated::class, [SendCargoTypeLifecycleNotification::class, 'handle']);
         Event::listen(CargoTypeDeleted::class, [SendCargoTypeLifecycleNotification::class, 'handle']);
+
+        // Regions
+        Event::listen(RegionCreated::class, [SendRegionLifecycleNotification::class, 'handle']);
+        Event::listen(RegionUpdated::class, [SendRegionLifecycleNotification::class, 'handle']);
+        Event::listen(RegionDeleted::class, [SendRegionLifecycleNotification::class, 'handle']);
+
+        // Zones
+        Event::listen(ZoneCreated::class, [SendZoneLifecycleNotification::class, 'handle']);
+        Event::listen(ZoneUpdated::class, [SendZoneLifecycleNotification::class, 'handle']);
+        Event::listen(ZoneDeleted::class, [SendZoneLifecycleNotification::class, 'handle']);
+
+        // Woredas
+        Event::listen(WoredaCreated::class, [SendWoredaLifecycleNotification::class, 'handle']);
+        Event::listen(WoredaUpdated::class, [SendWoredaLifecycleNotification::class, 'handle']);
+        Event::listen(WoredaDeleted::class, [SendWoredaLifecycleNotification::class, 'handle']);
+
+        // Places
+        Event::listen(PlaceCreated::class, [SendPlaceLifecycleNotification::class, 'handle']);
+        Event::listen(PlaceUpdated::class, [SendPlaceLifecycleNotification::class, 'handle']);
+        Event::listen(PlaceDeleted::class, [SendPlaceLifecycleNotification::class, 'handle']);
+
+        // Distances
+        Event::listen(DistanceCreated::class, [SendDistanceLifecycleNotification::class, 'handle']);
+        Event::listen(DistanceUpdated::class, [SendDistanceLifecycleNotification::class, 'handle']);
+        Event::listen(DistanceDeleted::class, [SendDistanceLifecycleNotification::class, 'handle']);
     }
 }

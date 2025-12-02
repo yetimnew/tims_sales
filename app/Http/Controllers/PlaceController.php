@@ -2,15 +2,18 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\PlaceCreated;
+use App\Events\PlaceDeleted;
+use App\Events\PlaceUpdated;
 use App\Models\Place;
 use App\Models\Woreda;
+use Exception;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
-use Inertia\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
-use Exception;
+use Inertia\Inertia;
+use Inertia\Response;
 use Spatie\Activitylog\Facades\Activity as ActivityLogger;
 use Spatie\Activitylog\Models\Activity;
 
@@ -24,7 +27,7 @@ class PlaceController extends Controller
         $query = Place::with(['woreda.zone.region'])->withCount(['originPerformances', 'destinationPerformances']);
 
         // Handle search
-        if ($request->has('search') && !empty($request->input('search'))) {
+        if ($request->has('search') && ! empty($request->input('search'))) {
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
@@ -57,7 +60,7 @@ class PlaceController extends Controller
             'accessibility_score',
             'is_logistics_hub',
         ];
-        if (!in_array($sort, $allowedSorts)) {
+        if (! in_array($sort, $allowedSorts)) {
             $sort = 'name';
         }
 
@@ -123,6 +126,8 @@ class PlaceController extends Controller
             ActivityLogger::performedOn($place)
                 ->causedBy(Auth::user())
                 ->log('created');
+
+            event(new PlaceCreated($place->loadMissing('woreda.zone'), Auth::user()));
 
             return redirect()->route('places.index')
                 ->with('success', 'Place created successfully.');
@@ -196,13 +201,29 @@ class PlaceController extends Controller
                 'road_quality_notes' => 'nullable|string|max:2000',
             ]);
 
-            $oldData = $place->toArray();
-            $place->update($validated);
+            $original = $place->getOriginal();
+            $place->fill($validated);
+
+            $dirty = $place->getDirty();
+            $changes = [];
+
+            foreach ($dirty as $attribute => $newValue) {
+                $changes[$attribute] = [
+                    'old' => $original[$attribute] ?? null,
+                    'new' => $newValue,
+                ];
+            }
+
+            $place->save();
 
             ActivityLogger::performedOn($place)
                 ->causedBy(Auth::user())
-                ->withProperties(['old' => $oldData, 'new' => $place->toArray()])
+                ->withProperties(['old' => $original, 'new' => $place->toArray()])
                 ->log('updated');
+
+            if ($changes !== []) {
+                event(new PlaceUpdated($place->fresh('woreda.zone'), $changes, Auth::user()));
+            }
 
             return redirect()->route('places.index')
                 ->with('success', 'Place updated successfully.');
@@ -230,31 +251,34 @@ class PlaceController extends Controller
             // Check if place is used as origin in performances
             if ($place->originPerformances()->count() > 0) {
                 return back()->withErrors([
-                    'error' => 'You are not allowed to delete this place. It is used as origin in ' . $place->originPerformances()->count() . ' performance record(s). Please remove all related performances first.'
+                    'error' => 'You are not allowed to delete this place. It is used as origin in '.$place->originPerformances()->count().' performance record(s). Please remove all related performances first.',
                 ]);
             }
 
             // Check if place is used as destination in performances
             if ($place->destinationPerformances()->count() > 0) {
                 return back()->withErrors([
-                    'error' => 'You are not allowed to delete this place. It is used as destination in ' . $place->destinationPerformances()->count() . ' performance record(s). Please remove all related performances first.'
+                    'error' => 'You are not allowed to delete this place. It is used as destination in '.$place->destinationPerformances()->count().' performance record(s). Please remove all related performances first.',
                 ]);
             }
 
             // Check if place is used as origin in distances
             if ($place->fromDistances()->count() > 0) {
                 return back()->withErrors([
-                    'error' => 'You are not allowed to delete this place. It is used as origin in ' . $place->fromDistances()->count() . ' distance record(s). Please remove all related distances first.'
+                    'error' => 'You are not allowed to delete this place. It is used as origin in '.$place->fromDistances()->count().' distance record(s). Please remove all related distances first.',
                 ]);
             }
 
             // Check if place is used as destination in distances
             if ($place->toDistances()->count() > 0) {
                 return back()->withErrors([
-                    'error' => 'You are not allowed to delete this place. It is used as destination in ' . $place->toDistances()->count() . ' distance record(s). Please remove all related distances first.'
+                    'error' => 'You are not allowed to delete this place. It is used as destination in '.$place->toDistances()->count().' distance record(s). Please remove all related distances first.',
                 ]);
             }
 
+            $placeId = $place->getKey();
+            $placeName = $place->name;
+            $woredaId = $place->woreda_id;
             $placeData = $place->toArray();
             $place->delete();
 
@@ -262,6 +286,8 @@ class PlaceController extends Controller
                 ->causedBy(Auth::user())
                 ->withProperties(['deleted' => $placeData])
                 ->log('deleted');
+
+            event(new PlaceDeleted($placeId, $placeName, $woredaId, $placeData, Auth::user()));
 
             return redirect()->route('places.index')
                 ->with('success', 'Place deleted successfully.');
@@ -285,7 +311,7 @@ class PlaceController extends Controller
         $query = Place::with(['woreda.zone.region'])->withCount(['originPerformances', 'destinationPerformances']);
 
         // Apply same search and sort as index
-        if ($request->has('search') && !empty($request->input('search'))) {
+        if ($request->has('search') && ! empty($request->input('search'))) {
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
@@ -307,7 +333,7 @@ class PlaceController extends Controller
         $direction = $request->input('direction', 'asc');
 
         $allowedSorts = ['name', 'code', 'origin_performances_count', 'destination_performances_count', 'created_at'];
-        if (!in_array($sort, $allowedSorts)) {
+        if (! in_array($sort, $allowedSorts)) {
             $sort = 'name';
         }
 
@@ -316,7 +342,7 @@ class PlaceController extends Controller
         $places = $query->get();
 
         // Generate CSV
-        $filename = 'places-' . date('Y-m-d-H-i-s') . '.csv';
+        $filename = 'places-'.date('Y-m-d-H-i-s').'.csv';
         $headers = [
             'Content-Type' => 'text/csv',
             'Content-Disposition' => "attachment; filename=\"{$filename}\"",
@@ -348,10 +374,9 @@ class PlaceController extends Controller
                 'Description',
                 'Infrastructure Notes',
                 'Road Quality Notes',
-                'Created At'
+                'Created At',
             ]);
 
-            // Data rows
             foreach ($places as $place) {
                 fputcsv($file, [
                     $place->id,
@@ -417,17 +442,14 @@ class PlaceController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $activePlaces,
-                'count' => $activePlaces->count()
+                'count' => $activePlaces->count(),
             ]);
 
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to retrieve active places'
+                'message' => 'Failed to retrieve active places',
             ], 500);
         }
     }
 }
-
-
-

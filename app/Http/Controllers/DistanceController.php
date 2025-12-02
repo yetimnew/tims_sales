@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\DistanceCreated;
+use App\Events\DistanceDeleted;
+use App\Events\DistanceUpdated;
 use App\Models\Distance;
 use App\Models\Place;
 use Exception;
@@ -166,6 +169,8 @@ class DistanceController extends Controller
                 ->causedBy(Auth::user())
                 ->log('created');
 
+            event(new DistanceCreated($distance->loadMissing(['fromPlace', 'toPlace']), Auth::user()));
+
             return redirect()->route('distances.index')
                 ->with('success', 'Distance created successfully.');
 
@@ -238,13 +243,30 @@ class DistanceController extends Controller
                 'safety_notes' => 'nullable|string|max:2000',
             ]);
 
-            $oldData = $distance->toArray();
-            $distance->update($validated);
+            $original = $distance->getOriginal();
+
+            $distance->fill($validated);
+
+            $dirty = $distance->getDirty();
+            $changes = [];
+
+            foreach ($dirty as $attribute => $newValue) {
+                $changes[$attribute] = [
+                    'old' => $original[$attribute] ?? null,
+                    'new' => $newValue,
+                ];
+            }
+
+            $distance->save();
 
             ActivityLogger::performedOn($distance)
                 ->causedBy(Auth::user())
-                ->withProperties(['old' => $oldData, 'new' => $distance->toArray()])
+                ->withProperties(['old' => $original, 'new' => $distance->toArray()])
                 ->log('updated');
+
+            if ($changes !== []) {
+                event(new DistanceUpdated($distance->fresh(['fromPlace', 'toPlace']), $changes, Auth::user()));
+            }
 
             return redirect()->route('distances.index')
                 ->with('success', 'Distance updated successfully.');
@@ -267,6 +289,9 @@ class DistanceController extends Controller
     public function destroy(Distance $distance)
     {
         try {
+            $distanceId = $distance->getKey();
+            $fromPlaceId = $distance->from_place_id;
+            $toPlaceId = $distance->to_place_id;
             $distanceData = $distance->toArray();
             $distance->delete();
 
@@ -274,6 +299,8 @@ class DistanceController extends Controller
                 ->causedBy(Auth::user())
                 ->withProperties(['deleted' => $distanceData])
                 ->log('deleted');
+
+            event(new DistanceDeleted($distanceId, $fromPlaceId, $toPlaceId, $distanceData, Auth::user()));
 
             return redirect()->route('distances.index')
                 ->with('success', 'Distance deleted successfully.');
