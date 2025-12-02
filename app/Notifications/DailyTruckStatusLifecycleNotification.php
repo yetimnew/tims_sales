@@ -10,7 +10,7 @@ use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Str;
 
-class UserLifecycleNotification extends Notification implements ChannelAwareNotification
+class DailyTruckStatusLifecycleNotification extends Notification implements ChannelAwareNotification
 {
     use Queueable;
 
@@ -49,31 +49,46 @@ class UserLifecycleNotification extends Notification implements ChannelAwareNoti
             ->subject($this->title)
             ->line($this->message);
 
-        $user = $this->payload['user'] ?? [];
-        $metrics = $this->payload['metrics'] ?? [];
+        $truck = $this->payload['truck'] ?? [];
+        $status = $this->payload['status'] ?? [];
+        $statusDate = $this->payload['status_date'] ?? null;
+        $notes = $this->payload['notes'] ?? null;
+        $changedBy = $this->payload['changed_by']['name'] ?? null;
 
-        if (isset($user['name'])) {
-            $mail->line('Name: '.$user['name']);
+        if (is_array($truck) && $truck !== []) {
+            $identifier = $truck['plate'] ?? (isset($truck['id']) ? '#'.$truck['id'] : null);
+
+            if ($identifier !== null) {
+                $mail->line('Truck: '.$identifier);
+            }
         }
 
-        if (isset($user['email'])) {
-            $mail->line('Email: '.$user['email']);
+        if (is_array($status) && $status !== []) {
+            if (isset($status['name'])) {
+                $mail->line('Status: '.$status['name']);
+            }
+
+            if (isset($status['status_type']['name'])) {
+                $mail->line('Status Type: '.$status['status_type']['name']);
+            }
         }
 
-        if (isset($user['roles']) && is_array($user['roles']) && $user['roles'] !== []) {
-            $mail->line('Roles: '.implode(', ', $user['roles']));
+        if ($statusDate !== null) {
+            $mail->line('Effective Date: '.$statusDate);
         }
 
-        if (isset($metrics['status'])) {
-            $mail->line('Status: '.Str::headline((string) $metrics['status']));
+        if ($notes !== null && $notes !== '') {
+            $mail->line('Notes: '.$notes);
         }
 
-        if (isset($metrics['roles'])) {
-            $mail->line('Assigned Roles: '.(int) $metrics['roles']);
+        if ($changedBy !== null) {
+            $mail->line('Recorded By: '.$changedBy);
         }
 
-        if (isset($metrics['permissions'])) {
-            $mail->line('Direct Permissions: '.(int) $metrics['permissions']);
+        $actorName = $this->payload['actor']['name'] ?? null;
+
+        if ($actorName !== null) {
+            $mail->line('Performed by: '.$actorName);
         }
 
         $changes = $this->payload['changes'] ?? [];
@@ -85,14 +100,23 @@ class UserLifecycleNotification extends Notification implements ChannelAwareNoti
                 $old = $diff['old'] ?? null;
                 $new = $diff['new'] ?? null;
 
-                $mail->line(sprintf('%s: %s -> %s', Str::headline((string) $attribute), $this->formatChangeValue($old), $this->formatChangeValue($new)));
+                if ($attribute === 'status') {
+                    $mail->line(sprintf(
+                        'Status: %s -> %s',
+                        $this->formatStatusSnapshot($old),
+                        $this->formatStatusSnapshot($new)
+                    ));
+
+                    continue;
+                }
+
+                $mail->line(sprintf(
+                    '%s: %s -> %s',
+                    Str::headline((string) $attribute),
+                    $this->formatChangeValue($old),
+                    $this->formatChangeValue($new)
+                ));
             }
-        }
-
-        $actorName = $this->payload['actor']['name'] ?? null;
-
-        if ($actorName !== null) {
-            $mail->line('Performed by: '.$actorName);
         }
 
         return $mail;
@@ -126,6 +150,32 @@ class UserLifecycleNotification extends Notification implements ChannelAwareNoti
         ];
     }
 
+    private function formatStatusSnapshot(mixed $snapshot): string
+    {
+        if (! is_array($snapshot) || $snapshot === []) {
+            return 'N/A';
+        }
+
+        $name = $snapshot['name'] ?? null;
+        $typeName = $snapshot['status_type']['name'] ?? null;
+
+        if ($name === null && $typeName === null) {
+            $id = $snapshot['id'] ?? null;
+
+            return $id !== null ? '#'.$id : 'N/A';
+        }
+
+        if ($typeName === null) {
+            return (string) $name;
+        }
+
+        if ($name === null) {
+            return $typeName;
+        }
+
+        return sprintf('%s (%s)', $name, $typeName);
+    }
+
     private function formatChangeValue(mixed $value): string
     {
         if ($value === null || $value === '') {
@@ -138,10 +188,6 @@ class UserLifecycleNotification extends Notification implements ChannelAwareNoti
 
         if (is_bool($value)) {
             return $value ? 'true' : 'false';
-        }
-
-        if ($value instanceof \DateTimeInterface) {
-            return $value->format('Y-m-d H:i:s');
         }
 
         return (string) $value;

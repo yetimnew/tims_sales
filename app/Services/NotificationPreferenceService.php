@@ -61,6 +61,7 @@ class NotificationPreferenceService
                 || $user->can('fuel.view')
                 || $user->can('driver-safety.view')
                 || $user->can('cargotypes.view')
+                || $user->can('statustypes.view')
                 || $user->can('regions.view')
                 || $user->can('zones.view')
                 || $user->can('woredas.view')
@@ -68,6 +69,12 @@ class NotificationPreferenceService
                 || $user->can('distances.view')
                 || $user->can('outsources.view')
                 || $user->can('outsource-performances.view')
+                || $user->can('operations.view')
+                || $user->can('customers.view')
+                || $user->can('performances.view')
+                || $user->can('truck-status-board.view')
+                || $user->can('users.view')
+                || $user->can('roles.view')
             ) {
                 return ['database'];
             }

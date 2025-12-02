@@ -10,7 +10,7 @@ use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Str;
 
-class UserLifecycleNotification extends Notification implements ChannelAwareNotification
+class StatusTypeLifecycleNotification extends Notification implements ChannelAwareNotification
 {
     use Queueable;
 
@@ -49,31 +49,28 @@ class UserLifecycleNotification extends Notification implements ChannelAwareNoti
             ->subject($this->title)
             ->line($this->message);
 
-        $user = $this->payload['user'] ?? [];
+        $name = $this->payload['name'] ?? null;
+        $description = $this->payload['description'] ?? null;
         $metrics = $this->payload['metrics'] ?? [];
 
-        if (isset($user['name'])) {
-            $mail->line('Name: '.$user['name']);
+        if ($name !== null) {
+            $mail->line('Status Type: '.$name);
         }
 
-        if (isset($user['email'])) {
-            $mail->line('Email: '.$user['email']);
+        if ($description !== null && $description !== '') {
+            $mail->line('Description: '.$description);
         }
 
-        if (isset($user['roles']) && is_array($user['roles']) && $user['roles'] !== []) {
-            $mail->line('Roles: '.implode(', ', $user['roles']));
+        if (is_array($metrics) && $metrics !== []) {
+            if (isset($metrics['statuses'])) {
+                $mail->line('Statuses Linked: '.(int) $metrics['statuses']);
+            }
         }
 
-        if (isset($metrics['status'])) {
-            $mail->line('Status: '.Str::headline((string) $metrics['status']));
-        }
+        $actorName = $this->payload['actor']['name'] ?? null;
 
-        if (isset($metrics['roles'])) {
-            $mail->line('Assigned Roles: '.(int) $metrics['roles']);
-        }
-
-        if (isset($metrics['permissions'])) {
-            $mail->line('Direct Permissions: '.(int) $metrics['permissions']);
+        if ($actorName !== null) {
+            $mail->line('Performed by: '.$actorName);
         }
 
         $changes = $this->payload['changes'] ?? [];
@@ -85,14 +82,13 @@ class UserLifecycleNotification extends Notification implements ChannelAwareNoti
                 $old = $diff['old'] ?? null;
                 $new = $diff['new'] ?? null;
 
-                $mail->line(sprintf('%s: %s -> %s', Str::headline((string) $attribute), $this->formatChangeValue($old), $this->formatChangeValue($new)));
+                $mail->line(sprintf(
+                    '%s: %s -> %s',
+                    Str::headline((string) $attribute),
+                    $this->formatChangeValue($old),
+                    $this->formatChangeValue($new)
+                ));
             }
-        }
-
-        $actorName = $this->payload['actor']['name'] ?? null;
-
-        if ($actorName !== null) {
-            $mail->line('Performed by: '.$actorName);
         }
 
         return $mail;
@@ -138,10 +134,6 @@ class UserLifecycleNotification extends Notification implements ChannelAwareNoti
 
         if (is_bool($value)) {
             return $value ? 'true' : 'false';
-        }
-
-        if ($value instanceof \DateTimeInterface) {
-            return $value->format('Y-m-d H:i:s');
         }
 
         return (string) $value;

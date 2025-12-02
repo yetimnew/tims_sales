@@ -2,12 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\StatusTypeCreated;
+use App\Events\StatusTypeDeleted;
+use App\Events\StatusTypeUpdated;
 use App\Models\StatusType;
+use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
-use Illuminate\Support\Facades\Log;
-use Exception;
 
 class StatusTypeController extends Controller
 {
@@ -46,10 +51,12 @@ class StatusTypeController extends Controller
 
             $statusType = StatusType::create($validated);
 
+            event(new StatusTypeCreated($statusType->fresh(), Auth::user()));
+
             Log::info('Status type created', [
                 'status_type_id' => $statusType->id,
                 'name' => $statusType->name,
-                'user_id' => auth()->id(),
+                'user_id' => Auth::id(),
             ]);
 
             return redirect()->route('statustypes.index')
@@ -59,7 +66,7 @@ class StatusTypeController extends Controller
             Log::error('Status type creation failed', [
                 'error' => $e->getMessage(),
                 'data' => $request->all(),
-                'user_id' => auth()->id(),
+                'user_id' => Auth::id(),
             ]);
 
             return back()->withErrors(['error' => 'Failed to create status type. Please try again.']);
@@ -95,16 +102,38 @@ class StatusTypeController extends Controller
     {
         try {
             $validated = $request->validate([
-                'name' => 'required|string|max:255|unique:statustypes,name,' . $statusType->id,
+                'name' => 'required|string|max:255|unique:statustypes,name,'.$statusType->id,
                 'description' => 'nullable|string|max:1000',
             ]);
 
-            $statusType->update($validated);
+            $original = Arr::only($statusType->getOriginal(), ['name', 'description']);
+
+            $statusType->fill($validated);
+
+            $dirty = $statusType->getDirty();
+            unset($dirty['updated_at']);
+
+            $changes = [];
+
+            foreach ($dirty as $attribute => $newValue) {
+                $changes[$attribute] = [
+                    'old' => $original[$attribute] ?? null,
+                    'new' => $newValue,
+                ];
+            }
+
+            if ($statusType->isDirty()) {
+                $statusType->save();
+            }
+
+            if ($changes !== []) {
+                event(new StatusTypeUpdated($statusType->fresh(), $changes, Auth::user()));
+            }
 
             Log::info('Status type updated', [
                 'status_type_id' => $statusType->id,
                 'name' => $statusType->name,
-                'user_id' => auth()->id(),
+                'user_id' => Auth::id(),
             ]);
 
             return redirect()->route('statustypes.index')
@@ -115,7 +144,7 @@ class StatusTypeController extends Controller
                 'status_type_id' => $statusType->id,
                 'error' => $e->getMessage(),
                 'data' => $request->all(),
-                'user_id' => auth()->id(),
+                'user_id' => Auth::id(),
             ]);
 
             return back()->withErrors(['error' => 'Failed to update status type. Please try again.']);
@@ -133,13 +162,33 @@ class StatusTypeController extends Controller
                 return back()->withErrors(['error' => 'Cannot delete status type that has statuses.']);
             }
 
+            $statusType->loadCount('statuses');
             $statusTypeData = $statusType->toArray();
+
+            $metrics = [];
+            $statusesCount = $statusType->getAttribute('statuses_count');
+
+            if ($statusesCount !== null) {
+                $metrics['statuses'] = (int) $statusesCount;
+            }
+
+            $statusTypeId = $statusType->id;
+            $statusTypeName = $statusType->name;
+
             $statusType->delete();
 
+            event(new StatusTypeDeleted(
+                $statusTypeId,
+                $statusTypeName,
+                $statusTypeData,
+                array_filter($metrics, static fn ($value) => $value !== null),
+                Auth::user(),
+            ));
+
             Log::info('Status type deleted', [
-                'status_type_id' => $statusType->id,
+                'status_type_id' => $statusTypeId,
                 'name' => $statusTypeData['name'],
-                'user_id' => auth()->id(),
+                'user_id' => Auth::id(),
             ]);
 
             return redirect()->route('statustypes.index')
@@ -149,13 +198,10 @@ class StatusTypeController extends Controller
             Log::error('Status type deletion failed', [
                 'status_type_id' => $statusType->id,
                 'error' => $e->getMessage(),
-                'user_id' => auth()->id(),
+                'user_id' => Auth::id(),
             ]);
 
             return back()->withErrors(['error' => 'Failed to delete status type. Please try again.']);
         }
     }
 }
-
-
-

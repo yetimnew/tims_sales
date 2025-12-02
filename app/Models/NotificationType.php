@@ -22,6 +22,30 @@ class NotificationType extends Model
 
     public const USER_DELETED = 'user.deleted';
 
+    public const ROLE_CREATED = 'role.created';
+
+    public const ROLE_UPDATED = 'role.updated';
+
+    public const ROLE_DELETED = 'role.deleted';
+
+    public const OPERATION_CREATED = 'operation.created';
+
+    public const OPERATION_UPDATED = 'operation.updated';
+
+    public const OPERATION_DELETED = 'operation.deleted';
+
+    public const CUSTOMER_CREATED = 'customer.created';
+
+    public const CUSTOMER_UPDATED = 'customer.updated';
+
+    public const CUSTOMER_DELETED = 'customer.deleted';
+
+    public const PERFORMANCE_CREATED = 'performance.created';
+
+    public const PERFORMANCE_UPDATED = 'performance.updated';
+
+    public const PERFORMANCE_DELETED = 'performance.deleted';
+
     public const DRIVER_CREATED = 'driver.created';
 
     public const DRIVER_UPDATED = 'driver.updated';
@@ -33,6 +57,12 @@ class NotificationType extends Model
     public const DRIVER_TRUCK_UPDATED = 'driver_truck.updated';
 
     public const DRIVER_TRUCK_DELETED = 'driver_truck.deleted';
+
+    public const DAILY_TRUCK_STATUS_CREATED = 'daily_truck_status.created';
+
+    public const DAILY_TRUCK_STATUS_UPDATED = 'daily_truck_status.updated';
+
+    public const DAILY_TRUCK_STATUS_DELETED = 'daily_truck_status.deleted';
 
     public const VEHICLE_TYPE_CREATED = 'vehicle_type.created';
 
@@ -57,6 +87,12 @@ class NotificationType extends Model
     public const CARGO_TYPE_UPDATED = 'cargo_type.updated';
 
     public const CARGO_TYPE_DELETED = 'cargo_type.deleted';
+
+    public const STATUS_TYPE_CREATED = 'status_type.created';
+
+    public const STATUS_TYPE_UPDATED = 'status_type.updated';
+
+    public const STATUS_TYPE_DELETED = 'status_type.deleted';
 
     public const REGION_CREATED = 'region.created';
 

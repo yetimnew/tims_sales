@@ -10,7 +10,7 @@ use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Str;
 
-class UserLifecycleNotification extends Notification implements ChannelAwareNotification
+class RoleLifecycleNotification extends Notification implements ChannelAwareNotification
 {
     use Queueable;
 
@@ -49,31 +49,41 @@ class UserLifecycleNotification extends Notification implements ChannelAwareNoti
             ->subject($this->title)
             ->line($this->message);
 
-        $user = $this->payload['user'] ?? [];
+        $name = $this->payload['name'] ?? null;
+        $guard = $this->payload['guard'] ?? null;
+        $permissions = $this->payload['permissions'] ?? [];
         $metrics = $this->payload['metrics'] ?? [];
 
-        if (isset($user['name'])) {
-            $mail->line('Name: '.$user['name']);
+        if ($name !== null) {
+            $mail->line('Role: '.$name);
         }
 
-        if (isset($user['email'])) {
-            $mail->line('Email: '.$user['email']);
+        if ($guard !== null) {
+            $mail->line('Guard: '.$guard);
         }
 
-        if (isset($user['roles']) && is_array($user['roles']) && $user['roles'] !== []) {
-            $mail->line('Roles: '.implode(', ', $user['roles']));
+        if (is_array($metrics) && $metrics !== []) {
+            if (isset($metrics['permissions'])) {
+                $mail->line('Permissions Assigned: '.(int) $metrics['permissions']);
+            }
+
+            if (isset($metrics['users'])) {
+                $mail->line('Users With Role: '.(int) $metrics['users']);
+            }
         }
 
-        if (isset($metrics['status'])) {
-            $mail->line('Status: '.Str::headline((string) $metrics['status']));
+        if (is_array($permissions) && $permissions !== []) {
+            $mail->line('Permission Snapshot:');
+
+            foreach ($permissions as $permission) {
+                $mail->line('  • '.Str::headline((string) $permission));
+            }
         }
 
-        if (isset($metrics['roles'])) {
-            $mail->line('Assigned Roles: '.(int) $metrics['roles']);
-        }
+        $actorName = $this->payload['actor']['name'] ?? null;
 
-        if (isset($metrics['permissions'])) {
-            $mail->line('Direct Permissions: '.(int) $metrics['permissions']);
+        if ($actorName !== null) {
+            $mail->line('Performed by: '.$actorName);
         }
 
         $changes = $this->payload['changes'] ?? [];
@@ -87,12 +97,6 @@ class UserLifecycleNotification extends Notification implements ChannelAwareNoti
 
                 $mail->line(sprintf('%s: %s -> %s', Str::headline((string) $attribute), $this->formatChangeValue($old), $this->formatChangeValue($new)));
             }
-        }
-
-        $actorName = $this->payload['actor']['name'] ?? null;
-
-        if ($actorName !== null) {
-            $mail->line('Performed by: '.$actorName);
         }
 
         return $mail;
@@ -138,10 +142,6 @@ class UserLifecycleNotification extends Notification implements ChannelAwareNoti
 
         if (is_bool($value)) {
             return $value ? 'true' : 'false';
-        }
-
-        if ($value instanceof \DateTimeInterface) {
-            return $value->format('Y-m-d H:i:s');
         }
 
         return (string) $value;

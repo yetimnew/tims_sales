@@ -2,17 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\DailyTruckStatusCreated;
+use App\Events\DailyTruckStatusUpdated;
 use App\Http\Requests\StoreDailyTruckStatusRequest;
 use App\Models\DailyTruckStatus;
 use App\Models\Status;
 use App\Models\StatusType;
 use App\Models\Truck;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
-use Exception;
 
 class DailyTruckStatusController extends Controller
 {
@@ -102,22 +104,78 @@ class DailyTruckStatusController extends Controller
             $data = $request->validated();
             $data['changed_by'] = Auth::id();
 
-            // Update or create the status
-            DailyTruckStatus::updateOrCreate(
-                [
-                    'truck_id' => $data['truck_id'],
-                    'status_date' => $data['status_date'],
-                ],
-                $data
-            );
+            $criteria = [
+                'truck_id' => $data['truck_id'],
+                'status_date' => $data['status_date'],
+            ];
+
+            $existing = DailyTruckStatus::query()
+                ->where($criteria)
+                ->first();
+
+            $dailyStatus = DailyTruckStatus::updateOrCreate($criteria, $data);
 
             DB::commit();
+
+            $dailyStatus->load([
+                'truck:id,plate',
+                'status:id,name,statustype_id',
+                'status.statusType:id,name',
+                'changedBy:id,name',
+            ]);
+
+            if ($existing === null || $dailyStatus->wasRecentlyCreated) {
+                event(new DailyTruckStatusCreated($dailyStatus, Auth::user()));
+
+                return redirect()->back()->with('success', 'Truck status updated successfully.');
+            }
+
+            $changes = $this->extractDailyStatusChanges($existing, $dailyStatus);
+
+            if ($changes !== []) {
+                event(new DailyTruckStatusUpdated($dailyStatus, $changes, Auth::user()));
+            }
 
             return redirect()->back()->with('success', 'Truck status updated successfully.');
 
         } catch (Exception $e) {
             DB::rollBack();
+
             return back()->withErrors(['error' => 'Failed to update truck status.']);
         }
+    }
+
+    /**
+     * @return array<string, array{old: mixed, new: mixed}>
+     */
+    private function extractDailyStatusChanges(?DailyTruckStatus $before, DailyTruckStatus $after): array
+    {
+        if ($before === null) {
+            return [];
+        }
+
+        $changes = [];
+
+        $previousStatusId = $before->getAttribute('status_id');
+        $currentStatusId = $after->getAttribute('status_id');
+
+        if ($previousStatusId !== $currentStatusId) {
+            $changes['status_id'] = [
+                'old' => $previousStatusId === null ? null : (int) $previousStatusId,
+                'new' => $currentStatusId === null ? null : (int) $currentStatusId,
+            ];
+        }
+
+        $previousNotes = $before->getAttribute('notes');
+        $currentNotes = $after->getAttribute('notes');
+
+        if (($previousNotes ?? null) !== ($currentNotes ?? null)) {
+            $changes['notes'] = [
+                'old' => $previousNotes,
+                'new' => $currentNotes,
+            ];
+        }
+
+        return $changes;
     }
 }
