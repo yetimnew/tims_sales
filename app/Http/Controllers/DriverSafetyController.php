@@ -2,17 +2,20 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Driver;
-use App\Models\DriverSafetyRecord;
+use App\Events\DriverSafetyRecordCreated;
+use App\Events\DriverSafetyRecordDeleted;
+use App\Events\DriverSafetyRecordUpdated;
 use App\Http\Requests\StoreDriverSafetyRequest;
 use App\Http\Requests\UpdateDriverSafetyRequest;
+use App\Models\Driver;
+use App\Models\DriverSafetyRecord;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Inertia\Inertia;
-use Inertia\Response;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use Exception;
+use Inertia\Inertia;
+use Inertia\Response;
 use Spatie\Activitylog\Models\Activity;
 
 class DriverSafetyController extends Controller
@@ -32,16 +35,16 @@ class DriverSafetyController extends Controller
         $perPageDefault = 15;
         $perPage = (int) $request->input('per_page', $perPageDefault);
 
-        if (!in_array($perPage, $perPageOptions, true)) {
+        if (! in_array($perPage, $perPageOptions, true)) {
             $perPage = $perPageDefault;
         }
 
-        if (!in_array($direction, ['asc', 'desc'], true)) {
+        if (! in_array($direction, ['asc', 'desc'], true)) {
             $direction = 'desc';
         }
 
         $allowedSorts = ['incident_date', 'severity', 'incident_type', 'damage_cost', 'created_at'];
-        if (!in_array($sort, $allowedSorts, true)) {
+        if (! in_array($sort, $allowedSorts, true)) {
             $sort = 'incident_date';
         }
 
@@ -58,15 +61,15 @@ class DriverSafetyController extends Controller
             });
         }
 
-        if (!empty($incidentType) && $incidentType !== 'all') {
+        if (! empty($incidentType) && $incidentType !== 'all') {
             $baseQuery->where('incident_type', $incidentType);
         }
 
-        if (!empty($severity) && $severity !== 'all') {
+        if (! empty($severity) && $severity !== 'all') {
             $baseQuery->where('severity', $severity);
         }
 
-        if (!empty($driverId) && $driverId !== 'all') {
+        if (! empty($driverId) && $driverId !== 'all') {
             $baseQuery->where('driver_id', $driverId);
         }
 
@@ -158,6 +161,8 @@ class DriverSafetyController extends Controller
 
             $safetyRecord = DriverSafetyRecord::create($validated);
 
+            event(new DriverSafetyRecordCreated($safetyRecord->loadMissing('driver'), Auth::user()));
+
             return redirect()->route('driver-safety.index')
                 ->with('success', 'Safety record created successfully.');
 
@@ -205,7 +210,26 @@ class DriverSafetyController extends Controller
     {
         try {
             $validated = $request->validated();
-            $driverSafety->update($validated);
+
+            $original = $driverSafety->getOriginal();
+
+            $driverSafety->fill($validated);
+
+            $dirty = $driverSafety->getDirty();
+            $changes = [];
+
+            foreach ($dirty as $attribute => $newValue) {
+                $changes[$attribute] = [
+                    'old' => $original[$attribute] ?? null,
+                    'new' => $newValue,
+                ];
+            }
+
+            $driverSafety->save();
+
+            if ($changes !== []) {
+                event(new DriverSafetyRecordUpdated($driverSafety->fresh('driver'), $changes, Auth::user()));
+            }
 
             return redirect()->route('driver-safety.index')
                 ->with('success', 'Safety record updated successfully.');
@@ -221,7 +245,16 @@ class DriverSafetyController extends Controller
     public function destroy(DriverSafetyRecord $driverSafety)
     {
         try {
+            $driverSafety->loadMissing('driver');
+
+            $recordId = $driverSafety->getKey();
+            $driverId = $driverSafety->driver?->getKey();
+            $driverName = $driverSafety->driver?->name;
+            $attributes = $driverSafety->getAttributes();
+
             $driverSafety->delete();
+
+            event(new DriverSafetyRecordDeleted($recordId, $driverId, $driverName, $attributes, Auth::user()));
 
             return redirect()->route('driver-safety.index')
                 ->with('success', 'Safety record deleted successfully.');
@@ -263,7 +296,7 @@ class DriverSafetyController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $analytics,
-                'count' => $analytics->count()
+                'count' => $analytics->count(),
             ]);
 
         } catch (Exception $e) {
@@ -274,7 +307,7 @@ class DriverSafetyController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to retrieve safety analytics'
+                'message' => 'Failed to retrieve safety analytics',
             ], 500);
         }
     }
@@ -300,7 +333,7 @@ class DriverSafetyController extends Controller
                 ->having('incident_count', '>', 0);
 
             if ($severity) {
-                $query->having($severity . '_count', '>', 0);
+                $query->having($severity.'_count', '>', 0);
             }
 
             $driversWithIssues = $query->orderBy('incident_count', 'desc')
@@ -310,7 +343,7 @@ class DriverSafetyController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $driversWithIssues,
-                'count' => $driversWithIssues->count()
+                'count' => $driversWithIssues->count(),
             ]);
 
         } catch (Exception $e) {
@@ -321,7 +354,7 @@ class DriverSafetyController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to retrieve drivers with safety issues'
+                'message' => 'Failed to retrieve drivers with safety issues',
             ], 500);
         }
     }
@@ -330,6 +363,3 @@ class DriverSafetyController extends Controller
      * Get safety statistics.
      */
 }
-
-
-

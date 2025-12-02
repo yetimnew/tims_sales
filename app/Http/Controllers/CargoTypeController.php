@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Enums\CargoCategory;
+use App\Events\CargoTypeCreated;
+use App\Events\CargoTypeDeleted;
+use App\Events\CargoTypeUpdated;
 use App\Http\Requests\StoreCargoTypeRequest;
 use App\Http\Requests\UpdateCargoTypeRequest;
 use App\Models\CargoType;
@@ -31,16 +34,16 @@ class CargoTypeController extends Controller
         $perPageDefault = 15;
         $perPage = (int) $request->input('per_page', $perPageDefault);
 
-        if (!in_array($perPage, $perPageOptions, true)) {
+        if (! in_array($perPage, $perPageOptions, true)) {
             $perPage = $perPageDefault;
         }
 
-        if (!in_array($direction, ['asc', 'desc'], true)) {
+        if (! in_array($direction, ['asc', 'desc'], true)) {
             $direction = 'asc';
         }
 
         $allowedSorts = ['name', 'category', 'weight_per_cubic_meter', 'requires_special_equipment', 'created_at'];
-        if (!in_array($sort, $allowedSorts, true)) {
+        if (! in_array($sort, $allowedSorts, true)) {
             $sort = 'name';
         }
 
@@ -142,6 +145,8 @@ class CargoTypeController extends Controller
 
             $cargoType = CargoType::create($validated);
 
+            event(new CargoTypeCreated($cargoType, Auth::user()));
+
             return redirect()->route('cargo-types.index')
                 ->with('success', 'Cargo type created successfully.');
 
@@ -186,7 +191,26 @@ class CargoTypeController extends Controller
     {
         try {
             $validated = $request->validated();
-            $cargoType->update($validated);
+
+            $original = $cargoType->getOriginal();
+
+            $cargoType->fill($validated);
+
+            $dirty = $cargoType->getDirty();
+            $changes = [];
+
+            foreach ($dirty as $attribute => $newValue) {
+                $changes[$attribute] = [
+                    'old' => $original[$attribute] ?? null,
+                    'new' => $newValue,
+                ];
+            }
+
+            $cargoType->save();
+
+            if ($changes !== []) {
+                event(new CargoTypeUpdated($cargoType->fresh(), $changes, Auth::user()));
+            }
 
             return redirect()->route('cargo-types.index')
                 ->with('success', 'Cargo type updated successfully.');
@@ -207,7 +231,13 @@ class CargoTypeController extends Controller
                 return back()->withErrors(['error' => 'Cannot delete cargo type that is being used in performances.']);
             }
 
+            $cargoTypeId = $cargoType->getKey();
+            $name = $cargoType->name;
+            $attributes = $cargoType->getAttributes();
+
             $cargoType->delete();
+
+            event(new CargoTypeDeleted($cargoTypeId, $name, $attributes, Auth::user()));
 
             return redirect()->route('cargo-types.index')
                 ->with('success', 'Cargo type deleted successfully.');
@@ -236,7 +266,7 @@ class CargoTypeController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => $statistics
+                'data' => $statistics,
             ]);
 
         } catch (Exception $e) {
@@ -247,7 +277,7 @@ class CargoTypeController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to retrieve cargo type statistics'
+                'message' => 'Failed to retrieve cargo type statistics',
             ], 500);
         }
     }
@@ -273,7 +303,7 @@ class CargoTypeController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $cargoTypes,
-                'count' => $cargoTypes->count()
+                'count' => $cargoTypes->count(),
             ]);
 
         } catch (Exception $e) {
@@ -284,7 +314,7 @@ class CargoTypeController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to retrieve cargo types by category'
+                'message' => 'Failed to retrieve cargo types by category',
             ], 500);
         }
     }
@@ -327,11 +357,11 @@ class CargoTypeController extends Controller
         $direction = strtolower((string) $request->input('direction', 'asc'));
 
         $allowedSorts = ['name', 'category', 'weight_per_cubic_meter', 'requires_special_equipment', 'created_at'];
-        if (!in_array($sort, $allowedSorts, true)) {
+        if (! in_array($sort, $allowedSorts, true)) {
             $sort = 'name';
         }
 
-        if (!in_array($direction, ['asc', 'desc'], true)) {
+        if (! in_array($direction, ['asc', 'desc'], true)) {
             $direction = 'asc';
         }
 
@@ -340,7 +370,7 @@ class CargoTypeController extends Controller
         $cargoTypes = $query->get();
 
         // Generate CSV
-        $filename = 'cargo-types-' . date('Y-m-d-H-i-s') . '.csv';
+        $filename = 'cargo-types-'.date('Y-m-d-H-i-s').'.csv';
         $headers = [
             'Content-Type' => 'text/csv',
             'Content-Disposition' => "attachment; filename=\"{$filename}\"",
@@ -378,6 +408,3 @@ class CargoTypeController extends Controller
         return response()->stream($callback, 200, $headers);
     }
 }
-
-
-

@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\DriverTruckCreated;
+use App\Events\DriverTruckDeleted;
+use App\Events\DriverTruckUpdated;
 use App\Http\Requests\StoreDriverTruckRequest;
 use App\Models\Driver;
 use App\Models\DriverTruck;
@@ -192,6 +195,8 @@ class DriverTruckController extends Controller
                 'user_id' => Auth::id(),
             ]);
 
+            event(new DriverTruckCreated($assignment->loadMissing(['driver', 'truck']), Auth::user()));
+
             return redirect()->route('driver-trucks.index')
                 ->with('success', 'Driver and truck assigned successfully.');
 
@@ -275,7 +280,9 @@ class DriverTruckController extends Controller
             $truck = Truck::findOrFail($request->truck_id);
             $driver = Driver::findOrFail($request->driver_id);
 
-            $driverTruck->update([
+            $original = $driverTruck->getOriginal();
+
+            $driverTruck->fill([
                 'truck_id' => $request->truck_id,
                 'driver_id' => $request->driver_id,
                 'plate' => $truck->plate,
@@ -285,6 +292,22 @@ class DriverTruckController extends Controller
                 'reason' => $request->reason,
                 'is_attached' => $request->has('date_detach') ? 0 : 1,
             ]);
+
+            $dirty = $driverTruck->getDirty();
+            $changes = [];
+
+            foreach ($dirty as $attribute => $newValue) {
+                $changes[$attribute] = [
+                    'old' => $original[$attribute] ?? null,
+                    'new' => $newValue,
+                ];
+            }
+
+            $driverTruck->save();
+
+            if ($changes !== []) {
+                event(new DriverTruckUpdated($driverTruck->fresh(['driver', 'truck']), $changes, Auth::user()));
+            }
 
             return redirect()->route('driver-trucks.index')
                 ->with('success', 'Driver-truck assignment updated successfully.');
@@ -306,8 +329,27 @@ class DriverTruckController extends Controller
                 return back()->withErrors(['error' => $blockers]);
             }
 
+            $driverTruck->loadMissing(['driver', 'truck']);
+
+            $assignmentId = $driverTruck->getKey();
+            $driverId = $driverTruck->driver?->getKey();
+            $driverName = $driverTruck->driver?->name;
+            $truckId = $driverTruck->truck?->getKey();
+            $truckPlate = $driverTruck->truck?->plate ?? $driverTruck->plate;
+            $attributes = $driverTruck->getAttributes();
+
             $driverTruck->delete();
             $this->driverTruckDeletionGuard->clearCache($driverTruck);
+
+            event(new DriverTruckDeleted(
+                $assignmentId,
+                $driverId,
+                $driverName,
+                $truckId,
+                $truckPlate,
+                $attributes,
+                Auth::user(),
+            ));
 
             return redirect()->route('driver-trucks.index')
                 ->with('success', 'Driver-truck assignment deleted successfully.');
@@ -345,11 +387,29 @@ class DriverTruckController extends Controller
             $truck = $driverTruck->truck;
             $driver = $driverTruck->driver;
 
-            $driverTruck->update([
+            $original = $driverTruck->getOriginal();
+
+            $driverTruck->fill([
                 'date_detach' => $request->date_detach,
                 'reason' => $request->reason,
                 'is_attached' => 0,
             ]);
+
+            $dirty = $driverTruck->getDirty();
+            $changes = [];
+
+            foreach ($dirty as $attribute => $newValue) {
+                $changes[$attribute] = [
+                    'old' => $original[$attribute] ?? null,
+                    'new' => $newValue,
+                ];
+            }
+
+            $driverTruck->save();
+
+            if ($changes !== []) {
+                event(new DriverTruckUpdated($driverTruck->fresh(['driver', 'truck']), $changes, Auth::user()));
+            }
 
             return redirect()->route('driver-trucks.index')
                 ->with('success', 'Driver detached from truck successfully.');

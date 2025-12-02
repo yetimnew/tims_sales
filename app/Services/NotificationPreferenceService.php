@@ -56,6 +56,11 @@ class NotificationPreferenceService
                 $user->hasRole('admin')
                 || $user->can('trucks.view')
                 || $user->can('drivers.view')
+                || $user->can('driver-trucks.view')
+                || $user->can('vehicletypes.view')
+                || $user->can('fuel.view')
+                || $user->can('driver-safety.view')
+                || $user->can('cargotypes.view')
             ) {
                 return ['database'];
             }

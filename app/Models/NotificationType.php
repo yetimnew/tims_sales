@@ -28,6 +28,36 @@ class NotificationType extends Model
 
     public const DRIVER_DELETED = 'driver.deleted';
 
+    public const DRIVER_TRUCK_CREATED = 'driver_truck.created';
+
+    public const DRIVER_TRUCK_UPDATED = 'driver_truck.updated';
+
+    public const DRIVER_TRUCK_DELETED = 'driver_truck.deleted';
+
+    public const VEHICLE_TYPE_CREATED = 'vehicle_type.created';
+
+    public const VEHICLE_TYPE_UPDATED = 'vehicle_type.updated';
+
+    public const VEHICLE_TYPE_DELETED = 'vehicle_type.deleted';
+
+    public const FUEL_RECORD_CREATED = 'fuel_record.created';
+
+    public const FUEL_RECORD_UPDATED = 'fuel_record.updated';
+
+    public const FUEL_RECORD_DELETED = 'fuel_record.deleted';
+
+    public const DRIVER_SAFETY_CREATED = 'driver_safety.created';
+
+    public const DRIVER_SAFETY_UPDATED = 'driver_safety.updated';
+
+    public const DRIVER_SAFETY_DELETED = 'driver_safety.deleted';
+
+    public const CARGO_TYPE_CREATED = 'cargo_type.created';
+
+    public const CARGO_TYPE_UPDATED = 'cargo_type.updated';
+
+    public const CARGO_TYPE_DELETED = 'cargo_type.deleted';
+
     /**
      * @var array<int, string>
      */

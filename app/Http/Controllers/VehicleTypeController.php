@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\VehicleTypeCreated;
+use App\Events\VehicleTypeDeleted;
+use App\Events\VehicleTypeUpdated;
 use App\Models\VehicleType;
 use Exception;
 use Illuminate\Http\Request;
@@ -173,6 +176,8 @@ class VehicleTypeController extends Controller
 
             $vehicleType = VehicleType::create($validated);
 
+            event(new VehicleTypeCreated($vehicleType, Auth::user()));
+
             return redirect()->route('vehicletypes.index')
                 ->with('success', 'Vehicle type created successfully.');
 
@@ -245,7 +250,25 @@ class VehicleTypeController extends Controller
                 'description' => 'nullable|string|max:1000',
             ]);
 
-            $vehicletype->update($validated);
+            $original = $vehicletype->getOriginal();
+
+            $vehicletype->fill($validated);
+
+            $dirty = $vehicletype->getDirty();
+            $changes = [];
+
+            foreach ($dirty as $attribute => $newValue) {
+                $changes[$attribute] = [
+                    'old' => $original[$attribute] ?? null,
+                    'new' => $newValue,
+                ];
+            }
+
+            $vehicletype->save();
+
+            if ($changes !== []) {
+                event(new VehicleTypeUpdated($vehicletype->fresh(), $changes, Auth::user()));
+            }
 
             return redirect()->route('vehicletypes.index')
                 ->with('success', 'Vehicle type updated successfully.');
@@ -274,7 +297,13 @@ class VehicleTypeController extends Controller
                 ]);
             }
 
+            $vehicleTypeId = $vehicletype->getKey();
+            $name = $vehicletype->name;
+            $attributes = $vehicletype->getAttributes();
+
             $vehicletype->delete();
+
+            event(new VehicleTypeDeleted($vehicleTypeId, $name, $attributes, Auth::user()));
 
             return redirect()->route('vehicletypes.index')
                 ->with('success', 'Vehicle type deleted successfully.');

@@ -2,21 +2,23 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Truck;
-use App\Models\Driver;
-use App\Models\DriverTruck;
-use App\Models\FuelRecord;
-use App\Models\FuelConsumptionAnalysis;
+use App\Events\FuelRecordCreated;
+use App\Events\FuelRecordDeleted;
+use App\Events\FuelRecordUpdated;
 use App\Http\Requests\StoreFuelRequest;
 use App\Http\Requests\UpdateFuelRequest;
+use App\Models\Driver;
+use App\Models\DriverTruck;
+use App\Models\FuelConsumptionAnalysis;
+use App\Models\FuelRecord;
+use App\Models\Truck;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Inertia\Inertia;
-use Inertia\Response;
-use Illuminate\Support\Facades\DB;
-use Exception;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Inertia\Inertia;
+use Inertia\Response;
 use Spatie\Activitylog\Models\Activity;
 
 class FuelController extends Controller
@@ -36,20 +38,20 @@ class FuelController extends Controller
         $perPageDefault = 15;
         $perPage = (int) $request->input('per_page', $perPageDefault);
 
-        if (!in_array($perPage, $perPageOptions, true)) {
+        if (! in_array($perPage, $perPageOptions, true)) {
             $perPage = $perPageDefault;
         }
 
-        if (!in_array($direction, ['asc', 'desc'], true)) {
+        if (! in_array($direction, ['asc', 'desc'], true)) {
             $direction = 'desc';
         }
 
         $allowedSorts = ['fuel_date', 'fuel_quantity_liters', 'total_cost', 'fuel_type', 'fuel_price_per_liter', 'created_at'];
-        if (!in_array($sort, $allowedSorts, true)) {
+        if (! in_array($sort, $allowedSorts, true)) {
             $sort = 'fuel_date';
         }
 
-    $baseQuery = FuelRecord::query()->with(['truck', 'driver', 'user', 'driverTruck.driver', 'driverTruck.truck']);
+        $baseQuery = FuelRecord::query()->with(['truck', 'driver', 'user', 'driverTruck.driver', 'driverTruck.truck']);
 
         if ($search !== '') {
             $baseQuery->where(function ($query) use ($search) {
@@ -64,15 +66,15 @@ class FuelController extends Controller
             });
         }
 
-        if (!empty($fuelType) && $fuelType !== 'all') {
+        if (! empty($fuelType) && $fuelType !== 'all') {
             $baseQuery->where('fuel_type', $fuelType);
         }
 
-        if (!empty($truckId)) {
+        if (! empty($truckId)) {
             $baseQuery->where('truck_id', $truckId);
         }
 
-        if (!empty($driverId)) {
+        if (! empty($driverId)) {
             $baseQuery->where('driver_id', $driverId);
         }
 
@@ -169,10 +171,10 @@ class FuelController extends Controller
      */
     public function export(Request $request)
     {
-    $query = FuelRecord::with(['truck', 'driver']);
+        $query = FuelRecord::with(['truck', 'driver']);
 
         // Apply search filter if provided
-        if ($request->has('search') && !empty($request->input('search'))) {
+        if ($request->has('search') && ! empty($request->input('search'))) {
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
                 $q->where('receipt_number', 'like', "%{$search}%")
@@ -212,7 +214,7 @@ class FuelController extends Controller
         $csvData = "Truck,Driver,Fuel Date,Fuel Type,Quantity Liters,Price Per Liter,Total Cost,Odometer,Receipt Number\n";
         foreach ($fuelRecords as $record) {
             $csvData .= sprintf(
-                '"%s","%s","%s","%s","%.2f","%.2f","%.2f","%s","%s"' . "\n",
+                '"%s","%s","%s","%s","%.2f","%.2f","%.2f","%s","%s"'."\n",
                 $record->truck->plate ?? 'N/A',
                 $record->driver->name ?? 'N/A',
                 $record->fuel_date,
@@ -244,7 +246,7 @@ class FuelController extends Controller
             $assignment = DriverTruck::query()->find($validated['driver_truck_id']);
 
             if (
-                !$assignment
+                ! $assignment
                 || (int) $assignment->is_attached !== 1
                 || $assignment->date_detach !== null
                 || $assignment->status !== 'active'
@@ -259,7 +261,9 @@ class FuelController extends Controller
             $validated['total_cost'] = $validated['fuel_quantity_liters'] * $validated['fuel_price_per_liter'];
             $validated['user_id'] = Auth::id();
 
-            FuelRecord::create($validated);
+            $fuelRecord = FuelRecord::create($validated);
+
+            event(new FuelRecordCreated($fuelRecord->loadMissing(['truck', 'driver']), Auth::user()));
 
             return redirect()->route('fuel.index')
                 ->with('success', 'Fuel record created successfully.');
@@ -342,7 +346,7 @@ class FuelController extends Controller
 
             $assignment = DriverTruck::query()->find($validated['driver_truck_id']);
 
-            if (!$assignment) {
+            if (! $assignment) {
                 throw ValidationException::withMessages([
                     'driver_truck_id' => 'The selected driver and truck pairing could not be found.',
                 ]);
@@ -350,7 +354,7 @@ class FuelController extends Controller
 
             $assignmentIsActive = (int) $assignment->is_attached === 1 && $assignment->date_detach === null && $assignment->status === 'active';
 
-            if (!$assignmentIsActive && $fuel->driver_truck_id !== $assignment->id) {
+            if (! $assignmentIsActive && $fuel->driver_truck_id !== $assignment->id) {
                 throw ValidationException::withMessages([
                     'driver_truck_id' => 'The selected driver and truck pairing is no longer active.',
                 ]);
@@ -360,7 +364,25 @@ class FuelController extends Controller
             $validated['driver_id'] = $assignment->driver_id;
             $validated['total_cost'] = $validated['fuel_quantity_liters'] * $validated['fuel_price_per_liter'];
 
-            $fuel->update($validated);
+            $original = $fuel->getOriginal();
+
+            $fuel->fill($validated);
+
+            $dirty = $fuel->getDirty();
+            $changes = [];
+
+            foreach ($dirty as $attribute => $newValue) {
+                $changes[$attribute] = [
+                    'old' => $original[$attribute] ?? null,
+                    'new' => $newValue,
+                ];
+            }
+
+            $fuel->save();
+
+            if ($changes !== []) {
+                event(new FuelRecordUpdated($fuel->fresh(['truck', 'driver']), $changes, Auth::user()));
+            }
 
             return redirect()->route('fuel.index')
                 ->with('success', 'Fuel record updated successfully.');
@@ -378,7 +400,13 @@ class FuelController extends Controller
     public function destroy(FuelRecord $fuel)
     {
         try {
+            $fuelRecordId = $fuel->getKey();
+            $receiptNumber = $fuel->receipt_number;
+            $attributes = $fuel->getAttributes();
+
             $fuel->delete();
+
+            event(new FuelRecordDeleted($fuelRecordId, $receiptNumber, $attributes, Auth::user()));
 
             return redirect()->route('fuel.index')
                 ->with('success', 'Fuel record deleted successfully.');
@@ -412,13 +440,13 @@ class FuelController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $analysis,
-                'count' => $analysis->count()
+                'count' => $analysis->count(),
             ]);
 
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to retrieve fuel consumption analysis'
+                'message' => 'Failed to retrieve fuel consumption analysis',
             ], 500);
         }
     }
@@ -438,13 +466,13 @@ class FuelController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Fuel consumption analysis generated successfully'
+                'message' => 'Fuel consumption analysis generated successfully',
             ]);
 
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to generate fuel consumption analysis'
+                'message' => 'Failed to generate fuel consumption analysis',
             ], 500);
         }
     }
@@ -500,6 +528,3 @@ class FuelController extends Controller
         }
     }
 }
-
-
-
