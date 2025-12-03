@@ -387,13 +387,6 @@ export default function TrucksIndex({ trucks, metrics, filters, statusOptions, v
             valueClassName: 'text-green-600',
         },
         {
-            title: 'Maintenance',
-            value: maintenanceCount,
-            description: 'Under repair',
-            icon: <Wrench className="h-3.5 w-3.5 text-yellow-600" />,
-            valueClassName: 'text-yellow-600',
-        },
-        {
             title: 'Fleet Value',
             value: fleetValueDisplay,
             description: 'Total fleet value',
@@ -424,20 +417,20 @@ export default function TrucksIndex({ trucks, metrics, filters, statusOptions, v
     ];
 
     const statsSection = (
-        <div className="flex w-full gap-3 overflow-x-auto pb-1">
+        <div className="flex w-full gap-2 overflow-x-auto pb-1">
             {statsCards.map((card) => (
                 <Card
                     key={card.title}
-                    className="min-w-[200px] flex-1 border border-slate-200/70 bg-white/90 shadow-sm dark:border-slate-800/50 dark:bg-slate-900/60"
+                    className="min-w-[180px] flex-1 border border-slate-200/70 bg-white/90 shadow-sm dark:border-slate-800/50 dark:bg-slate-900/60"
                 >
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 p-2">
                         <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                             {card.title}
                         </CardTitle>
                         {card.icon}
                     </CardHeader>
-                    <CardContent className="px-3 pb-3 pt-0">
-                        <div className={`text-base font-semibold ${card.valueClassName}`}>{card.value}</div>
+                    <CardContent className="px-2 pb-2 pt-0">
+                        <div className={`text-sm font-semibold ${card.valueClassName}`}>{card.value}</div>
                         <p className="text-[11px] text-muted-foreground">{card.description}</p>
                     </CardContent>
                 </Card>
