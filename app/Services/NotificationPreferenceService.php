@@ -76,7 +76,13 @@ class NotificationPreferenceService
                 || $user->can('users.view')
                 || $user->can('roles.view')
             ) {
-                return ['database'];
+                $channels = ['database'];
+
+                if (in_array(config('broadcasting.default'), ['pusher', 'reverb'], true)) {
+                    $channels[] = 'broadcast';
+                }
+
+                return $channels;
             }
 
             return [];

@@ -2,11 +2,32 @@
 
 namespace App\Services;
 
+use App\Models\DailyTruckStatus;
+use App\Models\DriverTruck;
+use App\Models\Performance;
 use App\Models\Truck;
+use App\Models\TruckFinancialRecord;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 
 class TruckMetricsService
 {
+    private const UTILIZATION_LOOKBACK_DAYS = 30;
+
+    private const STAFFING_LOOKBACK_DAYS = 180;
+
+    private const SHORT_TENURE_THRESHOLD_DAYS = 45;
+
+    private const MIN_ASSIGNMENTS_FOR_CHURN_FLAG = 2;
+
+    private const IDLE_STATUS_NAMES = [
+        'inactive',
+        'maintenance',
+        'out_of_service',
+        'downtime',
+    ];
+
     private array $localMetrics = [];
 
     public function metrics(?string $search, ?int $vehicleTypeId, ?string $status = null): array
@@ -26,6 +47,8 @@ class TruckMetricsService
         $query = Truck::query();
         $this->applyFilters($query, $filters['search'], $filters['vehicle_type'], $filters['status']);
 
+        $filteredTruckIds = (clone $query)->pluck('id');
+
         $metricsRow = $query
             ->selectRaw('COUNT(*) as total_count')
             ->selectRaw("SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active_count")
@@ -38,6 +61,9 @@ class TruckMetricsService
             'active' => (int) ($metricsRow->active_count ?? 0),
             'maintenance' => (int) ($metricsRow->maintenance_count ?? 0),
             'fleet_value' => (float) ($metricsRow->fleet_value_sum ?? 0.0),
+            'utilization' => $this->calculateUtilizationSnapshot($filteredTruckIds),
+            'financial' => $this->calculateFinancialSnapshot($filteredTruckIds),
+            'staffing' => $this->calculateStaffingSnapshot($filteredTruckIds),
         ];
 
         $this->localMetrics[$cacheKey] = $metrics;
@@ -72,6 +98,153 @@ class TruckMetricsService
         return $query;
     }
 
+    public function utilizationForTruck(Truck|int $truck): array
+    {
+        $truckId = $truck instanceof Truck ? $truck->id : $truck;
+
+        if (! $truckId) {
+            return $this->calculateUtilizationSnapshot(collect());
+        }
+
+        return $this->calculateUtilizationSnapshot(collect([$truckId]));
+    }
+
+    public function financialForTruck(Truck|int $truck): array
+    {
+        $truckId = $truck instanceof Truck ? $truck->id : $truck;
+
+        if (! $truckId) {
+            return $this->calculateFinancialSnapshot(collect());
+        }
+
+        return $this->calculateFinancialSnapshot(collect([$truckId]));
+    }
+
+    public function staffingForTruck(Truck|int $truck): array
+    {
+        $truckId = $truck instanceof Truck ? $truck->id : $truck;
+
+        if (! $truckId) {
+            return $this->calculateStaffingSnapshot(collect());
+        }
+
+        return $this->calculateStaffingSnapshot(collect([$truckId]));
+    }
+
+    private function calculateUtilizationSnapshot(Collection $truckIds): array
+    {
+        $windowDays = self::UTILIZATION_LOOKBACK_DAYS;
+
+        $default = [
+            'window_days' => $windowDays,
+            'service_days' => 0,
+            'idle_days' => 0,
+            'unknown_days' => 0,
+            'total_days' => 0,
+            'utilization_rate' => null,
+            'idle_rate' => null,
+        ];
+
+        if ($truckIds->isEmpty()) {
+            return $default;
+        }
+
+        $endDate = Carbon::today();
+        $startDate = $endDate->copy()->subDays($windowDays - 1);
+
+        $latestStatusIds = DailyTruckStatus::query()
+            ->whereIn('truck_id', $truckIds)
+            ->whereDate('status_date', '>=', $startDate)
+            ->whereDate('status_date', '<=', $endDate)
+            ->whereNull('deleted_at')
+            ->groupBy('truck_id', 'status_date')
+            ->selectRaw('MAX(id) as id')
+            ->pluck('id');
+
+        if ($latestStatusIds->isEmpty()) {
+            return $this->fallbackUtilizationFromTrucks($truckIds, $windowDays);
+        }
+
+        $idlePlaceholders = implode(', ', array_fill(0, count(self::IDLE_STATUS_NAMES), '?'));
+
+        $aggregates = DailyTruckStatus::query()
+            ->join('statuses', 'statuses.id', '=', 'daily_truck_statuses.status_id')
+            ->whereIn('daily_truck_statuses.id', $latestStatusIds)
+            ->selectRaw(
+                sprintf(
+                    'SUM(CASE WHEN LOWER(statuses.name) IN (%s) THEN 1 ELSE 0 END) as idle_days',
+                    $idlePlaceholders
+                ),
+                self::IDLE_STATUS_NAMES
+            )
+            ->selectRaw('COUNT(*) as total_days')
+            ->first();
+
+        $totalDays = (int) ($aggregates?->total_days ?? 0);
+
+        if ($totalDays === 0) {
+            return $this->fallbackUtilizationFromTrucks($truckIds, $windowDays);
+        }
+
+        $idleDays = (int) ($aggregates?->idle_days ?? 0);
+        $serviceDays = max($totalDays - $idleDays, 0);
+
+        $expectedDays = $truckIds->count() * $windowDays;
+        $unknownDays = max($expectedDays - $totalDays, 0);
+
+        return [
+            'window_days' => $windowDays,
+            'service_days' => $serviceDays,
+            'idle_days' => $idleDays,
+            'unknown_days' => $unknownDays,
+            'total_days' => $totalDays,
+            'utilization_rate' => $totalDays > 0 ? round($serviceDays / $totalDays, 4) : null,
+            'idle_rate' => $totalDays > 0 ? round($idleDays / $totalDays, 4) : null,
+        ];
+    }
+
+    private function fallbackUtilizationFromTrucks(Collection $truckIds, int $windowDays): array
+    {
+        $trucks = Truck::query()
+            ->whereIn('id', $truckIds)
+            ->select(['id', 'status'])
+            ->get();
+
+        if ($trucks->isEmpty()) {
+            return [
+                'window_days' => $windowDays,
+                'service_days' => 0,
+                'idle_days' => 0,
+                'unknown_days' => 0,
+                'total_days' => 0,
+                'utilization_rate' => null,
+                'idle_rate' => null,
+            ];
+        }
+
+        $idleCount = $trucks->filter(function ($truck) {
+            $status = strtolower((string) ($truck->status ?? ''));
+
+            return in_array($status, self::IDLE_STATUS_NAMES, true);
+        })->count();
+
+        $serviceCount = $trucks->count() - $idleCount;
+
+        $idleDays = $idleCount * $windowDays;
+        $serviceDays = $serviceCount * $windowDays;
+        $totalDays = $trucks->count() * $windowDays;
+
+        return [
+            'window_days' => $windowDays,
+            'service_days' => $serviceDays,
+            'idle_days' => $idleDays,
+            'unknown_days' => 0,
+            'total_days' => $totalDays,
+            'utilization_rate' => $totalDays > 0 ? round($serviceDays / $totalDays, 4) : null,
+            'idle_rate' => $totalDays > 0 ? round($idleDays / $totalDays, 4) : null,
+        ];
+    }
+
     private function normalizeStatus(?string $status): ?string
     {
         if ($status === null) {
@@ -90,5 +263,242 @@ class TruckMetricsService
     public function clearCache(): void
     {
         $this->localMetrics = [];
+    }
+
+    private function calculateFinancialSnapshot(Collection $truckIds): array
+    {
+        $windowDays = self::UTILIZATION_LOOKBACK_DAYS;
+
+        $default = [
+            'window_days' => $windowDays,
+            'total_revenue' => 0.0,
+            'total_cost' => 0.0,
+            'total_profit' => 0.0,
+            'avg_revenue_per_truck' => 0.0,
+            'ton_km' => 0.0,
+            'ton_km_per_birr' => null,
+        ];
+
+        if ($truckIds->isEmpty()) {
+            return $default;
+        }
+
+        $endDate = Carbon::today();
+        $startDate = $endDate->copy()->subDays($windowDays - 1);
+
+        $financialTotals = TruckFinancialRecord::query()
+            ->whereIn('truck_id', $truckIds)
+            ->whereDate('record_date', '>=', $startDate)
+            ->whereDate('record_date', '<=', $endDate)
+            ->selectRaw('COALESCE(SUM(revenue), 0) as total_revenue')
+            ->selectRaw('COALESCE(SUM(fuel_cost), 0) as total_fuel_cost')
+            ->selectRaw('COALESCE(SUM(maintenance_cost), 0) as total_maintenance_cost')
+            ->selectRaw('COALESCE(SUM(driver_salary), 0) as total_driver_salary')
+            ->selectRaw('COALESCE(SUM(insurance_cost), 0) as total_insurance_cost')
+            ->selectRaw('COALESCE(SUM(depreciation), 0) as total_depreciation')
+            ->selectRaw('COALESCE(SUM(other_costs), 0) as total_other_costs')
+            ->selectRaw('COALESCE(SUM(net_profit), 0) as total_net_profit')
+            ->first();
+
+        $totalRevenue = (float) ($financialTotals?->total_revenue ?? 0.0);
+
+        $totalCost = (float) (
+            ($financialTotals?->total_fuel_cost ?? 0)
+            + ($financialTotals?->total_maintenance_cost ?? 0)
+            + ($financialTotals?->total_driver_salary ?? 0)
+            + ($financialTotals?->total_insurance_cost ?? 0)
+            + ($financialTotals?->total_depreciation ?? 0)
+            + ($financialTotals?->total_other_costs ?? 0)
+        );
+
+        $totalProfit = (float) ($financialTotals?->total_net_profit ?? 0.0);
+
+        $tonKmAggregate = Performance::query()
+            ->whereHas('driverTruck', function (Builder $query) use ($truckIds) {
+                $query->whereIn('truck_id', $truckIds);
+            })
+            ->whereDate('DateDispach', '>=', $startDate)
+            ->whereDate('DateDispach', '<=', $endDate)
+            ->selectRaw('COALESCE(SUM(COALESCE(tonkm, 0)), 0) as ton_km')
+            ->first();
+
+        $totalTonKm = (float) ($tonKmAggregate?->ton_km ?? 0.0);
+
+        $tonKmPerBirr = $totalRevenue > 0.0
+            ? round($totalTonKm / $totalRevenue, 4)
+            : null;
+
+        $truckCount = max($truckIds->count(), 1);
+
+        return [
+            'window_days' => $windowDays,
+            'total_revenue' => round($totalRevenue, 2),
+            'total_cost' => round($totalCost, 2),
+            'total_profit' => round($totalProfit, 2),
+            'avg_revenue_per_truck' => round($totalRevenue / $truckCount, 2),
+            'ton_km' => round($totalTonKm, 2),
+            'ton_km_per_birr' => $tonKmPerBirr,
+        ];
+    }
+
+    private function calculateStaffingSnapshot(Collection $truckIds): array
+    {
+        $windowDays = self::STAFFING_LOOKBACK_DAYS;
+
+        $default = [
+            'window_days' => $windowDays,
+            'average_tenure_days' => null,
+            'assignment_count' => 0,
+            'truck_count_with_assignments' => 0,
+            'short_tenure_threshold_days' => self::SHORT_TENURE_THRESHOLD_DAYS,
+            'high_churn_truck_count' => 0,
+            'high_churn_trucks' => [],
+            'flagged_truck_ids' => [],
+        ];
+
+        if ($truckIds->isEmpty()) {
+            return $default;
+        }
+
+        $endDate = Carbon::today();
+        $startDate = $endDate->copy()->subDays($windowDays - 1);
+
+        $assignments = DriverTruck::query()
+            ->whereIn('truck_id', $truckIds)
+            ->where(function ($query) use ($startDate) {
+                $query->whereNull('date_detach')
+                    ->orWhereDate('date_detach', '>=', $startDate);
+            })
+            ->where(function ($query) use ($endDate) {
+                $query->whereDate('date_recived', '<=', $endDate)
+                    ->orWhereDate('assigned_date', '<=', $endDate);
+            })
+            ->select([
+                'truck_id',
+                'date_recived',
+                'assigned_date',
+                'date_detach',
+                'unassigned_date',
+            ])
+            ->orderBy('truck_id')
+            ->get();
+
+        if ($assignments->isEmpty()) {
+            return $default;
+        }
+
+        $assignmentCount = 0;
+        $totalTenureDays = 0.0;
+        $perTruckStats = [];
+
+        foreach ($assignments as $assignment) {
+            $startRaw = $assignment->date_recived ?? $assignment->assigned_date;
+
+            if (! $startRaw) {
+                continue;
+            }
+
+            $start = $startRaw instanceof Carbon ? $startRaw->copy() : Carbon::parse($startRaw);
+            $endRaw = $assignment->date_detach ?? $assignment->unassigned_date;
+            $end = $endRaw
+                ? ($endRaw instanceof Carbon ? $endRaw->copy() : Carbon::parse($endRaw))
+                : $endDate->copy();
+
+            if ($end->lt($startDate) || $start->gt($endDate)) {
+                continue;
+            }
+
+            if ($start->lt($startDate)) {
+                $start = $startDate->copy();
+            }
+
+            if ($end->gt($endDate)) {
+                $end = $endDate->copy();
+            }
+
+            if ($end->lt($start)) {
+                continue;
+            }
+
+            $tenureDays = $start->diffInDays($end) + 1;
+
+            $assignmentCount++;
+            $totalTenureDays += $tenureDays;
+
+            $truckId = (int) $assignment->truck_id;
+
+            if (! array_key_exists($truckId, $perTruckStats)) {
+                $perTruckStats[$truckId] = [
+                    'tenure_days_sum' => 0.0,
+                    'assignment_count' => 0,
+                ];
+            }
+
+            $perTruckStats[$truckId]['tenure_days_sum'] += $tenureDays;
+            $perTruckStats[$truckId]['assignment_count']++;
+        }
+
+        if ($assignmentCount === 0) {
+            return $default;
+        }
+
+        $averageTenureDays = round($totalTenureDays / $assignmentCount, 1);
+
+        $highChurnTrucks = collect($perTruckStats)
+            ->map(function (array $stat, int|string $truckId) {
+                if ($stat['assignment_count'] === 0) {
+                    return null;
+                }
+
+                return [
+                    'truck_id' => (int) $truckId,
+                    'average_tenure_days' => $stat['tenure_days_sum'] / $stat['assignment_count'],
+                    'assignment_count' => (int) $stat['assignment_count'],
+                ];
+            })
+            ->filter()
+            ->filter(fn (array $stat) => $stat['assignment_count'] >= self::MIN_ASSIGNMENTS_FOR_CHURN_FLAG
+                && $stat['average_tenure_days'] < self::SHORT_TENURE_THRESHOLD_DAYS)
+            ->sortBy('average_tenure_days')
+            ->values();
+
+        $highChurnTruckCount = $highChurnTrucks->count();
+
+        $flaggedTruckIds = $highChurnTrucks->pluck('truck_id')->all();
+
+        $plateLookup = [];
+
+        if (! empty($flaggedTruckIds)) {
+            $plateLookup = Truck::query()
+                ->whereIn('id', $flaggedTruckIds)
+                ->pluck('plate', 'id')
+                ->mapWithKeys(fn ($plate, $id) => [(int) $id => $plate])
+                ->all();
+        }
+
+        $highChurnTrucksLimited = $highChurnTrucks
+            ->map(function (array $stat) use ($plateLookup) {
+                $truckId = $stat['truck_id'];
+
+                return [
+                    'truck_id' => $truckId,
+                    'truck_plate' => $plateLookup[$truckId] ?? null,
+                    'average_tenure_days' => round($stat['average_tenure_days'], 1),
+                    'assignment_count' => $stat['assignment_count'],
+                ];
+            })
+            ->take(10)
+            ->all();
+
+        return [
+            'window_days' => $windowDays,
+            'average_tenure_days' => $averageTenureDays,
+            'assignment_count' => $assignmentCount,
+            'truck_count_with_assignments' => count($perTruckStats),
+            'short_tenure_threshold_days' => self::SHORT_TENURE_THRESHOLD_DAYS,
+            'high_churn_truck_count' => $highChurnTruckCount,
+            'high_churn_trucks' => $highChurnTrucksLimited,
+            'flagged_truck_ids' => array_map('intval', $flaggedTruckIds),
+        ];
     }
 }

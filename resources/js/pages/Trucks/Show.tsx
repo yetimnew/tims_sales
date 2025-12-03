@@ -117,6 +117,42 @@ type GradeWeights = {
     compliance_weight: number;
 };
 
+type UtilizationMetrics = {
+    window_days: number;
+    service_days: number;
+    idle_days: number;
+    unknown_days: number;
+    total_days: number;
+    utilization_rate: number | null;
+    idle_rate: number | null;
+};
+
+type FinancialMetrics = {
+    window_days: number;
+    total_revenue: number;
+    total_cost: number;
+    total_profit: number;
+    avg_revenue_per_truck: number;
+    ton_km: number;
+    ton_km_per_birr: number | null;
+};
+
+type StaffingMetrics = {
+    window_days: number;
+    average_tenure_days: number | null;
+    assignment_count: number;
+    truck_count_with_assignments: number;
+    short_tenure_threshold_days: number;
+    high_churn_truck_count: number;
+    high_churn_trucks: Array<{
+        truck_id: number;
+        truck_plate: string | null;
+        average_tenure_days: number;
+        assignment_count: number;
+    }>;
+    flagged_truck_ids: number[];
+};
+
 interface GradeReport {
     overall: {
         score: number;
@@ -148,6 +184,9 @@ interface TruckDetails {
     driverTrucks?: DriverAssignment[];
     maintenanceRecords?: MaintenanceRecord[];
     performances?: PerformanceRecord[];
+    utilization?: UtilizationMetrics | null;
+    financial?: FinancialMetrics | null;
+    staffing?: StaffingMetrics | null;
 }
 
 interface TrucksShowProps {
@@ -440,6 +479,33 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
     const driverAssignments = truck.driverTrucks ?? [];
     const maintenanceRecords = truck.maintenanceRecords ?? [];
     const performanceRecords = truck.performances ?? [];
+    const financial = truck.financial ?? null;
+    const staffing = truck.staffing ?? null;
+
+    const financialWindowDays = financial?.window_days ?? 30;
+    const totalRevenue = financial?.total_revenue ?? null;
+    const totalCost = financial?.total_cost ?? null;
+    const totalProfit = financial?.total_profit ?? null;
+    const averageRevenuePerTruck = financial?.avg_revenue_per_truck ?? null;
+    const totalTonKmFinancial = financial?.ton_km ?? null;
+    const tonKmPerBirr = financial?.ton_km_per_birr ?? null;
+    const revenueDisplay = formatCurrency(totalRevenue);
+    const costDisplay = formatCurrency(totalCost);
+    const profitDisplay = formatCurrency(totalProfit);
+    const avgRevenueDisplay = formatCurrency(averageRevenuePerTruck);
+    const tonKmPerBirrDisplay = tonKmPerBirr !== null && tonKmPerBirr !== undefined
+        ? `${tonKmPerBirr.toFixed(2)} ton-km / ETB`
+        : 'N/A';
+    const staffingWindowDays = staffing?.window_days ?? 180;
+    const averageTenureDays = staffing?.average_tenure_days ?? null;
+    const highChurnThresholdDays = staffing?.short_tenure_threshold_days ?? 0;
+    const highChurnAssignments = staffing?.assignment_count ?? 0;
+    const averageTenureDisplay = averageTenureDays !== null ? formatDays(averageTenureDays, 1) : 'N/A';
+    const isHighChurn = (staffing?.high_churn_trucks ?? []).some((entry) => entry.truck_id === truck.id);
+    const churnStatusLabel = isHighChurn ? 'High churn risk' : 'Stable assignments';
+    const churnStatusHelper = isHighChurn
+        ? `Average tenure ${averageTenureDisplay} across ${highChurnAssignments} assignment${highChurnAssignments === 1 ? '' : 's'} (< ${highChurnThresholdDays} days)`
+        : `${highChurnAssignments} assignment${highChurnAssignments === 1 ? '' : 's'} reviewed · Threshold ${highChurnThresholdDays} days`;
 
     const totalDistanceKm = performanceSummary?.total_distance_km ?? null;
     const totalLoadedDistanceKm = performanceSummary?.total_loaded_distance_km ?? null;
@@ -460,6 +526,13 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
     const totalPayloadTons = performanceSummary?.total_payload_tons ?? null;
     const avgPayloadTonsPerTrip = performanceSummary?.avg_payload_tons_per_trip ?? null;
     const tripCompletionRate = performanceSummary?.trip_completion_rate ?? null;
+    const utilization = truck.utilization ?? null;
+    const utilizationWindowDays = utilization?.window_days ?? 30;
+    const utilizationRate = utilization?.utilization_rate ?? null;
+    const utilizationRateDisplay = utilizationRate !== null ? formatPercent(utilizationRate, 0) : 'N/A';
+    const utilizationServiceDays = utilization?.service_days ?? null;
+    const utilizationIdleDays = utilization?.idle_days ?? null;
+    const utilizationUnknownDays = utilization?.unknown_days ?? null;
 
     const vehicleHighlights = [
         {
@@ -469,6 +542,46 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
         {
             label: 'Service Interval',
             value: formatKilometers(truck.serviceIntervalKM),
+        },
+        {
+            label: `Revenue (${financialWindowDays}d)`,
+            value: revenueDisplay,
+        },
+        {
+            label: 'Net Profit',
+            value: profitDisplay,
+        },
+        {
+            label: 'Operating Cost',
+            value: costDisplay,
+        },
+        {
+            label: 'Ton-KM per ETB',
+            value: tonKmPerBirrDisplay,
+        },
+        {
+            label: `Driver Tenure (${staffingWindowDays}d)`,
+            value: averageTenureDisplay,
+        },
+        {
+            label: 'Churn Status',
+            value: churnStatusLabel,
+        },
+        {
+            label: `Utilization (${utilizationWindowDays}d)`,
+            value: utilizationRateDisplay,
+        },
+        {
+            label: 'Service Days',
+            value: formatDays(utilizationServiceDays ?? null),
+        },
+        {
+            label: 'Idle Days',
+            value: formatDays(utilizationIdleDays ?? null),
+        },
+        {
+            label: 'Unknown Days',
+            value: formatDays(utilizationUnknownDays ?? null),
         },
         {
             label: 'Trips Logged',
@@ -508,9 +621,39 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
             label: 'Maintenance Spend',
             value: formatCurrency(maintenanceCost),
         },
+        {
+            label: 'Avg Revenue / Truck',
+            value: avgRevenueDisplay,
+        },
+        {
+            label: 'Total Ton-KM',
+            value: formatNumber(totalTonKmFinancial ?? null, {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0,
+            }),
+        },
     ];
 
     const overviewSummaryCards = [
+        {
+            label: `Revenue (${financialWindowDays}d)`,
+            value: revenueDisplay,
+            helper: tonKmPerBirr !== null && tonKmPerBirr !== undefined
+                ? `Ton-km per ETB: ${tonKmPerBirr.toFixed(2)}`
+                : 'Ton-km per ETB pending',
+        },
+        {
+            label: `Utilization (${utilizationWindowDays}d)`,
+            value: utilizationRateDisplay,
+            helper: utilization
+                ? `Service ${formatDays(utilizationServiceDays ?? null)} / Idle ${formatDays(utilizationIdleDays ?? null)}`
+                : 'Recent availability snapshot',
+        },
+        {
+            label: `Driver Tenure (${staffingWindowDays}d)`,
+            value: averageTenureDisplay,
+            helper: churnStatusHelper,
+        },
         {
             label: 'Trips Completed',
             value: formatNumber(completedTrips || null),

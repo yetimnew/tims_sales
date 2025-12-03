@@ -3,6 +3,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Badge } from '@/components/ui/badge'
 import { Link, router, usePage } from '@inertiajs/react'
 import { Bell, Check } from 'lucide-react'
+import { useEffect, useRef } from 'react'
+import { echo, echoIsConfigured } from '@laravel/echo-react'
 import { type SharedData } from '@/types'
 import {
   formatNotificationBody,
@@ -16,7 +18,51 @@ import { cn } from '@/lib/utils'
 
 export default function NotificationBell() {
   const page = usePage<SharedData & { notifications: { unread_count: number, recent: NotificationItem[] } }>()
-  const { notifications } = page.props
+  const { notifications, auth } = page.props
+  const refreshingRef = useRef(false)
+
+  useEffect(() => {
+    const userId = auth?.user?.id
+
+    if (!userId) {
+      return
+    }
+
+    const channelName = `App.Models.User.${userId}`
+    const echoInstance = echoIsConfigured() ? echo() : null
+
+    if (!echoInstance) {
+      return
+    }
+
+    const channel = echoInstance.private(channelName)
+
+    const handleBroadcastNotification = () => {
+      if (refreshingRef.current) {
+        return
+      }
+
+      refreshingRef.current = true
+
+      router.reload({
+        only: ['notifications'],
+        preserveState: true,
+        preserveScroll: true,
+        onFinish: () => {
+          refreshingRef.current = false
+        },
+        onError: () => {
+          refreshingRef.current = false
+        },
+      })
+    }
+
+    channel.notification(handleBroadcastNotification)
+
+    return () => {
+      echoInstance.leave(channelName)
+    }
+  }, [auth?.user?.id])
 
   const unread = notifications?.unread_count ?? 0
   const recent = notifications?.recent ?? []

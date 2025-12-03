@@ -485,6 +485,10 @@ class TruckController extends Controller
 
         $activityLogs = $this->transformActivityLogs($rawActivityLogs);
 
+        $utilizationSnapshot = $this->truckMetrics->utilizationForTruck($truck);
+        $financialSnapshot = $this->truckMetrics->financialForTruck($truck);
+        $staffingSnapshot = $this->truckMetrics->staffingForTruck($truck);
+
         $truckData = [
             'id' => $truck->id,
             'plate' => $truck->plate,
@@ -507,6 +511,9 @@ class TruckController extends Controller
             'driverTrucks' => $recentDriverAssignments,
             'maintenanceRecords' => $recentMaintenanceRecords,
             'performances' => $recentPerformanceRecords,
+            'utilization' => $utilizationSnapshot,
+            'financial' => $financialSnapshot,
+            'staffing' => $staffingSnapshot,
         ];
 
         return Inertia::render('Trucks/Show', [

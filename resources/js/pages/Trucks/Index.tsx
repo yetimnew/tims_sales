@@ -16,7 +16,7 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { Link, router } from '@inertiajs/react';
 import { toast } from '@/hooks/use-toast';
 import { type BreadcrumbItem } from '@/types';
-import { Plus, Eye, Edit, Trash2, Search, ArrowUpDown, Truck, CheckCircle, Wrench, XCircle, DollarSign } from 'lucide-react';
+import { Plus, Eye, Edit, Trash2, Search, ArrowUpDown, Truck, CheckCircle, Wrench, XCircle, DollarSign, ChevronRight, Gauge, TrendingUp, Users } from 'lucide-react';
 import { InertiaPagination } from '@/components/ui/pagination';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import * as React from 'react';
@@ -58,6 +58,42 @@ interface PaginationLink {
     active: boolean;
 }
 
+interface UtilizationMetrics {
+    window_days: number;
+    service_days: number;
+    idle_days: number;
+    unknown_days: number;
+    total_days: number;
+    utilization_rate: number | null;
+    idle_rate: number | null;
+}
+
+interface FinancialMetrics {
+    window_days: number;
+    total_revenue: number;
+    total_cost: number;
+    total_profit: number;
+    avg_revenue_per_truck: number;
+    ton_km: number;
+    ton_km_per_birr: number | null;
+}
+
+interface StaffingMetrics {
+    window_days: number;
+    average_tenure_days: number | null;
+    assignment_count: number;
+    truck_count_with_assignments: number;
+    short_tenure_threshold_days: number;
+    high_churn_truck_count: number;
+    high_churn_trucks: Array<{
+        truck_id: number;
+        truck_plate: string | null;
+        average_tenure_days: number;
+        assignment_count: number;
+    }>;
+    flagged_truck_ids: number[];
+}
+
 interface TrucksIndexProps {
     trucks: {
         data: TruckData[];
@@ -69,6 +105,9 @@ interface TrucksIndexProps {
         active: number;
         maintenance: number;
         fleet_value: number;
+        utilization?: UtilizationMetrics | null;
+        financial?: FinancialMetrics | null;
+        staffing?: StaffingMetrics | null;
     } | null;
     filters: {
         search?: string | null;
@@ -165,6 +204,42 @@ export default function TrucksIndex({ trucks, metrics, filters, statusOptions, v
     const activeCount = metrics?.active ?? 0;
     const maintenanceCount = metrics?.maintenance ?? 0;
     const fleetValue = metrics?.fleet_value ?? 0;
+    const utilization = metrics?.utilization ?? null;
+    const financial = metrics?.financial ?? null;
+    const staffing = metrics?.staffing ?? null;
+    const utilizationRateValue = utilization?.utilization_rate ?? null;
+    const utilizationRateDisplay = utilizationRateValue !== null
+        ? `${(utilizationRateValue * 100).toFixed(0)}%`
+        : '—';
+    const utilizationValueClass = utilizationRateValue === null
+        ? 'text-slate-500'
+        : utilizationRateValue >= 0.75
+            ? 'text-green-600'
+            : utilizationRateValue >= 0.5
+                ? 'text-yellow-600'
+                : 'text-red-600';
+    const utilizationDescription = utilization
+        ? `Service ${utilization.service_days}d · Idle ${utilization.idle_days}d · Unknown ${utilization.unknown_days}d`
+        : 'Utilization data pending';
+
+    const financialWindowDays = financial?.window_days ?? 30;
+    const revenueDisplay = formatETBCurrency(financial?.total_revenue ?? 0, {
+        notation: 'compact',
+        maximumFractionDigits: 2,
+    });
+    const tonKmPerBirrDisplay = financial?.ton_km_per_birr !== null && financial?.ton_km_per_birr !== undefined
+        ? `${financial.ton_km_per_birr.toFixed(2)} ton-km / ETB`
+        : 'Ton-km per birr pending';
+    const churnWindowDays = staffing?.window_days ?? 180;
+    const averageTenureDisplay = staffing?.average_tenure_days !== null && staffing?.average_tenure_days !== undefined
+        ? `${staffing.average_tenure_days.toFixed(1)} days`
+        : 'Average tenure pending';
+    const highChurnCount = staffing?.high_churn_truck_count ?? 0;
+    const highChurnThreshold = staffing?.short_tenure_threshold_days ?? 0;
+    const highChurnDescription = highChurnCount > 0
+        ? `${highChurnCount} truck${highChurnCount === 1 ? '' : 's'} below ${highChurnThreshold}d`
+        : 'Stable driver assignments';
+    const churnValueClass = highChurnCount > 0 ? 'text-rose-600' : 'text-slate-600';
 
     const handleNavigate = React.useCallback((overrides: NavigateOverrides = {}) => {
         const hasOverride = (key: keyof NavigateOverrides) => Object.prototype.hasOwnProperty.call(overrides, key);
@@ -325,81 +400,125 @@ export default function TrucksIndex({ trucks, metrics, filters, statusOptions, v
             icon: <DollarSign className="h-3.5 w-3.5 text-purple-600" />,
             valueClassName: 'text-purple-600',
         },
+        {
+            title: `Revenue (${financialWindowDays}d)`,
+            value: revenueDisplay,
+            description: tonKmPerBirrDisplay,
+            icon: <TrendingUp className="h-3.5 w-3.5 text-emerald-600" />,
+            valueClassName: 'text-emerald-600',
+        },
+        {
+            title: `Driver Churn (${churnWindowDays}d)`,
+            value: averageTenureDisplay,
+            description: highChurnDescription,
+            icon: <Users className="h-3.5 w-3.5 text-rose-600" />,
+            valueClassName: churnValueClass,
+        },
+        {
+            title: `Utilization (${utilization?.window_days ?? 30}d)`,
+            value: utilizationRateDisplay,
+            description: utilizationDescription,
+            icon: <Gauge className="h-3.5 w-3.5 text-slate-600" />,
+            valueClassName: utilizationValueClass,
+        },
     ];
 
     const statsSection = (
-        <div className="hidden gap-2 md:grid md:grid-cols-2 xl:grid-cols-4">
-            {statsCards.map((card) => (
-                <Card
-                    key={card.title}
-                    className="gap-2 border border-slate-200 py-2 shadow-sm sm:py-3"
-                >
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 p-1.5 sm:p-2">
-                        <CardTitle className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                            {card.title}
-                        </CardTitle>
-                        {card.icon}
-                    </CardHeader>
-                    <CardContent className="px-2 pb-2 pt-0 sm:px-3 sm:pb-2">
-                        <div className={`text-sm font-semibold sm:text-base ${card.valueClassName}`}>{card.value}</div>
-                        <p className="text-[11px] text-muted-foreground">{card.description}</p>
-                    </CardContent>
-                </Card>
-            ))}
-        </div>
+        <>
+            <div className="flex gap-3 overflow-x-auto pb-1 md:hidden">
+                {statsCards.map((card) => (
+                    <Card
+                        key={card.title}
+                        className="min-w-[180px] flex-1 border border-slate-200/70 bg-white/90 shadow-sm dark:border-slate-800/50 dark:bg-slate-900/60"
+                    >
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3">
+                            <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                {card.title}
+                            </CardTitle>
+                            {card.icon}
+                        </CardHeader>
+                        <CardContent className="px-3 pb-3 pt-0">
+                            <div className={`text-base font-semibold ${card.valueClassName}`}>{card.value}</div>
+                            <p className="text-[11px] text-muted-foreground">{card.description}</p>
+                        </CardContent>
+                    </Card>
+                ))}
+            </div>
+            <div className="hidden gap-2 md:grid md:grid-cols-6">
+                {statsCards.map((card) => (
+                    <Card
+                        key={card.title}
+                        className="gap-2 border border-slate-200 py-2 shadow-sm sm:py-3 dark:border-slate-800"
+                    >
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 p-1.5 sm:p-2">
+                            <CardTitle className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                {card.title}
+                            </CardTitle>
+                            {card.icon}
+                        </CardHeader>
+                        <CardContent className="px-2 pb-2 pt-0 sm:px-3 sm:pb-2">
+                            <div className={`text-sm font-semibold sm:text-base ${card.valueClassName}`}>{card.value}</div>
+                            <p className="text-[11px] text-muted-foreground">{card.description}</p>
+                        </CardContent>
+                    </Card>
+                ))}
+            </div>
+        </>
     );
 
     const tableHeaderExtras = (
-        <div className="flex flex-wrap items-center gap-2">
-            <div className="relative w-[260px] max-w-full">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+        <div className="flex w-full flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="relative w-full lg:max-w-sm">
+                <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                     placeholder="Search trucks..."
                     value={searchTerm}
                     onChange={(event) => handleSearchChange(event.target.value)}
-                    className="pl-10"
+                    className="w-full pl-10"
                 />
             </div>
-            <Select value={selectedStatus} onValueChange={handleStatusChange}>
-                <SelectTrigger className="w-[150px]">
-                    <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="all">All statuses</SelectItem>
-                    {statusOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                        </SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
-            <Select value={selectedVehicleType} onValueChange={handleVehicleTypeChange}>
-                <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Vehicle type" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="all">All vehicle types</SelectItem>
-                    {vehicleTypes.map((type) => (
-                        <SelectItem key={type.id} value={String(type.id)}>
-                            {type.name}
-                        </SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
-            <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                <span className="hidden sm:inline">Rows</span>
-                <Select value={perPage} onValueChange={handlePerPageChange}>
-                    <SelectTrigger className="w-[110px]">
-                        <SelectValue placeholder="Per page" />
+            <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 lg:flex lg:flex-1 lg:flex-wrap lg:items-center lg:justify-end">
+                <Select value={selectedStatus} onValueChange={handleStatusChange}>
+                    <SelectTrigger className="w-full sm:w-auto sm:min-w-[150px]">
+                        <SelectValue placeholder="Status" />
                     </SelectTrigger>
                     <SelectContent>
-                        {availablePerPageOptions.map((option) => (
-                            <SelectItem key={option} value={String(option)}>
-                                {option} / page
+                        <SelectItem value="all">All statuses</SelectItem>
+                        {statusOptions.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                                {option.label}
                             </SelectItem>
                         ))}
                     </SelectContent>
                 </Select>
+                <Select value={selectedVehicleType} onValueChange={handleVehicleTypeChange}>
+                    <SelectTrigger className="w-full sm:w-auto sm:min-w-[180px]">
+                        <SelectValue placeholder="Vehicle type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">All vehicle types</SelectItem>
+                        {vehicleTypes.map((type) => (
+                            <SelectItem key={type.id} value={String(type.id)}>
+                                {type.name}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+                <div className="flex w-full items-center justify-between gap-2 text-sm text-muted-foreground sm:w-auto">
+                    <span className="text-xs uppercase tracking-wide text-muted-foreground sm:text-sm">Rows</span>
+                    <Select value={perPage} onValueChange={handlePerPageChange}>
+                        <SelectTrigger className="w-full sm:w-[130px]">
+                            <SelectValue placeholder="Per page" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {availablePerPageOptions.map((option) => (
+                                <SelectItem key={option} value={String(option)}>
+                                    {option} / page
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
             </div>
         </div>
     );
@@ -518,6 +637,114 @@ export default function TrucksIndex({ trucks, metrics, filters, statusOptions, v
         </Table>
     );
 
+    const mobileContent = trucks?.data && trucks.data.length > 0 ? (
+        <div className="flex flex-col gap-3">
+            {trucks.data.map((truck, index) => (
+                <Card key={truck.id} className="border border-slate-200/70 shadow-sm dark:border-slate-800">
+                    <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 p-4">
+                        <div className="space-y-1">
+                            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                <span>#{rowOffset + index + 1}</span>
+                                <span className="hidden sm:inline-flex">Truck</span>
+                            </div>
+                            <CardTitle className="flex items-center gap-2 text-lg font-semibold">
+                                {truck.plate}
+                                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                            </CardTitle>
+                            <p className="text-sm text-muted-foreground">
+                                {truck.vehicleType?.name || 'Vehicle type pending'}
+                            </p>
+                        </div>
+                        <Badge
+                            className={`flex items-center gap-1 whitespace-nowrap ${
+                                truck.status === 'active'
+                                    ? 'bg-green-100 text-green-800 border-green-200 hover:bg-green-200'
+                                    : truck.status === 'maintenance'
+                                    ? 'bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200'
+                                    : 'bg-red-100 text-red-800 border-red-200 hover:bg-red-200'
+                            }`}
+                        >
+                            {truck.status === 'active' && <CheckCircle className="h-3 w-3" />}
+                            {truck.status === 'maintenance' && <Wrench className="h-3 w-3" />}
+                            {truck.status === 'inactive' && <XCircle className="h-3 w-3" />}
+                            {truck.status.charAt(0).toUpperCase() + truck.status.slice(1)}
+                        </Badge>
+                    </CardHeader>
+                    <CardContent className="space-y-4 p-4 pt-0">
+                        <div className="grid grid-cols-1 gap-3 text-sm text-muted-foreground">
+                            <div className="flex items-center justify-between">
+                                <span className="font-medium text-slate-600 dark:text-slate-300">Chassis</span>
+                                <span className="text-right font-semibold text-slate-900 dark:text-slate-100">
+                                    {truck.chasisNumber || '—'}
+                                </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <span className="font-medium text-slate-600 dark:text-slate-300">Engine</span>
+                                <span className="text-right font-semibold text-slate-900 dark:text-slate-100">
+                                    {truck.engineNumber || '—'}
+                                </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <span className="font-medium text-slate-600 dark:text-slate-300">Service Interval</span>
+                                <span className="text-right font-semibold text-slate-900 dark:text-slate-100">
+                                    {truck.serviceIntervalKM
+                                        ? `${truck.serviceIntervalKM.toLocaleString()} km`
+                                        : '—'}
+                                </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <span className="font-medium text-slate-600 dark:text-slate-300">Purchase Price</span>
+                                <span className="text-right font-semibold text-slate-900 dark:text-slate-100">
+                                    {formatETBCurrency(truck.purchasePrice)}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-wrap items-center justify-end gap-2">
+                            <Button asChild size="sm" variant="outline" className="flex-1 sm:flex-auto">
+                                <Link href={`/trucks/${truck.id}`}>
+                                    <Eye className="mr-2 h-4 w-4" />
+                                    View
+                                </Link>
+                            </Button>
+                            {hasPermission('trucks.edit') && (
+                                <Button asChild size="sm" variant="secondary" className="flex-1 sm:flex-none">
+                                    <Link href={`/trucks/${truck.id}/edit`}>
+                                        <Edit className="mr-2 h-4 w-4" />
+                                        Edit
+                                    </Link>
+                                </Button>
+                            )}
+                            {hasPermission('trucks.destroy') && (
+                                <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    className="flex-1 sm:flex-none"
+                                    onClick={() => handleDeleteClick(truck)}
+                                    disabled={isDeleting && selectedTruck?.id === truck.id}
+                                >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Delete
+                                </Button>
+                            )}
+                        </div>
+                    </CardContent>
+                </Card>
+            ))}
+        </div>
+    ) : (
+        <Card className="border border-slate-200/70 shadow-sm dark:border-slate-800">
+            <CardContent className="py-8 text-center text-muted-foreground">
+                No trucks found.
+                {hasPermission('trucks.create') && (
+                    <Link href="/trucks/create" className="ml-1 text-primary underline">
+                        Create one
+                    </Link>
+                )}
+            </CardContent>
+        </Card>
+    );
+
     return (
         <>
             <ListPageLayout
@@ -542,7 +769,12 @@ export default function TrucksIndex({ trucks, metrics, filters, statusOptions, v
                     />
                 }
             >
-                {tableContent}
+                <div className="hidden md:block">
+                    {tableContent}
+                </div>
+                <div className="md:hidden">
+                    {mobileContent}
+                </div>
             </ListPageLayout>
 
             <DeleteConfirmationDialog
