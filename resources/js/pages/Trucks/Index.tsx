@@ -424,51 +424,30 @@ export default function TrucksIndex({ trucks, metrics, filters, statusOptions, v
     ];
 
     const statsSection = (
-        <>
-            <div className="flex gap-3 overflow-x-auto pb-1 md:hidden">
-                {statsCards.map((card) => (
-                    <Card
-                        key={card.title}
-                        className="min-w-[180px] flex-1 border border-slate-200/70 bg-white/90 shadow-sm dark:border-slate-800/50 dark:bg-slate-900/60"
-                    >
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3">
-                            <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                                {card.title}
-                            </CardTitle>
-                            {card.icon}
-                        </CardHeader>
-                        <CardContent className="px-3 pb-3 pt-0">
-                            <div className={`text-base font-semibold ${card.valueClassName}`}>{card.value}</div>
-                            <p className="text-[11px] text-muted-foreground">{card.description}</p>
-                        </CardContent>
-                    </Card>
-                ))}
-            </div>
-            <div className="hidden gap-2 md:grid md:grid-cols-6">
-                {statsCards.map((card) => (
-                    <Card
-                        key={card.title}
-                        className="gap-2 border border-slate-200 py-2 shadow-sm sm:py-3 dark:border-slate-800"
-                    >
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 p-1.5 sm:p-2">
-                            <CardTitle className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                                {card.title}
-                            </CardTitle>
-                            {card.icon}
-                        </CardHeader>
-                        <CardContent className="px-2 pb-2 pt-0 sm:px-3 sm:pb-2">
-                            <div className={`text-sm font-semibold sm:text-base ${card.valueClassName}`}>{card.value}</div>
-                            <p className="text-[11px] text-muted-foreground">{card.description}</p>
-                        </CardContent>
-                    </Card>
-                ))}
-            </div>
-        </>
+        <div className="flex w-full gap-3 overflow-x-auto pb-1">
+            {statsCards.map((card) => (
+                <Card
+                    key={card.title}
+                    className="min-w-[200px] flex-1 border border-slate-200/70 bg-white/90 shadow-sm dark:border-slate-800/50 dark:bg-slate-900/60"
+                >
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3">
+                        <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                            {card.title}
+                        </CardTitle>
+                        {card.icon}
+                    </CardHeader>
+                    <CardContent className="px-3 pb-3 pt-0">
+                        <div className={`text-base font-semibold ${card.valueClassName}`}>{card.value}</div>
+                        <p className="text-[11px] text-muted-foreground">{card.description}</p>
+                    </CardContent>
+                </Card>
+            ))}
+        </div>
     );
 
     const tableHeaderExtras = (
-        <div className="flex w-full flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div className="relative w-full lg:max-w-sm">
+        <div className="flex w-full flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="relative w-full md:max-w-sm">
                 <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                     placeholder="Search trucks..."
@@ -477,9 +456,9 @@ export default function TrucksIndex({ trucks, metrics, filters, statusOptions, v
                     className="w-full pl-10"
                 />
             </div>
-            <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 lg:flex lg:flex-1 lg:flex-wrap lg:items-center lg:justify-end">
+            <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap md:w-auto md:flex-nowrap md:items-center md:justify-end md:gap-4">
                 <Select value={selectedStatus} onValueChange={handleStatusChange}>
-                    <SelectTrigger className="w-full sm:w-auto sm:min-w-[150px]">
+                    <SelectTrigger className="w-full min-w-[150px] sm:w-auto">
                         <SelectValue placeholder="Status" />
                     </SelectTrigger>
                     <SelectContent>
@@ -492,7 +471,7 @@ export default function TrucksIndex({ trucks, metrics, filters, statusOptions, v
                     </SelectContent>
                 </Select>
                 <Select value={selectedVehicleType} onValueChange={handleVehicleTypeChange}>
-                    <SelectTrigger className="w-full sm:w-auto sm:min-w-[180px]">
+                    <SelectTrigger className="w-full min-w-[180px] sm:w-auto">
                         <SelectValue placeholder="Vehicle type" />
                     </SelectTrigger>
                     <SelectContent>
@@ -504,10 +483,10 @@ export default function TrucksIndex({ trucks, metrics, filters, statusOptions, v
                         ))}
                     </SelectContent>
                 </Select>
-                <div className="flex w-full items-center justify-between gap-2 text-sm text-muted-foreground sm:w-auto">
+                <div className="flex w-full items-center justify-between gap-2 text-sm text-muted-foreground sm:w-auto md:w-auto md:justify-start">
                     <span className="text-xs uppercase tracking-wide text-muted-foreground sm:text-sm">Rows</span>
                     <Select value={perPage} onValueChange={handlePerPageChange}>
-                        <SelectTrigger className="w-full sm:w-[130px]">
+                        <SelectTrigger className="w-full sm:w-[130px] md:w-[120px]">
                             <SelectValue placeholder="Per page" />
                         </SelectTrigger>
                         <SelectContent>
