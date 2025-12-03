@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\UserNotificationSetting;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -30,13 +31,19 @@ class NotificationPreferenceAdminController extends Controller
                 });
             })
             ->orderBy('name')
-            ->paginate(12)
-            ->withQueryString();
+            ->get();
 
         $types = NotificationType::query()
             ->orderBy('name')
             ->get(['id', 'key', 'name', 'description', 'default_in_app', 'default_email'])
             ->map(static function (NotificationType $type): array {
+                $categorySlug = Str::before($type->key, '.');
+                $categoryName = Str::of($categorySlug)
+                    ->replace(['_', '-'], ' ')
+                    ->squish()
+                    ->headline()
+                    ->value();
+
                 return [
                     'id' => $type->id,
                     'key' => $type->key,
@@ -44,15 +51,24 @@ class NotificationPreferenceAdminController extends Controller
                     'description' => $type->description,
                     'default_in_app' => $type->default_in_app,
                     'default_email' => $type->default_email,
+                    'category' => $categoryName,
+                    'category_slug' => $categorySlug,
                 ];
             });
 
-        $userPayload = $users->through(static function (User $user): array {
+        $userPayload = $users->map(static function (User $user): array {
             $preferences = $user->notificationSettings
                 ->filter(static fn (UserNotificationSetting $setting) => $setting->type !== null)
                 ->sortBy(static fn (UserNotificationSetting $setting) => strtolower($setting->type->name))
                 ->values()
                 ->map(static function (UserNotificationSetting $setting): array {
+                    $categorySlug = Str::before($setting->type->key, '.');
+                    $categoryName = Str::of($categorySlug)
+                        ->replace(['_', '-'], ' ')
+                        ->squish()
+                        ->headline()
+                        ->value();
+
                     return [
                         'type_id' => $setting->notification_type_id,
                         'key' => $setting->type->key,
@@ -62,6 +78,8 @@ class NotificationPreferenceAdminController extends Controller
                         'email_enabled' => $setting->email_enabled,
                         'assigned_by' => $setting->assignedBy?->only(['id', 'name']),
                         'updated_at' => $setting->updated_at?->toIso8601String(),
+                        'category' => $categoryName,
+                        'category_slug' => $categorySlug,
                     ];
                 });
 
@@ -72,7 +90,7 @@ class NotificationPreferenceAdminController extends Controller
                 'roles' => $user->roles->pluck('name')->all(),
                 'preferences' => $preferences,
             ];
-        });
+        })->values();
 
         return Inertia::render('Notifications/Preferences', [
             'filters' => [

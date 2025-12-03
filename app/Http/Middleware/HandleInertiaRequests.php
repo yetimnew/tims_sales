@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Models\User;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Inertia\Middleware;
 
@@ -42,7 +43,14 @@ class HandleInertiaRequests extends Middleware
 
         $user = $request->user();
         $userPayload = $this->resolveUserPayload($user);
-        $permissions = $user ? $this->resolvePermissions($user, $request) : [];
+
+        $effectivePermissions = $user
+            ? $user->getAllPermissions()->pluck('name')
+            : collect();
+
+        $scopedPermissions = $user
+            ? $this->filterPermissionsForRequest($effectivePermissions, $request)
+            : collect();
 
         // Resolve notifications summary for header bell
         $notifications = $this->resolveNotificationsSummary($user);
@@ -53,7 +61,8 @@ class HandleInertiaRequests extends Middleware
             'quote' => ['message' => trim($message), 'author' => trim($author)],
             'auth' => [
                 'user' => $userPayload,
-                'permissions' => $permissions,
+                'permissions' => $scopedPermissions->values()->all(),
+                'all_permissions' => $effectivePermissions->values()->all(),
             ],
             'notifications' => $notifications,
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
@@ -81,21 +90,18 @@ class HandleInertiaRequests extends Middleware
         ];
     }
 
-    private function resolvePermissions(User $user, Request $request): array
+    private function filterPermissionsForRequest(Collection $permissions, Request $request): Collection
     {
-        $effectivePermissions = $user->getAllPermissions()->pluck('name');
-
         $routeName = $request->route()?->getName();
         $prefixes = $routeName ? $this->permissionPrefixesForRoute($routeName) : null;
 
         if ($prefixes === null) {
-            return $effectivePermissions->values()->all();
+            return $permissions->values();
         }
 
-        return $effectivePermissions
+        return $permissions
             ->filter(fn (string $permission) => Str::startsWith($permission, $prefixes))
-            ->values()
-            ->all();
+            ->values();
     }
 
     /**
@@ -114,7 +120,6 @@ class HandleInertiaRequests extends Middleware
             'trucks.update' => ['trucks.'],
             'trucks.destroy' => ['trucks.'],
             'trucks.deactivate' => ['trucks.'],
-            'trucks.export' => ['trucks.'],
             'trucks.free' => ['trucks.'],
         ];
 

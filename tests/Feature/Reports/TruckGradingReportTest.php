@@ -7,8 +7,11 @@ use App\Models\TruckGradeSnapshot;
 use App\Models\User;
 use App\Models\VehicleType;
 use Database\Seeders\CheckPermissionSeeder;
+use Database\Seeders\ReportPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 class TruckGradingReportTest extends TestCase
@@ -20,13 +23,19 @@ class TruckGradingReportTest extends TestCase
         parent::setUp();
 
         $this->seed(CheckPermissionSeeder::class);
+        $this->seed(ReportPermissionSeeder::class);
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
 
     public function test_truck_grading_report_renders_with_snapshot(): void
     {
         /** @var User $user */
         $user = User::factory()->create();
-        $user->givePermissionTo('trucks.show');
+        Permission::firstOrCreate([
+            'name' => 'reports.truck-grading.view',
+            'guard_name' => 'web',
+        ]);
+        $user->givePermissionTo('reports.truck-grading.view');
 
         $vehicleType = VehicleType::factory()->create(['name' => 'Flatbed']);
         $truck = Truck::factory()->create([

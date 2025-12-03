@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, router } from '@inertiajs/react'
-import { Eye, Trash2, SquarePen, Plus, Search, Download } from 'lucide-react'
+import { Eye, Trash2, SquarePen, Plus, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { InertiaPagination } from '@/components/ui/pagination'
 import { Input } from '@/components/ui/input'
@@ -70,10 +70,6 @@ export default function FinancialIndex({ financialRecords }: FinancialIndexProps
     )
   }
 
-  const handleExport = () => {
-    window.location.href = route('financial.export', { search, sort: sortColumn, direction: sortOrder })
-  }
-
   const handleDelete = (financial: FinancialRecord) => {
     setDeleteConfirmation({ id: financial.id, name: `${financial.truck?.plate || 'Financial'} - ${financial.record_date}` })
   }
@@ -133,12 +129,6 @@ export default function FinancialIndex({ financialRecords }: FinancialIndexProps
             </p>
           </div>
           <div className="flex gap-2">
-            {hasPermission('financial.export') && (
-              <Button onClick={handleExport} variant="outline">
-                <Download className="mr-2 h-4 w-4" />
-                Export CSV
-              </Button>
-            )}
             {hasPermission('financial.create') && (
               <Button asChild>
                 <Link href={route('financial.create')}>

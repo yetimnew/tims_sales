@@ -2,12 +2,12 @@
 
 namespace Tests\Feature\Performance;
 
-use App\Models\User;
-use App\Models\Truck;
 use App\Models\Driver;
-use App\Models\Role;
-use App\Models\Permission;
+use App\Models\Truck;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class PerformanceTest extends TestCase
@@ -26,9 +26,9 @@ class PerformanceTest extends TestCase
         // Create permissions
         $permissions = [
             'trucks.view', 'trucks.create', 'trucks.edit', 'trucks.destroy',
-            'trucks.show', 'trucks.store', 'trucks.update', 'trucks.export',
+            'trucks.show', 'trucks.store', 'trucks.update',
             'drivers.view', 'drivers.create', 'drivers.edit', 'drivers.destroy',
-            'drivers.show', 'drivers.store', 'drivers.update', 'drivers.export'
+            'drivers.show', 'drivers.store', 'drivers.update',
         ];
 
         foreach ($permissions as $permission) {
@@ -128,24 +128,19 @@ class PerformanceTest extends TestCase
     }
 
     /** @test */
-    public function trucks_export_performs_well_with_large_dataset()
+    public function trucks_export_endpoint_is_not_available()
     {
-        // Create large dataset
         Truck::factory()->count(1000)->create();
 
         $startTime = microtime(true);
 
         $response = $this->actingAs($this->user)
-            ->get(route('trucks.export'));
+            ->get('/trucks/export/csv');
 
-        $endTime = microtime(true);
-        $responseTime = $endTime - $startTime;
+        $response->assertNotFound();
 
-        $response->assertStatus(200);
-        $response->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
-
-        // Assert export response time is under 3 seconds
-        $this->assertLessThan(3.0, $responseTime, 'Trucks export took too long');
+        $responseTime = microtime(true) - $startTime;
+        $this->assertLessThan(1.0, $responseTime, 'Disabled export endpoint responded too slowly');
     }
 
     /** @test */
@@ -190,7 +185,7 @@ class PerformanceTest extends TestCase
         $truckData = [
             'plate' => 'PERF-123',
             'vehicletype_id' => \App\Models\VehicleType::factory()->create()->id,
-            'status' => 'active'
+            'status' => 'active',
         ];
 
         $startTime = microtime(true);
@@ -216,7 +211,7 @@ class PerformanceTest extends TestCase
         $updateData = [
             'plate' => 'UPDATED-123',
             'vehicletype_id' => $truck->vehicletype_id,
-            'status' => 'active'
+            'status' => 'active',
         ];
 
         $startTime = microtime(true);
@@ -230,7 +225,7 @@ class PerformanceTest extends TestCase
         $response->assertRedirect(route('trucks.show', $truck));
         $this->assertDatabaseHas('trucks', [
             'id' => $truck->id,
-            'plate' => 'UPDATED-123'
+            'plate' => 'UPDATED-123',
         ]);
 
         // Assert response time is under 1 second
@@ -304,7 +299,7 @@ class PerformanceTest extends TestCase
     }
 
     /** @test */
-    public function drivers_export_performs_well_with_large_dataset()
+    public function drivers_export_endpoint_is_not_available()
     {
         // Create large dataset
         Driver::factory()->count(1000)->create();
@@ -312,16 +307,14 @@ class PerformanceTest extends TestCase
         $startTime = microtime(true);
 
         $response = $this->actingAs($this->user)
-            ->get(route('drivers.export'));
+            ->get('/drivers/export/csv');
 
-        $endTime = microtime(true);
-        $responseTime = $endTime - $startTime;
+        $response->assertNotFound();
 
-        $response->assertStatus(200);
-        $response->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+        $responseTime = microtime(true) - $startTime;
 
-        // Assert export response time is under 3 seconds
-        $this->assertLessThan(3.0, $responseTime, 'Drivers export took too long');
+        // Assert disabled endpoint responds quickly
+        $this->assertLessThan(1.0, $responseTime, 'Disabled export endpoint responded too slowly');
     }
 
     /** @test */
@@ -498,24 +491,19 @@ class PerformanceTest extends TestCase
     }
 
     /** @test */
-    public function large_csv_export_performs_well()
+    public function large_csv_export_endpoint_is_not_available()
     {
-        // Create very large dataset
         Truck::factory()->count(5000)->create();
 
         $startTime = microtime(true);
 
         $response = $this->actingAs($this->user)
-            ->get(route('trucks.export'));
+            ->get('/trucks/export/csv');
 
-        $endTime = microtime(true);
-        $responseTime = $endTime - $startTime;
+        $response->assertNotFound();
 
-        $response->assertStatus(200);
-        $response->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
-
-        // Assert export response time is under 10 seconds
-        $this->assertLessThan(10.0, $responseTime, 'Large CSV export took too long');
+        $responseTime = microtime(true) - $startTime;
+        $this->assertLessThan(1.0, $responseTime, 'Disabled export endpoint responded too slowly');
     }
 
     /** @test */
@@ -534,7 +522,7 @@ class PerformanceTest extends TestCase
                 'status' => 'active',
                 'sort' => 'plate',
                 'direction' => 'asc',
-                'page' => 1
+                'page' => 1,
             ]));
 
         $endTime = microtime(true);

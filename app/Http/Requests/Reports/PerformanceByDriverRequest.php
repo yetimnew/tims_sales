@@ -12,7 +12,13 @@ class PerformanceByDriverRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        $user = $this->user();
+
+        if ($user === null) {
+            return false;
+        }
+
+        return $user->can('reports.performance-by-driver.view') || $user->can('reports.performance-by-driver.export');
     }
 
     /**

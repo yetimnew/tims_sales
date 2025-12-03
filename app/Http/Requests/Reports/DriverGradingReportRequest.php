@@ -8,7 +8,13 @@ class DriverGradingReportRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('drivers.show') ?? false;
+        $user = $this->user();
+
+        if ($user === null) {
+            return false;
+        }
+
+        return $user->can('reports.driver-grading.view');
     }
 
     public function rules(): array

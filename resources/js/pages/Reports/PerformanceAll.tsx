@@ -15,6 +15,7 @@ import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import type { LucideIcon } from 'lucide-react';
 import { BarChart3, ChevronDown, ChevronUp, CircleDollarSign, ClipboardList, Download, FileDigit, FileSpreadsheet, FileType2, Filter, Flame, MapPin, PackageCheck, RefreshCcw, Route, Search, TrendingUp, Truck, User } from 'lucide-react';
+import { usePermissions } from '@/hooks/use-permissions';
 
 interface OptionBase {
     id: number;
@@ -150,6 +151,8 @@ const getMarginChipClass = (value: number | null): string => {
 };
 
 export default function PerformanceAll({ filters, rows = [], summary, options }: PerformanceAllProps) {
+    const { hasPermission } = usePermissions();
+    const canExport = hasPermission('reports.performance-all.export');
     const driverOptions = Array.isArray(options?.drivers) ? options.drivers : [];
     const truckOptions = Array.isArray(options?.trucks) ? options.trucks : [];
     const operationOptions = Array.isArray(options?.operations) ? options.operations : [];
@@ -326,6 +329,10 @@ export default function PerformanceAll({ filters, rows = [], summary, options }:
     };
 
     const handleExport = (format: 'csv' | 'xlsx' | 'pdf') => {
+        if (!canExport) {
+            return;
+        }
+
         const params = new URLSearchParams();
 
         if (from) params.set('from', from);
@@ -703,28 +710,30 @@ export default function PerformanceAll({ filters, rows = [], summary, options }:
                                         </DialogFooter>
                                     </DialogContent>
                                 </Dialog>
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button type="button" variant="secondary" className="gap-2">
-                                            <Download className="h-4 w-4" />
-                                            Export
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end" className="w-44">
-                                        <DropdownMenuItem onSelect={() => handleExport('csv')} className="gap-2">
-                                            <FileDigit className="h-4 w-4 text-amber-500" />
-                                            CSV
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onSelect={() => handleExport('xlsx')} className="gap-2">
-                                            <FileSpreadsheet className="h-4 w-4 text-emerald-500" />
-                                            Excel
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onSelect={() => handleExport('pdf')} className="gap-2">
-                                            <FileType2 className="h-4 w-4 text-rose-500" />
-                                            PDF
-                                        </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
+                                {canExport && (
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button type="button" variant="secondary" className="gap-2">
+                                                <Download className="h-4 w-4" />
+                                                Export
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end" className="w-44">
+                                            <DropdownMenuItem onSelect={() => handleExport('csv')} className="gap-2">
+                                                <FileDigit className="h-4 w-4 text-amber-500" />
+                                                CSV
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onSelect={() => handleExport('xlsx')} className="gap-2">
+                                                <FileSpreadsheet className="h-4 w-4 text-emerald-500" />
+                                                Excel
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onSelect={() => handleExport('pdf')} className="gap-2">
+                                                <FileType2 className="h-4 w-4 text-rose-500" />
+                                                PDF
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                )}
                                 <Button type="button" variant="outline" className="gap-2" onClick={handleReset}>
                                     <RefreshCcw className="h-4 w-4" />
                                     Reset

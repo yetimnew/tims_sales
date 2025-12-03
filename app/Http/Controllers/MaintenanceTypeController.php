@@ -18,9 +18,9 @@ class MaintenanceTypeController extends Controller
         // Handle search
         $query = MaintenanceType::query();
 
-        if ($request->has('search') && !empty($request->search)) {
+        if ($request->has('search') && ! empty($request->search)) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                     ->orWhere('category', 'like', "%{$search}%")
                     ->orWhere('description', 'like', "%{$search}%");
@@ -33,13 +33,13 @@ class MaintenanceTypeController extends Controller
 
         // Validate sort column to prevent SQL injection
         $allowedSorts = ['name', 'category', 'interval_km', 'interval_months', 'estimated_cost', 'is_active', 'created_at'];
-        if (!in_array($sort, $allowedSorts)) {
+        if (! in_array($sort, $allowedSorts, true)) {
             $sort = 'name';
         }
 
         $query->orderBy($sort, $direction);
 
-        $maintenanceTypes = $query->paginate(5); // Temporarily set to 5 for testing pagination
+        $maintenanceTypes = $query->paginate(5);
 
         // Get statistics
         $statistics = [
@@ -105,7 +105,6 @@ class MaintenanceTypeController extends Controller
      */
     public function show(MaintenanceType $maintenanceType)
     {
-        // Load activity logs for this maintenance type
         $activityLogs = Activity::forSubject($maintenanceType)
             ->with('causer')
             ->orderByDesc('created_at')
@@ -133,7 +132,7 @@ class MaintenanceTypeController extends Controller
     public function update(Request $request, MaintenanceType $maintenanceType)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:maintenance_types,name,' . $maintenanceType->id,
+            'name' => 'required|string|max:255|unique:maintenance_types,name,'.$maintenanceType->id,
             'category' => 'required|string|in:Preventive,Corrective,Emergency',
             'interval_km' => 'nullable|integer|min:1',
             'interval_months' => 'nullable|integer|min:1',
@@ -152,7 +151,7 @@ class MaintenanceTypeController extends Controller
                 ->causedBy(Auth::user())
                 ->withProperties([
                     'old' => $oldAttributes,
-                    'attributes' => $maintenanceType->getAttributes()
+                    'attributes' => $maintenanceType->getAttributes(),
                 ])
                 ->log('updated');
         }
@@ -167,14 +166,12 @@ class MaintenanceTypeController extends Controller
     public function destroy(MaintenanceType $maintenanceType)
     {
         try {
-            // Check for related records that prevent deletion
             if ($maintenanceType->maintenanceRecords()->count() > 0) {
                 return back()->withErrors([
-                    'error' => 'You are not allowed to delete this maintenance type. It has ' . $maintenanceType->maintenanceRecords()->count() . ' maintenance record(s) associated with it. Please reassign or delete all maintenance records first.'
+                    'error' => 'You are not allowed to delete this maintenance type. It has '.$maintenanceType->maintenanceRecords()->count().' maintenance record(s) associated with it. Please reassign or delete all maintenance records first.',
                 ]);
             }
 
-            // Log the deletion
             if (Auth::check()) {
                 activity()
                     ->performedOn($maintenanceType)
@@ -197,33 +194,30 @@ class MaintenanceTypeController extends Controller
      */
     public function export(Request $request)
     {
-        // Apply search if provided
         $query = MaintenanceType::query();
 
-        if ($request->has('search') && !empty($request->search)) {
+        if ($request->has('search') && ! empty($request->search)) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                     ->orWhere('category', 'like', "%{$search}%")
                     ->orWhere('description', 'like', "%{$search}%");
             });
         }
 
-        // Apply sorting if provided
         $sort = $request->input('sort', 'name');
         $direction = $request->input('direction', 'asc');
         $allowedSorts = ['name', 'category', 'interval_km', 'interval_months', 'estimated_cost', 'is_active'];
-        if (in_array($sort, $allowedSorts)) {
+        if (in_array($sort, $allowedSorts, true)) {
             $query->orderBy($sort, $direction);
         }
 
         $maintenanceTypes = $query->get();
 
-        // Generate CSV
         $csvData = "Name,Category,Interval KM,Interval Months,Estimated Cost,Description,Is Active\n";
         foreach ($maintenanceTypes as $type) {
             $csvData .= sprintf(
-                '"%s","%s","%s","%s","%s","%s","%s"' . "\n",
+                '"%s","%s","%s","%s","%s","%s","%s"'."\n",
                 $type->name,
                 $type->category,
                 $type->interval_km ?? '',
@@ -234,7 +228,6 @@ class MaintenanceTypeController extends Controller
             );
         }
 
-        // Log the export
         if (Auth::check()) {
             activity()
                 ->causedBy(Auth::user())
@@ -242,11 +235,11 @@ class MaintenanceTypeController extends Controller
                 ->log('exported maintenance types to CSV');
         }
 
-        $filename = 'maintenance-types-' . now()->format('Y-m-d-H-i-s') . '.csv';
+        $filename = 'maintenance-types-'.now()->format('Y-m-d-H-i-s').'.csv';
 
         return response($csvData)
             ->header('Content-Type', 'text/csv')
-            ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
+            ->header('Content-Disposition', 'attachment; filename="'.$filename.'"');
     }
 
     /**
@@ -256,14 +249,13 @@ class MaintenanceTypeController extends Controller
     {
         $request->validate([
             'ids' => 'required|array',
-            'ids.*' => 'integer|exists:maintenance_types,id'
+            'ids.*' => 'integer|exists:maintenance_types,id',
         ]);
 
         try {
             $ids = $request->input('ids');
             $count = count($ids);
 
-            // Check if any maintenance types are associated with maintenance records
             $hasAssociations = false;
             foreach ($ids as $id) {
                 $maintenanceType = MaintenanceType::find($id);
@@ -275,11 +267,10 @@ class MaintenanceTypeController extends Controller
 
             if ($hasAssociations) {
                 return response()->json([
-                    'error' => 'One or more selected maintenance types have associated maintenance records and cannot be deleted.'
+                    'error' => 'One or more selected maintenance types have associated maintenance records and cannot be deleted.',
                 ], 422);
             }
 
-            // Log bulk deletion
             if (Auth::check()) {
                 activity()
                     ->causedBy(Auth::user())
@@ -291,9 +282,8 @@ class MaintenanceTypeController extends Controller
 
             return response()->json([
                 'message' => "Successfully deleted {$count} maintenance type(s).",
-                'count' => $count
+                'count' => $count,
             ]);
-
         } catch (\Exception $e) {
             return response()->json(['error' => 'Failed to delete maintenance types.'], 500);
         }
@@ -306,14 +296,13 @@ class MaintenanceTypeController extends Controller
     {
         $request->validate([
             'ids' => 'required|array',
-            'ids.*' => 'integer|exists:maintenance_types,id'
+            'ids.*' => 'integer|exists:maintenance_types,id',
         ]);
 
         try {
             $ids = $request->input('ids');
             $count = count($ids);
 
-            // Log bulk activation
             if (Auth::check()) {
                 activity()
                     ->causedBy(Auth::user())
@@ -325,9 +314,8 @@ class MaintenanceTypeController extends Controller
 
             return response()->json([
                 'message' => "Successfully activated {$count} maintenance type(s).",
-                'count' => $count
+                'count' => $count,
             ]);
-
         } catch (\Exception $e) {
             return response()->json(['error' => 'Failed to activate maintenance types.'], 500);
         }
@@ -340,14 +328,13 @@ class MaintenanceTypeController extends Controller
     {
         $request->validate([
             'ids' => 'required|array',
-            'ids.*' => 'integer|exists:maintenance_types,id'
+            'ids.*' => 'integer|exists:maintenance_types,id',
         ]);
 
         try {
             $ids = $request->input('ids');
             $count = count($ids);
 
-            // Log bulk deactivation
             if (Auth::check()) {
                 activity()
                     ->causedBy(Auth::user())
@@ -359,9 +346,8 @@ class MaintenanceTypeController extends Controller
 
             return response()->json([
                 'message' => "Successfully deactivated {$count} maintenance type(s).",
-                'count' => $count
+                'count' => $count,
             ]);
-
         } catch (\Exception $e) {
             return response()->json(['error' => 'Failed to deactivate maintenance types.'], 500);
         }

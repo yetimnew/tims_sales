@@ -2,11 +2,11 @@
 
 namespace Tests\Feature\FileUpload;
 
-use App\Models\User;
-use App\Models\Truck;
 use App\Models\Driver;
-use App\Models\Role;
 use App\Models\Permission;
+use App\Models\Role;
+use App\Models\Truck;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -28,9 +28,9 @@ class FileUploadTest extends TestCase
         // Create permissions
         $permissions = [
             'trucks.view', 'trucks.create', 'trucks.edit', 'trucks.destroy',
-            'trucks.show', 'trucks.store', 'trucks.update', 'trucks.export',
+            'trucks.show', 'trucks.store', 'trucks.update',
             'drivers.view', 'drivers.create', 'drivers.edit', 'drivers.destroy',
-            'drivers.show', 'drivers.store', 'drivers.update', 'drivers.export'
+            'drivers.show', 'drivers.store', 'drivers.update', 'drivers.export',
         ];
 
         foreach ($permissions as $permission) {
@@ -53,13 +53,13 @@ class FileUploadTest extends TestCase
 
         $response = $this->actingAs($this->user)
             ->post('/user/profile-picture', [
-                'profile_picture' => $file
+                'profile_picture' => $file,
             ]);
 
         $response->assertRedirect();
         $response->assertSessionHas('success');
 
-        Storage::disk('public')->assertExists('profile-pictures/' . $file->hashName());
+        Storage::disk('public')->assertExists('profile-pictures/'.$file->hashName());
     }
 
     /** @test */
@@ -71,13 +71,13 @@ class FileUploadTest extends TestCase
             ->post('/user/documents', [
                 'document' => $file,
                 'name' => 'Test Document',
-                'type' => 'contract'
+                'type' => 'contract',
             ]);
 
         $response->assertRedirect();
         $response->assertSessionHas('success');
 
-        Storage::disk('public')->assertExists('documents/' . $file->hashName());
+        Storage::disk('public')->assertExists('documents/'.$file->hashName());
     }
 
     /** @test */
@@ -87,16 +87,16 @@ class FileUploadTest extends TestCase
         $file = UploadedFile::fake()->create('truck-document.pdf', 1000);
 
         $response = $this->actingAs($this->user)
-            ->post('/trucks/' . $truck->id . '/documents', [
+            ->post('/trucks/'.$truck->id.'/documents', [
                 'document' => $file,
                 'name' => 'Truck Registration',
-                'type' => 'registration'
+                'type' => 'registration',
             ]);
 
         $response->assertRedirect();
         $response->assertSessionHas('success');
 
-        Storage::disk('public')->assertExists('truck-documents/' . $file->hashName());
+        Storage::disk('public')->assertExists('truck-documents/'.$file->hashName());
     }
 
     /** @test */
@@ -106,16 +106,16 @@ class FileUploadTest extends TestCase
         $file = UploadedFile::fake()->create('driver-license.pdf', 1000);
 
         $response = $this->actingAs($this->user)
-            ->post('/drivers/' . $driver->id . '/documents', [
+            ->post('/drivers/'.$driver->id.'/documents', [
                 'document' => $file,
                 'name' => 'Driver License',
-                'type' => 'license'
+                'type' => 'license',
             ]);
 
         $response->assertRedirect();
         $response->assertSessionHas('success');
 
-        Storage::disk('public')->assertExists('driver-documents/' . $file->hashName());
+        Storage::disk('public')->assertExists('driver-documents/'.$file->hashName());
     }
 
     /** @test */
@@ -125,15 +125,15 @@ class FileUploadTest extends TestCase
         $file = UploadedFile::fake()->image('maintenance.jpg', 800, 600);
 
         $response = $this->actingAs($this->user)
-            ->post('/maintenance/' . $maintenance->id . '/images', [
+            ->post('/maintenance/'.$maintenance->id.'/images', [
                 'image' => $file,
-                'description' => 'Before maintenance'
+                'description' => 'Before maintenance',
             ]);
 
         $response->assertRedirect();
         $response->assertSessionHas('success');
 
-        Storage::disk('public')->assertExists('maintenance-images/' . $file->hashName());
+        Storage::disk('public')->assertExists('maintenance-images/'.$file->hashName());
     }
 
     /** @test */
@@ -143,14 +143,14 @@ class FileUploadTest extends TestCase
         $file = UploadedFile::fake()->image('receipt.jpg', 800, 600);
 
         $response = $this->actingAs($this->user)
-            ->post('/fuel/' . $fuel->id . '/receipt', [
-                'receipt' => $file
+            ->post('/fuel/'.$fuel->id.'/receipt', [
+                'receipt' => $file,
             ]);
 
         $response->assertRedirect();
         $response->assertSessionHas('success');
 
-        Storage::disk('public')->assertExists('fuel-receipts/' . $file->hashName());
+        Storage::disk('public')->assertExists('fuel-receipts/'.$file->hashName());
     }
 
     /** @test */
@@ -162,7 +162,7 @@ class FileUploadTest extends TestCase
             ->post('/user/documents', [
                 'document' => $file,
                 'name' => 'Test Document',
-                'type' => 'contract'
+                'type' => 'contract',
             ]);
 
         $response->assertSessionHasErrors(['document']);
@@ -177,7 +177,7 @@ class FileUploadTest extends TestCase
             ->post('/user/documents', [
                 'document' => $file,
                 'name' => 'Test Document',
-                'type' => 'contract'
+                'type' => 'contract',
             ]);
 
         $response->assertSessionHasErrors(['document']);
@@ -190,7 +190,7 @@ class FileUploadTest extends TestCase
 
         $response = $this->actingAs($this->user)
             ->post('/user/profile-picture', [
-                'profile_picture' => $file
+                'profile_picture' => $file,
             ]);
 
         $response->assertSessionHasErrors(['profile_picture']);
@@ -206,14 +206,14 @@ class FileUploadTest extends TestCase
             ->post('/user/documents', [
                 'document' => $file1,
                 'name' => 'Test Document 1',
-                'type' => 'contract'
+                'type' => 'contract',
             ]);
 
         $response2 = $this->actingAs($this->user)
             ->post('/user/documents', [
                 'document' => $file2,
                 'name' => 'Test Document 2',
-                'type' => 'contract'
+                'type' => 'contract',
             ]);
 
         $response1->assertRedirect();
@@ -233,7 +233,7 @@ class FileUploadTest extends TestCase
             ->post('/user/documents', [
                 'document' => $file,
                 'name' => 'Test Document',
-                'type' => 'contract'
+                'type' => 'contract',
             ]);
 
         $response->assertRedirect();
@@ -242,7 +242,7 @@ class FileUploadTest extends TestCase
             'user_id' => $this->user->id,
             'name' => 'Test Document',
             'type' => 'contract',
-            'filename' => $file->hashName()
+            'filename' => $file->hashName(),
         ]);
     }
 
@@ -256,13 +256,13 @@ class FileUploadTest extends TestCase
             ->post('/user/documents', [
                 'document' => $file,
                 'name' => 'Test Document',
-                'type' => 'contract'
+                'type' => 'contract',
             ]);
 
         $response->assertRedirect();
 
         $response = $this->actingAs($this->user)
-            ->get('/user/documents/' . $filename . '/download');
+            ->get('/user/documents/'.$filename.'/download');
 
         $response->assertStatus(200);
         $response->assertHeader('Content-Type', 'application/pdf');
@@ -277,7 +277,7 @@ class FileUploadTest extends TestCase
             ->post('/user/documents', [
                 'document' => $file,
                 'name' => 'Test Document',
-                'type' => 'contract'
+                'type' => 'contract',
             ]);
 
         $response->assertRedirect();
@@ -285,16 +285,16 @@ class FileUploadTest extends TestCase
         $upload = \App\Models\FileUpload::where('user_id', $this->user->id)->first();
 
         $response = $this->actingAs($this->user)
-            ->delete('/user/documents/' . $upload->id);
+            ->delete('/user/documents/'.$upload->id);
 
         $response->assertRedirect();
         $response->assertSessionHas('success');
 
         $this->assertDatabaseMissing('file_uploads', [
-            'id' => $upload->id
+            'id' => $upload->id,
         ]);
 
-        Storage::disk('public')->assertMissing('documents/' . $file->hashName());
+        Storage::disk('public')->assertMissing('documents/'.$file->hashName());
     }
 
     /** @test */
@@ -305,7 +305,7 @@ class FileUploadTest extends TestCase
         $response = $this->post('/user/documents', [
             'document' => $file,
             'name' => 'Test Document',
-            'type' => 'contract'
+            'type' => 'contract',
         ]);
 
         $response->assertRedirect('/login');
@@ -321,7 +321,7 @@ class FileUploadTest extends TestCase
             ->post('/user/documents', [
                 'document' => $file,
                 'name' => 'Test Document',
-                'type' => 'contract'
+                'type' => 'contract',
             ]);
 
         $response->assertStatus(403);
@@ -337,7 +337,7 @@ class FileUploadTest extends TestCase
                 'document' => $file,
                 'name' => 'Test Document',
                 'type' => 'contract',
-                'scan_for_viruses' => true
+                'scan_for_viruses' => true,
             ]);
 
         $response->assertRedirect();
@@ -352,7 +352,7 @@ class FileUploadTest extends TestCase
         $response = $this->actingAs($this->user)
             ->post('/user/images', [
                 'image' => $file,
-                'compress' => true
+                'compress' => true,
             ]);
 
         $response->assertRedirect();
@@ -368,7 +368,7 @@ class FileUploadTest extends TestCase
             ->post('/user/images', [
                 'image' => $file,
                 'add_watermark' => true,
-                'watermark_text' => 'Confidential'
+                'watermark_text' => 'Confidential',
             ]);
 
         $response->assertRedirect();
@@ -383,7 +383,7 @@ class FileUploadTest extends TestCase
         $response = $this->actingAs($this->user)
             ->post('/user/images', [
                 'image' => $file,
-                'extract_metadata' => true
+                'extract_metadata' => true,
             ]);
 
         $response->assertRedirect();
@@ -396,14 +396,14 @@ class FileUploadTest extends TestCase
         $files = [
             UploadedFile::fake()->create('document1.pdf', 1000),
             UploadedFile::fake()->create('document2.pdf', 1000),
-            UploadedFile::fake()->create('document3.pdf', 1000)
+            UploadedFile::fake()->create('document3.pdf', 1000),
         ];
 
         $response = $this->actingAs($this->user)
             ->post('/user/documents/batch', [
                 'documents' => $files,
                 'name' => 'Batch Documents',
-                'type' => 'contract'
+                'type' => 'contract',
             ]);
 
         $response->assertRedirect();
@@ -421,7 +421,7 @@ class FileUploadTest extends TestCase
             ->post('/user/documents/extract', [
                 'zip_file' => $file,
                 'name' => 'Extracted Documents',
-                'type' => 'contract'
+                'type' => 'contract',
             ]);
 
         $response->assertRedirect();
@@ -436,7 +436,7 @@ class FileUploadTest extends TestCase
         $response = $this->actingAs($this->user)
             ->post('/user/documents/convert', [
                 'document' => $file,
-                'target_format' => 'pdf'
+                'target_format' => 'pdf',
             ]);
 
         $response->assertRedirect();
@@ -451,7 +451,7 @@ class FileUploadTest extends TestCase
         $response = $this->actingAs($this->user)
             ->post('/user/documents/ocr', [
                 'image' => $file,
-                'extract_text' => true
+                'extract_text' => true,
             ]);
 
         $response->assertRedirect();
@@ -466,13 +466,13 @@ class FileUploadTest extends TestCase
         $response = $this->actingAs($this->user)
             ->post('/user/images', [
                 'image' => $file,
-                'generate_thumbnail' => true
+                'generate_thumbnail' => true,
             ]);
 
         $response->assertRedirect();
         $response->assertSessionHas('success');
 
-        Storage::disk('public')->assertExists('thumbnails/' . $file->hashName());
+        Storage::disk('public')->assertExists('thumbnails/'.$file->hashName());
     }
 
     /** @test */
@@ -485,13 +485,13 @@ class FileUploadTest extends TestCase
                 'document' => $file,
                 'name' => 'Test Document',
                 'type' => 'contract',
-                'generate_preview' => true
+                'generate_preview' => true,
             ]);
 
         $response->assertRedirect();
         $response->assertSessionHas('success');
 
-        Storage::disk('public')->assertExists('previews/' . $file->hashName() . '.jpg');
+        Storage::disk('public')->assertExists('previews/'.$file->hashName().'.jpg');
     }
 
     /** @test */
@@ -504,7 +504,7 @@ class FileUploadTest extends TestCase
             ->post('/user/documents', [
                 'document' => $file1,
                 'name' => 'Test Document',
-                'type' => 'contract'
+                'type' => 'contract',
             ]);
 
         $response2 = $this->actingAs($this->user)
@@ -512,7 +512,7 @@ class FileUploadTest extends TestCase
                 'document' => $file2,
                 'name' => 'Test Document',
                 'type' => 'contract',
-                'version' => 2
+                'version' => 2,
             ]);
 
         $response1->assertRedirect();
@@ -521,11 +521,11 @@ class FileUploadTest extends TestCase
         $this->assertDatabaseCount('file_uploads', 2);
         $this->assertDatabaseHas('file_uploads', [
             'name' => 'Test Document',
-            'version' => 1
+            'version' => 1,
         ]);
         $this->assertDatabaseHas('file_uploads', [
             'name' => 'Test Document',
-            'version' => 2
+            'version' => 2,
         ]);
     }
 
@@ -539,7 +539,7 @@ class FileUploadTest extends TestCase
                 'document' => $file,
                 'name' => 'Test Document',
                 'type' => 'contract',
-                'shareable' => true
+                'shareable' => true,
             ]);
 
         $response->assertRedirect();
@@ -548,9 +548,9 @@ class FileUploadTest extends TestCase
         $upload = \App\Models\FileUpload::where('user_id', $this->user->id)->first();
 
         $response = $this->actingAs($this->user)
-            ->post('/user/documents/' . $upload->id . '/share', [
+            ->post('/user/documents/'.$upload->id.'/share', [
                 'email' => 'test@example.com',
-                'expires_at' => now()->addDays(7)
+                'expires_at' => now()->addDays(7),
             ]);
 
         $response->assertRedirect();
@@ -570,8 +570,8 @@ class FileUploadTest extends TestCase
                 'permissions' => [
                     'view' => ['admin', 'manager'],
                     'edit' => ['admin'],
-                    'delete' => ['admin']
-                ]
+                    'delete' => ['admin'],
+                ],
             ]);
 
         $response->assertRedirect();
@@ -588,7 +588,7 @@ class FileUploadTest extends TestCase
                 'document' => $file,
                 'name' => 'Test Document',
                 'type' => 'contract',
-                'encrypt' => true
+                'encrypt' => true,
             ]);
 
         $response->assertRedirect();
@@ -605,7 +605,7 @@ class FileUploadTest extends TestCase
                 'document' => $file,
                 'name' => 'Test Document',
                 'type' => 'contract',
-                'backup' => true
+                'backup' => true,
             ]);
 
         $response->assertRedirect();
@@ -623,7 +623,7 @@ class FileUploadTest extends TestCase
                 'name' => 'Test Document',
                 'type' => 'contract',
                 'auto_cleanup' => true,
-                'cleanup_after_days' => 30
+                'cleanup_after_days' => 30,
             ]);
 
         $response->assertRedirect();

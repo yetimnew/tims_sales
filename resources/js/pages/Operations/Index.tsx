@@ -22,7 +22,6 @@ import {
     ArrowUpDown,
     CheckCircle,
     Eye,
-    FileDown,
     Gauge,
     Plus,
     Search,
@@ -353,32 +352,8 @@ export default function OperationsIndex({
         }
     }
 
-    const handleExport = React.useCallback(() => {
-        const params = new URLSearchParams()
-        if (searchTerm.trim()) {
-            params.set('search', searchTerm.trim())
-        }
-        if (selectedStatus !== 'all') {
-            params.set('status', selectedStatus)
-        }
-        if (selectedCustomer !== 'all') {
-            params.set('customer', selectedCustomer)
-        }
-        params.set('sort', sortColumn)
-        params.set('direction', sortDirection)
-
-        const queryString = params.toString()
-        window.location.href = queryString ? `/operations/export/csv?${queryString}` : '/operations/export/csv'
-    }, [searchTerm, selectedStatus, selectedCustomer, sortColumn, sortDirection])
-
     const headerActions = (
         <>
-            {hasPermission('operations.export') && (
-                <Button variant="outline" onClick={handleExport}>
-                    <FileDown className="mr-2 h-4 w-4" />
-                    Export CSV
-                </Button>
-            )}
             {hasPermission('operations.create') && (
                 <Button asChild>
                     <Link href="/operations/create">

@@ -4,6 +4,7 @@ import { LucideIcon } from 'lucide-react';
 export interface Auth {
     user: User;
     permissions: string[];
+    all_permissions: string[];
 }
 
 export interface BreadcrumbItem {
@@ -22,6 +23,7 @@ export interface NavItem {
     icon?: LucideIcon | null;
     isActive?: boolean;
     items?: NavItem[]; // Support for nested menu items
+    requiredPermissions?: string[];
 }
 
 export interface SharedData {

@@ -35,7 +35,7 @@ class NotificationPreferenceAdminControllerTest extends TestCase
         $response->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('Notifications/Preferences')
-                ->has('users.data')
+                ->has('users', 2)
                 ->where('types.0.key', $type->key)
             );
     }

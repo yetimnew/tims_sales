@@ -6,7 +6,9 @@ use App\Contracts\ChannelAwareNotification;
 use App\Models\NotificationType;
 use Closure;
 use Illuminate\Notifications\Notification as IlluminateNotification;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
+use Throwable;
 
 class NotificationDispatcher
 {
@@ -39,7 +41,18 @@ class NotificationDispatcher
 
             $notification = $factory($type)->withChannels($channels);
 
-            Notification::send($user, $notification);
+            try {
+                Notification::send($user, $notification);
+            } catch (Throwable $exception) {
+                Log::warning('Failed to dispatch notification for user.', [
+                    'notification_type' => $type->key,
+                    'user_id' => $user->id,
+                    'channels' => $channels,
+                    'exception' => $exception->getMessage(),
+                ]);
+
+                report($exception);
+            }
         }
     }
 }

@@ -41,7 +41,7 @@ class TruckControllerTest extends TestCase
         // Create permissions
         $permissions = [
             'trucks.view', 'trucks.create', 'trucks.edit', 'trucks.destroy',
-            'trucks.show', 'trucks.store', 'trucks.update', 'trucks.export',
+            'trucks.show', 'trucks.store', 'trucks.update',
             'trucks.deactivate', 'trucks.free',
         ];
 
@@ -386,18 +386,14 @@ class TruckControllerTest extends TestCase
     }
 
     #[Test]
-    public function it_can_export_trucks_to_csv()
+    public function it_reports_not_found_when_exporting_trucks()
     {
         Truck::factory()->count(3)->create();
 
         $response = $this->actingAs($this->user)
-            ->get(route('trucks.export'));
+            ->get('/trucks/export/csv');
 
-        $response->assertStatus(200);
-        $response->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
-        $contentDisposition = $response->headers->get('Content-Disposition');
-        $this->assertStringContainsString('attachment; filename="trucks_', $contentDisposition);
-        $this->assertStringContainsString('.csv"', $contentDisposition);
+        $response->assertNotFound();
     }
 
     #[Test]

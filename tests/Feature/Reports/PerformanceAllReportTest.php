@@ -12,6 +12,8 @@ use App\Models\Truck;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 class PerformanceAllReportTest extends TestCase
@@ -22,6 +24,9 @@ class PerformanceAllReportTest extends TestCase
     {
         /** @var User $user */
         $user = User::factory()->create();
+
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        $this->grantPermissions($user, 'reports.performance-all.view');
 
         $driver = Driver::factory()->state(['status' => 'active'])->create(['name' => 'Alex Rider']);
         $truck = Truck::factory()->state(['status' => 'active'])->create(['plate' => 'AB-1234']);
@@ -106,6 +111,9 @@ class PerformanceAllReportTest extends TestCase
         /** @var User $user */
         $user = User::factory()->create();
 
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        $this->grantPermissions($user, 'reports.performance-all.view', 'reports.performance-all.export');
+
         $driverTruck = DriverTruck::factory()->create();
         $operation = Operation::factory()->create(['tariff' => 100]);
         $origin = Place::factory()->create();
@@ -128,5 +136,17 @@ class PerformanceAllReportTest extends TestCase
         $response->assertOk();
         $this->assertStringContainsString('text/csv', (string) $response->headers->get('content-type'));
         $this->assertNotNull($response->headers->get('content-disposition'));
+    }
+
+    private function grantPermissions(User $user, string ...$permissions): void
+    {
+        foreach ($permissions as $permission) {
+            Permission::firstOrCreate([
+                'name' => $permission,
+                'guard_name' => 'web',
+            ]);
+        }
+
+        $user->givePermissionTo($permissions);
     }
 }

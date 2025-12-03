@@ -14,7 +14,7 @@ import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialo
 import { usePermissions } from '@/hooks/use-permissions';
 import { Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
-import { Plus, Eye, Edit, Trash2, Search, ArrowUpDown, FileDown, Truck, CheckCircle, Package, Settings } from 'lucide-react';
+import { Plus, Eye, Edit, Trash2, Search, ArrowUpDown, Truck, CheckCircle, Package, Settings } from 'lucide-react';
 import { InertiaPagination } from '@/components/ui/pagination';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import * as React from 'react';
@@ -199,26 +199,8 @@ export default function VehicleTypesIndex({ vehicleTypes, metrics, filters, perP
         });
     };
 
-    const handleExport = React.useCallback(() => {
-        const params = new URLSearchParams();
-        if (searchTerm.trim()) {
-            params.set('search', searchTerm.trim());
-        }
-        params.set('sort', sortColumn);
-        params.set('direction', sortDirection);
-
-        const queryString = params.toString();
-        window.location.href = queryString ? `/vehicletypes/export/csv?${queryString}` : '/vehicletypes/export/csv';
-    }, [searchTerm, sortColumn, sortDirection]);
-
     const headerActions = (
         <>
-            {hasPermission('vehicletypes.export') && (
-                <Button variant="outline" onClick={handleExport}>
-                    <FileDown className="mr-2 h-4 w-4" />
-                    Export CSV
-                </Button>
-            )}
             {hasPermission('vehicletypes.create') && (
                 <Button asChild>
                     <Link href="/vehicletypes/create">

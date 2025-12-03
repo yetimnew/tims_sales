@@ -3,17 +3,20 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { InertiaPagination } from '@/components/ui/pagination';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, usePage } from '@inertiajs/react';
 import { Transition } from '@headlessui/react';
+import { usePermissions } from '@/hooks/use-permissions';
 import * as React from 'react';
-import { Plus, Trash2, Undo2 } from 'lucide-react';
+import { AlertCircle, Check, CheckCircle2, ChevronDown, Filter, Trash2, Undo2 } from 'lucide-react';
 import { index as indexRoute } from '@/routes/notifications/preferences';
 
 interface NotificationTypeResource {
@@ -23,6 +26,8 @@ interface NotificationTypeResource {
     description: string | null;
     default_in_app: boolean;
     default_email: boolean;
+    category: string;
+    category_slug: string;
 }
 
 interface AssignedByResource {
@@ -39,6 +44,8 @@ interface UserPreferenceResource {
     email_enabled: boolean;
     assigned_by?: AssignedByResource | null;
     updated_at?: string | null;
+    category: string;
+    category_slug: string;
 }
 
 interface UserResource {
@@ -47,23 +54,6 @@ interface UserResource {
     email: string;
     roles: string[];
     preferences: UserPreferenceResource[];
-}
-
-interface LinkResource {
-    url: string | null;
-    label: string;
-    active: boolean;
-}
-
-interface Paginated<T> {
-    data: T[];
-    links: LinkResource[];
-    current_page: number;
-    last_page: number;
-    per_page: number;
-    total: number;
-    from?: number | null;
-    to?: number | null;
 }
 
 type PreferenceRow = {
@@ -77,6 +67,8 @@ type PreferenceRow = {
     updatedAt?: string | null;
     remove?: boolean;
     isNew?: boolean;
+    category: string;
+    categorySlug: string;
 };
 
 interface NotificationPreferencesProps {
@@ -85,7 +77,7 @@ interface NotificationPreferencesProps {
         selected_user?: string | number | null;
     };
     types: NotificationTypeResource[];
-    users: Paginated<UserResource>;
+    users: UserResource[];
 }
 
 type FlashProps = {
@@ -102,17 +94,39 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-const toPreferenceRow = (preference: UserPreferenceResource): PreferenceRow => ({
-    typeId: preference.type_id,
-    key: preference.key,
-    name: preference.name,
-    description: preference.description,
-    inAppEnabled: preference.in_app_enabled,
-    emailEnabled: preference.email_enabled,
-    assignedBy: preference.assigned_by ?? undefined,
-    updatedAt: preference.updated_at ?? undefined,
+const toPreferenceRow = (preference: UserPreferenceResource): PreferenceRow => {
+    const categorySlug = preference.category_slug ?? 'general';
+    const categoryName = preference.category ?? 'General';
+
+    return {
+        typeId: preference.type_id,
+        key: preference.key,
+        name: preference.name,
+        description: preference.description,
+        inAppEnabled: preference.in_app_enabled,
+        emailEnabled: preference.email_enabled,
+        assignedBy: preference.assigned_by ?? undefined,
+        updatedAt: preference.updated_at ?? undefined,
+        remove: false,
+        isNew: false,
+        category: categoryName,
+        categorySlug,
+    };
+};
+
+const toPreferenceRowFromType = (type: NotificationTypeResource): PreferenceRow => ({
+    typeId: type.id,
+    key: type.key,
+    name: type.name,
+    description: type.description,
+    inAppEnabled: type.default_in_app,
+    emailEnabled: type.default_email,
+    assignedBy: undefined,
+    updatedAt: undefined,
     remove: false,
-    isNew: false,
+    isNew: true,
+    category: type.category ?? 'General',
+    categorySlug: type.category_slug ?? 'general',
 });
 
 const formatTimestamp = (timestamp?: string | null): string | null => {
@@ -135,6 +149,8 @@ const formatTimestamp = (timestamp?: string | null): string | null => {
 
 export default function NotificationPreferences({ filters, types, users }: NotificationPreferencesProps) {
     const { flash } = usePage<FlashProps>().props;
+    const { hasPermission } = usePermissions();
+    const canManageAssignments = hasPermission('users.update');
     const [searchTerm, setSearchTerm] = React.useState<string>(filters.search ?? '');
 
     const selectedFromFilter = React.useMemo(() => {
@@ -148,11 +164,11 @@ export default function NotificationPreferences({ filters, types, users }: Notif
     }, [filters.selected_user]);
 
     const [selectedUserId, setSelectedUserId] = React.useState<number | null>(() => {
-        if (selectedFromFilter !== null) {
+        if (selectedFromFilter !== null && users.some(user => user.id === selectedFromFilter)) {
             return selectedFromFilter;
         }
 
-        return users.data[0]?.id ?? null;
+        return users[0]?.id ?? null;
     });
 
     React.useEffect(() => {
@@ -161,37 +177,269 @@ export default function NotificationPreferences({ filters, types, users }: Notif
 
     React.useEffect(() => {
         setSelectedUserId(current => {
-            if (current !== null && users.data.some(user => user.id === current)) {
+            if (current !== null && users.some(user => user.id === current)) {
                 return current;
             }
 
-            if (selectedFromFilter !== null && users.data.some(user => user.id === selectedFromFilter)) {
+            if (selectedFromFilter !== null && users.some(user => user.id === selectedFromFilter)) {
                 return selectedFromFilter;
             }
 
-            return users.data[0]?.id ?? null;
+            return users[0]?.id ?? null;
         });
-    }, [users.data, selectedFromFilter]);
+    }, [users, selectedFromFilter]);
 
     const selectedUser = React.useMemo(() => {
         if (selectedUserId === null) {
             return null;
         }
 
-        return users.data.find(user => user.id === selectedUserId) ?? null;
-    }, [selectedUserId, users.data]);
+        return users.find(user => user.id === selectedUserId) ?? null;
+    }, [selectedUserId, users]);
 
     const [rows, setRows] = React.useState<PreferenceRow[]>(() =>
         selectedUser ? selectedUser.preferences.map(toPreferenceRow) : [],
     );
+    const [originalRows, setOriginalRows] = React.useState<PreferenceRow[]>(() =>
+        selectedUser ? selectedUser.preferences.map(toPreferenceRow) : [],
+    );
+    const [rowFilter, setRowFilter] = React.useState<'all' | 'active' | 'pending'>('all');
+    const [categorySelection, setCategorySelection] = React.useState<string>('all');
+    const [typePickerOpen, setTypePickerOpen] = React.useState(false);
+    const [selectedTypeIds, setSelectedTypeIds] = React.useState<number[]>([]);
 
     React.useEffect(() => {
-        setRows(selectedUser ? selectedUser.preferences.map(toPreferenceRow) : []);
+        setSelectedTypeIds([]);
+        setTypePickerOpen(false);
+    }, [categorySelection]);
+
+    React.useEffect(() => {
+        if (!canManageAssignments) {
+            setTypePickerOpen(false);
+            setSelectedTypeIds([]);
+        }
+    }, [canManageAssignments]);
+
+    React.useEffect(() => {
+        const nextRows = selectedUser ? selectedUser.preferences.map(toPreferenceRow) : [];
+        setRows(nextRows.map(row => ({ ...row })));
+        setOriginalRows(nextRows.map(row => ({ ...row })));
+        setRowFilter('all');
+        setCategorySelection('all');
+        setTypePickerOpen(false);
+        setSelectedTypeIds([]);
     }, [selectedUser]);
 
     const availableTypes = React.useMemo(() => {
         return types.filter(type => !rows.some(row => row.typeId === type.id));
     }, [types, rows]);
+
+    const categories = React.useMemo(() => {
+        const entries = new Map<string, string>();
+
+        types.forEach(type => {
+            const slug = type.category_slug ?? 'general';
+            const label = type.category ?? 'General';
+
+            if (!entries.has(slug)) {
+                entries.set(slug, label);
+            }
+        });
+
+        return Array.from(entries.entries())
+            .map(([slug, label]) => ({ slug, label }))
+            .sort((a, b) => a.label.localeCompare(b.label));
+    }, [types]);
+
+    const selectedCategoryLabel = React.useMemo(() => {
+        if (categorySelection === 'all') {
+            return 'All categories';
+        }
+
+        return categories.find(category => category.slug === categorySelection)?.label ?? categorySelection;
+    }, [categorySelection, categories]);
+
+    const categoryFilteredAvailableTypes = React.useMemo(() => {
+        if (categorySelection === 'all') {
+            return [] as NotificationTypeResource[];
+        }
+
+        return availableTypes.filter(type => (type.category_slug ?? 'general') === categorySelection);
+    }, [availableTypes, categorySelection]);
+
+    React.useEffect(() => {
+        setSelectedTypeIds(current =>
+            current.filter(typeId => categoryFilteredAvailableTypes.some(type => type.id === typeId)),
+        );
+    }, [categoryFilteredAvailableTypes]);
+
+    const toggleTypeSelection = React.useCallback((typeId: number) => {
+        setSelectedTypeIds(current =>
+            current.includes(typeId) ? current.filter(id => id !== typeId) : [...current, typeId],
+        );
+    }, []);
+
+    const handleSelectAll = React.useCallback(() => {
+        if (!canManageAssignments) {
+            return;
+        }
+
+        setSelectedTypeIds(categoryFilteredAvailableTypes.map(type => type.id));
+    }, [canManageAssignments, categoryFilteredAvailableTypes]);
+
+    const handleClearSelection = React.useCallback(() => {
+        if (!canManageAssignments) {
+            return;
+        }
+
+        setSelectedTypeIds([]);
+    }, [canManageAssignments]);
+
+    const addTypeIds = React.useCallback(
+        (typeIds: number[]) => {
+            if (!canManageAssignments || typeIds.length === 0) {
+                return;
+            }
+
+            setRows(current => {
+                const existing = new Set(current.map(row => row.typeId));
+                const next = [...current];
+
+                typeIds.forEach(typeId => {
+                    if (existing.has(typeId)) {
+                        return;
+                    }
+
+                    const type = types.find(item => item.id === typeId);
+                    if (!type) {
+                        return;
+                    }
+
+                    existing.add(typeId);
+                    next.push(toPreferenceRowFromType(type));
+                });
+
+                return next;
+            });
+        },
+        [canManageAssignments, types],
+    );
+
+    const handleAddSelected = React.useCallback(() => {
+        if (!canManageAssignments || selectedTypeIds.length === 0) {
+            return;
+        }
+
+        addTypeIds(selectedTypeIds);
+        setSelectedTypeIds([]);
+        setTypePickerOpen(false);
+    }, [addTypeIds, canManageAssignments, selectedTypeIds]);
+
+    const handleAddType = React.useCallback(
+        (typeId: number) => {
+            addTypeIds([typeId]);
+            setSelectedTypeIds(current => current.filter(id => id !== typeId));
+        },
+        [addTypeIds],
+    );
+
+    const handleAssignAllForCategory = React.useCallback(() => {
+        if (!canManageAssignments || categoryFilteredAvailableTypes.length === 0) {
+            return;
+        }
+
+        addTypeIds(categoryFilteredAvailableTypes.map(type => type.id));
+        setSelectedTypeIds([]);
+        setTypePickerOpen(false);
+    }, [addTypeIds, canManageAssignments, categoryFilteredAvailableTypes]);
+
+    const typePickerLabel = React.useMemo(() => {
+        if (!canManageAssignments) {
+            return 'Insufficient permissions';
+        }
+
+        if (categorySelection === 'all') {
+            return 'Select a category first';
+        }
+
+        if (categoryFilteredAvailableTypes.length === 0) {
+            return 'All types assigned';
+        }
+
+        if (selectedTypeIds.length === 0) {
+            return 'Select notification types';
+        }
+
+        if (selectedTypeIds.length === categoryFilteredAvailableTypes.length) {
+            return `Selected all (${selectedTypeIds.length})`;
+        }
+
+        return `${selectedTypeIds.length} selected`;
+    }, [canManageAssignments, categorySelection, categoryFilteredAvailableTypes, selectedTypeIds]);
+
+    const availableCount = categorySelection === 'all' ? availableTypes.length : categoryFilteredAvailableTypes.length;
+
+    const changedTypeIds = React.useMemo(() => {
+        const baseline = new Map(originalRows.map(row => [row.typeId, row]));
+        const changed = new Set<number>();
+
+        rows.forEach(row => {
+            const original = baseline.get(row.typeId);
+
+            if (!original) {
+                if (!row.remove) {
+                    changed.add(row.typeId);
+                }
+
+                return;
+            }
+
+            if (row.remove) {
+                changed.add(row.typeId);
+                return;
+            }
+
+            if (row.inAppEnabled !== original.inAppEnabled || row.emailEnabled !== original.emailEnabled) {
+                changed.add(row.typeId);
+            }
+        });
+
+        return changed;
+    }, [rows, originalRows]);
+
+    const hasChanges = React.useMemo(() => changedTypeIds.size > 0, [changedTypeIds]);
+
+    const filteredRows = React.useMemo(() => {
+        let dataset = rows;
+
+        if (categorySelection !== 'all') {
+            dataset = dataset.filter(row => row.categorySlug === categorySelection);
+        }
+
+        if (rowFilter === 'active') {
+            return dataset.filter(row => !row.remove);
+        }
+
+        if (rowFilter === 'pending') {
+            return dataset.filter(row => row.remove);
+        }
+
+        return dataset;
+    }, [rows, rowFilter, categorySelection]);
+
+    const pendingRemovalCount = React.useMemo(() => filteredRows.filter(row => row.remove).length, [filteredRows]);
+    const fullyEnabledCount = React.useMemo(
+        () => filteredRows.filter(row => row.inAppEnabled && row.emailEnabled && !row.remove).length,
+        [filteredRows],
+    );
+    const inAppEnabledCount = React.useMemo(
+        () => filteredRows.filter(row => row.inAppEnabled && !row.remove).length,
+        [filteredRows],
+    );
+    const emailEnabledCount = React.useMemo(
+        () => filteredRows.filter(row => row.emailEnabled && !row.remove).length,
+        [filteredRows],
+    );
 
     const handleSearchSubmit = React.useCallback(
         (event: React.FormEvent<HTMLFormElement>) => {
@@ -213,39 +461,12 @@ export default function NotificationPreferences({ filters, types, users }: Notif
         [searchTerm, selectedUserId],
     );
 
-    const handleAddType = React.useCallback(
-        (value: string) => {
-            const typeId = Number(value);
-            if (Number.isNaN(typeId)) {
-                return;
-            }
-
-            const type = types.find(item => item.id === typeId);
-            if (!type) {
-                return;
-            }
-
-            setRows(current => [
-                ...current,
-                {
-                    typeId: type.id,
-                    key: type.key,
-                    name: type.name,
-                    description: type.description,
-                    inAppEnabled: type.default_in_app,
-                    emailEnabled: type.default_email,
-                    assignedBy: undefined,
-                    updatedAt: undefined,
-                    remove: false,
-                    isNew: true,
-                },
-            ]);
-        },
-        [types],
-    );
-
     const handleToggle = React.useCallback(
         (typeId: number, channel: 'inAppEnabled' | 'emailEnabled', value: boolean) => {
+            if (!canManageAssignments) {
+                return;
+            }
+
             setRows(current =>
                 current.map(row =>
                     row.typeId === typeId
@@ -257,39 +478,58 @@ export default function NotificationPreferences({ filters, types, users }: Notif
                 ),
             );
         },
-        [],
+        [canManageAssignments],
     );
 
-    const handleRemove = React.useCallback((typeId: number) => {
-        setRows(current =>
-            current.map(row =>
-                row.typeId === typeId
-                    ? {
-                          ...row,
-                          remove: true,
-                      }
-                    : row,
-            ),
-        );
-    }, []);
+    const handleRemove = React.useCallback(
+        (typeId: number) => {
+            if (!canManageAssignments) {
+                return;
+            }
 
-    const handleRestore = React.useCallback((typeId: number) => {
-        setRows(current =>
-            current.map(row =>
-                row.typeId === typeId
-                    ? {
-                          ...row,
-                          remove: false,
-                      }
-                    : row,
-            ),
-        );
-    }, []);
+            setRows(current =>
+                current.map(row =>
+                    row.typeId === typeId
+                        ? {
+                              ...row,
+                              remove: true,
+                          }
+                        : row,
+                ),
+            );
+        },
+        [canManageAssignments],
+    );
+
+    const handleRestore = React.useCallback(
+        (typeId: number) => {
+            if (!canManageAssignments) {
+                return;
+            }
+
+            setRows(current =>
+                current.map(row =>
+                    row.typeId === typeId
+                        ? {
+                              ...row,
+                              remove: false,
+                          }
+                        : row,
+                ),
+            );
+        },
+        [canManageAssignments],
+    );
+
+    const resetChanges = React.useCallback(() => {
+        setRows(originalRows.map(row => ({ ...row })));
+        setRowFilter('all');
+    }, [originalRows]);
 
     const [isSaving, setIsSaving] = React.useState(false);
 
     const handleSave = React.useCallback(() => {
-        if (!selectedUser) {
+        if (!selectedUser || !hasChanges) {
             return;
         }
 
@@ -324,9 +564,10 @@ export default function NotificationPreferences({ filters, types, users }: Notif
                 onFinish: () => setIsSaving(false),
             },
         );
-    }, [rows, searchTerm, selectedUser, selectedUserId]);
+    }, [rows, searchTerm, selectedUser, selectedUserId, hasChanges]);
 
     const successMessage = flash?.success ?? null;
+    const saveDisabled = selectedUser === null || !hasChanges || isSaving;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -385,11 +626,11 @@ export default function NotificationPreferences({ filters, types, users }: Notif
                             <CardDescription>Select a person to manage their notification access.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-2">
-                            {users.data.length === 0 ? (
+                            {users.length === 0 ? (
                                 <p className="text-sm text-muted-foreground">No users match your search criteria.</p>
                             ) : (
                                 <div className="flex flex-col">
-                                    {users.data.map(user => {
+                                    {users.map(user => {
                                         const isSelected = user.id === selectedUserId;
 
                                         return (
@@ -419,11 +660,6 @@ export default function NotificationPreferences({ filters, types, users }: Notif
                                 </div>
                             )}
                         </CardContent>
-                        {users.links.length > 1 && (
-                            <div className="border-t border-border px-4 py-3">
-                                <InertiaPagination links={users.links} />
-                            </div>
-                        )}
                     </Card>
 
                     <Card className="min-h-[420px]">
@@ -437,28 +673,128 @@ export default function NotificationPreferences({ filters, types, users }: Notif
                             </div>
 
                             <div className="flex flex-wrap items-center gap-3">
-                                <Select onValueChange={handleAddType}>
-                                    <SelectTrigger className="w-full md:w-72">
-                                        <SelectValue placeholder="Add notification type" />
+                                <Select value={categorySelection} onValueChange={value => setCategorySelection(value)}>
+                                    <SelectTrigger className="w-full md:w-60">
+                                        <SelectValue placeholder="Select category" />
                                     </SelectTrigger>
                                     <SelectContent className="max-h-64">
-                                        {availableTypes.length === 0 ? (
+                                        <SelectItem value="all">All categories</SelectItem>
+                                        {categories.length === 0 ? (
                                             <div className="px-3 py-2 text-sm text-muted-foreground">
-                                                All notification types are already assigned.
+                                                No notification categories available yet.
                                             </div>
                                         ) : (
-                                            availableTypes.map(type => (
-                                                <SelectItem key={type.id} value={String(type.id)}>
-                                                    {type.name}
+                                            categories.map(category => (
+                                                <SelectItem key={category.slug} value={category.slug}>
+                                                    {category.label}
                                                 </SelectItem>
                                             ))
                                         )}
                                     </SelectContent>
                                 </Select>
-                                <Badge variant="outline" className="flex items-center gap-1">
-                                    <Plus className="h-3 w-3" />
-                                    Add type
-                                </Badge>
+                                <Popover
+                                    open={canManageAssignments ? typePickerOpen : false}
+                                    onOpenChange={open => {
+                                        if (canManageAssignments) {
+                                            setTypePickerOpen(open);
+                                        }
+                                    }}
+                                >
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            className="w-full justify-between md:w-72"
+                                            disabled={
+                                                !canManageAssignments ||
+                                                categorySelection === 'all' ||
+                                                categoryFilteredAvailableTypes.length === 0
+                                            }
+                                        >
+                                            <span>{typePickerLabel}</span>
+                                            <ChevronDown className="h-4 w-4 opacity-60" />
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-80 p-0" align="start">
+                                        <Command>
+                                            <CommandInput placeholder="Search notification types" />
+                                            <CommandList>
+                                                <CommandEmpty>
+                                                    {categoryFilteredAvailableTypes.length === 0
+                                                        ? 'All notification types in this category are already assigned.'
+                                                        : 'No notification types match your search.'}
+                                                </CommandEmpty>
+                                                <CommandGroup>
+                                                    {categoryFilteredAvailableTypes.map(type => {
+                                                        const isSelected = selectedTypeIds.includes(type.id);
+
+                                                        return (
+                                                            <CommandItem
+                                                                key={type.id}
+                                                                value={String(type.id)}
+                                                                onSelect={() => canManageAssignments && toggleTypeSelection(type.id)}
+                                                            >
+                                                                <div className="flex w-full items-center justify-between gap-3">
+                                                                    <div className="flex flex-col">
+                                                                        <span className="text-sm font-medium text-foreground">
+                                                                            {type.name}
+                                                                        </span>
+                                                                        {type.description && (
+                                                                            <span className="text-xs text-muted-foreground">
+                                                                                {type.description}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                    {isSelected && <Check className="h-4 w-4 text-primary" />}
+                                                                </div>
+                                                            </CommandItem>
+                                                        );
+                                                    })}
+                                                </CommandGroup>
+                                            </CommandList>
+                                        </Command>
+                                        <div className="flex items-center justify-between gap-2 border-t border-border bg-background/80 p-3">
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={handleSelectAll}
+                                                disabled={
+                                                    !canManageAssignments ||
+                                                    categoryFilteredAvailableTypes.length === 0 ||
+                                                    selectedTypeIds.length === categoryFilteredAvailableTypes.length
+                                                }
+                                            >
+                                                Select all
+                                            </Button>
+                                            <div className="flex items-center gap-2">
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={handleClearSelection}
+                                                    disabled={!canManageAssignments || selectedTypeIds.length === 0}
+                                                >
+                                                    Clear
+                                                </Button>
+                                                <Button
+                                                    type="button"
+                                                    size="sm"
+                                                    onClick={handleAddSelected}
+                                                    disabled={!canManageAssignments || selectedTypeIds.length === 0}
+                                                >
+                                                    Add selected
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </PopoverContent>
+                                </Popover>
+
+                                {selectedTypeIds.length > 0 && (
+                                    <Badge variant="outline">
+                                        {selectedTypeIds.length} type{selectedTypeIds.length === 1 ? '' : 's'} selected
+                                    </Badge>
+                                )}
                             </div>
                         </CardHeader>
 
@@ -474,107 +810,329 @@ export default function NotificationPreferences({ filters, types, users }: Notif
                                 </div>
                             ) : (
                                 <div className="space-y-5">
-                                    {rows.map(row => {
-                                        const updatedAt = formatTimestamp(row.updatedAt);
+                                    <div className="flex flex-col gap-3 rounded-lg border border-border bg-background/60 p-4">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            {categorySelection !== 'all' && (
+                                                <Badge variant="outline" className="flex items-center gap-1">
+                                                    <Filter className="h-3.5 w-3.5" />
+                                                    {selectedCategoryLabel}
+                                                </Badge>
+                                            )}
+                                            <Badge variant="secondary" className="flex items-center gap-1">
+                                                <CheckCircle2 className="h-3.5 w-3.5" />
+                                                {fullyEnabledCount} fully enabled
+                                            </Badge>
 
-                                        return (
-                                            <div
-                                                key={row.typeId}
-                                                className={cn(
-                                                    'rounded-lg border border-border bg-card p-4 shadow-sm',
-                                                    row.remove && 'bg-muted/40 opacity-75',
+                                            <Badge variant="secondary" className="flex items-center gap-1">
+                                                <AlertCircle className="h-3.5 w-3.5" />
+                                                {pendingRemovalCount} pending removal
+                                            </Badge>
+
+                                            <Badge variant="outline">{inAppEnabledCount} in-app</Badge>
+                                            <Badge variant="outline">{emailEnabledCount} email</Badge>
+                                            <Badge variant="outline">{availableCount} available</Badge>
+                                            {hasChanges && <Badge variant="destructive">Unsaved changes</Badge>}
+                                        </div>
+                                        <Tabs value={rowFilter} onValueChange={value => setRowFilter(value as 'all' | 'active' | 'pending')}>
+                                            <TabsList>
+                                                <TabsTrigger value="all" className="flex items-center gap-1">
+                                                    <Filter className="h-3.5 w-3.5" /> All
+                                                </TabsTrigger>
+                                                <TabsTrigger value="active">Active</TabsTrigger>
+                                                <TabsTrigger value="pending">Pending removal</TabsTrigger>
+                                            </TabsList>
+                                        </Tabs>
+                                    </div>
+
+                                    {categorySelection !== 'all' ? (
+                                        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,1fr)_360px]">
+                                            <div className="space-y-4">
+                                                {filteredRows.length === 0 ? (
+                                                    <div className="rounded-md border border-dashed border-border p-6 text-sm text-muted-foreground">
+                                                        No notification types match the selected filter. Adjust the filter to view assignments.
+                                                    </div>
+                                                ) : (
+                                                    filteredRows.map(row => {
+                                                        const updatedAt = formatTimestamp(row.updatedAt);
+                                                        const isDisabled = !row.inAppEnabled && !row.emailEnabled;
+                                                        const isChanged = changedTypeIds.has(row.typeId);
+
+                                                        return (
+                                                            <div
+                                                                key={row.typeId}
+                                                                className={cn(
+                                                                    'rounded-lg border border-border bg-card p-4 shadow-sm transition-colors',
+                                                                    row.remove && 'border-rose-300/60 bg-rose-50/60 dark:border-rose-500/40 dark:bg-rose-500/10',
+                                                                    isChanged && !row.remove && 'border-blue-300/70 ring-2 ring-blue-100 dark:border-blue-500/40 dark:ring-blue-400/20',
+                                                                )}
+                                                            >
+                                                                <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                                                                    <div>
+                                                                        <h3 className="text-sm font-semibold text-foreground">{row.name}</h3>
+                                                                        <p className="max-w-2xl text-sm text-muted-foreground">
+                                                                            {row.description ?? 'No description available.'}
+                                                                        </p>
+                                                                        <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                                                                            <Badge variant="outline">{row.category}</Badge>
+                                                                            {row.assignedBy && <Badge variant="outline">Grant by {row.assignedBy.name}</Badge>}
+                                                                            {row.isNew && !row.remove && <Badge variant="outline">New assignment</Badge>}
+                                                                            {row.remove && <Badge variant="destructive">Will be removed</Badge>}
+                                                                            {isDisabled && !row.remove && <Badge variant="secondary">Delivery disabled</Badge>}
+                                                                            {updatedAt && <span>Updated {updatedAt}</span>}
+                                                                        </div>
+                                                                    </div>
+                                                                    {canManageAssignments && (
+                                                                        <div className="flex gap-2">
+                                                                            {row.remove ? (
+                                                                                <Button
+                                                                                    type="button"
+                                                                                    variant="secondary"
+                                                                                    size="sm"
+                                                                                    onClick={() => handleRestore(row.typeId)}
+                                                                                >
+                                                                                    <Undo2 className="mr-1 h-4 w-4" /> Restore
+                                                                                </Button>
+                                                                            ) : (
+                                                                                <Button
+                                                                                    type="button"
+                                                                                    variant="ghost"
+                                                                                    size="sm"
+                                                                                    onClick={() => handleRemove(row.typeId)}
+                                                                                >
+                                                                                    <Trash2 className="mr-1 h-4 w-4" /> Remove
+                                                                                </Button>
+                                                                            )}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+
+                                                                <div className="mt-4 grid gap-3 md:grid-cols-2">
+                                                                    <div className="flex items-start gap-3 rounded-md border border-border bg-background/70 p-4">
+                                                                        <Checkbox
+                                                                            id={`admin-pref-${row.typeId}-in-app`}
+                                                                            checked={row.inAppEnabled}
+                                                                            disabled={!canManageAssignments || row.remove}
+                                                                            onCheckedChange={value =>
+                                                                                handleToggle(
+                                                                                    row.typeId,
+                                                                                    'inAppEnabled',
+                                                                                    value === true,
+                                                                                )
+                                                                            }
+                                                                        />
+                                                                        <div>
+                                                                            <Label htmlFor={`admin-pref-${row.typeId}-in-app`}>
+                                                                                In-app alerts
+                                                                            </Label>
+                                                                            <p className="text-sm text-muted-foreground">
+                                                                                Deliver real-time notifications within the dashboard.
+                                                                            </p>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="flex items-start gap-3 rounded-md border border-border bg-background/70 p-4">
+                                                                        <Checkbox
+                                                                            id={`admin-pref-${row.typeId}-email`}
+                                                                            checked={row.emailEnabled}
+                                                                            disabled={!canManageAssignments || row.remove}
+                                                                            onCheckedChange={value =>
+                                                                                handleToggle(
+                                                                                    row.typeId,
+                                                                                    'emailEnabled',
+                                                                                    value === true,
+                                                                                )
+                                                                            }
+                                                                        />
+                                                                        <div>
+                                                                            <Label htmlFor={`admin-pref-${row.typeId}-email`}>
+                                                                                Email alerts
+                                                                            </Label>
+                                                                            <p className="text-sm text-muted-foreground">
+                                                                                Send transactional emails when this event occurs.
+                                                                            </p>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })
                                                 )}
-                                            >
-                                                <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                                            </div>
+
+                                            <aside className="flex h-fit flex-col gap-3 rounded-lg border border-border bg-background/60 p-4">
+                                                <div className="flex items-center justify-between gap-3">
                                                     <div>
-                                                        <h3 className="text-sm font-semibold text-foreground">{row.name}</h3>
-                                                        <p className="max-w-2xl text-sm text-muted-foreground">
-                                                            {row.description ?? 'No description available.'}
+                                                        <h3 className="text-sm font-semibold text-foreground">Not yet assigned</h3>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            Notifications in {selectedCategoryLabel} that are still available to grant.
                                                         </p>
-                                                        <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                                                            {row.assignedBy && <Badge variant="outline">Grant by {row.assignedBy.name}</Badge>}
-                                                            {row.isNew && <Badge variant="outline">New assignment</Badge>}
-                                                            {row.remove && <Badge variant="destructive">Will be removed</Badge>}
-                                                            {updatedAt && <span>Updated {updatedAt}</span>}
-                                                        </div>
                                                     </div>
-                                                    <div className="flex gap-2">
-                                                        {row.remove ? (
-                                                            <Button
-                                                                type="button"
-                                                                variant="secondary"
-                                                                size="sm"
-                                                                onClick={() => handleRestore(row.typeId)}
-                                                            >
-                                                                <Undo2 className="mr-1 h-4 w-4" /> Restore
-                                                            </Button>
-                                                        ) : (
-                                                            <Button
-                                                                type="button"
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                onClick={() => handleRemove(row.typeId)}
-                                                            >
-                                                                <Trash2 className="mr-1 h-4 w-4" /> Remove
-                                                            </Button>
-                                                        )}
-                                                    </div>
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={handleAssignAllForCategory}
+                                                        disabled={
+                                                            !canManageAssignments ||
+                                                            categoryFilteredAvailableTypes.length === 0
+                                                        }
+                                                    >
+                                                        Assign all
+                                                    </Button>
                                                 </div>
 
-                                                <div className="mt-4 grid gap-3 md:grid-cols-2">
-                                                    <div className="flex items-start gap-3 rounded-md border border-border bg-background/70 p-4">
-                                                        <Checkbox
-                                                            id={`admin-pref-${row.typeId}-in-app`}
-                                                            checked={row.inAppEnabled}
-                                                            disabled={row.remove}
-                                                            onCheckedChange={value =>
-                                                                handleToggle(
-                                                                    row.typeId,
-                                                                    'inAppEnabled',
-                                                                    value === true,
-                                                                )
-                                                            }
-                                                        />
-                                                        <div>
-                                                            <Label htmlFor={`admin-pref-${row.typeId}-in-app`}>
-                                                                In-app alerts
-                                                            </Label>
-                                                            <p className="text-sm text-muted-foreground">
-                                                                Deliver real-time notifications within the dashboard.
-                                                            </p>
+                                                {categoryFilteredAvailableTypes.length === 0 ? (
+                                                    <div className="rounded-md border border-dashed border-border p-4 text-xs text-muted-foreground">
+                                                        Every notification in this category is already assigned.
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex flex-col gap-3">
+                                                        {categoryFilteredAvailableTypes.map(type => (
+                                                            <div
+                                                                key={type.id}
+                                                                className="rounded-md border border-border bg-card/80 p-3"
+                                                            >
+                                                                <div className="flex items-start justify-between gap-3">
+                                                                    <div className="flex flex-col">
+                                                                        <span className="text-sm font-medium text-foreground">
+                                                                            {type.name}
+                                                                        </span>
+                                                                        {type.description && (
+                                                                            <span className="text-xs text-muted-foreground">
+                                                                                {type.description}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                    <Button
+                                                                        type="button"
+                                                                        size="sm"
+                                                                        onClick={() => handleAddType(type.id)}
+                                                                        disabled={!canManageAssignments}
+                                                                    >
+                                                                        Add
+                                                                    </Button>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </aside>
+                                        </div>
+                                    ) : filteredRows.length === 0 ? (
+                                        <div className="rounded-md border border-dashed border-border p-6 text-sm text-muted-foreground">
+                                            No notification types match the selected filter. Adjust the filter to view assignments.
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-4">
+                                            {filteredRows.map(row => {
+                                                const updatedAt = formatTimestamp(row.updatedAt);
+                                                const isDisabled = !row.inAppEnabled && !row.emailEnabled;
+                                                const isChanged = changedTypeIds.has(row.typeId);
+
+                                                return (
+                                                    <div
+                                                        key={row.typeId}
+                                                        className={cn(
+                                                            'rounded-lg border border-border bg-card p-4 shadow-sm transition-colors',
+                                                            row.remove && 'border-rose-300/60 bg-rose-50/60 dark:border-rose-500/40 dark:bg-rose-500/10',
+                                                            isChanged && !row.remove && 'border-blue-300/70 ring-2 ring-blue-100 dark:border-blue-500/40 dark:ring-blue-400/20',
+                                                        )}
+                                                    >
+                                                        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                                                            <div>
+                                                                <h3 className="text-sm font-semibold text-foreground">{row.name}</h3>
+                                                                <p className="max-w-2xl text-sm text-muted-foreground">
+                                                                    {row.description ?? 'No description available.'}
+                                                                </p>
+                                                                <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                                                                    <Badge variant="outline">{row.category}</Badge>
+                                                                    {row.assignedBy && <Badge variant="outline">Grant by {row.assignedBy.name}</Badge>}
+                                                                    {row.isNew && !row.remove && <Badge variant="outline">New assignment</Badge>}
+                                                                    {row.remove && <Badge variant="destructive">Will be removed</Badge>}
+                                                                    {isDisabled && !row.remove && <Badge variant="secondary">Delivery disabled</Badge>}
+                                                                    {updatedAt && <span>Updated {updatedAt}</span>}
+                                                                </div>
+                                                            </div>
+                                                            {canManageAssignments && (
+                                                                <div className="flex gap-2">
+                                                                    {row.remove ? (
+                                                                        <Button
+                                                                            type="button"
+                                                                            variant="secondary"
+                                                                            size="sm"
+                                                                            onClick={() => handleRestore(row.typeId)}
+                                                                        >
+                                                                            <Undo2 className="mr-1 h-4 w-4" /> Restore
+                                                                        </Button>
+                                                                    ) : (
+                                                                        <Button
+                                                                            type="button"
+                                                                            variant="ghost"
+                                                                            size="sm"
+                                                                            onClick={() => handleRemove(row.typeId)}
+                                                                        >
+                                                                            <Trash2 className="mr-1 h-4 w-4" /> Remove
+                                                                        </Button>
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="mt-4 grid gap-3 md:grid-cols-2">
+                                                            <div className="flex items-start gap-3 rounded-md border border-border bg-background/70 p-4">
+                                                                <Checkbox
+                                                                    id={`admin-pref-${row.typeId}-in-app`}
+                                                                    checked={row.inAppEnabled}
+                                                                    disabled={!canManageAssignments || row.remove}
+                                                                    onCheckedChange={value =>
+                                                                        handleToggle(
+                                                                            row.typeId,
+                                                                            'inAppEnabled',
+                                                                            value === true,
+                                                                        )
+                                                                    }
+                                                                />
+                                                                <div>
+                                                                    <Label htmlFor={`admin-pref-${row.typeId}-in-app`}>
+                                                                        In-app alerts
+                                                                    </Label>
+                                                                    <p className="text-sm text-muted-foreground">
+                                                                        Deliver real-time notifications within the dashboard.
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex items-start gap-3 rounded-md border border-border bg-background/70 p-4">
+                                                                <Checkbox
+                                                                    id={`admin-pref-${row.typeId}-email`}
+                                                                    checked={row.emailEnabled}
+                                                                    disabled={!canManageAssignments || row.remove}
+                                                                    onCheckedChange={value =>
+                                                                        handleToggle(
+                                                                            row.typeId,
+                                                                            'emailEnabled',
+                                                                            value === true,
+                                                                        )
+                                                                    }
+                                                                />
+                                                                <div>
+                                                                    <Label htmlFor={`admin-pref-${row.typeId}-email`}>
+                                                                        Email alerts
+                                                                    </Label>
+                                                                    <p className="text-sm text-muted-foreground">
+                                                                        Send transactional emails when this event occurs.
+                                                                    </p>
+                                                                </div>
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                    <div className="flex items-start gap-3 rounded-md border border-border bg-background/70 p-4">
-                                                        <Checkbox
-                                                            id={`admin-pref-${row.typeId}-email`}
-                                                            checked={row.emailEnabled}
-                                                            disabled={row.remove}
-                                                            onCheckedChange={value =>
-                                                                handleToggle(
-                                                                    row.typeId,
-                                                                    'emailEnabled',
-                                                                    value === true,
-                                                                )
-                                                            }
-                                                        />
-                                                        <div>
-                                                            <Label htmlFor={`admin-pref-${row.typeId}-email`}>
-                                                                Email alerts
-                                                            </Label>
-                                                            <p className="text-sm text-muted-foreground">
-                                                                Send transactional emails when this event occurs.
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
+                                                );
+                                            })}
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </CardContent>
 
-                        <div className="flex items-center justify-between gap-3 border-t border-border px-6 py-4">
+                        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-6 py-4">
                             <Transition
                                 show={Boolean(successMessage)}
                                 enter="transition ease-out duration-200"
@@ -590,9 +1148,17 @@ export default function NotificationPreferences({ filters, types, users }: Notif
                             <Button
                                 type="button"
                                 onClick={handleSave}
-                                disabled={selectedUser === null || isSaving}
+                                disabled={saveDisabled}
                             >
                                 {isSaving ? 'Saving…' : 'Save changes'}
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                onClick={resetChanges}
+                                disabled={!hasChanges || isSaving}
+                            >
+                                Reset
                             </Button>
                         </div>
                     </Card>

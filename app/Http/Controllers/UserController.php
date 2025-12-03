@@ -7,6 +7,7 @@ use App\Events\UserDeleted;
 use App\Events\UserUpdated;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
+use App\Models\NotificationType;
 use App\Models\User;
 use Carbon\CarbonInterface;
 use Exception;
@@ -131,9 +132,13 @@ class UserController extends Controller
     public function create(): Response
     {
         $roles = Role::all();
+        $notificationTypes = NotificationType::query()
+            ->orderBy('name')
+            ->get(['id', 'key', 'name', 'description', 'default_in_app', 'default_email']);
 
         return Inertia::render('Users/Create', [
             'roles' => $roles,
+            'notificationTypes' => $notificationTypes,
         ]);
     }
 
@@ -144,6 +149,21 @@ class UserController extends Controller
     {
         try {
             $validated = $request->validated();
+            $preferencesInput = $validated['notification_preferences'] ?? [];
+
+            if ($validated['role'] === 'admin') {
+                $preferencesInput = NotificationType::query()
+                    ->orderBy('id')
+                    ->get(['id'])
+                    ->map(static fn (NotificationType $type) => [
+                        'type_id' => $type->id,
+                        'in_app_enabled' => true,
+                        'email_enabled' => true,
+                    ])
+                    ->all();
+            }
+            unset($validated['notification_preferences']);
+
             $validated['password'] = Hash::make($validated['password']);
 
             $user = User::create($validated);
@@ -152,6 +172,32 @@ class UserController extends Controller
             $role = Role::where('name', $validated['role'])->first();
             if ($role) {
                 $user->assignRole($role);
+            }
+
+            $preferences = collect($preferencesInput)
+                ->map(static function (array $preference): array {
+                    return [
+                        'type_id' => (int) $preference['type_id'],
+                        'in_app_enabled' => (bool) $preference['in_app_enabled'],
+                        'email_enabled' => (bool) $preference['email_enabled'],
+                    ];
+                })
+                ->unique('type_id')
+                ->filter(static function (array $preference) use ($validated): bool {
+                    if ($validated['role'] === 'admin') {
+                        return true;
+                    }
+
+                    return $preference['in_app_enabled'] || $preference['email_enabled'];
+                });
+
+            foreach ($preferences as $preference) {
+                $user->notificationSettings()->create([
+                    'notification_type_id' => $preference['type_id'],
+                    'assigned_by' => $request->user()->id,
+                    'in_app_enabled' => $preference['in_app_enabled'],
+                    'email_enabled' => $preference['email_enabled'],
+                ]);
             }
 
             // Log activity

@@ -1,10 +1,8 @@
 import { useState } from 'react'
-import { AppShell } from '@/components/app-shell'
-import { AppContent } from '@/components/app-content'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { usePage, router } from '@inertiajs/react'
+import { Head, usePage, router } from '@inertiajs/react'
 import { Bell, Check, MailOpen } from 'lucide-react'
 import {
     formatNotificationBody,
@@ -16,6 +14,8 @@ import {
     type NotificationItem,
 } from '@/lib/notification-utils'
 import { cn } from '@/lib/utils'
+import AppLayout from '@/layouts/app-layout'
+import { type BreadcrumbItem } from '@/types'
 
 type PageProps = {
   notifications: {
@@ -23,6 +23,13 @@ type PageProps = {
     recent: NotificationItem[]
   }
 }
+
+const breadcrumbs: BreadcrumbItem[] = [
+        {
+                title: 'Notifications',
+                href: '/notifications',
+        },
+]
 
 export default function NotificationsIndex() {
     const page = usePage<PageProps>()
@@ -71,8 +78,17 @@ export default function NotificationsIndex() {
     }
 
     return (
-        <AppShell>
-            <AppContent heading="Notifications" description="Stay up to date with the latest activity across your fleet.">
+        <AppLayout breadcrumbs={breadcrumbs}>
+            <Head title="Notifications" />
+
+            <div className="flex flex-col gap-6 px-4 py-6">
+                <div className="space-y-1">
+                    <h1 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-50">Notifications</h1>
+                    <p className="max-w-3xl text-sm text-neutral-600 dark:text-neutral-400">
+                        Stay up to date with the latest activity across your fleet.
+                    </p>
+                </div>
+
                 <div className="grid gap-6">
                     <Card>
                         <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -112,9 +128,9 @@ export default function NotificationsIndex() {
                                 </Button>
                             </div>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="space-y-4">
                             {items.length === 0 ? (
-                                <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-neutral-300 bg-white px-8 py-12 text-center dark:border-neutral-800 dark:bg-neutral-900/40">
+                                <div className="flex flex-col items-start gap-3 rounded-lg border border-dashed border-neutral-300 bg-white px-8 py-12 text-left dark:border-neutral-800 dark:bg-neutral-900/40">
                                     <MailOpen className="size-10 text-neutral-300" />
                                     <div className="space-y-1">
                                         <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-200">Nothing new to review</p>
@@ -122,12 +138,12 @@ export default function NotificationsIndex() {
                                     </div>
                                 </div>
                             ) : (
-                                <div className="flex flex-col gap-4">
-                                      {items.map(({ notification, title, body, timestamp, unread, accent, typeLabel }) => (
+                                <div className="flex flex-col gap-4 text-left">
+                                    {items.map(({ notification, title, body, timestamp, unread, accent, typeLabel }) => (
                                         <article
                                             key={notification.id}
                                             className={cn(
-                                                'relative overflow-hidden rounded-xl border border-neutral-200 bg-white p-4 shadow-sm transition hover:border-neutral-300 dark:border-neutral-800 dark:bg-neutral-900/80 dark:hover:border-neutral-700',
+                                                'relative overflow-hidden rounded-xl border border-neutral-200 bg-white p-4 text-left shadow-sm transition hover:border-neutral-300 dark:border-neutral-800 dark:bg-neutral-900/80 dark:hover:border-neutral-700',
                                                 unread && 'border-blue-200 shadow-md dark:border-blue-400/40',
                                             )}
                                         >
@@ -140,7 +156,7 @@ export default function NotificationsIndex() {
                                                             unread ? 'opacity-100' : 'opacity-60',
                                                         )}
                                                     />
-                                                    <div className="space-y-1">
+                                                    <div className="space-y-1 text-left">
                                                         <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">{title}</h3>
                                                         <p className="text-xs text-neutral-500 dark:text-neutral-400">{timestamp.absolute || timestamp.relative}</p>
                                                     </div>
@@ -171,8 +187,8 @@ export default function NotificationsIndex() {
                         </CardContent>
                     </Card>
                 </div>
-            </AppContent>
-        </AppShell>
+            </div>
+        </AppLayout>
     )
 }
 

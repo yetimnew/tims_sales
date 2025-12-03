@@ -17,7 +17,7 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import { toast } from '@/hooks/use-toast';
-import { Plus, Eye, Edit, Trash2, Search, ArrowUpDown, FileDown, Users, CheckCircle, XCircle, Briefcase } from 'lucide-react';
+import { Plus, Eye, Edit, Trash2, Search, ArrowUpDown, Users, CheckCircle, XCircle, Briefcase } from 'lucide-react';
 import { InertiaPagination } from '@/components/ui/pagination';
 import * as React from 'react';
 
@@ -256,45 +256,14 @@ export default function CustomersIndex({ customers, metrics, filters, statusOpti
         }
     };
 
-    const headerActions = (
-        <>
-            {hasPermission('customers.export') && (
-                <Button
-                    variant="outline"
-                    onClick={() => {
-                        const params = new URLSearchParams();
-                        if (searchTerm.trim()) {
-                            params.set('search', searchTerm.trim());
-                        }
-                        if (selectedStatus !== 'all') {
-                            params.set('status', selectedStatus);
-                        }
-                        params.set('sort', sortBy);
-                        params.set('direction', sortDirection);
-                        if (perPage) {
-                            params.set('per_page', perPage);
-                        }
-
-                        const queryString = params.toString();
-                        window.location.href = queryString
-                            ? `/customers/export/csv?${queryString}`
-                            : '/customers/export/csv';
-                    }}
-                >
-                    <FileDown className="mr-2 h-4 w-4" />
-                    Export CSV
-                </Button>
-            )}
-            {hasPermission('customers.create') && (
-                <Button asChild>
-                    <Link href="/customers/create">
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add Customer
-                    </Link>
-                </Button>
-            )}
-        </>
-    );
+    const headerActions = hasPermission('customers.create') ? (
+        <Button asChild>
+            <Link href="/customers/create">
+                <Plus className="mr-2 h-4 w-4" />
+                Add Customer
+            </Link>
+        </Button>
+    ) : null;
 
     const statsCards = [
         {

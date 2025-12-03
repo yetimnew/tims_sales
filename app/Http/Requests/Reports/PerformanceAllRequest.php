@@ -12,7 +12,13 @@ class PerformanceAllRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        $user = $this->user();
+
+        if ($user === null) {
+            return false;
+        }
+
+        return $user->can('reports.performance-all.view') || $user->can('reports.performance-all.export');
     }
 
     /**

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Head, Link, router } from '@inertiajs/react';
-import { Plus, Eye, Edit, Search, ArrowUpDown, Trash2, FileDown, Fuel, DollarSign, Calendar, TrendingUp, Activity } from 'lucide-react';
+import { Plus, Eye, Edit, Search, ArrowUpDown, Trash2, Fuel, DollarSign, Calendar, TrendingUp, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -212,19 +212,6 @@ export default function FuelRecordsIndex({ fuelRecords, statistics, filters }: F
                         </p>
                     </div>
                     <div className="flex gap-2">
-                        {hasPermission('fuel-records.view') && totalFuelRecords > 0 && (
-                            <Button variant="outline" onClick={() => {
-                                const params = new URLSearchParams({
-                                    search: searchTerm,
-                                    sort: sortColumn || 'fuel_date',
-                                    direction: sortDirection,
-                                });
-                                window.location.href = `/fuel-records/export/csv?${params.toString()}`;
-                            }}>
-                                <FileDown className="mr-2 h-4 w-4" />
-                                Export CSV
-                            </Button>
-                        )}
                         {hasPermission('fuel-records.create') && (
                             <Button asChild>
                                 <Link href="/fuel-records/create">

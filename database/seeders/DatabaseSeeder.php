@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call(NotificationTypeSeeder::class);
         $this->call(CheckPermissionSeeder::class);
+        $this->call(ReportPermissionSeeder::class);
         $this->call(UsersSeeder::class);
         $this->call(AdminUserSeeder::class);
 

@@ -20,7 +20,6 @@ import {
     ArrowUpDown,
     BarChart3,
     CheckCircle,
-    FileDown,
     Filter,
     Layers,
     MapPin,
@@ -371,29 +370,8 @@ export default function WoredasIndex({ woredas, metrics, filters, statusOptions,
         }
     }
 
-    const handleExport = useCallback(() => {
-        const params = new URLSearchParams()
-        if (searchTerm.trim()) {
-            params.set('search', searchTerm.trim())
-        }
-        if (selectedStatus !== 'all') {
-            params.set('status', selectedStatus)
-        }
-        params.set('sort', sortColumn)
-        params.set('direction', sortDirection)
-
-        const queryString = params.toString()
-        window.location.href = queryString ? `/woredas/export?${queryString}` : '/woredas/export'
-    }, [searchTerm, selectedStatus, sortColumn, sortDirection])
-
     const headerActions = (
         <>
-            {hasPermission('woredas.export') && (
-                <Button variant="outline" onClick={handleExport}>
-                    <FileDown className="mr-2 h-4 w-4" />
-                    Export CSV
-                </Button>
-            )}
             {hasPermission('woredas.create') && (
                 <Button asChild>
                     <Link href="/woredas/create">

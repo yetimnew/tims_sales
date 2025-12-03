@@ -9,7 +9,13 @@ class FuelEfficiencyRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        $user = $this->user();
+
+        if ($user === null) {
+            return false;
+        }
+
+        return $user->can('reports.fuel-efficiency.view') || $user->can('reports.fuel-efficiency.export');
     }
 
     public function rules(): array

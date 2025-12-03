@@ -16,7 +16,7 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { Link, router } from '@inertiajs/react';
 import { toast } from '@/hooks/use-toast';
 import { type BreadcrumbItem } from '@/types';
-import { Plus, Eye, Edit, Trash2, Search, ArrowUpDown, FileDown, Truck, CheckCircle, Wrench, XCircle, DollarSign } from 'lucide-react';
+import { Plus, Eye, Edit, Trash2, Search, ArrowUpDown, Truck, CheckCircle, Wrench, XCircle, DollarSign } from 'lucide-react';
 import { InertiaPagination } from '@/components/ui/pagination';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import * as React from 'react';
@@ -264,33 +264,6 @@ export default function TrucksIndex({ trucks, metrics, filters, statusOptions, v
 
     const headerActions = (
         <>
-            {hasPermission('trucks.export') && (
-                <Button
-                    variant="outline"
-                    onClick={() => {
-                        const params = new URLSearchParams();
-                        if (searchTerm.trim()) {
-                            params.set('search', searchTerm.trim());
-                        }
-                        if (selectedStatus !== 'all') {
-                            params.set('status', selectedStatus);
-                        }
-                        if (selectedVehicleType !== 'all') {
-                            params.set('vehicle_type', selectedVehicleType);
-                        }
-                        params.set('sort', sortBy);
-                        params.set('direction', sortDirection);
-
-                        const queryString = params.toString();
-                        window.location.href = queryString
-                            ? `/trucks/export/csv?${queryString}`
-                            : '/trucks/export/csv';
-                    }}
-                >
-                    <FileDown className="mr-2 h-4 w-4" />
-                    Export CSV
-                </Button>
-            )}
             {hasPermission('trucks.create') && (
                 <Button asChild>
                     <Link href="/trucks/create">

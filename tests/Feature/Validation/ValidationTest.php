@@ -37,13 +37,13 @@ class ValidationTest extends TestCase
         // Create permissions
         $permissions = [
             'trucks.view', 'trucks.create', 'trucks.edit', 'trucks.destroy',
-            'trucks.show', 'trucks.store', 'trucks.update', 'trucks.export',
+            'trucks.show', 'trucks.store', 'trucks.update',
             'drivers.view', 'drivers.create', 'drivers.edit', 'drivers.destroy',
-            'drivers.show', 'drivers.store', 'drivers.update', 'drivers.export',
+            'drivers.show', 'drivers.store', 'drivers.update',
             'operations.view', 'operations.create', 'operations.store', 'operations.edit',
-            'operations.update', 'operations.destroy', 'operations.export',
+            'operations.update', 'operations.destroy',
             'performances.view', 'performances.create', 'performances.store', 'performances.edit',
-            'performances.update', 'performances.destroy', 'performances.export',
+            'performances.update', 'performances.destroy',
         ];
 
         foreach ($permissions as $permission) {

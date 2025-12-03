@@ -16,7 +16,7 @@ import { Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { toast } from '@/hooks/use-toast';
-import { Plus, Eye, Edit, Search, ArrowUpDown, Trash2, FileDown, Users, UserCheck, UserX, User, MapPin as MapPinIcon, Phone } from 'lucide-react';
+import { Plus, Eye, Edit, Search, ArrowUpDown, Trash2, Users, UserCheck, UserX, User, MapPin as MapPinIcon, Phone } from 'lucide-react';
 import { InertiaPagination } from '@/components/ui/pagination';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import * as React from 'react';
@@ -275,33 +275,6 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
 
     const headerActions = (
         <>
-            {hasPermission('drivers.export') && (
-                <Button
-                    variant="outline"
-                    onClick={() => {
-                        const params = new URLSearchParams();
-                        if (searchTerm.trim()) {
-                            params.set('search', searchTerm.trim());
-                        }
-                        if (selectedStatus !== 'all') {
-                            params.set('status', selectedStatus);
-                        }
-                        if (selectedGender !== 'all') {
-                            params.set('sex', selectedGender);
-                        }
-                        params.set('sort', sortColumn || 'name');
-                        params.set('direction', sortDirection);
-
-                        const queryString = params.toString();
-                        window.location.href = queryString
-                            ? `/drivers/export/csv?${queryString}`
-                            : '/drivers/export/csv';
-                    }}
-                >
-                    <FileDown className="mr-2 h-4 w-4" />
-                    Export CSV
-                </Button>
-            )}
             {hasPermission('drivers.create') && (
                 <Button asChild>
                     <Link href="/drivers/create">

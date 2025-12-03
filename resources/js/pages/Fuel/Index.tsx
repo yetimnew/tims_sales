@@ -259,27 +259,6 @@ export default function FuelIndex({ fuelRecords, metrics, filters, fuelTypeOptio
         handleNavigate({ sort: column, direction: newDirection })
     }
 
-    const handleExport = React.useCallback(() => {
-        const params = new URLSearchParams()
-        if (searchTerm.trim()) {
-            params.set('search', searchTerm.trim())
-        }
-        if (selectedFuelType !== 'all') {
-            params.set('fuel_type', selectedFuelType)
-        }
-        if (selectedTruck !== 'all') {
-            params.set('truck', selectedTruck)
-        }
-        if (selectedDriver !== 'all') {
-            params.set('driver', selectedDriver)
-        }
-        params.set('sort', sortColumn)
-        params.set('direction', sortDirection)
-
-        const queryString = params.toString()
-        window.location.href = queryString ? `/fuel/export?${queryString}` : '/fuel/export'
-    }, [searchTerm, selectedFuelType, selectedTruck, selectedDriver, sortColumn, sortDirection])
-
     const handleDeleteClick = (record: FuelRecord) => {
         setSelectedRecord(record)
         setDeleteDialogOpen(true)
@@ -544,21 +523,14 @@ export default function FuelIndex({ fuelRecords, metrics, filters, fuelTypeOptio
                 description={`Manage ${totalRecords} fuel record${totalRecords === 1 ? '' : 's'}`}
                 breadcrumbs={breadcrumbs}
                 actions={
-                    <>
-                        {hasPermission('fuel.export') && (
-                            <Button variant="outline" onClick={handleExport}>
-                                Export CSV
-                            </Button>
-                        )}
-                        {hasPermission('fuel.create') && (
-                            <Button asChild>
-                                <Link href="/fuel/create">
-                                    <Plus className="mr-2 h-4 w-4" />
-                                    Add Fuel Record
-                                </Link>
-                            </Button>
-                        )}
-                    </>
+                    hasPermission('fuel.create') ? (
+                        <Button asChild>
+                            <Link href="/fuel/create">
+                                <Plus className="mr-2 h-4 w-4" />
+                                Add Fuel Record
+                            </Link>
+                        </Button>
+                    ) : null
                 }
                 stats={statsSection}
                 tableTitle="Fuel Transactions"

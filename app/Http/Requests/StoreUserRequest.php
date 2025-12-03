@@ -3,7 +3,6 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 
 class StoreUserRequest extends FormRequest
@@ -33,9 +32,13 @@ class StoreUserRequest extends FormRequest
                     ->mixedCase()      // Requires uppercase and lowercase
                     ->numbers()        // Requires at least one number
                     ->symbols()       // Requires at least one special character
-                    ->uncompromised() // Checks against leaked passwords
+                    ->uncompromised(), // Checks against leaked passwords
             ],
             'role' => 'required|string|exists:roles,name',
+            'notification_preferences' => ['sometimes', 'array'],
+            'notification_preferences.*.type_id' => ['required', 'integer', 'exists:notification_types,id'],
+            'notification_preferences.*.in_app_enabled' => ['required', 'boolean'],
+            'notification_preferences.*.email_enabled' => ['required', 'boolean'],
         ];
     }
 
@@ -60,6 +63,10 @@ class StoreUserRequest extends FormRequest
             'password.confirmed' => 'The password confirmation does not match.',
             'role.required' => 'The role field is required.',
             'role.exists' => 'The selected role is invalid.',
+            'notification_preferences.*.type_id.required' => 'A notification type selection is required.',
+            'notification_preferences.*.type_id.exists' => 'One of the selected notification types is invalid.',
+            'notification_preferences.*.in_app_enabled.boolean' => 'In-app selection must be true or false.',
+            'notification_preferences.*.email_enabled.boolean' => 'Email selection must be true or false.',
         ];
     }
 
@@ -76,7 +83,7 @@ class StoreUserRequest extends FormRequest
             'password' => 'password',
             'password_confirmation' => 'password confirmation',
             'role' => 'role',
+            'notification_preferences' => 'notification preferences',
         ];
     }
 }
-

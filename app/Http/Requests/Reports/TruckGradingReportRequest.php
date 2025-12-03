@@ -8,7 +8,13 @@ class TruckGradingReportRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('trucks.show') ?? false;
+        $user = $this->user();
+
+        if ($user === null) {
+            return false;
+        }
+
+        return $user->can('reports.truck-grading.view');
     }
 
     public function rules(): array

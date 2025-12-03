@@ -1,8 +1,16 @@
+import * as React from 'react';
 import { usePage } from '@inertiajs/react';
+import { type SharedData } from '@/types';
 
 export function usePermissions() {
-    const page = usePage();
-    const permissions = (page.props.auth as any)?.permissions || [];
+    const { auth } = usePage<SharedData>().props;
+    const scopedPermissions = auth?.permissions ?? [];
+    const allPermissions = auth?.all_permissions ?? [];
+
+    const permissions = React.useMemo(
+        () => Array.from(new Set([...scopedPermissions, ...allPermissions])),
+        [scopedPermissions, allPermissions],
+    );
 
     const hasPermission = (permission: string): boolean => {
         return permissions.includes(permission);

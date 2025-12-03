@@ -13,7 +13,7 @@ class CheckPermissionSeeder extends Seeder
         // ==================== TRUCKS PERMISSIONS ====================
         $truckPermissions = [
             'trucks.view', 'trucks.show', 'trucks.create', 'trucks.store', 'trucks.edit',
-            'trucks.update', 'trucks.deactivate', 'trucks.destroy', 'trucks.export', 'trucks.free',
+            'trucks.update', 'trucks.deactivate', 'trucks.destroy', 'trucks.free',
         ];
 
         // ==================== DRIVER TRUCK ASSIGNMENTS PERMISSIONS ====================
@@ -25,37 +25,37 @@ class CheckPermissionSeeder extends Seeder
         // ==================== DRIVERS PERMISSIONS ====================
         $driverPermissions = [
             'drivers.view', 'drivers.show', 'drivers.create', 'drivers.store', 'drivers.edit',
-            'drivers.update', 'drivers.destroy', 'drivers.export', 'drivers.deactivate',
+            'drivers.update', 'drivers.destroy', 'drivers.deactivate',
         ];
 
         // ==================== MAINTENANCE PERMISSIONS ====================
         $maintenancePermissions = [
             'maintenance.view', 'maintenance.show', 'maintenance.create', 'maintenance.store', 'maintenance.edit',
-            'maintenance.update', 'maintenance.destroy', 'maintenance.export', 'maintenance.complete',
+            'maintenance.update', 'maintenance.destroy', 'maintenance.complete',
         ];
 
         // ==================== MAINTENANCE TYPE PERMISSIONS ====================
         $maintenanceTypePermissions = [
             'maintenance-types.view', 'maintenance-types.show', 'maintenance-types.create', 'maintenance-types.store',
-            'maintenance-types.edit', 'maintenance-types.update', 'maintenance-types.destroy', 'maintenance-types.export',
+            'maintenance-types.edit', 'maintenance-types.update', 'maintenance-types.destroy',
         ];
 
         // ==================== VEHICLE TYPE PERMISSIONS ====================
         $vehicleTypePermissions = [
             'vehicletypes.view', 'vehicletypes.show', 'vehicletypes.create', 'vehicletypes.store',
-            'vehicletypes.edit', 'vehicletypes.update', 'vehicletypes.destroy', 'vehicletypes.export',
+            'vehicletypes.edit', 'vehicletypes.update', 'vehicletypes.destroy',
         ];
 
         // ==================== FUEL PERMISSIONS ====================
         $fuelPermissions = [
             'fuel.view', 'fuel.show', 'fuel.create', 'fuel.store', 'fuel.edit',
-            'fuel.update', 'fuel.destroy', 'fuel.export', 'fuel.analysis',
+            'fuel.update', 'fuel.destroy', 'fuel.analysis',
         ];
 
         // ==================== FINANCIAL PERMISSIONS ====================
         $financialPermissions = [
             'financial.view', 'financial.show', 'financial.create', 'financial.store', 'financial.edit',
-            'financial.update', 'financial.destroy', 'financial.export', 'financial.analytics',
+            'financial.update', 'financial.destroy', 'financial.analytics',
         ];
 
         // ==================== CARGO TYPE PERMISSIONS ====================
@@ -67,25 +67,25 @@ class CheckPermissionSeeder extends Seeder
         // ==================== REGION PERMISSIONS ====================
         $regionPermissions = [
             'regions.view', 'regions.show', 'regions.create', 'regions.store',
-            'regions.edit', 'regions.update', 'regions.destroy', 'regions.export',
+            'regions.edit', 'regions.update', 'regions.destroy',
         ];
 
         // ==================== ZONE PERMISSIONS ====================
         $zonePermissions = [
             'zones.view', 'zones.show', 'zones.create', 'zones.store',
-            'zones.edit', 'zones.update', 'zones.destroy', 'zones.export',
+            'zones.edit', 'zones.update', 'zones.destroy',
         ];
 
         // ==================== WOREDA PERMISSIONS ====================
         $woredaPermissions = [
             'woredas.view', 'woredas.show', 'woredas.create', 'woredas.store',
-            'woredas.edit', 'woredas.update', 'woredas.destroy', 'woredas.export',
+            'woredas.edit', 'woredas.update', 'woredas.destroy',
         ];
 
         // ==================== PLACE PERMISSIONS ====================
         $placePermissions = [
             'places.view', 'places.show', 'places.create', 'places.store',
-            'places.edit', 'places.update', 'places.destroy', 'places.export',
+            'places.edit', 'places.update', 'places.destroy',
         ];
 
         // ==================== STATUS TYPE PERMISSIONS ====================
@@ -108,56 +108,56 @@ class CheckPermissionSeeder extends Seeder
         // ==================== OPERATION PERMISSIONS ====================
         $operationPermissions = [
             'operations.view', 'operations.show', 'operations.create', 'operations.store',
-            'operations.edit', 'operations.update', 'operations.destroy', 'operations.export',
+            'operations.edit', 'operations.update', 'operations.destroy',
             'operations.deactivate', 'operations.available',
         ];
 
         // ==================== CUSTOMER PERMISSIONS ====================
         $customerPermissions = [
             'customers.view', 'customers.show', 'customers.create', 'customers.store',
-            'customers.edit', 'customers.update', 'customers.destroy', 'customers.export',
+            'customers.edit', 'customers.update', 'customers.destroy',
             'customers.deactivate', 'customers.active',
         ];
 
         // ==================== REGION PERMISSIONS ====================
         $regionPermissions = [
             'regions.view', 'regions.show', 'regions.create', 'regions.store',
-            'regions.edit', 'regions.update', 'regions.destroy', 'regions.export',
+            'regions.edit', 'regions.update', 'regions.destroy',
             'regions.deactivate', 'regions.active',
         ];
 
         // ==================== ZONE PERMISSIONS ====================
         $zonePermissions = [
             'zones.view', 'zones.show', 'zones.create', 'zones.store',
-            'zones.edit', 'zones.update', 'zones.destroy', 'zones.export',
+            'zones.edit', 'zones.update', 'zones.destroy',
             'zones.deactivate', 'zones.active',
         ];
 
         // ==================== WOREDA PERMISSIONS ====================
         $woredaPermissions = [
             'woredas.view', 'woredas.show', 'woredas.create', 'woredas.store',
-            'woredas.edit', 'woredas.update', 'woredas.destroy', 'woredas.export',
+            'woredas.edit', 'woredas.update', 'woredas.destroy',
             'woredas.deactivate', 'woredas.active',
         ];
 
         // ==================== PLACE PERMISSIONS ====================
         $placePermissions = [
             'places.view', 'places.show', 'places.create', 'places.store',
-            'places.edit', 'places.update', 'places.destroy', 'places.export',
+            'places.edit', 'places.update', 'places.destroy',
             'places.deactivate', 'places.active',
         ];
 
         // ==================== DISTANCE PERMISSIONS ====================
         $distancePermissions = [
             'distances.view', 'distances.show', 'distances.create', 'distances.store',
-            'distances.edit', 'distances.update', 'distances.destroy', 'distances.export',
+            'distances.edit', 'distances.update', 'distances.destroy',
             'distances.deactivate', 'distances.active',
         ];
 
         // ==================== PERFORMANCE PERMISSIONS ====================
         $performancePermissions = [
             'performances.view', 'performances.show', 'performances.create', 'performances.store',
-            'performances.edit', 'performances.update', 'performances.destroy', 'performances.export',
+            'performances.edit', 'performances.update', 'performances.destroy',
             'performances.deactivate', 'performances.active',
         ];
 

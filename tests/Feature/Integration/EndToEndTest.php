@@ -3,12 +3,14 @@
 namespace Tests\Feature\Integration;
 
 use App\Models\Driver;
+use App\Models\DriverTruck;
 use App\Models\Truck;
 use App\Models\User;
 use App\Models\VehicleType;
 use App\Models\Woreda;
 use App\Models\Zone;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Routing\Middleware\ThrottleRequests;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -35,13 +37,14 @@ class EndToEndTest extends TestCase
         // Create permissions
         $permissions = [
             'trucks.view', 'trucks.create', 'trucks.edit', 'trucks.destroy',
-            'trucks.show', 'trucks.store', 'trucks.update', 'trucks.export',
+            'trucks.show', 'trucks.store', 'trucks.update',
             'drivers.view', 'drivers.create', 'drivers.edit', 'drivers.destroy',
             'drivers.show', 'drivers.store', 'drivers.update', 'drivers.export',
+            'driver-trucks.view', 'driver-trucks.create',
             'maintenance.view', 'maintenance.create', 'maintenance.edit', 'maintenance.destroy',
             'maintenance.show', 'maintenance.store', 'maintenance.update', 'maintenance.export',
             'fuel.view', 'fuel.create', 'fuel.edit', 'fuel.destroy',
-            'fuel.show', 'fuel.store', 'fuel.update', 'fuel.export',
+            'fuel.show', 'fuel.store', 'fuel.update',
             'financial.view', 'financial.create', 'financial.edit', 'financial.destroy',
             'financial.show', 'financial.store', 'financial.update', 'financial.export',
         ];
@@ -64,9 +67,11 @@ class EndToEndTest extends TestCase
     /** @test */
     public function complete_fleet_management_workflow()
     {
+        $this->withoutMiddleware(ThrottleRequests::class);
+
         // 1. Create a truck
         $truckData = [
-            'plate' => 'E2E-001',
+            'plate' => 'AB-1234',
             'vehicletype_id' => $this->vehicleType->id,
             'chasisNumber' => 'CH123456',
             'engineNumber' => 'EN789012',
@@ -82,22 +87,22 @@ class EndToEndTest extends TestCase
             ->post(route('trucks.store'), $truckData);
 
         $response->assertRedirect(route('trucks.index'));
-        $this->assertDatabaseHas('trucks', ['plate' => 'E2E-001']);
+        $this->assertDatabaseHas('trucks', ['plate' => 'AB-1234']);
 
-        $truck = Truck::where('plate', 'E2E-001')->first();
+        $truck = Truck::where('plate', 'AB-1234')->first();
 
         // 2. Create a driver
         $driverData = [
+            'driverid' => 'DRV001',
             'name' => 'John Doe',
-            'driver_id' => 'DRV001',
-            'mobile' => '+251911234567',
-            'sex' => 'Male',
+            'sex' => 'male',
             'birthdate' => '1990-05-15',
-            'hired_date' => '2020-01-01',
-            'zone_id' => $this->zone->id,
-            'woreda_id' => $this->woreda->id,
+            'zone' => $this->zone->name,
+            'woreda' => $this->woreda->name,
             'kebele' => '01',
-            'house_number' => '123',
+            'housenumber' => '123',
+            'mobile' => '+251911234567',
+            'hireddate' => '2020-01-01',
             'status' => 'active',
         ];
 
@@ -111,23 +116,32 @@ class EndToEndTest extends TestCase
 
         // 3. Assign driver to truck
         $response = $this->actingAs($this->user)
-            ->post(route('drivers.assign-truck', $driver), [
+            ->withServerVariables(['REMOTE_ADDR' => '127.0.0.2'])
+            ->post(route('driver-trucks.store'), [
                 'truck_id' => $truck->id,
-                'assigned_date' => now()->format('Y-m-d'),
+                'driver_id' => $driver->id,
+                'date_recived' => now()->format('Y-m-d'),
             ]);
 
-        $response->assertRedirect();
+        $response->assertRedirect(route('driver-trucks.index'));
         $this->assertDatabaseHas('driver_truck', [
             'driver_id' => $driver->id,
             'truck_id' => $truck->id,
             'status' => 'active',
         ]);
 
+        $driverTruck = DriverTruck::where('driver_id', $driver->id)
+            ->where('truck_id', $truck->id)
+            ->firstOrFail();
+
+        $scheduledDate = now()->addDay()->toDateString();
+        $completedDate = now()->addDays(2)->toDateString();
+
         // 4. Create maintenance record
         $maintenanceData = [
             'truck_id' => $truck->id,
             'maintenance_type_id' => \App\Models\MaintenanceType::factory()->create()->id,
-            'scheduled_date' => '2023-12-01',
+            'scheduled_date' => $scheduledDate,
             'status' => 'scheduled',
             'description' => 'Regular maintenance',
             'cost' => 1500.00,
@@ -146,14 +160,14 @@ class EndToEndTest extends TestCase
             ->put(route('maintenance.update', $maintenance), [
                 'truck_id' => $truck->id,
                 'maintenance_type_id' => $maintenance->maintenance_type_id,
-                'scheduled_date' => '2023-12-01',
-                'completed_date' => '2023-12-02',
+                'scheduled_date' => $scheduledDate,
+                'completed_date' => $completedDate,
                 'status' => 'completed',
                 'description' => 'Regular maintenance completed',
                 'cost' => 1500.00,
             ]);
 
-        $response->assertRedirect(route('maintenance.show', $maintenance));
+        $response->assertRedirect(route('maintenance.index'));
         $this->assertDatabaseHas('vehicle_maintenance_records', [
             'id' => $maintenance->id,
             'status' => 'completed',
@@ -161,13 +175,14 @@ class EndToEndTest extends TestCase
 
         // 6. Create fuel record
         $fuelData = [
+            'driver_truck_id' => $driverTruck->id,
             'truck_id' => $truck->id,
             'driver_id' => $driver->id,
-            'fuel_date' => '2023-12-01',
+            'fuel_date' => now()->toDateString(),
             'fuel_quantity_liters' => 50.0,
             'fuel_price_per_liter' => 45.0,
             'total_cost' => 2250.0,
-            'fuel_type' => 'Diesel',
+            'fuel_type' => 'diesel',
             'fuel_station' => 'Shell Station',
             'receipt_number' => 'RCP001',
             'odometer_reading' => 100000,
@@ -226,21 +241,20 @@ class EndToEndTest extends TestCase
 
         // 9. Test search functionality
         $response = $this->actingAs($this->user)
-            ->get(route('trucks.index', ['search' => 'E2E']));
+            ->get(route('trucks.index', ['search' => 'AB-1234']));
 
         $response->assertStatus(200)
             ->assertInertia(fn ($page) => $page
                 ->component('Trucks/Index')
                 ->has('trucks.data', 1)
-                ->where('trucks.data.0.plate', 'E2E-001')
+                ->where('trucks.data.0.plate', 'AB-1234')
             );
 
-        // 10. Test export functionality
+        // 10. Ensure export endpoint is disabled
         $response = $this->actingAs($this->user)
-            ->get(route('trucks.export'));
+            ->get('/trucks/export/csv');
 
-        $response->assertStatus(200);
-        $response->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+        $response->assertNotFound();
 
         // 11. Test dashboard
         $response = $this->actingAs($this->user)

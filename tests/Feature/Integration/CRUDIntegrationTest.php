@@ -447,22 +447,14 @@ class CRUDIntegrationTest extends TestCase
     }
 
     /** @test */
-    public function it_can_perform_export_operations()
+    public function it_confirms_truck_export_endpoint_is_disabled()
     {
-        // Create test data
         Truck::factory()->count(5)->create();
 
-        // Test CSV export
         $exportResponse = $this->actingAs($this->user)
-            ->get(route('trucks.export'));
+            ->get('/trucks/export/csv');
 
-        $exportResponse->assertStatus(200);
-        $exportResponse->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
-        $exportResponse->assertHeader('Content-Disposition', 'attachment; filename="trucks.csv"');
-
-        $csvContent = $exportResponse->getContent();
-        $this->assertStringContainsString('plate', $csvContent);
-        $this->assertStringContainsString('status', $csvContent);
+        $exportResponse->assertNotFound();
     }
 
     /** @test */

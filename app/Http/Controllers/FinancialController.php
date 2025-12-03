@@ -4,13 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Truck;
 use App\Models\TruckFinancialRecord;
-use App\Models\InsuranceRecord;
+use Exception;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
-use Inertia\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Exception;
+use Inertia\Inertia;
+use Inertia\Response;
 use Spatie\Activitylog\Facades\Activity as ActivityLogger;
 use Spatie\Activitylog\Models\Activity;
 
@@ -24,7 +23,7 @@ class FinancialController extends Controller
         $query = TruckFinancialRecord::with(['truck']);
 
         // Handle search
-        if ($request->has('search') && !empty($request->input('search'))) {
+        if ($request->has('search') && ! empty($request->input('search'))) {
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
                 $q->whereHas('truck', function ($q) use ($search) {
@@ -39,7 +38,7 @@ class FinancialController extends Controller
 
         // Validate sort column to prevent SQL injection
         $allowedSorts = ['record_date', 'revenue', 'net_profit', 'period_type', 'created_at'];
-        if (!in_array($sort, $allowedSorts)) {
+        if (! in_array($sort, $allowedSorts)) {
             $sort = 'record_date';
         }
 
@@ -64,62 +63,6 @@ class FinancialController extends Controller
         return Inertia::render('Financial/Create', [
             'trucks' => $trucks,
         ]);
-    }
-
-    /**
-     * Export financial records to CSV.
-     */
-    public function export(Request $request)
-    {
-        $query = TruckFinancialRecord::with(['truck']);
-
-        // Apply search filter if provided
-        if ($request->has('search') && !empty($request->input('search'))) {
-            $search = $request->input('search');
-            $query->where(function ($q) use ($search) {
-                $q->whereHas('truck', function ($q) use ($search) {
-                    $q->where('plate', 'like', "%{$search}%");
-                });
-            });
-        }
-
-        // Apply sorting if provided
-        $sort = $request->input('sort', 'record_date');
-        $direction = $request->input('direction', 'desc');
-        $allowedSorts = ['record_date', 'revenue', 'net_profit', 'period_type', 'created_at'];
-        if (in_array($sort, $allowedSorts)) {
-            $query->orderBy($sort, $direction);
-        }
-
-        $financialRecords = $query->get();
-
-        // Generate CSV
-        $csvData = "Truck,Record Date,Period Type,Revenue,Fuel Cost,Maintenance Cost,Driver Salary,Insurance Cost,Depreciation,Other Costs,Net Profit\n";
-        foreach ($financialRecords as $record) {
-            $csvData .= sprintf(
-                '"%s","%s","%s","%.2f","%.2f","%.2f","%.2f","%.2f","%.2f","%.2f","%.2f"' . "\n",
-                $record->truck->plate ?? 'N/A',
-                $record->record_date,
-                $record->period_type,
-                $record->revenue,
-                $record->fuel_cost,
-                $record->maintenance_cost,
-                $record->driver_salary,
-                $record->insurance_cost,
-                $record->depreciation,
-                $record->other_costs,
-                $record->net_profit
-            );
-        }
-
-        // Log the export
-    ActivityLogger::causedBy(Auth::user())
-            ->withProperties(['count' => count($financialRecords)])
-            ->log('exported');
-
-        return response($csvData)
-            ->header('Content-Type', 'text/csv')
-            ->header('Content-Disposition', 'attachment; filename="financial-records.csv"');
     }
 
     /**
@@ -278,13 +221,13 @@ class FinancialController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $analytics,
-                'count' => $analytics->count()
+                'count' => $analytics->count(),
             ]);
 
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to retrieve financial analytics'
+                'message' => 'Failed to retrieve financial analytics',
             ], 500);
         }
     }
@@ -313,13 +256,13 @@ class FinancialController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => $profitLoss
+                'data' => $profitLoss,
             ]);
 
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to retrieve profit and loss statement'
+                'message' => 'Failed to retrieve profit and loss statement',
             ], 500);
         }
     }
@@ -344,6 +287,3 @@ class FinancialController extends Controller
         ];
     }
 }
-
-
-

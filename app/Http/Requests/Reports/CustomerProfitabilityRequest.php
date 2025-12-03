@@ -9,7 +9,13 @@ class CustomerProfitabilityRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        $user = $this->user();
+
+        if ($user === null) {
+            return false;
+        }
+
+        return $user->can('reports.customer-profitability.view') || $user->can('reports.customer-profitability.export');
     }
 
     public function rules(): array

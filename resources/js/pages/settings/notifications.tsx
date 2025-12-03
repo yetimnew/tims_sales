@@ -105,6 +105,31 @@ export default function NotificationSettings({ preferences }: NotificationSettin
         [],
     );
 
+    const enableAll = React.useCallback(() => {
+        setRows(current =>
+            current.map(row => ({
+                ...row,
+                inAppEnabled: true,
+                emailEnabled: true,
+            })),
+        );
+    }, []);
+
+    const disableAll = React.useCallback(() => {
+        setRows(current =>
+            current.map(row => ({
+                ...row,
+                inAppEnabled: false,
+                emailEnabled: false,
+            })),
+        );
+    }, []);
+
+    const fullyEnabledCount = React.useMemo(
+        () => rows.filter(row => row.inAppEnabled && row.emailEnabled).length,
+        [rows],
+    );
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Notification preferences" />
@@ -139,6 +164,29 @@ export default function NotificationSettings({ preferences }: NotificationSettin
                         >
                             {({ processing, recentlySuccessful }) => (
                                 <>
+                                    <div className="flex flex-col gap-4 rounded-lg border border-border bg-muted/40 p-4 md:flex-row md:items-center md:justify-between">
+                                        <div className="space-y-1">
+                                            <h3 className="text-sm font-semibold">Notification coverage</h3>
+                                            <p className="text-sm text-muted-foreground">
+                                                {fullyEnabledCount} of {rows.length} notifications are fully enabled
+                                                (in-app & email).
+                                            </p>
+                                        </div>
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <Button type="button" variant="secondary" onClick={enableAll}>
+                                                Enable all
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                onClick={disableAll}
+                                                className="border-border"
+                                            >
+                                                Disable all
+                                            </Button>
+                                        </div>
+                                    </div>
+
                                     {rows.map((row, index) => {
                                         const updatedAt = formatTimestamp(row.updatedAt);
 

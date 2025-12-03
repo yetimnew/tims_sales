@@ -221,21 +221,13 @@ class SecurityTest extends TestCase
     public function it_prevents_directory_traversal_attacks()
     {
         $user = $this->createUser();
-        $permissions = ['trucks.export'];
-        foreach ($permissions as $permission) {
-            Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
-        }
-        $role = Role::findByName('admin', 'web');
-        $role->givePermissionTo($permissions);
-        $user->assignRole($role);
 
         $maliciousFilename = '../../../etc/passwd';
 
         $response = $this->actingAs($user)
-            ->get(route('trucks.export', ['filename' => $maliciousFilename]));
+            ->get('/trucks/export/csv?filename='.urlencode($maliciousFilename));
 
-        $response->assertStatus(200);
-        $response->assertHeader('Content-Disposition', 'attachment; filename="trucks.csv"');
+        $response->assertNotFound();
     }
 
     /** @test */

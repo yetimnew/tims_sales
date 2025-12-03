@@ -2,11 +2,9 @@
 
 namespace Tests\Feature\Notification;
 
-use App\Models\User;
-use App\Models\Truck;
-use App\Models\Driver;
-use App\Models\Role;
 use App\Models\Permission;
+use App\Models\Role;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
@@ -27,9 +25,9 @@ class NotificationTest extends TestCase
         // Create permissions
         $permissions = [
             'trucks.view', 'trucks.create', 'trucks.edit', 'trucks.destroy',
-            'trucks.show', 'trucks.store', 'trucks.update', 'trucks.export',
+            'trucks.show', 'trucks.store', 'trucks.update',
             'drivers.view', 'drivers.create', 'drivers.edit', 'drivers.destroy',
-            'drivers.show', 'drivers.store', 'drivers.update', 'drivers.export'
+            'drivers.show', 'drivers.store', 'drivers.update', 'drivers.export',
         ];
 
         foreach ($permissions as $permission) {
@@ -61,11 +59,11 @@ class NotificationTest extends TestCase
         $notification = $user->notifications()->create([
             'type' => \App\Notifications\TestNotification::class,
             'data' => ['message' => 'Test message'],
-            'read_at' => null
+            'read_at' => null,
         ]);
 
         $response = $this->actingAs($user)
-            ->post('/notifications/' . $notification->id . '/read');
+            ->post('/notifications/'.$notification->id.'/read');
 
         $response->assertRedirect();
         $this->assertNotNull($notification->fresh()->read_at);
@@ -78,12 +76,12 @@ class NotificationTest extends TestCase
         $user->notifications()->create([
             'type' => \App\Notifications\TestNotification::class,
             'data' => ['message' => 'Test message 1'],
-            'read_at' => null
+            'read_at' => null,
         ]);
         $user->notifications()->create([
             'type' => \App\Notifications\TestNotification::class,
             'data' => ['message' => 'Test message 2'],
-            'read_at' => null
+            'read_at' => null,
         ]);
 
         $response = $this->actingAs($user)
@@ -99,11 +97,11 @@ class NotificationTest extends TestCase
         $user = User::factory()->create();
         $notification = $user->notifications()->create([
             'type' => \App\Notifications\TestNotification::class,
-            'data' => ['message' => 'Test message']
+            'data' => ['message' => 'Test message'],
         ]);
 
         $response = $this->actingAs($user)
-            ->delete('/notifications/' . $notification->id);
+            ->delete('/notifications/'.$notification->id);
 
         $response->assertRedirect();
         $this->assertDatabaseMissing('notifications', ['id' => $notification->id]);
@@ -115,11 +113,11 @@ class NotificationTest extends TestCase
         $user = User::factory()->create();
         $user->notifications()->create([
             'type' => \App\Notifications\TestNotification::class,
-            'data' => ['message' => 'Test message 1']
+            'data' => ['message' => 'Test message 1'],
         ]);
         $user->notifications()->create([
             'type' => \App\Notifications\TestNotification::class,
-            'data' => ['message' => 'Test message 2']
+            'data' => ['message' => 'Test message 2'],
         ]);
 
         $response = $this->actingAs($user)
@@ -135,7 +133,7 @@ class NotificationTest extends TestCase
         $user = User::factory()->create();
         $user->notifications()->create([
             'type' => \App\Notifications\TestNotification::class,
-            'data' => ['message' => 'Test message']
+            'data' => ['message' => 'Test message'],
         ]);
 
         $response = $this->actingAs($user)
@@ -154,11 +152,11 @@ class NotificationTest extends TestCase
         $user = User::factory()->create();
         $user->notifications()->create([
             'type' => \App\Notifications\TestNotification::class,
-            'data' => ['message' => 'Test message']
+            'data' => ['message' => 'Test message'],
         ]);
         $user->notifications()->create([
             'type' => \App\Notifications\AnotherNotification::class,
-            'data' => ['message' => 'Another message']
+            'data' => ['message' => 'Another message'],
         ]);
 
         $response = $this->actingAs($user)
@@ -178,12 +176,12 @@ class NotificationTest extends TestCase
         $user->notifications()->create([
             'type' => \App\Notifications\TestNotification::class,
             'data' => ['message' => 'Unread message'],
-            'read_at' => null
+            'read_at' => null,
         ]);
         $user->notifications()->create([
             'type' => \App\Notifications\TestNotification::class,
             'data' => ['message' => 'Read message'],
-            'read_at' => now()
+            'read_at' => now(),
         ]);
 
         $response = $this->actingAs($user)
@@ -202,11 +200,11 @@ class NotificationTest extends TestCase
         $user = User::factory()->create();
         $user->notifications()->create([
             'type' => \App\Notifications\TestNotification::class,
-            'data' => ['message' => 'Important message']
+            'data' => ['message' => 'Important message'],
         ]);
         $user->notifications()->create([
             'type' => \App\Notifications\TestNotification::class,
-            'data' => ['message' => 'Regular message']
+            'data' => ['message' => 'Regular message'],
         ]);
 
         $response = $this->actingAs($user)
@@ -226,12 +224,12 @@ class NotificationTest extends TestCase
         $user->notifications()->create([
             'type' => \App\Notifications\TestNotification::class,
             'data' => ['message' => 'First message'],
-            'created_at' => now()->subHour()
+            'created_at' => now()->subHour(),
         ]);
         $user->notifications()->create([
             'type' => \App\Notifications\TestNotification::class,
             'data' => ['message' => 'Second message'],
-            'created_at' => now()
+            'created_at' => now(),
         ]);
 
         $response = $this->actingAs($user)
@@ -253,7 +251,7 @@ class NotificationTest extends TestCase
         for ($i = 1; $i <= 25; $i++) {
             $user->notifications()->create([
                 'type' => \App\Notifications\TestNotification::class,
-                'data' => ['message' => "Message {$i}"]
+                'data' => ['message' => "Message {$i}"],
             ]);
         }
 
@@ -274,7 +272,7 @@ class NotificationTest extends TestCase
         $user = User::factory()->create();
         $user->notifications()->create([
             'type' => \App\Notifications\TestNotification::class,
-            'data' => ['message' => 'Test message']
+            'data' => ['message' => 'Test message'],
         ]);
 
         $response = $this->actingAs($user)
@@ -297,8 +295,8 @@ class NotificationTest extends TestCase
                 'notification_types' => [
                     'maintenance' => true,
                     'fuel' => false,
-                    'financial' => true
-                ]
+                    'financial' => true,
+                ],
             ]);
 
         $response->assertRedirect();
@@ -306,7 +304,7 @@ class NotificationTest extends TestCase
             'id' => $user->id,
             'email_notifications' => true,
             'sms_notifications' => false,
-            'push_notifications' => true
+            'push_notifications' => true,
         ]);
     }
 
@@ -319,7 +317,7 @@ class NotificationTest extends TestCase
             ->post('/notifications/send', [
                 'user_id' => $user->id,
                 'type' => 'TestNotification',
-                'data' => ['message' => 'Test message']
+                'data' => ['message' => 'Test message'],
             ]);
 
         $response->assertRedirect();
@@ -337,7 +335,7 @@ class NotificationTest extends TestCase
             ->post('/notifications/send-bulk', [
                 'user_ids' => $users->pluck('id')->toArray(),
                 'type' => 'TestNotification',
-                'data' => ['message' => 'Bulk message']
+                'data' => ['message' => 'Bulk message'],
             ]);
 
         $response->assertRedirect();
@@ -358,7 +356,7 @@ class NotificationTest extends TestCase
                 'user_id' => $user->id,
                 'type' => 'TestNotification',
                 'data' => ['message' => 'Scheduled message'],
-                'send_at' => now()->addHour()
+                'send_at' => now()->addHour(),
             ]);
 
         $response->assertRedirect();
@@ -373,17 +371,17 @@ class NotificationTest extends TestCase
             'user_id' => $user->id,
             'type' => 'TestNotification',
             'data' => ['message' => 'Scheduled message'],
-            'send_at' => now()->addHour()
+            'send_at' => now()->addHour(),
         ]);
 
         $response = $this->actingAs($this->user)
-            ->delete('/notifications/scheduled/' . $scheduledNotification->id);
+            ->delete('/notifications/scheduled/'.$scheduledNotification->id);
 
         $response->assertRedirect();
         $response->assertSessionHas('success');
 
         $this->assertDatabaseMissing('scheduled_notifications', [
-            'id' => $scheduledNotification->id
+            'id' => $scheduledNotification->id,
         ]);
     }
 
@@ -394,7 +392,7 @@ class NotificationTest extends TestCase
         $user->notifications()->create([
             'type' => \App\Notifications\TestNotification::class,
             'data' => ['message' => 'Test message'],
-            'read_at' => now()
+            'read_at' => now(),
         ]);
 
         $response = $this->actingAs($user)
@@ -428,7 +426,7 @@ class NotificationTest extends TestCase
                 'name' => 'Test Template',
                 'subject' => 'Test Subject',
                 'body' => 'Test Body',
-                'type' => 'email'
+                'type' => 'email',
             ]);
 
         $response->assertRedirect();
@@ -438,7 +436,7 @@ class NotificationTest extends TestCase
             'name' => 'Test Template',
             'subject' => 'Test Subject',
             'body' => 'Test Body',
-            'type' => 'email'
+            'type' => 'email',
         ]);
     }
 
@@ -449,15 +447,15 @@ class NotificationTest extends TestCase
             'name' => 'Test Template',
             'subject' => 'Test Subject',
             'body' => 'Test Body',
-            'type' => 'email'
+            'type' => 'email',
         ]);
 
         $response = $this->actingAs($this->user)
-            ->put('/notifications/templates/' . $template->id, [
+            ->put('/notifications/templates/'.$template->id, [
                 'name' => 'Updated Template',
                 'subject' => 'Updated Subject',
                 'body' => 'Updated Body',
-                'type' => 'email'
+                'type' => 'email',
             ]);
 
         $response->assertRedirect();
@@ -467,7 +465,7 @@ class NotificationTest extends TestCase
             'id' => $template->id,
             'name' => 'Updated Template',
             'subject' => 'Updated Subject',
-            'body' => 'Updated Body'
+            'body' => 'Updated Body',
         ]);
     }
 
@@ -478,17 +476,17 @@ class NotificationTest extends TestCase
             'name' => 'Test Template',
             'subject' => 'Test Subject',
             'body' => 'Test Body',
-            'type' => 'email'
+            'type' => 'email',
         ]);
 
         $response = $this->actingAs($this->user)
-            ->delete('/notifications/templates/' . $template->id);
+            ->delete('/notifications/templates/'.$template->id);
 
         $response->assertRedirect();
         $response->assertSessionHas('success');
 
         $this->assertDatabaseMissing('notification_templates', [
-            'id' => $template->id
+            'id' => $template->id,
         ]);
     }
 
@@ -499,11 +497,11 @@ class NotificationTest extends TestCase
             'name' => 'Test Template',
             'subject' => 'Test Subject',
             'body' => 'Test Body',
-            'type' => 'email'
+            'type' => 'email',
         ]);
 
         $response = $this->actingAs($this->user)
-            ->get('/notifications/templates/' . $template->id . '/preview');
+            ->get('/notifications/templates/'.$template->id.'/preview');
 
         $response->assertStatus(200);
         $response->assertInertia(fn ($page) => $page
@@ -519,12 +517,12 @@ class NotificationTest extends TestCase
             'name' => 'Test Template',
             'subject' => 'Test Subject',
             'body' => 'Test Body',
-            'type' => 'email'
+            'type' => 'email',
         ]);
 
         $response = $this->actingAs($this->user)
-            ->post('/notifications/templates/' . $template->id . '/test', [
-                'email' => 'test@example.com'
+            ->post('/notifications/templates/'.$template->id.'/test', [
+                'email' => 'test@example.com',
             ]);
 
         $response->assertRedirect();
@@ -592,7 +590,7 @@ class NotificationTest extends TestCase
                 'push_enabled' => true,
                 'frequency' => 'immediate',
                 'quiet_hours_start' => '22:00',
-                'quiet_hours_end' => '08:00'
+                'quiet_hours_end' => '08:00',
             ]);
 
         $response->assertRedirect();
@@ -623,8 +621,8 @@ class NotificationTest extends TestCase
                     'smtp_host' => 'smtp.example.com',
                     'smtp_port' => 587,
                     'smtp_username' => 'test@example.com',
-                    'smtp_password' => 'password'
-                ]
+                    'smtp_password' => 'password',
+                ],
             ]);
 
         $response->assertRedirect();
@@ -632,7 +630,7 @@ class NotificationTest extends TestCase
 
         $this->assertDatabaseHas('notification_channels', [
             'name' => 'Test Channel',
-            'type' => 'email'
+            'type' => 'email',
         ]);
     }
 
@@ -646,13 +644,13 @@ class NotificationTest extends TestCase
                 'smtp_host' => 'smtp.example.com',
                 'smtp_port' => 587,
                 'smtp_username' => 'test@example.com',
-                'smtp_password' => 'password'
-            ]
+                'smtp_password' => 'password',
+            ],
         ]);
 
         $response = $this->actingAs($this->user)
-            ->post('/notifications/channels/' . $channel->id . '/test', [
-                'email' => 'test@example.com'
+            ->post('/notifications/channels/'.$channel->id.'/test', [
+                'email' => 'test@example.com',
             ]);
 
         $response->assertRedirect();
@@ -692,7 +690,7 @@ class NotificationTest extends TestCase
             ->post('/notifications/reports/generate', [
                 'start_date' => '2023-01-01',
                 'end_date' => '2023-12-31',
-                'type' => 'summary'
+                'type' => 'summary',
             ]);
 
         $response->assertRedirect();
@@ -706,11 +704,11 @@ class NotificationTest extends TestCase
             'name' => 'Test Report',
             'type' => 'summary',
             'data' => ['test' => 'data'],
-            'generated_at' => now()
+            'generated_at' => now(),
         ]);
 
         $response = $this->actingAs($this->user)
-            ->get('/notifications/reports/' . $report->id . '/download');
+            ->get('/notifications/reports/'.$report->id.'/download');
 
         $response->assertStatus(200);
         $response->assertHeader('Content-Type', 'application/pdf');

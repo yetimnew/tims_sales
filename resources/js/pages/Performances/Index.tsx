@@ -22,7 +22,6 @@ import {
     CheckCircle,
     Edit,
     Eye,
-    FileDown,
     Plus,
     Search,
     Trash2,
@@ -102,7 +101,7 @@ interface PerformancesIndexProps {
     filters: {
         search?: string | null
         status?: string | null
-    load_phase?: string | null
+        load_phase?: string | null
         sort?: string | null
         direction?: 'asc' | 'desc' | null
         per_page?: number | null
@@ -295,10 +294,7 @@ export default function PerformancesIndex({
                 <div className="flex items-center gap-2">
                     {column.label}
                     {column.sortable !== false && (
-                        <ArrowUpDown
-                            size={14}
-                            className={isActive ? 'text-primary' : 'text-muted-foreground opacity-50'}
-                        />
+                        <ArrowUpDown size={14} className={isActive ? 'text-primary' : 'text-muted-foreground opacity-50'} />
                     )}
                 </div>
             </TableHead>
@@ -342,32 +338,8 @@ export default function PerformancesIndex({
         }
     }
 
-    const handleExport = React.useCallback(() => {
-        const params = new URLSearchParams()
-        if (searchTerm.trim()) {
-            params.set('search', searchTerm.trim())
-        }
-        if (selectedStatus !== 'all') {
-            params.set('status', selectedStatus)
-        }
-        if (selectedLoadPhase !== 'all') {
-            params.set('load_phase', selectedLoadPhase)
-        }
-        params.set('sort', sortColumn)
-        params.set('direction', sortDirection)
-
-        const queryString = params.toString()
-        window.location.href = queryString ? `/performances/export/csv?${queryString}` : '/performances/export/csv'
-    }, [searchTerm, selectedStatus, selectedLoadPhase, sortColumn, sortDirection])
-
     const headerActions = (
         <>
-            {hasPermission('performances.export') && (
-                <Button variant="outline" onClick={handleExport}>
-                    <FileDown className="mr-2 h-4 w-4" />
-                    Export CSV
-                </Button>
-            )}
             {hasPermission('performances.create') && (
                 <Button asChild>
                     <Link href="/performances/create">
@@ -611,6 +583,5 @@ export default function PerformancesIndex({
                 isLoading={isDeleting}
             />
         </>
-
     )
 }

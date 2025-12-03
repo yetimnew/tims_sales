@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
-import { Link, router, usePage } from '@inertiajs/react'
+import { Link, router } from '@inertiajs/react'
 import { type BreadcrumbItem } from '@/types'
 import { usePermissions } from '@/hooks/use-permissions'
 import ListPageLayout from '@/components/layouts/list-page-layout'
@@ -16,7 +16,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table'
-import { ArrowUpDown, FileDown, GaugeCircle, Globe2, MapPin, Navigation2, Route, ShieldAlert, Trash2, TrendingDown } from 'lucide-react'
+import { ArrowUpDown, GaugeCircle, Globe2, MapPin, Navigation2, Route, ShieldAlert, Trash2, TrendingDown } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useToast } from '@/hooks/use-toast'
@@ -157,7 +157,6 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
 export default function DistancesIndex({ distances, metrics, filters }: DistancesIndexProps) {
     const { hasPermission } = usePermissions()
     const { toast } = useToast()
-    const { url } = usePage()
 
     const [search, setSearch] = useState(filters?.search ?? '')
     const [routeType, setRouteType] = useState(filters?.routeType ?? 'all')
@@ -354,31 +353,14 @@ export default function DistancesIndex({ distances, metrics, filters }: Distance
         }
     }
 
-    const headerActions = (
-        <>
-            {hasPermission('distances.export') && (
-                <Button
-                    variant="outline"
-                    onClick={() => {
-                        const query = url.split('?')[1]
-                        const exportUrl = query ? `/distances/export?${query}` : '/distances/export'
-                        window.location.href = exportUrl
-                    }}
-                >
-                    <FileDown className="mr-2 h-4 w-4" />
-                    Export CSV
-                </Button>
-            )}
-            {hasPermission('distances.create') && (
-                <Button asChild>
-                    <Link href="/distances/create">
-                        <Navigation2 className="mr-2 h-4 w-4" />
-                        Add Distance
-                    </Link>
-                </Button>
-            )}
-        </>
-    )
+    const headerActions = hasPermission('distances.create') ? (
+        <Button asChild>
+            <Link href="/distances/create">
+                <Navigation2 className="mr-2 h-4 w-4" />
+                Add Distance
+            </Link>
+        </Button>
+    ) : null
 
     const statsSection = (
         <div className="hidden gap-2 md:grid md:grid-cols-2 xl:grid-cols-4">

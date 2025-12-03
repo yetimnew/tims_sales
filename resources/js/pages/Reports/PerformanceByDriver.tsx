@@ -14,6 +14,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Activity, Award, Download, FileDigit, FileSpreadsheet, FileType2, Filter, GaugeCircle, RefreshCcw, Search, User, ChevronDown, ChevronUp } from 'lucide-react';
+import { usePermissions } from '@/hooks/use-permissions';
 
 interface DriverOption {
     id: number;
@@ -81,6 +82,8 @@ const formatCurrency = (value: number) => new Intl.NumberFormat(undefined, { sty
 const formatPercentage = (value: number | null) => (value === null ? '—' : `${value.toFixed(2)}%`);
 
 export default function PerformanceByDriver({ filters, rows = [], summary, drivers }: PerformanceByDriverProps) {
+    const { hasPermission } = usePermissions();
+    const canExport = hasPermission('reports.performance-by-driver.export');
     const [from, setFrom] = useState(filters?.from ?? '');
     const [to, setTo] = useState(filters?.to ?? '');
     const [selectedDrivers, setSelectedDrivers] = useState<number[]>(filters?.driver_ids ?? []);
@@ -156,6 +159,10 @@ export default function PerformanceByDriver({ filters, rows = [], summary, drive
     };
 
     const handleExport = (format: 'csv' | 'xlsx' | 'pdf') => {
+        if (!canExport) {
+            return;
+        }
+
         const params = new URLSearchParams();
 
         if (from) params.set('from', from);
@@ -348,28 +355,30 @@ export default function PerformanceByDriver({ filters, rows = [], summary, drive
                                         </DialogFooter>
                                     </DialogContent>
                                 </Dialog>
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button type="button" variant="secondary" className="gap-2">
-                                            <Download className="h-4 w-4" />
-                                            Export
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end" className="w-44">
-                                        <DropdownMenuItem onSelect={() => handleExport('csv')} className="gap-2">
-                                            <FileDigit className="h-4 w-4 text-amber-500" />
-                                            CSV
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onSelect={() => handleExport('xlsx')} className="gap-2">
-                                            <FileSpreadsheet className="h-4 w-4 text-emerald-500" />
-                                            Excel
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onSelect={() => handleExport('pdf')} className="gap-2">
-                                            <FileType2 className="h-4 w-4 text-rose-500" />
-                                            PDF
-                                        </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
+                                {canExport && (
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button type="button" variant="secondary" className="gap-2">
+                                                <Download className="h-4 w-4" />
+                                                Export
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end" className="w-44">
+                                            <DropdownMenuItem onSelect={() => handleExport('csv')} className="gap-2">
+                                                <FileDigit className="h-4 w-4 text-amber-500" />
+                                                CSV
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onSelect={() => handleExport('xlsx')} className="gap-2">
+                                                <FileSpreadsheet className="h-4 w-4 text-emerald-500" />
+                                                Excel
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onSelect={() => handleExport('pdf')} className="gap-2">
+                                                <FileType2 className="h-4 w-4 text-rose-500" />
+                                                PDF
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                )}
                                 <Button type="button" variant="outline" className="gap-2" onClick={handleReset}>
                                     <RefreshCcw className="h-4 w-4" />
                                     Reset

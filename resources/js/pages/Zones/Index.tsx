@@ -22,7 +22,6 @@ import {
     CalendarClock,
     CheckCircle,
     Eye,
-    FileDown,
     Filter,
     Map,
     MapPin,
@@ -365,29 +364,8 @@ export default function ZonesIndex({ zones, metrics, filters, statusOptions, per
         }
     }
 
-    const handleExport = useCallback(() => {
-        const params = new URLSearchParams()
-        if (searchTerm.trim()) {
-            params.set('search', searchTerm.trim())
-        }
-        if (selectedStatus !== 'all') {
-            params.set('status', selectedStatus)
-        }
-        params.set('sort', sortColumn)
-        params.set('direction', sortDirection)
-
-        const queryString = params.toString()
-        window.location.href = queryString ? `/zones/export?${queryString}` : '/zones/export'
-    }, [searchTerm, selectedStatus, sortColumn, sortDirection])
-
     const headerActions = (
         <>
-            {hasPermission('zones.export') && (
-                <Button variant="outline" onClick={handleExport}>
-                    <FileDown className="mr-2 h-4 w-4" />
-                    Export CSV
-                </Button>
-            )}
             {hasPermission('zones.create') && (
                 <Button asChild>
                     <Link href="/zones/create">

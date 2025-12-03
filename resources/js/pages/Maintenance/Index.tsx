@@ -18,7 +18,7 @@ import { InertiaPagination } from '@/components/ui/pagination';
 import { Input } from '@/components/ui/input';
 import * as React from 'react';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
-import { AlertTriangle, ArrowUpDown, CheckCircle, Clock, DollarSign, Eye, FileDown, Plus, User, Wrench, Edit, Search, Trash2 } from 'lucide-react';
+import { AlertTriangle, ArrowUpDown, CheckCircle, Clock, DollarSign, Eye, Plus, User, Wrench, Edit, Search, Trash2 } from 'lucide-react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -112,10 +112,13 @@ const toNumeric = (value: number | string | null | undefined): number | null => 
 const formatNumber = (value: number | string | null | undefined) => {
     const numeric = toNumeric(value);
     if (numeric === null) {
-        return '0';
+        return '0.00';
     }
 
-    return numeric.toLocaleString();
+    return new Intl.NumberFormat('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    }).format(numeric);
 };
 
 const formatCurrency = (value: number | string | null | undefined) => {
@@ -280,24 +283,6 @@ export default function MaintenanceIndex({ maintenanceRecords, metrics, filters,
         handleNavigate({ sort: column, direction: newDirection });
     };
 
-    const handleExport = React.useCallback(() => {
-        const params = new URLSearchParams();
-        if (searchTerm.trim()) {
-            params.set('search', searchTerm.trim());
-        }
-        if (selectedStatus !== 'all') {
-            params.set('status', selectedStatus);
-        }
-        if (selectedType !== 'all') {
-            params.set('maintenance_type', selectedType);
-        }
-        params.set('sort', sortColumn);
-        params.set('direction', sortDirection);
-
-        const queryString = params.toString();
-        window.location.href = queryString ? `/maintenance/export/csv?${queryString}` : '/maintenance/export/csv';
-    }, [searchTerm, selectedStatus, selectedType, sortColumn, sortDirection]);
-
     const handleDeleteDialogChange = React.useCallback((open: boolean) => {
         setDeleteDialogOpen(open);
         if (!open) {
@@ -340,12 +325,6 @@ export default function MaintenanceIndex({ maintenanceRecords, metrics, filters,
 
     const headerActions = (
         <>
-            {hasPermission('maintenance.export') && (
-                <Button variant="outline" onClick={handleExport}>
-                    <FileDown className="mr-2 h-4 w-4" />
-                    Export CSV
-                </Button>
-            )}
             {hasPermission('maintenance.create') && (
                 <Button asChild>
                     <Link href="/maintenance/create">

@@ -29,7 +29,7 @@ class ApiEndpointTest extends TestCase
         // Create permissions
         $permissions = [
             'trucks.view', 'trucks.create', 'trucks.edit', 'trucks.destroy',
-            'trucks.show', 'trucks.store', 'trucks.update', 'trucks.export',
+            'trucks.show', 'trucks.store', 'trucks.update',
             'drivers.view', 'drivers.create', 'drivers.edit', 'drivers.destroy',
             'drivers.show', 'drivers.store', 'drivers.update', 'drivers.export',
         ];
@@ -155,19 +155,6 @@ class ApiEndpointTest extends TestCase
 
         $response->assertRedirect(route('trucks.index'));
         $this->assertSoftDeleted('trucks', ['id' => $truck->id]);
-    }
-
-    #[Test]
-    public function trucks_export_endpoint_returns_csv(): void
-    {
-        Truck::factory()->count(3)->create();
-
-        $response = $this->actingAs($this->user)
-            ->get(route('trucks.export'));
-
-        $response->assertStatus(200);
-        $response->assertHeader('Content-Type', 'text/csv');
-        $this->assertStringContainsString('attachment; filename="trucks_', $response->headers->get('Content-Disposition'));
     }
 
     #[Test]
@@ -505,22 +492,6 @@ class ApiEndpointTest extends TestCase
                 ->has('trucks.data', 1)
                 ->where('trucks.data.0.status', 'active')
             );
-    }
-
-    #[Test]
-    public function api_endpoints_handle_export_parameters(): void
-    {
-        Truck::factory()->create(['plate' => 'EX-1234', 'status' => 'active']);
-        Truck::factory()->create(['plate' => 'OT-5678', 'status' => 'inactive']);
-
-        $response = $this->actingAs($this->user)
-            ->get(route('trucks.export'));
-
-        $response->assertStatus(200);
-        $csvContent = $response->getContent();
-
-        $this->assertStringContainsString('EX-1234', $csvContent);
-        $this->assertStringContainsString('OT-5678', $csvContent);
     }
 
     #[Test]

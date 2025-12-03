@@ -16,7 +16,7 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { Head, Link, router } from '@inertiajs/react';
 import { toast } from '@/hooks/use-toast';
 import { type BreadcrumbItem } from '@/types';
-import { Plus, Eye, Edit, Search, ArrowUpDown, Trash2, FileDown, Settings, Wrench, CheckCircle, XCircle, DollarSign, Calendar, CheckSquare, Square } from 'lucide-react';
+import { Plus, Eye, Edit, Search, ArrowUpDown, Trash2, Settings, Wrench, CheckCircle, XCircle, DollarSign, Calendar, CheckSquare, Square } from 'lucide-react';
 import { InertiaPagination } from '@/components/ui/pagination';
 import * as React from 'react';
 
@@ -344,19 +344,6 @@ export default function MaintenanceTypesIndex({ maintenanceTypes, statistics, fi
                         {/* Regular Actions */}
                         {selectedIds.length === 0 && (
                             <>
-                                {hasPermission('maintenance-types.view') && totalMaintenanceTypes > 0 && (
-                                    <Button variant="outline" onClick={() => {
-                                        const params = new URLSearchParams({
-                                            search: searchTerm,
-                                            sort: sortColumn || 'name',
-                                            direction: sortDirection,
-                                        });
-                                        window.location.href = `/maintenance-types/export/csv?${params.toString()}`;
-                                    }}>
-                                        <FileDown className="mr-2 h-4 w-4" />
-                                        Export CSV
-                                    </Button>
-                                )}
                                 {hasPermission('maintenance-types.create') && (
                                     <Button asChild>
                                         <Link href="/maintenance-types/create">

@@ -29,7 +29,6 @@ class ComponentTest extends TestCase
             'trucks.edit',
             'trucks.store',
             'trucks.update',
-            'trucks.export',
             'trucks.destroy',
             'drivers.view',
             'drivers.create',

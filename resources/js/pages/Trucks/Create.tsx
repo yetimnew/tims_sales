@@ -32,7 +32,7 @@ interface TrucksCreateProps {
 }
 
 export default function TrucksCreate({ vehicleTypes }: TrucksCreateProps) {
-    const { data, setData, post, processing, errors } = useForm({
+    const { data, setData, post, processing, errors, clearErrors } = useForm({
         plate: '',
         vehicletype_id: '',
         chasisNumber: '',
@@ -140,6 +140,7 @@ export default function TrucksCreate({ vehicleTypes }: TrucksCreateProps) {
 
     const handleFieldChange = (field: string, value: string) => {
         setData(field as any, value);
+        clearErrors(field);
         validateField(field, value);
         setIsDirty(true);
     };
@@ -161,7 +162,13 @@ export default function TrucksCreate({ vehicleTypes }: TrucksCreateProps) {
             return;
         }
 
-        post('/trucks');
+        post('/trucks', {
+            onSuccess: () => {
+                clearErrors();
+                setFrontendErrors({});
+                setIsDirty(false);
+            },
+        });
     };
 
     const getFieldError = (fieldName: string) => errors[fieldName as keyof typeof errors] || frontendErrors[fieldName] || '';
@@ -332,7 +339,7 @@ export default function TrucksCreate({ vehicleTypes }: TrucksCreateProps) {
                                             id="chasisNumber"
                                             type="text"
                                             value={data.chasisNumber}
-                                            onChange={(e) => setData('chasisNumber', e.target.value)}
+                                            onChange={(e) => handleFieldChange('chasisNumber', e.target.value)}
                                             placeholder="Chassis number"
                                         />
                                         <p className="text-xs text-muted-foreground">Optional - Factory assigned identifier</p>
@@ -344,7 +351,7 @@ export default function TrucksCreate({ vehicleTypes }: TrucksCreateProps) {
                                             id="engineNumber"
                                             type="text"
                                             value={data.engineNumber}
-                                            onChange={(e) => setData('engineNumber', e.target.value)}
+                                            onChange={(e) => handleFieldChange('engineNumber', e.target.value)}
                                             placeholder="Engine number"
                                         />
                                         <p className="text-xs text-muted-foreground">Optional - Engine identifier</p>
@@ -356,7 +363,7 @@ export default function TrucksCreate({ vehicleTypes }: TrucksCreateProps) {
                                             id="tyreSyze"
                                             type="text"
                                             value={data.tyreSyze}
-                                            onChange={(e) => setData('tyreSyze', e.target.value)}
+                                            onChange={(e) => handleFieldChange('tyreSyze', e.target.value)}
                                             placeholder="e.g., 315/80R22.5"
                                         />
                                         <p className="text-xs text-muted-foreground">Optional - Standard tire specification</p>
