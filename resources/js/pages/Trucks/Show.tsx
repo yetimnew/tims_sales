@@ -6,6 +6,7 @@ import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialo
 import { ActivityLogTable } from '@/components/activity-log-table';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { toast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -434,6 +435,7 @@ const gradeCategoryConfig: Record<GradeCategoryKey, {
 export default function TrucksShow({ truck, activityLogs = [], counts, performanceSummary, maintenanceSummary, gradeReport }: TrucksShowProps) {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [deleteError, setDeleteError] = useState<string | null>(null);
 
     const driverAssignments = truck.driverTrucks ?? [];
     const maintenanceRecords = truck.maintenanceRecords ?? [];
@@ -697,9 +699,37 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
             onSuccess: () => {
                 setDeleteDialogOpen(false);
                 setIsDeleting(false);
+                setDeleteError(null);
+                toast({
+                    title: 'Truck deleted',
+                    description: `${truck.plate} has been removed from the fleet.`,
+                });
             },
-            onError: () => {
+            onError: (errors) => {
                 setIsDeleting(false);
+                if (errors && typeof errors === 'object') {
+                    const messages = Object.values(errors)
+                        .flatMap((value) => (Array.isArray(value) ? value : [value]))
+                        .filter((value) => Boolean(value))
+                        .join('\n');
+
+                    const fallback = 'Unable to delete this truck. Please resolve any blocking records first.';
+                    setDeleteError(messages || fallback);
+
+                    toast({
+                        title: 'Delete failed',
+                        description: messages || fallback,
+                        variant: 'destructive',
+                    });
+                } else {
+                    const fallback = 'An unexpected error occurred while deleting the truck. Please try again.';
+                    setDeleteError(fallback);
+                    toast({
+                        title: 'Delete failed',
+                        description: fallback,
+                        variant: 'destructive',
+                    });
+                }
             },
         });
     };
@@ -1535,12 +1565,19 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
             {/* Delete Confirmation Dialog */}
             <DeleteConfirmationDialog
                 open={deleteDialogOpen}
-                onOpenChange={setDeleteDialogOpen}
+                onOpenChange={(open) => {
+                    setDeleteDialogOpen(open);
+                    if (!open) {
+                        setDeleteError(null);
+                    }
+                }}
                 title="Delete Truck"
-                description="Are you sure you want to delete this truck? This action cannot be undone and will remove all associated records."
+                description="Delete this truck and remove it from all fleet records?"
                 itemName={truck.plate}
                 onConfirm={handleDeleteConfirm}
                 isLoading={isDeleting}
+                errorMessage={deleteError}
+                confirmLabel="Delete Truck"
             />
         </AppLayout>
     );

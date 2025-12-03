@@ -138,6 +138,7 @@ export default function TrucksIndex({ trucks, metrics, filters, statusOptions, v
     const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
     const [selectedTruck, setSelectedTruck] = React.useState<TruckData | null>(null);
     const [isDeleting, setIsDeleting] = React.useState(false);
+    const [deleteError, setDeleteError] = React.useState<string | null>(null);
     const availablePerPageOptions = React.useMemo(() => (perPageOptions?.length ? perPageOptions : [10, 15, 25, 50]), [perPageOptions]);
     const resolvedPerPage = React.useMemo(() => {
         const candidate = filters?.per_page;
@@ -234,6 +235,7 @@ export default function TrucksIndex({ trucks, metrics, filters, statusOptions, v
     const handleDeleteClick = (truck: TruckData) => {
         setSelectedTruck(truck);
         setDeleteDialogOpen(true);
+        setDeleteError(null);
     };
 
     const handleDeleteConfirm = () => {
@@ -245,18 +247,32 @@ export default function TrucksIndex({ trucks, metrics, filters, statusOptions, v
                 setDeleteDialogOpen(false);
                 setSelectedTruck(null);
                 setIsDeleting(false);
+                setDeleteError(null);
             },
             onError: (errors) => {
                 setIsDeleting(false);
                 if (errors && typeof errors === 'object') {
-                    const errorMessages = Object.values(errors).flat().join('\n');
-                    if (errorMessages) {
-                        toast({
-                            title: '❌ Delete Failed',
-                            description: errorMessages,
-                            variant: 'destructive',
-                        });
-                    }
+                    const messages = Object.values(errors)
+                        .flatMap((value) => (Array.isArray(value) ? value : [value]))
+                        .filter((value) => Boolean(value))
+                        .join('\n');
+
+                    const fallback = 'Failed to delete truck. Please review the requirements and try again.';
+                    setDeleteError(messages || fallback);
+
+                    toast({
+                        title: '❌ Delete Failed',
+                        description: messages || fallback,
+                        variant: 'destructive',
+                    });
+                } else {
+                    const fallback = 'An unexpected error occurred while deleting the truck. Please try again.';
+                    setDeleteError(fallback);
+                    toast({
+                        title: '❌ Delete Failed',
+                        description: fallback,
+                        variant: 'destructive',
+                    });
                 }
             },
         });
@@ -531,12 +547,20 @@ export default function TrucksIndex({ trucks, metrics, filters, statusOptions, v
 
             <DeleteConfirmationDialog
                 open={deleteDialogOpen}
-                onOpenChange={setDeleteDialogOpen}
+                onOpenChange={(open) => {
+                    setDeleteDialogOpen(open);
+                    if (!open) {
+                        setSelectedTruck(null);
+                        setDeleteError(null);
+                    }
+                }}
                 title="Delete Truck"
                 description="Are you sure you want to delete this truck? This action cannot be undone."
                 itemName={selectedTruck?.plate}
                 onConfirm={handleDeleteConfirm}
                 isLoading={isDeleting}
+                errorMessage={deleteError}
+                confirmLabel="Delete Truck"
             />
         </>
     );
