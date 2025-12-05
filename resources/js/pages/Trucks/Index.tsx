@@ -16,7 +16,24 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { Link, router } from '@inertiajs/react';
 import { toast } from '@/hooks/use-toast';
 import { type BreadcrumbItem } from '@/types';
-import { Plus, Eye, Edit, Trash2, Search, ArrowUpDown, Truck, CheckCircle, Wrench, XCircle, DollarSign, ChevronRight, Gauge, TrendingUp, Users, Loader2 } from 'lucide-react';
+import {
+    Plus,
+    Eye,
+    Edit,
+    Trash2,
+    Search,
+    ArrowUpDown,
+    Truck,
+    CheckCircle,
+    Wrench,
+    XCircle,
+    DollarSign,
+    ChevronRight,
+    Gauge,
+    TrendingUp,
+    Users,
+    Loader2,
+} from 'lucide-react';
 import { InertiaPagination } from '@/components/ui/pagination';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -168,8 +185,28 @@ const formatETBCurrency = (value?: number | null, options?: Intl.NumberFormatOpt
     return etbCurrencyFormatter.format(value);
 };
 
-export default function TrucksIndex({ trucks, metrics, filters, statusOptions, vehicleTypes, perPageOptions }: TrucksIndexProps) {
+export default function TrucksIndex({
+    trucks,
+    metrics,
+    filters,
+    statusOptions,
+    vehicleTypes,
+    perPageOptions,
+}: TrucksIndexProps) {
     const { hasPermission } = usePermissions();
+
+    const getTimestamp = React.useCallback(() => {
+        if (typeof window === 'undefined') {
+            return Date.now();
+        }
+
+        if ('performance' in window && typeof window.performance.now === 'function') {
+            return window.performance.now();
+        }
+
+        return Date.now();
+    }, []);
+
     const [searchTerm, setSearchTerm] = React.useState(filters?.search ?? '');
     const [selectedStatus, setSelectedStatus] = React.useState(filters?.status ?? 'all');
     const [selectedVehicleType, setSelectedVehicleType] = React.useState(
@@ -177,72 +214,109 @@ export default function TrucksIndex({ trucks, metrics, filters, statusOptions, v
     );
     const [sortBy, setSortBy] = React.useState(filters?.sort ?? 'created_at');
     const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>(filters?.direction ?? 'desc');
+
     const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
     const [selectedTruck, setSelectedTruck] = React.useState<TruckData | null>(null);
     const [isDeleting, setIsDeleting] = React.useState(false);
     const [deleteError, setDeleteError] = React.useState<string | null>(null);
-    const availablePerPageOptions = React.useMemo(() => (perPageOptions?.length ? perPageOptions : [10, 15, 25, 50]), [perPageOptions]);
+
+    const initialShouldShowSkeleton = React.useMemo(() => {
+        if (typeof window === 'undefined') {
+            return true;
+        }
+
+        const stored = window.sessionStorage.getItem(SKELETON_FLAG_KEY);
+        return stored === 'true' || stored === null;
+    }, []);
+
+    const [isLoading, setIsLoading] = React.useState<boolean>(initialShouldShowSkeleton);
+    const loadingStartedAtRef = React.useRef<number | null>(initialShouldShowSkeleton ? getTimestamp() : null);
+    const loadingTimeoutRef = React.useRef<number | null>(null);
+
+    const clearLoadingTimeout = React.useCallback(() => {
+        if (loadingTimeoutRef.current === null) {
+            return;
+        }
+
+        if (typeof window !== 'undefined') {
+            window.clearTimeout(loadingTimeoutRef.current);
+        }
+
+        loadingTimeoutRef.current = null;
+    }, []);
+
+    const beginLoading = React.useCallback(() => {
+        if (loadingStartedAtRef.current === null) {
+            loadingStartedAtRef.current = getTimestamp();
+        }
+
+        clearLoadingTimeout();
+        setIsLoading((current) => (current ? current : true));
+    }, [clearLoadingTimeout, getTimestamp]);
+
+    const finishLoading = React.useCallback(() => {
+        const minimumDuration = 350;
+        const startedAt = loadingStartedAtRef.current;
+        const now = getTimestamp();
+        const elapsed = startedAt === null ? minimumDuration : now - startedAt;
+        const remaining = Math.max(minimumDuration - elapsed, 0);
+
+        if (remaining <= 0 || typeof window === 'undefined') {
+            clearLoadingTimeout();
+            loadingStartedAtRef.current = null;
+            setIsLoading(false);
+            return;
+        }
+
+        clearLoadingTimeout();
+        loadingTimeoutRef.current = window.setTimeout(() => {
+            loadingStartedAtRef.current = null;
+            setIsLoading(false);
+            loadingTimeoutRef.current = null;
+        }, remaining);
+    }, [clearLoadingTimeout, getTimestamp]);
+
+    React.useEffect(() => () => {
+        clearLoadingTimeout();
+    }, [clearLoadingTimeout]);
+
+    const availablePerPageOptions = React.useMemo(
+        () => (perPageOptions?.length ? perPageOptions : [10, 15, 25, 50]),
+        [perPageOptions],
+    );
+
     const resolvedPerPage = React.useMemo(() => {
         const candidate = filters?.per_page;
         if (typeof candidate === 'number' && availablePerPageOptions.includes(candidate)) {
             return candidate;
         }
-
         return availablePerPageOptions[0] ?? 10;
     }, [filters?.per_page, availablePerPageOptions]);
+
     const [perPage, setPerPage] = React.useState<string>(() => String(resolvedPerPage));
-    const [isLoading, setIsLoading] = React.useState<boolean>(() => {
-        if (typeof window !== 'undefined') {
-            const shouldShowSkeleton = window.sessionStorage.getItem(SKELETON_FLAG_KEY) === 'true';
-            if (shouldShowSkeleton) {
-                window.sessionStorage.removeItem(SKELETON_FLAG_KEY);
-                return true;
-            }
-        }
 
-        return !Array.isArray(trucks?.data);
-    });
-
-    React.useEffect(() => {
-        setPerPage(String(resolvedPerPage));
-    }, [resolvedPerPage]);
-
-    React.useEffect(() => {
-        if (!Array.isArray(trucks?.data)) {
-            return;
-        }
-
-        setIsLoading(false);
-
-        if (typeof window !== 'undefined') {
-            window.sessionStorage.removeItem(SKELETON_FLAG_KEY);
-        }
-    }, [trucks?.data]);
-
+    // Listen for Inertia visits to toggle loading state.
     React.useEffect(() => {
         const isPrefetchVisit = (event: unknown): boolean => {
             if (!event || typeof event !== 'object' || event === null) {
                 return false;
             }
-
             const detail = (event as { detail?: { visit?: { prefetch?: boolean } } }).detail;
             return Boolean(detail?.visit?.prefetch);
         };
 
         const handleStart = (event: unknown) => {
-            if (isPrefetchVisit(event)) {
-                return;
-            }
+            if (isPrefetchVisit(event)) return;
 
-            setIsLoading(true);
+            if (typeof window !== 'undefined') {
+                window.sessionStorage.setItem(SKELETON_FLAG_KEY, 'true');
+            }
+            beginLoading();
         };
 
         const handleFinish = (event: unknown) => {
-            if (isPrefetchVisit(event)) {
-                return;
-            }
-
-            setIsLoading(false);
+            if (isPrefetchVisit(event)) return;
+            finishLoading();
         };
 
         const unsubscribeStart = router.on('start', handleStart);
@@ -256,39 +330,58 @@ export default function TrucksIndex({ trucks, metrics, filters, statusOptions, v
             unsubscribeSuccess();
             unsubscribeError();
         };
-    }, []);
+    }, [beginLoading, finishLoading]);
 
     React.useEffect(() => {
-        if (Array.isArray(trucks?.data)) {
-            setIsLoading(false);
+        if (!Array.isArray(trucks?.data)) {
+            return;
         }
-    }, [trucks?.data]);
+
+        finishLoading();
+
+        if (typeof window !== 'undefined') {
+            window.sessionStorage.removeItem(SKELETON_FLAG_KEY);
+        }
+    }, [finishLoading, trucks?.data]);
+
+    // Keep perPage synced with server-provided filter changes
+    React.useEffect(() => {
+        setPerPage(String(resolvedPerPage));
+    }, [resolvedPerPage]);
 
     const truckCount = metrics?.total ?? trucks?.meta?.total ?? trucks?.data?.length ?? 0;
     const currentPage = trucks?.meta?.current_page ?? 1;
     const lastPage = trucks?.meta?.last_page ?? 1;
+
     const perPageCountRaw = trucks?.meta?.per_page ?? Number(perPage);
-    const perPageCount = Number.isFinite(perPageCountRaw) && perPageCountRaw > 0
-        ? Number(perPageCountRaw)
-        : trucks?.data?.length || 1;
+    const perPageCount =
+        Number.isFinite(perPageCountRaw) && perPageCountRaw > 0
+            ? Number(perPageCountRaw)
+            : trucks?.data?.length || 1;
+
     const rowOffset = (currentPage - 1) * perPageCount;
+
     const activeCount = metrics?.active ?? 0;
     const maintenanceCount = metrics?.maintenance ?? 0;
     const fleetValue = metrics?.fleet_value ?? 0;
+
     const utilization = metrics?.utilization ?? null;
     const financial = metrics?.financial ?? null;
     const staffing = metrics?.staffing ?? null;
+
     const utilizationRateValue = utilization?.utilization_rate ?? null;
-    const utilizationRateDisplay = utilizationRateValue !== null
-        ? `${(utilizationRateValue * 100).toFixed(0)}%`
-        : '—';
-    const utilizationValueClass = utilizationRateValue === null
-        ? 'text-slate-500'
-        : utilizationRateValue >= 0.75
-            ? 'text-green-600'
-            : utilizationRateValue >= 0.5
-                ? 'text-yellow-600'
-                : 'text-red-600';
+    const utilizationRateDisplay =
+        utilizationRateValue !== null ? `${(utilizationRateValue * 100).toFixed(0)}%` : '—';
+
+    const utilizationValueClass =
+        utilizationRateValue === null
+            ? 'text-slate-500'
+            : utilizationRateValue >= 0.75
+                ? 'text-green-600'
+                : utilizationRateValue >= 0.5
+                    ? 'text-yellow-600'
+                    : 'text-red-600';
+
     const utilizationDescription = utilization
         ? `Service ${utilization.service_days}d · Idle ${utilization.idle_days}d · Unknown ${utilization.unknown_days}d`
         : 'Utilization data pending';
@@ -298,57 +391,85 @@ export default function TrucksIndex({ trucks, metrics, filters, statusOptions, v
         notation: 'compact',
         maximumFractionDigits: 2,
     });
-    const tonKmPerBirrDisplay = financial?.ton_km_per_birr !== null && financial?.ton_km_per_birr !== undefined
-        ? `${financial.ton_km_per_birr.toFixed(2)} ton-km / ETB`
-        : 'Ton-km per birr pending';
+
+    const tonKmPerBirrDisplay =
+        financial?.ton_km_per_birr !== null && financial?.ton_km_per_birr !== undefined
+            ? `${financial.ton_km_per_birr.toFixed(2)} ton-km / ETB`
+            : 'Ton-km per birr pending';
+
     const churnWindowDays = staffing?.window_days ?? 180;
-    const averageTenureDisplay = staffing?.average_tenure_days !== null && staffing?.average_tenure_days !== undefined
-        ? `${staffing.average_tenure_days.toFixed(1)} days`
-        : 'Average tenure pending';
+    const averageTenureDisplay =
+        staffing?.average_tenure_days !== null && staffing?.average_tenure_days !== undefined
+            ? `${staffing.average_tenure_days.toFixed(1)} days`
+            : 'Average tenure pending';
+
     const highChurnCount = staffing?.high_churn_truck_count ?? 0;
     const highChurnThreshold = staffing?.short_tenure_threshold_days ?? 0;
-    const highChurnDescription = highChurnCount > 0
-        ? `${highChurnCount} truck${highChurnCount === 1 ? '' : 's'} below ${highChurnThreshold}d`
-        : 'Stable driver assignments';
+
+    const highChurnDescription =
+        highChurnCount > 0
+            ? `${highChurnCount} truck${highChurnCount === 1 ? '' : 's'} below ${highChurnThreshold}d`
+            : 'Stable driver assignments';
+
     const churnValueClass = highChurnCount > 0 ? 'text-rose-600' : 'text-slate-600';
-    const showSkeleton = isLoading;
 
-    const handleNavigate = React.useCallback((overrides: NavigateOverrides = {}) => {
-        const hasOverride = (key: keyof NavigateOverrides) => Object.prototype.hasOwnProperty.call(overrides, key);
+    const handleNavigate = React.useCallback(
+        (overrides: NavigateOverrides = {}) => {
+            const hasOverride = (key: keyof NavigateOverrides) =>
+                Object.prototype.hasOwnProperty.call(overrides, key);
 
-        const nextSearch = hasOverride('search')
-            ? overrides.search
-            : (searchTerm.trim() ? searchTerm.trim() : undefined);
-        const nextStatus = hasOverride('status')
-            ? overrides.status
-            : (selectedStatus !== 'all' ? selectedStatus : undefined);
-        const nextVehicleType = hasOverride('vehicle_type')
-            ? overrides.vehicle_type
-            : (selectedVehicleType !== 'all' ? selectedVehicleType : undefined);
-        const nextSort = hasOverride('sort') ? overrides.sort ?? sortBy : sortBy;
-        const nextDirection = hasOverride('direction') ? overrides.direction ?? sortDirection : sortDirection;
-        const nextPerPage = hasOverride('per_page') ? overrides.per_page : Number(perPage);
-        const nextPage = hasOverride('page') ? overrides.page : undefined;
+            const nextSearch = hasOverride('search')
+                ? overrides.search
+                : searchTerm.trim()
+                    ? searchTerm.trim()
+                    : undefined;
 
-        const params: Record<string, string | number | undefined> = {
-            search: nextSearch && nextSearch !== '' ? nextSearch : undefined,
-            status: nextStatus && nextStatus !== 'all' ? nextStatus : undefined,
-            vehicle_type: nextVehicleType && nextVehicleType !== 'all' ? nextVehicleType : undefined,
-            sort: nextSort,
-            direction: nextDirection,
-            page: nextPage,
-            per_page: typeof nextPerPage === 'number' && Number.isFinite(nextPerPage) && nextPerPage > 0 ? nextPerPage : undefined,
-        };
+            const nextStatus = hasOverride('status')
+                ? overrides.status
+                : selectedStatus !== 'all'
+                    ? selectedStatus
+                    : undefined;
 
-        Object.keys(params).forEach((key) => {
-            if (params[key] === undefined) {
-                delete params[key];
+            const nextVehicleType = hasOverride('vehicle_type')
+                ? overrides.vehicle_type
+                : selectedVehicleType !== 'all'
+                    ? selectedVehicleType
+                    : undefined;
+
+            const nextSort = hasOverride('sort') ? overrides.sort ?? sortBy : sortBy;
+            const nextDirection = hasOverride('direction') ? overrides.direction ?? sortDirection : sortDirection;
+
+            const nextPerPage = hasOverride('per_page') ? overrides.per_page : Number(perPage);
+            const nextPage = hasOverride('page') ? overrides.page : undefined;
+
+            const params: Record<string, string | number | undefined> = {
+                search: nextSearch && nextSearch !== '' ? nextSearch : undefined,
+                status: nextStatus && nextStatus !== 'all' ? nextStatus : undefined,
+                vehicle_type: nextVehicleType && nextVehicleType !== 'all' ? nextVehicleType : undefined,
+                sort: nextSort,
+                direction: nextDirection,
+                page: nextPage,
+                per_page:
+                    typeof nextPerPage === 'number' && Number.isFinite(nextPerPage) && nextPerPage > 0
+                        ? nextPerPage
+                        : undefined,
+            };
+
+            Object.keys(params).forEach((key) => {
+                if (params[key] === undefined) {
+                    delete params[key];
+                }
+            });
+
+            if (typeof window !== 'undefined') {
+                window.sessionStorage.setItem(SKELETON_FLAG_KEY, 'true');
             }
-        });
 
-        setIsLoading(true);
-        router.get('/trucks', params, { preserveState: true, replace: false });
-    }, [searchTerm, selectedStatus, selectedVehicleType, sortBy, sortDirection, perPage, setIsLoading]);
+            beginLoading();
+            router.get('/trucks', params, { preserveState: true, replace: false });
+        },
+        [beginLoading, searchTerm, selectedStatus, selectedVehicleType, sortBy, sortDirection, perPage],
+    );
 
     const handleSearchChange = (value: string) => {
         setSearchTerm(value);
@@ -372,7 +493,8 @@ export default function TrucksIndex({ trucks, metrics, filters, statusOptions, v
     };
 
     const handleSort = (column: string) => {
-        const newDirection: 'asc' | 'desc' = sortBy === column && sortDirection === 'asc' ? 'desc' : 'asc';
+        const newDirection: 'asc' | 'desc' =
+            sortBy === column && sortDirection === 'asc' ? 'desc' : 'asc';
 
         setSortBy(column);
         setSortDirection(newDirection);
@@ -390,6 +512,7 @@ export default function TrucksIndex({ trucks, metrics, filters, statusOptions, v
         if (!selectedTruck) return;
 
         setIsDeleting(true);
+
         router.delete(`/trucks/${selectedTruck.id}`, {
             onSuccess: () => {
                 setDeleteDialogOpen(false);
@@ -399,6 +522,7 @@ export default function TrucksIndex({ trucks, metrics, filters, statusOptions, v
             },
             onError: (errors) => {
                 setIsDeleting(false);
+
                 if (errors && typeof errors === 'object') {
                     const messages = Object.values(errors)
                         .flatMap((value) => (Array.isArray(value) ? value : [value]))
@@ -416,6 +540,7 @@ export default function TrucksIndex({ trucks, metrics, filters, statusOptions, v
                 } else {
                     const fallback = 'An unexpected error occurred while deleting the truck. Please try again.';
                     setDeleteError(fallback);
+
                     toast({
                         title: '❌ Delete Failed',
                         description: fallback,
@@ -506,14 +631,14 @@ export default function TrucksIndex({ trucks, metrics, filters, statusOptions, v
                     </CardHeader>
                     <CardContent className="px-2 pb-2 pt-0">
                         <div className="min-h-[1.1rem]">
-                            {showSkeleton ? (
+                            {isLoading ? (
                                 <Skeleton className="h-3.5 w-20" aria-hidden="true" />
                             ) : (
                                 <div className={`text-sm font-semibold ${card.valueClassName}`}>{card.value}</div>
                             )}
                         </div>
                         <div className="mt-1 min-h-[0.9rem]">
-                            {showSkeleton ? (
+                            {isLoading ? (
                                 <Skeleton className="h-3 w-28" aria-hidden="true" />
                             ) : (
                                 <p className="text-[11px] text-muted-foreground">{card.description}</p>
@@ -563,6 +688,7 @@ export default function TrucksIndex({ trucks, metrics, filters, statusOptions, v
                         ))}
                     </SelectContent>
                 </Select>
+
                 <div className="flex w-full items-center justify-between gap-2 text-sm text-muted-foreground sm:w-auto md:w-auto md:justify-start">
                     <span className="text-xs uppercase tracking-wide text-muted-foreground sm:text-sm">Rows</span>
                     <Select value={perPage} onValueChange={handlePerPageChange}>
@@ -598,7 +724,6 @@ export default function TrucksIndex({ trucks, metrics, filters, statusOptions, v
         </TableHead>
     );
 
-    // TODO: Evaluate row virtualization or infinite scrolling once fleet size impacts render costs.
     const tableContent = (
         <Table className="transition-opacity">
             <TableHeader className="[&_tr]:sticky [&_tr]:top-0 [&_tr]:z-20 [&_tr]:bg-background [&_tr]:shadow-sm">
@@ -609,7 +734,8 @@ export default function TrucksIndex({ trucks, metrics, filters, statusOptions, v
                 </TableRow>
             </TableHeader>
             <TableBody>
-                {showSkeleton ? (
+                {isLoading ? (
+                    // Show skeleton while loading
                     Array.from({ length: 6 }).map((_, index) => (
                         <TableRow key={`truck-skeleton-row-${index}`}>
                             <TableCell className="text-center">
@@ -623,6 +749,7 @@ export default function TrucksIndex({ trucks, metrics, filters, statusOptions, v
                         </TableRow>
                     ))
                 ) : trucks?.data && trucks.data.length > 0 ? (
+                    // Show actual data
                     trucks.data.map((truck, index) => (
                         <TableRow key={truck.id} className="hover:bg-muted/50">
                             <TableCell className="text-center font-medium">
@@ -651,13 +778,12 @@ export default function TrucksIndex({ trucks, metrics, filters, statusOptions, v
                             </TableCell>
                             <TableCell>
                                 <Badge
-                                    className={`flex items-center gap-1 w-fit ${
-                                        truck.status === 'active'
-                                            ? 'bg-green-100 text-green-800 border-green-200 hover:bg-green-200'
-                                            : truck.status === 'maintenance'
+                                    className={`flex items-center gap-1 w-fit ${truck.status === 'active'
+                                        ? 'bg-green-100 text-green-800 border-green-200 hover:bg-green-200'
+                                        : truck.status === 'maintenance'
                                             ? 'bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200'
                                             : 'bg-red-100 text-red-800 border-red-200 hover:bg-red-200'
-                                    }`}
+                                        }`}
                                 >
                                     {truck.status === 'active' && <CheckCircle className="h-3 w-3" />}
                                     {truck.status === 'maintenance' && <Wrench className="h-3 w-3" />}
@@ -731,7 +857,7 @@ export default function TrucksIndex({ trucks, metrics, filters, statusOptions, v
         </div>
     );
 
-    const mobileContent = showSkeleton ? (
+    const mobileContent = isLoading ? (
         mobileSkeletonContent
     ) : trucks?.data && trucks.data.length > 0 ? (
         <div className="flex flex-col gap-3 transition-opacity">
@@ -752,13 +878,12 @@ export default function TrucksIndex({ trucks, metrics, filters, statusOptions, v
                             </p>
                         </div>
                         <Badge
-                            className={`flex items-center gap-1 whitespace-nowrap ${
-                                truck.status === 'active'
-                                    ? 'bg-green-100 text-green-800 border-green-200 hover:bg-green-200'
-                                    : truck.status === 'maintenance'
+                            className={`flex items-center gap-1 whitespace-nowrap ${truck.status === 'active'
+                                ? 'bg-green-100 text-green-800 border-green-200 hover:bg-green-200'
+                                : truck.status === 'maintenance'
                                     ? 'bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200'
                                     : 'bg-red-100 text-red-800 border-red-200 hover:bg-red-200'
-                            }`}
+                                }`}
                         >
                             {truck.status === 'active' && <CheckCircle className="h-3 w-3" />}
                             {truck.status === 'maintenance' && <Wrench className="h-3 w-3" />}
@@ -856,15 +981,17 @@ export default function TrucksIndex({ trucks, metrics, filters, statusOptions, v
                 tableDescription="Manage and track all vehicles in your fleet"
                 tableHeaderExtras={tableHeaderExtras}
                 pagination={
-                    <InertiaPagination
-                        className="mt-4"
-                        links={trucks.links}
-                        from={trucks.meta?.from ?? undefined}
-                        to={trucks.meta?.to ?? undefined}
-                        total={trucks.meta?.total ?? undefined}
-                        currentPage={currentPage}
-                        lastPage={lastPage}
-                    />
+                    !isLoading && trucks?.links && (
+                        <InertiaPagination
+                            className="mt-4"
+                            links={trucks.links}
+                            from={trucks.meta?.from ?? undefined}
+                            to={trucks.meta?.to ?? undefined}
+                            total={trucks.meta?.total ?? undefined}
+                            currentPage={currentPage}
+                            lastPage={lastPage}
+                        />
+                    )
                 }
             >
                 <div className="hidden md:block">
@@ -876,6 +1003,7 @@ export default function TrucksIndex({ trucks, metrics, filters, statusOptions, v
                     )}
                     {tableContent}
                 </div>
+
                 <div className="space-y-3 md:hidden">
                     {isLoading && (
                         <div className="flex items-center gap-2 text-sm text-muted-foreground" aria-live="polite">
