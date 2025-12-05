@@ -2,12 +2,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AlertCircle, BarChart3, History, ShieldCheck, CheckCircle, XCircle, Calendar, User, ArrowLeft, Edit, Trash2, Hash, Activity, Truck, ArrowUpRight } from 'lucide-react';
+import { AlertCircle, Ban, BarChart3, History, ShieldCheck, CheckCircle, XCircle, Calendar, User, ArrowLeft, Edit, Trash2, Hash, Activity, Truck, ArrowUpRight } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { Head, Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { ActivityLogTable } from '@/components/activity-log-table';
+import { usePermissions } from '@/hooks/use-permissions';
 import { useState } from 'react';
 
 interface ActivityLog {
@@ -429,8 +430,26 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function DriversShow({ driver, activityLogs = [], performanceSummary, safetySummary, counts, gradeReport }: DriversShowProps) {
+    const { hasPermission } = usePermissions();
+    const canViewDriverList = hasPermission('drivers.view');
+    const canEditDriver = hasPermission('drivers.edit');
+    const canDeleteDriver = hasPermission('drivers.destroy');
+    const canDeactivateDriver = hasPermission('drivers.deactivate');
+    const canActivateDriver = hasPermission('drivers.activate');
+    const canViewDriverTruckAssignments = hasPermission('driver-trucks.view');
+
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [deactivateDialogOpen, setDeactivateDialogOpen] = useState(false);
+    const [activateDialogOpen, setActivateDialogOpen] = useState(false);
+    const [isDeactivating, setIsDeactivating] = useState(false);
+    const [isActivating, setIsActivating] = useState(false);
+    const [deactivateError, setDeactivateError] = useState<string | null>(null);
+    const [activateError, setActivateError] = useState<string | null>(null);
+
+    const showDeactivateButton = canDeactivateDriver && driver.status !== 'inactive';
+    const showActivateButton = canActivateDriver && driver.status === 'inactive';
+    const showActionButtons = canEditDriver || canDeleteDriver || showDeactivateButton || showActivateButton;
 
     const overallGrade = gradeReport?.overall ?? null;
     const gradeWeights = gradeReport?.weights ?? null;
@@ -469,6 +488,40 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
                 setIsDeleting(false);
             },
             onError: () => setIsDeleting(false),
+        });
+    };
+
+    const handleDeactivateConfirm = () => {
+        setDeactivateError(null);
+        setIsDeactivating(true);
+        router.post(`/drivers/${driver.id}/deactivate`, {}, {
+            onSuccess: () => {
+                setDeactivateDialogOpen(false);
+                setDeactivateError(null);
+            },
+            onError: (errors: Record<string, string>) => {
+                setDeactivateError(errors.error ?? 'Failed to deactivate driver. Please try again.');
+            },
+            onFinish: () => {
+                setIsDeactivating(false);
+            },
+        });
+    };
+
+    const handleActivateConfirm = () => {
+        setActivateError(null);
+        setIsActivating(true);
+        router.post(`/drivers/${driver.id}/activate`, {}, {
+            onSuccess: () => {
+                setActivateDialogOpen(false);
+                setActivateError(null);
+            },
+            onError: (errors: Record<string, string>) => {
+                setActivateError(errors.error ?? 'Failed to activate driver. Please try again.');
+            },
+            onFinish: () => {
+                setIsActivating(false);
+            },
         });
     };
 
@@ -527,14 +580,16 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
                 <div className="bg-gradient-to-r from-slate-50 to-indigo-50 dark:from-slate-900 dark:to-indigo-950/30 rounded-lg p-6 border border-slate-200 dark:border-slate-700">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => router.get('/drivers')}
-                                className="flex items-center gap-2 hover:bg-slate-100 dark:hover:bg-slate-800 border-slate-300 dark:border-slate-600"
-                            >
-                                <ArrowLeft className="h-4 w-4" /> Back to Drivers
-                            </Button>
+                            {canViewDriverList && (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => router.get('/drivers')}
+                                    className="flex items-center gap-2 hover:bg-slate-100 dark:hover:bg-slate-800 border-slate-300 dark:border-slate-600"
+                                >
+                                    <ArrowLeft className="h-4 w-4" /> Back to Drivers
+                                </Button>
+                            )}
                             <div className="flex items-center gap-4">
                                 <div className="p-3 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl">
                                     <User className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
@@ -545,18 +600,48 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
                                 </div>
                             </div>
                         </div>
-                        <div className="flex gap-2">
-                            <Button variant="outline" asChild className="hover:bg-indigo-50 hover:border-indigo-300 border-slate-300 dark:border-slate-600">
-                                <Link href={`/drivers/${driver.id}/edit`}><Edit className="mr-2 h-4 w-4" /> Edit Driver</Link>
-                            </Button>
-                            <Button
-                                variant="outline"
-                                onClick={() => setDeleteDialogOpen(true)}
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300"
-                            >
-                                <Trash2 className="mr-2 h-4 w-4" /> Delete Driver
-                            </Button>
-                        </div>
+                        {showActionButtons && (
+                            <div className="flex gap-2">
+                                {canEditDriver && (
+                                    <Button variant="outline" asChild className="hover:bg-indigo-50 hover:border-indigo-300 border-slate-300 dark:border-slate-600">
+                                        <Link href={`/drivers/${driver.id}/edit`}><Edit className="mr-2 h-4 w-4" /> Edit Driver</Link>
+                                    </Button>
+                                )}
+                                {showDeactivateButton && (
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => {
+                                            setDeactivateError(null);
+                                            setDeactivateDialogOpen(true);
+                                        }}
+                                        className="text-amber-600 hover:text-amber-700 hover:bg-amber-50 border-amber-200 hover:border-amber-300"
+                                    >
+                                        <Ban className="mr-2 h-4 w-4" /> Deactivate
+                                    </Button>
+                                )}
+                                {showActivateButton && (
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => {
+                                            setActivateError(null);
+                                            setActivateDialogOpen(true);
+                                        }}
+                                        className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 border-emerald-200 hover:border-emerald-300"
+                                    >
+                                        <CheckCircle className="mr-2 h-4 w-4" /> Activate
+                                    </Button>
+                                )}
+                                {canDeleteDriver && (
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => setDeleteDialogOpen(true)}
+                                        className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300"
+                                    >
+                                        <Trash2 className="mr-2 h-4 w-4" /> Delete Driver
+                                    </Button>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -643,7 +728,7 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
                                                 <CardTitle className="flex items-center gap-2 text-xl"><Truck className="h-5 w-5 text-blue-600" /> Truck Assignments</CardTitle>
                                                 <CardDescription className="text-base">Recent vehicles paired with this driver</CardDescription>
                                             </div>
-                                            {driver.driverTrucks && driver.driverTrucks.length > 0 && (
+                                            {canViewDriverTruckAssignments && driver.driverTrucks && driver.driverTrucks.length > 0 && (
                                                 <Button variant="link" size="sm" className="px-0" asChild>
                                                     <Link href={`/driver-trucks?driver_id=${driver.id}`} className="flex items-center gap-1 text-blue-600 dark:text-blue-300">
                                                         View all
@@ -681,15 +766,17 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
                                                         </div>
                                                         <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                                                             <span className="text-xs text-muted-foreground">Status note: {assignmentStatusLabel}</span>
-                                                            <Button variant="link" size="sm" className="px-0" asChild>
-                                                                <Link
-                                                                    href={`/drivers/${driver.id}/assignments/${assignment.id}/performances`}
-                                                                    className="flex items-center gap-1"
-                                                                >
-                                                                    View assignment
-                                                                    <ArrowUpRight className="h-4 w-4" />
-                                                                </Link>
-                                                            </Button>
+                                                            {canViewDriverTruckAssignments && (
+                                                                <Button variant="link" size="sm" className="px-0" asChild>
+                                                                    <Link
+                                                                        href={`/drivers/${driver.id}/assignments/${assignment.id}/performances`}
+                                                                        className="flex items-center gap-1"
+                                                                    >
+                                                                        View assignment
+                                                                        <ArrowUpRight className="h-4 w-4" />
+                                                                    </Link>
+                                                                </Button>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 );
@@ -1044,15 +1131,63 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
                     </TabsContent>
                 </Tabs>
             </div>
-            <DeleteConfirmationDialog
-                open={deleteDialogOpen}
-                onOpenChange={setDeleteDialogOpen}
-                title="Delete Driver"
-                description="Are you sure you want to delete this driver? This action cannot be undone and will remove all associated records."
-                itemName={driver.name}
-                onConfirm={handleDeleteConfirm}
-                isLoading={isDeleting}
-            />
+            {canDeleteDriver && (
+                <DeleteConfirmationDialog
+                    open={deleteDialogOpen}
+                    onOpenChange={(open) => {
+                        setDeleteDialogOpen(open);
+                        if (!open) {
+                            setIsDeleting(false);
+                        }
+                    }}
+                    title="Delete Driver"
+                    description="Are you sure you want to delete this driver? This action cannot be undone and will remove all associated records."
+                    itemName={driver.name}
+                    onConfirm={handleDeleteConfirm}
+                    isLoading={isDeleting}
+                />
+            )}
+            {canDeactivateDriver && (
+                <DeleteConfirmationDialog
+                    open={deactivateDialogOpen}
+                    onOpenChange={(open) => {
+                        setDeactivateDialogOpen(open);
+                        if (!open) {
+                            setIsDeactivating(false);
+                            setDeactivateError(null);
+                        }
+                    }}
+                    title="Deactivate Driver"
+                    description="This driver will be marked as inactive and removed from active workflows."
+                    itemName={driver.name}
+                    onConfirm={handleDeactivateConfirm}
+                    confirmLabel="Deactivate"
+                    isLoading={isDeactivating}
+                    errorMessage={deactivateError}
+                    supportingText="You can activate this driver again at any time from this page."
+                />
+            )}
+            {canActivateDriver && (
+                <DeleteConfirmationDialog
+                    open={activateDialogOpen}
+                    onOpenChange={(open) => {
+                        setActivateDialogOpen(open);
+                        if (!open) {
+                            setIsActivating(false);
+                            setActivateError(null);
+                        }
+                    }}
+                    title="Activate Driver"
+                    description="This driver will be marked as active and available for new assignments."
+                    itemName={driver.name}
+                    onConfirm={handleActivateConfirm}
+                    confirmLabel="Activate"
+                    isLoading={isActivating}
+                    isDangerous={false}
+                    errorMessage={activateError}
+                    supportingText="Only drivers with completed onboarding should be activated."
+                />
+            )}
         </AppLayout>
     );
 }

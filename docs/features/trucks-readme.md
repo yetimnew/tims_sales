@@ -22,7 +22,7 @@ This guide explains the truck management feature for both developers and operato
 - Playwright prerequisites:
   - Install bundled browsers once per machine: `npx playwright install`
   - Confirm `.env` uses `QUEUE_CONNECTION=database` and `CACHE_STORE=database` so background jobs and cache-backed features behave the same as CI
-- Confirm truck permissions exist (`trucks.view`, `trucks.create`, `trucks.store`, `trucks.show`, `trucks.edit`, `trucks.update`, `trucks.destroy`, `trucks.deactivate`, `trucks.export`, `trucks.free`)
+- Confirm truck permissions exist (`trucks.view`, `trucks.create`, `trucks.store`, `trucks.show`, `trucks.edit`, `trucks.update`, `trucks.destroy`, `trucks.deactivate`, `trucks.export`)
 - Regenerate Wayfinder clients after route changes: `php artisan wayfinder:generate`
 
 ### 1.2 Domain Essentials
@@ -34,7 +34,7 @@ This guide explains the truck management feature for both developers and operato
   - Force uppercase plates with Ethiopian regex (`^[A-Z]{2,3}-[0-9]{4,5}$`)
   - Validate status (`active`, `inactive`, `maintenance`), numeric ranges (service interval 1k-100k KM, purchase price ≤ 999,999,999.99), date order (service start ≥ production)
 - **Controller**: `TruckController`
-  - Index metrics, CSV export, CRUD, deactivate, free-truck JSON, status history timeline using Inertia responses
+  - Index metrics, CSV export, CRUD, deactivate, status history timeline using Inertia responses
 - **Service**: `TruckAssignmentService`
   - Provides `getAvailableTrucks()` for the free-truck endpoint
 
@@ -67,7 +67,7 @@ php artisan test --filter=TruckControllerTest
 npm run test:e2e -- tests/e2e/truck-create.spec.ts
 ```
 
-- Feature test covers index/search/sort/pagination, CRUD, status history, free truck JSON, CSV export, permissions, validation, deactivate, and activity logging
+- Feature test covers index/search/sort/pagination, CRUD, status history, CSV export, permissions, validation, deactivate, and activity logging
 - Playwright spec logs in, creates a truck, confirms the index row, and verifies show-page fields (status, vehicle type, chassis, engine, tyre size, service interval, purchase price, production date, service start date)
 
 ### 1.6 Developer Tips
@@ -115,10 +115,9 @@ npm run test:e2e -- tests/e2e/truck-create.spec.ts
 - In the detail view choose **History → Status History** or visit `/trucks/{id}/status-history`
 - Filter by From/To to see when statuses changed and who recorded them
 
-### 2.6 Export & Free Trucks
+### 2.6 Export Data
 
 - **Export CSV** downloads the filtered list with identifiers, financials, and statuses
-- **Free Trucks** endpoint (`/trucks/free/list`) lists active trucks without driver assignments for planning
 
 ### 2.7 Deactivate or Delete
 

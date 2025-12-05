@@ -11,7 +11,30 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { InertiaPagination } from '@/components/ui/pagination';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ArrowUpDown, CheckCircle, Edit, Eye, FileDown, Plus, Search, Shield, Trash2, Users, XCircle } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuGroup,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+    ArrowUpDown,
+    CheckCircle,
+    Edit,
+    Eye,
+    FileDown,
+    Loader2,
+    MinusCircle,
+    MoreVertical,
+    Plus,
+    Search,
+    Shield,
+    Trash2,
+    Users,
+    XCircle,
+} from 'lucide-react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -80,6 +103,8 @@ interface UsersIndexProps {
     };
 }
 
+type FilterChipKey = 'role' | 'status' | 'perPage';
+
 export default function UsersIndex({ users, filters, roleOptions, statusOptions, perPageOptions, stats }: UsersIndexProps) {
     const { hasPermission } = usePermissions();
     const [searchTerm, setSearchTerm] = useState(filters?.search ?? '');
@@ -112,10 +137,34 @@ export default function UsersIndex({ users, filters, roleOptions, statusOptions,
     }, [filters?.per_page, users?.per_page, availablePerPageOptions]);
 
     const [perPage, setPerPage] = useState<string>(() => String(resolvedPerPage));
+    const [isLoading, setIsLoading] = useState<boolean>(() => ! users?.data);
 
     useEffect(() => {
         setPerPage(String(resolvedPerPage));
     }, [resolvedPerPage]);
+
+    useEffect(() => {
+        const handleStart = () => setIsLoading(true);
+        const handleFinish = () => setIsLoading(false);
+
+        const unsubscribeStart = router.on('start', handleStart);
+        const unsubscribeFinish = router.on('finish', handleFinish);
+        const unsubscribeSuccess = router.on('success', handleFinish);
+        const unsubscribeError = router.on('error', handleFinish);
+
+        return () => {
+            unsubscribeStart();
+            unsubscribeFinish();
+            unsubscribeSuccess();
+            unsubscribeError();
+        };
+    }, []);
+
+    useEffect(() => {
+        if (users?.data) {
+            setIsLoading(false);
+        }
+    }, [users?.data]);
 
     const handleNavigate = useCallback((overrides: Partial<{
         search?: string;
@@ -316,6 +365,51 @@ export default function UsersIndex({ users, filters, roleOptions, statusOptions,
         </div>
     );
 
+    const selectedRoleLabel = useMemo(() => {
+        if (selectedRole === 'all') {
+            return null;
+        }
+
+        return roleOptions?.find((option) => option.value === selectedRole)?.label ?? selectedRole;
+    }, [roleOptions, selectedRole]);
+
+    const selectedStatusLabel = useMemo(() => {
+        if (selectedStatus === 'all') {
+            return null;
+        }
+
+        return statusOptions?.find((option) => option.value === selectedStatus)?.label ?? selectedStatus;
+    }, [selectedStatus, statusOptions]);
+
+    const activeFilterChips = useMemo(() => (
+        [
+            selectedRoleLabel ? { key: 'role' as FilterChipKey, label: `Role: ${selectedRoleLabel}` } : null,
+            selectedStatusLabel ? { key: 'status' as FilterChipKey, label: `Status: ${selectedStatusLabel}` } : null,
+            perPage !== String(resolvedPerPage)
+                ? { key: 'perPage' as FilterChipKey, label: `Rows: ${perPage}` }
+                : null,
+        ].filter(Boolean) as Array<{ key: FilterChipKey; label: string }>
+    ), [perPage, resolvedPerPage, selectedRoleLabel, selectedStatusLabel]);
+
+    const clearFilter = useCallback((key: FilterChipKey) => {
+        switch (key) {
+            case 'role':
+                setSelectedRole('all');
+                handleNavigate({ role: undefined, page: 1 });
+                break;
+            case 'status':
+                setSelectedStatus('all');
+                handleNavigate({ status: undefined, page: 1 });
+                break;
+            case 'perPage':
+                setPerPage(String(resolvedPerPage));
+                handleNavigate({ per_page: resolvedPerPage, page: 1 });
+                break;
+            default:
+                break;
+        }
+    }, [handleNavigate, resolvedPerPage]);
+
     const headerActions = (
         <>
             {hasPermission('users.export') && (
@@ -359,60 +453,94 @@ export default function UsersIndex({ users, filters, roleOptions, statusOptions,
     );
 
     const tableHeaderExtras = (
-        <div className="flex flex-wrap items-center gap-2">
-            <div className="relative w-[260px] max-w-full">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                    placeholder="Search by name or email..."
-                    value={searchTerm}
-                    onChange={handleSearch}
-                    className="pl-10"
-                />
-            </div>
-            <Select value={selectedRole} onValueChange={handleRoleChange}>
-                <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Role" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="all">All roles</SelectItem>
-                    {(roleOptions ?? []).map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                        </SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
-            <Select value={selectedStatus} onValueChange={handleStatusChange}>
-                <SelectTrigger className="w-[170px]">
-                    <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                    {(statusOptions ?? [
-                        { label: 'All statuses', value: 'all' },
-                        { label: 'Verified', value: 'verified' },
-                        { label: 'Pending', value: 'pending' },
-                    ]).map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                        </SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
-            <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                <span className="hidden sm:inline">Rows</span>
-                <Select value={perPage} onValueChange={handlePerPageChange}>
-                    <SelectTrigger className="w-[110px]">
-                        <SelectValue placeholder="Per page" />
+        <div className="flex flex-col gap-3">
+            <div className="flex flex-wrap items-center gap-2">
+                <div className="relative w-[260px] max-w-full">
+                    <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        placeholder="Search by name or email..."
+                        value={searchTerm}
+                        onChange={handleSearch}
+                        className="pl-10"
+                    />
+                    {searchTerm && (
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                            {users?.total ?? 0} results
+                        </span>
+                    )}
+                </div>
+                <Select value={selectedRole} onValueChange={handleRoleChange}>
+                    <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Role" />
                     </SelectTrigger>
                     <SelectContent>
-                        {availablePerPageOptions.map((option) => (
-                            <SelectItem key={option} value={String(option)}>
-                                {option} / page
+                        <SelectItem value="all">All roles</SelectItem>
+                        {(roleOptions ?? []).map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                                {option.label}
                             </SelectItem>
                         ))}
                     </SelectContent>
                 </Select>
+                <Select value={selectedStatus} onValueChange={handleStatusChange}>
+                    <SelectTrigger className="w-[170px]">
+                        <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {(statusOptions ?? [
+                            { label: 'All statuses', value: 'all' },
+                            { label: 'Verified', value: 'verified' },
+                            { label: 'Pending', value: 'pending' },
+                        ]).map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                                {option.label}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+                <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                    <span className="hidden sm:inline">Rows</span>
+                    <Select value={perPage} onValueChange={handlePerPageChange}>
+                        <SelectTrigger className="w-[110px]">
+                            <SelectValue placeholder="Per page" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {availablePerPageOptions.map((option) => (
+                                <SelectItem key={option} value={String(option)}>
+                                    {option} / page
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
             </div>
+            {Boolean(activeFilterChips.length || searchTerm) && (
+                <div className="flex flex-wrap items-center gap-2">
+                    {activeFilterChips.map((chip) => (
+                        <button
+                            key={chip.key}
+                            type="button"
+                            onClick={() => clearFilter(chip.key)}
+                            className="flex items-center gap-1 rounded-full bg-muted px-3 py-1 text-xs text-muted-foreground transition hover:bg-muted/80"
+                        >
+                            {chip.label}
+                            <MinusCircle className="h-3 w-3" />
+                        </button>
+                    ))}
+                    {searchTerm && (
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setSearchTerm('');
+                                handleNavigate({ search: undefined, page: 1 });
+                            }}
+                            className="text-xs text-primary underline"
+                        >
+                            Clear search
+                        </button>
+                    )}
+                </div>
+            )}
         </div>
     );
 
@@ -429,161 +557,201 @@ export default function UsersIndex({ users, filters, roleOptions, statusOptions,
                 tableDescription={`${userCount} total user${userCount === 1 ? '' : 's'} in system`}
                 tableHeaderExtras={tableHeaderExtras}
                 pagination={
-                    <InertiaPagination
-                        from={users?.from}
-                        to={users?.to}
-                        total={userCount}
-                        links={users?.links}
-                        currentPage={currentPage}
-                        lastPage={totalPages}
-                        className="mt-0 border-t bg-muted/30 p-4"
-                    />
+                    users?.links?.length ? (
+                        <InertiaPagination
+                            from={users?.from ?? undefined}
+                            to={users?.to ?? undefined}
+                            total={userCount}
+                            links={users?.links ?? []}
+                            currentPage={currentPage}
+                            lastPage={totalPages}
+                            className="mt-0 border-t bg-muted/30 p-4"
+                        />
+                    ) : null
                 }
             >
-                <Table>
-                    <TableHeader>
-                        <TableRow className="sticky top-0 z-50 bg-background border-b">
-                            <TableHead className="w-12 bg-background text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                                No.
-                            </TableHead>
-                            <TableHead
-                                onClick={() => handleSort('name')}
-                                className="cursor-pointer select-none bg-background transition-colors hover:bg-muted/70"
-                            >
-                                <div className="flex items-center">
-                                    Name <SortIcon column="name" />
-                                </div>
-                            </TableHead>
-                            <TableHead
-                                onClick={() => handleSort('email')}
-                                className="cursor-pointer select-none bg-background transition-colors hover:bg-muted/70"
-                            >
-                                <div className="flex items-center">
-                                    Email <SortIcon column="email" />
-                                </div>
-                            </TableHead>
-                            <TableHead className="bg-background">Roles</TableHead>
-                            <TableHead className="bg-background">Verified</TableHead>
-                            <TableHead
-                                onClick={() => handleSort('created_at')}
-                                className="cursor-pointer select-none bg-background transition-colors hover:bg-muted/70"
-                            >
-                                <div className="flex items-center">
-                                    Created <SortIcon column="created_at" />
-                                </div>
-                            </TableHead>
-                            <TableHead className="bg-background text-center">Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {users?.data && users.data.length > 0 ? (
-                            users.data.map((user, index) => {
-                                const rowNumber = (users.from ?? 1) + index;
+                <div className="relative">
+                    {isLoading && (
+                        <div className="absolute inset-0 z-20 flex flex-col gap-3 rounded-lg border bg-background/80 p-4 backdrop-blur">
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                Loading users...
+                            </div>
+                            <div className="space-y-2">
+                                {Array.from({ length: 5 }).map((_, index) => (
+                                    <div key={`user-skeleton-${index}`} className="grid grid-cols-7 items-center gap-3">
+                                        <Skeleton className="h-4 w-10" />
+                                        <Skeleton className="h-4" />
+                                        <Skeleton className="h-4" />
+                                        <Skeleton className="h-4" />
+                                        <Skeleton className="h-4" />
+                                        <Skeleton className="h-4" />
+                                        <Skeleton className="h-8 w-8 rounded-full" />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
-                                return (
-                                    <TableRow key={user.id} className="hover:bg-muted/50">
-                                        <TableCell className="w-12 text-center text-sm font-semibold text-muted-foreground">
-                                            {rowNumber}
-                                        </TableCell>
-                                        <TableCell className="font-medium">{user.name}</TableCell>
-                                        <TableCell className="text-muted-foreground">{user.email}</TableCell>
-                                        <TableCell>
-                                            <div className="flex flex-wrap gap-1">
-                                                {user.roles && user.roles.length > 0 ? (
-                                                    user.roles.map((role) => (
-                                                        <Badge
-                                                            key={role.id}
-                                                            className={`flex w-fit items-center gap-1 ${getRoleBadgeColor(role.name)}`}
-                                                        >
-                                                            <Shield className="h-3 w-3" />
-                                                            {role.name.charAt(0).toUpperCase() + role.name.slice(1)}
-                                                        </Badge>
-                                                    ))
-                                                ) : (
-                                                    <span className="text-sm text-muted-foreground">No roles</span>
-                                                )}
+                    <Table className={isLoading ? 'opacity-50 transition-opacity' : undefined}>
+                        <TableHeader>
+                            <TableRow className="sticky top-0 z-40 bg-background border-b">
+                                <TableHead className="w-12 bg-background text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                    No.
+                                </TableHead>
+                                <TableHead
+                                    onClick={() => handleSort('name')}
+                                    className="cursor-pointer select-none bg-background transition-colors hover:bg-muted/70"
+                                >
+                                    <div className="flex items-center">
+                                        Name <SortIcon column="name" />
+                                    </div>
+                                </TableHead>
+                                <TableHead
+                                    onClick={() => handleSort('email')}
+                                    className="cursor-pointer select-none bg-background transition-colors hover:bg-muted/70"
+                                >
+                                    <div className="flex items-center">
+                                        Email <SortIcon column="email" />
+                                    </div>
+                                </TableHead>
+                                <TableHead className="bg-background">Roles</TableHead>
+                                <TableHead className="bg-background">Verified</TableHead>
+                                <TableHead
+                                    onClick={() => handleSort('created_at')}
+                                    className="cursor-pointer select-none bg-background transition-colors hover:bg-muted/70"
+                                >
+                                    <div className="flex items-center">
+                                        Created <SortIcon column="created_at" />
+                                    </div>
+                                </TableHead>
+                                <TableHead className="bg-background text-center">Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {users?.data && users.data.length > 0 ? (
+                                users.data.map((user, index) => {
+                                    const rowNumber = (users.from ?? 1) + index;
+
+                                    return (
+                                        <TableRow key={user.id} className="hover:bg-muted/50">
+                                            <TableCell className="w-12 text-center text-sm font-semibold text-muted-foreground">
+                                                {rowNumber}
+                                            </TableCell>
+                                            <TableCell className="font-medium">{user.name}</TableCell>
+                                            <TableCell className="text-muted-foreground">{user.email}</TableCell>
+                                            <TableCell>
+                                                <div className="flex flex-wrap gap-1">
+                                                    {user.roles && user.roles.length > 0 ? (
+                                                        user.roles.map((role) => (
+                                                            <Badge
+                                                                key={role.id}
+                                                                className={`flex w-fit items-center gap-1 ${getRoleBadgeColor(role.name)}`}
+                                                            >
+                                                                <Shield className="h-3 w-3" />
+                                                                {role.name.charAt(0).toUpperCase() + role.name.slice(1)}
+                                                            </Badge>
+                                                        ))
+                                                    ) : (
+                                                        <span className="text-sm text-muted-foreground">No roles</span>
+                                                    )}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge
+                                                    className={`flex w-fit items-center gap-1 ${
+                                                        user.email_verified_at
+                                                            ? 'bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-200'
+                                                            : 'bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-200'
+                                                    }`}
+                                                >
+                                                    {user.email_verified_at ? (
+                                                        <>
+                                                            <CheckCircle className="h-3 w-3" />
+                                                            Verified
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <XCircle className="h-3 w-3" />
+                                                            Pending
+                                                        </>
+                                                    )}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell className="text-sm text-muted-foreground">
+                                                {user.created_at ? new Date(user.created_at).toLocaleDateString() : '—'}
+                                            </TableCell>
+                                            <TableCell className="text-center">
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
+                                                            <span className="sr-only">Open actions</span>
+                                                            <MoreVertical className="h-4 w-4" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end" className="w-44">
+                                                        <DropdownMenuGroup>
+                                                            <DropdownMenuItem asChild>
+                                                                <Link className="flex w-full items-center gap-2" href={`/users/${user.id}`}>
+                                                                    <Eye className="h-4 w-4" />
+                                                                    View
+                                                                </Link>
+                                                            </DropdownMenuItem>
+                                                            {hasPermission('users.edit') && (
+                                                                <DropdownMenuItem asChild>
+                                                                    <Link className="flex w-full items-center gap-2" href={`/users/${user.id}/edit`}>
+                                                                        <Edit className="h-4 w-4" />
+                                                                        Edit
+                                                                    </Link>
+                                                                </DropdownMenuItem>
+                                                            )}
+                                                            {hasPermission('users.destroy') && (
+                                                                <DropdownMenuItem
+                                                                    className="gap-2 text-red-600 focus:text-red-600"
+                                                                    onSelect={(event) => {
+                                                                        event.preventDefault();
+                                                                        handleDeleteClick(user);
+                                                                    }}
+                                                                >
+                                                                    <Trash2 className="h-4 w-4 text-red-600" />
+                                                                    Delete
+                                                                </DropdownMenuItem>
+                                                            )}
+                                                        </DropdownMenuGroup>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </TableCell>
+                                        </TableRow>
+                                    );
+                                })
+                            ) : (
+                                <TableRow>
+                                    <TableCell colSpan={7} className="py-16">
+                                        <div className="flex flex-col items-center justify-center text-center">
+                                            <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-muted/50">
+                                                <Users className="h-10 w-10 text-muted-foreground" />
                                             </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Badge
-                                                className={`flex w-fit items-center gap-1 ${
-                                                    user.email_verified_at
-                                                        ? 'bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-200'
-                                                        : 'bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-200'
-                                                }`}
-                                            >
-                                                {user.email_verified_at ? (
-                                                    <>
-                                                        <CheckCircle className="h-3 w-3" />
-                                                        Verified
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <XCircle className="h-3 w-3" />
-                                                        Pending
-                                                    </>
-                                                )}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell className="text-sm text-muted-foreground">
-                                            {user.created_at ? new Date(user.created_at).toLocaleDateString() : '—'}
-                                        </TableCell>
-                                        <TableCell className="text-center">
-                                            <div className="flex justify-center gap-2">
-                                                <Button asChild size="sm" variant="ghost">
-                                                    <Link href={`/users/${user.id}`}>
-                                                        <Eye className="h-4 w-4" />
+                                            <h3 className="mb-2 text-xl font-semibold">No users found</h3>
+                                            <p className="mb-6 max-w-md text-muted-foreground">
+                                                {searchTerm
+                                                    ? `No users match "${searchTerm}". Try adjusting your filters or search terms.`
+                                                    : 'Get started by adding your first user to the system. Manage access and permissions effectively.'}
+                                            </p>
+                                            {hasPermission('users.create') && (
+                                                <Button asChild size="lg" className="shadow-lg">
+                                                    <Link href="/users/create">
+                                                        <Plus className="mr-2 h-4 w-4" />
+                                                        {searchTerm ? 'Clear Filters & Add User' : 'Add First User'}
                                                     </Link>
                                                 </Button>
-                                                {hasPermission('users.edit') && (
-                                                    <Button asChild size="sm" variant="ghost">
-                                                        <Link href={`/users/${user.id}/edit`}>
-                                                            <Edit className="h-4 w-4" />
-                                                        </Link>
-                                                    </Button>
-                                                )}
-                                                {hasPermission('users.destroy') && (
-                                                    <Button
-                                                        size="sm"
-                                                        variant="ghost"
-                                                        onClick={() => handleDeleteClick(user)}
-                                                        className="text-red-600 hover:bg-red-50 hover:text-red-700"
-                                                    >
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </Button>
-                                                )}
-                                            </div>
-                                        </TableCell>
-                                    </TableRow>
-                                );
-                            })
-                        ) : (
-                            <TableRow>
-                                <TableCell colSpan={7} className="py-16">
-                                    <div className="flex flex-col items-center justify-center text-center">
-                                        <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-muted/50">
-                                            <Users className="h-10 w-10 text-muted-foreground" />
+                                            )}
                                         </div>
-                                        <h3 className="mb-2 text-xl font-semibold">No users found</h3>
-                                        <p className="mb-6 max-w-md text-muted-foreground">
-                                            {searchTerm
-                                                ? `No users match "${searchTerm}". Try adjusting your filters or search terms.`
-                                                : 'Get started by adding your first user to the system. Manage access and permissions effectively.'}
-                                        </p>
-                                        {hasPermission('users.create') && (
-                                            <Button asChild size="lg" className="shadow-lg">
-                                                <Link href="/users/create">
-                                                    <Plus className="mr-2 h-4 w-4" />
-                                                    {searchTerm ? 'Clear Filters & Add User' : 'Add First User'}
-                                                </Link>
-                                            </Button>
-                                        )}
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
+                </div>
             </ListPageLayout>
 
             <DeleteConfirmationDialog

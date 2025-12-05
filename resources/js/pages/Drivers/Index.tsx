@@ -102,6 +102,7 @@ type NavigateOverrides = {
 
 export default function DriversIndex({ drivers, metrics, filters, statusOptions, genderOptions, perPageOptions }: DriversIndexProps) {
     const { hasPermission } = usePermissions();
+    const canViewDriverDetails = hasPermission('drivers.show');
     const [searchTerm, setSearchTerm] = React.useState(filters?.search ?? '');
     const [selectedStatus, setSelectedStatus] = React.useState(filters?.status ?? 'all');
     const [selectedGender, setSelectedGender] = React.useState(filters?.sex ?? 'all');
@@ -451,11 +452,13 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
                             </TableCell>
                             <TableCell className="text-center">
                                 <div className="flex justify-center gap-2">
-                                    <Button asChild size="sm" variant="ghost">
-                                        <Link href={`/drivers/${driver.id}`}>
-                                            <Eye className="h-4 w-4" />
-                                        </Link>
-                                    </Button>
+                                    {canViewDriverDetails && (
+                                        <Button asChild size="sm" variant="ghost">
+                                            <Link href={`/drivers/${driver.id}`}>
+                                                <Eye className="h-4 w-4" />
+                                            </Link>
+                                        </Button>
+                                    )}
                                     {hasPermission('drivers.edit') && (
                                         <Button asChild size="sm" variant="ghost">
                                             <Link href={`/drivers/${driver.id}/edit`}>

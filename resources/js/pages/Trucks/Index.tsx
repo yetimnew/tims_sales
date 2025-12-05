@@ -16,9 +16,10 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { Link, router } from '@inertiajs/react';
 import { toast } from '@/hooks/use-toast';
 import { type BreadcrumbItem } from '@/types';
-import { Plus, Eye, Edit, Trash2, Search, ArrowUpDown, Truck, CheckCircle, Wrench, XCircle, DollarSign, ChevronRight, Gauge, TrendingUp, Users } from 'lucide-react';
+import { Plus, Eye, Edit, Trash2, Search, ArrowUpDown, Truck, CheckCircle, Wrench, XCircle, DollarSign, ChevronRight, Gauge, TrendingUp, Users, Loader2 } from 'lucide-react';
 import { InertiaPagination } from '@/components/ui/pagination';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
 import * as React from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -132,6 +133,8 @@ type NavigateOverrides = {
     per_page?: number;
 };
 
+const SKELETON_FLAG_KEY = 'trucks.index.shouldShowSkeleton';
+
 const columns: Array<{ key: string; label: string }> = [
     { key: 'plate', label: 'Plate' },
     { key: 'vehicleType', label: 'Vehicle Type' },
@@ -188,10 +191,78 @@ export default function TrucksIndex({ trucks, metrics, filters, statusOptions, v
         return availablePerPageOptions[0] ?? 10;
     }, [filters?.per_page, availablePerPageOptions]);
     const [perPage, setPerPage] = React.useState<string>(() => String(resolvedPerPage));
+    const [isLoading, setIsLoading] = React.useState<boolean>(() => {
+        if (typeof window !== 'undefined') {
+            const shouldShowSkeleton = window.sessionStorage.getItem(SKELETON_FLAG_KEY) === 'true';
+            if (shouldShowSkeleton) {
+                window.sessionStorage.removeItem(SKELETON_FLAG_KEY);
+                return true;
+            }
+        }
+
+        return !Array.isArray(trucks?.data);
+    });
 
     React.useEffect(() => {
         setPerPage(String(resolvedPerPage));
     }, [resolvedPerPage]);
+
+    React.useEffect(() => {
+        if (!Array.isArray(trucks?.data)) {
+            return;
+        }
+
+        setIsLoading(false);
+
+        if (typeof window !== 'undefined') {
+            window.sessionStorage.removeItem(SKELETON_FLAG_KEY);
+        }
+    }, [trucks?.data]);
+
+    React.useEffect(() => {
+        const isPrefetchVisit = (event: unknown): boolean => {
+            if (!event || typeof event !== 'object' || event === null) {
+                return false;
+            }
+
+            const detail = (event as { detail?: { visit?: { prefetch?: boolean } } }).detail;
+            return Boolean(detail?.visit?.prefetch);
+        };
+
+        const handleStart = (event: unknown) => {
+            if (isPrefetchVisit(event)) {
+                return;
+            }
+
+            setIsLoading(true);
+        };
+
+        const handleFinish = (event: unknown) => {
+            if (isPrefetchVisit(event)) {
+                return;
+            }
+
+            setIsLoading(false);
+        };
+
+        const unsubscribeStart = router.on('start', handleStart);
+        const unsubscribeFinish = router.on('finish', handleFinish);
+        const unsubscribeSuccess = router.on('success', handleFinish);
+        const unsubscribeError = router.on('error', handleFinish);
+
+        return () => {
+            unsubscribeStart();
+            unsubscribeFinish();
+            unsubscribeSuccess();
+            unsubscribeError();
+        };
+    }, []);
+
+    React.useEffect(() => {
+        if (Array.isArray(trucks?.data)) {
+            setIsLoading(false);
+        }
+    }, [trucks?.data]);
 
     const truckCount = metrics?.total ?? trucks?.meta?.total ?? trucks?.data?.length ?? 0;
     const currentPage = trucks?.meta?.current_page ?? 1;
@@ -240,6 +311,7 @@ export default function TrucksIndex({ trucks, metrics, filters, statusOptions, v
         ? `${highChurnCount} truck${highChurnCount === 1 ? '' : 's'} below ${highChurnThreshold}d`
         : 'Stable driver assignments';
     const churnValueClass = highChurnCount > 0 ? 'text-rose-600' : 'text-slate-600';
+    const showSkeleton = isLoading;
 
     const handleNavigate = React.useCallback((overrides: NavigateOverrides = {}) => {
         const hasOverride = (key: keyof NavigateOverrides) => Object.prototype.hasOwnProperty.call(overrides, key);
@@ -274,8 +346,9 @@ export default function TrucksIndex({ trucks, metrics, filters, statusOptions, v
             }
         });
 
+        setIsLoading(true);
         router.get('/trucks', params, { preserveState: true, replace: false });
-    }, [searchTerm, selectedStatus, selectedVehicleType, sortBy, sortDirection, perPage]);
+    }, [searchTerm, selectedStatus, selectedVehicleType, sortBy, sortDirection, perPage, setIsLoading]);
 
     const handleSearchChange = (value: string) => {
         setSearchTerm(value);
@@ -416,6 +489,8 @@ export default function TrucksIndex({ trucks, metrics, filters, statusOptions, v
         },
     ];
 
+    const canViewTruckDetails = hasPermission('trucks.show');
+
     const statsSection = (
         <div className="flex w-full gap-2 overflow-x-auto pb-1">
             {statsCards.map((card) => (
@@ -430,8 +505,20 @@ export default function TrucksIndex({ trucks, metrics, filters, statusOptions, v
                         {card.icon}
                     </CardHeader>
                     <CardContent className="px-2 pb-2 pt-0">
-                        <div className={`text-sm font-semibold ${card.valueClassName}`}>{card.value}</div>
-                        <p className="text-[11px] text-muted-foreground">{card.description}</p>
+                        <div className="min-h-[1.1rem]">
+                            {showSkeleton ? (
+                                <Skeleton className="h-3.5 w-20" aria-hidden="true" />
+                            ) : (
+                                <div className={`text-sm font-semibold ${card.valueClassName}`}>{card.value}</div>
+                            )}
+                        </div>
+                        <div className="mt-1 min-h-[0.9rem]">
+                            {showSkeleton ? (
+                                <Skeleton className="h-3 w-28" aria-hidden="true" />
+                            ) : (
+                                <p className="text-[11px] text-muted-foreground">{card.description}</p>
+                            )}
+                        </div>
                     </CardContent>
                 </Card>
             ))}
@@ -513,7 +600,7 @@ export default function TrucksIndex({ trucks, metrics, filters, statusOptions, v
 
     // TODO: Evaluate row virtualization or infinite scrolling once fleet size impacts render costs.
     const tableContent = (
-        <Table>
+        <Table className="transition-opacity">
             <TableHeader className="[&_tr]:sticky [&_tr]:top-0 [&_tr]:z-20 [&_tr]:bg-background [&_tr]:shadow-sm">
                 <TableRow className="border-b bg-background">
                     <TableHead className="sticky top-0 z-20 w-12 bg-background text-center">#</TableHead>
@@ -522,7 +609,20 @@ export default function TrucksIndex({ trucks, metrics, filters, statusOptions, v
                 </TableRow>
             </TableHeader>
             <TableBody>
-                {trucks?.data && trucks.data.length > 0 ? (
+                {showSkeleton ? (
+                    Array.from({ length: 6 }).map((_, index) => (
+                        <TableRow key={`truck-skeleton-row-${index}`}>
+                            <TableCell className="text-center">
+                                <Skeleton className="mx-auto h-4 w-6" aria-hidden="true" />
+                            </TableCell>
+                            {Array.from({ length: columns.length + 1 }).map((__, cellIndex) => (
+                                <TableCell key={`truck-skeleton-cell-${index}-${cellIndex}`}>
+                                    <Skeleton className="h-4 w-full" aria-hidden="true" />
+                                </TableCell>
+                            ))}
+                        </TableRow>
+                    ))
+                ) : trucks?.data && trucks.data.length > 0 ? (
                     trucks.data.map((truck, index) => (
                         <TableRow key={truck.id} className="hover:bg-muted/50">
                             <TableCell className="text-center font-medium">
@@ -567,11 +667,13 @@ export default function TrucksIndex({ trucks, metrics, filters, statusOptions, v
                             </TableCell>
                             <TableCell className="text-center">
                                 <div className="flex justify-center gap-2">
-                                    <Button asChild size="sm" variant="ghost">
-                                        <Link href={`/trucks/${truck.id}`}>
-                                            <Eye className="h-4 w-4" />
-                                        </Link>
-                                    </Button>
+                                    {canViewTruckDetails && (
+                                        <Button asChild size="sm" variant="ghost">
+                                            <Link href={`/trucks/${truck.id}`}>
+                                                <Eye className="h-4 w-4" />
+                                            </Link>
+                                        </Button>
+                                    )}
                                     {hasPermission('trucks.edit') && (
                                         <Button asChild size="sm" variant="ghost">
                                             <Link href={`/trucks/${truck.id}/edit`}>
@@ -595,7 +697,7 @@ export default function TrucksIndex({ trucks, metrics, filters, statusOptions, v
                     ))
                 ) : (
                     <TableRow>
-                        <TableCell colSpan={8} className="py-8 text-center text-muted-foreground">
+                        <TableCell colSpan={9} className="py-8 text-center text-muted-foreground">
                             No trucks found.
                             {hasPermission('trucks.create') && (
                                 <Link href="/trucks/create" className="ml-1 text-primary underline">
@@ -609,8 +711,30 @@ export default function TrucksIndex({ trucks, metrics, filters, statusOptions, v
         </Table>
     );
 
-    const mobileContent = trucks?.data && trucks.data.length > 0 ? (
-        <div className="flex flex-col gap-3">
+    const mobileSkeletonContent = (
+        <div className="flex flex-col gap-3" aria-hidden="true">
+            {Array.from({ length: 3 }).map((_, index) => (
+                <Card key={`truck-card-skeleton-${index}`} className="border border-slate-200/70 shadow-sm dark:border-slate-800">
+                    <CardHeader className="space-y-3">
+                        <Skeleton className="h-3 w-16" />
+                        <Skeleton className="h-5 w-32" />
+                        <Skeleton className="h-4 w-24" />
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                        {Array.from({ length: 4 }).map((__, infoIndex) => (
+                            <Skeleton key={`truck-card-detail-${infoIndex}`} className="h-3.5 w-full" />
+                        ))}
+                        <Skeleton className="h-9 w-full" />
+                    </CardContent>
+                </Card>
+            ))}
+        </div>
+    );
+
+    const mobileContent = showSkeleton ? (
+        mobileSkeletonContent
+    ) : trucks?.data && trucks.data.length > 0 ? (
+        <div className="flex flex-col gap-3 transition-opacity">
             {trucks.data.map((truck, index) => (
                 <Card key={truck.id} className="border border-slate-200/70 shadow-sm dark:border-slate-800">
                     <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 p-4">
@@ -673,12 +797,14 @@ export default function TrucksIndex({ trucks, metrics, filters, statusOptions, v
                         </div>
 
                         <div className="flex flex-wrap items-center justify-end gap-2">
-                            <Button asChild size="sm" variant="outline" className="flex-1 sm:flex-auto">
-                                <Link href={`/trucks/${truck.id}`}>
-                                    <Eye className="mr-2 h-4 w-4" />
-                                    View
-                                </Link>
-                            </Button>
+                            {canViewTruckDetails && (
+                                <Button asChild size="sm" variant="outline" className="flex-1 sm:flex-auto">
+                                    <Link href={`/trucks/${truck.id}`}>
+                                        <Eye className="mr-2 h-4 w-4" />
+                                        View
+                                    </Link>
+                                </Button>
+                            )}
                             {hasPermission('trucks.edit') && (
                                 <Button asChild size="sm" variant="secondary" className="flex-1 sm:flex-none">
                                     <Link href={`/trucks/${truck.id}/edit`}>
@@ -742,9 +868,21 @@ export default function TrucksIndex({ trucks, metrics, filters, statusOptions, v
                 }
             >
                 <div className="hidden md:block">
+                    {isLoading && (
+                        <div className="mb-3 flex items-center gap-2 text-sm text-muted-foreground" aria-live="polite">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Loading trucks...
+                        </div>
+                    )}
                     {tableContent}
                 </div>
-                <div className="md:hidden">
+                <div className="space-y-3 md:hidden">
+                    {isLoading && (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground" aria-live="polite">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Loading trucks...
+                        </div>
+                    )}
                     {mobileContent}
                 </div>
             </ListPageLayout>

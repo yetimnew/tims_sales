@@ -13,7 +13,6 @@ use App\Models\Performance;
 use App\Models\Truck;
 use App\Models\VehicleMaintenanceRecord;
 use App\Models\VehicleType;
-use App\Services\TruckAssignmentService;
 use App\Services\TruckDeletionGuard;
 use App\Services\TruckGradeService;
 use App\Services\TruckMetricsService;
@@ -744,26 +743,15 @@ class TruckController extends Controller
     }
 
     /**
-     * Get free trucks (not assigned to any driver).
+     * Activate the specified truck.
      */
-    public function freeTrucks()
+    public function activate(Truck $truck)
     {
-        try {
-            $assignmentService = new TruckAssignmentService;
-            $freeTrucks = $assignmentService->getAvailableTrucks();
+        $truck->update(['status' => 'active']);
+        $this->truckMetrics->clearCache();
 
-            return response()->json([
-                'success' => true,
-                'data' => $freeTrucks,
-                'count' => $freeTrucks->count(),
-            ]);
-
-        } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to retrieve free trucks',
-            ], 500);
-        }
+        return redirect()->route('trucks.index')
+            ->with('success', 'Truck activated successfully.');
     }
 
     private function toCarbon(null|string|Carbon $value): ?Carbon

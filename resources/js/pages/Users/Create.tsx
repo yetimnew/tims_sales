@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useForm, Head } from '@inertiajs/react'
-import { User, Shield, Mail, CheckCircle, AlertCircle, Lock, Info, Plus, Trash2, Sparkles, Filter, Search, BellRing } from 'lucide-react'
+import { User, Shield, Mail, CheckCircle, AlertCircle, Lock, Info, Plus, Trash2, Sparkles, Filter, Search, BellRing, ChevronDown, Eye, EyeOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -8,10 +8,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { useToast } from '@/hooks/use-toast'
 import AppLayout from '@/layouts/app-layout'
 import { type BreadcrumbItem } from '@/types'
 import { validateUser, type ValidationErrors } from '@/lib/validation'
+import { evaluatePasswordStrength } from '@/lib/password-strength'
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -80,6 +82,13 @@ export default function UsersCreate({ roles, notificationTypes }: UsersCreatePro
   const [assignedNotifications, setAssignedNotifications] = useState<NotificationAssignment[]>([])
   const [pendingNotificationType, setPendingNotificationType] = useState<string>('')
   const [notificationSearchTerm, setNotificationSearchTerm] = useState<string>('')
+  const [openSections, setOpenSections] = useState({
+    profile: true,
+    access: true,
+    notifications: false,
+  })
+  const [showPassword, setShowPassword] = useState(false)
+  const [showPasswordConfirmation, setShowPasswordConfirmation] = useState(false)
 
   const isAdminRole = data.role === 'admin'
 
@@ -96,6 +105,8 @@ export default function UsersCreate({ roles, notificationTypes }: UsersCreatePro
       email_enabled: notification.emailEnabled,
     })))
   }, [assignedNotifications, setData])
+
+  const passwordStrength = useMemo(() => evaluatePasswordStrength(data.password), [data.password])
 
   const availableNotificationTypes = useMemo(() =>
     notificationTypes.filter(type => !assignedNotifications.some(notification => notification.typeId === type.id)),
@@ -299,341 +310,443 @@ export default function UsersCreate({ roles, notificationTypes }: UsersCreatePro
             )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Label htmlFor="name" className="text-sm font-semibold text-slate-700 dark:text-slate-300">Name <span className="text-red-500">*</span></Label>
-                </div>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                  <Input
-                    id="name"
-                    type="text"
-                    value={data.name}
-                    onChange={e => handleFieldChange('name', e.target.value)}
-                    placeholder="Enter user name"
-                    className={`pl-10 transition-all duration-200 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 ${frontendErrors.name || errors.name ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : 'focus:ring-blue-500/20 focus:border-blue-500 hover:border-slate-400 dark:hover:border-slate-500'}`}
-                  />
-                </div>
-                {(frontendErrors.name || errors.name) && (
-                  <p className="text-sm text-red-500 flex items-center gap-1">
-                    <AlertCircle className="h-3 w-3" />
-                    {frontendErrors.name || errors.name}
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Label htmlFor="email" className="text-sm font-semibold text-slate-700 dark:text-slate-300">Email <span className="text-red-500">*</span></Label>
-                </div>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                  <Input
-                    id="email"
-                    type="email"
-                    value={data.email}
-                    onChange={e => handleFieldChange('email', e.target.value)}
-                    placeholder="Enter email address"
-                    className={`pl-10 transition-all duration-200 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 ${frontendErrors.email || errors.email ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : 'focus:ring-blue-500/20 focus:border-blue-500 hover:border-slate-400 dark:hover:border-slate-500'}`}
-                  />
-                </div>
-                {(frontendErrors.email || errors.email) && (
-                  <p className="text-sm text-red-500 flex items-center gap-1">
-                    <AlertCircle className="h-3 w-3" />
-                    {frontendErrors.email || errors.email}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Label htmlFor="password" className="text-sm font-semibold text-slate-700 dark:text-slate-300">Password <span className="text-red-500">*</span></Label>
-                </div>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                  <Input
-                    id="password"
-                    type="password"
-                    value={data.password}
-                    onChange={e => handleFieldChange('password', e.target.value)}
-                    placeholder="Enter password"
-                    className={`pl-10 transition-all duration-200 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 ${frontendErrors.password || errors.password ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : 'focus:ring-blue-500/20 focus:border-blue-500 hover:border-slate-400 dark:hover:border-slate-500'}`}
-                  />
-                </div>
-                {(frontendErrors.password || errors.password) && (
-                  <p className="text-sm text-red-500 flex items-center gap-1">
-                    <AlertCircle className="h-3 w-3" />
-                    {frontendErrors.password || errors.password}
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Label htmlFor="password_confirmation" className="text-sm font-semibold text-slate-700 dark:text-slate-300">Confirm Password <span className="text-red-500">*</span></Label>
-                </div>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                  <Input
-                    id="password_confirmation"
-                    type="password"
-                    value={data.password_confirmation}
-                    onChange={e => handleFieldChange('password_confirmation', e.target.value)}
-                    placeholder="Confirm password"
-                    className={`pl-10 transition-all duration-200 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 ${frontendErrors.password_confirmation || errors.password_confirmation ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : 'focus:ring-blue-500/20 focus:border-blue-500 hover:border-slate-400 dark:hover:border-slate-500'}`}
-                  />
-                </div>
-                {(frontendErrors.password_confirmation || errors.password_confirmation) && (
-                  <p className="text-sm text-red-500 flex items-center gap-1">
-                    <AlertCircle className="h-3 w-3" />
-                    {frontendErrors.password_confirmation || errors.password_confirmation}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Label htmlFor="role" className="text-sm font-semibold text-slate-700 dark:text-slate-300">Role <span className="text-red-500">*</span></Label>
-              </div>
-              <Select value={data.role} onValueChange={value => handleFieldChange('role', value)}>
-                <SelectTrigger className={`transition-all duration-200 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 focus:ring-blue-500/20 focus:border-blue-500 ${frontendErrors.role || errors.role ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}>
-                  <SelectValue placeholder="Select a role" />
-                </SelectTrigger>
-                <SelectContent className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-lg z-50">
-                  {roles.map(role => (
-                    <SelectItem
-                      key={role.id}
-                      value={role.name}
-                      className="hover:bg-slate-100 dark:hover:bg-slate-700 focus:bg-slate-100 dark:focus:bg-slate-700"
-                    >
-                      <div className="flex items-center gap-2">
-                        <Shield className="h-4 w-4" />
-                        {role.name.charAt(0).toUpperCase() + role.name.slice(1)}
+            <div className="space-y-4">
+              <Collapsible
+                open={openSections.profile}
+                onOpenChange={value => setOpenSections(prev => ({ ...prev, profile: value }))}
+                className="group/collapsible overflow-hidden rounded-xl border border-slate-200/80 bg-white/90 shadow-sm backdrop-blur-sm dark:border-slate-700/70 dark:bg-slate-900/40"
+              >
+                <CollapsibleTrigger asChild>
+                  <button
+                    type="button"
+                    className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left text-sm font-semibold text-slate-800 transition hover:bg-slate-50 dark:text-slate-100 dark:hover:bg-slate-900/60"
+                  >
+                    <span className="inline-flex items-center gap-3">
+                      <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                        <User className="h-4 w-4" />
+                      </span>
+                      <span className="flex flex-col">
+                        <span>Profile &amp; Contact</span>
+                        <span className="text-xs font-normal text-slate-500 dark:text-slate-400">Name and sign-in email for the new teammate.</span>
+                      </span>
+                    </span>
+                    <ChevronDown className="h-4 w-4 text-slate-500 transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                  </button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-6 border-t border-slate-200/70 px-5 pb-6 pt-5 dark:border-slate-700/60">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="name" className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                        Name <span className="text-red-500">*</span>
+                      </Label>
+                      <div className="relative">
+                        <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                        <Input
+                          id="name"
+                          type="text"
+                          value={data.name}
+                          onChange={event => handleFieldChange('name', event.target.value)}
+                          placeholder="Enter user name"
+                          className={`pl-10 transition-all duration-200 bg-white dark:bg-slate-900/60 border-slate-300 dark:border-slate-700 ${frontendErrors.name || errors.name ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : 'hover:border-slate-400 focus:border-blue-500 focus:ring-blue-500/20 dark:hover:border-slate-500'}`}
+                        />
                       </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {(frontendErrors.role || errors.role) && (
-                <p className="text-sm text-red-500 flex items-center gap-1">
-                  <AlertCircle className="h-3 w-3" />
-                  {frontendErrors.role || errors.role}
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-4 rounded-lg border border-slate-200 bg-slate-50/60 p-4 dark:border-slate-700 dark:bg-slate-900/40">
-              <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
-                <div>
-                  <div className="flex items-center gap-2 text-slate-800 dark:text-slate-200">
-                    <BellRing className="h-4 w-4" />
-                    <h2 className="text-sm font-semibold">Notification access</h2>
-                  </div>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">
-                    Select which lifecycle notifications this user should receive by default. They can personalize their channels later inside their profile.
-                  </p>
-                  {isAdminRole && (
-                    <div className="mt-2 flex items-center gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-700 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-300">
-                      <Sparkles className="h-3.5 w-3.5" />
-                      <span>Admins automatically receive every notification across all channels.</span>
+                      {(frontendErrors.name || errors.name) && (
+                        <p className="flex items-center gap-1 text-sm text-red-500">
+                          <AlertCircle className="h-3 w-3" />
+                          {frontendErrors.name || errors.name}
+                        </p>
+                      )}
                     </div>
-                  )}
-                </div>
-                <Badge variant="outline" className="self-start text-xs uppercase tracking-wide">
-                  Optional
-                </Badge>
-              </div>
 
-              {!isAdminRole && (
-                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                  <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
-                    <Select
-                      value={pendingNotificationType}
-                      onValueChange={value => {
-                        setPendingNotificationType(value)
-                        handleAddNotificationType(value)
-                      }}
-                    >
-                      <SelectTrigger className="w-full md:w-72 bg-white dark:bg-slate-900/60">
-                        <SelectValue placeholder="Add notification type" />
+                    <div className="space-y-2">
+                      <Label htmlFor="email" className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                        Email <span className="text-red-500">*</span>
+                      </Label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                        <Input
+                          id="email"
+                          type="email"
+                          value={data.email}
+                          onChange={event => handleFieldChange('email', event.target.value)}
+                          placeholder="Enter email address"
+                          className={`pl-10 transition-all duration-200 bg-white dark:bg-slate-900/60 border-slate-300 dark:border-slate-700 ${frontendErrors.email || errors.email ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : 'hover:border-slate-400 focus:border-blue-500 focus:ring-blue-500/20 dark:hover:border-slate-500'}`}
+                        />
+                      </div>
+                      {(frontendErrors.email || errors.email) && (
+                        <p className="flex items-center gap-1 text-sm text-red-500">
+                          <AlertCircle className="h-3 w-3" />
+                          {frontendErrors.email || errors.email}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+
+              <Collapsible
+                open={openSections.access}
+                onOpenChange={value => setOpenSections(prev => ({ ...prev, access: value }))}
+                className="group/collapsible overflow-hidden rounded-xl border border-slate-200/80 bg-white/90 shadow-sm backdrop-blur-sm dark:border-slate-700/70 dark:bg-slate-900/40"
+              >
+                <CollapsibleTrigger asChild>
+                  <button
+                    type="button"
+                    className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left text-sm font-semibold text-slate-800 transition hover:bg-slate-50 dark:text-slate-100 dark:hover:bg-slate-900/60"
+                  >
+                    <span className="inline-flex items-center gap-3">
+                      <span className="flex h-8 w-8 items-center justify-center rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300">
+                        <Shield className="h-4 w-4" />
+                      </span>
+                      <span className="flex flex-col">
+                        <span>Access &amp; Security</span>
+                        <span className="text-xs font-normal text-slate-500 dark:text-slate-400">Assign the right role and set a strong starter password.</span>
+                      </span>
+                    </span>
+                    <ChevronDown className="h-4 w-4 text-slate-500 transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                  </button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-6 border-t border-slate-200/70 px-5 pb-6 pt-5 dark:border-slate-700/60">
+                  <div className="space-y-2">
+                    <Label htmlFor="role" className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                      Role <span className="text-red-500">*</span>
+                    </Label>
+                    <Select value={data.role} onValueChange={value => handleFieldChange('role', value)}>
+                      <SelectTrigger className={`transition-all duration-200 bg-white dark:bg-slate-900/60 border-slate-300 dark:border-slate-700 hover:border-slate-400 focus:border-blue-500 focus:ring-blue-500/20 dark:hover:border-slate-600 ${frontendErrors.role || errors.role ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}>
+                        <SelectValue placeholder="Select a role" />
                       </SelectTrigger>
-                      <SelectContent className="max-h-64">
-                        {availableNotificationTypes.length === 0 ? (
-                          <div className="px-3 py-2 text-sm text-slate-500">All notification types are already assigned.</div>
-                        ) : (
-                          availableNotificationTypes.map(type => (
-                            <SelectItem key={type.id} value={String(type.id)}>
-                              {type.name}
-                            </SelectItem>
-                          ))
-                        )}
+                      <SelectContent className="z-50 max-h-64 bg-white dark:bg-slate-900/80">
+                        {roles.map(role => (
+                          <SelectItem
+                            key={role.id}
+                            value={role.name}
+                            className="hover:bg-slate-100 dark:hover:bg-slate-800"
+                          >
+                            <div className="flex items-center gap-2">
+                              <Shield className="h-4 w-4" />
+                              {role.name.charAt(0).toUpperCase() + role.name.slice(1)}
+                            </div>
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
-                    <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-                      <Plus className="h-3.5 w-3.5" />
-                      Add notification
-                    </div>
+                    {(frontendErrors.role || errors.role) && (
+                      <p className="flex items-center gap-1 text-sm text-red-500">
+                        <AlertCircle className="h-3 w-3" />
+                        {frontendErrors.role || errors.role}
+                      </p>
+                    )}
                   </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      onClick={assignAllAvailableNotifications}
-                      disabled={assignedNotifications.length === notificationTypes.length}
-                      className="flex items-center gap-2 bg-white text-slate-700 hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-                    >
-                      <Sparkles className="h-4 w-4" />
-                      Assign all
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={clearAllAssignedNotifications}
-                      disabled={assignedNotifications.length === 0}
-                      className="flex items-center gap-2 border-slate-300 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      Clear
-                    </Button>
-                  </div>
-                </div>
-              )}
 
-              <div className="flex flex-col gap-3 rounded-md border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900/60">
-                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                  <div className="flex flex-col gap-1">
-                    <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Assignment overview</span>
-                    <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-                      <Filter className="h-3.5 w-3.5" />
-                      <span>{assignedCount} of {totalNotificationTypes} notifications selected</span>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="password" className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                        Password <span className="text-red-500">*</span>
+                      </Label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                        <Input
+                          id="password"
+                          type={showPassword ? 'text' : 'password'}
+                          value={data.password}
+                          onChange={event => handleFieldChange('password', event.target.value)}
+                          placeholder="Enter password"
+                          className={`pl-10 pr-12 transition-all duration-200 bg-white dark:bg-slate-900/60 border-slate-300 dark:border-slate-700 ${frontendErrors.password || errors.password ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : 'hover:border-slate-400 focus:border-blue-500 focus:ring-blue-500/20 dark:hover:border-slate-600'}`}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(prev => !prev)}
+                          className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-500 transition hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                          aria-label={showPassword ? 'Hide password' : 'Show password'}
+                        >
+                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-xs font-medium text-slate-500 dark:text-slate-400">
+                          <span>Password strength</span>
+                          <span className={passwordStrength.evaluated ? passwordStrength.textClass : 'text-slate-500 dark:text-slate-400'}>
+                            {passwordStrength.evaluated ? passwordStrength.label : 'Waiting for input'}
+                          </span>
+                        </div>
+                        <div className="h-2 rounded-full bg-slate-200 dark:bg-slate-800">
+                          <div
+                            className={`h-2 rounded-full transition-all duration-300 ${passwordStrength.barClass}`}
+                            style={{ width: `${passwordStrength.evaluated ? passwordStrength.progress : 0}%` }}
+                          />
+                        </div>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                          {passwordStrength.evaluated ? passwordStrength.hint : 'Start typing to evaluate this password.'}
+                        </p>
+                      </div>
+                      {(frontendErrors.password || errors.password) && (
+                        <p className="flex items-center gap-1 text-sm text-red-500">
+                          <AlertCircle className="h-3 w-3" />
+                          {frontendErrors.password || errors.password}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="password_confirmation" className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                        Confirm Password <span className="text-red-500">*</span>
+                      </Label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                        <Input
+                          id="password_confirmation"
+                          type={showPasswordConfirmation ? 'text' : 'password'}
+                          value={data.password_confirmation}
+                          onChange={event => handleFieldChange('password_confirmation', event.target.value)}
+                          placeholder="Confirm password"
+                          className={`pl-10 pr-12 transition-all duration-200 bg-white dark:bg-slate-900/60 border-slate-300 dark:border-slate-700 ${frontendErrors.password_confirmation || errors.password_confirmation ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : 'hover:border-slate-400 focus:border-blue-500 focus:ring-blue-500/20 dark:hover:border-slate-600'}`}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPasswordConfirmation(prev => !prev)}
+                          className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-500 transition hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                          aria-label={showPasswordConfirmation ? 'Hide password confirmation' : 'Show password confirmation'}
+                        >
+                          {showPasswordConfirmation ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
+                      {(frontendErrors.password_confirmation || errors.password_confirmation) && (
+                        <p className="flex items-center gap-1 text-sm text-red-500">
+                          <AlertCircle className="h-3 w-3" />
+                          {frontendErrors.password_confirmation || errors.password_confirmation}
+                        </p>
+                      )}
                     </div>
                   </div>
-                  {assignedNotifications.length > 0 && (
-                    <div className="relative flex h-10 w-full items-center gap-2 overflow-hidden rounded-full bg-slate-100 px-3 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300 md:w-56">
-                      <div
-                        className="absolute left-0 top-0 h-full bg-gradient-to-r from-blue-500 to-purple-600"
-                        style={{ width: `${assignmentProgress}%` }}
-                      />
-                      <span className="relative flex items-center gap-1">
-                        <Sparkles className="h-3.5 w-3.5" />
-                        {assignmentProgress}% coverage
+                </CollapsibleContent>
+              </Collapsible>
+
+              <Collapsible
+                open={openSections.notifications}
+                onOpenChange={value => setOpenSections(prev => ({ ...prev, notifications: value }))}
+                className="group/collapsible overflow-hidden rounded-xl border border-slate-200/80 bg-white/90 shadow-sm backdrop-blur-sm dark:border-slate-700/70 dark:bg-slate-900/40"
+              >
+                <CollapsibleTrigger asChild>
+                  <button
+                    type="button"
+                    className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left text-sm font-semibold text-slate-800 transition hover:bg-slate-50 dark:text-slate-100 dark:hover:bg-slate-900/60"
+                  >
+                    <span className="inline-flex items-center gap-3">
+                      <span className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                        <BellRing className="h-4 w-4" />
                       </span>
+                      <span className="flex flex-col">
+                        <span>Notification Preferences</span>
+                        <span className="text-xs font-normal text-slate-500 dark:text-slate-400">Fine-tune advanced notification defaults for this account.</span>
+                      </span>
+                    </span>
+                    <span className="inline-flex items-center gap-2 text-xs font-medium text-amber-700 dark:text-amber-300">
+                      <Badge variant="outline" className="border-amber-200 bg-amber-100/60 text-amber-700 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-200">
+                        Optional
+                      </Badge>
+                      <ChevronDown className="h-4 w-4 text-slate-500 transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                    </span>
+                  </button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-6 border-t border-slate-200/70 px-5 pb-6 pt-5 dark:border-slate-700/60">
+                  <div className="space-y-3">
+                    <p className="text-sm text-slate-600 dark:text-slate-400">
+                      Select which lifecycle notifications this user should receive by default. They can personalize their channels later inside their profile.
+                    </p>
+                    {isAdminRole && (
+                      <div className="flex items-center gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-700 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-300">
+                        <Sparkles className="h-3.5 w-3.5" />
+                        <span>Admins automatically receive every notification across all channels.</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {!isAdminRole && (
+                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                      <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
+                        <Select
+                          value={pendingNotificationType}
+                          onValueChange={value => {
+                            setPendingNotificationType(value)
+                            handleAddNotificationType(value)
+                          }}
+                        >
+                          <SelectTrigger className="w-full bg-white dark:bg-slate-900/60 md:w-72">
+                            <SelectValue placeholder="Add notification type" />
+                          </SelectTrigger>
+                          <SelectContent className="max-h-64">
+                            {availableNotificationTypes.length === 0 ? (
+                              <div className="px-3 py-2 text-sm text-slate-500">All notification types are already assigned.</div>
+                            ) : (
+                              availableNotificationTypes.map(type => (
+                                <SelectItem key={type.id} value={String(type.id)}>
+                                  {type.name}
+                                </SelectItem>
+                              ))
+                            )}
+                          </SelectContent>
+                        </Select>
+                        <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                          <Plus className="h-3.5 w-3.5" />
+                          Add notification
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          onClick={assignAllAvailableNotifications}
+                          disabled={assignedNotifications.length === notificationTypes.length}
+                          className="flex items-center gap-2 bg-white text-slate-700 hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                        >
+                          <Sparkles className="h-4 w-4" />
+                          Assign all
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={clearAllAssignedNotifications}
+                          disabled={assignedNotifications.length === 0}
+                          className="flex items-center gap-2 border-slate-300 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Clear
+                        </Button>
+                      </div>
                     </div>
                   )}
-                </div>
-                <div className="relative">
-                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                  <Input
-                    value={notificationSearchTerm}
-                    onChange={event => setNotificationSearchTerm(event.target.value)}
-                    placeholder="Search assigned notifications"
-                    className="pl-10"
-                  />
-                </div>
-              </div>
 
-              {filteredAssignedNotifications.length === 0 ? (
-                assignedNotifications.length === 0 ? (
-                <div className="rounded-md border border-dashed border-slate-300 px-4 py-6 text-sm text-slate-500 dark:border-slate-600 dark:text-slate-400">
-                  No notifications selected. The user will inherit only default alerts from their permissions.
-                </div>
-                ) : (
-                  <div className="rounded-md border border-dashed border-slate-300 px-4 py-6 text-sm text-slate-500 dark:border-slate-600 dark:text-slate-400">
-                    No notifications match your search.
-                  </div>
-                )
-              ) : (
-                <div className="space-y-4">
-                  {filteredAssignedNotifications.map(notification => (
-                    <div key={notification.typeId} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/60">
-                      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                        <div>
-                          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{notification.name}</h3>
-                          <p className="text-sm text-slate-600 dark:text-slate-400">
-                            {notification.description ?? 'No description available for this notification.'}
-                          </p>
-                        </div>
-                        {!isAdminRole && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleNotificationRemove(notification.typeId)}
-                            className="self-start text-slate-600 hover:text-red-600 dark:text-slate-300 dark:hover:text-red-400"
-                          >
-                            <Trash2 className="mr-1 h-4 w-4" /> Remove
-                          </Button>
-                        )}
-                      </div>
-
-                      <div className="mt-4 grid gap-3 md:grid-cols-2">
-                        <div className={`flex items-start gap-3 rounded-md border border-slate-200 p-4 dark:border-slate-700 ${notification.inAppEnabled ? 'bg-blue-50/70 dark:bg-blue-950/30' : 'bg-slate-50 dark:bg-slate-900/70'}`}>
-                          <Checkbox
-                            id={`notification-${notification.typeId}-in-app`}
-                            checked={notification.inAppEnabled}
-                            onCheckedChange={value => handleNotificationToggle(notification.typeId, 'inAppEnabled', value === true)}
-                            disabled={isAdminRole}
-                          />
-                          <div>
-                            <Label htmlFor={`notification-${notification.typeId}-in-app`} className="text-sm font-medium text-slate-800 dark:text-slate-200">
-                              In-app alerts
-                            </Label>
-                            <p className="text-xs text-slate-600 dark:text-slate-400">
-                              Deliver real-time messages inside the dashboard.
-                            </p>
-                          </div>
-                        </div>
-                        <div className={`flex items-start gap-3 rounded-md border border-slate-200 p-4 dark:border-slate-700 ${notification.emailEnabled ? 'bg-blue-50/70 dark:bg-blue-950/30' : 'bg-slate-50 dark:bg-slate-900/70'}`}>
-                          <Checkbox
-                            id={`notification-${notification.typeId}-email`}
-                            checked={notification.emailEnabled}
-                            onCheckedChange={value => handleNotificationToggle(notification.typeId, 'emailEnabled', value === true)}
-                            disabled={isAdminRole}
-                          />
-                          <div>
-                            <Label htmlFor={`notification-${notification.typeId}-email`} className="text-sm font-medium text-slate-800 dark:text-slate-200">
-                              Email alerts
-                            </Label>
-                            <p className="text-xs text-slate-600 dark:text-slate-400">
-                              Send transactional emails when this event occurs.
-                            </p>
-                          </div>
+                  <div className="flex flex-col gap-3 rounded-md border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900/60">
+                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                      <div className="flex flex-col gap-1">
+                        <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Assignment overview</span>
+                        <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                          <Filter className="h-3.5 w-3.5" />
+                          <span>{assignedCount} of {totalNotificationTypes} notifications selected</span>
                         </div>
                       </div>
+                      {assignedNotifications.length > 0 && (
+                        <div className="relative flex h-10 w-full items-center gap-2 overflow-hidden rounded-full bg-slate-100 px-3 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300 md:w-56">
+                          <div
+                            className="absolute left-0 top-0 h-full bg-gradient-to-r from-blue-500 to-purple-600"
+                            style={{ width: `${assignmentProgress}%` }}
+                          />
+                          <span className="relative flex items-center gap-1">
+                            <Sparkles className="h-3.5 w-3.5" />
+                            {assignmentProgress}% coverage
+                          </span>
+                        </div>
+                      )}
                     </div>
-                  ))}
-                </div>
-              )}
+                    <div className="relative">
+                      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                      <Input
+                        value={notificationSearchTerm}
+                        onChange={event => setNotificationSearchTerm(event.target.value)}
+                        placeholder="Search assigned notifications"
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+
+                  {filteredAssignedNotifications.length === 0 ? (
+                    assignedNotifications.length === 0 ? (
+                      <div className="rounded-md border border-dashed border-slate-300 px-4 py-6 text-sm text-slate-500 dark:border-slate-600 dark:text-slate-400">
+                        No notifications selected. The user will inherit only default alerts from their permissions.
+                      </div>
+                    ) : (
+                      <div className="rounded-md border border-dashed border-slate-300 px-4 py-6 text-sm text-slate-500 dark:border-slate-600 dark:text-slate-400">
+                        No notifications match your search.
+                      </div>
+                    )
+                  ) : (
+                    <div className="space-y-4">
+                      {filteredAssignedNotifications.map(notification => (
+                        <div key={notification.typeId} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/60">
+                          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                            <div>
+                              <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{notification.name}</h3>
+                              <p className="text-sm text-slate-600 dark:text-slate-400">
+                                {notification.description ?? 'No description available for this notification.'}
+                              </p>
+                            </div>
+                            {!isAdminRole && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleNotificationRemove(notification.typeId)}
+                                className="self-start text-slate-600 hover:text-red-600 dark:text-slate-300 dark:hover:text-red-400"
+                              >
+                                <Trash2 className="mr-1 h-4 w-4" /> Remove
+                              </Button>
+                            )}
+                          </div>
+
+                          <div className="mt-4 grid gap-3 md:grid-cols-2">
+                            <div className={`flex items-start gap-3 rounded-md border border-slate-200 p-4 dark:border-slate-700 ${notification.inAppEnabled ? 'bg-blue-50/70 dark:bg-blue-950/30' : 'bg-slate-50 dark:bg-slate-900/70'}`}>
+                              <Checkbox
+                                id={`notification-${notification.typeId}-in-app`}
+                                checked={notification.inAppEnabled}
+                                onCheckedChange={value => handleNotificationToggle(notification.typeId, 'inAppEnabled', value === true)}
+                                disabled={isAdminRole}
+                              />
+                              <div>
+                                <Label htmlFor={`notification-${notification.typeId}-in-app`} className="text-sm font-medium text-slate-800 dark:text-slate-200">
+                                  In-app alerts
+                                </Label>
+                                <p className="text-xs text-slate-600 dark:text-slate-400">
+                                  Deliver real-time messages inside the dashboard.
+                                </p>
+                              </div>
+                            </div>
+                            <div className={`flex items-start gap-3 rounded-md border border-slate-200 p-4 dark:border-slate-700 ${notification.emailEnabled ? 'bg-blue-50/70 dark:bg-blue-950/30' : 'bg-slate-50 dark:bg-slate-900/70'}`}>
+                              <Checkbox
+                                id={`notification-${notification.typeId}-email`}
+                                checked={notification.emailEnabled}
+                                onCheckedChange={value => handleNotificationToggle(notification.typeId, 'emailEnabled', value === true)}
+                                disabled={isAdminRole}
+                              />
+                              <div>
+                                <Label htmlFor={`notification-${notification.typeId}-email`} className="text-sm font-medium text-slate-800 dark:text-slate-200">
+                                  Email alerts
+                                </Label>
+                                <p className="text-xs text-slate-600 dark:text-slate-400">
+                                  Send transactional emails when this event occurs.
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CollapsibleContent>
+              </Collapsible>
             </div>
 
-            <div className="flex items-center justify-between pt-6 border-t border-slate-200 dark:border-slate-700 bg-gradient-to-r from-slate-50 to-blue-50 dark:from-slate-800 dark:to-blue-950/20 -mx-6 px-6 -mb-6 rounded-b-lg">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-                  <span className="text-red-500">*</span>
-                  <span>All required fields must be completed</span>
-                </div>
+            <div className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-gradient-to-r from-slate-50 to-blue-50 px-6 py-5 dark:border-slate-700 dark:from-slate-800 dark:to-blue-950/20 md:flex-row md:items-center md:justify-between">
+              <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                <span className="text-red-500">*</span>
+                <span>All required fields must be completed</span>
               </div>
               <div className="flex gap-3">
-                <Button type="button" variant="outline" asChild className="hover:bg-slate-100 dark:hover:bg-slate-700 border-slate-300 dark:border-slate-600">
+                <Button type="button" variant="outline" asChild className="border-slate-300 hover:bg-slate-100 dark:border-slate-600 dark:hover:bg-slate-700">
                   <a href="/users">Cancel</a>
                 </Button>
                 <Button
                   type="submit"
                   disabled={processing}
-                  className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all duration-200 px-6 min-w-[140px]"
+                  className="min-w-[140px] bg-gradient-to-r from-blue-600 to-blue-700 px-6 text-white shadow-lg transition hover:from-blue-700 hover:to-blue-800 hover:shadow-xl"
                 >
                   {processing ? (
                     <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white" />
                       Creating...
                     </>
                   ) : (
                     <>
-                      <CheckCircle className="h-4 w-4 mr-2" />
+                      <CheckCircle className="mr-2 h-4 w-4" />
                       Create User
                     </>
                   )}

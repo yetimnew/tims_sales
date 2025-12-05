@@ -63,9 +63,10 @@ Route::middleware(['auth'])->group(function () {
             ->middleware('can:trucks.deactivate')
             ->name('trucks.deactivate');
 
-        Route::get('trucks/free/list', [TruckController::class, 'freeTrucks'])
-            ->middleware('can:trucks.free')
-            ->name('trucks.free');
+        Route::post('trucks/{truck}/activate', [TruckController::class, 'activate'])
+            ->middleware('can:trucks.activate')
+            ->name('trucks.activate');
+
     });
 
     // Truck Status History (per-truck timeline)
@@ -153,8 +154,12 @@ Route::middleware(['auth'])->group(function () {
             ->name('drivers.destroy');
 
         Route::post('drivers/{driver}/deactivate', [DriverController::class, 'deactivate'])
-            ->middleware('can:drivers.update')
+            ->middleware('can:drivers.deactivate')
             ->name('drivers.deactivate');
+
+        Route::post('drivers/{driver}/activate', [DriverController::class, 'activate'])
+            ->middleware('can:drivers.activate')
+            ->name('drivers.activate');
     });
 
     // Performances with rate limiting and permission middleware

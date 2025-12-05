@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Models\DailyTruckStatus;
-use App\Models\Driver;
 use App\Models\DriverTruck;
 use App\Models\MaintenanceType;
 use App\Models\Operation;
@@ -42,7 +41,7 @@ class TruckControllerTest extends TestCase
         $permissions = [
             'trucks.view', 'trucks.create', 'trucks.edit', 'trucks.destroy',
             'trucks.show', 'trucks.store', 'trucks.update',
-            'trucks.deactivate', 'trucks.free',
+            'trucks.deactivate', 'trucks.activate',
         ];
 
         foreach ($permissions as $permission) {
@@ -743,55 +742,35 @@ class TruckControllerTest extends TestCase
     }
 
     #[Test]
-    public function it_returns_free_trucks_list()
+    public function it_can_activate_a_truck()
     {
-        $freeTruck = Truck::factory()->create([
-            'status' => 'active',
-        ]);
-
-        $assignedTruck = Truck::factory()->create([
-            'status' => 'active',
-        ]);
-
-        $driver = Driver::factory()->create([
-            'status' => 'active',
-        ]);
-
-        DriverTruck::factory()->create([
-            'driver_id' => $driver->id,
-            'truck_id' => $assignedTruck->id,
-            'status' => 'active',
-            'unassigned_date' => null,
+        $truck = Truck::factory()->create([
+            'status' => 'inactive',
         ]);
 
         $response = $this->actingAs($this->user)
-            ->getJson(route('trucks.free'));
+            ->post(route('trucks.activate', $truck));
 
-        $response->assertOk()
-            ->assertJson([
-                'success' => true,
-                'count' => 1,
-            ]);
+        $response->assertRedirect(route('trucks.index'));
 
-        $data = $response->json('data');
-
-        $this->assertIsArray($data);
-        $this->assertCount(1, $data);
-        $this->assertEquals($freeTruck->id, $data[0]['id']);
+        $this->assertDatabaseHas('trucks', [
+            'id' => $truck->id,
+            'status' => 'active',
+        ]);
     }
 
     #[Test]
-    public function it_requires_permission_to_view_free_trucks()
+    public function it_requires_permission_to_activate_trucks()
     {
-        Truck::factory()->create([
-            'status' => 'active',
+        $truck = Truck::factory()->create([
+            'status' => 'inactive',
         ]);
 
         /** @var User $userWithoutPermission */
         $userWithoutPermission = User::factory()->create();
 
         $response = $this->actingAs($userWithoutPermission)
-            ->getJson(route('trucks.free'));
+            ->post(route('trucks.activate', $truck));
 
         $response->assertStatus(403);
     }

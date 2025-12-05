@@ -120,7 +120,6 @@ class HandleInertiaRequests extends Middleware
             'trucks.update' => ['trucks.'],
             'trucks.destroy' => ['trucks.'],
             'trucks.deactivate' => ['trucks.'],
-            'trucks.free' => ['trucks.'],
         ];
 
         return $map[$routeName] ?? null;

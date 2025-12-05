@@ -709,4 +709,17 @@ class DriverController extends Controller
         return redirect()->route('drivers.index')
             ->with('success', 'Driver deactivated successfully.');
     }
+
+    /**
+     * Activate the specified driver.
+     */
+    public function activate(Driver $driver)
+    {
+        $driver->update(['status' => 'active']);
+
+        $this->driverMetrics->clearCache();
+
+        return redirect()->route('drivers.index')
+            ->with('success', 'Driver activated successfully.');
+    }
 }

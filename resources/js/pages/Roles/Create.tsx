@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useForm } from '@inertiajs/react'
 import { Link, Head } from '@inertiajs/react'
 import { ArrowLeft, CheckSquare, Square, CircleAlert } from 'lucide-react'
@@ -12,12 +12,14 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useToast } from '@/hooks/use-toast'
 import { validateRole } from '@/lib/validation'
+import {
+  buildPermissionDependencyMaps,
+  addPermissionWithDependencies,
+  removePermissionAndDependents,
+  type PermissionRecord,
+} from '@/lib/permission-dependencies'
 
-interface Permission {
-  id: number
-  name: string
-  guard_name: string
-}
+type Permission = PermissionRecord
 
 interface RoleFormData {
   name: string
@@ -45,6 +47,12 @@ export default function RolesCreate({ permissions }: RoleCreateProps) {
     }
   }, [errors])
 
+  const groupedPermissions = useMemo(() => permissions || {}, [permissions])
+  const dependencyMaps = useMemo(
+    () => buildPermissionDependencyMaps(groupedPermissions),
+    [groupedPermissions]
+  )
+
   const handleFieldChange = (field: string, value: string) => {
     setData(field as keyof RoleFormData, value)
     if (frontendErrors[field]) {
@@ -63,12 +71,9 @@ export default function RolesCreate({ permissions }: RoleCreateProps) {
   }
 
   const handlePermissionChange = (permissionId: number, checked: boolean) => {
-    let newPermissions: number[]
-    if (checked) {
-      newPermissions = [...selectedPermissions, permissionId]
-    } else {
-      newPermissions = selectedPermissions.filter(id => id !== permissionId)
-    }
+    const newPermissions = checked
+      ? addPermissionWithDependencies(selectedPermissions, permissionId, dependencyMaps)
+      : removePermissionAndDependents(selectedPermissions, permissionId, dependencyMaps)
     setSelectedPermissions(newPermissions)
     setData('permissions', newPermissions)
   }
@@ -77,13 +82,19 @@ export default function RolesCreate({ permissions }: RoleCreateProps) {
     const modulePermissionIds = modulePermissions.map(p => p.id)
     const allSelected = modulePermissionIds.every(id => selectedPermissions.includes(id))
 
-    let newPermissions: number[]
+    let newPermissions = selectedPermissions
     if (allSelected) {
-      // Deselect all permissions in this module
-      newPermissions = selectedPermissions.filter(id => !modulePermissionIds.includes(id))
+      modulePermissionIds.forEach(id => {
+        if (newPermissions.includes(id)) {
+          newPermissions = removePermissionAndDependents(newPermissions, id, dependencyMaps)
+        }
+      })
     } else {
-      // Select all permissions in this module
-      newPermissions = [...new Set([...selectedPermissions, ...modulePermissionIds])]
+      modulePermissionIds.forEach(id => {
+        if (!newPermissions.includes(id)) {
+          newPermissions = addPermissionWithDependencies(newPermissions, id, dependencyMaps)
+        }
+      })
     }
     setSelectedPermissions(newPermissions)
     setData('permissions', newPermissions)
@@ -101,9 +112,6 @@ export default function RolesCreate({ permissions }: RoleCreateProps) {
   }
 
   const hasErrors = Object.keys(frontendErrors).length > 0 || Object.keys(errors).length > 0
-
-  // Permissions are already grouped by the backend
-  const groupedPermissions = permissions || {}
 
   return (
     <AppLayout breadcrumbs={[]}>
@@ -165,6 +173,9 @@ export default function RolesCreate({ permissions }: RoleCreateProps) {
 
             <div className="space-y-4">
               <Label>Permissions *</Label>
+              <p className="text-sm text-muted-foreground">
+                Selecting advanced permissions automatically includes the required view and show access.
+              </p>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {Object.entries(groupedPermissions).map(([module, modulePermissions]) => {
                   const modulePermissionIds = modulePermissions.map(p => p.id)

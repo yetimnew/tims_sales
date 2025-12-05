@@ -8,6 +8,7 @@ import { toast } from '@/hooks/use-toast';
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { usePage } from '@inertiajs/react';
 import { useEffect } from 'react';
+import { router } from '@inertiajs/react';
 
 interface AppLayoutProps {
     children: React.ReactNode;
@@ -42,6 +43,42 @@ export default function AppLayout({
             });
         }
     }, [flash?.error]);
+
+    useEffect(() => {
+        const handleStart = (event: unknown) => {
+            if (typeof window === 'undefined') {
+                return;
+            }
+
+            const visit = (event as { detail?: { visit?: { prefetch?: boolean; url?: URL | string } } })?.detail?.visit;
+            if (!visit || visit.prefetch) {
+                return;
+            }
+
+            const urlLike = visit.url;
+            let pathname: string | null = null;
+
+            if (urlLike instanceof URL) {
+                pathname = urlLike.pathname;
+            } else if (typeof urlLike === 'string') {
+                try {
+                    pathname = new URL(urlLike, window.location.origin).pathname;
+                } catch (error) {
+                    console.error('Failed to parse visit URL for skeleton toggle', error);
+                }
+            }
+
+            if (pathname === '/trucks') {
+                window.sessionStorage.setItem('trucks.index.shouldShowSkeleton', 'true');
+            }
+        };
+
+        const unsubscribeStart = router.on('start', handleStart);
+
+        return () => {
+            unsubscribeStart();
+        };
+    }, []);
 
     return (
         <>

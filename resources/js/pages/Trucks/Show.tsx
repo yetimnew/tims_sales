@@ -9,21 +9,23 @@ import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { usePermissions } from '@/hooks/use-permissions';
 import {
     Activity,
     ArrowLeft,
     ArrowUpRight,
+    Ban,
     BarChart3,
     Calendar,
     CheckCircle,
     DollarSign,
+    Edit,
     Hash,
     History,
     Truck,
+    Trash2,
     Wrench,
     XCircle,
-    Edit,
-    Trash2,
     Clock,
     User,
 } from 'lucide-react';
@@ -475,6 +477,22 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [deleteError, setDeleteError] = useState<string | null>(null);
+    const { hasPermission } = usePermissions();
+    const canEditTruck = hasPermission('trucks.edit');
+    const canDeleteTruck = hasPermission('trucks.destroy');
+    const canDeactivateTruck = hasPermission('trucks.deactivate');
+    const canActivateTruck = hasPermission('trucks.activate');
+    const canViewTruckList = hasPermission('trucks.view');
+    const canViewDriverTruckAssignments = hasPermission('driver-trucks.view');
+    const [deactivateDialogOpen, setDeactivateDialogOpen] = useState(false);
+    const [isDeactivating, setIsDeactivating] = useState(false);
+    const [deactivateError, setDeactivateError] = useState<string | null>(null);
+    const [activateDialogOpen, setActivateDialogOpen] = useState(false);
+    const [isActivating, setIsActivating] = useState(false);
+    const [activateError, setActivateError] = useState<string | null>(null);
+    const showDeactivateButton = canDeactivateTruck && truck.status !== 'inactive';
+    const showActivateButton = canActivateTruck && truck.status === 'inactive';
+    const showActionButtons = canEditTruck || canDeleteTruck || showDeactivateButton || showActivateButton;
 
     const driverAssignments = truck.driverTrucks ?? [];
     const maintenanceRecords = truck.maintenanceRecords ?? [];
@@ -836,7 +854,50 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
               }>
         : [];
 
+    const handleDeactivateConfirm = () => {
+        if (!showDeactivateButton) {
+            return;
+        }
+
+        setIsDeactivating(true);
+        router.post(`/trucks/${truck.id}/deactivate`, {}, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setDeactivateDialogOpen(false);
+                setDeactivateError(null);
+                toast({
+                    title: 'Truck deactivated',
+                    description: `${truck.plate} is now marked as inactive.`,
+                });
+            },
+            onError: (errors) => {
+                const messages = errors && typeof errors === 'object'
+                    ? Object.values(errors)
+                          .flatMap((value) => (Array.isArray(value) ? value : [value]))
+                          .filter((value) => Boolean(value))
+                          .join('\n')
+                    : null;
+
+                const fallback = 'Unable to deactivate this truck. Please try again.';
+                const message = messages || fallback;
+                setDeactivateError(message);
+                toast({
+                    title: 'Deactivate failed',
+                    description: message,
+                    variant: 'destructive',
+                });
+            },
+            onFinish: () => {
+                setIsDeactivating(false);
+            },
+        });
+    };
+
     const handleDeleteConfirm = () => {
+        if (!canDeleteTruck) {
+            return;
+        }
+
         setIsDeleting(true);
         router.delete(`/trucks/${truck.id}`, {
             onSuccess: () => {
@@ -877,6 +938,45 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
         });
     };
 
+    const handleActivateConfirm = () => {
+        if (!showActivateButton) {
+            return;
+        }
+
+        setIsActivating(true);
+        router.post(`/trucks/${truck.id}/activate`, {}, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setActivateDialogOpen(false);
+                setActivateError(null);
+                toast({
+                    title: 'Truck activated',
+                    description: `${truck.plate} is now marked as active.`,
+                });
+            },
+            onError: (errors) => {
+                const messages = errors && typeof errors === 'object'
+                    ? Object.values(errors)
+                          .flatMap((value) => (Array.isArray(value) ? value : [value]))
+                          .filter((value) => Boolean(value))
+                          .join('\n')
+                    : null;
+
+                const fallback = 'Unable to activate this truck. Please try again.';
+                const message = messages || fallback;
+                setActivateError(message);
+                toast({
+                    title: 'Activate failed',
+                    description: message,
+                    variant: 'destructive',
+                });
+            },
+            onFinish: () => {
+                setIsActivating(false);
+            },
+        });
+    };
+
     const getStatusBadgeColor = (status: string | undefined | null) => {
         if (!status) return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
 
@@ -900,15 +1000,17 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
                 <div className="bg-gradient-to-r from-slate-50 to-indigo-50 dark:from-slate-900 dark:to-indigo-950/30 rounded-lg p-6 border border-slate-200 dark:border-slate-700">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => router.get('/trucks')}
-                                className="flex items-center gap-2 hover:bg-slate-100 dark:hover:bg-slate-800 border-slate-300 dark:border-slate-600"
-                            >
-                                <ArrowLeft className="h-4 w-4" />
-                                Back to Trucks
-                            </Button>
+                            {canViewTruckList && (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => router.get('/trucks')}
+                                    className="flex items-center gap-2 hover:bg-slate-100 dark:hover:bg-slate-800 border-slate-300 dark:border-slate-600"
+                                >
+                                    <ArrowLeft className="h-4 w-4" />
+                                    Back to Trucks
+                                </Button>
+                            )}
                             <div className="flex items-center gap-4">
                                 <div className="p-3 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl">
                                     <Truck className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
@@ -919,26 +1021,60 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
                                 </div>
                             </div>
                         </div>
-                        <div className="flex gap-2">
-                            <Button
-                                variant="outline"
-                                asChild
-                                className="hover:bg-indigo-50 hover:border-indigo-300 border-slate-300 dark:border-slate-600"
-                            >
-                                <Link href={`/trucks/${truck.id}/edit`}>
-                                    <Edit className="mr-2 h-4 w-4" />
-                                    Edit Truck
-                                </Link>
-                            </Button>
-                            <Button
-                                variant="outline"
-                                onClick={() => setDeleteDialogOpen(true)}
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300"
-                            >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Delete Truck
-                            </Button>
-                        </div>
+                        {showActionButtons && (
+                            <div className="flex flex-wrap justify-end gap-2">
+                                {showActivateButton && (
+                                    <Button
+                                        variant="default"
+                                        onClick={() => {
+                                            setActivateError(null);
+                                            setActivateDialogOpen(true);
+                                        }}
+                                        className="bg-green-600 hover:bg-green-700"
+                                        disabled={isActivating}
+                                    >
+                                        <CheckCircle className="mr-2 h-4 w-4" />
+                                        Activate
+                                    </Button>
+                                )}
+                                {showDeactivateButton && (
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => {
+                                            setDeactivateError(null);
+                                            setDeactivateDialogOpen(true);
+                                        }}
+                                        className="text-amber-600 hover:text-amber-700 hover:bg-amber-50 border-amber-200 hover:border-amber-300"
+                                        disabled={isDeactivating}
+                                    >
+                                        <Ban className="mr-2 h-4 w-4" />
+                                        Deactivate
+                                    </Button>
+                                )}
+                                {canEditTruck && (
+                                    <Button
+                                        variant="outline"
+                                        asChild
+                                        className="hover:bg-indigo-50 hover:border-indigo-300 border-slate-300 dark:border-slate-600"
+                                    >
+                                        <Link href={`/trucks/${truck.id}/edit`}>
+                                            <Edit className="mr-2 h-4 w-4" />
+                                            Edit Truck
+                                        </Link>
+                                    </Button>
+                                )}
+                                {canDeleteTruck && (
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => setDeleteDialogOpen(true)}
+                                        className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300"
+                                    >
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Delete Truck
+                                    </Button>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -1048,7 +1184,7 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
                                                     Current and past driver assignments for this truck
                                                 </CardDescription>
                                             </div>
-                                            {driverAssignments.length > 0 && (
+                                            {driverAssignments.length > 0 && canViewDriverTruckAssignments && (
                                                 <Button variant="link" size="sm" className="px-0" asChild>
                                                     <Link
                                                         href={`/driver-trucks?truck_id=${truck.id}`}
@@ -1106,15 +1242,17 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
                                                         </div>
                                                         <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                                                             <span className="text-xs text-muted-foreground">Status note: {assignmentStatusLabel}</span>
-                                                            <Button variant="link" size="sm" className="px-0" asChild>
-                                                                <Link
-                                                                    href={`/trucks/${truck.id}/assignments/${assignment.id}/performances`}
-                                                                    className="flex items-center gap-1"
-                                                                >
-                                                                    View assignment
-                                                                    <ArrowUpRight className="h-4 w-4" />
-                                                                </Link>
-                                                            </Button>
+                                                            {canViewDriverTruckAssignments && (
+                                                                <Button variant="link" size="sm" className="px-0" asChild>
+                                                                    <Link
+                                                                        href={`/trucks/${truck.id}/assignments/${assignment.id}/performances`}
+                                                                        className="flex items-center gap-1"
+                                                                    >
+                                                                        View assignment
+                                                                        <ArrowUpRight className="h-4 w-4" />
+                                                                    </Link>
+                                                                </Button>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 );
@@ -1705,23 +1843,71 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
                 </Tabs>
             </div>
 
+            {/* Deactivate Confirmation Dialog */}
+            {showDeactivateButton && (
+                <DeleteConfirmationDialog
+                    open={deactivateDialogOpen}
+                    onOpenChange={(open) => {
+                        setDeactivateDialogOpen(open);
+                        if (!open) {
+                            setDeactivateError(null);
+                        }
+                    }}
+                    title="Deactivate Truck"
+                    description="Mark this truck as inactive so it no longer appears in active operations."
+                    itemName={truck.plate}
+                    onConfirm={handleDeactivateConfirm}
+                    isLoading={isDeactivating}
+                    errorMessage={deactivateError}
+                    confirmLabel="Deactivate Truck"
+                    cancelLabel="Cancel"
+                    isDangerous={false}
+                    supportingText="You can reactivate the truck later from the trucks management section."
+                />
+            )}
+
+            {showActivateButton && (
+                <DeleteConfirmationDialog
+                    open={activateDialogOpen}
+                    onOpenChange={(open) => {
+                        setActivateDialogOpen(open);
+                        if (!open) {
+                            setActivateError(null);
+                        }
+                    }}
+                    title="Activate Truck"
+                    description="Set this truck back to active status so it appears in operations."
+                    itemName={truck.plate}
+                    onConfirm={handleActivateConfirm}
+                    isLoading={isActivating}
+                    errorMessage={activateError}
+                    confirmLabel="Activate Truck"
+                    cancelLabel="Cancel"
+                    isDangerous={false}
+                    supportingText="Ensure prerequisite checks are complete before returning this truck to service."
+                />
+            )}
+
             {/* Delete Confirmation Dialog */}
-            <DeleteConfirmationDialog
-                open={deleteDialogOpen}
-                onOpenChange={(open) => {
-                    setDeleteDialogOpen(open);
-                    if (!open) {
-                        setDeleteError(null);
-                    }
-                }}
-                title="Delete Truck"
-                description="Delete this truck and remove it from all fleet records?"
-                itemName={truck.plate}
-                onConfirm={handleDeleteConfirm}
-                isLoading={isDeleting}
-                errorMessage={deleteError}
-                confirmLabel="Delete Truck"
-            />
+            {canDeleteTruck && (
+                <DeleteConfirmationDialog
+                    open={deleteDialogOpen}
+                    onOpenChange={(open) => {
+                        setDeleteDialogOpen(open);
+                        if (!open) {
+                            setDeleteError(null);
+                        }
+                    }}
+                    title="Delete Truck"
+                    description="Delete this truck and remove it from all fleet records?"
+                    itemName={truck.plate}
+                    onConfirm={handleDeleteConfirm}
+                    isLoading={isDeleting}
+                    errorMessage={deleteError}
+                    confirmLabel="Delete Truck"
+                />
+            )}
+
         </AppLayout>
     );
 }

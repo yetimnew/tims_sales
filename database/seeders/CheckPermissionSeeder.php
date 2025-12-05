@@ -2,18 +2,24 @@
 
 namespace Database\Seeders;
 
+use App\Models\User;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
 class CheckPermissionSeeder extends Seeder
 {
+    /**
+     * @var array<string, array<int, string>>
+     */
+    private array $permissionDependencies = [];
+
     public function run(): void
     {
         // ==================== TRUCKS PERMISSIONS ====================
         $truckPermissions = [
             'trucks.view', 'trucks.show', 'trucks.create', 'trucks.store', 'trucks.edit',
-            'trucks.update', 'trucks.deactivate', 'trucks.destroy', 'trucks.free',
+            'trucks.update', 'trucks.deactivate', 'trucks.activate', 'trucks.destroy',
         ];
 
         // ==================== DRIVER TRUCK ASSIGNMENTS PERMISSIONS ====================
@@ -25,7 +31,7 @@ class CheckPermissionSeeder extends Seeder
         // ==================== DRIVERS PERMISSIONS ====================
         $driverPermissions = [
             'drivers.view', 'drivers.show', 'drivers.create', 'drivers.store', 'drivers.edit',
-            'drivers.update', 'drivers.destroy', 'drivers.deactivate',
+            'drivers.update', 'drivers.destroy', 'drivers.deactivate', 'drivers.activate',
         ];
 
         // ==================== MAINTENANCE PERMISSIONS ====================
@@ -248,9 +254,12 @@ class CheckPermissionSeeder extends Seeder
 
         // ==================== ROLES CONFIGURATION ====================
 
+        $this->buildPermissionDependencies($allPermissions);
+
         // ADMIN: All permissions
         $adminRole = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
         $adminRole->syncPermissions($allPermissions);
+        $this->applyPermissionDependenciesToRole($adminRole);
 
         // MANAGER: All except destroy
         $managerPermissions = array_filter(
@@ -259,6 +268,7 @@ class CheckPermissionSeeder extends Seeder
         );
         $managerRole = Role::firstOrCreate(['name' => 'manager', 'guard_name' => 'web']);
         $managerRole->syncPermissions($managerPermissions);
+        $this->applyPermissionDependenciesToRole($managerRole);
 
         // USER: Only view, show, export
         $userPermissions = array_filter(
@@ -269,5 +279,135 @@ class CheckPermissionSeeder extends Seeder
         );
         $userRole = Role::firstOrCreate(['name' => 'user', 'guard_name' => 'web']);
         $userRole->syncPermissions($userPermissions);
+        $this->applyPermissionDependenciesToRole($userRole);
+
+        // Ensure any existing users or roles pick up required dependencies
+        Role::with('permissions')->get()->each(function (Role $role): void {
+            $this->applyPermissionDependenciesToRole($role);
+        });
+
+        User::query()
+            ->with('permissions')
+            ->chunkById(200, function ($users): void {
+                $users->each(function (User $user): void {
+                    $this->applyPermissionDependenciesToUser($user);
+                });
+            });
+    }
+
+    private function applyPermissionDependenciesToRole(Role $role): void
+    {
+        $rolePermissions = $role->permissions->pluck('name')->all();
+
+        if ($rolePermissions === []) {
+            return;
+        }
+
+        $missingDependencies = $this->resolveMissingDependencies($rolePermissions);
+
+        if ($missingDependencies === []) {
+            return;
+        }
+
+        $role->givePermissionTo($missingDependencies);
+    }
+
+    private function applyPermissionDependenciesToUser(User $user): void
+    {
+        $directPermissions = $user->permissions->pluck('name')->all();
+
+        if ($directPermissions === []) {
+            return;
+        }
+
+        $missingDependencies = $this->resolveMissingDependencies($directPermissions);
+
+        if ($missingDependencies === []) {
+            return;
+        }
+
+        $user->givePermissionTo($missingDependencies);
+    }
+
+    /**
+     * @param  array<int, string>  $allPermissions
+     */
+    private function buildPermissionDependencies(array $allPermissions): void
+    {
+        $modulePermissions = [];
+
+        foreach ($allPermissions as $permission) {
+            if (! str_contains($permission, '.')) {
+                continue;
+            }
+
+            [$module, $action] = explode('.', $permission, 2);
+            $modulePermissions[$module][$action] = $permission;
+        }
+
+        foreach ($modulePermissions as $module => $actions) {
+            $viewDependencies = array_values(array_filter([
+                $actions['view'] ?? null,
+                $actions['show'] ?? null,
+            ]));
+
+            $createDependency = $actions['create'] ?? null;
+            $editDependency = $actions['edit'] ?? null;
+            $storeDependency = $actions['store'] ?? null;
+            $updateDependency = $actions['update'] ?? null;
+
+            foreach ($actions as $action => $permission) {
+                if ($action === 'view' || $action === 'show') {
+                    continue;
+                }
+
+                $dependencies = $viewDependencies;
+
+                if ($action === 'store' && $createDependency) {
+                    $dependencies[] = $createDependency;
+                }
+
+                if ($action === 'update' && $editDependency) {
+                    $dependencies[] = $editDependency;
+                }
+
+                if ($action === 'create' && $storeDependency) {
+                    $dependencies[] = $storeDependency;
+                }
+
+                if ($action === 'edit' && $updateDependency) {
+                    $dependencies[] = $updateDependency;
+                }
+
+                if ($dependencies === []) {
+                    continue;
+                }
+
+                $this->permissionDependencies[$permission] = array_values(array_unique($dependencies));
+            }
+        }
+    }
+
+    /**
+     * @param  array<int, string>  $permissionNames
+     * @return array<int, string>
+     */
+    private function resolveMissingDependencies(array $permissionNames): array
+    {
+        $assigned = array_fill_keys($permissionNames, true);
+        $missing = [];
+
+        foreach ($permissionNames as $permission) {
+            foreach ($this->permissionDependencies[$permission] ?? [] as $dependency) {
+                if (isset($assigned[$dependency])) {
+                    continue;
+                }
+
+                $assigned[$dependency] = true;
+                $missing[$dependency] = $dependency;
+            }
+        }
+
+        return array_values($missing);
     }
 }

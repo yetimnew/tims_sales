@@ -1,9 +1,8 @@
 import { Link, Head } from '@inertiajs/react'
-import { ArrowLeft, SquarePen, Trash2, User, Shield, ScrollText, Mail, Phone, Calendar } from 'lucide-react'
+import { ArrowLeft, SquarePen, Trash2, User, Shield, ScrollText, MoreVertical, Send, RefreshCcw, Clock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog'
 import { ActivityLogTable } from '@/components/activity-log-table'
 import { useToast } from '@/hooks/use-toast'
@@ -12,6 +11,7 @@ import AppLayout from '@/layouts/app-layout'
 import { useState } from 'react'
 import { router } from '@inertiajs/react'
 import { type BreadcrumbItem } from '@/types'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -84,53 +84,96 @@ export default function UsersShow({ user, activityLogs }: UsersShowProps) {
     return new Date(dateString).toLocaleDateString(undefined, options)
   }
 
-  const getRoleBadgeColor = (roleName: string) => {
-    switch (roleName.toLowerCase()) {
-      case 'admin':
-        return 'bg-red-500 text-white'
-      case 'manager':
-        return 'bg-blue-500 text-white'
-      case 'driver':
-        return 'bg-green-500 text-white'
-      case 'user':
-        return 'bg-gray-500 text-white'
-      default:
-        return 'bg-purple-500 text-white'
-    }
+  const formatDateTime = (dateString: string) => {
+    if (!dateString) return 'Unknown date'
+    return new Date(dateString).toLocaleString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
   }
+
+  const roleBadgePalette: Record<string, string> = {
+    admin: 'border-indigo-200 bg-indigo-50 text-indigo-700 dark:border-indigo-900 dark:bg-indigo-950/40 dark:text-indigo-200',
+    manager: 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-200',
+    driver: 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200',
+    user: 'border-slate-200 bg-slate-100 text-slate-700 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-200',
+    default: 'border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-900 dark:bg-violet-950/40 dark:text-violet-200',
+  }
+
+  const getRoleBadgeClass = (roleName: string) => {
+    return roleBadgePalette[roleName.toLowerCase()] ?? roleBadgePalette.default
+  }
+
+  const timelineEntries = [...activityLogs]
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .slice(0, 5)
 
   return (
     <AppLayout breadcrumbs={breadcrumbs}>
       <Head title={`User: ${user.name}`} />
       <div className="flex h-full flex-1 flex-col gap-6 overflow-auto p-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-            <Link href="/users">
-            <Button variant="outline" size="icon">
-              <ArrowLeft className="h-4 w-4" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              size="icon"
+              asChild
+              className="border-slate-300 hover:bg-slate-100 dark:border-slate-600 dark:hover:bg-slate-800"
+            >
+              <Link href="/users">
+                <ArrowLeft className="h-4 w-4" />
+              </Link>
             </Button>
-          </Link>
-          <h1 className="text-2xl font-bold">User: {user.name}</h1>
-        </div>
-        <div className="flex gap-2">
-          {hasPermission('users.edit') && (
-            <Link href={`/users/${user.id}/edit`}>
-              <Button variant="outline">
-                <SquarePen className="mr-2 h-4 w-4" /> Edit User
+            <h1 className="text-2xl font-bold">User: {user.name}</h1>
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="flex items-center gap-2 border-slate-300 hover:bg-slate-100 dark:border-slate-600 dark:hover:bg-slate-800">
+                <MoreVertical className="h-4 w-4" />
+                Actions
               </Button>
-            </Link>
-          )}
-          {hasPermission('users.destroy') && (
-            <Button variant="destructive" onClick={handleDelete}>
-              <Trash2 className="mr-2 h-4 w-4" /> Delete User
-            </Button>
-          )}
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>Quick Actions</DropdownMenuLabel>
+              {hasPermission('users.edit') && (
+                <DropdownMenuItem onSelect={() => router.visit(`/users/${user.id}/edit`)}>
+                  <SquarePen className="h-4 w-4" />
+                  Edit user
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem disabled>
+                <Send className="h-4 w-4" />
+                Resend invite (pending)
+              </DropdownMenuItem>
+              <DropdownMenuItem disabled>
+                <RefreshCcw className="h-4 w-4" />
+                Reset password link
+              </DropdownMenuItem>
+              {hasPermission('users.destroy') && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    variant="destructive"
+                    onSelect={event => {
+                      event.preventDefault()
+                      handleDelete()
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Delete user
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-4">
         {/* Basic Information Card */}
-        <Card className="lg:col-span-2">
+        <Card className="xl:col-span-2">
           <CardHeader className="border-b">
             <CardTitle className="flex items-center gap-2">
               <User className="h-5 w-5" /> Basic Information
@@ -159,7 +202,7 @@ export default function UsersShow({ user, activityLogs }: UsersShowProps) {
         </Card>
 
         {/* Quick Info Sidebar */}
-        <Card className="lg:col-span-1">
+        <Card className="xl:col-span-1">
           <CardHeader className="border-b">
             <CardTitle className="flex items-center gap-2">
               <Shield className="h-5 w-5" /> Quick Info
@@ -181,7 +224,7 @@ export default function UsersShow({ user, activityLogs }: UsersShowProps) {
               <div className="space-y-1">
                 {user.roles.length > 0 ? (
                   user.roles.map(role => (
-                    <Badge key={role.id} className={getRoleBadgeColor(role.name)}>
+                    <Badge key={role.id} variant="outline" className={`${getRoleBadgeClass(role.name)} border`}>
                       {role.name}
                     </Badge>
                   ))
@@ -193,8 +236,46 @@ export default function UsersShow({ user, activityLogs }: UsersShowProps) {
           </CardContent>
         </Card>
 
+        {/* Recent Activity Timeline */}
+        <Card className="xl:col-span-1">
+          <CardHeader className="border-b">
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5" /> Recent Activity
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            {timelineEntries.length > 0 ? (
+              <ul className="space-y-4">
+                {timelineEntries.map((log, index) => (
+                  <li key={log.id} className="relative pl-6">
+                    {index < timelineEntries.length - 1 && (
+                      <span className="absolute left-[9px] top-5 h-full w-px bg-slate-200 dark:bg-slate-700" aria-hidden="true" />
+                    )}
+                    <span className="absolute left-1.5 top-2 flex h-3 w-3 items-center justify-center rounded-full bg-indigo-500 dark:bg-indigo-400" aria-hidden="true" />
+                    <div className="flex flex-col gap-1">
+                      <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                        {log.description || 'Activity recorded'}
+                      </span>
+                      <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                        <Badge variant="outline" className="border-slate-200 bg-slate-100 text-slate-700 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-300">
+                          {log.log_name}
+                        </Badge>
+                        <span>{formatDateTime(log.created_at)}</span>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="rounded-md border border-dashed border-slate-300 px-4 py-6 text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
+                No recent activity recorded for this user.
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Roles & Permissions Card */}
-        <Card className="lg:col-span-3">
+        <Card className="xl:col-span-4">
           <CardHeader className="border-b">
             <CardTitle className="flex items-center gap-2">
               <Shield className="h-5 w-5" /> Roles & Permissions
@@ -210,7 +291,7 @@ export default function UsersShow({ user, activityLogs }: UsersShowProps) {
                         <Shield className="h-5 w-5 text-muted-foreground" />
                         <div>
                           <p className="font-medium">{role.name}</p>
-                          <Badge className={getRoleBadgeColor(role.name)} variant="secondary">
+                          <Badge variant="outline" className={`${getRoleBadgeClass(role.name)} border`}>
                             Role
                           </Badge>
                         </div>
@@ -236,7 +317,7 @@ export default function UsersShow({ user, activityLogs }: UsersShowProps) {
         </Card>
 
         {/* Record Information Card */}
-        <Card className="lg:col-span-3">
+        <Card className="xl:col-span-4">
           <CardHeader className="border-b">
             <CardTitle className="flex items-center gap-2">
               <ScrollText className="h-5 w-5" /> Record Information
@@ -255,7 +336,7 @@ export default function UsersShow({ user, activityLogs }: UsersShowProps) {
         </Card>
 
         {/* Activity Log Card */}
-        <Card className="lg:col-span-3">
+        <Card className="xl:col-span-4">
           <CardHeader className="border-b">
             <CardTitle className="flex items-center gap-2">
               <ScrollText className="h-5 w-5" /> Activity Log
