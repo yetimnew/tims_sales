@@ -345,12 +345,6 @@ const getMainNavItems = (currentUrl: string): NavItem[] => {
                         requiredPermissions: ['reports.truck-grading.view'],
                     },
                     {
-                        title: 'Driver Grading',
-                        href: '/reports/driver-grading',
-                        icon: Users,
-                        requiredPermissions: ['reports.driver-grading.view'],
-                    },
-                    {
                         title: 'Performance (All)',
                         href: '/reports/performance-all',
                         icon: Activity,

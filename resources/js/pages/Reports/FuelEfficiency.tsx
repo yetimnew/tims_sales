@@ -2,19 +2,31 @@ import { useMemo, useState } from 'react';
 import { Head, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { ReportHero } from '@/components/reports/report-hero';
-import { ReportPageShell } from '@/components/reports/report-page-shell';
-import { ReportSectionCard } from '@/components/reports/report-section-card';
-import { ReportSummaryGrid } from '@/components/reports/report-summary-grid';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
-import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { CircleDollarSign, Droplet, Filter, Gauge, TrendingDown, TrendingUp } from 'lucide-react';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableFooter,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
+import {
+    CircleDollarSign,
+    Droplet,
+    Filter,
+    Gauge,
+    TrendingDown,
+    TrendingUp,
+} from 'lucide-react';
 
 interface TruckOption {
     id: number;
@@ -193,52 +205,40 @@ export default function FuelEfficiency({
         router.get('/reports/fuel-efficiency', {}, { preserveState: false, preserveScroll: true });
     };
 
-    const summaryItems = [
+    const summaryCards = [
         {
-            key: 'total-cost',
-            label: 'Total cost',
+            title: 'Total Cost',
             value: formatCurrency(totals?.total_cost ?? 0),
             helper: 'Fuel spend in the selected window',
-            icon: <CircleDollarSign className="h-3.5 w-3.5" />,
-            iconWrapperClassName: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200',
+            icon: <CircleDollarSign className="h-4 w-4 text-emerald-500" />,
         },
         {
-            key: 'total-liters',
-            label: 'Total liters',
+            title: 'Total Liters',
             value: `${formatDecimal(totals?.total_liters ?? 0)} L`,
             helper: 'Liters purchased across all included trucks',
-            icon: <Droplet className="h-3.5 w-3.5" />,
-            iconWrapperClassName: 'bg-blue-50 text-blue-600 dark:bg-blue-500/20 dark:text-blue-200',
+            icon: <Droplet className="h-4 w-4 text-blue-500" />,
         },
         {
-            key: 'total-distance',
-            label: 'Total distance',
+            title: 'Total Distance',
             value: `${formatDecimal(totals?.total_distance_km ?? 0)} km`,
             helper: 'Distance estimated from odometer readings',
-            icon: <Gauge className="h-3.5 w-3.5" />,
-            iconWrapperClassName: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-200',
+            icon: <Gauge className="h-4 w-4 text-indigo-500" />,
         },
         {
-            key: 'fleet-efficiency',
-            label: 'Fleet km / L',
-            value:
-                summary?.fleet_efficiency_km_per_liter !== null
-                    ? `${formatDecimal(summary.fleet_efficiency_km_per_liter)} km / L`
-                    : '—',
-            helper: 'Distance achieved per litre across the selection',
-            icon: <TrendingUp className="h-3.5 w-3.5" />,
-            iconWrapperClassName: 'bg-amber-50 text-amber-600 dark:bg-amber-500/20 dark:text-amber-200',
+            title: 'Fleet Km / L',
+            value: summary?.fleet_efficiency_km_per_liter !== null
+                ? `${formatDecimal(summary.fleet_efficiency_km_per_liter)} km / L`
+                : '—',
+            helper: 'Distance achieved per liter across the selection',
+            icon: <TrendingUp className="h-4 w-4 text-amber-500" />,
         },
         {
-            key: 'cost-per-km',
-            label: 'Cost / km',
-            value:
-                summary?.fleet_cost_per_km !== null
-                    ? `${formatCurrency(summary.fleet_cost_per_km)} / km`
-                    : '—',
+            title: 'Cost / Km',
+            value: summary?.fleet_cost_per_km !== null
+                ? `${formatCurrency(summary.fleet_cost_per_km)} / km`
+                : '—',
             helper: 'Average fuel spend needed to cover one kilometre',
-            icon: <TrendingDown className="h-3.5 w-3.5" />,
-            iconWrapperClassName: 'bg-rose-50 text-rose-600 dark:bg-rose-500/20 dark:text-rose-200',
+            icon: <TrendingDown className="h-4 w-4 text-rose-500" />,
         },
     ];
 
@@ -249,173 +249,187 @@ export default function FuelEfficiency({
     const visibleTruckBadges = selectedTruckPlates.slice(0, 4);
     const extraTruckCount = Math.max(selectedTruckPlates.length - visibleTruckBadges.length, 0);
 
-    const detailBadgeItems = [
-        { key: 'from', label: `From ${appliedFrom || '—'}` },
-        { key: 'to', label: `To ${appliedTo || '—'}` },
-        {
-            key: 'trucks',
-            label:
-                appliedTruckCount > 0
-                    ? `${appliedTruckCount} truck${appliedTruckCount > 1 ? 's' : ''}`
-                    : 'All trucks',
-        },
-    ];
-
-    const highlightBadgeItems = [
-        {
-            key: 'best-count',
-            label: `${highlightData.best_efficiency.length} best performers`,
-        },
-        {
-            key: 'costly-count',
-            label: `${highlightData.highest_cost_per_km.length} costly outliers`,
-        },
-    ];
-
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Fuel Efficiency & Cost" />
-            <ReportPageShell>
-                <ReportHero
-                    eyebrow="Fuel Lens"
-                    title="Fuel efficiency & cost"
-                    description="Benchmark trucks by consumption, spend, and distance covered. Combine refuelling data with odometer readings to surface outliers and opportunities to optimise routes or driver habits."
-                    actions={
-                        <>
-                            <Button type="button" variant="outline" className="gap-2" onClick={handleReset}>
-                                Reset
-                            </Button>
-                            <Button type="button" className="gap-2" onClick={handleApplyFilters}>
-                                Generate report
-                            </Button>
-                        </>
-                    }
-                />
-
-                <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
-                    <ReportSectionCard
-                        title="Filters"
-                        description="Refine by date and fleet subset."
-                        contentClassName="flex flex-col gap-6 p-6"
-                    >
-                        <div className="space-y-2">
-                            <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Date range</span>
-                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                <Input type="date" value={from} onChange={(event) => setFrom(event.target.value)} />
-                                <Input type="date" value={to} onChange={(event) => setTo(event.target.value)} />
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-slate-100/60 dark:bg-slate-900/40">
+                <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-4 pb-10 sm:p-6 lg:p-10">
+                    <header className="rounded-2xl border border-slate-200 bg-white/95 px-6 py-6 shadow-sm backdrop-blur dark:border-slate-800/70 dark:bg-slate-900/70">
+                        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                            <div className="space-y-2">
+                                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">Fuel Lens</p>
+                                <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-50">Fuel Efficiency &amp; Cost</h1>
+                                <p className="max-w-3xl text-sm text-slate-600 dark:text-slate-300">
+                                    Benchmark trucks by consumption, spend, and distance covered. Combine refuelling data with odometer readings to surface outliers and opportunities to optimise routes or driver habits.
+                                </p>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2">
+                                <Button type="button" variant="outline" className="gap-2" onClick={handleReset}>
+                                    Reset
+                                </Button>
+                                <Button type="button" className="gap-2" onClick={handleApplyFilters}>
+                                    Generate report
+                                </Button>
                             </div>
                         </div>
-                        <div className="space-y-3">
-                            <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Trucks</span>
-                            <Popover open={truckSelectorOpen} onOpenChange={setTruckSelectorOpen}>
-                                <PopoverTrigger asChild>
-                                    <Button type="button" variant="outline" className="w-full justify-between">
-                                        <span className="flex items-center gap-2 text-sm">
-                                            {noTruckFilter ? 'All trucks' : `${selectedTrucks.length} selected`}
-                                        </span>
-                                        <Filter className="h-3.5 w-3.5 text-slate-400" />
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-96 p-0" align="start">
-                                    <div className="flex items-center justify-between px-3 py-2">
-                                        <div className="flex items-center gap-2">
-                                            <Button type="button" variant="ghost" size="sm" onClick={handleSelectAll}>
-                                                {selectedTrucks.length === trucks.length && trucks.length > 0 ? 'Unselect all' : 'Select all'}
-                                            </Button>
-                                            <Button type="button" variant="ghost" size="sm" onClick={handleClearTrucks}>
-                                                Clear
-                                            </Button>
-                                        </div>
+                    </header>
+
+                    <section className="grid gap-6 lg:grid-cols-[360px_1fr]">
+                        <Card className="flex h-full flex-col border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
+                            <CardHeader className="space-y-2">
+                                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50">Filters</CardTitle>
+                                <CardDescription className="text-sm">Refine by date and fleet subset.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="flex-1 space-y-6">
+                                <div className="space-y-2">
+                                    <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Date range</span>
+                                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                        <Input type="date" value={from} onChange={(event) => setFrom(event.target.value)} />
+                                        <Input type="date" value={to} onChange={(event) => setTo(event.target.value)} />
                                     </div>
-                                    <Separator />
-                                    <Command>
-                                        <div className="flex items-center px-3 py-2">
-                                            <CommandInput
-                                                placeholder="Search truck plate..."
-                                                value={truckSearch}
-                                                onValueChange={setTruckSearch}
-                                            />
-                                        </div>
-                                        <CommandList className="max-h-64">
-                                            <CommandEmpty>No trucks found.</CommandEmpty>
-                                            <CommandGroup heading="Trucks">
-                                                <CommandItem onSelect={() => setSelectedTrucks([])} className="flex items-center gap-2">
-                                                    <Checkbox checked={noTruckFilter} />
-                                                    <span className="font-medium">All trucks</span>
-                                                    {noTruckFilter && <Badge variant="secondary" className="ml-auto">Active</Badge>}
-                                                </CommandItem>
-                                                {filteredTruckOptions.map((option) => {
-                                                    const checked = selectedTrucks.includes(option.id);
-
-                                                    return (
-                                                        <CommandItem
-                                                            key={option.id}
-                                                            onSelect={() => handleToggleTruck(option.id)}
-                                                            className="flex items-center gap-2"
-                                                        >
-                                                            <Checkbox checked={checked} />
-                                                            <span className="font-medium">{option.plate}</span>
-                                                            {option.status && (
-                                                                <Badge variant="outline" className="ml-auto capitalize text-xs">
-                                                                    {option.status}
-                                                                </Badge>
-                                                            )}
-                                                            {checked && <Badge variant="secondary" className="ml-2">Included</Badge>}
+                                </div>
+                                <div className="space-y-3">
+                                    <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Trucks</span>
+                                    <Popover open={truckSelectorOpen} onOpenChange={setTruckSelectorOpen}>
+                                        <PopoverTrigger asChild>
+                                            <Button type="button" variant="outline" className="w-full justify-between">
+                                                <span className="flex items-center gap-2 text-sm">
+                                                    {noTruckFilter ? 'All trucks' : `${selectedTrucks.length} selected`}
+                                                </span>
+                                                <Filter className="h-3.5 w-3.5 text-slate-400" />
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-96 p-0" align="start">
+                                            <div className="flex items-center justify-between px-3 py-2">
+                                                <div className="flex items-center gap-2">
+                                                    <Button type="button" variant="ghost" size="sm" onClick={handleSelectAll}>
+                                                        {selectedTrucks.length === trucks.length && trucks.length > 0 ? 'Unselect all' : 'Select all'}
+                                                    </Button>
+                                                    <Button type="button" variant="ghost" size="sm" onClick={handleClearTrucks}>
+                                                        Clear
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                            <Separator />
+                                            <Command>
+                                                <div className="flex items-center px-3 py-2">
+                                                    <CommandInput
+                                                        placeholder="Search truck plate..."
+                                                        value={truckSearch}
+                                                        onValueChange={setTruckSearch}
+                                                    />
+                                                </div>
+                                                <CommandList className="max-h-64">
+                                                    <CommandEmpty>No trucks found.</CommandEmpty>
+                                                    <CommandGroup heading="Trucks">
+                                                        <CommandItem onSelect={() => setSelectedTrucks([])} className="flex items-center gap-2">
+                                                            <Checkbox checked={noTruckFilter} />
+                                                            <span className="font-medium">All trucks</span>
+                                                            {noTruckFilter && <Badge variant="secondary" className="ml-auto">Active</Badge>}
                                                         </CommandItem>
-                                                    );
-                                                })}
-                                            </CommandGroup>
-                                        </CommandList>
-                                    </Command>
-                                </PopoverContent>
-                            </Popover>
-                            <div className="flex flex-wrap gap-2">
-                                {noTruckFilter && (
-                                    <Badge variant="outline" className="border-dashed text-muted-foreground">
-                                        All trucks included
-                                    </Badge>
-                                )}
-                                {!noTruckFilter &&
-                                    visibleTruckBadges.map((plate) => (
-                                        <Badge key={plate} variant="secondary" className="bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-100">
-                                            {plate}
-                                        </Badge>
-                                    ))}
-                                {!noTruckFilter && extraTruckCount > 0 && (
-                                    <Badge variant="outline" className="border-dashed text-muted-foreground">
-                                        +{extraTruckCount} more
-                                    </Badge>
-                                )}
-                            </div>
-                        </div>
-                        <div className="flex flex-col gap-3 border-t border-slate-200/60 pt-6 sm:flex-row sm:justify-between dark:border-slate-700/60">
-                            <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={handleReset}>
-                                Reset
-                            </Button>
-                            <Button type="button" className="w-full sm:w-auto" onClick={handleApplyFilters}>
-                                Apply filters
-                            </Button>
-                        </div>
-                    </ReportSectionCard>
+                                                        {filteredTruckOptions.map((option) => {
+                                                            const checked = selectedTrucks.includes(option.id);
 
-                    <ReportSectionCard
-                        title="Fleet snapshot"
-                        description="Key fuel metrics across all included trucks."
-                        contentClassName="p-6"
-                    >
-                        <ReportSummaryGrid items={summaryItems} className="gap-4 md:grid-cols-2 xl:grid-cols-5" />
-                    </ReportSectionCard>
-                </div>
+                                                            return (
+                                                                <CommandItem
+                                                                    key={option.id}
+                                                                    onSelect={() => handleToggleTruck(option.id)}
+                                                                    className="flex items-center gap-2"
+                                                                >
+                                                                    <Checkbox checked={checked} />
+                                                                    <span className="font-medium">{option.plate}</span>
+                                                                    {option.status && (
+                                                                        <Badge variant="outline" className="ml-auto capitalize text-xs">
+                                                                            {option.status}
+                                                                        </Badge>
+                                                                    )}
+                                                                    {checked && <Badge variant="secondary" className="ml-2">Included</Badge>}
+                                                                </CommandItem>
+                                                            );
+                                                        })}
+                                                    </CommandGroup>
+                                                </CommandList>
+                                            </Command>
+                                        </PopoverContent>
+                                    </Popover>
+                                    <div className="flex flex-wrap gap-2">
+                                        {noTruckFilter && (
+                                            <Badge variant="outline" className="border-dashed text-muted-foreground">
+                                                All trucks included
+                                            </Badge>
+                                        )}
+                                        {!noTruckFilter && visibleTruckBadges.map((plate) => (
+                                            <Badge key={plate} variant="secondary" className="bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-100">
+                                                {plate}
+                                            </Badge>
+                                        ))}
+                                        {!noTruckFilter && extraTruckCount > 0 && (
+                                            <Badge variant="outline" className="border-dashed text-muted-foreground">
+                                                +{extraTruckCount} more
+                                            </Badge>
+                                        )}
+                                    </div>
+                                </div>
+                            </CardContent>
+                            <CardFooter className="flex flex-col gap-3 sm:flex-row sm:justify-between">
+                                <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={handleReset}>
+                                    Reset
+                                </Button>
+                                <Button type="button" className="w-full sm:w-auto" onClick={handleApplyFilters}>
+                                    Apply filters
+                                </Button>
+                            </CardFooter>
+                        </Card>
 
-                <div className="grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-                    <ReportSectionCard
-                        title="Per-truck efficiency"
-                        description="Detailed consumption, spend, and efficiency by truck."
-                        badgeItems={detailBadgeItems}
-                        contentClassName="p-0"
-                    >
-                        <div className="overflow-x-auto">
-                            <Table>
+                        <Card className="flex h-full flex-col border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
+                            <CardHeader className="space-y-2">
+                                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50">Fleet Snapshot</CardTitle>
+                                <CardDescription className="text-sm">Key fuel metrics across all included trucks.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+                                {summaryCards.map((card) => (
+                                    <Card
+                                        key={card.title}
+                                        className="border border-slate-200/80 bg-white/90 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800/70 dark:bg-slate-950/60"
+                                    >
+                                        <CardHeader className="flex flex-row items-start justify-between space-y-0 p-4">
+                                            <div className="space-y-1">
+                                                <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                                    {card.title}
+                                                </CardTitle>
+                                                <div className="text-xl font-semibold text-slate-900 dark:text-slate-50">{card.value}</div>
+                                            </div>
+                                            {card.icon}
+                                        </CardHeader>
+                                        <CardContent className="px-4 pb-4 pt-0">
+                                            <CardDescription className="text-xs text-muted-foreground">{card.helper}</CardDescription>
+                                        </CardContent>
+                                    </Card>
+                                ))}
+                            </CardContent>
+                        </Card>
+                    </section>
+
+                    <section className="grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+                        <Card className="border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
+                            <CardHeader className="space-y-3 border-b border-slate-200/60 pb-4 dark:border-slate-700/60">
+                                <div className="space-y-1">
+                                    <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50">Per-truck efficiency</CardTitle>
+                                    <CardDescription className="text-sm">Detailed consumption, spend, and efficiency by truck.</CardDescription>
+                                </div>
+                                <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                                    <Badge variant="outline">From {appliedFrom || '—'}</Badge>
+                                    <Badge variant="outline">To {appliedTo || '—'}</Badge>
+                                    <Badge variant="outline">
+                                        {appliedTruckCount > 0
+                                            ? `${appliedTruckCount} truck${appliedTruckCount > 1 ? 's' : ''}`
+                                            : 'All trucks'}
+                                    </Badge>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="p-0">
+                                <div className="overflow-x-auto">
+                                    <Table>
                                         <TableHeader className="bg-slate-50/60 text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-900/60 dark:text-slate-400">
                                             <TableRow className="divide-x divide-slate-200/40 dark:divide-slate-800/50">
                                                 <TableHead className="whitespace-nowrap">Truck</TableHead>
@@ -480,69 +494,65 @@ export default function FuelEfficiency({
                                                 </TableRow>
                                             </TableFooter>
                                         )}
-                            </Table>
-                        </div>
-                    </ReportSectionCard>
+                                    </Table>
+                                </div>
+                            </CardContent>
+                        </Card>
 
-                    <div className="grid gap-6">
-                        <ReportSectionCard
-                            title="Highlights"
-                            description="Top performers and cost hotspots."
-                            badgeItems={highlightBadgeItems}
-                            contentClassName="grid gap-6 p-6 md:grid-cols-2"
-                        >
-                            <div className="space-y-3">
-                                <div className="text-sm font-semibold text-slate-700 dark:text-slate-200">Best efficiency</div>
-                                {highlightData.best_efficiency.length === 0 && (
-                                    <p className="text-sm text-muted-foreground">No efficiency winners yet.</p>
-                                )}
-                                {highlightData.best_efficiency.length > 0 && (
-                                    <ol className="space-y-2 text-sm text-slate-600 dark:text-slate-300">
-                                        {highlightData.best_efficiency.map((row, index) => (
-                                            <li
-                                                key={row.truck_id}
-                                                className="flex items-center justify-between rounded-lg border border-slate-200/70 bg-slate-50/60 px-3 py-2 dark:border-slate-800/60 dark:bg-slate-900/60"
-                                            >
-                                                <span className="font-medium text-slate-900 dark:text-slate-50">
-                                                    {index + 1}. {row.plate}
-                                                </span>
-                                                <span>{formatOptionalDecimal(row.efficiency_km_per_liter, ' km/L')}</span>
-                                            </li>
-                                        ))}
-                                    </ol>
-                                )}
-                            </div>
-                            <div className="space-y-3">
-                                <div className="text-sm font-semibold text-slate-700 dark:text-slate-200">Highest cost per km</div>
-                                {highlightData.highest_cost_per_km.length === 0 && (
-                                    <p className="text-sm text-muted-foreground">No costly outliers detected.</p>
-                                )}
-                                {highlightData.highest_cost_per_km.length > 0 && (
-                                    <ol className="space-y-2 text-sm text-slate-600 dark:text-slate-300">
-                                        {highlightData.highest_cost_per_km.map((row, index) => (
-                                            <li
-                                                key={row.truck_id}
-                                                className="flex items-center justify-between rounded-lg border border-slate-200/70 bg-rose-50/60 px-3 py-2 dark:border-rose-900/40 dark:bg-rose-950/30"
-                                            >
-                                                <span className="font-medium text-slate-900 dark:text-slate-50">
-                                                    {index + 1}. {row.plate}
-                                                </span>
-                                                <span>{formatOptionalCurrency(row.cost_per_km, ' / km')}</span>
-                                            </li>
-                                        ))}
-                                    </ol>
-                                )}
-                            </div>
-                        </ReportSectionCard>
-
-                        <ReportSectionCard
-                            title="Refuel trend"
-                            description="Month-over-month litres and cost."
-                            contentClassName="p-0"
-                        >
-                            <div className="max-h-[320px] overflow-auto">
-                                <Table>
+                        <div className="grid gap-6">
+                            <Card className="border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
+                                <CardHeader className="space-y-2 border-b border-slate-200/60 pb-4 dark:border-slate-700/60">
+                                    <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50">Highlights</CardTitle>
+                                    <CardDescription className="text-sm">Top performers and cost hotspots.</CardDescription>
+                                </CardHeader>
+                                <CardContent className="grid gap-6 md:grid-cols-2">
                                     <div className="space-y-3">
+                                        <div className="text-sm font-semibold text-slate-700 dark:text-slate-200">Best efficiency</div>
+                                        {highlightData.best_efficiency.length === 0 && (
+                                            <p className="text-sm text-muted-foreground">No efficiency winners yet.</p>
+                                        )}
+                                        {highlightData.best_efficiency.length > 0 && (
+                                            <ol className="space-y-2 text-sm text-slate-600 dark:text-slate-300">
+                                                {highlightData.best_efficiency.map((row, index) => (
+                                                    <li key={row.truck_id} className="flex items-center justify-between rounded-lg border border-slate-200/70 bg-slate-50/60 px-3 py-2 dark:border-slate-800/60 dark:bg-slate-900/60">
+                                                        <span className="font-medium text-slate-900 dark:text-slate-50">
+                                                            {index + 1}. {row.plate}
+                                                        </span>
+                                                        <span>{formatOptionalDecimal(row.efficiency_km_per_liter, ' km/L')}</span>
+                                                    </li>
+                                                ))}
+                                            </ol>
+                                        )}
+                                    </div>
+                                    <div className="space-y-3">
+                                        <div className="text-sm font-semibold text-slate-700 dark:text-slate-200">Highest cost per km</div>
+                                        {highlightData.highest_cost_per_km.length === 0 && (
+                                            <p className="text-sm text-muted-foreground">No costly outliers detected.</p>
+                                        )}
+                                        {highlightData.highest_cost_per_km.length > 0 && (
+                                            <ol className="space-y-2 text-sm text-slate-600 dark:text-slate-300">
+                                                {highlightData.highest_cost_per_km.map((row, index) => (
+                                                    <li key={row.truck_id} className="flex items-center justify-between rounded-lg border border-slate-200/70 bg-rose-50/60 px-3 py-2 dark:border-rose-900/40 dark:bg-rose-950/30">
+                                                        <span className="font-medium text-slate-900 dark:text-slate-50">
+                                                            {index + 1}. {row.plate}
+                                                        </span>
+                                                        <span>{formatOptionalCurrency(row.cost_per_km, ' / km')}</span>
+                                                    </li>
+                                                ))}
+                                            </ol>
+                                        )}
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            <Card className="border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
+                                <CardHeader className="space-y-2 border-b border-slate-200/60 pb-4 dark:border-slate-700/60">
+                                    <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50">Refuel trend</CardTitle>
+                                    <CardDescription className="text-sm">Month-over-month litres and cost.</CardDescription>
+                                </CardHeader>
+                                <CardContent className="p-0">
+                                    <div className="max-h-[320px] overflow-auto">
+                                        <Table>
                                             <TableHeader className="bg-slate-50/60 text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-900/60 dark:text-slate-400">
                                                 <TableRow>
                                                     <TableHead>Period</TableHead>
@@ -572,13 +582,14 @@ export default function FuelEfficiency({
                                                     </TableRow>
                                                 ))}
                                             </TableBody>
+                                        </Table>
                                     </div>
-                                </Table>
-                            </div>
-                        </ReportSectionCard>
-                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    </section>
                 </div>
-            </ReportPageShell>
+            </div>
         </AppLayout>
     );
 }
