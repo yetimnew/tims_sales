@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Truck;
 use App\Models\User;
 use Database\Seeders\CheckPermissionSeeder;
+use Database\Seeders\ReportPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -18,6 +19,7 @@ class PermissionTest extends TestCase
     {
         parent::setUp();
         $this->seed(CheckPermissionSeeder::class);
+        $this->seed(ReportPermissionSeeder::class);
     }
 
     /** @test */
@@ -66,7 +68,9 @@ class PermissionTest extends TestCase
 
         $viewLike = ['view', 'show', 'export'];
         foreach (Permission::all() as $permission) {
-            $action = explode('.', $permission->name)[1] ?? '';
+            $segments = explode('.', $permission->name);
+            $action = end($segments);
+            $action = is_string($action) ? $action : '';
             if (in_array($action, $viewLike, true)) {
                 $this->assertTrue($userRole->hasPermissionTo($permission->name), "User role should have {$permission->name}");
             } else {

@@ -1,16 +1,19 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { FormPageLayout } from '@/components/forms/form-page-layout';
+import { FormSection } from '@/components/forms/form-section';
+import { FormField } from '@/components/forms/form-field';
+import { FormActionsBar } from '@/components/forms/form-actions-bar';
+import { UnsavedChangesBadge } from '@/components/forms/unsaved-changes-badge';
+import { ScrollToTopFab } from '@/components/forms/scroll-to-top-fab';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import AppLayout from '@/layouts/app-layout';
-import { Head, Link, useForm } from '@inertiajs/react';
-import { type BreadcrumbItem } from '@/types';
 import { toast } from '@/hooks/use-toast';
-import { customerValidation, validateCustomer, type ValidationErrors } from '@/lib/validation';
-import { useEffect, useRef, useState, type FormEventHandler } from 'react';
-import { AlertCircle, ArrowLeft, ArrowUp, Building2, CheckCircle, Info, Mail, Phone, Save, UserCircle } from 'lucide-react';
+import { customerValidation, validateCustomer } from '@/lib/validation';
+import { type BreadcrumbItem } from '@/types';
+import { Link, useForm } from '@inertiajs/react';
+import { ArrowLeft, Building2, CheckCircle, Info, Mail, Phone, Save, UserCircle } from 'lucide-react';
+import { type FormEventHandler, useEffect, useMemo, useRef, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -24,7 +27,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function CustomersCreate() {
-    const { data, setData, post, processing, errors } = useForm({
+    const { data, setData, post, processing, errors, clearErrors } = useForm<CustomerFormData>({
         name: '',
         contact_person: '',
         phone: '',
@@ -33,101 +36,102 @@ export default function CustomersCreate() {
         status: 'active',
     });
 
-    const [frontendErrors, setFrontendErrors] = useState<ValidationErrors>({});
+    const [frontendErrors, setFrontendErrors] = useState<Partial<Record<CustomerFormField, string>>>({});
     const [isDirty, setIsDirty] = useState(false);
     const [showScrollTop, setShowScrollTop] = useState(false);
-    const formRef = useRef<HTMLFormElement | null>(null);
+    const scrollContainerRef = useRef<HTMLFormElement | null>(null);
 
     useEffect(() => {
-        const container = formRef.current;
+        const container = scrollContainerRef.current;
         if (!container) {
             return;
         }
 
-        const handleScroll = () => {
-            setShowScrollTop(container.scrollTop > 240);
-        };
-
+        const handleScroll = () => setShowScrollTop(container.scrollTop > 240);
         handleScroll();
         container.addEventListener('scroll', handleScroll);
-
-        return () => {
-            container.removeEventListener('scroll', handleScroll);
-        };
+        return () => container.removeEventListener('scroll', handleScroll);
     }, []);
 
     useEffect(() => {
-        const messages = Object.values(errors)
-            .map((message) => (typeof message === 'string' ? message : String(message)));
+        const errorMessages = Object.values(errors)
+            .map((message) =>
+                typeof message === 'string' ? message : Array.isArray(message) ? message.join(', ') : String(message),
+            )
+            .filter(Boolean);
 
-        if (messages.length > 0) {
+        if (errorMessages.length > 0) {
             toast({
                 title: '⚠️ Validation Error',
-                description: messages.join(', '),
+                description: errorMessages.join(', '),
                 variant: 'destructive',
             });
         }
     }, [errors]);
 
-    const validateField = (field: string, value: string) => {
-        const fieldErrors = { ...frontendErrors };
-
-        if (field === 'name') {
-            const message = customerValidation.name(value);
-            if (message) {
-                fieldErrors.name = message;
-            } else {
-                delete fieldErrors.name;
-            }
-        }
-
-        if (field === 'email') {
-            const message = value ? customerValidation.email(value) : '';
-            if (message) {
-                fieldErrors.email = message;
-            } else {
-                delete fieldErrors.email;
-            }
-        }
-
-        if (field === 'phone') {
-            const message = value ? customerValidation.phone(value) : '';
-            if (message) {
-                fieldErrors.phone = message;
-            } else {
-                delete fieldErrors.phone;
-            }
-        }
-
-        if (field === 'status') {
-            if (!value) {
-                fieldErrors.status = 'Status is required';
-            } else if (!['active', 'inactive'].includes(value)) {
-                fieldErrors.status = 'Invalid status';
-            } else {
-                delete fieldErrors.status;
-            }
-        }
-
-        setFrontendErrors(fieldErrors);
+    const handleScrollToTop = () => {
+        scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    const handleFieldChange = (field: keyof typeof data, value: string) => {
+    const validateField = (field: CustomerFormField, value: string) => {
+        setFrontendErrors((prev) => {
+            const next = { ...prev };
+            let message = '';
+
+            switch (field) {
+                case 'name':
+                    message = customerValidation.name(value);
+                    break;
+                case 'email':
+                    message = value ? customerValidation.email(value) : '';
+                    break;
+                case 'phone':
+                    message = value ? customerValidation.phone(value) : '';
+                    break;
+                case 'status':
+                    if (!value) {
+                        message = 'Status is required';
+                    } else if (!['active', 'inactive'].includes(value)) {
+                        message = 'Invalid status';
+                    }
+                    break;
+                default:
+                    message = '';
+                    break;
+            }
+
+            if (message) {
+                next[field] = message;
+            } else {
+                delete next[field];
+            }
+
+            return next;
+        });
+    };
+
+    const handleFieldChange = (field: CustomerFormField, value: string) => {
         setData(field, value);
+        clearErrors(field);
         validateField(field, value);
         setIsDirty(true);
     };
 
-    const handleSubmit: FormEventHandler = (event) => {
+    const submit: FormEventHandler = (event) => {
         event.preventDefault();
 
-        const collectedErrors = validateCustomer(data);
+        const validationResult = validateCustomer(data);
+        const nextErrors: Partial<Record<CustomerFormField, string>> = { ...validationResult };
+
         if (!data.status) {
-            collectedErrors.status = 'Status is required';
+            nextErrors.status = 'Status is required';
+        } else if (!['active', 'inactive'].includes(data.status)) {
+            nextErrors.status = 'Invalid status';
         }
 
-        if (Object.keys(collectedErrors).length > 0) {
-            setFrontendErrors(collectedErrors);
+        setFrontendErrors(nextErrors);
+
+        if (Object.keys(nextErrors).length > 0) {
             toast({
                 title: '⚠️ Validation Error',
                 description: 'Please resolve the highlighted fields before submitting.',
@@ -138,283 +142,243 @@ export default function CustomersCreate() {
 
         post('/customers', {
             onSuccess: () => {
-                setIsDirty(false);
                 setFrontendErrors({});
+                setIsDirty(false);
+                clearErrors();
             },
         });
     };
 
-    const getFieldError = (field: keyof typeof data | 'status') => {
-        return (errors[field] as string | undefined) || (frontendErrors[field] as string | undefined) || '';
+    const getFieldError = (field: CustomerFormField): string => {
+        const backendError = errors[field];
+        if (backendError) {
+            return typeof backendError === 'string' ? backendError : String(backendError);
+        }
+
+        return frontendErrors[field] ?? '';
     };
 
-    const scrollToTop = () => {
-        formRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-    };
+    const nameError = useMemo(() => getFieldError('name'), [errors, frontendErrors, data.name]);
+    const statusError = useMemo(() => getFieldError('status'), [errors, frontendErrors, data.status]);
+    const addressError = useMemo(() => getFieldError('address'), [errors, frontendErrors, data.address]);
+    const contactPersonError = useMemo(() => getFieldError('contact_person'), [errors, frontendErrors, data.contact_person]);
+    const phoneError = useMemo(() => getFieldError('phone'), [errors, frontendErrors, data.phone]);
+    const emailError = useMemo(() => getFieldError('email'), [errors, frontendErrors, data.email]);
+    const hasErrors = Boolean(nameError || statusError || phoneError || emailError || contactPersonError || addressError);
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Create Customer" />
-            <div className="flex h-full flex-1 flex-col gap-6 overflow-hidden rounded-xl p-4">
-                <Card className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200/70 bg-white/95 text-card-foreground shadow-xl backdrop-blur-lg dark:border-slate-800/60 dark:bg-slate-900/70">
-                    <CardHeader className="px-6 pb-0">
-                        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                            <div className="flex items-start gap-4">
-                                <div className="rounded-xl bg-blue-100 p-2 text-blue-600 shadow-sm dark:bg-blue-900/30 dark:text-blue-400">
-                                    <UserCircle className="h-5 w-5" />
-                                </div>
-                                <div>
-                                    <CardTitle className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
-                                        Register New Customer
-                                    </CardTitle>
-                                    <CardDescription className="text-sm text-slate-600 dark:text-slate-400">
-                                        Capture the relationship profile, primary contacts, and operating status.
-                                    </CardDescription>
-                                </div>
-                            </div>
-                            <div className="flex flex-wrap items-center gap-3">
-                                <Button variant="ghost" size="sm" asChild>
-                                    <Link href="/customers">
-                                        <ArrowLeft className="mr-2 h-4 w-4" />
-                                        Back to Customers
-                                    </Link>
-                                </Button>
-                                {isDirty && (
-                                    <div className="flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1.5 text-sm font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-                                        <Save className="h-3 w-3" />
-                                        Unsaved Changes
-                                    </div>
-                                )}
-                                <div className="flex items-center gap-2 rounded-full bg-blue-100 px-3 py-1.5 text-sm font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
-                                    <div className="h-2 w-2 animate-pulse rounded-full bg-blue-500"></div>
-                                    CRM Intake
-                                </div>
-                            </div>
-                        </div>
-                    </CardHeader>
-
-                    <CardContent className="flex flex-1 flex-col overflow-hidden p-0">
-                        <form
-                            ref={formRef}
-                            onSubmit={handleSubmit}
-                            className="flex flex-1 flex-col gap-8 overflow-y-auto p-6 pb-24"
-                            style={{ minHeight: 0 }}
-                        >
-                            <section className="space-y-5 rounded-xl border border-slate-200/70 bg-white/80 p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/40">
-                                <div className="flex items-center gap-3">
-                                    <div className="rounded-lg bg-blue-100 p-2 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
-                                        <Info className="h-4 w-4" />
-                                    </div>
-                                    <div>
-                                        <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Relationship Profile</h2>
-                                        <p className="text-sm text-muted-foreground">Core identifiers and client health metadata.</p>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="name" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                                            Customer Name <span className="text-red-500">*</span>
-                                        </Label>
-                                        <div className="relative">
-                                            <Building2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                                            <Input
-                                                id="name"
-                                                value={data.name}
-                                                onChange={(event) => handleFieldChange('name', event.target.value)}
-                                                placeholder="e.g., Horizon Logistics PLC"
-                                                className={`pl-9 transition-all duration-200 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 ${getFieldError('name') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : 'focus:ring-blue-500/20 focus:border-blue-500 hover:border-slate-400 dark:hover:border-slate-500'}`}
-                                            />
-                                        </div>
-                                        {getFieldError('name') && (
-                                            <p className="flex items-center gap-1 text-sm text-red-500">
-                                                <AlertCircle className="h-3 w-3" />
-                                                {getFieldError('name')}
-                                            </p>
-                                        )}
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <Label htmlFor="status" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                                            Status <span className="text-red-500">*</span>
-                                        </Label>
-                                        <Select
-                                            value={data.status}
-                                            onValueChange={(value) => handleFieldChange('status', value)}
-                                        >
-                                            <SelectTrigger className={`transition-all duration-200 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 focus:ring-blue-500/20 focus:border-blue-500 ${getFieldError('status') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}>
-                                                <SelectValue placeholder="Select status" />
-                                            </SelectTrigger>
-                                            <SelectContent className="z-50 bg-white shadow-lg dark:bg-slate-800">
-                                                <SelectItem value="active" className="hover:bg-slate-100 focus:bg-slate-100 dark:hover:bg-slate-700 dark:focus:bg-slate-700">Active</SelectItem>
-                                                <SelectItem value="inactive" className="hover:bg-slate-100 focus:bg-slate-100 dark:hover:bg-slate-700 dark:focus:bg-slate-700">Inactive</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                        {getFieldError('status') && (
-                                            <p className="flex items-center gap-1 text-sm text-red-500">
-                                                <AlertCircle className="h-3 w-3" />
-                                                {getFieldError('status')}
-                                            </p>
-                                        )}
-                                    </div>
-
-                                    <div className="space-y-2 md:col-span-2">
-                                        <Label htmlFor="address" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                                            Headquarters / Billing Address
-                                        </Label>
-                                        <Textarea
-                                            id="address"
-                                            value={data.address}
-                                            onChange={(event) => handleFieldChange('address', event.target.value)}
-                                            placeholder="Street, city, and any billing instructions"
-                                            className="min-h-[96px] resize-y bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
-                                        />
-                                        {getFieldError('address') && (
-                                            <p className="flex items-center gap-1 text-sm text-red-500">
-                                                <AlertCircle className="h-3 w-3" />
-                                                {getFieldError('address')}
-                                            </p>
-                                        )}
-                                    </div>
-                                </div>
-                            </section>
-
-                            <section className="space-y-5 rounded-xl border border-slate-200/70 bg-white/80 p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/40">
-                                <div className="flex items-center gap-3">
-                                    <div className="rounded-lg bg-emerald-100 p-2 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
-                                        <Phone className="h-4 w-4" />
-                                    </div>
-                                    <div>
-                                        <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Primary Contacts</h2>
-                                        <p className="text-sm text-muted-foreground">Keep outreach routing and channel hygiene current.</p>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="contact_person" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                                            Relationship Owner
-                                        </Label>
-                                        <div className="relative">
-                                            <UserCircle className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                                            <Input
-                                                id="contact_person"
-                                                value={data.contact_person}
-                                                onChange={(event) => handleFieldChange('contact_person', event.target.value)}
-                                                placeholder="e.g., Selam Tesfaye"
-                                                className="pl-9 transition-all duration-200 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 focus:ring-blue-500/20 focus:border-blue-500 hover:border-slate-400 dark:hover:border-slate-500"
-                                            />
-                                        </div>
-                                        {getFieldError('contact_person') && (
-                                            <p className="flex items-center gap-1 text-sm text-red-500">
-                                                <AlertCircle className="h-3 w-3" />
-                                                {getFieldError('contact_person')}
-                                            </p>
-                                        )}
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <Label htmlFor="phone" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                                            Phone Number
-                                        </Label>
-                                        <div className="relative">
-                                            <Phone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                                            <Input
-                                                id="phone"
-                                                type="tel"
-                                                value={data.phone}
-                                                onChange={(event) => handleFieldChange('phone', event.target.value)}
-                                                placeholder="e.g., +251 91 123 4567"
-                                                className={`pl-9 transition-all duration-200 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 ${getFieldError('phone') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : 'focus:ring-blue-500/20 focus:border-blue-500 hover:border-slate-400 dark:hover:border-slate-500'}`}
-                                            />
-                                        </div>
-                                        {getFieldError('phone') && (
-                                            <p className="flex items-center gap-1 text-sm text-red-500">
-                                                <AlertCircle className="h-3 w-3" />
-                                                {getFieldError('phone')}
-                                            </p>
-                                        )}
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <Label htmlFor="email" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                                            Email Address
-                                        </Label>
-                                        <div className="relative">
-                                            <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                                            <Input
-                                                id="email"
-                                                type="email"
-                                                value={data.email}
-                                                onChange={(event) => handleFieldChange('email', event.target.value)}
-                                                placeholder="e.g., partnerships@horizon-logistics.com"
-                                                className={`pl-9 transition-all duration-200 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 ${getFieldError('email') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : 'focus:ring-blue-500/20 focus:border-blue-500 hover:border-slate-400 dark:hover:border-slate-500'}`}
-                                            />
-                                        </div>
-                                        {getFieldError('email') && (
-                                            <p className="flex items-center gap-1 text-sm text-red-500">
-                                                <AlertCircle className="h-3 w-3" />
-                                                {getFieldError('email')}
-                                            </p>
-                                        )}
-                                    </div>
-
-                                </div>
-                            </section>
-
-                            <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-slate-200/70 bg-white/80 px-6 py-5 shadow-sm dark:border-slate-800 dark:bg-slate-900/40">
-                                <div className="flex items-center gap-4">
-                                    <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-                                        <span className="text-red-500">*</span>
-                                        <span>Required for onboarding</span>
-                                    </div>
-                                    {isDirty && (
-                                        <div className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400">
-                                            <Save className="h-3 w-3" />
-                                            <span>Unsaved changes detected</span>
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="flex gap-3">
-                                    <Button type="button" variant="outline" asChild className="border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700">
-                                        <Link href="/customers">Cancel</Link>
-                                    </Button>
-                                    <Button
-                                        type="submit"
-                                        disabled={processing || Object.keys(frontendErrors).length > 0}
-                                        className="min-w-[150px] bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg transition-all duration-200 hover:from-blue-700 hover:to-blue-800 hover:shadow-xl"
-                                    >
-                                        {processing ? (
-                                            <>
-                                                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white"></div>
-                                                Saving...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <CheckCircle className="mr-2 h-4 w-4" />
-                                                Create Customer
-                                            </>
-                                        )}
-                                    </Button>
-                                </div>
-                            </div>
-                        </form>
-                    </CardContent>
-                </Card>
-
-                {showScrollTop && (
-                    <Button
-                        type="button"
-                        onClick={scrollToTop}
-                        className="fixed bottom-6 right-6 z-50 shadow-lg"
-                        variant="secondary"
-                        aria-label="Scroll to top"
-                    >
-                        <ArrowUp className="h-4 w-4" />
+        <FormPageLayout
+            title="Register New Customer"
+            headTitle="Create Customer"
+            description="Capture the relationship profile, primary contacts, and operating status."
+            breadcrumbs={breadcrumbs}
+            icon={<UserCircle className="h-5 w-5" />}
+            headerAside={
+                <>
+                    <Button variant="ghost" size="sm" asChild>
+                        <Link href="/customers">
+                            <ArrowLeft className="mr-2 h-4 w-4" />
+                            Back to Customers
+                        </Link>
                     </Button>
-                )}
-            </div>
-        </AppLayout>
+                    {isDirty && <UnsavedChangesBadge />}
+                    <div className="flex items-center gap-2 rounded-full bg-blue-100 px-3 py-1.5 text-sm font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                        <div className="h-2 w-2 animate-pulse rounded-full bg-blue-500"></div>
+                        CRM Intake
+                    </div>
+                </>
+            }
+        >
+            <form
+                ref={scrollContainerRef}
+                onSubmit={submit}
+                className="flex flex-1 flex-col gap-8 overflow-y-auto p-6 pb-24"
+                style={{ minHeight: 0 }}
+            >
+                <FormSection
+                    title="Relationship Profile"
+                    description="Core identifiers and client health metadata."
+                    icon={
+                        <div className="rounded-lg bg-blue-100 p-2 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+                            <Info className="h-4 w-4" />
+                        </div>
+                    }
+                    contentClassName="gap-6 md:grid-cols-2"
+                >
+                    <FormField
+                        id="name"
+                        label="Customer Name"
+                        required
+                        tooltip="Provide the registered business or trading name."
+                        error={nameError}
+                    >
+                        <div className="relative">
+                            <Building2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                            <Input
+                                id="name"
+                                value={data.name}
+                                onChange={(event) => handleFieldChange('name', event.target.value)}
+                                placeholder="e.g., Horizon Logistics PLC"
+                                className={`pl-9 transition-all duration-200 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 ${nameError ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : 'focus:border-blue-500 focus:ring-blue-500/20 hover:border-slate-400 dark:hover:border-slate-500'}`}
+                                autoComplete="off"
+                            />
+                        </div>
+                    </FormField>
+
+                    <FormField
+                        id="status"
+                        label="Status"
+                        required
+                        tooltip="Active customers appear in operational workflows."
+                        error={statusError}
+                    >
+                        <Select value={data.status} onValueChange={(value) => handleFieldChange('status', value)}>
+                            <SelectTrigger
+                                className={`transition-all duration-200 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 focus:border-blue-500 focus:ring-blue-500/20 ${statusError ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}
+                            >
+                                <SelectValue placeholder="Select status" />
+                            </SelectTrigger>
+                            <SelectContent className="z-50 bg-white shadow-lg dark:bg-slate-800">
+                                <SelectItem value="active" className="hover:bg-slate-100 focus:bg-slate-100 dark:hover:bg-slate-700 dark:focus:bg-slate-700">
+                                    Active
+                                </SelectItem>
+                                <SelectItem value="inactive" className="hover:bg-slate-100 focus:bg-slate-100 dark:hover:bg-slate-700 dark:focus:bg-slate-700">
+                                    Inactive
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </FormField>
+
+                    <FormField
+                        id="address"
+                        label="Headquarters / Billing Address"
+                        helperText="Optional. Street, city, and any billing instructions."
+                        error={addressError}
+                        className="md:col-span-2"
+                    >
+                        <Textarea
+                            id="address"
+                            value={data.address}
+                            onChange={(event) => handleFieldChange('address', event.target.value)}
+                            placeholder="Street, city, and any billing instructions"
+                            rows={4}
+                            className="min-h-[96px] resize-y transition-all duration-200 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 focus:border-blue-500 focus:ring-blue-500/20"
+                        />
+                    </FormField>
+                </FormSection>
+
+                <FormSection
+                    title="Primary Contacts"
+                    description="Maintain outreach routing and channel hygiene."
+                    icon={
+                        <div className="rounded-lg bg-emerald-100 p-2 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
+                            <Phone className="h-4 w-4" />
+                        </div>
+                    }
+                    contentClassName="gap-6 md:grid-cols-2"
+                >
+                    <FormField
+                        id="contact_person"
+                        label="Relationship Owner"
+                        helperText="Optional. Primary point of contact on the customer side."
+                        error={contactPersonError}
+                    >
+                        <div className="relative">
+                            <UserCircle className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                            <Input
+                                id="contact_person"
+                                value={data.contact_person}
+                                onChange={(event) => handleFieldChange('contact_person', event.target.value)}
+                                placeholder="e.g., Selam Tesfaye"
+                                className="pl-9 transition-all duration-200 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 focus:border-blue-500 focus:ring-blue-500/20 hover:border-slate-400 dark:hover:border-slate-500"
+                            />
+                        </div>
+                    </FormField>
+
+                    <FormField id="phone" label="Phone Number" helperText="Optional. Include country code." error={phoneError}>
+                        <div className="relative">
+                            <Phone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                            <Input
+                                id="phone"
+                                type="tel"
+                                value={data.phone}
+                                onChange={(event) => handleFieldChange('phone', event.target.value)}
+                                placeholder="e.g., +251 91 123 4567"
+                                className={`pl-9 transition-all duration-200 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 ${phoneError ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : 'focus:border-blue-500 focus:ring-blue-500/20 hover:border-slate-400 dark:hover:border-slate-500'}`}
+                            />
+                        </div>
+                    </FormField>
+
+                    <FormField id="email" label="Email Address" helperText="Optional. Used for notifications." error={emailError}>
+                        <div className="relative">
+                            <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                            <Input
+                                id="email"
+                                type="email"
+                                value={data.email}
+                                onChange={(event) => handleFieldChange('email', event.target.value)}
+                                placeholder="e.g., partnerships@horizon-logistics.com"
+                                className={`pl-9 transition-all duration-200 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 ${emailError ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : 'focus:border-blue-500 focus:ring-blue-500/20 hover:border-slate-400 dark:hover:border-slate-500'}`}
+                                autoComplete="off"
+                            />
+                        </div>
+                    </FormField>
+                </FormSection>
+
+                <FormActionsBar
+                    left={
+                        <>
+                            <span className="flex items-center gap-2">
+                                <span className="text-red-500">*</span>
+                                Required fields for onboarding
+                            </span>
+                            {isDirty && (
+                                <span className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                                    <Save className="h-3 w-3" />
+                                    Unsaved changes detected
+                                </span>
+                            )}
+                        </>
+                    }
+                    right={
+                        <>
+                            <Button type="button" variant="outline" asChild className="border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700">
+                                <Link href="/customers">Cancel</Link>
+                            </Button>
+                            <Button
+                                type="submit"
+                                disabled={processing || hasErrors || !data.name.trim()}
+                                className="min-w-[150px] bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg transition-all duration-200 hover:from-blue-700 hover:to-blue-800 hover:shadow-xl"
+                            >
+                                {processing ? (
+                                    <>
+                                        <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white"></div>
+                                        Saving...
+                                    </>
+                                ) : (
+                                    <>
+                                        <CheckCircle className="mr-2 h-4 w-4" />
+                                        Create Customer
+                                    </>
+                                )}
+                            </Button>
+                        </>
+                    }
+                />
+            </form>
+            <ScrollToTopFab visible={showScrollTop} onClick={handleScrollToTop} />
+        </FormPageLayout>
     );
 }
+
+type CustomerFormData = {
+    name: string;
+    contact_person: string;
+    phone: string;
+    email: string;
+    address: string;
+    status: string;
+};
+
+type CustomerFormField = keyof CustomerFormData;
 

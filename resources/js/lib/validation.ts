@@ -276,6 +276,12 @@ export const fuelValidation = {
     return ''
   },
 
+  fuel_station: (value: string) => {
+    if (!value || !value.trim()) return 'Fuel station is required'
+    if (value.length > 255) return 'Fuel station cannot exceed 255 characters'
+    return ''
+  },
+
   fuel_quantity_liters: (value: string) => {
     if (!value) return 'Fuel quantity is required'
     const num = parseFloat(value)
@@ -1118,6 +1124,7 @@ export function validateFuel(data: any): ValidationErrors {
   const errors: ValidationErrors = {}
   errors.driver_truck_id = fuelValidation.driver_truck_id(data.driver_truck_id)
   errors.fuel_date = fuelValidation.fuel_date(data.fuel_date)
+  errors.fuel_station = fuelValidation.fuel_station(data.fuel_station)
   errors.fuel_quantity_liters = fuelValidation.fuel_quantity_liters(data.fuel_quantity_liters)
   errors.fuel_price_per_liter = fuelValidation.fuel_price_per_liter(data.fuel_price_per_liter)
   errors.fuel_type = fuelValidation.fuel_type(data.fuel_type)

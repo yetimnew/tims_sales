@@ -1,65 +1,57 @@
-import { useEffect, useMemo, useRef, useState, type FormEventHandler } from 'react';
-import { Head, Link, useForm } from '@inertiajs/react';
-import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem } from '@/types';
-import { validateDriverSafety, type ValidationErrors } from '@/lib/validation';
-import { useToast } from '@/hooks/use-toast';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
+import { FormActionsBar } from '@/components/forms/form-actions-bar';
+import { FormField } from '@/components/forms/form-field';
+import { FormPageLayout } from '@/components/forms/form-page-layout';
+import { FormSection } from '@/components/forms/form-section';
+import { ScrollToTopFab } from '@/components/forms/scroll-to-top-fab';
+import { UnsavedChangesBadge } from '@/components/forms/unsaved-changes-badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { CardDescription } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { toast } from '@/hooks/use-toast';
+import { validateDriverSafety } from '@/lib/validation';
+import { type BreadcrumbItem } from '@/types';
+import { Link, useForm } from '@inertiajs/react';
+import type { FormEventHandler } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import type { LucideIcon } from 'lucide-react';
 import {
-    ShieldAlert,
-    ShieldCheck,
     AlertCircle,
     AlertTriangle,
+    ArrowLeft,
     ClipboardList,
-    Users,
     MapPin,
     NotebookPen,
-    Save,
     Shield,
-    ArrowUp,
-    ArrowLeft,
-    SquarePen,
+    ShieldAlert,
+    ShieldCheck,
+    ShieldPlus,
+    Users,
 } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Driver Safety',
-        href: '/driver-safety',
-    },
-    {
-        title: 'Edit',
-        href: '#',
-    },
-];
-
-interface Driver {
+type DriverSummary = {
     id: number;
     name: string;
-}
+};
 
-interface SafetyRecord {
+type DriverSafetyRecord = {
     id: number;
-    driver_id: number;
+    driver_id: number | null;
     incident_date: string;
     incident_type: string;
-    description: string;
     severity: string;
-    damage_cost?: number;
-    location?: string;
-    resolution?: string;
-}
+    description: string;
+    damage_cost?: number | null;
+    location?: string | null;
+    resolution?: string | null;
+};
 
 interface DriverSafetyEditProps {
-    driverSafety: SafetyRecord;
-    drivers: Driver[];
+    driverSafety: DriverSafetyRecord;
+    drivers: DriverSummary[];
 }
 
 interface IncidentOption {
@@ -77,23 +69,55 @@ interface SeverityOption {
     icon: LucideIcon;
 }
 
+type DriverSafetyFormData = {
+    driver_id: string;
+    incident_date: string;
+    incident_type: string;
+    severity: string;
+    description: string;
+    damage_cost: string;
+    location: string;
+    resolution: string;
+};
+
+type DriverSafetyFormField = keyof DriverSafetyFormData;
+
+const formatDateForInput = (value: string): string => {
+    if (!value) {
+        return '';
+    }
+
+    if (!value.includes('T')) {
+        return value;
+    }
+
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.valueOf())) {
+        return value;
+    }
+
+    return parsed.toISOString().split('T')[0];
+};
+
+const areFormValuesEqual = (left: DriverSafetyFormData, right: DriverSafetyFormData): boolean => JSON.stringify(left) === JSON.stringify(right);
+
 const incidentTypes: IncidentOption[] = [
     {
         value: 'accident',
         label: 'Accident',
-        description: 'Collision, rollover, or material damage event.',
+        description: 'Collision, rollover, or damage event requiring investigation.',
         icon: ShieldAlert,
     },
     {
         value: 'violation',
         label: 'Violation',
-        description: 'Traffic or policy breach recorded against the driver.',
+        description: 'Traffic or safety policy breach recorded against the driver.',
         icon: AlertTriangle,
     },
     {
         value: 'warning',
         label: 'Warning',
-        description: 'Behaviour flagged for monitoring or coaching.',
+        description: 'Behaviour flagged for coaching or future follow-up.',
         icon: ClipboardList,
     },
 ];
@@ -109,146 +133,175 @@ const severityLevels: SeverityOption[] = [
     {
         value: 'major',
         label: 'Major',
-        description: 'Significant disruption with coaching recommended.',
+        description: 'Significant disruption with recommended coaching and review.',
         tone: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400',
         icon: AlertTriangle,
     },
     {
         value: 'critical',
         label: 'Critical',
-        description: 'Immediate escalation required to protect assets.',
+        description: 'Immediate escalation required to protect drivers and assets.',
         tone: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400',
         icon: ShieldAlert,
     },
 ];
 
+const breadcrumbs = (record: DriverSafetyRecord): BreadcrumbItem[] => [
+    { title: 'Driver Safety', href: '/driver-safety' },
+    { title: `Record #${record.id}`, href: `/driver-safety/${record.id}` },
+    { title: 'Edit', href: `/driver-safety/${record.id}/edit` },
+];
+
 export default function DriverSafetyEdit({ driverSafety, drivers }: DriverSafetyEditProps) {
-    const initialValues = useMemo(() => ({
-        driver_id: driverSafety.driver_id ? String(driverSafety.driver_id) : '',
-        incident_date: driverSafety.incident_date,
-        incident_type: driverSafety.incident_type,
-        severity: driverSafety.severity,
-        description: driverSafety.description ?? '',
-        damage_cost: driverSafety.damage_cost !== undefined && driverSafety.damage_cost !== null
-            ? String(driverSafety.damage_cost)
-            : '',
-        location: driverSafety.location ?? '',
-        resolution: driverSafety.resolution ?? '',
-    }), [driverSafety]);
+    const initialFormData = useMemo<DriverSafetyFormData>(
+        () => ({
+            driver_id: driverSafety.driver_id ? String(driverSafety.driver_id) : '',
+            incident_date: formatDateForInput(driverSafety.incident_date),
+            incident_type: driverSafety.incident_type || incidentTypes[0]?.value || 'accident',
+            severity: driverSafety.severity || severityLevels[0]?.value || 'minor',
+            description: driverSafety.description ?? '',
+            damage_cost:
+                driverSafety.damage_cost !== undefined && driverSafety.damage_cost !== null
+                    ? String(driverSafety.damage_cost)
+                    : '',
+            location: driverSafety.location ?? '',
+            resolution: driverSafety.resolution ?? '',
+        }),
+        [driverSafety],
+    );
 
-    const { data, setData, put, processing, errors } = useForm({ ...initialValues });
-    const { toast } = useToast();
-    const [frontendErrors, setFrontendErrors] = useState<ValidationErrors>({});
-    const [showScrollTop, setShowScrollTop] = useState(false);
+    const initialDataRef = useRef<DriverSafetyFormData>(initialFormData);
+    const formRef = useRef<HTMLFormElement | null>(null);
+
+    const { data, setData, setDefaults, put, processing, errors, clearErrors } = useForm<DriverSafetyFormData>(initialFormData);
+
+    const [frontendErrors, setFrontendErrors] = useState<Partial<Record<DriverSafetyFormField, string>>>({});
     const [isDirty, setIsDirty] = useState(false);
-    const scrollContainerRef = useRef<HTMLFormElement | null>(null);
+    const [showScrollTop, setShowScrollTop] = useState(false);
 
-    const mergedErrors = { ...frontendErrors, ...errors } as Record<string, string | string[]>;
+    useEffect(() => {
+        const nextDefaults = { ...initialFormData };
+        setDefaults(nextDefaults);
+        setData(() => ({ ...nextDefaults }));
+        initialDataRef.current = { ...nextDefaults };
+        setFrontendErrors({});
+        setIsDirty(false);
+    }, [initialFormData, setDefaults, setData]);
+
+    useEffect(() => {
+        const container = formRef.current;
+        if (!container) {
+            return;
+        }
+
+        const handleScroll = () => setShowScrollTop(container.scrollTop > 240);
+        handleScroll();
+        container.addEventListener('scroll', handleScroll);
+        return () => container.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    useEffect(() => {
+        const errorMessages = Object.values(errors)
+            .map((message) => (typeof message === 'string' ? message : String(message)))
+            .filter(Boolean);
+
+        if (errorMessages.length > 0) {
+            toast({
+                title: '⚠️ Validation Error',
+                description: errorMessages.join(', '),
+                variant: 'destructive',
+            });
+        }
+    }, [errors]);
+
+    const backendErrors = useMemo(
+        () =>
+            Object.entries(errors).reduce<Partial<Record<DriverSafetyFormField, string>>>((acc, [key, value]) => {
+                const message = typeof value === 'string' ? value : value ? String(value) : '';
+                if (message) {
+                    acc[key as DriverSafetyFormField] = message;
+                }
+                return acc;
+            }, {}),
+        [errors],
+    );
+
+    const fieldErrors = useMemo(
+        () => ({
+            ...frontendErrors,
+            ...backendErrors,
+        }),
+        [frontendErrors, backendErrors],
+    );
 
     const selectedIncident = useMemo(
-        () => incidentTypes.find((item) => item.value === data.incident_type),
+        () => incidentTypes.find((item) => item.value === data.incident_type) ?? incidentTypes[0],
         [data.incident_type],
     );
 
     const selectedSeverity = useMemo(
-        () => severityLevels.find((item) => item.value === data.severity),
+        () => severityLevels.find((item) => item.value === data.severity) ?? severityLevels[0],
         [data.severity],
     );
 
-    const IncidentIcon = selectedIncident?.icon ?? ShieldAlert;
-    const SeverityIcon = selectedSeverity?.icon ?? ShieldCheck;
+    const IncidentIcon = selectedIncident.icon;
+    const SeverityIcon = selectedSeverity.icon;
 
     const estimatedDamageCost = useMemo(() => {
         if (!data.damage_cost) {
             return null;
         }
         const value = Number.parseFloat(data.damage_cost);
-        if (Number.isNaN(value) || !Number.isFinite(value)) {
-            return null;
-        }
-        return value;
+        return Number.isFinite(value) ? value : null;
     }, [data.damage_cost]);
 
-    useEffect(() => {
-        if (Object.keys(errors).length === 0) {
-            return;
-        }
-        const message = Object.values(errors)
-            .map((value) => (Array.isArray(value) ? value.join(', ') : value))
-            .filter(Boolean)
-            .join(', ');
-
-        toast({
-            variant: 'destructive',
-            title: 'Validation error',
-            description: message || 'Please address the highlighted fields before saving.',
-        });
-    }, [errors, toast]);
-
-    useEffect(() => {
-        const container = scrollContainerRef.current;
-        if (!container) {
-            return;
-        }
-
-        const handleScroll = () => {
-            setShowScrollTop(container.scrollTop > 240);
-        };
-
-        handleScroll();
-        container.addEventListener('scroll', handleScroll);
-
-        return () => {
-            container.removeEventListener('scroll', handleScroll);
-        };
-    }, []);
-
     const handleScrollToTop = () => {
-        scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+        formRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    const validateField = (fieldName: keyof typeof data, value: string) => {
-        const payload = { ...data, [fieldName]: value };
-        const validationErrors = validateDriverSafety(payload);
-        const fieldError = validationErrors[fieldName];
+    const validateField = (field: DriverSafetyFormField, value: string) => {
+        const result = validateDriverSafety({ ...data, [field]: value });
+        const message = result[field];
 
         setFrontendErrors((prev) => {
             const next = { ...prev };
-            if (fieldError) {
-                next[fieldName] = fieldError;
+            if (message) {
+                next[field] = message;
             } else {
-                delete next[fieldName];
+                delete next[field];
             }
             return next;
         });
     };
 
-    const handleFieldChange = (fieldName: keyof typeof data, value: string, shouldValidate = true) => {
-        const updated = { ...data, [fieldName]: value };
-        setData(fieldName, value);
-        setIsDirty(Object.entries(initialValues).some(([key, initialValue]) => updated[key as keyof typeof updated] !== initialValue));
+    const handleFieldChange = (field: DriverSafetyFormField, value: string, options?: { validate?: boolean }) => {
+        const nextData: DriverSafetyFormData = { ...data, [field]: value };
+        setData(() => nextData);
+        clearErrors(field);
 
-        if (shouldValidate) {
-            validateField(fieldName, value);
+        if (options?.validate ?? true) {
+            validateField(field, value);
         } else {
             setFrontendErrors((prev) => {
                 const next = { ...prev };
-                delete next[fieldName];
+                delete next[field];
                 return next;
             });
         }
+
+        setIsDirty(!areFormValuesEqual(nextData, initialDataRef.current));
     };
 
-    const submit: FormEventHandler = (event) => {
+    const handleSubmit: FormEventHandler<HTMLFormElement> = (event) => {
         event.preventDefault();
 
-        const validationResult = validateDriverSafety({ ...data });
+        const validationResult = validateDriverSafety(data);
         if (Object.keys(validationResult).length > 0) {
-            setFrontendErrors(validationResult);
+            setFrontendErrors(validationResult as Partial<Record<DriverSafetyFormField, string>>);
             toast({
-                variant: 'destructive',
-                title: 'Validation error',
+                title: '⚠️ Validation Error',
                 description: 'Please resolve the highlighted issues before saving.',
+                variant: 'destructive',
             });
             return;
         }
@@ -256,428 +309,342 @@ export default function DriverSafetyEdit({ driverSafety, drivers }: DriverSafety
         put(`/driver-safety/${driverSafety.id}`, {
             preserveScroll: true,
             onSuccess: () => {
+                const nextDefaults = { ...data };
+                setDefaults(nextDefaults);
+                initialDataRef.current = nextDefaults;
                 setFrontendErrors({});
                 setIsDirty(false);
+                clearErrors();
                 toast({
-                    title: 'Safety record updated',
-                    description: 'The incident details were saved successfully.',
+                    title: '✅ Safety Record Updated',
+                    description: 'The driver safety incident has been updated.',
                 });
+            },
+            onError: (pageErrors) => {
+                setFrontendErrors((prev) => ({
+                    ...prev,
+                    ...(pageErrors as Partial<Record<DriverSafetyFormField, string>>),
+                }));
             },
         });
     };
 
-    const getFieldError = (fieldName: keyof typeof data) => {
-        const value = mergedErrors[fieldName];
-        if (!value) {
-            return '';
-        }
-        return Array.isArray(value) ? value.join(', ') : value;
-    };
-
-    const hasErrors = Object.keys(mergedErrors).length > 0;
+    const getFieldError = (field: DriverSafetyFormField): string => fieldErrors[field] ?? '';
+    const hasErrors = Object.values(fieldErrors).some(Boolean);
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={`Edit Safety Record #${driverSafety.id}`} />
-            <div className="flex h-full flex-1 flex-col gap-6 overflow-hidden rounded-xl p-4">
-                <Card className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200/70 bg-white/95 text-card-foreground shadow-xl backdrop-blur-lg dark:border-slate-800/60 dark:bg-slate-900/70">
-                    <CardHeader className="px-6 pb-0">
-                        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                            <div className="flex items-start gap-4">
-                                <div className="rounded-xl bg-rose-100 p-2 text-rose-600 shadow-sm dark:bg-rose-900/30 dark:text-rose-300">
-                                    <SquarePen className="h-5 w-5" />
+        <FormPageLayout
+            title="Update Driver Safety Incident"
+            headTitle={`Safety Record #${driverSafety.id}`}
+            description="Refine the documented details to keep your safety insights accurate and actionable."
+            breadcrumbs={breadcrumbs(driverSafety)}
+            icon={<ShieldAlert className="h-5 w-5" />}
+            headerAside={
+                <>
+                    <Button variant="ghost" size="sm" asChild>
+                        <Link href={`/driver-safety/${driverSafety.id}`}>
+                            <ArrowLeft className="mr-2 h-4 w-4" />
+                            Back to Record
+                        </Link>
+                    </Button>
+                    {isDirty && <UnsavedChangesBadge />}
+                    {selectedSeverity && (
+                        <div className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium ${selectedSeverity.tone}`}>
+                            <SeverityIcon className="h-3 w-3" />
+                            {selectedSeverity.label} Severity
+                        </div>
+                    )}
+                </>
+            }
+        >
+            {hasErrors && (
+                <div className="px-6 pt-6">
+                    <Alert variant="destructive">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>Please resolve the highlighted fields before submitting the form.</AlertDescription>
+                    </Alert>
+                </div>
+            )}
+
+            <form
+                ref={formRef}
+                onSubmit={handleSubmit}
+                className="flex flex-1 flex-col gap-8 overflow-y-auto p-6 pb-24"
+                style={{ minHeight: 0 }}
+            >
+                <FormSection
+                    title="Incident Overview"
+                    description="Confirm who was involved and the key incident attributes."
+                    icon={
+                        <div className="rounded-lg bg-rose-100 p-2 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300">
+                            <Shield className="h-4 w-4" />
+                        </div>
+                    }
+                    contentClassName="gap-6 md:grid-cols-2"
+                >
+                    <FormField
+                        id="driver_id"
+                        label="Driver"
+                        required
+                        helperText="Only active drivers are listed."
+                        error={getFieldError('driver_id')}
+                    >
+                        <Select value={data.driver_id} onValueChange={(value) => handleFieldChange('driver_id', value)}>
+                            <SelectTrigger
+                                id="driver_id"
+                                className={`border-slate-300 focus:border-rose-500 focus:ring-rose-500/20 dark:border-slate-700 dark:focus:border-rose-400 ${getFieldError('driver_id') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20 dark:border-red-500' : ''}`}
+                            >
+                                <SelectValue placeholder="Select driver" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {drivers.map((driver) => (
+                                    <SelectItem key={driver.id} value={String(driver.id)}>
+                                        <div className="flex items-center gap-2">
+                                            <Users className="h-3.5 w-3.5 text-slate-500" />
+                                            <span>{driver.name}</span>
+                                        </div>
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </FormField>
+
+                    <FormField id="incident_date" label="Incident Date" required error={getFieldError('incident_date')}>
+                        <Input
+                            id="incident_date"
+                            name="incident_date"
+                            type="date"
+                            value={data.incident_date}
+                            onChange={(event) => handleFieldChange('incident_date', event.target.value)}
+                            className={`border-slate-300 focus:border-rose-500 focus:ring-rose-500/20 dark:border-slate-700 dark:focus:border-rose-400 ${getFieldError('incident_date') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20 dark:border-red-500' : ''}`}
+                        />
+                    </FormField>
+
+                    <FormField id="incident_type" label="Incident Type" required error={getFieldError('incident_type')}>
+                        <Select value={data.incident_type} onValueChange={(value) => handleFieldChange('incident_type', value)}>
+                            <SelectTrigger
+                                id="incident_type"
+                                className={`border-slate-300 focus:border-rose-500 focus:ring-rose-500/20 dark:border-slate-700 dark:focus:border-rose-400 ${getFieldError('incident_type') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20 dark:border-red-500' : ''}`}
+                            >
+                                <SelectValue placeholder="Select incident type" />
+                            </SelectTrigger>
+                            <SelectContent className="max-h-60">
+                                {incidentTypes.map((item) => (
+                                    <SelectItem key={item.value} value={item.value} className="py-2">
+                                        <div className="flex items-start gap-3 text-left">
+                                            <item.icon className="mt-0.5 h-4 w-4 text-slate-500" />
+                                            <div>
+                                                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{item.label}</span>
+                                                <CardDescription className="text-xs text-muted-foreground">{item.description}</CardDescription>
+                                            </div>
+                                        </div>
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </FormField>
+
+                    <FormField id="severity" label="Severity" required error={getFieldError('severity')}>
+                        <Select value={data.severity} onValueChange={(value) => handleFieldChange('severity', value)}>
+                            <SelectTrigger
+                                id="severity"
+                                className={`border-slate-300 focus:border-rose-500 focus:ring-rose-500/20 dark:border-slate-700 dark:focus:border-rose-400 ${getFieldError('severity') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20 dark:border-red-500' : ''}`}
+                            >
+                                <SelectValue placeholder="Select severity" />
+                            </SelectTrigger>
+                            <SelectContent className="max-h-56">
+                                {severityLevels.map((item) => (
+                                    <SelectItem key={item.value} value={item.value} className="py-2">
+                                        <div className="flex items-start gap-3 text-left">
+                                            <item.icon className="mt-0.5 h-4 w-4 text-slate-500" />
+                                            <div>
+                                                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{item.label}</span>
+                                                <CardDescription className="text-xs text-muted-foreground">{item.description}</CardDescription>
+                                            </div>
+                                        </div>
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </FormField>
+                </FormSection>
+
+                <FormSection
+                    title="Impact & Context"
+                    description="Capture financial implications and where the incident occurred."
+                    icon={
+                        <div className="rounded-lg bg-amber-100 p-2 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                            <ClipboardList className="h-4 w-4" />
+                        </div>
+                    }
+                    contentClassName="gap-6 md:grid-cols-2"
+                >
+                    <FormField
+                        id="damage_cost"
+                        label="Estimated Damage Cost"
+                        helperText="Leave blank if no financial impact is recorded."
+                        error={getFieldError('damage_cost')}
+                    >
+                        <Input
+                            id="damage_cost"
+                            name="damage_cost"
+                            type="number"
+                            inputMode="decimal"
+                            step="0.01"
+                            value={data.damage_cost}
+                            onChange={(event) => handleFieldChange('damage_cost', event.target.value)}
+                            placeholder="0.00"
+                            className={`border-slate-300 focus:border-rose-500 focus:ring-rose-500/20 dark:border-slate-700 dark:focus:border-rose-400 ${getFieldError('damage_cost') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20 dark:border-red-500' : ''}`}
+                        />
+                    </FormField>
+
+                    <FormField
+                        id="location"
+                        label="Location"
+                        helperText="Optional. Max 255 characters."
+                        error={getFieldError('location')}
+                    >
+                        <div className="relative">
+                            <MapPin className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                            <Input
+                                id="location"
+                                name="location"
+                                type="text"
+                                value={data.location}
+                                onChange={(event) => handleFieldChange('location', event.target.value, { validate: false })}
+                                onBlur={() => validateField('location', data.location)}
+                                placeholder="e.g. Addis Ababa – Ring Road"
+                                className={`pl-10 border-slate-300 focus:border-rose-500 focus:ring-rose-500/20 dark:border-slate-700 dark:focus:border-rose-400 ${getFieldError('location') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20 dark:border-red-500' : ''}`}
+                            />
+                        </div>
+                    </FormField>
+
+                    <div className="md:col-span-2">
+                        <div className="flex flex-wrap items-center gap-3 rounded-lg border border-dashed border-rose-300/60 bg-rose-50/70 p-4 dark:border-rose-500/40 dark:bg-rose-500/10">
+                            <div className="flex items-center gap-3">
+                                <div className="rounded-full bg-white/90 p-2 text-rose-600 shadow-sm dark:bg-white/10 dark:text-rose-300">
+                                    <IncidentIcon className="h-4 w-4" />
                                 </div>
                                 <div>
-                                    <CardTitle className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
-                                        Update Driver Safety Incident
-                                    </CardTitle>
-                                    <CardDescription className="text-sm text-slate-600 dark:text-slate-400">
-                                        Refine the documented details to keep your safety insights accurate and actionable.
-                                    </CardDescription>
+                                    <p className="text-sm font-semibold text-rose-700 dark:text-rose-200">Current Incident Snapshot</p>
+                                    <p className="text-xs text-rose-700/80 dark:text-rose-200/80">
+                                        {selectedIncident.description}
+                                    </p>
                                 </div>
                             </div>
-                            <div className="flex flex-wrap items-center gap-3">
-                                <Button type="button" variant="ghost" size="sm" asChild>
-                                    <Link href={`/driver-safety/${driverSafety.id}`}>
-                                        <ArrowLeft className="mr-2 h-4 w-4" />
-                                        Back to Record
-                                    </Link>
-                                </Button>
-                                {isDirty && (
-                                    <div className="flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1.5 text-sm font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-                                        <Save className="h-3 w-3" />
-                                        Unsaved Changes
-                                    </div>
-                                )}
+                            <div className="flex flex-wrap items-center gap-3 text-xs text-rose-700/80 dark:text-rose-200/80">
                                 {selectedSeverity && (
-                                    <div className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium ${selectedSeverity.tone}`}>
+                                    <Badge variant="secondary" className={`flex items-center gap-2 border-0 px-3 py-2 text-sm ${selectedSeverity.tone}`}>
                                         <SeverityIcon className="h-3 w-3" />
-                                        {selectedSeverity.label} Severity
-                                    </div>
+                                        {selectedSeverity.label} severity
+                                    </Badge>
+                                )}
+                                {estimatedDamageCost !== null && (
+                                    <Badge
+                                        variant="outline"
+                                        className="flex items-center gap-1 border-rose-200/80 bg-white/75 px-3 py-2 text-sm text-rose-700 dark:border-rose-400/50 dark:bg-transparent dark:text-rose-200"
+                                    >
+                                        Estimated cost&nbsp;
+                                        {estimatedDamageCost.toLocaleString(undefined, {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2,
+                                        })}
+                                    </Badge>
                                 )}
                             </div>
                         </div>
-                    </CardHeader>
-                    <CardContent className="flex flex-1 flex-col overflow-hidden p-0">
-                        {hasErrors && (
-                            <div className="mx-6 mt-6">
-                                <Alert variant="destructive" className="border-red-500/50">
-                                    <AlertCircle className="h-4 w-4" />
-                                    <AlertDescription>Please resolve the highlighted fields before submitting the form.</AlertDescription>
-                                </Alert>
-                            </div>
-                        )}
+                    </div>
+                </FormSection>
 
-                        <form
-                            ref={scrollContainerRef}
-                            onSubmit={submit}
-                            className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-6 py-6"
-                        >
-                            <section className="space-y-5 rounded-xl border border-slate-200/70 bg-white/80 p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/40">
-                                <div className="flex items-center gap-3">
-                                    <div className="rounded-lg bg-rose-100 p-2 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300">
-                                        <Shield className="h-4 w-4" />
-                                    </div>
-                                    <div>
-                                        <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Incident Overview</h2>
-                                        <p className="text-sm text-muted-foreground">Confirm who was involved and the essential context for the record.</p>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="driver_id" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                                            Driver <span className="text-red-500">*</span>
-                                        </Label>
-                                        <Select value={data.driver_id} onValueChange={(value) => handleFieldChange('driver_id', value)}>
-                                            <SelectTrigger
-                                                id="driver_id"
-                                                className={`bg-white transition-all duration-200 hover:border-slate-400 focus:border-rose-500 focus:ring-rose-500/20 dark:bg-slate-800 dark:hover:border-slate-500 ${getFieldError('driver_id') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20 dark:border-red-500' : 'border-slate-300 dark:border-slate-600'}`}
-                                            >
-                                                <SelectValue placeholder="Select driver" />
-                                            </SelectTrigger>
-                                            <SelectContent className="bg-white shadow-lg dark:bg-slate-800">
-                                                {drivers.map((driver) => (
-                                                    <SelectItem
-                                                        key={driver.id}
-                                                        value={driver.id.toString()}
-                                                        className="flex items-center gap-2 hover:bg-slate-100 focus:bg-slate-100 dark:hover:bg-slate-700 dark:focus:bg-slate-700"
-                                                    >
-                                                        <div className="flex items-center gap-2">
-                                                            <Users className="h-3.5 w-3.5 text-slate-500" />
-                                                            <span>{driver.name}</span>
-                                                        </div>
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        {getFieldError('driver_id') && (
-                                            <p className="flex items-center gap-1 text-sm text-red-500">
-                                                <AlertCircle className="h-3 w-3" />
-                                                {getFieldError('driver_id')}
-                                            </p>
-                                        )}
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <Label htmlFor="incident_date" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                                            Incident Date <span className="text-red-500">*</span>
-                                        </Label>
-                                        <Input
-                                            id="incident_date"
-                                            type="date"
-                                            value={data.incident_date}
-                                            onChange={(event) => handleFieldChange('incident_date', event.target.value)}
-                                            className={`bg-white transition-all duration-200 focus:border-rose-500 focus:ring-rose-500/20 dark:bg-slate-800 ${getFieldError('incident_date') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20 dark:border-red-500' : 'border-slate-300 hover:border-slate-400 dark:border-slate-600 dark:hover:border-slate-500'}`}
-                                        />
-                                        {getFieldError('incident_date') && (
-                                            <p className="flex items-center gap-1 text-sm text-red-500">
-                                                <AlertCircle className="h-3 w-3" />
-                                                {getFieldError('incident_date')}
-                                            </p>
-                                        )}
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <Label htmlFor="incident_type" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                                            Incident Type <span className="text-red-500">*</span>
-                                        </Label>
-                                        <Select value={data.incident_type} onValueChange={(value) => handleFieldChange('incident_type', value)}>
-                                            <SelectTrigger
-                                                id="incident_type"
-                                                className={`bg-white transition-all duration-200 hover:border-slate-400 focus:border-rose-500 focus:ring-rose-500/20 dark:bg-slate-800 dark:hover:border-slate-500 ${getFieldError('incident_type') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20 dark:border-red-500' : 'border-slate-300 dark:border-slate-600'}`}
-                                            >
-                                                <SelectValue placeholder="Select incident type" />
-                                            </SelectTrigger>
-                                            <SelectContent className="max-h-60 bg-white shadow-lg dark:bg-slate-800">
-                                                {incidentTypes.map((item) => (
-                                                    <SelectItem
-                                                        key={item.value}
-                                                        value={item.value}
-                                                        className="gap-2 py-2 hover:bg-slate-100 focus:bg-slate-100 dark:hover:bg-slate-700 dark:focus:bg-slate-700"
-                                                    >
-                                                        <div className="flex items-start gap-3">
-                                                            <item.icon className="mt-0.5 h-4 w-4 text-slate-500" />
-                                                            <div className="flex flex-col">
-                                                                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{item.label}</span>
-                                                                <span className="text-xs text-muted-foreground">{item.description}</span>
-                                                            </div>
-                                                        </div>
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        {getFieldError('incident_type') && (
-                                            <p className="flex items-center gap-1 text-sm text-red-500">
-                                                <AlertCircle className="h-3 w-3" />
-                                                {getFieldError('incident_type')}
-                                            </p>
-                                        )}
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <Label htmlFor="severity" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                                            Severity <span className="text-red-500">*</span>
-                                        </Label>
-                                        <Select value={data.severity} onValueChange={(value) => handleFieldChange('severity', value)}>
-                                            <SelectTrigger
-                                                id="severity"
-                                                className={`bg-white transition-all duration-200 hover:border-slate-400 focus:border-rose-500 focus:ring-rose-500/20 dark:bg-slate-800 dark:hover:border-slate-500 ${getFieldError('severity') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20 dark:border-red-500' : 'border-slate-300 dark:border-slate-600'}`}
-                                            >
-                                                <SelectValue placeholder="Select severity" />
-                                            </SelectTrigger>
-                                            <SelectContent className="max-h-56 bg-white shadow-lg dark:bg-slate-800">
-                                                {severityLevels.map((item) => (
-                                                    <SelectItem
-                                                        key={item.value}
-                                                        value={item.value}
-                                                        className="gap-2 py-2 hover:bg-slate-100 focus:bg-slate-100 dark:hover:bg-slate-700 dark:focus:bg-slate-700"
-                                                    >
-                                                        <div className="flex items-start gap-3">
-                                                            <item.icon className="mt-0.5 h-4 w-4 text-slate-500" />
-                                                            <div className="flex flex-col text-left">
-                                                                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{item.label}</span>
-                                                                <span className="text-xs text-muted-foreground">{item.description}</span>
-                                                            </div>
-                                                        </div>
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        {getFieldError('severity') && (
-                                            <p className="flex items-center gap-1 text-sm text-red-500">
-                                                <AlertCircle className="h-3 w-3" />
-                                                {getFieldError('severity')}
-                                            </p>
-                                        )}
-                                    </div>
-                                </div>
-                            </section>
-
-                            <section className="space-y-5 rounded-xl border border-slate-200/70 bg-white/80 p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/40">
-                                <div className="flex items-center gap-3">
-                                    <div className="rounded-lg bg-amber-100 p-2 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-                                        <ClipboardList className="h-4 w-4" />
-                                    </div>
-                                    <div>
-                                        <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Impact &amp; Context</h2>
-                                        <p className="text-sm text-muted-foreground">Capture financial implications and where the incident occurred.</p>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="damage_cost" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                                            Estimated Damage Cost
-                                        </Label>
-                                        <Input
-                                            id="damage_cost"
-                                            type="number"
-                                            inputMode="decimal"
-                                            step="0.01"
-                                            value={data.damage_cost}
-                                            onChange={(event) => handleFieldChange('damage_cost', event.target.value)}
-                                            placeholder="0.00"
-                                            className={`bg-white transition-all duration-200 focus:border-rose-500 focus:ring-rose-500/20 dark:bg-slate-800 ${getFieldError('damage_cost') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20 dark:border-red-500' : 'border-slate-300 hover:border-slate-400 dark:border-slate-600 dark:hover:border-slate-500'}`}
-                                        />
-                                        {getFieldError('damage_cost') && (
-                                            <p className="flex items-center gap-1 text-sm text-red-500">
-                                                <AlertCircle className="h-3 w-3" />
-                                                {getFieldError('damage_cost')}
-                                            </p>
-                                        )}
-                                        <p className="text-xs text-muted-foreground">Leave blank if no financial impact is recorded.</p>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <Label htmlFor="location" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                                            Location
-                                        </Label>
-                                        <div className="relative">
-                                            <MapPin className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                                            <Input
-                                                id="location"
-                                                type="text"
-                                                value={data.location}
-                                                onChange={(event) => handleFieldChange('location', event.target.value, false)}
-                                                placeholder="e.g., Addise Ababa - Ring Road"
-                                                className={`bg-white pl-10 transition-all duration-200 focus:border-rose-500 focus:ring-rose-500/20 dark:bg-slate-800 ${getFieldError('location') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20 dark:border-red-500' : 'border-slate-300 hover:border-slate-400 dark:border-slate-600 dark:hover:border-slate-500'}`}
-                                            />
-                                        </div>
-                                        {getFieldError('location') && (
-                                            <p className="flex items-center gap-1 text-sm text-red-500">
-                                                <AlertCircle className="h-3 w-3" />
-                                                {getFieldError('location')}
-                                            </p>
-                                        )}
-                                    </div>
-
-                                    <div className="space-y-3 md:col-span-2">
-                                        <div className="flex flex-wrap items-center gap-3 rounded-lg border border-dashed border-rose-300/60 bg-rose-50/70 p-4 dark:border-rose-500/40 dark:bg-rose-500/10">
-                                            <div className="flex items-center gap-3">
-                                                <div className="rounded-full bg-white/90 p-2 text-rose-600 shadow-sm dark:bg-white/10 dark:text-rose-300">
-                                                    <IncidentIcon className="h-4 w-4" />
-                                                </div>
-                                                <div>
-                                                    <p className="text-sm font-semibold text-rose-700 dark:text-rose-200">Current Incident Snapshot</p>
-                                                    <p className="text-xs text-rose-700/80 dark:text-rose-200/80">
-                                                        {selectedIncident?.description ?? 'Choose an incident type to unlock tailored follow-up guidance.'}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <div className="flex flex-wrap items-center gap-3 text-xs text-rose-700/80 dark:text-rose-200/80">
-                                                {selectedSeverity && (
-                                                    <Badge variant="secondary" className={`flex items-center gap-2 border-0 px-3 py-2 text-sm ${selectedSeverity.tone}`}>
-                                                        <SeverityIcon className="h-3 w-3" />
-                                                        {selectedSeverity.label} severity
-                                                    </Badge>
-                                                )}
-                                                {estimatedDamageCost !== null && (
-                                                    <Badge
-                                                        variant="outline"
-                                                        className="flex items-center gap-1 border-rose-200/80 bg-white/75 px-3 py-2 text-sm text-rose-700 dark:border-rose-400/50 dark:bg-transparent dark:text-rose-200"
-                                                    >
-                                                        Estimated cost&nbsp;
-                                                        {estimatedDamageCost.toLocaleString(undefined, {
-                                                            minimumFractionDigits: 2,
-                                                            maximumFractionDigits: 2,
-                                                        })}
-                                                    </Badge>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </section>
-
-                            <section className="space-y-5 rounded-xl border border-slate-200/70 bg-white/80 p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/40">
-                                <div className="flex items-center gap-3">
-                                    <div className="rounded-lg bg-slate-100 p-2 text-slate-600 dark:bg-slate-800/60 dark:text-slate-200">
-                                        <NotebookPen className="h-4 w-4" />
-                                    </div>
-                                    <div>
-                                        <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Documentation &amp; Follow-up</h2>
-                                        <p className="text-sm text-muted-foreground">Provide the narrative and corrective actions planned for this incident.</p>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="description" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                                        Incident Description <span className="text-red-500">*</span>
-                                    </Label>
-                                    <Textarea
-                                        id="description"
-                                        value={data.description}
-                                        onChange={(event) => handleFieldChange('description', event.target.value)}
-                                        placeholder="Describe what happened, contributing factors, and immediate impacts."
-                                        rows={5}
-                                        className={`bg-white transition-all duration-200 focus:border-rose-500 focus:ring-rose-500/20 dark:bg-slate-800 ${getFieldError('description') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20 dark:border-red-500' : 'border-slate-300 hover:border-slate-400 dark:border-slate-600 dark:hover:border-slate-500'}`}
-                                    />
-                                    {getFieldError('description') && (
-                                        <p className="flex items-center gap-1 text-sm text-red-500">
-                                            <AlertCircle className="h-3 w-3" />
-                                            {getFieldError('description')}
-                                        </p>
-                                    )}
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="resolution" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                                        Corrective Action
-                                    </Label>
-                                    <Textarea
-                                        id="resolution"
-                                        value={data.resolution}
-                                        onChange={(event) => handleFieldChange('resolution', event.target.value, false)}
-                                        placeholder="Outline coaching, maintenance, or policy follow-up planned for this incident."
-                                        rows={4}
-                                        className={`bg-white transition-all duration-200 focus:border-rose-500 focus:ring-rose-500/20 dark:bg-slate-800 ${getFieldError('resolution') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20 dark:border-red-500' : 'border-slate-300 hover:border-slate-400 dark:border-slate-600 dark:hover:border-slate-500'}`}
-                                    />
-                                    {getFieldError('resolution') && (
-                                        <p className="flex items-center gap-1 text-sm text-red-500">
-                                            <AlertCircle className="h-3 w-3" />
-                                            {getFieldError('resolution')}
-                                        </p>
-                                    )}
-                                </div>
-                            </section>
-
-                            <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-slate-200/70 bg-white/80 px-6 py-5 shadow-sm dark:border-slate-800 dark:bg-slate-900/40">
-                                <div className="flex flex-col gap-2 text-sm text-slate-600 dark:text-slate-400 md:flex-row md:items-center md:gap-4">
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-red-500">*</span>
-                                        <span>Required fields</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <ClipboardList className="h-3 w-3" />
-                                        <span>Complete data enables proactive safety coaching and reporting.</span>
-                                    </div>
-                                </div>
-                                <div className="flex gap-3">
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        asChild
-                                        className="border-slate-300 hover:bg-slate-100 dark:border-slate-600 dark:hover:bg-slate-700"
-                                    >
-                                        <Link href={`/driver-safety/${driverSafety.id}`}>Cancel</Link>
-                                    </Button>
-                                    <Button
-                                        type="submit"
-                                        disabled={processing || hasErrors}
-                                        className="bg-gradient-to-r from-rose-600 to-rose-700 px-6 text-white shadow-lg transition-all duration-200 hover:from-rose-700 hover:to-rose-800 hover:shadow-xl"
-                                    >
-                                        {processing ? (
-                                            <>
-                                                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white" />
-                                                Updating...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <ShieldCheck className="mr-2 h-4 w-4" />
-                                                Save Changes
-                                            </>
-                                        )}
-                                    </Button>
-                                </div>
-                            </div>
-                        </form>
-                    </CardContent>
-                </Card>
-
-                {showScrollTop && (
-                    <Button
-                        type="button"
-                        onClick={handleScrollToTop}
-                        className="fixed bottom-6 right-6 z-50 shadow-lg"
-                        variant="secondary"
-                        aria-label="Scroll to top"
+                <FormSection
+                    title="Documentation & Follow-up"
+                    description="Provide the narrative and planned corrective actions for the safety team."
+                    icon={
+                        <div className="rounded-lg bg-slate-100 p-2 text-slate-600 dark:bg-slate-800/60 dark:text-slate-200">
+                            <NotebookPen className="h-4 w-4" />
+                        </div>
+                    }
+                    contentClassName="gap-6"
+                >
+                    <FormField
+                        id="description"
+                        label="Incident Description"
+                        required
+                        helperText="Describe what happened, contributing factors, and immediate impacts."
+                        error={getFieldError('description')}
+                        className="md:col-span-2"
                     >
-                        <ArrowUp className="h-4 w-4" />
-                    </Button>
-                )}
-            </div>
-        </AppLayout>
+                        <Textarea
+                            id="description"
+                            name="description"
+                            value={data.description}
+                            onChange={(event) => handleFieldChange('description', event.target.value)}
+                            rows={5}
+                            className={`resize-y border-slate-300 focus:border-rose-500 focus:ring-rose-500/20 dark:border-slate-700 dark:focus:border-rose-400 ${getFieldError('description') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20 dark:border-red-500' : ''}`}
+                            placeholder="Describe what happened, contributing factors, and immediate impacts."
+                        />
+                    </FormField>
+
+                    <FormField
+                        id="resolution"
+                        label="Corrective Action"
+                        helperText="Outline coaching, maintenance, or policy follow-up planned for this incident."
+                        error={getFieldError('resolution')}
+                        className="md:col-span-2"
+                    >
+                        <Textarea
+                            id="resolution"
+                            name="resolution"
+                            value={data.resolution}
+                            onChange={(event) => handleFieldChange('resolution', event.target.value, { validate: false })}
+                            onBlur={() => validateField('resolution', data.resolution)}
+                            rows={4}
+                            className={`resize-y border-slate-300 focus:border-rose-500 focus:ring-rose-500/20 dark:border-slate-700 dark:focus:border-rose-400 ${getFieldError('resolution') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20 dark:border-red-500' : ''}`}
+                            placeholder="Outline coaching, maintenance, or policy follow-up planned for this incident."
+                        />
+                    </FormField>
+                </FormSection>
+
+                <FormActionsBar
+                    left={
+                        <>
+                            <span className="flex items-center gap-2 text-sm">
+                                <ShieldPlus className="h-4 w-4 text-rose-500" />
+                                Keep this record current to support driver coaching and auditing.
+                            </span>
+                            <span className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <ClipboardList className="h-3 w-3" />
+                                Changes are tracked for future safety analytics.
+                            </span>
+                        </>
+                    }
+                    right={
+                        <>
+                            <Button type="button" variant="outline" asChild className="border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800">
+                                <Link href={`/driver-safety/${driverSafety.id}`}>Cancel</Link>
+                            </Button>
+                            <Button
+                                type="submit"
+                                disabled={processing || hasErrors || !isDirty}
+                                className="min-w-[180px] bg-gradient-to-r from-rose-600 to-rose-700 text-white shadow-lg transition hover:from-rose-700 hover:to-rose-800"
+                            >
+                                {processing ? (
+                                    <>
+                                        <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white" />
+                                        Saving...
+                                    </>
+                                ) : (
+                                    <>
+                                        <ShieldCheck className="mr-2 h-4 w-4" />
+                                        Save Changes
+                                    </>
+                                )}
+                            </Button>
+                        </>
+                    }
+                />
+            </form>
+            <ScrollToTopFab visible={showScrollTop} onClick={handleScrollToTop} />
+        </FormPageLayout>
     );
 }
-

@@ -2,9 +2,12 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
+import { ReportHero } from '@/components/reports/report-hero';
+import { ReportPageShell } from '@/components/reports/report-page-shell';
+import { ReportSectionCard } from '@/components/reports/report-section-card';
+import { ReportSummaryGrid } from '@/components/reports/report-summary-grid';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
     Dialog,
     DialogContent,
@@ -541,314 +544,377 @@ export default function TruckGradingReport({
             : 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-200';
     }, [recalculationNotice]);
 
+    const statusBadges = [
+        { key: 'snapshot', label: `Snapshot ${formatDate(appliedSnapshotDate)}` },
+        {
+            key: 'vehicle-type',
+            label: appliedVehicleTypeId
+                ? vehicleTypes.find((type) => type.id === appliedVehicleTypeId)?.name ?? 'Filtered type'
+                : 'All vehicle types',
+        },
+        { key: 'status', label: appliedStatus === 'all' ? 'All statuses' : appliedStatus.charAt(0).toUpperCase() + appliedStatus.slice(1) },
+        { key: 'grade', label: appliedGradeLetter === 'all' ? 'All grades' : `Grade ${appliedGradeLetter}` },
+        { key: 'per-page', label: `${appliedPerPage} per page` },
+    ];
+
+    const summaryItems = useMemo(
+        () => [
+            {
+                key: 'snapshot',
+                label: 'Snapshot date',
+                value: formatDate(appliedSnapshotDate),
+                helper: 'Reference point used for the grade snapshot',
+                icon: <CalendarClock className="h-3.5 w-3.5" />,
+                iconWrapperClassName: 'bg-violet-50 text-violet-600 dark:bg-violet-500/20 dark:text-violet-200',
+            },
+            {
+                key: 'fleet',
+                label: 'Tracked trucks',
+                value: formatNumber(paginator?.meta?.total ?? rows.length),
+                helper: 'Vehicles included after filters are applied',
+                icon: <Truck className="h-3.5 w-3.5" />,
+                iconWrapperClassName: 'bg-sky-50 text-sky-600 dark:bg-sky-500/20 dark:text-sky-200',
+                valueClassName: 'text-sky-600 dark:text-sky-200',
+            },
+            {
+                key: 'score',
+                label: 'Average score',
+                value: averageScore === null ? '—' : averageScore.toFixed(1),
+                helper: 'Mean of graded truck scores',
+                icon: <Gauge className="h-3.5 w-3.5" />,
+                iconWrapperClassName: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200',
+                valueClassName: 'text-emerald-600 dark:text-emerald-200',
+            },
+            {
+                key: 'top-grade',
+                label: 'Top grade',
+                value: topGrade ? `Grade ${topGrade}` : '—',
+                helper: 'Highest performing grade within the filtered fleet',
+                icon: <LineChart className="h-3.5 w-3.5" />,
+                iconWrapperClassName: 'bg-amber-50 text-amber-600 dark:bg-amber-500/20 dark:text-amber-200',
+                valueClassName: 'text-amber-600 dark:text-amber-200',
+            },
+            {
+                key: 'calculated-at',
+                label: 'Last calculated',
+                value: formatDateTime(latestCalculation?.calculated_at ?? rows[0]?.snapshot?.calculated_at ?? null),
+                helper: 'When the grading snapshot was last generated',
+                icon: <ListFilter className="h-3.5 w-3.5" />,
+                iconWrapperClassName: 'bg-rose-50 text-rose-600 dark:bg-rose-500/20 dark:text-rose-200',
+            },
+            {
+                key: 'calculated-by',
+                label: 'Calculated by',
+                value: latestCalculation?.calculated_by?.name ?? rows[0]?.snapshot?.calculated_by?.name ?? '—',
+                helper: 'User who initiated the latest grading run',
+                icon: <Settings className="h-3.5 w-3.5" />,
+                iconWrapperClassName: 'bg-slate-100 text-slate-600 dark:bg-slate-800/60 dark:text-slate-200',
+            },
+        ],
+        [appliedSnapshotDate, paginator?.meta?.total, rows, averageScore, topGrade, latestCalculation],
+    );
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Truck grading" />
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-slate-100/60 dark:bg-slate-900/40">
-                <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-4 pb-10 sm:p-6 lg:p-10">
-                    <header className="rounded-2xl border border-slate-200 bg-white/95 px-6 py-6 shadow-sm backdrop-blur dark:border-slate-800/70 dark:bg-slate-900/70">
-                        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                            <div className="space-y-2">
-                                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">Truck Grading</p>
-                                <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-50">Truck grading report</h1>
-                                <p className="max-w-3xl text-sm text-slate-600 dark:text-slate-300">
-                                    Review the graded leaderboard, compare category scores, and identify outliers after adjusting the configuration.
-                                </p>
-                            </div>
-                            <div className="flex flex-wrap items-center gap-2">
-                                <Dialog open={filtersOpen} onOpenChange={setFiltersOpen}>
-                                    <DialogTrigger asChild>
-                                        <Button type="button" variant="outline" className="gap-2">
-                                            <ListFilter className="h-4 w-4" />
-                                            Filters
-                                            {activeFilterCount > 0 ? (
-                                                <Badge variant="secondary" className="h-5 min-w-[2rem] justify-center px-2 text-xs font-semibold">
-                                                    {activeFilterCount}
-                                                </Badge>
-                                            ) : null}
-                                        </Button>
-                                    </DialogTrigger>
-                                    <DialogContent className="w-full sm:max-w-4xl sm:rounded-2xl">
-                                        <DialogHeader className="text-left">
-                                            <DialogTitle>Filter graded trucks</DialogTitle>
-                                            <DialogDescription>Select snapshot, vehicle type, and grade filters before regenerating the leaderboard.</DialogDescription>
-                                        </DialogHeader>
-                                        <div className="grid gap-6">
-                                            <div className="grid gap-4 rounded-xl border border-slate-200 bg-white/95 p-6 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
-                                                <div className="grid gap-4 md:grid-cols-2">
-                                                    <div className="space-y-2">
-                                                        <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Snapshot date</label>
-                                                        <Select value={snapshotDate} onValueChange={setSnapshotDate}>
-                                                            <SelectTrigger>
-                                                                <SelectValue placeholder="Select snapshot" />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                                {snapshotDates.map((date) => (
-                                                                    <SelectItem key={date} value={date}>
-                                                                        {formatDate(date)}
-                                                                    </SelectItem>
-                                                                ))}
-                                                            </SelectContent>
-                                                        </Select>
-                                                        <p className="text-xs text-muted-foreground">Snapshots are created whenever grading completes.</p>
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Vehicle type</label>
-                                                        <Select value={vehicleTypeId ? String(vehicleTypeId) : 'all'} onValueChange={(value) => setVehicleTypeId(value === 'all' ? null : Number(value))}>
-                                                            <SelectTrigger>
-                                                                <SelectValue placeholder="All vehicle types" />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                                <SelectItem value="all">All vehicle types</SelectItem>
-                                                                {vehicleTypes.map((type) => (
-                                                                    <SelectItem key={type.id} value={String(type.id)}>
-                                                                        {type.name}
-                                                                    </SelectItem>
-                                                                ))}
-                                                            </SelectContent>
-                                                        </Select>
-                                                        <p className="text-xs text-muted-foreground">Limit the leaderboard to specific asset classes.</p>
-                                                    </div>
-                                                </div>
-                                                <Separator />
-                                                <div className="grid gap-4 md:grid-cols-2">
-                                                    <div className="space-y-2">
-                                                        <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Truck status</label>
-                                                        <Select value={status} onValueChange={setStatus}>
-                                                            <SelectTrigger>
-                                                                <SelectValue placeholder="All statuses" />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                                <SelectItem value="all">All statuses</SelectItem>
-                                                                {statusOptions.map((option) => (
-                                                                    <SelectItem key={option} value={option}>
-                                                                        {option.charAt(0).toUpperCase() + option.slice(1)}
-                                                                    </SelectItem>
-                                                                ))}
-                                                            </SelectContent>
-                                                        </Select>
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Grade letter</label>
-                                                        <Select value={gradeLetter} onValueChange={setGradeLetter}>
-                                                            <SelectTrigger>
-                                                                <SelectValue placeholder="All grades" />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                                <SelectItem value="all">All grades</SelectItem>
-                                                                {gradeLetterOptions.map((letter) => (
-                                                                    <SelectItem key={letter} value={letter}>
-                                                                        Grade {letter}
-                                                                    </SelectItem>
-                                                                ))}
-                                                            </SelectContent>
-                                                        </Select>
-                                                    </div>
-                                                </div>
-                                                <Separator />
+            <ReportPageShell>
+                <ReportHero
+                    eyebrow="Asset intelligence"
+                    title="Truck grading report"
+                    description="Review the graded leaderboard, compare category scores, and identify outliers after adjusting the configuration."
+                    actions={
+                        <div className="flex flex-wrap items-center gap-2">
+                            <Dialog open={filtersOpen} onOpenChange={setFiltersOpen}>
+                                <DialogTrigger asChild>
+                                    <Button type="button" variant="outline" className="gap-2">
+                                        <ListFilter className="h-4 w-4" />
+                                        Filters
+                                        {activeFilterCount > 0 ? (
+                                            <Badge variant="secondary" className="h-5 min-w-[2rem] justify-center px-2 text-xs font-semibold">
+                                                {activeFilterCount}
+                                            </Badge>
+                                        ) : null}
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent className="w-full sm:max-w-4xl sm:rounded-2xl">
+                                    <DialogHeader className="text-left">
+                                        <DialogTitle>Filter graded trucks</DialogTitle>
+                                        <DialogDescription>
+                                            Select snapshot, vehicle type, and grade filters before regenerating the leaderboard.
+                                        </DialogDescription>
+                                    </DialogHeader>
+                                    <div className="grid gap-6">
+                                        <div className="grid gap-4 rounded-xl border border-slate-200 bg-white/95 p-6 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
+                                            <div className="grid gap-4 md:grid-cols-2">
                                                 <div className="space-y-2">
-                                                    <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Rows per page</label>
-                                                    <Select value={String(perPage)} onValueChange={(value) => setPerPage(Number(value))}>
-                                                        <SelectTrigger className="w-[160px]">
-                                                            <SelectValue placeholder="Rows per page" />
+                                                    <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Snapshot date</label>
+                                                    <Select value={snapshotDate} onValueChange={setSnapshotDate}>
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Select snapshot" />
                                                         </SelectTrigger>
                                                         <SelectContent>
-                                                            {availablePerPageOptions.map((option) => (
-                                                                <SelectItem key={option} value={String(option)}>
-                                                                    {option} / page
+                                                            {snapshotDates.map((snapshot) => (
+                                                                <SelectItem key={snapshot} value={snapshot}>
+                                                                    {formatDate(snapshot)}
+                                                                </SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <p className="text-xs text-muted-foreground">Snapshots are created whenever grading completes.</p>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Vehicle type</label>
+                                                    <Select
+                                                        value={vehicleTypeId ? String(vehicleTypeId) : 'all'}
+                                                        onValueChange={(value) => setVehicleTypeId(value === 'all' ? null : Number(value))}
+                                                    >
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="All vehicle types" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="all">All vehicle types</SelectItem>
+                                                            {vehicleTypes.map((type) => (
+                                                                <SelectItem key={type.id} value={String(type.id)}>
+                                                                    {type.name}
+                                                                </SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <p className="text-xs text-muted-foreground">Limit the leaderboard to specific asset classes.</p>
+                                                </div>
+                                            </div>
+                                            <Separator />
+                                            <div className="grid gap-4 md:grid-cols-2">
+                                                <div className="space-y-2">
+                                                    <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Truck status</label>
+                                                    <Select value={status} onValueChange={setStatus}>
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="All statuses" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="all">All statuses</SelectItem>
+                                                            {statusOptions.map((option) => (
+                                                                <SelectItem key={option} value={option}>
+                                                                    {option.charAt(0).toUpperCase() + option.slice(1)}
+                                                                </SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Grade letter</label>
+                                                    <Select value={gradeLetter} onValueChange={setGradeLetter}>
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="All grades" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="all">All grades</SelectItem>
+                                                            {gradeLetterOptions.map((letter) => (
+                                                                <SelectItem key={letter} value={letter}>
+                                                                    Grade {letter}
                                                                 </SelectItem>
                                                             ))}
                                                         </SelectContent>
                                                     </Select>
                                                 </div>
                                             </div>
+                                            <Separator />
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Rows per page</label>
+                                                <Select value={String(perPage)} onValueChange={(value) => setPerPage(Number(value))}>
+                                                    <SelectTrigger className="w-[160px]">
+                                                        <SelectValue placeholder="Rows per page" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {availablePerPageOptions.map((option) => (
+                                                            <SelectItem key={option} value={String(option)}>
+                                                                {option} / page
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
                                         </div>
-                                        <DialogFooter>
-                                            <Button type="button" variant="outline" onClick={handleReset}>
-                                                Reset
-                                            </Button>
-                                            <Button type="button" onClick={handleGenerateReport}>
-                                                Generate report
-                                            </Button>
-                                        </DialogFooter>
-                                    </DialogContent>
-                                </Dialog>
-                                <Button asChild variant="secondary" className="gap-2">
-                                    <Link href="/settings/truck-grading">
-                                        <Settings className="h-4 w-4" />
-                                        Adjust settings
-                                    </Link>
+                                    </div>
+                                    <DialogFooter>
+                                        <Button type="button" variant="outline" onClick={handleReset}>
+                                            Reset
+                                        </Button>
+                                        <Button type="button" onClick={handleGenerateReport}>
+                                            Generate report
+                                        </Button>
+                                    </DialogFooter>
+                                </DialogContent>
+                            </Dialog>
+                            <Button asChild variant="secondary" className="gap-2">
+                                <Link href="/settings/truck-grading">
+                                    <Settings className="h-4 w-4" />
+                                    Adjust settings
+                                </Link>
+                            </Button>
+                            {canRecalculate ? (
+                                <Button
+                                    type="button"
+                                    className="gap-2"
+                                    onClick={handleRecalculateSnapshot}
+                                    disabled={recalculating || !appliedSnapshotDate}
+                                >
+                                    {recalculating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Gauge className="h-4 w-4" />}
+                                    {recalculating ? 'Recalculating…' : 'Recalculate snapshot'}
                                 </Button>
-                                {canRecalculate ? (
-                                    <Button
-                                        type="button"
-                                        className="gap-2"
-                                        onClick={handleRecalculateSnapshot}
-                                        disabled={recalculating || !appliedSnapshotDate}
-                                    >
-                                        {recalculating ? (
-                                            <Loader2 className="h-4 w-4 animate-spin" />
-                                        ) : (
-                                            <Gauge className="h-4 w-4" />
-                                        )}
-                                        {recalculating ? 'Recalculating…' : 'Recalculate snapshot'}
-                                    </Button>
-                                ) : null}
-                                <Button type="button" variant="outline" className="gap-2" onClick={handleReset}>
-                                    <RefreshCcw className="h-4 w-4" />
-                                    Reset
-                                </Button>
-                            </div>
-                            {recalculationNotice ? (
-                                <div className={`mt-4 rounded-lg border px-4 py-3 text-sm transition ${recalculationTone}`}>
-                                    {recalculationNotice.message}
-                                </div>
                             ) : null}
+                            <Button type="button" variant="outline" className="gap-2" onClick={handleReset}>
+                                <RefreshCcw className="h-4 w-4" />
+                                Reset
+                            </Button>
                         </div>
-                    </header>
+                    }
+                />
 
-                    <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-                        {kpiCards.map((card) => {
-                            const Icon = card.icon;
-
-                            return (
-                                <Card key={card.label} className="border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
-                                    <CardContent className="flex items-center gap-3 p-4">
-                                        <span className={`flex h-10 w-10 items-center justify-center rounded-full ${card.tone}`}>
-                                            <Icon className="h-5 w-5" />
-                                        </span>
-                                        <div className="space-y-0.5">
-                                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{card.label}</p>
-                                            <p className="text-lg font-semibold text-slate-900 dark:text-slate-50">{card.value}</p>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            );
-                        })}
-                    </section>
-
-                    <Card className="border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
-                        <CardHeader className="space-y-3 border-b border-slate-200/60 pb-5 dark:border-slate-700/60">
-                            <div className="space-y-1">
-                                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50">Graded trucks</CardTitle>
-                                <CardDescription className="text-sm">
-                                    Latest snapshot insight for the fleet. Use filters to narrow the leaderboard to specific criteria.
-                                </CardDescription>
+                <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
+                    <ReportSectionCard
+                        title="Applied filters"
+                        description="Current snapshot settings applied to the leaderboard."
+                        contentClassName="flex flex-col gap-6 p-6"
+                    >
+                        <div className="flex flex-wrap gap-2">
+                            {statusBadges.map((badge) => (
+                                <Badge key={badge.key} variant="outline" className="text-xs">
+                                    {badge.label}
+                                </Badge>
+                            ))}
+                        </div>
+                        {recalculationNotice ? (
+                            <div className={`rounded-lg border px-4 py-3 text-sm transition ${recalculationTone}`}>
+                                {recalculationNotice.message}
                             </div>
-                            <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                                <Badge variant="outline">Snapshot {formatDate(appliedSnapshotDate)}</Badge>
-                                <Badge variant="outline">{appliedVehicleTypeId ? vehicleTypes.find((type) => type.id === appliedVehicleTypeId)?.name ?? 'Filtered type' : 'All vehicle types'}</Badge>
-                                <Badge variant="outline">{appliedStatus === 'all' ? 'All statuses' : appliedStatus.charAt(0).toUpperCase() + appliedStatus.slice(1)}</Badge>
-                                <Badge variant="outline">{appliedGradeLetter === 'all' ? 'All grades' : `Grade ${appliedGradeLetter}`}</Badge>
-                                <Badge variant="outline">{appliedPerPage} per page</Badge>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="p-0">
-                            <div className="overflow-x-auto">
-                                <Table>
-                                    <TableHeader className="bg-slate-50/60 text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-900/60 dark:text-slate-400">
-                                        <TableRow className="divide-x divide-slate-200/40 dark:divide-slate-800/50">
-                                            <TableHead className="whitespace-nowrap">Rank</TableHead>
-                                            <TableHead className="whitespace-nowrap">Truck</TableHead>
-                                            <TableHead className="whitespace-nowrap">Vehicle type</TableHead>
-                                            <TableHead className="whitespace-nowrap">Grade</TableHead>
-                                            <TableHead className="whitespace-nowrap">Key categories</TableHead>
-                                            <TableHead className="whitespace-nowrap">Service start</TableHead>
-                                            <TableHead className="whitespace-nowrap">Production</TableHead>
-                                            <TableHead className="whitespace-nowrap">Purchase price</TableHead>
-                                            <TableHead className="whitespace-nowrap">Snapshot info</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {rows.length === 0 ? (
-                                            <TableRow>
-                                                <TableCell colSpan={9} className="py-6 text-center text-sm text-muted-foreground">
-                                                    No graded trucks found for this snapshot.
+                        ) : (
+                            <p className="text-xs text-muted-foreground">
+                                The truck grading snapshot updates whenever a recalculation is triggered or grading completes automatically.
+                            </p>
+                        )}
+                    </ReportSectionCard>
+
+                    <ReportSectionCard
+                        title="Fleet snapshot"
+                        description="Headline metrics for the filtered truck grading snapshot."
+                        contentClassName="p-6"
+                    >
+                        <ReportSummaryGrid items={summaryItems} className="gap-4 md:grid-cols-2 xl:grid-cols-3" />
+                    </ReportSectionCard>
+                </div>
+
+                <ReportSectionCard
+                    title="Graded trucks"
+                    description="Latest snapshot insight for the fleet. Use filters to narrow the leaderboard to specific criteria."
+                    badgeItems={statusBadges}
+                    contentClassName="p-0"
+                >
+                    <div className="overflow-x-auto">
+                        <Table>
+                            <TableHeader className="bg-slate-50/60 text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-900/60 dark:text-slate-400">
+                                <TableRow className="divide-x divide-slate-200/40 dark:divide-slate-800/50">
+                                    <TableHead className="whitespace-nowrap">Rank</TableHead>
+                                    <TableHead className="whitespace-nowrap">Truck</TableHead>
+                                    <TableHead className="whitespace-nowrap">Vehicle type</TableHead>
+                                    <TableHead className="whitespace-nowrap">Grade</TableHead>
+                                    <TableHead className="whitespace-nowrap">Key categories</TableHead>
+                                    <TableHead className="whitespace-nowrap">Service start</TableHead>
+                                    <TableHead className="whitespace-nowrap">Production</TableHead>
+                                    <TableHead className="whitespace-nowrap">Purchase price</TableHead>
+                                    <TableHead className="whitespace-nowrap">Snapshot info</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {rows.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={9} className="py-6 text-center text-sm text-muted-foreground">
+                                            No graded trucks found for this snapshot.
+                                        </TableCell>
+                                    </TableRow>
+                                ) : (
+                                    rows.map((row, index) => {
+                                        const rowNumber = (paginator?.meta?.from ?? 1) + index;
+                                        const overallLetter = row.grade?.overall?.letter ?? '—';
+                                        const overallScore = row.grade?.overall?.score ?? null;
+                                        const categories = row.grade?.categories ?? {};
+                                        const topCategories = Object.entries(categories)
+                                            .map(([key, details]) => ({
+                                                key,
+                                                score: typeof details?.score === 'number' ? details.score : null,
+                                            }))
+                                            .sort((a, b) => (b.score ?? -Infinity) - (a.score ?? -Infinity))
+                                            .slice(0, 3);
+
+                                        return (
+                                            <TableRow
+                                                key={row.id ?? `${row.plate}-${rowNumber}`}
+                                                className="divide-x divide-slate-200/40 odd:bg-white even:bg-slate-50/40 hover:bg-slate-100/60 dark:divide-slate-800/50 dark:odd:bg-slate-900/40 dark:even:bg-slate-900/20 dark:hover:bg-slate-800/50"
+                                            >
+                                                <TableCell className="whitespace-nowrap text-sm font-semibold text-slate-600 dark:text-slate-200">{rowNumber}</TableCell>
+                                                <TableCell className="whitespace-nowrap">
+                                                    <div className="flex flex-col gap-1">
+                                                        <span className="font-semibold text-slate-900 dark:text-slate-50">{row.plate}</span>
+                                                        <div className="flex flex-wrap items-center gap-2">
+                                                            <Badge className={statusBadgeTone(row.status)}>{row.status ?? 'Unknown'}</Badge>
+                                                            {row.service_start_date ? (
+                                                                <span className="text-xs text-muted-foreground">In service {formatDate(row.service_start_date)}</span>
+                                                            ) : null}
+                                                        </div>
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell className="whitespace-nowrap text-sm text-slate-700 dark:text-slate-100">{row.vehicleType?.name ?? '—'}</TableCell>
+                                                <TableCell className="whitespace-nowrap">
+                                                    <div className="flex flex-col gap-1">
+                                                        <Badge className={gradeBadgeTone(overallLetter)}>Grade {overallLetter}</Badge>
+                                                        <span className="text-sm text-muted-foreground">Score {formatScore(overallScore)}</span>
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell className="whitespace-nowrap">
+                                                    {topCategories.length > 0 ? (
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {topCategories.map((category) => (
+                                                                <Badge key={category.key} variant="secondary" className="capitalize">
+                                                                    {category.key.replace(/[_-]+/g, ' ')}
+                                                                    {category.score !== null ? ` · ${category.score.toFixed(1)}` : ''}
+                                                                </Badge>
+                                                            ))}
+                                                        </div>
+                                                    ) : (
+                                                        <span className="text-sm text-muted-foreground">—</span>
+                                                    )}
+                                                </TableCell>
+                                                <TableCell className="whitespace-nowrap text-sm text-slate-700 dark:text-slate-100">{formatDate(row.service_start_date)}</TableCell>
+                                                <TableCell className="whitespace-nowrap text-sm text-slate-700 dark:text-slate-100">{formatDate(row.production_date)}</TableCell>
+                                                <TableCell className="whitespace-nowrap text-sm text-slate-700 dark:text-slate-100">{formatNumber(row.purchase_price)}</TableCell>
+                                                <TableCell className="whitespace-nowrap">
+                                                    <div className="flex flex-col gap-1">
+                                                        <span className="text-sm text-slate-900 dark:text-slate-50">{formatDateTime(row.snapshot?.calculated_at)}</span>
+                                                        {row.snapshot?.calculated_by?.name ? (
+                                                            <span className="text-xs text-muted-foreground">by {row.snapshot.calculated_by.name}</span>
+                                                        ) : null}
+                                                    </div>
                                                 </TableCell>
                                             </TableRow>
-                                        ) : (
-                                            rows.map((row, index) => {
-                                                const rowNumber = (paginator?.meta?.from ?? 1) + index;
-                                                const overallLetter = row.grade?.overall?.letter ?? '—';
-                                                const overallScore = row.grade?.overall?.score ?? null;
-                                                const categories = row.grade?.categories ?? {};
-                                                const topCategories = Object.entries(categories)
-                                                    .map(([key, details]) => ({
-                                                        key,
-                                                        score: typeof details?.score === 'number' ? details.score : null,
-                                                    }))
-                                                    .sort((a, b) => (b.score ?? -Infinity) - (a.score ?? -Infinity))
-                                                    .slice(0, 3);
+                                        );
+                                    })
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
 
-                                                return (
-                                                    <TableRow
-                                                        key={row.id ?? `${row.plate}-${rowNumber}`}
-                                                        className="divide-x divide-slate-200/40 odd:bg-white even:bg-slate-50/40 hover:bg-slate-100/60 dark:divide-slate-800/50 dark:odd:bg-slate-900/40 dark:even:bg-slate-900/20 dark:hover:bg-slate-800/50"
-                                                    >
-                                                        <TableCell className="whitespace-nowrap text-sm font-semibold text-slate-600 dark:text-slate-200">{rowNumber}</TableCell>
-                                                        <TableCell className="whitespace-nowrap">
-                                                            <div className="flex flex-col gap-1">
-                                                                <span className="font-semibold text-slate-900 dark:text-slate-50">{row.plate}</span>
-                                                                <div className="flex flex-wrap items-center gap-2">
-                                                                    <Badge className={statusBadgeTone(row.status)}>{row.status ?? 'Unknown'}</Badge>
-                                                                    {row.service_start_date ? (
-                                                                        <span className="text-xs text-muted-foreground">In service {formatDate(row.service_start_date)}</span>
-                                                                    ) : null}
-                                                                </div>
-                                                            </div>
-                                                        </TableCell>
-                                                        <TableCell className="whitespace-nowrap text-sm text-slate-700 dark:text-slate-100">{row.vehicleType?.name ?? '—'}</TableCell>
-                                                        <TableCell className="whitespace-nowrap">
-                                                            <div className="flex flex-col gap-1">
-                                                                <Badge className={gradeBadgeTone(overallLetter)}>Grade {overallLetter}</Badge>
-                                                                <span className="text-sm text-muted-foreground">Score {formatScore(overallScore)}</span>
-                                                            </div>
-                                                        </TableCell>
-                                                        <TableCell className="whitespace-nowrap">
-                                                            {topCategories.length > 0 ? (
-                                                                <div className="flex flex-wrap gap-1">
-                                                                    {topCategories.map((category) => (
-                                                                        <Badge key={category.key} variant="secondary" className="capitalize">
-                                                                            {category.key.replace(/[_-]+/g, ' ')}{category.score !== null ? ` · ${category.score.toFixed(1)}` : ''}
-                                                                        </Badge>
-                                                                    ))}
-                                                                </div>
-                                                            ) : (
-                                                                <span className="text-sm text-muted-foreground">—</span>
-                                                            )}
-                                                        </TableCell>
-                                                        <TableCell className="whitespace-nowrap text-sm text-slate-700 dark:text-slate-100">{formatDate(row.service_start_date)}</TableCell>
-                                                        <TableCell className="whitespace-nowrap text-sm text-slate-700 dark:text-slate-100">{formatDate(row.production_date)}</TableCell>
-                                                        <TableCell className="whitespace-nowrap text-sm text-slate-700 dark:text-slate-100">{formatNumber(row.purchase_price)}</TableCell>
-                                                        <TableCell className="whitespace-nowrap">
-                                                            <div className="flex flex-col gap-1">
-                                                                <span className="text-sm text-slate-900 dark:text-slate-50">{formatDateTime(row.snapshot?.calculated_at)}</span>
-                                                                {row.snapshot?.calculated_by?.name ? (
-                                                                    <span className="text-xs text-muted-foreground">by {row.snapshot.calculated_by.name}</span>
-                                                                ) : null}
-                                                            </div>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                );
-                                            })
-                                        )}
-                                    </TableBody>
-                                </Table>
-                            </div>
-                            <div className="border-t border-slate-200/60 bg-slate-50/60 px-4 py-3 dark:border-slate-700/60 dark:bg-slate-900/60">
-                                <InertiaPagination
-                                    from={paginator?.meta?.from ?? undefined}
-                                    to={paginator?.meta?.to ?? undefined}
-                                    total={paginator?.meta?.total ?? undefined}
-                                    links={paginator?.links}
-                                    currentPage={paginator?.meta?.current_page ?? undefined}
-                                    lastPage={paginator?.meta?.last_page ?? undefined}
-                                />
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-            </div>
+                    <div className="border-t border-slate-200/60 bg-slate-50/60 px-4 py-3 dark:border-slate-700/60 dark:bg-slate-900/60">
+                        <InertiaPagination
+                            from={paginator?.meta?.from ?? undefined}
+                            to={paginator?.meta?.to ?? undefined}
+                            total={paginator?.meta?.total ?? undefined}
+                            links={paginator?.links}
+                            currentPage={paginator?.meta?.current_page ?? undefined}
+                            lastPage={paginator?.meta?.last_page ?? undefined}
+                        />
+                    </div>
+                </ReportSectionCard>
+            </ReportPageShell>
         </AppLayout>
     );
 }

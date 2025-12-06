@@ -1,15 +1,18 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { FormPageLayout } from '@/components/forms/form-page-layout';
+import { FormSection } from '@/components/forms/form-section';
+import { FormField } from '@/components/forms/form-field';
+import { FormActionsBar } from '@/components/forms/form-actions-bar';
+import { UnsavedChangesBadge } from '@/components/forms/unsaved-changes-badge';
+import { ScrollToTopFab } from '@/components/forms/scroll-to-top-fab';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import AppLayout from '@/layouts/app-layout';
-import { Head, Link, useForm } from '@inertiajs/react';
-import { type BreadcrumbItem } from '@/types';
-import { FormEventHandler, useEffect, useRef, useState } from 'react';
-import { validateVehicleType, type ValidationErrors } from '@/lib/validation';
 import { toast } from '@/hooks/use-toast';
-import { AlertCircle, Info, Save, Package, CheckCircle, ArrowUp, ArrowLeft } from 'lucide-react';
+import { validateVehicleType } from '@/lib/validation';
+import { type BreadcrumbItem } from '@/types';
+import { Link, useForm } from '@inertiajs/react';
+import { ArrowLeft, CheckCircle, Info, Package, Save } from 'lucide-react';
+import { type FormEventHandler, useEffect, useRef, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -23,20 +26,22 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function VehicleTypesCreate() {
-    const { data, setData, post, processing, errors } = useForm({
+    const { data, setData, post, processing, errors, clearErrors } = useForm<VehicleTypeFormData>({
         name: '',
         description: '',
     });
 
-    const [frontendErrors, setFrontendErrors] = useState<ValidationErrors>({});
+    const [frontendErrors, setFrontendErrors] = useState<Partial<Record<VehicleTypeFormField, string>>>({});
     const [isDirty, setIsDirty] = useState(false);
     const [showScrollTop, setShowScrollTop] = useState(false);
     const scrollContainerRef = useRef<HTMLFormElement | null>(null);
 
-    // toast errors coming from backend
     useEffect(() => {
-        const errorMessages = Object.entries(errors).map(([_, message]) => (typeof message === 'string' ? message : String(message)));
-        if (errorMessages.length) {
+        const errorMessages = Object.values(errors)
+            .map((message) => (typeof message === 'string' ? message : String(message)))
+            .filter(Boolean);
+
+        if (errorMessages.length > 0) {
             toast({
                 title: '⚠️ Validation Error',
                 description: errorMessages.join(', '),
@@ -45,10 +50,12 @@ export default function VehicleTypesCreate() {
         }
     }, [errors]);
 
-    // scrolling visibility (match truck create)
     useEffect(() => {
         const container = scrollContainerRef.current;
-        if (!container) return;
+        if (!container) {
+            return;
+        }
+
         const handleScroll = () => setShowScrollTop(container.scrollTop > 240);
         handleScroll();
         container.addEventListener('scroll', handleScroll);
@@ -59,28 +66,33 @@ export default function VehicleTypesCreate() {
         scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    // realtime validation single field
-    const validateField = (field: 'name' | 'description', value: string) => {
-        const draft = { ...data, [field]: value };
-        const all = validateVehicleType(draft);
-        setFrontendErrors(prev => {
+    const validateField = (field: VehicleTypeFormField, value: string) => {
+        const nextState = { ...data, [field]: value } as VehicleTypeFormData;
+        const message = validateVehicleType(nextState)[field];
+
+        setFrontendErrors((prev) => {
             const next = { ...prev };
-            if (all[field]) next[field] = all[field]; else delete next[field];
+            if (message) {
+                next[field] = message;
+            } else {
+                delete next[field];
+            }
             return next;
         });
     };
 
-    const handleFieldChange = (field: 'name' | 'description', value: string) => {
+    const handleFieldChange = (field: VehicleTypeFormField, value: string) => {
         setData(field, value);
+        clearErrors(field);
         validateField(field, value);
         setIsDirty(true);
     };
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
-        const allErrors = validateVehicleType(data);
-        if (Object.keys(allErrors).length) {
-            setFrontendErrors(allErrors);
+        const validationResult = validateVehicleType(data);
+        if (Object.keys(validationResult).length > 0) {
+            setFrontendErrors(validationResult as Partial<Record<VehicleTypeFormField, string>>);
             toast({
                 title: '⚠️ Validation Error',
                 description: 'Please fix the validation errors before submitting.',
@@ -88,172 +100,160 @@ export default function VehicleTypesCreate() {
             });
             return;
         }
+
         post('/vehicletypes', {
+            preserveScroll: true,
             onSuccess: () => {
                 setIsDirty(false);
                 setFrontendErrors({});
+                clearErrors();
+                toast({
+                    title: '✅ Vehicle Type Created',
+                    description: 'Vehicle type has been added successfully.',
+                });
             },
         });
     };
 
-    const getFieldError = (field: 'name' | 'description') => errors[field] || frontendErrors[field] || '';
-    const hasErrors = Boolean(getFieldError('name') || getFieldError('description'));
+    const getFieldError = (field: VehicleTypeFormField): string => {
+        const backendError = errors[field];
+        if (backendError) {
+            return typeof backendError === 'string' ? backendError : String(backendError);
+        }
+
+        return frontendErrors[field] ?? '';
+    };
+
+    const nameError = getFieldError('name');
+    const descriptionError = getFieldError('description');
+    const hasErrors = Boolean(nameError || descriptionError);
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Create Vehicle Type" />
-            <div className="flex h-full flex-1 flex-col gap-6 overflow-hidden rounded-xl p-4">
-                <Card className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200/70 bg-white/95 text-card-foreground shadow-xl backdrop-blur-lg dark:border-slate-800/60 dark:bg-slate-900/70">
-                    <CardHeader className="px-6 pb-0">
-                        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                            <div className="flex items-start gap-4">
-                                <div className="rounded-xl bg-blue-100 p-2 text-blue-600 shadow-sm dark:bg-blue-900/30 dark:text-blue-400">
-                                    <Package className="h-5 w-5" />
-                                </div>
-                                <div>
-                                    <CardTitle className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Create Vehicle Type</CardTitle>
-                                    <CardDescription className="text-sm text-slate-600 dark:text-slate-400">
-                                        Define a new vehicle classification used when registering trucks.
-                                    </CardDescription>
-                                </div>
-                            </div>
-                            <div className="flex flex-wrap items-center gap-3">
-                                <Button variant="ghost" size="sm" asChild>
-                                    <Link href="/vehicletypes">
-                                        <ArrowLeft className="mr-2 h-4 w-4" />
-                                        Back to Vehicle Types
-                                    </Link>
-                                </Button>
-                                {isDirty && (
-                                    <div className="flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1.5 text-sm font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-                                        <Save className="h-3 w-3" />
-                                        Unsaved Changes
-                                    </div>
-                                )}
-                                <div className="flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1.5 text-sm font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
-                                    <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-500"></div>
-                                    Fleet Operations
-                                </div>
-                            </div>
-                        </div>
-                    </CardHeader>
-
-                    <CardContent className="flex flex-1 flex-col overflow-hidden p-0">
-                        <form
-                            ref={scrollContainerRef}
-                            onSubmit={submit}
-                            className="flex flex-1 flex-col gap-8 overflow-y-auto p-6 pb-24"
-                            style={{ minHeight: 0 }}
-                            noValidate
-                        >
-                            <section className="space-y-5 rounded-xl border border-slate-200/70 bg-white/80 p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/40">
-                                <div className="flex items-center gap-3">
-                                    <div className="rounded-lg bg-blue-100 p-2 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
-                                        <Info className="h-4 w-4" />
-                                    </div>
-                                    <div>
-                                        <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Vehicle Type Details</h2>
-                                        <p className="text-sm text-muted-foreground">Provide a descriptive name. Description is optional.</p>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="name" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                                            <span className="text-red-500">*</span> Name
-                                        </Label>
-                                        <Input
-                                            id="name"
-                                            type="text"
-                                            value={data.name}
-                                            onChange={(e) => handleFieldChange('name', e.target.value)}
-                                            placeholder="e.g. Heavy Truck, Light Truck"
-                                            className={`transition-all duration-200 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 focus:ring-blue-500/20 focus:border-blue-500 ${getFieldError('name') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}
-                                        />
-                                        {getFieldError('name') && (
-                                            <p className="flex items-center gap-1 text-sm text-red-500">
-                                                <AlertCircle className="h-3 w-3" />
-                                                {getFieldError('name')}
-                                            </p>
-                                        )}
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="description" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                                            Description
-                                        </Label>
-                                        <Textarea
-                                            id="description"
-                                            value={data.description}
-                                            onChange={(e) => handleFieldChange('description', e.target.value)}
-                                            placeholder="Optional description of the vehicle type"
-                                            rows={4}
-                                            className={`resize-none transition-all duration-200 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 focus:ring-blue-500/20 focus:border-blue-500 ${getFieldError('description') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}
-                                        />
-                                        {getFieldError('description') && (
-                                            <p className="flex items-center gap-1 text-sm text-red-500">
-                                                <AlertCircle className="h-3 w-3" />
-                                                {getFieldError('description')}
-                                            </p>
-                                        )}
-                                    </div>
-                                </div>
-                            </section>
-
-                            <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-slate-200/70 bg-white/80 px-6 py-5 shadow-sm dark:border-slate-800 dark:bg-slate-900/40">
-                                <div className="flex items-center gap-4">
-                                    <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-                                        <span className="text-red-500">*</span>
-                                        <span>All required fields must be completed</span>
-                                    </div>
-                                    {isDirty && (
-                                        <div className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400">
-                                            <Save className="h-3 w-3" />
-                                            <span>You have unsaved changes</span>
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="flex gap-3">
-                                    <Button type="button" variant="outline" asChild className="border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700">
-                                        <Link href="/vehicletypes">Cancel</Link>
-                                    </Button>
-                                    <Button
-                                        type="submit"
-                                        disabled={processing || hasErrors || !data.name.trim()}
-                                        className="min-w-[160px] bg-gradient-to-r from-blue-600 to-blue-700 px-6 text-white shadow-lg transition-all duration-200 hover:from-blue-700 hover:to-blue-800 hover:shadow-xl"
-                                    >
-                                        {processing ? (
-                                            <>
-                                                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white"></div>
-                                                Creating...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <CheckCircle className="mr-2 h-4 w-4" />
-                                                Create Vehicle Type
-                                            </>
-                                        )}
-                                    </Button>
-                                </div>
-                            </div>
-                        </form>
-                    </CardContent>
-                </Card>
-
-                {showScrollTop && (
-                    <Button
-                        type="button"
-                        onClick={handleScrollToTop}
-                        className="fixed bottom-6 right-6 z-50 shadow-lg"
-                        variant="secondary"
-                        aria-label="Scroll to top"
-                    >
-                        <ArrowUp className="h-4 w-4" />
+        <FormPageLayout
+            title="Create Vehicle Type"
+            headTitle="Create Vehicle Type"
+            description="Define a new vehicle classification used when registering trucks."
+            breadcrumbs={breadcrumbs}
+            icon={<Package className="h-5 w-5" />}
+            headerAside={
+                <>
+                    <Button variant="ghost" size="sm" asChild>
+                        <Link href="/vehicletypes">
+                            <ArrowLeft className="mr-2 h-4 w-4" />
+                            Back to Vehicle Types
+                        </Link>
                     </Button>
-                )}
-            </div>
-        </AppLayout>
+                    {isDirty && <UnsavedChangesBadge />}
+                    <div className="flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1.5 text-sm font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                        <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-500"></div>
+                        Fleet Operations
+                    </div>
+                </>
+            }
+        >
+            <form
+                ref={scrollContainerRef}
+                onSubmit={submit}
+                className="flex flex-1 flex-col gap-8 overflow-y-auto p-6 pb-24"
+                style={{ minHeight: 0 }}
+            >
+                <FormSection
+                    title="Vehicle Type Details"
+                    description="Provide a descriptive name. Description is optional."
+                    icon={
+                        <div className="rounded-lg bg-blue-100 p-2 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+                            <Info className="h-4 w-4" />
+                        </div>
+                    }
+                    contentClassName="gap-6 md:grid-cols-2"
+                >
+                    <FormField
+                        id="name"
+                        label="Name"
+                        required
+                        tooltip="Use a descriptive name for the vehicle class."
+                        error={nameError}
+                    >
+                        <Input
+                            id="name"
+                            type="text"
+                            value={data.name}
+                            onChange={(event) => handleFieldChange('name', event.target.value)}
+                            placeholder="e.g. Heavy Truck, Light Truck"
+                            className={`transition-all duration-200 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 focus:ring-blue-500/20 focus:border-blue-500 ${nameError ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}
+                            autoComplete="off"
+                        />
+                    </FormField>
+                    <FormField
+                        id="description"
+                        label="Description"
+                        error={descriptionError}
+                        helperText="Optional. Helps others understand where this type should be used."
+                        contentClassName="md:col-span-1"
+                    >
+                        <Textarea
+                            id="description"
+                            value={data.description}
+                            onChange={(event) => handleFieldChange('description', event.target.value)}
+                            placeholder="Optional description of the vehicle type"
+                            rows={4}
+                            className={`resize-none transition-all duration-200 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 focus:ring-blue-500/20 focus:border-blue-500 ${descriptionError ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}
+                        />
+                    </FormField>
+                </FormSection>
+
+                <FormActionsBar
+                    left={
+                        <>
+                            <span className="flex items-center gap-2">
+                                <span className="text-red-500">*</span>
+                                All required fields must be completed
+                            </span>
+                            {isDirty && (
+                                <span className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                                    <Save className="h-3 w-3" />
+                                    You have unsaved changes
+                                </span>
+                            )}
+                        </>
+                    }
+                    right={
+                        <>
+                            <Button type="button" variant="outline" asChild className="border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700">
+                                <Link href="/vehicletypes">Cancel</Link>
+                            </Button>
+                            <Button
+                                type="submit"
+                                disabled={processing || hasErrors || !data.name.trim()}
+                                className="min-w-[160px] bg-gradient-to-r from-blue-600 to-blue-700 px-6 text-white shadow-lg transition-all duration-200 hover:from-blue-700 hover:to-blue-800 hover:shadow-xl"
+                            >
+                                {processing ? (
+                                    <>
+                                        <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white"></div>
+                                        Creating...
+                                    </>
+                                ) : (
+                                    <>
+                                        <CheckCircle className="mr-2 h-4 w-4" />
+                                        Create Vehicle Type
+                                    </>
+                                )}
+                            </Button>
+                        </>
+                    }
+                />
+            </form>
+            <ScrollToTopFab visible={showScrollTop} onClick={handleScrollToTop} />
+        </FormPageLayout>
     );
 }
+
+type VehicleTypeFormData = {
+    name: string;
+    description: string;
+};
+
+type VehicleTypeFormField = keyof VehicleTypeFormData;
 
 
 

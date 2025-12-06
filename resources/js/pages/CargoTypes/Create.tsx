@@ -1,518 +1,481 @@
-import { useEffect, useMemo, useRef, useState, type FormEventHandler } from 'react';
-import { Head, Link, useForm } from '@inertiajs/react';
-import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem } from '@/types';
-import { validateCargoType, type ValidationErrors } from '@/lib/validation';
-import { useToast } from '@/hooks/use-toast';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { FormActionsBar } from '@/components/forms/form-actions-bar';
+import { FormField } from '@/components/forms/form-field';
+import { FormPageLayout } from '@/components/forms/form-page-layout';
+import { FormSection } from '@/components/forms/form-section';
+import { ScrollToTopFab } from '@/components/forms/scroll-to-top-fab';
+import { UnsavedChangesBadge } from '@/components/forms/unsaved-changes-badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Package, Boxes, ClipboardCheck, AlertTriangle, Shield, Save, ArrowLeft, ArrowUp } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
+import { validateCargoType } from '@/lib/validation';
+import { type BreadcrumbItem } from '@/types';
+import { Link, useForm } from '@inertiajs/react';
+import { useEffect, useMemo, useRef, useState, type FormEventHandler } from 'react';
+import {
+    AlertTriangle,
+    Boxes,
+    ClipboardCheck,
+    MapPin,
+    Package,
+    ShieldCheck,
+} from 'lucide-react';
 
-const breadcrumbs: BreadcrumbItem[] = [
-	{
-		title: 'Cargo Types',
-		href: '/cargo-types',
-	},
-	{
-		title: 'Create',
-		href: '/cargo-types/create',
-	},
-];
-
-interface CategoryOption {
-	value: string;
-	label: string;
+interface CargoTypeCreateProps {
+    categories: Array<{ value: string; label: string }>;
 }
 
-interface CargoTypesCreateProps {
-	categories: CategoryOption[];
-}
-
-type CargoTypeCreateForm = {
-	name: string;
-	category: string;
-	weight_per_cubic_meter: string;
-	handling_requirements: string;
-	safety_requirements: string;
-	requires_special_equipment: boolean;
+type CargoTypeFormData = {
+    name: string;
+    category: string;
+    weight_per_cubic_meter: string;
+    handling_requirements: string;
+    safety_requirements: string;
+    requires_special_equipment: boolean;
 };
 
-export default function CargoTypesCreate({ categories }: CargoTypesCreateProps) {
-	const categoryOptions: CategoryOption[] = categories.length ? categories : [];
+type CargoTypeFormField = keyof CargoTypeFormData;
 
-	const { data, setData, post, processing, errors } = useForm<CargoTypeCreateForm>({
-		name: '',
-		category: categoryOptions?.[0]?.value ?? '',
-		weight_per_cubic_meter: '',
-		handling_requirements: '',
-		safety_requirements: '',
-		requires_special_equipment: false,
-	});
+type FieldErrorMap = Partial<Record<CargoTypeFormField, string>>;
 
-	const { toast } = useToast();
-	const [frontendErrors, setFrontendErrors] = useState<ValidationErrors>({});
-	const [isDirty, setIsDirty] = useState(false);
-	const [showScrollTop, setShowScrollTop] = useState(false);
-	const scrollContainerRef = useRef<HTMLFormElement | null>(null);
+const breadcrumbs: BreadcrumbItem[] = [
+    { title: 'Cargo Types', href: '/cargo-types' },
+    { title: 'Create', href: '/cargo-types/create' },
+];
 
-	const mergedErrors = useMemo(
-		() => ({ ...frontendErrors, ...errors }) as Record<string, string | string[]>,
-		[frontendErrors, errors]
-	);
+const customValidationMessage = (field: CargoTypeFormField, value: string | boolean): string => {
+    if (field === 'handling_requirements' || field === 'safety_requirements') {
+        if (typeof value === 'string' && value.length > 2000) {
+            return 'Details cannot exceed 2,000 characters.';
+        }
+    }
 
-	useEffect(() => {
-		const container = scrollContainerRef.current;
-		if (!container) {
-			return;
-		}
+    return '';
+};
 
-		const handleScroll = () => {
-			setShowScrollTop(container.scrollTop > 240);
-		};
+export default function CargoTypesCreate({ categories }: CargoTypeCreateProps) {
+    const defaultCategory = categories[0]?.value ?? '';
 
-		handleScroll();
-		container.addEventListener('scroll', handleScroll);
+    const { data, setData, post, processing, errors, clearErrors, reset } = useForm<CargoTypeFormData>({
+        name: '',
+        category: defaultCategory,
+        weight_per_cubic_meter: '',
+        handling_requirements: '',
+        safety_requirements: '',
+        requires_special_equipment: false,
+    });
 
-		return () => {
-			container.removeEventListener('scroll', handleScroll);
-		};
-	}, []);
+    const [frontendErrors, setFrontendErrors] = useState<FieldErrorMap>({});
+    const [isDirty, setIsDirty] = useState(false);
+    const [showScrollTop, setShowScrollTop] = useState(false);
+    const formRef = useRef<HTMLFormElement | null>(null);
 
-	useEffect(() => {
-		if (!data.category && categoryOptions[0]) {
-			setData('category', categoryOptions[0].value);
-		}
-	}, [categoryOptions, data.category, setData]);
+    useEffect(() => {
+        const container = formRef.current;
+        if (!container) {
+            return;
+        }
 
-	useEffect(() => {
-		if (Object.keys(errors).length === 0) {
-			return;
-		}
+        const handleScroll = () => setShowScrollTop(container.scrollTop > 240);
+        handleScroll();
+        container.addEventListener('scroll', handleScroll);
+        return () => container.removeEventListener('scroll', handleScroll);
+    }, []);
 
-		const message = Object.values(errors)
-			.map((value) => (Array.isArray(value) ? value.join(', ') : value))
-			.filter(Boolean)
-			.join(', ');
+    useEffect(() => {
+        if (!data.category && defaultCategory) {
+            setData('category', defaultCategory);
+        }
+    }, [defaultCategory, data.category, setData]);
 
-		toast({
-			variant: 'destructive',
-			title: 'Validation error',
-			description: message || 'Please address the highlighted fields before saving.',
-		});
-	}, [errors, toast]);
+    useEffect(() => {
+        const errorMessages = Object.values(errors)
+            .map((message) => (typeof message === 'string' ? message : String(message)))
+            .filter(Boolean);
 
-	const handleScrollToTop = () => {
-		scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-	};
+        if (errorMessages.length > 0) {
+            toast({
+                title: '⚠️ Validation Error',
+                description: errorMessages.join(', '),
+                variant: 'destructive',
+            });
+        }
+    }, [errors]);
 
-	const validateField = (fieldName: keyof typeof data, value: string | boolean) => {
-		const payload = { ...data, [fieldName]: value };
-		const validationErrors = validateCargoType(payload);
-		const fieldError = validationErrors[fieldName];
+    const backendErrors = useMemo(
+        () =>
+            Object.entries(errors).reduce<FieldErrorMap>((acc, [key, value]) => {
+                const message = typeof value === 'string' ? value : value ? String(value) : '';
+                if (message) {
+                    acc[key as CargoTypeFormField] = message;
+                }
+                return acc;
+            }, {}),
+        [errors],
+    );
 
-		setFrontendErrors((prev) => {
-			const next = { ...prev };
-			if (fieldError) {
-				next[fieldName] = fieldError;
-			} else {
-				delete next[fieldName];
-			}
-			return next;
-		});
-	};
+    const fieldErrors = useMemo(
+        () => ({
+            ...frontendErrors,
+            ...backendErrors,
+        }),
+        [frontendErrors, backendErrors],
+    );
 
-	const handleFieldChange = (fieldName: keyof typeof data, value: string, shouldValidate = true) => {
-		setData(fieldName, value);
-		setIsDirty(true);
+    const densityInsight = useMemo(() => {
+        const value = Number.parseFloat(data.weight_per_cubic_meter);
+        if (!Number.isFinite(value) || value <= 0) {
+            return null;
+        }
 
-		if (shouldValidate) {
-			validateField(fieldName, value);
-		} else {
-			setFrontendErrors((prev) => {
-				const next = { ...prev };
-				delete next[fieldName];
-				return next;
-			});
-		}
-	};
+        if (value >= 1200) {
+            return { label: 'Heavy Density', tone: 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900' };
+        }
+        if (value >= 600) {
+            return { label: 'Medium Density', tone: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200' };
+        }
+        return { label: 'Light Density', tone: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' };
+    }, [data.weight_per_cubic_meter]);
 
-	const handleCheckboxChange = (checked: boolean) => {
-		setData('requires_special_equipment', checked);
-		setIsDirty(true);
-		validateField('requires_special_equipment', checked);
-	};
+    const handleScrollToTop = () => {
+        formRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+    };
 
-	const submit: FormEventHandler = (event) => {
-		event.preventDefault();
+    const validateField = (field: CargoTypeFormField, value: string | boolean) => {
+        const result = validateCargoType({ ...data, [field]: value });
+        const message = (result as FieldErrorMap)[field] ?? customValidationMessage(field, value);
 
-		const validationResult = validateCargoType({ ...data });
-		if (Object.keys(validationResult).length > 0) {
-			setFrontendErrors(validationResult);
-			toast({
-				variant: 'destructive',
-				title: 'Validation error',
-				description: 'Please resolve the highlighted issues before saving.',
-			});
-			return;
-		}
+        setFrontendErrors((prev) => {
+            const next = { ...prev };
+            if (message) {
+                next[field] = message;
+            } else {
+                delete next[field];
+            }
+            return next;
+        });
+    };
 
-		post('/cargo-types', {
-			preserveScroll: true,
-			onSuccess: () => {
-				setFrontendErrors({});
-				setIsDirty(false);
-			},
-		});
-	};
+    const handleFieldChange = (field: CargoTypeFormField, value: string, options?: { validate?: boolean }) => {
+        setData(field, value);
+        clearErrors(field);
 
-	const getFieldError = (fieldName: keyof typeof data) => {
-		const value = mergedErrors[fieldName];
-		if (!value) {
-			return '';
-		}
-		return Array.isArray(value) ? value.join(', ') : value;
-	};
+        if (options?.validate ?? true) {
+            validateField(field, value);
+        } else {
+            setFrontendErrors((prev) => {
+                const next = { ...prev };
+                delete next[field];
+                return next;
+            });
+        }
 
-	const hasErrors = Object.keys(mergedErrors).length > 0;
+        setIsDirty(true);
+    };
 
-	const densityInsight = useMemo(() => {
-		const value = Number.parseFloat(data.weight_per_cubic_meter);
-		if (!Number.isFinite(value) || value <= 0) {
-			return null;
-		}
-		if (value >= 1200) {
-			return { label: 'Heavy Density', tone: 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900' };
-		}
-		if (value >= 600) {
-			return { label: 'Medium Density', tone: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200' };
-		}
-		return { label: 'Light Density', tone: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' };
-	}, [data.weight_per_cubic_meter]);
+    const handleCheckboxChange = (checked: boolean | 'indeterminate') => {
+        const value = Boolean(checked);
+        setData('requires_special_equipment', value);
+        clearErrors('requires_special_equipment');
+        validateField('requires_special_equipment', value);
+        setIsDirty(true);
+    };
 
-	return (
-		<AppLayout breadcrumbs={breadcrumbs}>
-			<Head title="Create Cargo Type" />
-			<div className="flex h-full flex-1 flex-col gap-6 overflow-hidden rounded-xl p-4">
-				<Card className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200/70 bg-white/95 text-card-foreground shadow-xl backdrop-blur-lg dark:border-slate-800/60 dark:bg-slate-900/70">
-					<CardHeader className="px-6 pb-0">
-						<div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-							<div className="flex items-start gap-4">
-								<div className="rounded-xl bg-rose-100 p-2 text-rose-600 shadow-sm dark:bg-rose-900/30 dark:text-rose-300">
-									<Package className="h-5 w-5" />
-								</div>
-								<div>
-									<CardTitle className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
-										Register Cargo Type
-									</CardTitle>
-									<CardDescription className="text-sm text-slate-600 dark:text-slate-400">
-										Standardize cargo classifications to improve dispatch planning and safety compliance.
-									</CardDescription>
-								</div>
-							</div>
-							<div className="flex flex-wrap items-center gap-3">
-								<Button variant="ghost" size="sm" asChild>
-									<Link href="/cargo-types">
-										<ArrowLeft className="mr-2 h-4 w-4" />
-										Back to Cargo Types
-									</Link>
-								</Button>
-								{isDirty && (
-									<div className="flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1.5 text-sm font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-										<Save className="h-3 w-3" />
-										Unsaved Changes
-									</div>
-								)}
-								<div className="flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1.5 text-sm font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
-									<div className="h-2 w-2 animate-pulse rounded-full bg-emerald-500"></div>
-									Inventory Standards
-								</div>
-							</div>
-						</div>
-					</CardHeader>
+    const handleSubmit: FormEventHandler<HTMLFormElement> = (event) => {
+        event.preventDefault();
 
-					<CardContent className="flex flex-1 flex-col overflow-hidden p-0">
-						{hasErrors && (
-							<div className="mx-6 mt-6">
-								<Alert variant="destructive" className="border-red-500/50">
-									<AlertTriangle className="h-4 w-4" />
-									<AlertDescription>Please resolve the highlighted fields before submitting the form.</AlertDescription>
-								</Alert>
-							</div>
-						)}
+        const validationResult = validateCargoType(data) as FieldErrorMap;
+        const customResults = (['handling_requirements', 'safety_requirements'] as const).reduce<FieldErrorMap>((acc, key) => {
+            const message = customValidationMessage(key, data[key]);
+            if (message) {
+                acc[key] = message;
+            }
+            return acc;
+        }, {});
 
-						<form
-							ref={scrollContainerRef}
-							onSubmit={submit}
-							className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-6 py-6"
-						>
-							<section className="space-y-5 rounded-xl border border-slate-200/70 bg-white/80 p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/40">
-								<div className="flex items-center gap-3">
-									<div className="rounded-lg bg-rose-100 p-2 text-rose-600 dark:bg-rose-900/30 dark:text-rose-300">
-										<Boxes className="h-4 w-4" />
-									</div>
-									<div>
-										<h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Cargo Overview</h2>
-										<p className="text-sm text-muted-foreground">Define the core identity and classification for this cargo type.</p>
-									</div>
-								</div>
+        const combinedErrors: FieldErrorMap = { ...validationResult, ...customResults };
 
-								<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-									<div className="space-y-2">
-										<Label htmlFor="name" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-											Cargo Name <span className="text-red-500">*</span>
-										</Label>
-										<Input
-											id="name"
-											type="text"
-											value={data.name}
-											onChange={(event) => handleFieldChange('name', event.target.value)}
-											placeholder="e.g., Bagged Cement"
-											maxLength={255}
-											className={`bg-white transition-all duration-200 focus:border-rose-500 focus:ring-rose-500/20 dark:bg-slate-800 ${getFieldError('name') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20 dark:border-red-500' : 'border-slate-300 hover:border-slate-400 dark:border-slate-600 dark:hover:border-slate-500'}`}
-										/>
-										{getFieldError('name') && (
-											<p className="flex items-center gap-1 text-sm text-red-500">
-												<AlertTriangle className="h-3 w-3" />
-												{getFieldError('name')}
-											</p>
-										)}
-									</div>
+        if (Object.values(combinedErrors).some(Boolean)) {
+            setFrontendErrors(combinedErrors);
+            toast({
+                title: '⚠️ Validation Error',
+                description: 'Please resolve the highlighted issues before saving.',
+                variant: 'destructive',
+            });
+            return;
+        }
 
-									<div className="space-y-2">
-										<Label htmlFor="category" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-											Category <span className="text-red-500">*</span>
-										</Label>
-										<Select
-											value={data.category}
-											onValueChange={(value) => handleFieldChange('category', value)}
-											disabled={!categoryOptions.length}
-										>
-											<SelectTrigger
-												id="category"
-												className={`bg-white transition-all duration-200 focus:border-rose-500 focus:ring-rose-500/20 dark:bg-slate-800 ${getFieldError('category') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20 dark:border-red-500' : 'border-slate-300 hover:border-slate-400 dark:border-slate-600 dark:hover:border-slate-500'}`}
-											>
-												<SelectValue placeholder="Select category" />
-											</SelectTrigger>
-											<SelectContent className="bg-white shadow-lg dark:bg-slate-800">
-												{categoryOptions.map((option: CategoryOption) => (
-													<SelectItem
-														key={option.value}
-														value={option.value}
-														className="hover:bg-slate-100 focus:bg-slate-100 dark:hover:bg-slate-700 dark:focus:bg-slate-700"
-													>
-														{option.label}
-													</SelectItem>
-												))}
-											</SelectContent>
-										</Select>
-										{!categoryOptions.length && (
-											<p className="text-sm text-muted-foreground">No categories available. Please add at least one category in the backend.</p>
-										)}
-										{getFieldError('category') && (
-											<p className="flex items-center gap-1 text-sm text-red-500">
-												<AlertTriangle className="h-3 w-3" />
-												{getFieldError('category')}
-											</p>
-										)}
-									</div>
+        post('/cargo-types', {
+            preserveScroll: true,
+            onSuccess: () => {
+                setFrontendErrors({});
+                setIsDirty(false);
+                clearErrors();
+                toast({
+                    title: '✅ Cargo Type Registered',
+                    description: 'The cargo classification has been saved.',
+                });
+                reset();
+                formRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+            },
+            onError: (pageErrors) => {
+                setFrontendErrors((prev) => ({ ...prev, ...(pageErrors as FieldErrorMap) }));
+            },
+        });
+    };
 
-									<div className="md:col-span-2">
-										<div className="flex flex-col gap-3 rounded-lg border border-dashed border-rose-300/60 bg-rose-50/70 p-4 dark:border-rose-500/40 dark:bg-rose-500/10 md:flex-row md:items-center md:justify-between">
-											<div className="flex items-start gap-3">
-												<div className="rounded-full bg-white/90 p-2 text-rose-600 shadow-sm dark:bg-white/10 dark:text-rose-300">
-													<Package className="h-4 w-4" />
-												</div>
-												<div>
-													<p className="text-sm font-semibold text-rose-700 dark:text-rose-200">Special Equipment Requirement</p>
-													<p className="text-xs text-rose-700/80 dark:text-rose-200/80">
-														Flag cargos that need forklifts, refrigeration, or dedicated containment.
-													</p>
-												</div>
-											</div>
-											<div className="flex items-center gap-3">
-												<Checkbox
-													id="requires_special_equipment"
-													checked={data.requires_special_equipment}
-													onCheckedChange={(checked) => handleCheckboxChange(Boolean(checked))}
-													className="border-slate-300 text-rose-600 focus-visible:ring-rose-500 dark:border-slate-600"
-												/>
-												<Label htmlFor="requires_special_equipment" className="text-sm font-medium text-slate-700 dark:text-slate-300">
-													Requires special equipment
-												</Label>
-												<Badge variant="secondary" className={`border-0 ${data.requires_special_equipment ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-200' : 'bg-slate-100 text-slate-600 dark:bg-slate-800/60 dark:text-slate-300'}`}>
-													{data.requires_special_equipment ? 'Flagged' : 'Standard Handling'}
-												</Badge>
-											</div>
-										</div>
-										{getFieldError('requires_special_equipment') && (
-											<p className="mt-2 flex items-center gap-1 text-sm text-red-500">
-												<AlertTriangle className="h-3 w-3" />
-												{getFieldError('requires_special_equipment')}
-											</p>
-										)}
-									</div>
-								</div>
-							</section>
+    const getFieldError = (field: CargoTypeFormField): string => fieldErrors[field] ?? '';
+    const hasErrors = Object.values(fieldErrors).some(Boolean);
+    const hasCategories = categories.length > 0;
 
-							<section className="space-y-5 rounded-xl border border-slate-200/70 bg-white/80 p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/40">
-								<div className="flex items-center gap-3">
-									<div className="rounded-lg bg-blue-100 p-2 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300">
-										<ClipboardCheck className="h-4 w-4" />
-									</div>
-									<div>
-										<h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Specifications</h2>
-										<p className="text-sm text-muted-foreground">Capture physical characteristics that influence transport planning.</p>
-									</div>
-								</div>
+    return (
+        <FormPageLayout
+            title="Register Cargo Type"
+            headTitle="Create Cargo Type"
+            description="Standardize cargo classifications to improve dispatch planning and safety compliance."
+            breadcrumbs={breadcrumbs}
+            icon={<Package className="h-5 w-5" />}
+            headerAside={
+                <>
+                    <Button variant="ghost" size="sm" asChild>
+                        <Link href="/cargo-types">Back to Cargo Types</Link>
+                    </Button>
+                    {isDirty && <UnsavedChangesBadge />}
+                    <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">Inventory Standards</Badge>
+                </>
+            }
+        >
+            {hasErrors && (
+                <div className="px-6 pt-6">
+                    <Alert variant="destructive">
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertDescription>Please resolve the highlighted fields before submitting the form.</AlertDescription>
+                    </Alert>
+                </div>
+            )}
 
-								<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-									<div className="space-y-2">
-										<Label htmlFor="weight_per_cubic_meter" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-											Weight per m³ (kg)
-										</Label>
-										<Input
-											id="weight_per_cubic_meter"
-											type="number"
-											inputMode="decimal"
-											step="0.01"
-											value={data.weight_per_cubic_meter}
-											onChange={(event) => handleFieldChange('weight_per_cubic_meter', event.target.value)}
-											placeholder="0.00"
-											className={`bg-white transition-all duration-200 focus:border-rose-500 focus:ring-rose-500/20 dark:bg-slate-800 ${getFieldError('weight_per_cubic_meter') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20 dark:border-red-500' : 'border-slate-300 hover:border-slate-400 dark:border-slate-600 dark:hover:border-slate-500'}`}
-										/>
-										{getFieldError('weight_per_cubic_meter') && (
-											<p className="flex items-center gap-1 text-sm text-red-500">
-												<AlertTriangle className="h-3 w-3" />
-												{getFieldError('weight_per_cubic_meter')}
-											</p>
-										)}
-										<p className="text-xs text-muted-foreground">Optional but improves stacking and load balancing recommendations.</p>
-									</div>
+            <form
+                ref={formRef}
+                onSubmit={handleSubmit}
+                className="flex flex-1 flex-col gap-8 overflow-y-auto p-6 pb-24"
+                style={{ minHeight: 0 }}
+            >
+                <FormSection
+                    title="Cargo Overview"
+                    description="Define the core identity and classification for this cargo type."
+                    icon={
+                        <div className="rounded-lg bg-rose-100 p-2 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300">
+                            <Boxes className="h-4 w-4" />
+                        </div>
+                    }
+                    contentClassName="gap-6 md:grid-cols-2"
+                >
+                    <FormField id="name" label="Cargo Name" required helperText="Maximum 255 characters." error={getFieldError('name')}>
+                        <Input
+                            id="name"
+                            name="name"
+                            value={data.name}
+                            onChange={(event) => handleFieldChange('name', event.target.value)}
+                            placeholder="e.g. Bagged Cement"
+                            maxLength={255}
+                            className={`border-slate-300 focus:border-rose-500 focus:ring-rose-500/20 dark:border-slate-700 dark:focus:border-rose-400 ${getFieldError('name') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20 dark:border-red-500' : ''}`}
+                        />
+                    </FormField>
 
-									<div className="space-y-2">
-										<Label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Density Insight</Label>
-										<div className="flex h-12 items-center justify-between rounded-lg border border-dashed border-blue-200/70 bg-blue-50/70 px-4 text-sm dark:border-blue-500/40 dark:bg-blue-500/10">
-											<span className="text-slate-600 dark:text-slate-300">Auto assessment</span>
-											<Badge variant="secondary" className={`border-0 ${densityInsight ? densityInsight.tone : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300'}`}>
-												{densityInsight ? densityInsight.label : 'Awaiting input'}
-											</Badge>
-										</div>
-										<p className="text-xs text-muted-foreground">Helps dispatchers assign appropriate trailers and stacking strategy.</p>
-									</div>
-								</div>
-							</section>
+                    <FormField
+                        id="category"
+                        label="Category"
+                        required
+                        helperText={hasCategories ? 'Choose the category that best fits this cargo.' : 'No categories available. Please add one in the admin panel.'}
+                        error={getFieldError('category')}
+                    >
+                        <Select
+                            value={data.category}
+                            onValueChange={(value) => handleFieldChange('category', value)}
+                            disabled={!hasCategories}
+                        >
+                            <SelectTrigger
+                                id="category"
+                                className={`border-slate-300 focus:border-rose-500 focus:ring-rose-500/20 dark:border-slate-700 dark:focus:border-rose-400 ${getFieldError('category') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20 dark:border-red-500' : ''}`}
+                            >
+                                <SelectValue placeholder="Select category" />
+                            </SelectTrigger>
+                            <SelectContent className="max-h-60">
+                                {categories.map((option) => (
+                                    <SelectItem key={option.value} value={option.value}>
+                                        {option.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </FormField>
 
-							<section className="space-y-5 rounded-xl border border-slate-200/70 bg-white/80 p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/40">
-								<div className="flex items-center gap-3">
-									<div className="rounded-lg bg-slate-100 p-2 text-slate-600 dark:bg-slate-800/60 dark:text-slate-200">
-										<Shield className="h-4 w-4" />
-									</div>
-									<div>
-										<h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Handling &amp; Safety Guidance</h2>
-										<p className="text-sm text-muted-foreground">Document the operational and compliance instructions for crews.</p>
-									</div>
-								</div>
+                    <FormField
+                        id="requires_special_equipment"
+                        label="Special Equipment"
+                        helperText="Flag cargos that need forklifts, refrigeration, or dedicated containment."
+                        error={getFieldError('requires_special_equipment')}
+                        className="md:col-span-2"
+                    >
+                        <div className="flex flex-col gap-4 rounded-lg border border-dashed border-rose-300/60 bg-rose-50/70 p-4 dark:border-rose-500/40 dark:bg-rose-500/10 md:flex-row md:items-center md:justify-between">
+                            <div className="flex items-start gap-3">
+                                <div className="rounded-full bg-white/90 p-2 text-rose-600 shadow-sm dark:bg-white/10 dark:text-rose-300">
+                                    <Package className="h-4 w-4" />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-semibold text-rose-700 dark:text-rose-200">Requires special handling?</p>
+                                    <p className="text-xs text-rose-700/80 dark:text-rose-200/80">
+                                        Mark this to alert dispatch teams about extra preparation needs.
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <Checkbox
+                                    id="requires_special_equipment"
+                                    checked={data.requires_special_equipment}
+                                    onCheckedChange={handleCheckboxChange}
+                                    className="border-slate-300 text-rose-600 focus-visible:ring-rose-500 dark:border-slate-600"
+                                />
+                                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Requires special equipment</span>
+                                <Badge variant="secondary" className={`border-0 ${data.requires_special_equipment ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-200' : 'bg-slate-100 text-slate-600 dark:bg-slate-800/60 dark:text-slate-300'}`}>
+                                    {data.requires_special_equipment ? 'Flagged' : 'Standard Handling'}
+                                </Badge>
+                            </div>
+                        </div>
+                    </FormField>
+                </FormSection>
 
-								<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-									<div className="space-y-2">
-										<Label htmlFor="handling_requirements" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-											Handling Requirements
-										</Label>
-										<Textarea
-											id="handling_requirements"
-											value={data.handling_requirements}
-											onChange={(event) => handleFieldChange('handling_requirements', event.target.value, false)}
-											placeholder="Describe handling instructions, stacking limits, protective materials, etc."
-											rows={5}
-											className="bg-white transition-all duration-200 focus:border-rose-500 focus:ring-rose-500/20 dark:bg-slate-800 border-slate-300 hover:border-slate-400 dark:border-slate-600 dark:hover:border-slate-500"
-										/>
-										{getFieldError('handling_requirements') && (
-											<p className="flex items-center gap-1 text-sm text-red-500">
-												<AlertTriangle className="h-3 w-3" />
-												{getFieldError('handling_requirements')}
-											</p>
-										)}
-									</div>
+                <FormSection
+                    title="Specifications"
+                    description="Capture physical characteristics that influence transport planning."
+                    icon={
+                        <div className="rounded-lg bg-blue-100 p-2 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300">
+                            <ClipboardCheck className="h-4 w-4" />
+                        </div>
+                    }
+                    contentClassName="gap-6 md:grid-cols-2"
+                >
+                    <FormField
+                        id="weight_per_cubic_meter"
+                        label="Weight per m³ (kg)"
+                        helperText="Optional but improves stacking and load balancing recommendations."
+                        error={getFieldError('weight_per_cubic_meter')}
+                    >
+                        <Input
+                            id="weight_per_cubic_meter"
+                            name="weight_per_cubic_meter"
+                            type="number"
+                            inputMode="decimal"
+                            step="0.01"
+                            value={data.weight_per_cubic_meter}
+                            onChange={(event) => handleFieldChange('weight_per_cubic_meter', event.target.value)}
+                            placeholder="0.00"
+                            className={`border-slate-300 focus:border-rose-500 focus:ring-rose-500/20 dark:border-slate-700 dark:focus:border-rose-400 ${getFieldError('weight_per_cubic_meter') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20 dark:border-red-500' : ''}`}
+                        />
+                    </FormField>
 
-									<div className="space-y-2">
-										<Label htmlFor="safety_requirements" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-											Safety Requirements
-										</Label>
-										<Textarea
-											id="safety_requirements"
-											value={data.safety_requirements}
-											onChange={(event) => handleFieldChange('safety_requirements', event.target.value, false)}
-											placeholder="Summarize PPE, regulatory compliance, or incident response notes."
-											rows={5}
-											className="bg-white transition-all duration-200 focus:border-rose-500 focus:ring-rose-500/20 dark:bg-slate-800 border-slate-300 hover:border-slate-400 dark:border-slate-600 dark:hover:border-slate-500"
-										/>
-										{getFieldError('safety_requirements') && (
-											<p className="flex items-center gap-1 text-sm text-red-500">
-												<AlertTriangle className="h-3 w-3" />
-												{getFieldError('safety_requirements')}
-											</p>
-										)}
-									</div>
-								</div>
-							</section>
+                    <FormField id="density_insight" label="Density Insight" helperText="Helps scheduling teams understand cargo stacking constraints." className="md:col-span-1">
+                        <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-300">
+                            {densityInsight ? (
+                                <Badge className={`mb-2 inline-flex items-center gap-2 border-0 px-3 py-1.5 text-sm font-medium ${densityInsight.tone}`}>
+                                    <ShieldCheck className="h-3.5 w-3.5" />
+                                    {densityInsight.label}
+                                </Badge>
+                            ) : (
+                                <Badge variant="secondary" className="mb-2 border-0 bg-slate-100 text-slate-600 dark:bg-slate-800/60 dark:text-slate-300">
+                                    Awaiting data
+                                </Badge>
+                            )}
+                            <p className="text-xs text-muted-foreground">
+                                Provide weight per cubic meter to unlock automated stacking and payload recommendations.
+                            </p>
+                        </div>
+                    </FormField>
+                </FormSection>
 
-							<div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-slate-200/70 bg-white/80 px-6 py-5 shadow-sm dark:border-slate-800 dark:bg-slate-900/40">
-								<div className="flex flex-col gap-2 text-sm text-slate-600 dark:text-slate-400 md:flex-row md:items-center md:gap-4">
-									<div className="flex items-center gap-2">
-										<span className="text-red-500">*</span>
-										<span>Required fields</span>
-									</div>
-									<div className="flex items-center gap-2">
-										<ClipboardCheck className="h-3 w-3" />
-										<span>Accurate cargo profiles keep routing, costing, and compliance aligned.</span>
-									</div>
-								</div>
-								<div className="flex gap-3">
-									<Button type="button" variant="outline" asChild className="border-slate-300 hover:bg-slate-100 dark:border-slate-600 dark:hover:bg-slate-700">
-										<Link href="/cargo-types">Cancel</Link>
-									</Button>
-									<Button
-										type="submit"
-										disabled={processing || hasErrors}
-										className="min-w-[160px] bg-gradient-to-r from-rose-600 to-rose-700 px-6 text-white shadow-lg transition-all duration-200 hover:from-rose-700 hover:to-rose-800 hover:shadow-xl"
-									>
-										{processing ? (
-											<>
-												<div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white" />
-												Saving...
-											</>
-										) : (
-											<>
-												<Shield className="mr-2 h-4 w-4" />
-												Save Cargo Type
-											</>
-										)}
-									</Button>
-								</div>
-							</div>
-						</form>
-					</CardContent>
-				</Card>
+                <FormSection
+                    title="Handling & Safety"
+                    description="Outline the operational and safety expectations for this cargo."
+                    icon={
+                        <div className="rounded-lg bg-slate-100 p-2 text-slate-600 dark:bg-slate-800/60 dark:text-slate-200">
+                            <MapPin className="h-4 w-4" />
+                        </div>
+                    }
+                    contentClassName="gap-6"
+                >
+                    <FormField
+                        id="handling_requirements"
+                        label="Handling Notes"
+                        helperText="Optional. Describe packaging, stacking order, or temperature controls."
+                        error={getFieldError('handling_requirements')}
+                    >
+                        <Textarea
+                            id="handling_requirements"
+                            name="handling_requirements"
+                            value={data.handling_requirements}
+                            onChange={(event) => handleFieldChange('handling_requirements', event.target.value, { validate: false })}
+                            onBlur={() => validateField('handling_requirements', data.handling_requirements)}
+                            rows={4}
+                            maxLength={2000}
+                            className={`resize-y border-slate-300 focus:border-rose-500 focus:ring-rose-500/20 dark:border-slate-700 dark:focus:border-rose-400 ${getFieldError('handling_requirements') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20 dark:border-red-500' : ''}`}
+                            placeholder="Include palletisation, stacking, or temperature guidance."
+                        />
+                    </FormField>
 
-				{showScrollTop && (
-					<Button
-						type="button"
-						onClick={handleScrollToTop}
-						className="fixed bottom-6 right-6 z-50 shadow-lg"
-						variant="secondary"
-						aria-label="Scroll to top"
-					>
-						<ArrowUp className="h-4 w-4" />
-					</Button>
-				)}
-			</div>
-		</AppLayout>
-	);
+                    <FormField
+                        id="safety_requirements"
+                        label="Safety Guidance"
+                        helperText="Optional. Highlight protective equipment or risk mitigation steps."
+                        error={getFieldError('safety_requirements')}
+                    >
+                        <Textarea
+                            id="safety_requirements"
+                            name="safety_requirements"
+                            value={data.safety_requirements}
+                            onChange={(event) => handleFieldChange('safety_requirements', event.target.value, { validate: false })}
+                            onBlur={() => validateField('safety_requirements', data.safety_requirements)}
+                            rows={4}
+                            maxLength={2000}
+                            className={`resize-y border-slate-300 focus:border-rose-500 focus:ring-rose-500/20 dark:border-slate-700 dark:focus:border-rose-400 ${getFieldError('safety_requirements') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20 dark:border-red-500' : ''}`}
+                            placeholder="Document PPE needs, hazard markings, or emergency contacts."
+                        />
+                    </FormField>
+                </FormSection>
+
+                <FormActionsBar
+                    left={
+                        <>
+                            <span className="flex items-center gap-2 text-sm">
+                                <span className="text-red-500">*</span>
+                                Required fields keep cargo cataloging consistent across the fleet.
+                            </span>
+                            <span className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <ClipboardCheck className="h-3 w-3" />
+                                Accurate specs unlock safer loading playbooks.
+                            </span>
+                        </>
+                    }
+                    right={
+                        <>
+                            <Button type="button" variant="outline" asChild className="border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800">
+                                <Link href="/cargo-types">Cancel</Link>
+                            </Button>
+                            <Button
+                                type="submit"
+                                disabled={processing || hasErrors}
+                                className="min-w-[180px] bg-gradient-to-r from-rose-600 to-rose-700 text-white shadow-lg transition hover:from-rose-700 hover:to-rose-800"
+                            >
+                                {processing ? 'Saving…' : 'Save Cargo Type'}
+                            </Button>
+                        </>
+                    }
+                />
+            </form>
+            <ScrollToTopFab visible={showScrollTop} onClick={handleScrollToTop} />
+        </FormPageLayout>
+    );
 }
