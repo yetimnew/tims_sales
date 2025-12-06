@@ -1,115 +1,150 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { TableCell, TableRow } from '@/components/ui/table';
+import ListPageLayout from '@/components/layouts/list-page-layout';
+import { ListingStatsHeader } from '@/components/listing/stats-header';
+import { ListingFilterBar } from '@/components/listing/filter-bar';
+import { ListingTableShell } from '@/components/listing/data-table-shell';
+import { ListingMobileItemList } from '@/components/listing/mobile-item-list';
+import { ListingLoadingPlaceholder } from '@/components/listing/loading-placeholder';
+import { ListingPaginationFooter } from '@/components/listing/pagination-footer';
+import { ListingRowActionsMenu } from '@/components/listing/row-actions-menu';
+import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
+import { usePermissions } from '@/hooks/use-permissions';
+import { useListingLoading } from '@/hooks/use-listing-loading';
+import { toast } from '@/hooks/use-toast';
+import { Link, router } from '@inertiajs/react';
+import { type BreadcrumbItem } from '@/types';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
+import * as React from 'react';
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table'
-import ListPageLayout from '@/components/layouts/list-page-layout'
-import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog'
-import { usePermissions } from '@/hooks/use-permissions'
-import { useToast } from '@/hooks/use-toast'
-import { Link, router } from '@inertiajs/react'
-import { type BreadcrumbItem } from '@/types'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { InertiaPagination } from '@/components/ui/pagination'
-import { Input } from '@/components/ui/input'
-import * as React from 'react'
-import { AlertTriangle, ArrowUpDown, DollarSign, Eye, Megaphone, Plus, Search, ShieldAlert, SquarePen, Trash2 } from 'lucide-react'
+    Plus,
+    Eye,
+    Edit,
+    Search,
+    Trash2,
+    ShieldAlert,
+    AlertTriangle,
+    Megaphone,
+    DollarSign,
+    ChevronRight,
+} from 'lucide-react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Driver Safety',
         href: '/driver-safety',
     },
-]
+];
 
 interface DriverSummary {
-    id: number
-    name: string
+    id: number;
+    name: string;
 }
 
 interface SafetyRecord {
-    id: number
-    driver_id: number
-    incident_date: string
-    incident_type: string
-    severity: string
-    description: string
-    damage_cost?: number | null
-    location?: string | null
-    driver?: DriverSummary | null
+    id: number;
+    driver_id: number;
+    incident_date: string;
+    incident_type: string;
+    severity: string;
+    description: string;
+    damage_cost?: number | null;
+    location?: string | null;
+    driver?: DriverSummary | null;
 }
 
 interface DriverSafetyIndexProps {
     safetyRecords: {
-        data: SafetyRecord[]
-        current_page: number
-        last_page: number
-        total: number
-        from: number
-        to: number
+        data: SafetyRecord[];
+        current_page: number;
+        last_page: number;
+        total: number;
+        from: number | null;
+        to: number | null;
+        per_page?: number | null;
         links: Array<{
-            url: string | null
-            label: string
-            active: boolean
-        }>
-    }
+            url: string | null;
+            label: string;
+            active: boolean;
+        }>;
+    };
     metrics: {
-        total: number
-        accidents: number
-        violations: number
-        warnings: number
-        critical: number
-        major: number
-        minor: number
-        total_damage_cost: number
-        average_damage_cost: number
-    }
+        total: number;
+        accidents: number;
+        violations: number;
+        warnings: number;
+        critical: number;
+        major: number;
+        minor: number;
+        total_damage_cost: number;
+        average_damage_cost: number;
+    };
     filters: {
-        search?: string | null
-        incident_type?: string | null
-        severity?: string | null
-        driver?: number | string | null
-        sort?: string | null
-        direction?: 'asc' | 'desc' | null
-        per_page?: number | null
-    }
-    incidentTypeOptions: Array<{ label: string; value: string }>
-    severityOptions: Array<{ label: string; value: string }>
-    driverOptions: DriverSummary[]
-    perPageOptions: number[]
+        search?: string | null;
+        incident_type?: string | null;
+        severity?: string | null;
+        driver?: number | string | null;
+        sort?: string | null;
+        direction?: 'asc' | 'desc' | null;
+        per_page?: number | null;
+    };
+    incidentTypeOptions: Array<{ label: string; value: string }>;
+    severityOptions: Array<{ label: string; value: string }>;
+    driverOptions: DriverSummary[];
+    perPageOptions: number[];
 }
 
-const columns: Array<{ key: string; label: string; sortable?: boolean; sortKey?: string }> = [
-    { key: 'incident_date', label: 'Date', sortable: true, sortKey: 'incident_date' },
-    { key: 'driver', label: 'Driver' },
-    { key: 'incident_type', label: 'Type', sortable: true, sortKey: 'incident_type' },
-    { key: 'severity', label: 'Severity', sortable: true, sortKey: 'severity' },
-    { key: 'description', label: 'Description' },
-    { key: 'damage_cost', label: 'Damage Cost', sortable: true, sortKey: 'damage_cost' },
-]
+const SKELETON_FLAG_KEY = 'driver-safety.index.shouldShowSkeleton';
 
-const formatDate = (value?: string | null) => {
+const COLUMN_DEFINITIONS: Array<{
+    id:
+        | 'incident_date'
+        | 'driver'
+        | 'incident_type'
+        | 'severity'
+        | 'description'
+        | 'damage_cost';
+    label: string;
+    sortKey?: string;
+    align?: 'left' | 'center' | 'right';
+}> = [
+    { id: 'incident_date', label: 'Date', sortKey: 'incident_date' },
+    { id: 'driver', label: 'Driver' },
+    { id: 'incident_type', label: 'Type', sortKey: 'incident_type', align: 'center' },
+    { id: 'severity', label: 'Severity', sortKey: 'severity', align: 'center' },
+    { id: 'description', label: 'Description' },
+    { id: 'damage_cost', label: 'Damage Cost', sortKey: 'damage_cost', align: 'right' },
+];
+
+type NavigateOverrides = {
+    search?: string;
+    incident_type?: string;
+    severity?: string;
+    driver?: string | number;
+    sort?: string;
+    direction?: 'asc' | 'desc';
+    page?: number;
+    per_page?: number;
+};
+
+const formatDate = (value?: string | null): string => {
     if (!value) {
-        return '—'
+        return '—';
     }
 
-    const date = new Date(value)
-    if (Number.isNaN(date.getTime())) {
-        return '—'
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+        return '—';
     }
 
-    return date.toLocaleDateString()
-}
+    return parsed.toLocaleDateString();
+};
 
-const formatCurrency = (value?: number | null) => {
+const formatCurrency = (value?: number | null): string => {
     if (typeof value !== 'number' || Number.isNaN(value)) {
-        return 'ETB 0.00'
+        return 'ETB\u00a00.00';
     }
 
     return new Intl.NumberFormat('en-US', {
@@ -117,36 +152,44 @@ const formatCurrency = (value?: number | null) => {
         currency: 'ETB',
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
-    }).format(value)
-}
+    }).format(value);
+};
 
-const getSeverityBadgeClass = (severity: string) => {
-    const normalized = severity.toLowerCase()
+const getSeverityBadgeClass = (severity: string): string => {
+    const normalized = severity.toLowerCase();
     if (normalized === 'critical') {
-        return 'bg-red-500 text-white hover:bg-red-600'
+        return 'bg-red-500 text-white hover:bg-red-600';
     }
     if (normalized === 'major') {
-        return 'bg-orange-500 text-white hover:bg-orange-600'
+        return 'bg-orange-500 text-white hover:bg-orange-600';
     }
     if (normalized === 'minor') {
-        return 'bg-amber-500 text-white hover:bg-amber-600'
+        return 'bg-amber-500 text-white hover:bg-amber-600';
     }
-    return 'bg-muted text-muted-foreground'
-}
+    return 'bg-muted text-muted-foreground';
+};
 
-const getIncidentTypeBadgeClass = (incidentType: string) => {
-    const normalized = incidentType.toLowerCase()
+const getIncidentTypeBadgeClass = (incidentType: string): string => {
+    const normalized = incidentType.toLowerCase();
     if (normalized === 'accident') {
-        return 'bg-rose-500 text-white hover:bg-rose-600'
+        return 'bg-rose-500 text-white hover:bg-rose-600';
     }
     if (normalized === 'violation') {
-        return 'bg-indigo-500 text-white hover:bg-indigo-600'
+        return 'bg-indigo-500 text-white hover:bg-indigo-600';
     }
     if (normalized === 'warning') {
-        return 'bg-blue-500 text-white hover:bg-blue-600'
+        return 'bg-blue-500 text-white hover:bg-blue-600';
     }
-    return 'bg-muted text-muted-foreground'
-}
+    return 'bg-muted text-muted-foreground';
+};
+
+const formatCount = (value?: number | null): string => {
+    if (typeof value !== 'number' || Number.isNaN(value)) {
+        return '0';
+    }
+
+    return value.toLocaleString();
+};
 
 export default function DriverSafetyIndex({
     safetyRecords,
@@ -157,210 +200,495 @@ export default function DriverSafetyIndex({
     driverOptions,
     perPageOptions,
 }: DriverSafetyIndexProps) {
-    const { hasPermission } = usePermissions()
-    const { toast } = useToast()
-    const [searchTerm, setSearchTerm] = React.useState(filters?.search ?? '')
-    const [selectedIncidentType, setSelectedIncidentType] = React.useState(filters?.incident_type ?? 'all')
-    const [selectedSeverity, setSelectedSeverity] = React.useState(filters?.severity ?? 'all')
-    const [selectedDriver, setSelectedDriver] = React.useState(filters?.driver ? String(filters.driver) : 'all')
-    const [sortColumn, setSortColumn] = React.useState<string>(filters?.sort ?? 'incident_date')
-    const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>(filters?.direction ?? 'desc')
-    const availablePerPageOptions = React.useMemo(() => (perPageOptions?.length ? perPageOptions : [15, 25, 50, 100]), [perPageOptions])
+    const { hasPermission } = usePermissions();
+    const canViewRecord = hasPermission('driver-safety.show');
+    const canEditRecord = hasPermission('driver-safety.edit');
+    const canDeleteRecord = hasPermission('driver-safety.destroy');
+    const canCreateRecord = hasPermission('driver-safety.create');
+
+    const [searchTerm, setSearchTerm] = React.useState(filters?.search ?? '');
+    const [selectedIncidentType, setSelectedIncidentType] = React.useState(filters?.incident_type ?? 'all');
+    const [selectedSeverity, setSelectedSeverity] = React.useState(filters?.severity ?? 'all');
+    const [selectedDriver, setSelectedDriver] = React.useState(filters?.driver ? String(filters.driver) : 'all');
+    const [sortColumn, setSortColumn] = React.useState<string>(filters?.sort ?? 'incident_date');
+    const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>(filters?.direction ?? 'desc');
+    const availablePerPageOptions = React.useMemo(
+        () => (perPageOptions?.length ? perPageOptions : [15, 25, 50, 100]),
+        [perPageOptions],
+    );
     const resolvedPerPage = React.useMemo(() => {
-        const candidate = filters?.per_page
+        const candidate = filters?.per_page;
         if (typeof candidate === 'number' && availablePerPageOptions.includes(candidate)) {
-            return candidate
+            return candidate;
         }
 
-        return availablePerPageOptions[0] ?? 15
-    }, [filters?.per_page, availablePerPageOptions])
-    const [perPage, setPerPage] = React.useState<string>(() => String(resolvedPerPage))
-    const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false)
-    const [selectedRecord, setSelectedRecord] = React.useState<SafetyRecord | null>(null)
-    const [isDeleting, setIsDeleting] = React.useState(false)
+        return availablePerPageOptions[0] ?? 15;
+    }, [filters?.per_page, availablePerPageOptions]);
+    const [perPage, setPerPage] = React.useState<string>(() => String(resolvedPerPage));
+
+    const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+    const [selectedRecord, setSelectedRecord] = React.useState<SafetyRecord | null>(null);
+    const [isDeleting, setIsDeleting] = React.useState(false);
+
+    const isDataReady = Array.isArray(safetyRecords?.data);
+    const { isLoading } = useListingLoading({
+        storageKey: SKELETON_FLAG_KEY,
+        isDataReady,
+    });
 
     React.useEffect(() => {
-        setPerPage(String(resolvedPerPage))
-    }, [resolvedPerPage])
+        setPerPage(String(resolvedPerPage));
+    }, [resolvedPerPage]);
 
-    const totalRecords = metrics?.total ?? safetyRecords?.total ?? 0
-    const currentPage = safetyRecords?.current_page ?? 1
-    const lastPage = safetyRecords?.last_page ?? 1
-    const safetyData = safetyRecords?.data ?? []
-    const rowOffset = Math.max(0, (safetyRecords?.from ?? 1) - 1)
+    const safetyData = safetyRecords?.data ?? [];
+    const totalRecords = metrics?.total ?? safetyRecords?.total ?? safetyData.length ?? 0;
+    const accidents = metrics?.accidents ?? 0;
+    const violations = metrics?.violations ?? 0;
+    const warnings = metrics?.warnings ?? 0;
+    const critical = metrics?.critical ?? 0;
+    const major = metrics?.major ?? 0;
+    const minor = metrics?.minor ?? 0;
+    const totalDamageCost = metrics?.total_damage_cost ?? 0;
+    const averageDamageCost = metrics?.average_damage_cost ?? 0;
 
-    const handleNavigate = React.useCallback((overrides: Partial<{
-        search?: string
-        incident_type?: string
-        severity?: string
-        driver?: string | number
-        sort?: string
-        direction?: 'asc' | 'desc'
-        page?: number
-        per_page?: number
-    }>) => {
-        const perPageValue = overrides.per_page !== undefined ? overrides.per_page : Number(perPage)
-        const params: Record<string, string | number | undefined> = {
-            search: overrides.search !== undefined ? overrides.search : (searchTerm.trim() ? searchTerm.trim() : undefined),
-            incident_type: overrides.incident_type !== undefined ? overrides.incident_type : (selectedIncidentType !== 'all' ? selectedIncidentType : undefined),
-            severity: overrides.severity !== undefined ? overrides.severity : (selectedSeverity !== 'all' ? selectedSeverity : undefined),
-            driver: overrides.driver !== undefined ? overrides.driver : (selectedDriver !== 'all' ? selectedDriver : undefined),
-            sort: overrides.sort ?? sortColumn,
-            direction: overrides.direction ?? sortDirection,
-            page: overrides.page,
-            per_page: perPageValue,
-        }
+    const rowOffset = Math.max((safetyRecords?.from ?? 1) - 1, 0);
 
-        Object.keys(params).forEach((key) => {
-            const value = params[key]
-            if (
-                value === undefined ||
-                value === null ||
-                value === '' ||
-                (key === 'per_page' && (typeof value !== 'number' || !Number.isFinite(value) || value <= 0))
-            ) {
-                delete params[key]
+    const handleNavigate = React.useCallback(
+        (overrides: NavigateOverrides = {}) => {
+            const hasOverride = (key: keyof NavigateOverrides) =>
+                Object.prototype.hasOwnProperty.call(overrides, key);
+
+            const nextSearch = hasOverride('search')
+                ? overrides.search
+                : searchTerm.trim()
+                    ? searchTerm.trim()
+                    : undefined;
+
+            const nextIncidentType = hasOverride('incident_type')
+                ? overrides.incident_type
+                : selectedIncidentType !== 'all'
+                    ? selectedIncidentType
+                    : undefined;
+
+            const nextSeverity = hasOverride('severity')
+                ? overrides.severity
+                : selectedSeverity !== 'all'
+                    ? selectedSeverity
+                    : undefined;
+
+            const nextDriver = hasOverride('driver')
+                ? overrides.driver
+                : selectedDriver !== 'all'
+                    ? selectedDriver
+                    : undefined;
+
+            const nextSort = hasOverride('sort') ? overrides.sort ?? sortColumn : sortColumn;
+            const nextDirection = hasOverride('direction') ? overrides.direction ?? sortDirection : sortDirection;
+            const nextPerPage = hasOverride('per_page') ? overrides.per_page : Number(perPage);
+            const nextPage = hasOverride('page') ? overrides.page : undefined;
+
+            const params: Record<string, string | number | undefined> = {
+                search: nextSearch && nextSearch !== '' ? nextSearch : undefined,
+                incident_type: nextIncidentType && nextIncidentType !== 'all' ? nextIncidentType : undefined,
+                severity: nextSeverity && nextSeverity !== 'all' ? nextSeverity : undefined,
+                driver: nextDriver && nextDriver !== 'all' ? nextDriver : undefined,
+                sort: nextSort,
+                direction: nextDirection,
+                page: nextPage,
+                per_page:
+                    typeof nextPerPage === 'number' && Number.isFinite(nextPerPage) && nextPerPage > 0
+                        ? nextPerPage
+                        : undefined,
+            };
+
+            Object.keys(params).forEach((key) => {
+                if (params[key] === undefined) {
+                    delete params[key];
+                }
+            });
+
+            if (typeof window !== 'undefined') {
+                window.sessionStorage.setItem(SKELETON_FLAG_KEY, 'true');
             }
-        })
 
-        router.get('/driver-safety', params, { preserveState: true, replace: false })
-    }, [searchTerm, selectedIncidentType, selectedSeverity, selectedDriver, sortColumn, sortDirection, perPage])
+            router.get('/driver-safety', params, { preserveState: true, replace: false });
+        },
+        [perPage, searchTerm, selectedIncidentType, selectedSeverity, selectedDriver, sortColumn, sortDirection],
+    );
 
     const handleSearchChange = (value: string) => {
-        setSearchTerm(value)
-        handleNavigate({ search: value.trim() ? value.trim() : undefined, page: 1 })
-    }
+        setSearchTerm(value);
+        handleNavigate({ search: value.trim() ? value.trim() : undefined, page: 1 });
+    };
 
     const handleIncidentTypeChange = (value: string) => {
-        setSelectedIncidentType(value)
-        handleNavigate({ incident_type: value !== 'all' ? value : undefined, page: 1 })
-    }
+        setSelectedIncidentType(value);
+        handleNavigate({ incident_type: value !== 'all' ? value : undefined, page: 1 });
+    };
 
     const handleSeverityChange = (value: string) => {
-        setSelectedSeverity(value)
-        handleNavigate({ severity: value !== 'all' ? value : undefined, page: 1 })
-    }
+        setSelectedSeverity(value);
+        handleNavigate({ severity: value !== 'all' ? value : undefined, page: 1 });
+    };
 
     const handleDriverChange = (value: string) => {
-        setSelectedDriver(value)
-        handleNavigate({ driver: value !== 'all' ? value : undefined, page: 1 })
-    }
+        setSelectedDriver(value);
+        handleNavigate({ driver: value !== 'all' ? value : undefined, page: 1 });
+    };
 
     const handlePerPageChange = (value: string) => {
-        setPerPage(value)
-        const numericValue = Number(value)
-        handleNavigate({ per_page: Number.isNaN(numericValue) ? undefined : numericValue, page: 1 })
-    }
+        setPerPage(value);
+        const numericValue = Number(value);
+        handleNavigate({ per_page: Number.isNaN(numericValue) ? undefined : numericValue, page: 1 });
+    };
 
-    const handleSort = (column: string) => {
-        const newDirection: 'asc' | 'desc' = sortColumn === column && sortDirection === 'asc' ? 'desc' : 'asc'
-        setSortColumn(column)
-        setSortDirection(newDirection)
-        handleNavigate({ sort: column, direction: newDirection })
-    }
+    const handleSort = React.useCallback(
+        (column: string) => {
+            const newDirection: 'asc' | 'desc' = sortColumn === column && sortDirection === 'asc' ? 'desc' : 'asc';
+            setSortColumn(column);
+            setSortDirection(newDirection);
+            handleNavigate({ sort: column, direction: newDirection });
+        },
+        [handleNavigate, sortColumn, sortDirection],
+    );
 
     const handleDeleteClick = (record: SafetyRecord) => {
-        setSelectedRecord(record)
-        setDeleteDialogOpen(true)
-    }
+        setSelectedRecord(record);
+        setDeleteDialogOpen(true);
+    };
 
     const handleDeleteConfirm = () => {
         if (!selectedRecord) {
-            return
+            return;
         }
 
-        setIsDeleting(true)
+        setIsDeleting(true);
+
         router.delete(`/driver-safety/${selectedRecord.id}`, {
             preserveScroll: true,
             onSuccess: () => {
-                setIsDeleting(false)
-                setDeleteDialogOpen(false)
-                setSelectedRecord(null)
+                setDeleteDialogOpen(false);
+                setSelectedRecord(null);
+                setIsDeleting(false);
                 toast({
                     title: 'Safety record deleted',
                     description: 'The driver safety record was removed successfully.',
-                })
+                });
             },
             onError: (errors) => {
-                setIsDeleting(false)
-                const errorMessages = errors && typeof errors === 'object'
-                    ? Object.values(errors as Record<string, unknown>)
+                setIsDeleting(false);
+
+                const fallback = 'Failed to delete safety record. Please try again.';
+                if (errors && typeof errors === 'object') {
+                    const errorMessages = Object.values(errors)
                         .flatMap((value) => (Array.isArray(value) ? value : [value]))
-                        .filter((value): value is string => typeof value === 'string')
-                        .join('\n')
-                    : 'Failed to delete safety record.'
-                toast({
-                    title: 'Delete failed',
-                    description: errorMessages,
-                    variant: 'destructive',
-                })
+                        .filter(Boolean)
+                        .join('\n');
+
+                    toast({
+                        title: 'Delete failed',
+                        description: errorMessages || fallback,
+                        variant: 'destructive',
+                    });
+                } else {
+                    toast({
+                        title: 'Delete failed',
+                        description: fallback,
+                        variant: 'destructive',
+                    });
+                }
             },
-        })
-    }
+        });
+    };
 
-    const statsCards = [
+    const headerActions = (
+        <>
+            {canCreateRecord && (
+                <Button asChild>
+                    <Link href="/driver-safety/create">
+                        <Plus className="mr-2 h-4 w-4" />
+                        New Safety Record
+                    </Link>
+                </Button>
+            )}
+        </>
+    );
+
+    const statsDefinitions = [
         {
-            title: 'Total Records',
-            value: metrics ? metrics.total.toLocaleString() : '0',
-            description: `${metrics?.critical?.toLocaleString() ?? 0} critical incidents`,
+            id: 'total-records',
+            label: 'Total Records',
             icon: <ShieldAlert className="h-3.5 w-3.5 text-blue-600" />,
-            valueClassName: 'text-blue-600',
+            className: 'min-w-0',
+            value: isLoading ? (
+                <Skeleton className="h-3.5 w-20" aria-hidden="true" />
+            ) : (
+                formatCount(totalRecords)
+            ),
+            description: isLoading ? (
+                <Skeleton className="h-3 w-40" aria-hidden="true" />
+            ) : (
+                `${formatCount(critical)} critical incidents`
+            ),
+            valueClassName: isLoading ? undefined : 'text-blue-600',
         },
         {
-            title: 'Accidents',
-            value: metrics ? metrics.accidents.toLocaleString() : '0',
-            description: `${metrics?.violations?.toLocaleString() ?? 0} violations`,
+            id: 'accidents',
+            label: 'Accidents',
             icon: <AlertTriangle className="h-3.5 w-3.5 text-rose-600" />,
-            valueClassName: 'text-rose-600',
+            className: 'min-w-0',
+            value: isLoading ? (
+                <Skeleton className="h-3.5 w-16" aria-hidden="true" />
+            ) : (
+                formatCount(accidents)
+            ),
+            description: isLoading ? (
+                <Skeleton className="h-3 w-36" aria-hidden="true" />
+            ) : (
+                `${formatCount(violations)} violations`
+            ),
+            valueClassName: isLoading ? undefined : 'text-rose-600',
         },
         {
-            title: 'Warnings',
-            value: metrics ? metrics.warnings.toLocaleString() : '0',
-            description: `${metrics?.minor?.toLocaleString() ?? 0} minor cases`,
+            id: 'warnings',
+            label: 'Warnings',
             icon: <Megaphone className="h-3.5 w-3.5 text-amber-600" />,
-            valueClassName: 'text-amber-600',
+            className: 'min-w-0',
+            value: isLoading ? (
+                <Skeleton className="h-3.5 w-16" aria-hidden="true" />
+            ) : (
+                formatCount(warnings)
+            ),
+            description: isLoading ? (
+                <Skeleton className="h-3 w-36" aria-hidden="true" />
+            ) : (
+                `${formatCount(minor)} minor cases`
+            ),
+            valueClassName: isLoading ? undefined : 'text-amber-600',
         },
         {
-            title: 'Damage Cost',
-            value: formatCurrency(metrics?.total_damage_cost ?? 0),
-            description: `Avg ${formatCurrency(metrics?.average_damage_cost ?? 0)}`,
+            id: 'damage-cost',
+            label: 'Damage Cost',
             icon: <DollarSign className="h-3.5 w-3.5 text-purple-600" />,
-            valueClassName: 'text-purple-600',
+            className: 'min-w-0',
+            value: isLoading ? (
+                <Skeleton className="h-3.5 w-24" aria-hidden="true" />
+            ) : (
+                formatCurrency(totalDamageCost)
+            ),
+            description: isLoading ? (
+                <Skeleton className="h-3 w-32" aria-hidden="true" />
+            ) : (
+                `Avg ${formatCurrency(averageDamageCost)}`
+            ),
+            valueClassName: isLoading ? undefined : 'text-purple-600',
         },
-    ]
+    ];
 
-    const statsSection = (
-        <div className="hidden gap-2 md:grid md:grid-cols-2 xl:grid-cols-4">
-            {statsCards.map((card) => (
-                <Card key={card.title} className="gap-2 border border-slate-200 py-2 shadow-sm sm:py-3">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 p-1.5 sm:p-2">
-                        <CardTitle className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                            {card.title}
-                        </CardTitle>
-                        {card.icon}
-                    </CardHeader>
-                    <CardContent className="px-2 pb-2 pt-0 sm:px-3 sm:pb-2">
-                        <div className={`text-sm font-semibold sm:text-base ${card.valueClassName}`}>{card.value}</div>
-                        <p className="text-[11px] text-muted-foreground">{card.description}</p>
-                    </CardContent>
-                </Card>
-            ))}
-        </div>
-    )
+    const statsSection = <ListingStatsHeader stats={statsDefinitions} orientation="row" />;
+
+    const perPageSelectOptions = React.useMemo(
+        () =>
+            availablePerPageOptions.map((option) => ({
+                value: String(option),
+                label: `${option} / page`,
+            })),
+        [availablePerPageOptions],
+    );
+
+    const tableColumns = React.useMemo(
+        () => [
+            { id: 'index', label: '#', align: 'center' as const },
+            ...COLUMN_DEFINITIONS.map((column) => ({
+                id: column.id,
+                label: column.label,
+                sortable: Boolean(column.sortKey),
+                sortKey: column.sortKey,
+                align: column.align,
+            })),
+            { id: 'actions', label: 'Actions', align: 'center' as const },
+        ],
+        [],
+    );
+
+    const tableRows = isLoading
+        ? Array.from({ length: 6 }).map((_, rowIndex) => (
+              <TableRow key={`safety-record-skeleton-${rowIndex}`} aria-hidden="true">
+                  {tableColumns.map((column) => (
+                      <TableCell
+                          key={`${column.id}-${rowIndex}`}
+                          className={
+                              column.align === 'center'
+                                  ? 'text-center'
+                                  : column.align === 'right'
+                                      ? 'text-right'
+                                      : undefined
+                          }
+                      >
+                          <Skeleton className="mx-auto h-4 w-24 max-w-full" />
+                      </TableCell>
+                  ))}
+              </TableRow>
+          ))
+        : safetyData.length > 0
+            ? safetyData.map((record, index) => (
+                  <TableRow key={record.id} className="hover:bg-muted/50">
+                      <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
+                      <TableCell className="font-medium">{formatDate(record.incident_date)}</TableCell>
+                      <TableCell className="text-muted-foreground">{record.driver?.name || '—'}</TableCell>
+                      <TableCell className="text-center">
+                          <Badge className={getIncidentTypeBadgeClass(record.incident_type)}>
+                              {record.incident_type}
+                          </Badge>
+                      </TableCell>
+                      <TableCell className="text-center">
+                          <Badge className={getSeverityBadgeClass(record.severity)}>{record.severity}</Badge>
+                      </TableCell>
+                      <TableCell className="max-w-sm truncate text-muted-foreground" title={record.description}>
+                          {record.description || '—'}
+                      </TableCell>
+                      <TableCell className="text-right font-semibold">{formatCurrency(record.damage_cost ?? 0)}</TableCell>
+                      <TableCell className="text-center">
+                          <ListingRowActionsMenu
+                              actions={[
+                                  canViewRecord && {
+                                      label: 'View',
+                                      icon: <Eye className="h-4 w-4" />,
+                                      href: `/driver-safety/${record.id}`,
+                                  },
+                                  canEditRecord && {
+                                      label: 'Edit',
+                                      icon: <Edit className="h-4 w-4" />,
+                                      href: `/driver-safety/${record.id}/edit`,
+                                  },
+                                  canDeleteRecord && {
+                                      label: 'Delete',
+                                      icon: <Trash2 className="h-4 w-4" />,
+                                      danger: true,
+                                      disabled: isDeleting && selectedRecord?.id === record.id,
+                                      onSelect: () => handleDeleteClick(record),
+                                  },
+                              ]}
+                          />
+                      </TableCell>
+                  </TableRow>
+              ))
+            : (
+                <TableRow>
+                    <TableCell colSpan={tableColumns.length} className="py-8 text-center text-muted-foreground">
+                        No safety records found.
+                        {canCreateRecord && (
+                            <Link href="/driver-safety/create" className="ml-1 text-primary underline">
+                                Create one
+                            </Link>
+                        )}
+                    </TableCell>
+                </TableRow>
+            );
+
+    const mobileItems = React.useMemo(
+        () =>
+            safetyData.map((record, index) => ({
+                record,
+                position: rowOffset + index + 1,
+            })),
+        [rowOffset, safetyData],
+    );
+
+    const mobileContent = isLoading ? (
+        <ListingLoadingPlaceholder showStats={false} filterItemCount={4} rowCount={4} />
+    ) : (
+        <ListingMobileItemList
+            items={mobileItems}
+            getKey={(item) => item.record.id}
+            renderTitle={(item) => (
+                <div className="flex items-center gap-2">
+                    <span className="text-xs uppercase tracking-wide text-muted-foreground">#{item.position}</span>
+                    <span className="text-base">{item.record.driver?.name || 'Unassigned driver'}</span>
+                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+                </div>
+            )}
+            renderSubtitle={(item) => `${item.record.incident_type} • ${item.record.severity}`}
+            renderContent={(item) => (
+                <div className="space-y-3 text-sm text-muted-foreground">
+                    <div className="flex items-center justify-between">
+                        <span className="font-medium text-slate-600 dark:text-slate-300">Date</span>
+                        <span className="text-right text-slate-900 dark:text-slate-100">{formatDate(item.record.incident_date)}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <span className="font-medium text-slate-600 dark:text-slate-300">Description</span>
+                        <span className="ml-3 text-right text-slate-900 dark:text-slate-100">
+                            {item.record.description || '—'}
+                        </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <span className="font-medium text-slate-600 dark:text-slate-300">Damage Cost</span>
+                        <span className="text-right text-slate-900 dark:text-slate-100">{formatCurrency(item.record.damage_cost ?? 0)}</span>
+                    </div>
+                </div>
+            )}
+            renderFooter={(item) => (
+                <div className="flex w-full flex-wrap items-center justify-end gap-2">
+                    {canViewRecord && (
+                        <Button asChild size="sm" variant="outline" className="flex-1 sm:flex-auto">
+                            <Link href={`/driver-safety/${item.record.id}`}>
+                                <Eye className="mr-2 h-4 w-4" />
+                                View
+                            </Link>
+                        </Button>
+                    )}
+                    {canEditRecord && (
+                        <Button asChild size="sm" variant="secondary" className="flex-1 sm:flex-none">
+                            <Link href={`/driver-safety/${item.record.id}/edit`}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                Edit
+                            </Link>
+                        </Button>
+                    )}
+                    {canDeleteRecord && (
+                        <Button
+                            size="sm"
+                            variant="destructive"
+                            className="flex-1 sm:flex-none"
+                            onClick={() => handleDeleteClick(item.record)}
+                            disabled={isDeleting && selectedRecord?.id === item.record.id}
+                        >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                        </Button>
+                    )}
+                </div>
+            )}
+            emptyState={(
+                <div className="py-8 text-center text-muted-foreground">
+                    No safety records found.
+                    {canCreateRecord && (
+                        <Link href="/driver-safety/create" className="ml-1 text-primary underline">
+                            Create one
+                        </Link>
+                    )}
+                </div>
+            )}
+        />
+    );
 
     const tableHeaderExtras = (
-        <div className="flex flex-wrap items-center gap-2">
-            <div className="relative w-[260px] max-w-full">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                    placeholder="Search safety records..."
-                    value={searchTerm}
-                    onChange={(event) => handleSearchChange(event.target.value)}
-                    className="pl-10"
-                />
-            </div>
+        <ListingFilterBar
+            search={{
+                value: searchTerm,
+                placeholder: 'Search safety records...',
+                onChange: handleSearchChange,
+                icon: <Search className="h-4 w-4" />,
+            }}
+            perPage={{
+                value: perPage,
+                label: 'Rows',
+                onChange: handlePerPageChange,
+                options: perPageSelectOptions,
+            }}
+        >
             <Select value={selectedIncidentType} onValueChange={handleIncidentTypeChange}>
-                <SelectTrigger className="w-[160px]">
+                <SelectTrigger className="w-full min-w-[160px] sm:w-auto">
                     <SelectValue placeholder="Incident type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -373,7 +701,7 @@ export default function DriverSafetyIndex({
                 </SelectContent>
             </Select>
             <Select value={selectedSeverity} onValueChange={handleSeverityChange}>
-                <SelectTrigger className="w-[150px]">
+                <SelectTrigger className="w-full min-w-[150px] sm:w-auto">
                     <SelectValue placeholder="Severity" />
                 </SelectTrigger>
                 <SelectContent>
@@ -386,7 +714,7 @@ export default function DriverSafetyIndex({
                 </SelectContent>
             </Select>
             <Select value={selectedDriver} onValueChange={handleDriverChange}>
-                <SelectTrigger className="w-[200px]">
+                <SelectTrigger className="w-full min-w-[200px] sm:w-auto">
                     <SelectValue placeholder="Driver" />
                 </SelectTrigger>
                 <SelectContent>
@@ -398,146 +726,15 @@ export default function DriverSafetyIndex({
                     ))}
                 </SelectContent>
             </Select>
-            <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                <span className="hidden sm:inline">Rows</span>
-                <Select value={perPage} onValueChange={handlePerPageChange}>
-                    <SelectTrigger className="w-[110px]">
-                        <SelectValue placeholder="Per page" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {availablePerPageOptions.map((option) => (
-                            <SelectItem key={option} value={String(option)}>
-                                {option} / page
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-            </div>
-        </div>
-    )
-
-    const renderHeaderCell = (column: { key: string; label: string; sortable?: boolean; sortKey?: string }) => {
-        const sortable = column.sortable ?? false
-        const columnKey = column.sortKey ?? column.key
-        const isActive = sortColumn === columnKey
-
-        if (!sortable) {
-            return (
-                <TableHead key={column.key} className="sticky top-0 z-20 bg-background">
-                    {column.label}
-                </TableHead>
-            )
-        }
-
-        return (
-            <TableHead
-                key={column.key}
-                className="sticky top-0 z-20 cursor-pointer select-none bg-background transition-colors hover:bg-muted/70"
-                onClick={() => handleSort(columnKey ?? column.key)}
-            >
-                <div className="flex items-center gap-2">
-                    {column.label}
-                    <ArrowUpDown size={14} className={isActive ? 'text-primary' : 'text-muted-foreground opacity-50'} />
-                </div>
-            </TableHead>
-        )
-    }
-
-    const tableContent = (
-        <Table>
-            <TableHeader className="[&_tr]:sticky [&_tr]:top-0 [&_tr]:z-20 [&_tr]:bg-background [&_tr]:shadow-sm">
-                <TableRow className="border-b bg-background">
-                    <TableHead className="sticky top-0 z-20 w-12 bg-background text-center">#</TableHead>
-                    {columns.map((column) => renderHeaderCell(column))}
-                    <TableHead className="sticky top-0 z-20 bg-background text-center">Actions</TableHead>
-                </TableRow>
-            </TableHeader>
-            <TableBody>
-                {safetyData.length > 0 ? (
-                    safetyData.map((record, index) => (
-                        <TableRow key={record.id} className="hover:bg-muted/50">
-                            <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
-                            <TableCell className="font-medium">{formatDate(record.incident_date)}</TableCell>
-                            <TableCell className="text-muted-foreground">{record.driver?.name || '—'}</TableCell>
-                            <TableCell>
-                                <Badge className={getIncidentTypeBadgeClass(record.incident_type)}>
-                                    {record.incident_type}
-                                </Badge>
-                            </TableCell>
-                            <TableCell>
-                                <Badge className={getSeverityBadgeClass(record.severity)}>
-                                    {record.severity}
-                                </Badge>
-                            </TableCell>
-                            <TableCell className="max-w-sm truncate text-muted-foreground" title={record.description}>
-                                {record.description || '—'}
-                            </TableCell>
-                            <TableCell className="font-semibold">{formatCurrency(record.damage_cost ?? 0)}</TableCell>
-                            <TableCell className="text-center">
-                                <div className="flex justify-center gap-2">
-                                    {hasPermission('driver-safety.show') && (
-                                        <Button asChild size="sm" variant="ghost">
-                                            <Link href={`/driver-safety/${record.id}`}>
-                                                <Eye className="h-4 w-4" />
-                                            </Link>
-                                        </Button>
-                                    )}
-                                    {hasPermission('driver-safety.edit') && (
-                                        <Button asChild size="sm" variant="ghost">
-                                            <Link href={`/driver-safety/${record.id}/edit`}>
-                                                <SquarePen className="h-4 w-4" />
-                                            </Link>
-                                        </Button>
-                                    )}
-                                    {hasPermission('driver-safety.destroy') && (
-                                        <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            onClick={() => handleDeleteClick(record)}
-                                            className="text-red-600 hover:bg-red-50 hover:text-red-700"
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                    )}
-                                </div>
-                            </TableCell>
-                        </TableRow>
-                    ))
-                ) : (
-                    <TableRow>
-                        <TableCell colSpan={columns.length + 2} className="py-8 text-center text-muted-foreground">
-                            No safety records found.
-                            {hasPermission('driver-safety.create') && (
-                                <Link href="/driver-safety/create" className="ml-1 text-primary underline">
-                                    Create one
-                                </Link>
-                            )}
-                        </TableCell>
-                    </TableRow>
-                )}
-            </TableBody>
-        </Table>
-    )
-
-    const headerActions = (
-        <>
-            {hasPermission('driver-safety.create') && (
-                <Button asChild>
-                    <Link href="/driver-safety/create">
-                        <Plus className="mr-2 h-4 w-4" />
-                        New Safety Record
-                    </Link>
-                </Button>
-            )}
-        </>
-    )
+        </ListingFilterBar>
+    );
 
     return (
         <>
             <ListPageLayout
                 headTitle="Driver Safety"
                 title="Driver Safety"
-                description={`Monitor incidents across the fleet. Total: ${totalRecords.toLocaleString()}`}
+                description={`Monitor incidents across the fleet. Total: ${formatCount(totalRecords)}`}
                 breadcrumbs={breadcrumbs}
                 actions={headerActions}
                 stats={statsSection}
@@ -545,30 +742,49 @@ export default function DriverSafetyIndex({
                 tableDescription="Track incidents, severity, and impact"
                 tableHeaderExtras={tableHeaderExtras}
                 pagination={
-                    <InertiaPagination
-                        className="mt-4"
-                        links={safetyRecords.links}
-                        from={safetyRecords.from}
-                        to={safetyRecords.to}
-                        total={safetyRecords.total}
-                        currentPage={currentPage}
-                        lastPage={lastPage}
-                    />
+                    !isLoading && safetyRecords?.links ? (
+                        <ListingPaginationFooter
+                            className="mt-4"
+                            links={safetyRecords.links}
+                            from={safetyRecords.from ?? undefined}
+                            to={safetyRecords.to ?? undefined}
+                            total={safetyRecords.total ?? undefined}
+                        />
+                    ) : null
                 }
             >
-                {tableContent}
+                <div className="hidden md:block">
+                    <ListingTableShell
+                        columns={tableColumns}
+                        sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSort }}
+                    >
+                        {tableRows}
+                    </ListingTableShell>
+                </div>
+
+                <div className="space-y-3 md:hidden">{mobileContent}</div>
             </ListPageLayout>
 
             <DeleteConfirmationDialog
                 open={deleteDialogOpen}
-                onOpenChange={setDeleteDialogOpen}
+                onOpenChange={(open) => {
+                    setDeleteDialogOpen(open);
+                    if (!open) {
+                        setSelectedRecord(null);
+                        setIsDeleting(false);
+                    }
+                }}
                 title="Delete Safety Record"
                 description="Are you sure you want to delete this safety record? This action cannot be undone."
-                itemName={selectedRecord ? `${selectedRecord.driver?.name || 'Driver'} – ${formatDate(selectedRecord.incident_date)}` : ''}
+                itemName={
+                    selectedRecord
+                        ? `${selectedRecord.driver?.name || 'Driver'} – ${formatDate(selectedRecord.incident_date)}`
+                        : undefined
+                }
                 onConfirm={handleDeleteConfirm}
                 isLoading={isDeleting}
             />
         </>
-    )
+    );
 }
 

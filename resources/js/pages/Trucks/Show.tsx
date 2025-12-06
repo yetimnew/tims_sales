@@ -4,6 +4,9 @@ import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { ActivityLogTable } from '@/components/activity-log-table';
+import { DetailHeader } from '@/components/detail/detail-header';
+import { DetailSummaryGrid } from '@/components/detail/detail-summary-grid';
+import { DetailSectionCard } from '@/components/detail/detail-section-card';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
@@ -997,32 +1000,26 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
             <Head title={`View Truck - ${truck.plate}`} />
             <div className="flex flex-1 min-h-0 flex-col gap-6 rounded-xl p-4">
                 {/* Header */}
-                <div className="bg-gradient-to-r from-slate-50 to-indigo-50 dark:from-slate-900 dark:to-indigo-950/30 rounded-lg p-6 border border-slate-200 dark:border-slate-700">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            {canViewTruckList && (
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => router.get('/trucks')}
-                                    className="flex items-center gap-2 hover:bg-slate-100 dark:hover:bg-slate-800 border-slate-300 dark:border-slate-600"
-                                >
-                                    <ArrowLeft className="h-4 w-4" />
-                                    Back to Trucks
-                                </Button>
-                            )}
-                            <div className="flex items-center gap-4">
-                                <div className="p-3 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl">
-                                    <Truck className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
-                                </div>
-                                <div>
-                                    <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{truck.plate}</h1>
-                                    <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Comprehensive truck profile and fleet insights</p>
-                                </div>
-                            </div>
-                        </div>
-                        {showActionButtons && (
-                            <div className="flex flex-wrap justify-end gap-2">
+                <DetailHeader
+                    leading={
+                        canViewTruckList ? (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => router.get('/trucks')}
+                                className="flex items-center gap-2 border-slate-300 hover:bg-slate-100 dark:border-slate-600 dark:hover:bg-slate-800"
+                            >
+                                <ArrowLeft className="h-4 w-4" />
+                                Back to Trucks
+                            </Button>
+                        ) : null
+                    }
+                    icon={<Truck className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />}
+                    title={truck.plate}
+                    subtitle="Comprehensive truck profile and fleet insights"
+                    actions={
+                        showActionButtons ? (
+                            <>
                                 {showActivateButton && (
                                     <Button
                                         variant="default"
@@ -1044,7 +1041,7 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
                                             setDeactivateError(null);
                                             setDeactivateDialogOpen(true);
                                         }}
-                                        className="text-amber-600 hover:text-amber-700 hover:bg-amber-50 border-amber-200 hover:border-amber-300"
+                                        className="border-amber-200 text-amber-600 hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700"
                                         disabled={isDeactivating}
                                     >
                                         <Ban className="mr-2 h-4 w-4" />
@@ -1055,7 +1052,7 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
                                     <Button
                                         variant="outline"
                                         asChild
-                                        className="hover:bg-indigo-50 hover:border-indigo-300 border-slate-300 dark:border-slate-600"
+                                        className="border-slate-300 hover:border-indigo-300 hover:bg-indigo-50 dark:border-slate-600"
                                     >
                                         <Link href={`/trucks/${truck.id}/edit`}>
                                             <Edit className="mr-2 h-4 w-4" />
@@ -1067,16 +1064,16 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
                                     <Button
                                         variant="outline"
                                         onClick={() => setDeleteDialogOpen(true)}
-                                        className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300"
+                                        className="border-red-200 text-red-600 hover:border-red-300 hover:bg-red-50 hover:text-red-700"
                                     >
                                         <Trash2 className="mr-2 h-4 w-4" />
                                         Delete Truck
                                     </Button>
                                 )}
-                            </div>
-                        )}
-                    </div>
-                </div>
+                            </>
+                        ) : null
+                    }
+                />
 
                 <Tabs defaultValue="overview" className="flex-1 overflow-hidden flex flex-col">
                     <TabsList className="grid w-full grid-cols-4 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
@@ -1099,78 +1096,60 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
                     </TabsList>
 
                     <TabsContent value="overview" className="space-y-6 h-full overflow-y-auto">
-                        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                            {overviewSummaryCards.map(card => (
-                                <div
-                                    key={card.label}
-                                    className="rounded-xl border-0 bg-gradient-to-br from-white to-indigo-50 dark:from-slate-900 dark:to-indigo-950/20 p-5 shadow-lg"
-                                >
-                                    <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">{card.label}</p>
-                                    <p className="mt-2 text-2xl font-bold text-slate-900 dark:text-slate-100">{card.value}</p>
-                                    <p className="mt-1 text-xs text-muted-foreground">{card.helper}</p>
-                                </div>
-                            ))}
-                        </div>
+                        <DetailSummaryGrid items={overviewSummaryCards} />
                         <div className="flex flex-col lg:flex-row gap-6">
                             {/* Main Details */}
                             <div className="flex-1 space-y-6">
                                 {/* Enhanced Basic Information */}
-                                <Card className="shadow-lg border-0 bg-gradient-to-br from-background to-muted/20">
-                                    <CardHeader className="bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-950/20 dark:to-blue-950/20 border-b">
-                                        <CardTitle className="flex items-center gap-2 text-xl">
-                                            <Truck className="h-5 w-5 text-indigo-600" />
-                                            Basic Information
-                                        </CardTitle>
-                                        <CardDescription className="text-base">
-                                            Core truck details and specifications
-                                        </CardDescription>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="grid gap-4">
+                                <DetailSectionCard
+                                    icon={<Truck className="h-5 w-5 text-indigo-600" />}
+                                    title="Basic Information"
+                                    description="Core truck details and specifications"
+                                >
+                                    <div className="grid gap-4">
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <p className="text-sm font-medium text-muted-foreground">Status</p>
+                                                <Badge className={`mt-1 flex w-fit items-center gap-1 ${getStatusBadgeColor(truck.status)}`}>
+                                                    {truck.status === 'active' && <CheckCircle className="h-3 w-3" />}
+                                                    {truck.status === 'maintenance' && <Wrench className="h-3 w-3" />}
+                                                    {truck.status === 'inactive' && <XCircle className="h-3 w-3" />}
+                                                    {truck.status ? truck.status.charAt(0).toUpperCase() + truck.status.slice(1) : 'Unknown'}
+                                                </Badge>
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-medium text-muted-foreground">Vehicle Type</p>
+                                                <p className="mt-1 text-sm font-semibold">{truck.vehicleType?.name || 'Unknown'}</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="border-t border-slate-200 pt-4 dark:border-slate-700">
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div>
-                                                    <p className="text-sm font-medium text-muted-foreground">Status</p>
-                                                    <Badge className={`mt-1 flex items-center gap-1 w-fit ${getStatusBadgeColor(truck.status)}`}>
-                                                        {truck.status === 'active' && <CheckCircle className="h-3 w-3" />}
-                                                        {truck.status === 'maintenance' && <Wrench className="h-3 w-3" />}
-                                                        {truck.status === 'inactive' && <XCircle className="h-3 w-3" />}
-                                                        {truck.status ? truck.status.charAt(0).toUpperCase() + truck.status.slice(1) : 'Unknown'}
-                                                    </Badge>
+                                                    <p className="text-sm font-medium text-muted-foreground">Chassis Number</p>
+                                                    <p className="mt-1 text-sm font-mono">{truck.chasisNumber || 'N/A'}</p>
                                                 </div>
                                                 <div>
-                                                    <p className="text-sm font-medium text-muted-foreground">Vehicle Type</p>
-                                                    <p className="mt-1 text-sm font-semibold">{truck.vehicleType?.name || 'Unknown'}</p>
-                                                </div>
-                                            </div>
-
-                                            <div className="border-t border-slate-200 dark:border-slate-700 pt-4">
-                                                <div className="grid grid-cols-2 gap-4">
-                                                    <div>
-                                                        <p className="text-sm font-medium text-muted-foreground">Chassis Number</p>
-                                                        <p className="mt-1 text-sm font-mono">{truck.chasisNumber || 'N/A'}</p>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-sm font-medium text-muted-foreground">Engine Number</p>
-                                                        <p className="mt-1 text-sm font-mono">{truck.engineNumber || 'N/A'}</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div className="border-t border-slate-200 dark:border-slate-700 pt-4">
-                                                <div className="grid grid-cols-2 gap-4">
-                                                    <div>
-                                                        <p className="text-sm font-medium text-muted-foreground">Tyre Size</p>
-                                                        <p className="mt-1 text-sm">{truck.tyreSyze || 'N/A'}</p>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-sm font-medium text-muted-foreground">Service Interval</p>
-                                                        <p className="mt-1 text-sm">{formatKilometers(truck.serviceIntervalKM)}</p>
-                                                    </div>
+                                                    <p className="text-sm font-medium text-muted-foreground">Engine Number</p>
+                                                    <p className="mt-1 text-sm font-mono">{truck.engineNumber || 'N/A'}</p>
                                                 </div>
                                             </div>
                                         </div>
-                                    </CardContent>
-                                </Card>
+
+                                        <div className="border-t border-slate-200 pt-4 dark:border-slate-700">
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <p className="text-sm font-medium text-muted-foreground">Tyre Size</p>
+                                                    <p className="mt-1 text-sm">{truck.tyreSyze || 'N/A'}</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-medium text-muted-foreground">Service Interval</p>
+                                                    <p className="mt-1 text-sm">{formatKilometers(truck.serviceIntervalKM)}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </DetailSectionCard>
 
                                 <Card className="shadow-lg border-0 bg-gradient-to-br from-background to-muted/20">
                                     <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-b">

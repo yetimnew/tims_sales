@@ -1,34 +1,37 @@
-import { ChangeEvent, useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, router } from '@inertiajs/react';
-import { ArrowUpDown, Eye, FileDown, Layers, Search, Shield } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { InertiaPagination } from '@/components/ui/pagination';
-import { Input } from '@/components/ui/input';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { usePermissions } from '@/hooks/use-permissions';
-import ListPageLayout from '@/components/layouts/list-page-layout';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { TableCell, TableRow } from '@/components/ui/table';
+import ListPageLayout from '@/components/layouts/list-page-layout';
+import { ListingStatsHeader } from '@/components/listing/stats-header';
+import { ListingFilterBar } from '@/components/listing/filter-bar';
+import { ListingTableShell } from '@/components/listing/data-table-shell';
+import { ListingMobileItemList } from '@/components/listing/mobile-item-list';
+import { ListingLoadingPlaceholder } from '@/components/listing/loading-placeholder';
+import { ListingPaginationFooter } from '@/components/listing/pagination-footer';
+import { ListingRowActionsMenu } from '@/components/listing/row-actions-menu';
+import { usePermissions as usePermissionChecker } from '@/hooks/use-permissions';
+import { useListingLoading } from '@/hooks/use-listing-loading';
+import { Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
-import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
+import * as React from 'react';
+import { ArrowUpDown, Eye, FileDown, Layers, Search, Shield } from 'lucide-react';
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Permissions',
-        href: '/permissions',
-    },
-];
+type ColumnKey = 'name' | 'module' | 'action' | 'guard' | 'created_at';
 
-interface Permission {
+type FilterChipKey = 'module' | 'perPage';
+
+interface PermissionRecord {
     id: number;
     name: string;
     guard_name: string;
-    created_at: string;
+    created_at?: string | null;
 }
 
 interface PermissionsIndexProps {
     permissions: {
-        data: Permission[];
+        data: PermissionRecord[];
         current_page: number;
         last_page: number;
         per_page: number;
@@ -43,7 +46,6 @@ interface PermissionsIndexProps {
     };
     filters?: {
         search?: string | null;
-        guard?: string | null;
         module?: string | null;
         sort?: string | null;
         direction?: 'asc' | 'desc' | null;
@@ -51,23 +53,139 @@ interface PermissionsIndexProps {
     };
     moduleOptions?: Array<{ label: string; value: string }>;
     perPageOptions?: number[];
+    stats?: {
+        totalPermissions?: number;
+        moduleCount?: number;
+        guardCount?: number;
+    };
 }
 
-export default function PermissionsIndex({ permissions, filters, moduleOptions, perPageOptions }: PermissionsIndexProps) {
-    const { hasPermission } = usePermissions();
-    const [searchTerm, setSearchTerm] = useState(filters?.search ?? '');
-    const [selectedModule, setSelectedModule] = useState(() => {
-        const module = filters?.module ?? null;
-        return module && module !== '' ? module : 'all';
+const breadcrumbs: BreadcrumbItem[] = [
+    {
+        title: 'Permissions',
+        href: '/permissions',
+    },
+];
+
+const SKELETON_FLAG_KEY = 'permissions.index.shouldShowSkeleton';
+
+const COLUMN_DEFINITIONS: Array<{
+    id: ColumnKey;
+    label: string;
+    sortKey?: string;
+    align?: 'center' | 'right';
+}> = [
+    { id: 'name', label: 'Permission', sortKey: 'name' },
+    { id: 'module', label: 'Module' },
+    { id: 'action', label: 'Action' },
+    { id: 'guard', label: 'Guard', sortKey: 'guard_name' },
+    { id: 'created_at', label: 'Created', sortKey: 'created_at' },
+];
+
+const formatCount = (value?: number | string | null): string => {
+    if (value === null || value === undefined || value === '') {
+        return '0';
+    }
+
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) {
+        return '0';
+    }
+
+    return numeric.toLocaleString();
+};
+
+const formatDateValue = (value?: string | null): string => {
+    if (!value) {
+        return '—';
+    }
+
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+        return '—';
+    }
+
+    return parsed.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
     });
-    const [sortBy, setSortBy] = useState(filters?.sort ?? 'name');
-    const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(filters?.direction ?? 'asc');
+};
 
-    const availablePerPageOptions = useMemo(() => (
-        perPageOptions?.length ? perPageOptions : [10, 15, 25, 50]
-    ), [perPageOptions]);
+const resolveModuleAndAction = (permissionName: string): { module: string; action: string } => {
+    if (!permissionName) {
+        return { module: 'general', action: 'general' };
+    }
 
-    const resolvedPerPage = useMemo(() => {
+    const [moduleSegment = 'general', actionSegment = 'general'] = permissionName.split('.');
+    return {
+        module: moduleSegment,
+        action: actionSegment,
+    };
+};
+
+const getModuleBadgeClass = (module: string): string => {
+    switch (module.toLowerCase()) {
+        case 'trucks':
+            return 'border-sky-200 bg-sky-100 text-sky-700 dark:border-sky-900/40 dark:bg-sky-900/30 dark:text-sky-200';
+        case 'drivers':
+            return 'border-emerald-200 bg-emerald-100 text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-900/30 dark:text-emerald-200';
+        case 'maintenance':
+            return 'border-amber-200 bg-amber-100 text-amber-700 dark:border-amber-900/40 dark:bg-amber-900/30 dark:text-amber-200';
+        case 'fuel':
+            return 'border-rose-200 bg-rose-100 text-rose-700 dark:border-rose-900/40 dark:bg-rose-900/30 dark:text-rose-200';
+        case 'financial':
+            return 'border-purple-200 bg-purple-100 text-purple-700 dark:border-purple-900/40 dark:bg-purple-900/30 dark:text-purple-200';
+        case 'users':
+            return 'border-indigo-200 bg-indigo-100 text-indigo-700 dark:border-indigo-900/40 dark:bg-indigo-900/30 dark:text-indigo-200';
+        case 'roles':
+            return 'border-fuchsia-200 bg-fuchsia-100 text-fuchsia-700 dark:border-fuchsia-900/40 dark:bg-fuchsia-900/30 dark:text-fuchsia-200';
+        case 'permissions':
+            return 'border-slate-200 bg-slate-100 text-slate-700 dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-300';
+        default:
+            return 'border-slate-200 bg-transparent text-slate-700 dark:border-slate-700 dark:text-slate-200';
+    }
+};
+
+const getActionBadgeClass = (action: string): string => {
+    switch (action.toLowerCase()) {
+        case 'create':
+            return 'border-emerald-200 bg-emerald-100 text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-900/30 dark:text-emerald-200';
+        case 'read':
+        case 'show':
+            return 'border-sky-200 bg-sky-100 text-sky-700 dark:border-sky-900/40 dark:bg-sky-900/30 dark:text-sky-200';
+        case 'update':
+        case 'edit':
+            return 'border-amber-200 bg-amber-100 text-amber-700 dark:border-amber-900/40 dark:bg-amber-900/30 dark:text-amber-200';
+        case 'delete':
+        case 'destroy':
+            return 'border-rose-200 bg-rose-100 text-rose-700 dark:border-rose-900/40 dark:bg-rose-900/30 dark:text-rose-200';
+        case 'export':
+            return 'border-purple-200 bg-purple-100 text-purple-700 dark:border-purple-900/40 dark:bg-purple-900/30 dark:text-purple-200';
+        default:
+            return 'border-slate-200 bg-slate-100 text-slate-700 dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-300';
+    }
+};
+
+export default function PermissionsIndex({ permissions, filters, moduleOptions, perPageOptions, stats }: PermissionsIndexProps) {
+    const { hasPermission } = usePermissionChecker();
+    const canViewPermission = hasPermission('permissions.show');
+    const canExportPermissions = hasPermission('permissions.export');
+
+    const [searchTerm, setSearchTerm] = React.useState(filters?.search ?? '');
+    const [selectedModule, setSelectedModule] = React.useState(() => {
+        const moduleValue = filters?.module ?? null;
+        return moduleValue && moduleValue !== '' ? moduleValue : 'all';
+    });
+    const [sortColumn, setSortColumn] = React.useState<string>(filters?.sort ?? 'name');
+    const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>(filters?.direction ?? 'asc');
+
+    const availablePerPageOptions = React.useMemo(
+        () => (perPageOptions?.length ? perPageOptions : [10, 15, 25, 50]),
+        [perPageOptions],
+    );
+
+    const resolvedPerPage = React.useMemo(() => {
         const candidate = filters?.per_page ?? permissions?.per_page;
         if (typeof candidate === 'number' && availablePerPageOptions.includes(candidate)) {
             return candidate;
@@ -76,65 +194,96 @@ export default function PermissionsIndex({ permissions, filters, moduleOptions, 
         return availablePerPageOptions[0] ?? 15;
     }, [filters?.per_page, permissions?.per_page, availablePerPageOptions]);
 
-    const [perPage, setPerPage] = useState<string>(() => String(resolvedPerPage));
+    const [perPage, setPerPage] = React.useState<string>(() => String(resolvedPerPage));
 
-    useEffect(() => {
+    const permissionData = permissions?.data ?? [];
+    const isDataReady = Array.isArray(permissionData);
+
+    const { isLoading } = useListingLoading({
+        storageKey: SKELETON_FLAG_KEY,
+        isDataReady,
+    });
+
+    React.useEffect(() => {
         setPerPage(String(resolvedPerPage));
     }, [resolvedPerPage]);
 
-    const handleNavigate = useCallback((overrides: Partial<{
-        search?: string;
-        module?: string;
-        sort?: string;
-        direction?: 'asc' | 'desc';
-        page?: number;
-        per_page?: number;
-    }> = {}) => {
-        const params: Record<string, string | number | undefined> = {
-            search: overrides.search !== undefined
+    const totalPermissions = stats?.totalPermissions ?? permissions?.total ?? permissionData.length ?? 0;
+    const moduleCount = stats?.moduleCount ?? (() => {
+        const modules = permissionData.reduce<Set<string>>((set, permission) => {
+            const { module } = resolveModuleAndAction(permission.name);
+            set.add(module.toLowerCase());
+            return set;
+        }, new Set());
+        return modules.size;
+    })();
+    const guardCount = stats?.guardCount ?? permissionData.reduce<Set<string>>((set, permission) => {
+        if (permission.guard_name) {
+            set.add(permission.guard_name.toLowerCase());
+        }
+        return set;
+    }, new Set()).size;
+
+    const rowOffset = Math.max((permissions?.from ?? 1) - 1, 0);
+
+    const handleNavigate = React.useCallback(
+        (overrides: {
+            search?: string;
+            module?: string;
+            sort?: string;
+            direction?: 'asc' | 'desc';
+            page?: number;
+            per_page?: number;
+        } = {}) => {
+            const hasOverride = (key: keyof typeof overrides) => Object.prototype.hasOwnProperty.call(overrides, key);
+
+            const nextSearch = hasOverride('search')
                 ? overrides.search
-                : (searchTerm.trim() ? searchTerm.trim() : undefined),
-            module: overrides.module !== undefined
+                : searchTerm.trim()
+                    ? searchTerm.trim()
+                    : undefined;
+
+            const nextModule = hasOverride('module')
                 ? overrides.module
-                : (selectedModule !== 'all' ? selectedModule : undefined),
-            sort: overrides.sort ?? sortBy,
-            direction: overrides.direction ?? sortDirection,
-            page: overrides.page,
-            per_page: overrides.per_page !== undefined
-                ? overrides.per_page
-                : Number(perPage),
-        };
+                : selectedModule !== 'all'
+                    ? selectedModule
+                    : undefined;
 
-        Object.keys(params).forEach((key) => {
-            const value = params[key];
-            if (
-                value === undefined ||
-                value === null ||
-                value === '' ||
-                (key === 'per_page' && (typeof value !== 'number' || !Number.isFinite(value) || value <= 0))
-            ) {
-                delete params[key];
+            const nextSort = hasOverride('sort') ? overrides.sort ?? sortColumn : sortColumn;
+            const nextDirection = hasOverride('direction') ? overrides.direction ?? sortDirection : sortDirection;
+            const nextPerPage = hasOverride('per_page') ? overrides.per_page : Number(perPage);
+            const nextPage = hasOverride('page') ? overrides.page : undefined;
+
+            const params: Record<string, string | number | undefined> = {
+                search: nextSearch,
+                module: nextModule,
+                sort: nextSort,
+                direction: nextDirection,
+                page: nextPage,
+                per_page:
+                    typeof nextPerPage === 'number' && Number.isFinite(nextPerPage) && nextPerPage > 0
+                        ? nextPerPage
+                        : undefined,
+            };
+
+            Object.keys(params).forEach((key) => {
+                if (params[key] === undefined) {
+                    delete params[key];
+                }
+            });
+
+            if (typeof window !== 'undefined') {
+                window.sessionStorage.setItem(SKELETON_FLAG_KEY, 'true');
             }
-        });
 
-        router.get('/permissions', params, { preserveState: true, replace: false });
-    }, [searchTerm, selectedModule, sortBy, sortDirection, perPage]);
+            router.get('/permissions', params, { preserveState: true, replace: false });
+        },
+        [perPage, searchTerm, selectedModule, sortColumn, sortDirection],
+    );
 
-    const handleSearch = (event: ChangeEvent<HTMLInputElement>) => {
-        const value = event.target.value;
+    const handleSearchChange = (value: string) => {
         setSearchTerm(value);
         handleNavigate({ search: value.trim() ? value.trim() : undefined, page: 1 });
-    };
-
-    const handleSort = (column: string) => {
-        let newDirection: 'asc' | 'desc' = 'asc';
-        if (sortBy === column && sortDirection === 'asc') {
-            newDirection = 'desc';
-        }
-
-        setSortBy(column);
-        setSortDirection(newDirection);
-        handleNavigate({ sort: column, direction: newDirection });
     };
 
     const handleModuleChange = (value: string) => {
@@ -148,71 +297,338 @@ export default function PermissionsIndex({ permissions, filters, moduleOptions, 
         handleNavigate({ per_page: Number.isNaN(numericValue) ? undefined : numericValue, page: 1 });
     };
 
-    const SortIcon = ({ column }: { column: string }) => {
-        if (sortBy !== column) {
-            return <ArrowUpDown className="ml-2 h-4 w-4 opacity-50" />;
+    const handleSort = React.useCallback(
+        (column: string) => {
+            const newDirection: 'asc' | 'desc' = sortColumn === column && sortDirection === 'asc' ? 'desc' : 'asc';
+            setSortColumn(column);
+            setSortDirection(newDirection);
+            handleNavigate({ sort: column, direction: newDirection });
+        },
+        [handleNavigate, sortColumn, sortDirection],
+    );
+
+    const activeModuleLabel = React.useMemo(() => {
+        if (selectedModule === 'all') {
+            return null;
         }
-        return (
-            <ArrowUpDown
-                className={`ml-2 h-4 w-4 transition-transform ${
-                    sortDirection === 'desc' ? 'rotate-180' : ''
-                }`}
-            />
-        );
-    };
 
-    const permissionCount = permissions?.total || 0;
-    const currentPage = permissions?.current_page || 1;
-    const totalPages = permissions?.last_page || 1;
+        return moduleOptions?.find((option) => option.value === selectedModule)?.label ?? selectedModule;
+    }, [moduleOptions, selectedModule]);
 
-    const moduleCount = (moduleOptions ?? []).length > 0
-        ? moduleOptions!.length
-        : new Set((permissions?.data ?? []).map(permission => {
-            const [moduleName] = permission.name.split('.');
-            return moduleName ?? permission.name;
-        })).size;
+    const activeFilterChips = React.useMemo(
+        () =>
+            [
+                activeModuleLabel ? { key: 'module' as FilterChipKey, label: `Module: ${activeModuleLabel}` } : null,
+                perPage !== String(resolvedPerPage)
+                    ? { key: 'perPage' as FilterChipKey, label: `Rows: ${perPage}` }
+                    : null,
+            ].filter(Boolean) as Array<{ key: FilterChipKey; label: string }>,
+        [activeModuleLabel, perPage, resolvedPerPage],
+    );
 
-    const statsCards = [
+    const clearFilter = React.useCallback(
+        (key: FilterChipKey) => {
+            switch (key) {
+                case 'module':
+                    setSelectedModule('all');
+                    handleNavigate({ module: undefined, page: 1 });
+                    break;
+                case 'perPage':
+                    setPerPage(String(resolvedPerPage));
+                    handleNavigate({ per_page: resolvedPerPage, page: 1 });
+                    break;
+                default:
+                    break;
+            }
+        },
+        [handleNavigate, resolvedPerPage],
+    );
+
+    const statsDefinitions = [
         {
-            title: 'Total Permissions',
-            value: permissionCount,
-            description: 'Across the platform',
-            accentClassName: 'text-indigo-600',
-            helperClassName: 'bg-indigo-100 text-indigo-600',
-            icon: <Shield className="h-5 w-5" />,
+            id: 'total-permissions',
+            label: 'Total Permissions',
+            icon: <Shield className="h-3.5 w-3.5 text-indigo-500" />,
+            value: isLoading ? <Skeleton className="h-3.5 w-16" aria-hidden="true" /> : formatCount(totalPermissions),
+            description: isLoading ? (
+                <Skeleton className="h-3 w-24" aria-hidden="true" />
+            ) : (
+                'Across the platform'
+            ),
+            valueClassName: isLoading ? undefined : 'text-indigo-600',
         },
         {
-            title: 'Modules',
-            value: moduleCount,
-            description: 'Permission groups',
-            accentClassName: 'text-amber-600',
-            helperClassName: 'bg-amber-100 text-amber-600',
-            icon: <Layers className="h-5 w-5" />,
+            id: 'module-count',
+            label: 'Modules',
+            icon: <Layers className="h-3.5 w-3.5 text-amber-500" />,
+            value: isLoading ? <Skeleton className="h-3.5 w-12" aria-hidden="true" /> : formatCount(moduleCount),
+            description: isLoading ? (
+                <Skeleton className="h-3 w-28" aria-hidden="true" />
+            ) : (
+                'Permission groups'
+            ),
+            valueClassName: isLoading ? undefined : 'text-amber-600',
+        },
+        {
+            id: 'guard-count',
+            label: 'Guard Types',
+            icon: <ArrowUpDown className="h-3.5 w-3.5 text-slate-500" />,
+            value: isLoading ? <Skeleton className="h-3.5 w-10" aria-hidden="true" /> : formatCount(guardCount),
+            description: isLoading ? (
+                <Skeleton className="h-3 w-28" aria-hidden="true" />
+            ) : (
+                'Distinct guard names'
+            ),
+            valueClassName: isLoading ? undefined : 'text-slate-600',
         },
     ];
 
-    const statsSection = (
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-            {statsCards.map(card => (
-                <Card key={card.title} className="border border-slate-200/70 shadow-sm transition hover:shadow-md dark:border-slate-800/70">
-                    <CardContent className="flex items-center justify-between gap-4 p-4">
-                        <div>
-                            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{card.title}</p>
-                            <p className={`mt-2 text-2xl font-semibold ${card.accentClassName}`}>{card.value}</p>
-                            <p className="text-xs text-muted-foreground">{card.description}</p>
+    const statsSection = <ListingStatsHeader stats={statsDefinitions} orientation="row" />;
+
+    const tableColumns = React.useMemo(
+        () => [
+            { id: 'index', label: '#', align: 'center' as const },
+            ...COLUMN_DEFINITIONS.map((column) => ({
+                id: column.id,
+                label: column.label,
+                sortable: Boolean(column.sortKey),
+                sortKey: column.sortKey,
+                align: column.align,
+            })),
+            { id: 'actions', label: 'Actions', align: 'center' as const },
+        ],
+        [],
+    );
+
+    const renderColumnValue = React.useCallback((permission: PermissionRecord, column: ColumnKey): React.ReactNode => {
+        const { module, action } = resolveModuleAndAction(permission.name);
+
+        switch (column) {
+            case 'name':
+                return (
+                    <div className="flex flex-col">
+                        <span className="font-medium text-foreground">{permission.name}</span>
+                        <span className="text-xs text-muted-foreground">ID #{permission.id}</span>
+                    </div>
+                );
+            case 'module':
+                return (
+                    <Badge className={`w-fit ${getModuleBadgeClass(module)}`}>
+                        {module}
+                    </Badge>
+                );
+            case 'action':
+                return (
+                    <Badge className={`w-fit ${getActionBadgeClass(action)}`}>
+                        {action}
+                    </Badge>
+                );
+            case 'guard':
+                return <span className="text-sm text-muted-foreground">{permission.guard_name}</span>;
+            case 'created_at':
+                return <span className="text-sm text-muted-foreground">{formatDateValue(permission.created_at)}</span>;
+            default:
+                return '—';
+        }
+    }, []);
+
+    const tableRows = isLoading
+        ? Array.from({ length: 6 }).map((_, rowIndex) => (
+              <TableRow key={`permissions-skeleton-${rowIndex}`} aria-hidden="true">
+                  {tableColumns.map((column) => (
+                      <TableCell
+                          key={`${column.id}-${rowIndex}`}
+                          className={
+                              column.align === 'center'
+                                  ? 'text-center'
+                                  : column.align === 'right'
+                                      ? 'text-right'
+                                      : undefined
+                          }
+                      >
+                          <Skeleton className="mx-auto h-4 w-24 max-w-full" />
+                      </TableCell>
+                  ))}
+              </TableRow>
+          ))
+        : permissionData.length > 0
+            ? permissionData.map((permission, index) => (
+                  <TableRow key={permission.id} className="hover:bg-muted/50">
+                      <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
+                      {COLUMN_DEFINITIONS.map((column) => (
+                          <TableCell
+                              key={column.id}
+                              className={
+                                  column.align === 'center'
+                                      ? 'text-center'
+                                      : column.align === 'right'
+                                          ? 'text-right'
+                                          : undefined
+                              }
+                          >
+                              {renderColumnValue(permission, column.id)}
+                          </TableCell>
+                      ))}
+                      <TableCell className="text-center">
+                          <ListingRowActionsMenu
+                              actions={[
+                                  canViewPermission && {
+                                      label: 'View',
+                                      icon: <Eye className="h-4 w-4" />,
+                                      href: `/permissions/${permission.id}`,
+                                  },
+                              ]}
+                          />
+                      </TableCell>
+                  </TableRow>
+              ))
+            : (
+                <TableRow>
+                    <TableCell colSpan={tableColumns.length} className="py-12">
+                        <div className="flex flex-col items-center justify-center text-center">
+                            <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-muted/50">
+                                <Shield className="h-10 w-10 text-muted-foreground" />
+                            </div>
+                            <h3 className="mb-2 text-lg font-semibold">No permissions found</h3>
+                            <p className="mb-6 max-w-md text-sm text-muted-foreground">
+                                {searchTerm
+                                    ? `No permissions match "${searchTerm}". Try adjusting your filters or search terms.`
+                                    : 'Permissions are managed automatically. Adjust filters or roles to view assigned access.'}
+                            </p>
                         </div>
-                        <div className={`flex h-10 w-10 items-center justify-center rounded-full ${card.helperClassName}`}>
-                            {card.icon}
+                    </TableCell>
+                </TableRow>
+            );
+
+    const mobileItems = React.useMemo(
+        () =>
+            permissionData.map((permission, index) => ({
+                record: permission,
+                position: rowOffset + index + 1,
+            })),
+        [permissionData, rowOffset],
+    );
+
+    const mobileContent = isLoading ? (
+        <ListingLoadingPlaceholder showStats={false} filterItemCount={3} rowCount={4} />
+    ) : (
+        <ListingMobileItemList
+            items={mobileItems}
+            getKey={(item) => item.record.id}
+            renderTitle={(item) => (
+                <div className="flex items-center gap-2">
+                    <span className="text-xs uppercase tracking-wide text-muted-foreground">#{item.position}</span>
+                    <span className="text-base font-semibold text-foreground">{item.record.name}</span>
+                    <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
+                </div>
+            )}
+            renderSubtitle={(item) => `Guard: ${item.record.guard_name}`}
+            renderContent={(item) => {
+                const { module, action } = resolveModuleAndAction(item.record.name);
+
+                return (
+                    <div className="space-y-3 text-sm text-muted-foreground">
+                        <div className="flex items-center justify-between">
+                            <span className="font-medium text-slate-600 dark:text-slate-300">Module</span>
+                            <span className="text-right text-slate-900 dark:text-slate-100">{module}</span>
                         </div>
-                    </CardContent>
-                </Card>
-            ))}
-        </div>
+                        <div className="flex items-center justify-between">
+                            <span className="font-medium text-slate-600 dark:text-slate-300">Action</span>
+                            <span className="text-right text-slate-900 dark:text-slate-100">{action}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <span className="font-medium text-slate-600 dark:text-slate-300">Created</span>
+                            <span className="text-right text-slate-900 dark:text-slate-100">{formatDateValue(item.record.created_at)}</span>
+                        </div>
+                    </div>
+                );
+            }}
+            renderFooter={(item) => (
+                <div className="flex w-full flex-wrap items-center justify-end gap-2">
+                    {canViewPermission && (
+                        <Button asChild size="sm" variant="outline" className="flex-1 sm:flex-auto">
+                            <Link href={`/permissions/${item.record.id}`}>
+                                <Eye className="mr-2 h-4 w-4" />
+                                View
+                            </Link>
+                        </Button>
+                    )}
+                </div>
+            )}
+            emptyState={(
+                <div className="py-8 text-center text-muted-foreground">
+                    No permissions found.
+                </div>
+            )}
+        />
+    );
+
+    const filterChips =
+        (activeFilterChips.length || searchTerm) && !isLoading ? (
+            <div className="flex flex-1 flex-wrap items-center gap-2">
+                {activeFilterChips.map((chip) => (
+                    <button
+                        key={chip.key}
+                        type="button"
+                        onClick={() => clearFilter(chip.key)}
+                        className="flex items-center gap-1 rounded-full bg-muted px-3 py-1 text-xs text-muted-foreground transition hover:bg-muted/80"
+                    >
+                        {chip.label}
+                    </button>
+                ))}
+                {searchTerm && (
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setSearchTerm('');
+                            handleNavigate({ search: undefined, page: 1 });
+                        }}
+                        className="text-xs text-primary underline"
+                    >
+                        Clear search
+                    </button>
+                )}
+            </div>
+        ) : undefined;
+
+    const tableHeaderExtras = (
+        <ListingFilterBar
+            search={{
+                value: searchTerm,
+                placeholder: 'Search permissions...',
+                onChange: handleSearchChange,
+                icon: <Search className="h-4 w-4" />,
+            }}
+            perPage={{
+                value: perPage,
+                label: 'Rows',
+                onChange: handlePerPageChange,
+                options: availablePerPageOptions.map((option) => ({
+                    value: String(option),
+                    label: `${option} / page`,
+                })),
+            }}
+            trailing={filterChips}
+        >
+            <Select value={selectedModule} onValueChange={handleModuleChange}>
+                <SelectTrigger className="w-full min-w-[170px] sm:w-auto">
+                    <SelectValue placeholder="Module" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">All modules</SelectItem>
+                    {(moduleOptions ?? []).map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                        </SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+        </ListingFilterBar>
     );
 
     const headerActions = (
         <>
-            {hasPermission('permissions.export') && (
+            {canExportPermissions && (
                 <Button
                     variant="outline"
                     onClick={() => {
@@ -223,8 +639,8 @@ export default function PermissionsIndex({ permissions, filters, moduleOptions, 
                         if (selectedModule !== 'all') {
                             params.set('module', selectedModule);
                         }
-                        if (sortBy) {
-                            params.set('sort', sortBy);
+                        if (sortColumn) {
+                            params.set('sort', sortColumn);
                         }
                         if (sortDirection) {
                             params.set('direction', sortDirection);
@@ -241,188 +657,39 @@ export default function PermissionsIndex({ permissions, filters, moduleOptions, 
         </>
     );
 
-    const tableHeaderExtras = (
-        <div className="flex flex-wrap items-center gap-2">
-            <div className="relative w-[260px] max-w-full">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                    placeholder="Search permissions..."
-                    value={searchTerm}
-                    onChange={handleSearch}
-                    className="pl-10"
-                />
-            </div>
-            <Select value={selectedModule} onValueChange={handleModuleChange}>
-                <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Module" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="all">All modules</SelectItem>
-                    {(moduleOptions ?? []).map(option => (
-                        <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                        </SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
-            <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                <span className="hidden sm:inline">Rows</span>
-                <Select value={perPage} onValueChange={handlePerPageChange}>
-                    <SelectTrigger className="w-[110px]">
-                        <SelectValue placeholder="Per page" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {availablePerPageOptions.map(option => (
-                            <SelectItem key={option} value={String(option)}>
-                                {option} / page
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-            </div>
-        </div>
-    );
-
-    const getModuleBadgeColor = (module: string) => {
-        switch (module.toLowerCase()) {
-            case 'trucks':
-                return 'bg-blue-500 text-white';
-            case 'drivers':
-                return 'bg-green-500 text-white';
-            case 'maintenance':
-                return 'bg-orange-500 text-white';
-            case 'fuel':
-                return 'bg-yellow-500 text-white';
-            case 'financial':
-                return 'bg-purple-500 text-white';
-            case 'users':
-                return 'bg-red-500 text-white';
-            case 'roles':
-                return 'bg-indigo-500 text-white';
-            case 'permissions':
-                return 'bg-pink-500 text-white';
-            default:
-                return 'bg-gray-500 text-white';
-        }
-    };
-
-    const getActionBadgeColor = (action: string) => {
-        switch (action.toLowerCase()) {
-            case 'create':
-                return 'bg-green-100 text-green-800';
-            case 'read':
-            case 'show':
-                return 'bg-blue-100 text-blue-800';
-            case 'update':
-            case 'edit':
-                return 'bg-yellow-100 text-yellow-800';
-            case 'delete':
-            case 'destroy':
-                return 'bg-red-100 text-red-800';
-            case 'export':
-                return 'bg-purple-100 text-purple-800';
-            default:
-                return 'bg-gray-100 text-gray-800';
-        }
-    };
-
     return (
         <ListPageLayout
             headTitle="Permissions"
             title="Permission Management"
-            description="Manage system permissions and access control"
+            description={`Manage ${formatCount(totalPermissions)} permission${totalPermissions === 1 ? '' : 's'} across the platform`}
             breadcrumbs={breadcrumbs}
             actions={headerActions}
             stats={statsSection}
             tableTitle="Permission Directory"
-            tableDescription={`${permissionCount} total permission${permissionCount === 1 ? '' : 's'} in system`}
+            tableDescription={`${formatCount(totalPermissions)} total permission${totalPermissions === 1 ? '' : 's'} in system`}
             tableHeaderExtras={tableHeaderExtras}
             pagination={
-                <InertiaPagination
-                    from={permissions?.from ?? undefined}
-                    to={permissions?.to ?? undefined}
-                    total={permissionCount}
-                    links={permissions?.links}
-                    currentPage={currentPage}
-                    lastPage={totalPages}
-                    className="mt-0 border-t bg-muted/30 p-4"
-                />
+                !isLoading && permissions?.links ? (
+                    <ListingPaginationFooter
+                        className="mt-4"
+                        links={permissions.links}
+                        from={permissions.from ?? undefined}
+                        to={permissions.to ?? undefined}
+                        total={permissions.total ?? undefined}
+                    />
+                ) : null
             }
         >
-            <Table>
-                <TableHeader>
-                    <TableRow className="sticky top-0 z-50 bg-background border-b">
-                        <TableHead className="w-12 bg-background text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                            No.
-                        </TableHead>
-                        <TableHead
-                            onClick={() => handleSort('name')}
-                            className="cursor-pointer select-none bg-background transition-colors hover:bg-muted/70"
-                        >
-                            <div className="flex items center">
-                                Permission <SortIcon column="name" />
-                            </div>
-                        </TableHead>
-                        <TableHead className="bg-background">Module</TableHead>
-                        <TableHead className="bg-background">Action</TableHead>
-                        <TableHead className="bg-background text-right">Actions</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {permissions?.data && permissions.data.length > 0 ? (
-                        permissions.data.map((permission, index) => {
-                            const rowNumber = (permissions.from ?? 1) + index;
-                            const [module, rawAction = 'general'] = permission.name.split('.');
-                            const action = rawAction.toLowerCase();
+            <div className="hidden md:block">
+                <ListingTableShell
+                    columns={tableColumns}
+                    sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSort }}
+                >
+                    {tableRows}
+                </ListingTableShell>
+            </div>
 
-                            return (
-                                <TableRow key={permission.id}>
-                                    <TableCell className="w-12 text-center text-sm font-semibold text-muted-foreground">
-                                        {rowNumber}
-                                    </TableCell>
-                                    <TableCell className="font-medium">{permission.name}</TableCell>
-                                    <TableCell>
-                                        <Badge className={getModuleBadgeColor(module)}>
-                                            {module}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge className={getActionBadgeColor(action)}>
-                                            {action}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell className="flex justify-end space-x-2">
-                                        {hasPermission('permissions.show') && (
-                                            <Link href={`/permissions/${permission.id}`}>
-                                                <Button variant="ghost" size="icon">
-                                                    <Eye className="h-4 w-4" />
-                                                </Button>
-                                            </Link>
-                                        )}
-                                    </TableCell>
-                                </TableRow>
-                            );
-                        })
-                    ) : (
-                        <TableRow>
-                            <TableCell colSpan={5} className="py-16">
-                                <div className="flex flex-col items-center justify-center text-center">
-                                    <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-muted/50">
-                                        <Shield className="h-10 w-10 text-muted-foreground" />
-                                    </div>
-                                    <h3 className="mb-2 text-xl font-semibold">No permissions found</h3>
-                                    <p className="text-muted-foreground">
-                                        {searchTerm
-                                            ? `No permissions match "${searchTerm}". Try adjusting your search terms.`
-                                            : 'Permissions are managed automatically. Use roles to assign permissions to users.'
-                                        }
-                                    </p>
-                                </div>
-                            </TableCell>
-                        </TableRow>
-                    )}
-                </TableBody>
-            </Table>
+            <div className="space-y-3 md:hidden">{mobileContent}</div>
         </ListPageLayout>
     );
 }

@@ -1,24 +1,36 @@
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { TableCell, TableRow } from '@/components/ui/table';
+import ListPageLayout from '@/components/layouts/list-page-layout';
+import { ListingStatsHeader } from '@/components/listing/stats-header';
+import { ListingFilterBar } from '@/components/listing/filter-bar';
+import { ListingTableShell } from '@/components/listing/data-table-shell';
+import { ListingMobileItemList } from '@/components/listing/mobile-item-list';
+import { ListingLoadingPlaceholder } from '@/components/listing/loading-placeholder';
+import { ListingPaginationFooter } from '@/components/listing/pagination-footer';
+import { ListingRowActionsMenu } from '@/components/listing/row-actions-menu';
+import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
+import { usePermissions } from '@/hooks/use-permissions';
+import { useListingLoading } from '@/hooks/use-listing-loading';
+import { toast } from '@/hooks/use-toast';
+import { Link, router } from '@inertiajs/react';
+import { type BreadcrumbItem } from '@/types';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
+import * as React from 'react';
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table'
-import ListPageLayout from '@/components/layouts/list-page-layout'
-import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog'
-import { usePermissions } from '@/hooks/use-permissions'
-import { useToast } from '@/hooks/use-toast'
-import { Link, router } from '@inertiajs/react'
-import { type BreadcrumbItem } from '@/types'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { InertiaPagination } from '@/components/ui/pagination'
-import { Input } from '@/components/ui/input'
-import * as React from 'react'
-import { ArrowUpDown, Boxes, ClipboardList, Eye, Package, Plus, Scale, Search, SquarePen, Trash2 } from 'lucide-react'
+    Plus,
+    Eye,
+    Edit,
+    Search,
+    Trash2,
+    Boxes,
+    Package,
+    Scale,
+    ClipboardList,
+    ChevronRight,
+    Download,
+} from 'lucide-react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -28,333 +40,624 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 interface CargoTypeSummary {
-    id: number
-    name: string
-    category: string
-    weight_per_cubic_meter?: number | null
-    requires_special_equipment: boolean
-    handling_requirements?: string | null
-    safety_requirements?: string | null
+    id: number;
+    name: string;
+    category: string;
+    weight_per_cubic_meter?: number | null;
+    requires_special_equipment: boolean;
+    handling_requirements?: string | null;
+    safety_requirements?: string | null;
 }
 
 interface CargoTypesIndexProps {
     cargoTypes: {
-        data: CargoTypeSummary[]
-        current_page: number
-        last_page: number
-        total: number
-        from: number
-        to: number
+        data: CargoTypeSummary[];
+        current_page: number;
+        last_page: number;
+        total: number;
+        from: number | null;
+        to: number | null;
+        per_page?: number | null;
         links: Array<{
-            url: string | null
-            label: string
-            active: boolean
-        }>
-    }
+            url: string | null;
+            label: string;
+            active: boolean;
+        }>;
+    };
     metrics: {
-        total: number
-        requires_special_equipment: number
-        without_special_equipment: number
-        average_weight: number
-        distinct_categories: number
-    }
+        total: number;
+        requires_special_equipment: number;
+        without_special_equipment: number;
+        average_weight: number;
+        distinct_categories: number;
+    };
     filters: {
-        search?: string | null
-        category?: string | null
-        requires_special_equipment?: string | null
-        sort?: string | null
-        direction?: 'asc' | 'desc' | null
-        per_page?: number | null
-    }
-    categoryOptions: Array<{ label: string; value: string }>
-    perPageOptions: number[]
+        search?: string | null;
+        category?: string | null;
+        requires_special_equipment?: string | null;
+        sort?: string | null;
+        direction?: 'asc' | 'desc' | null;
+        per_page?: number | null;
+    };
+    categoryOptions: Array<{ label: string; value: string }>;
+    perPageOptions: number[];
 }
 
-const columns: Array<{ key: string; label: string; sortable?: boolean; sortKey?: string }> = [
-    { key: 'name', label: 'Name', sortable: true, sortKey: 'name' },
-    { key: 'category', label: 'Category', sortable: true, sortKey: 'category' },
-    { key: 'weight_per_cubic_meter', label: 'Weight / m³', sortable: true, sortKey: 'weight_per_cubic_meter' },
-    { key: 'requires_special_equipment', label: 'Special Equipment', sortable: true, sortKey: 'requires_special_equipment' },
-]
+const SKELETON_FLAG_KEY = 'cargo-types.index.shouldShowSkeleton';
 
-const specialEquipmentOptions: Array<{ label: string; value: string }> = [
+const COLUMN_DEFINITIONS: Array<{
+    id: keyof CargoTypeSummary | 'weight';
+    label: string;
+    sortKey?: string;
+    align?: 'center' | 'right';
+}> = [
+    { id: 'name', label: 'Name', sortKey: 'name' },
+    { id: 'category', label: 'Category', sortKey: 'category' },
+    { id: 'weight', label: 'Weight / m³', sortKey: 'weight_per_cubic_meter', align: 'right' },
+    { id: 'requires_special_equipment', label: 'Special Equipment', sortKey: 'requires_special_equipment', align: 'center' },
+];
+
+const SPECIAL_EQUIPMENT_OPTIONS: Array<{ label: string; value: string }> = [
     { label: 'All types', value: 'all' },
     { label: 'Requires special equipment', value: '1' },
     { label: 'No special equipment', value: '0' },
-]
+];
 
-const formatWeight = (value?: number | null) => {
+const formatWeight = (value?: number | null): string => {
     if (typeof value !== 'number' || Number.isNaN(value)) {
-        return '—'
+        return '—';
     }
 
-    return `${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg`
-}
+    return `${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg`;
+};
 
-export default function CargoTypesIndex({ cargoTypes, metrics, filters, categoryOptions, perPageOptions }: CargoTypesIndexProps) {
-    const { hasPermission } = usePermissions()
-    const { toast } = useToast()
-    const [searchTerm, setSearchTerm] = React.useState(filters?.search ?? '')
-    const [selectedCategory, setSelectedCategory] = React.useState(filters?.category ?? 'all')
-    const [selectedSpecialEquipment, setSelectedSpecialEquipment] = React.useState(filters?.requires_special_equipment ?? 'all')
-    const [sortColumn, setSortColumn] = React.useState<string>(filters?.sort ?? 'name')
-    const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>(filters?.direction ?? 'asc')
-    const availablePerPageOptions = React.useMemo(() => (perPageOptions?.length ? perPageOptions : [15, 25, 50, 100]), [perPageOptions])
+const formatNumber = (value?: number | null): string => {
+    if (typeof value !== 'number' || Number.isNaN(value)) {
+        return '0';
+    }
+
+    return value.toLocaleString();
+};
+
+export default function CargoTypesIndex({
+    cargoTypes,
+    metrics,
+    filters,
+    categoryOptions,
+    perPageOptions,
+}: CargoTypesIndexProps) {
+    const { hasPermission } = usePermissions();
+    const canViewCargoType = hasPermission('cargo-types.show');
+    const canEditCargoType = hasPermission('cargo-types.edit');
+    const canDeleteCargoType = hasPermission('cargo-types.destroy');
+    const canCreateCargoType = hasPermission('cargo-types.create');
+    const canExportCargoTypes = hasPermission('cargo-types.export');
+
+    const [searchTerm, setSearchTerm] = React.useState(filters?.search ?? '');
+    const [selectedCategory, setSelectedCategory] = React.useState(filters?.category ?? 'all');
+    const [selectedSpecialEquipment, setSelectedSpecialEquipment] = React.useState(
+        filters?.requires_special_equipment ?? 'all',
+    );
+    const [sortColumn, setSortColumn] = React.useState<string>(filters?.sort ?? 'name');
+    const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>(filters?.direction ?? 'asc');
+    const availablePerPageOptions = React.useMemo(
+        () => (perPageOptions?.length ? perPageOptions : [15, 25, 50, 100]),
+        [perPageOptions],
+    );
     const resolvedPerPage = React.useMemo(() => {
-        const candidate = filters?.per_page
+        const candidate = filters?.per_page;
         if (typeof candidate === 'number' && availablePerPageOptions.includes(candidate)) {
-            return candidate
+            return candidate;
         }
 
-        return availablePerPageOptions[0] ?? 15
-    }, [filters?.per_page, availablePerPageOptions])
-    const [perPage, setPerPage] = React.useState<string>(() => String(resolvedPerPage))
-    const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false)
-    const [selectedType, setSelectedType] = React.useState<CargoTypeSummary | null>(null)
-    const [isDeleting, setIsDeleting] = React.useState(false)
+        return availablePerPageOptions[0] ?? 15;
+    }, [filters?.per_page, availablePerPageOptions]);
+    const [perPage, setPerPage] = React.useState<string>(() => String(resolvedPerPage));
+
+    const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+    const [selectedType, setSelectedType] = React.useState<CargoTypeSummary | null>(null);
+    const [isDeleting, setIsDeleting] = React.useState(false);
+
+    const isDataReady = Array.isArray(cargoTypes?.data);
+    const { isLoading } = useListingLoading({
+        storageKey: SKELETON_FLAG_KEY,
+        isDataReady,
+    });
 
     React.useEffect(() => {
-        setPerPage(String(resolvedPerPage))
-    }, [resolvedPerPage])
+        setPerPage(String(resolvedPerPage));
+    }, [resolvedPerPage]);
 
-    const cargoTypeData = cargoTypes?.data ?? []
-    const totalRecords = metrics?.total ?? cargoTypes?.total ?? 0
-    const currentPage = cargoTypes?.current_page ?? 1
-    const lastPage = cargoTypes?.last_page ?? 1
+    const cargoTypeData = cargoTypes?.data ?? [];
+    const totalRecords = metrics?.total ?? cargoTypes?.total ?? cargoTypeData.length ?? 0;
+    const currentPage = cargoTypes?.current_page ?? 1;
+    const perPageCountRaw = cargoTypes?.per_page ?? Number(perPage);
+    const perPageCount =
+        Number.isFinite(perPageCountRaw) && perPageCountRaw && perPageCountRaw > 0
+            ? Number(perPageCountRaw)
+            : cargoTypeData.length || 1;
+    const rowOffset = (currentPage - 1) * perPageCount;
 
-    const handleNavigate = React.useCallback((overrides: Partial<{
-        search?: string
-        category?: string
-        requires_special_equipment?: string
-        sort?: string
-        direction?: 'asc' | 'desc'
-        page?: number
-        per_page?: number
-    }>) => {
-        const perPageValue = overrides.per_page !== undefined ? overrides.per_page : Number(perPage)
-        const params: Record<string, string | number | undefined> = {
-            search: overrides.search !== undefined ? overrides.search : (searchTerm.trim() ? searchTerm.trim() : undefined),
-            category: overrides.category !== undefined ? overrides.category : (selectedCategory !== 'all' ? selectedCategory : undefined),
-            requires_special_equipment: overrides.requires_special_equipment !== undefined ? overrides.requires_special_equipment : (selectedSpecialEquipment !== 'all' ? selectedSpecialEquipment : undefined),
-            sort: overrides.sort ?? sortColumn,
-            direction: overrides.direction ?? sortDirection,
-            page: overrides.page,
-            per_page: perPageValue,
-        }
+    const handleNavigate = React.useCallback(
+        (overrides: {
+            search?: string;
+            category?: string;
+            requires_special_equipment?: string;
+            sort?: string;
+            direction?: 'asc' | 'desc';
+            page?: number;
+            per_page?: number;
+        } = {}) => {
+            const hasOverride = (key: keyof typeof overrides) => Object.prototype.hasOwnProperty.call(overrides, key);
 
-        Object.keys(params).forEach((key) => {
-            const value = params[key]
-            if (
-                value === undefined ||
-                value === null ||
-                value === '' ||
-                (key === 'per_page' && (typeof value !== 'number' || !Number.isFinite(value) || value <= 0))
-            ) {
-                delete params[key]
+            const nextSearch = hasOverride('search')
+                ? overrides.search
+                : searchTerm.trim()
+                    ? searchTerm.trim()
+                    : undefined;
+
+            const nextCategory = hasOverride('category')
+                ? overrides.category
+                : selectedCategory !== 'all'
+                    ? selectedCategory
+                    : undefined;
+
+            const nextSpecialEquipment = hasOverride('requires_special_equipment')
+                ? overrides.requires_special_equipment
+                : selectedSpecialEquipment !== 'all'
+                    ? selectedSpecialEquipment
+                    : undefined;
+
+            const nextSort = hasOverride('sort') ? overrides.sort ?? sortColumn : sortColumn;
+            const nextDirection = hasOverride('direction') ? overrides.direction ?? sortDirection : sortDirection;
+            const nextPerPage = hasOverride('per_page') ? overrides.per_page : Number(perPage);
+            const nextPage = hasOverride('page') ? overrides.page : undefined;
+
+            const params: Record<string, string | number | undefined> = {
+                search: nextSearch && nextSearch !== '' ? nextSearch : undefined,
+                category: nextCategory && nextCategory !== 'all' ? nextCategory : undefined,
+                requires_special_equipment:
+                    nextSpecialEquipment && nextSpecialEquipment !== 'all' ? nextSpecialEquipment : undefined,
+                sort: nextSort,
+                direction: nextDirection,
+                page: nextPage,
+                per_page:
+                    typeof nextPerPage === 'number' && Number.isFinite(nextPerPage) && nextPerPage > 0
+                        ? nextPerPage
+                        : undefined,
+            };
+
+            Object.keys(params).forEach((key) => {
+                if (params[key] === undefined) {
+                    delete params[key];
+                }
+            });
+
+            if (typeof window !== 'undefined') {
+                window.sessionStorage.setItem(SKELETON_FLAG_KEY, 'true');
             }
-        })
 
-        router.get('/cargo-types', params, { preserveState: true, replace: false })
-    }, [searchTerm, selectedCategory, selectedSpecialEquipment, sortColumn, sortDirection, perPage])
+            router.get('/cargo-types', params, { preserveState: true, replace: false });
+        },
+        [perPage, searchTerm, selectedCategory, selectedSpecialEquipment, sortColumn, sortDirection],
+    );
 
     const handleSearchChange = (value: string) => {
-        setSearchTerm(value)
-        handleNavigate({ search: value.trim() ? value.trim() : undefined, page: 1 })
-    }
+        setSearchTerm(value);
+        handleNavigate({ search: value.trim() ? value.trim() : undefined, page: 1 });
+    };
 
     const handleCategoryChange = (value: string) => {
-        setSelectedCategory(value)
-        handleNavigate({ category: value !== 'all' ? value : undefined, page: 1 })
-    }
+        setSelectedCategory(value);
+        handleNavigate({ category: value !== 'all' ? value : undefined, page: 1 });
+    };
 
     const handleSpecialEquipmentChange = (value: string) => {
-        setSelectedSpecialEquipment(value)
-        handleNavigate({ requires_special_equipment: value !== 'all' ? value : undefined, page: 1 })
-    }
+        setSelectedSpecialEquipment(value);
+        handleNavigate({ requires_special_equipment: value !== 'all' ? value : undefined, page: 1 });
+    };
 
     const handlePerPageChange = (value: string) => {
-        setPerPage(value)
-        const numericValue = Number(value)
-        handleNavigate({ per_page: Number.isNaN(numericValue) ? undefined : numericValue, page: 1 })
-    }
+        setPerPage(value);
+        const numericValue = Number(value);
+        handleNavigate({ per_page: Number.isNaN(numericValue) ? undefined : numericValue, page: 1 });
+    };
 
-    const handleSort = (column: string) => {
-        const newDirection: 'asc' | 'desc' = sortColumn === column && sortDirection === 'asc' ? 'desc' : 'asc'
-        setSortColumn(column)
-        setSortDirection(newDirection)
-        handleNavigate({ sort: column, direction: newDirection })
-    }
+    const handleSort = React.useCallback(
+        (column: string) => {
+            const newDirection: 'asc' | 'desc' = sortColumn === column && sortDirection === 'asc' ? 'desc' : 'asc';
+            setSortColumn(column);
+            setSortDirection(newDirection);
+            handleNavigate({ sort: column, direction: newDirection });
+        },
+        [handleNavigate, sortColumn, sortDirection],
+    );
 
     const handleDeleteClick = (type: CargoTypeSummary) => {
-        setSelectedType(type)
-        setDeleteDialogOpen(true)
-    }
+        setSelectedType(type);
+        setDeleteDialogOpen(true);
+    };
 
     const handleDeleteConfirm = () => {
         if (!selectedType) {
-            return
+            return;
         }
 
-        setIsDeleting(true)
+        setIsDeleting(true);
+
         router.delete(`/cargo-types/${selectedType.id}`, {
             preserveScroll: true,
             onSuccess: () => {
-                setIsDeleting(false)
-                setDeleteDialogOpen(false)
-                setSelectedType(null)
+                setDeleteDialogOpen(false);
+                setSelectedType(null);
+                setIsDeleting(false);
                 toast({
                     title: 'Cargo type deleted',
                     description: 'The cargo type was removed successfully.',
-                })
+                });
             },
             onError: (errors) => {
-                setIsDeleting(false)
-                const errorMessages = errors && typeof errors === 'object'
-                    ? Object.values(errors as Record<string, unknown>)
+                setIsDeleting(false);
+
+                const fallback = 'Failed to delete cargo type. Please try again.';
+                if (errors && typeof errors === 'object') {
+                    const errorMessages = Object.values(errors)
                         .flatMap((value) => (Array.isArray(value) ? value : [value]))
-                        .filter((value): value is string => typeof value === 'string')
-                        .join('\n')
-                    : 'Failed to delete cargo type.'
-                toast({
-                    title: 'Delete failed',
-                    description: errorMessages,
-                    variant: 'destructive',
-                })
+                        .filter(Boolean)
+                        .join('\n');
+
+                    toast({
+                        title: 'Delete failed',
+                        description: errorMessages || fallback,
+                        variant: 'destructive',
+                    });
+                } else {
+                    toast({
+                        title: 'Delete failed',
+                        description: fallback,
+                        variant: 'destructive',
+                    });
+                }
             },
-        })
-    }
+        });
+    };
 
     const handleExport = React.useCallback(() => {
-        const params = new URLSearchParams()
+        const params = new URLSearchParams();
         if (searchTerm.trim()) {
-            params.set('search', searchTerm.trim())
+            params.set('search', searchTerm.trim());
         }
         if (selectedCategory !== 'all') {
-            params.set('category', selectedCategory)
+            params.set('category', selectedCategory);
         }
         if (selectedSpecialEquipment !== 'all') {
-            params.set('requires_special_equipment', selectedSpecialEquipment)
+            params.set('requires_special_equipment', selectedSpecialEquipment);
         }
-        params.set('sort', sortColumn)
-        params.set('direction', sortDirection)
+        params.set('sort', sortColumn);
+        params.set('direction', sortDirection);
 
-        const queryString = params.toString()
-        window.location.href = queryString ? `/cargo-types/export?${queryString}` : '/cargo-types/export'
-    }, [searchTerm, selectedCategory, selectedSpecialEquipment, sortColumn, sortDirection])
+        const queryString = params.toString();
+        window.location.href = queryString ? `/cargo-types/export?${queryString}` : '/cargo-types/export';
+    }, [searchTerm, selectedCategory, selectedSpecialEquipment, sortColumn, sortDirection]);
 
-    const getCategoryBadgeClass = (category: string) => {
-        const normalized = category.toLowerCase()
+    const getCategoryBadgeClass = (category: string): string => {
+        const normalized = category.toLowerCase();
         if (normalized.includes('general')) {
-            return 'bg-slate-500 text-white hover:bg-slate-600'
+            return 'bg-slate-500 text-white hover:bg-slate-600';
         }
         if (normalized.includes('construct')) {
-            return 'bg-blue-500 text-white hover:bg-blue-600'
+            return 'bg-blue-500 text-white hover:bg-blue-600';
         }
         if (normalized.includes('agri')) {
-            return 'bg-emerald-500 text-white hover:bg-emerald-600'
+            return 'bg-emerald-500 text-white hover:bg-emerald-600';
         }
         if (normalized.includes('industrial')) {
-            return 'bg-orange-500 text-white hover:bg-orange-600'
+            return 'bg-orange-500 text-white hover:bg-orange-600';
         }
         if (normalized.includes('food')) {
-            return 'bg-rose-500 text-white hover:bg-rose-600'
+            return 'bg-rose-500 text-white hover:bg-rose-600';
         }
         if (normalized.includes('consumer')) {
-            return 'bg-purple-500 text-white hover:bg-purple-600'
+            return 'bg-purple-500 text-white hover:bg-purple-600';
         }
-        return 'bg-muted text-muted-foreground'
-    }
+        return 'bg-muted text-muted-foreground';
+    };
 
-    const renderHeaderCell = (column: { key: string; label: string; sortable?: boolean; sortKey?: string }) => {
-        const sortable = column.sortable ?? false
-        const columnKey = column.sortKey ?? column.key
-        const isActive = sortColumn === columnKey
-
-        if (!sortable) {
-            return (
-                <TableHead key={column.key} className="sticky top-0 z-20 bg-background">
-                    {column.label}
-                </TableHead>
-            )
-        }
-
-        return (
-            <TableHead
-                key={column.key}
-                className="sticky top-0 z-20 cursor-pointer select-none bg-background transition-colors hover:bg-muted/70"
-                onClick={() => handleSort(columnKey)}
-            >
-                <div className="flex items-center gap-2">
-                    {column.label}
-                    <ArrowUpDown size={14} className={isActive ? 'text-primary' : 'text-muted-foreground opacity-50'} />
-                </div>
-            </TableHead>
-        )
-    }
-
-    const statsCards = [
+    const statsDefinitions = [
         {
-            title: 'Cargo Types',
-            value: metrics ? metrics.total.toLocaleString() : '0',
-            description: `${metrics?.distinct_categories?.toLocaleString() ?? 0} categories`,
+            id: 'cargo-types',
+            label: 'Cargo Types',
             icon: <Boxes className="h-3.5 w-3.5 text-blue-600" />,
-            valueClassName: 'text-blue-600',
+            className: 'min-w-0',
+            value: isLoading ? (
+                <Skeleton className="h-3.5 w-20" aria-hidden="true" />
+            ) : (
+                formatNumber(metrics?.total)
+            ),
+            description: isLoading ? (
+                <Skeleton className="h-3 w-36" aria-hidden="true" />
+            ) : (
+                `${formatNumber(metrics?.distinct_categories)} categories`
+            ),
+            valueClassName: isLoading ? undefined : 'text-blue-600',
         },
         {
-            title: 'Special Equipment',
-            value: metrics ? metrics.requires_special_equipment.toLocaleString() : '0',
-            description: `${metrics?.without_special_equipment?.toLocaleString() ?? 0} standard types`,
+            id: 'special-equipment',
+            label: 'Special Equipment',
             icon: <Package className="h-3.5 w-3.5 text-purple-600" />,
-            valueClassName: 'text-purple-600',
+            className: 'min-w-0',
+            value: isLoading ? (
+                <Skeleton className="h-3.5 w-20" aria-hidden="true" />
+            ) : (
+                formatNumber(metrics?.requires_special_equipment)
+            ),
+            description: isLoading ? (
+                <Skeleton className="h-3 w-36" aria-hidden="true" />
+            ) : (
+                `${formatNumber(metrics?.without_special_equipment)} standard`
+            ),
+            valueClassName: isLoading ? undefined : 'text-purple-600',
         },
         {
-            title: 'Average Weight',
-            value: metrics?.average_weight ? `${metrics.average_weight.toFixed(2)} kg` : '0.00 kg',
-            description: 'Per cubic meter',
+            id: 'average-weight',
+            label: 'Average Weight',
             icon: <Scale className="h-3.5 w-3.5 text-emerald-600" />,
-            valueClassName: 'text-emerald-600',
+            className: 'min-w-0',
+            value: isLoading ? (
+                <Skeleton className="h-3.5 w-24" aria-hidden="true" />
+            ) : (
+                metrics?.average_weight
+                    ? `${metrics.average_weight.toFixed(2)} kg`
+                    : '0.00 kg'
+            ),
+            description: isLoading ? (
+                <Skeleton className="h-3 w-28" aria-hidden="true" />
+            ) : (
+                'Per cubic meter'
+            ),
+            valueClassName: isLoading ? undefined : 'text-emerald-600',
         },
         {
-            title: 'Handling Notes',
-            value: metrics ? metrics.total.toLocaleString() : '0',
-            description: 'Review safety requirements',
+            id: 'handling-notes',
+            label: 'Handling Notes',
             icon: <ClipboardList className="h-3.5 w-3.5 text-amber-600" />,
-            valueClassName: 'text-amber-600',
+            className: 'min-w-0',
+            value: isLoading ? (
+                <Skeleton className="h-3.5 w-20" aria-hidden="true" />
+            ) : (
+                formatNumber(metrics?.total)
+            ),
+            description: isLoading ? (
+                <Skeleton className="h-3 w-32" aria-hidden="true" />
+            ) : (
+                'Review safety requirements'
+            ),
+            valueClassName: isLoading ? undefined : 'text-amber-600',
         },
-    ]
+    ];
 
-    const statsSection = (
-        <div className="hidden gap-2 md:grid md:grid-cols-2 xl:grid-cols-4">
-            {statsCards.map((card) => (
-                <div key={card.title} className="gap-2 rounded-lg border border-slate-200 py-2 shadow-sm sm:py-3">
-                    <div className="flex items-center justify-between px-2 pb-1 sm:px-3">
-                        <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                            {card.title}
-                        </span>
-                        {card.icon}
-                    </div>
-                    <div className="px-2 pb-2 pt-0 sm:px-3">
-                        <div className={`text-sm font-semibold sm:text-base ${card.valueClassName}`}>{card.value}</div>
-                        <p className="text-[11px] text-muted-foreground">{card.description}</p>
-                    </div>
+    const statsSection = <ListingStatsHeader stats={statsDefinitions} orientation="row" />;
+
+    const perPageSelectOptions = React.useMemo(
+        () =>
+            availablePerPageOptions.map((option) => ({
+                value: String(option),
+                label: `${option} / page`,
+            })),
+        [availablePerPageOptions],
+    );
+
+    const tableColumns = React.useMemo(
+        () => [
+            { id: 'index', label: '#', align: 'center' as const },
+            ...COLUMN_DEFINITIONS.map((column) => ({
+                id: String(column.id),
+                label: column.label,
+                sortable: Boolean(column.sortKey),
+                sortKey: column.sortKey,
+                align: column.align,
+            })),
+            { id: 'actions', label: 'Actions', align: 'center' as const },
+        ],
+        [],
+    );
+
+    const tableRows = isLoading
+        ? Array.from({ length: 6 }).map((_, rowIndex) => (
+              <TableRow key={`cargo-type-skeleton-${rowIndex}`} aria-hidden="true">
+                  {tableColumns.map((column) => (
+                      <TableCell
+                          key={`${column.id}-${rowIndex}`}
+                          className={
+                              column.align === 'center'
+                                  ? 'text-center'
+                                  : column.align === 'right'
+                                      ? 'text-right'
+                                      : undefined
+                          }
+                      >
+                          <Skeleton className="mx-auto h-4 w-24 max-w-full" />
+                      </TableCell>
+                  ))}
+              </TableRow>
+          ))
+        : cargoTypeData.length > 0
+            ? cargoTypeData.map((type, index) => (
+                  <TableRow key={type.id} className="hover:bg-muted/50">
+                      <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
+                      <TableCell className="font-semibold">{type.name}</TableCell>
+                      <TableCell>
+                          <Badge className={getCategoryBadgeClass(type.category)}>{type.category}</Badge>
+                      </TableCell>
+                      <TableCell className="text-right text-muted-foreground">
+                          {formatWeight(type.weight_per_cubic_meter)}
+                      </TableCell>
+                      <TableCell className="text-center">
+                          {type.requires_special_equipment ? (
+                              <Badge className="bg-rose-500 text-white hover:bg-rose-600">Required</Badge>
+                          ) : (
+                              <span className="text-muted-foreground">Not required</span>
+                          )}
+                      </TableCell>
+                      <TableCell className="text-center">
+                          <ListingRowActionsMenu
+                              actions={[
+                                  canViewCargoType && {
+                                      label: 'View',
+                                      icon: <Eye className="h-4 w-4" />,
+                                      href: `/cargo-types/${type.id}`,
+                                  },
+                                  canEditCargoType && {
+                                      label: 'Edit',
+                                      icon: <Edit className="h-4 w-4" />,
+                                      href: `/cargo-types/${type.id}/edit`,
+                                  },
+                                  canDeleteCargoType && {
+                                      label: 'Delete',
+                                      icon: <Trash2 className="h-4 w-4" />,
+                                      danger: true,
+                                      disabled: isDeleting && selectedType?.id === type.id,
+                                      onSelect: () => handleDeleteClick(type),
+                                  },
+                              ]}
+                          />
+                      </TableCell>
+                  </TableRow>
+              ))
+            : (
+                <TableRow>
+                    <TableCell colSpan={tableColumns.length} className="py-8 text-center text-muted-foreground">
+                        No cargo types found.
+                        {canCreateCargoType && (
+                            <Link href="/cargo-types/create" className="ml-1 text-primary underline">
+                                Create one
+                            </Link>
+                        )}
+                    </TableCell>
+                </TableRow>
+            );
+
+    const mobileItems = React.useMemo(
+        () =>
+            cargoTypeData.map((type, index) => ({
+                record: type,
+                position: rowOffset + index + 1,
+            })),
+        [cargoTypeData, rowOffset],
+    );
+
+    const mobileContent = isLoading ? (
+        <ListingLoadingPlaceholder showStats={false} filterItemCount={4} rowCount={4} />
+    ) : (
+        <ListingMobileItemList
+            items={mobileItems}
+            getKey={(item) => item.record.id}
+            renderTitle={(item) => (
+                <div className="flex items-center gap-2">
+                    <span className="text-xs uppercase tracking-wide text-muted-foreground">#{item.position}</span>
+                    <span className="text-base">{item.record.name}</span>
+                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
                 </div>
-            ))}
-        </div>
-    )
+            )}
+            renderSubtitle={(item) => item.record.category}
+            renderContent={(item) => (
+                <div className="space-y-3 text-sm text-muted-foreground">
+                    <div className="flex items-center justify-between">
+                        <span className="font-medium text-slate-600 dark:text-slate-300">Weight / m³</span>
+                        <span className="text-right text-slate-900 dark:text-slate-100">
+                            {formatWeight(item.record.weight_per_cubic_meter)}
+                        </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <span className="font-medium text-slate-600 dark:text-slate-300">Special equipment</span>
+                        <span className="text-right text-slate-900 dark:text-slate-100">
+                            {item.record.requires_special_equipment ? 'Required' : 'Not required'}
+                        </span>
+                    </div>
+                    {(item.record.handling_requirements || item.record.safety_requirements) && (
+                        <div className="space-y-1">
+                            {item.record.handling_requirements && (
+                                <div>
+                                    <span className="text-xs uppercase text-muted-foreground">Handling</span>
+                                    <p className="text-sm text-slate-900 dark:text-slate-100">
+                                        {item.record.handling_requirements}
+                                    </p>
+                                </div>
+                            )}
+                            {item.record.safety_requirements && (
+                                <div>
+                                    <span className="text-xs uppercase text-muted-foreground">Safety</span>
+                                    <p className="text-sm text-slate-900 dark:text-slate-100">
+                                        {item.record.safety_requirements}
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            )}
+            renderFooter={(item) => (
+                <div className="flex w-full flex-wrap items-center justify-end gap-2">
+                    {canViewCargoType && (
+                        <Button asChild size="sm" variant="outline" className="flex-1 sm:flex-auto">
+                            <Link href={`/cargo-types/${item.record.id}`}>
+                                <Eye className="mr-2 h-4 w-4" />
+                                View
+                            </Link>
+                        </Button>
+                    )}
+                    {canEditCargoType && (
+                        <Button asChild size="sm" variant="secondary" className="flex-1 sm:flex-none">
+                            <Link href={`/cargo-types/${item.record.id}/edit`}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                Edit
+                            </Link>
+                        </Button>
+                    )}
+                    {canDeleteCargoType && (
+                        <Button
+                            size="sm"
+                            variant="destructive"
+                            className="flex-1 sm:flex-none"
+                            onClick={() => handleDeleteClick(item.record)}
+                            disabled={isDeleting && selectedType?.id === item.record.id}
+                        >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                        </Button>
+                    )}
+                </div>
+            )}
+            emptyState={(
+                <div className="py-8 text-center text-muted-foreground">
+                    No cargo types found.
+                    {canCreateCargoType && (
+                        <Link href="/cargo-types/create" className="ml-1 text-primary underline">
+                            Create one
+                        </Link>
+                    )}
+                </div>
+            )}
+        />
+    );
 
     const tableHeaderExtras = (
-        <div className="flex flex-wrap items-center gap-2">
-            <div className="relative w-[260px] max-w-full">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                    placeholder="Search cargo types..."
-                    value={searchTerm}
-                    onChange={(event) => handleSearchChange(event.target.value)}
-                    className="pl-10"
-                />
-            </div>
+        <ListingFilterBar
+            search={{
+                value: searchTerm,
+                placeholder: 'Search cargo types...',
+                onChange: handleSearchChange,
+                icon: <Search className="h-4 w-4" />,
+            }}
+            perPage={{
+                value: perPage,
+                label: 'Rows',
+                onChange: handlePerPageChange,
+                options: perPageSelectOptions,
+            }}
+        >
             <Select value={selectedCategory} onValueChange={handleCategoryChange}>
-                <SelectTrigger className="w-[200px]">
+                <SelectTrigger className="w-full min-w-[200px] sm:w-auto">
                     <SelectValue placeholder="Category" />
                 </SelectTrigger>
                 <SelectContent>
@@ -367,113 +670,29 @@ export default function CargoTypesIndex({ cargoTypes, metrics, filters, category
                 </SelectContent>
             </Select>
             <Select value={selectedSpecialEquipment} onValueChange={handleSpecialEquipmentChange}>
-                <SelectTrigger className="w-[220px]">
+                <SelectTrigger className="w-full min-w-[200px] sm:w-auto">
                     <SelectValue placeholder="Special equipment" />
                 </SelectTrigger>
                 <SelectContent>
-                    {specialEquipmentOptions.map((option) => (
+                    {SPECIAL_EQUIPMENT_OPTIONS.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                             {option.label}
                         </SelectItem>
                     ))}
                 </SelectContent>
             </Select>
-            <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                <span className="hidden sm:inline">Rows</span>
-                <Select value={perPage} onValueChange={handlePerPageChange}>
-                    <SelectTrigger className="w-[110px]">
-                        <SelectValue placeholder="Per page" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {availablePerPageOptions.map((option) => (
-                            <SelectItem key={option} value={String(option)}>
-                                {option} / page
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-            </div>
-        </div>
-    )
-
-    const tableContent = (
-        <Table>
-            <TableHeader className="[&_tr]:sticky [&_tr]:top-0 [&_tr]:z-20 [&_tr]:bg-background [&_tr]:shadow-sm">
-                <TableRow className="border-b bg-background">
-                    {columns.map((column) => renderHeaderCell(column))}
-                    <TableHead className="sticky top-0 z-20 bg-background text-center">Actions</TableHead>
-                </TableRow>
-            </TableHeader>
-            <TableBody>
-                {cargoTypeData.length > 0 ? (
-                    cargoTypeData.map((type) => (
-                        <TableRow key={type.id} className="hover:bg-muted/50">
-                            <TableCell className="font-semibold">{type.name}</TableCell>
-                            <TableCell>
-                                <Badge className={getCategoryBadgeClass(type.category)}>{type.category}</Badge>
-                            </TableCell>
-                            <TableCell className="text-muted-foreground">{formatWeight(type.weight_per_cubic_meter)}</TableCell>
-                            <TableCell>
-                                {type.requires_special_equipment ? (
-                                    <Badge className="bg-rose-500 text-white hover:bg-rose-600">Required</Badge>
-                                ) : (
-                                    <span className="text-muted-foreground">Not required</span>
-                                )}
-                            </TableCell>
-                            <TableCell className="text-center">
-                                <div className="flex justify-center gap-2">
-                                    {hasPermission('cargo-types.show') && (
-                                        <Button asChild size="sm" variant="ghost">
-                                            <Link href={`/cargo-types/${type.id}`}>
-                                                <Eye className="h-4 w-4" />
-                                            </Link>
-                                        </Button>
-                                    )}
-                                    {hasPermission('cargo-types.edit') && (
-                                        <Button asChild size="sm" variant="ghost">
-                                            <Link href={`/cargo-types/${type.id}/edit`}>
-                                                <SquarePen className="h-4 w-4" />
-                                            </Link>
-                                        </Button>
-                                    )}
-                                    {hasPermission('cargo-types.destroy') && (
-                                        <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            onClick={() => handleDeleteClick(type)}
-                                            className="text-red-600 hover:bg-red-50 hover:text-red-700"
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                    )}
-                                </div>
-                            </TableCell>
-                        </TableRow>
-                    ))
-                ) : (
-                    <TableRow>
-                        <TableCell colSpan={columns.length + 1} className="py-8 text-center text-muted-foreground">
-                            No cargo types found.
-                            {hasPermission('cargo-types.create') && (
-                                <Link href="/cargo-types/create" className="ml-1 text-primary underline">
-                                    Create one
-                                </Link>
-                            )}
-                        </TableCell>
-                    </TableRow>
-                )}
-            </TableBody>
-        </Table>
-    )
+        </ListingFilterBar>
+    );
 
     const headerActions = (
         <>
-            {hasPermission('cargo-types.export') && (
-                <Button variant="outline" onClick={handleExport}>
+            {canExportCargoTypes && (
+                <Button variant="outline" onClick={handleExport} className="gap-2">
+                    <Download className="h-4 w-4" />
                     Export CSV
                 </Button>
             )}
-            {hasPermission('cargo-types.create') && (
+            {canCreateCargoType && (
                 <Button asChild>
                     <Link href="/cargo-types/create">
                         <Plus className="mr-2 h-4 w-4" />
@@ -482,14 +701,14 @@ export default function CargoTypesIndex({ cargoTypes, metrics, filters, category
                 </Button>
             )}
         </>
-    )
+    );
 
     return (
         <>
             <ListPageLayout
                 headTitle="Cargo Types"
                 title="Cargo Types"
-                description={`Manage cargo configurations. Total: ${totalRecords.toLocaleString()}`}
+                description={`Manage cargo configurations. Total: ${formatNumber(totalRecords)}`}
                 breadcrumbs={breadcrumbs}
                 actions={headerActions}
                 stats={statsSection}
@@ -497,29 +716,45 @@ export default function CargoTypesIndex({ cargoTypes, metrics, filters, category
                 tableDescription="All registered cargo categories"
                 tableHeaderExtras={tableHeaderExtras}
                 pagination={
-                    <InertiaPagination
-                        className="mt-4"
-                        links={cargoTypes.links}
-                        from={cargoTypes.from}
-                        to={cargoTypes.to}
-                        total={cargoTypes.total}
-                        currentPage={currentPage}
-                        lastPage={lastPage}
-                    />
+                    !isLoading && cargoTypes?.links ? (
+                        <ListingPaginationFooter
+                            className="mt-4"
+                            links={cargoTypes.links}
+                            from={cargoTypes.from ?? undefined}
+                            to={cargoTypes.to ?? undefined}
+                            total={cargoTypes.total ?? undefined}
+                        />
+                    ) : null
                 }
             >
-                {tableContent}
+                <div className="hidden md:block">
+                    <ListingTableShell
+                        columns={tableColumns}
+                        sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSort }}
+                    >
+                        {tableRows}
+                    </ListingTableShell>
+                </div>
+
+                <div className="space-y-3 md:hidden">{mobileContent}</div>
             </ListPageLayout>
 
             <DeleteConfirmationDialog
                 open={deleteDialogOpen}
-                onOpenChange={setDeleteDialogOpen}
+                onOpenChange={(open) => {
+                    setDeleteDialogOpen(open);
+                    if (!open) {
+                        setSelectedType(null);
+                        setIsDeleting(false);
+                    }
+                }}
                 title="Delete Cargo Type"
                 description="Are you sure you want to delete this cargo type? This action cannot be undone."
-                itemName={selectedType ? `${selectedType.name}` : ''}
+                itemName={selectedType ? selectedType.name : undefined}
                 onConfirm={handleDeleteConfirm}
                 isLoading={isDeleting}
             />
         </>
-    )
+    );
 }
+

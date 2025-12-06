@@ -2,27 +2,21 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react
 import { Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import { usePermissions } from '@/hooks/use-permissions';
+import { useListingLoading } from '@/hooks/use-listing-loading';
 import ListPageLayout from '@/components/layouts/list-page-layout';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
-import { InertiaPagination } from '@/components/ui/pagination';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { TableCell, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
+import { Skeleton } from '@/components/ui/skeleton';
+import { toast } from '@/hooks/use-toast';
 import {
     Activity,
-    ArrowUpDown,
+    ArrowDownRight,
     Calendar,
+    ChevronRight,
     Coins,
     MapPin,
     Plus,
@@ -32,6 +26,13 @@ import {
     Edit,
     Trash2,
 } from 'lucide-react';
+import { ListingFilterBar } from '@/components/listing/filter-bar';
+import { ListingStatsHeader, type ListingStatDefinition } from '@/components/listing/stats-header';
+import { ListingTableShell, type ListingTableColumn } from '@/components/listing/data-table-shell';
+import { ListingMobileItemList } from '@/components/listing/mobile-item-list';
+import { ListingLoadingPlaceholder } from '@/components/listing/loading-placeholder';
+import { ListingRowActionsMenu } from '@/components/listing/row-actions-menu';
+import { ListingPaginationFooter } from '@/components/listing/pagination-footer';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -116,25 +117,27 @@ type ColumnKey =
     | 'cost'
     | 'status';
 
-interface ColumnConfig {
-    key: ColumnKey;
+interface ColumnDefinition {
+    id: ColumnKey;
     label: string;
-    sortable?: boolean;
     sortKey?: string;
-    align?: 'left' | 'right';
+    sortable?: boolean;
+    align?: 'left' | 'center' | 'right';
 }
 
-const columns: ColumnConfig[] = [
-    { key: 'trip_number', label: 'Trip #', sortable: true, sortKey: 'trip_number' },
-    { key: 'dispatch_date', label: 'Dispatch Date', sortable: true, sortKey: 'dispatch_date' },
-    { key: 'vendor', label: 'Vendor' },
-    { key: 'route', label: 'Route' },
-    { key: 'distance_km', label: 'Distance (KM)', sortable: true, sortKey: 'distance_km', align: 'right' },
-    { key: 'cargo_volume_mt', label: 'Cargo (MT)', sortable: true, sortKey: 'cargo_volume_mt', align: 'right' },
-    { key: 'tonkm', label: 'Ton-KM', sortable: true, sortKey: 'tonkm', align: 'right' },
-    { key: 'cost', label: 'Cost', sortable: true, sortKey: 'cost', align: 'right' },
-    { key: 'status', label: 'Status', sortable: true, sortKey: 'status' },
+const COLUMN_DEFINITIONS: ColumnDefinition[] = [
+    { id: 'trip_number', label: 'Trip #', sortKey: 'trip_number' },
+    { id: 'dispatch_date', label: 'Dispatch Date', sortKey: 'dispatch_date' },
+    { id: 'vendor', label: 'Vendor', sortKey: 'vendor' },
+    { id: 'route', label: 'Route', sortable: false },
+    { id: 'distance_km', label: 'Distance (KM)', sortKey: 'distance_km', align: 'right' },
+    { id: 'cargo_volume_mt', label: 'Cargo (MT)', sortKey: 'cargo_volume_mt', align: 'right' },
+    { id: 'tonkm', label: 'Ton-KM', sortKey: 'tonkm', align: 'right' },
+    { id: 'cost', label: 'Cost', sortKey: 'cost', align: 'right' },
+    { id: 'status', label: 'Status', sortKey: 'status', align: 'center' },
 ];
+
+const SKELETON_FLAG_KEY = 'outsource-performances.index.shouldShowSkeleton';
 
 const formatNumberValue = (value?: number | string | null, fractionDigits = 2, suffix = ''): string => {
     if (value === null || value === undefined || value === '') {
@@ -187,7 +190,7 @@ const formatDateValue = (value?: string | null): string => {
 };
 
 const renderStatusBadge = (status: string): ReactNode => {
-    const normalized = status.toLowerCase();
+    const normalized = status?.toLowerCase();
 
     if (normalized === 'active' || normalized === 'in_transit') {
         return (
@@ -229,7 +232,10 @@ export default function OutsourcePerformancesIndex({
     perPageOptions,
 }: OutsourcePerformanceIndexProps) {
     const { hasPermission } = usePermissions();
-    const { toast } = useToast();
+
+    const canCreate = hasPermission('outsource-performances.create');
+    const canEdit = hasPermission('outsource-performances.edit');
+    const canDelete = hasPermission('outsource-performances.destroy');
 
     const [searchTerm, setSearchTerm] = useState(filters?.search ?? '');
     const [selectedStatus, setSelectedStatus] = useState(filters?.status ?? 'all');
@@ -270,7 +276,33 @@ export default function OutsourcePerformancesIndex({
     const totalCost = metrics?.totalCost ?? 0;
     const activeRecords = metrics?.activeRecords ?? 0;
 
-    const startIndex = typeof outsourcePerformances?.from === 'number' ? outsourcePerformances.from : 1;
+    const rowOffset = Math.max((outsourcePerformances?.from ?? 1) - 1, 0);
+    const isDataReady = Array.isArray(outsourcePerformances?.data);
+
+    const { isLoading } = useListingLoading({
+        storageKey: SKELETON_FLAG_KEY,
+        isDataReady,
+    });
+
+    const perPageSelectOptions = useMemo(
+        () => availablePerPageOptions.map((option) => ({ value: String(option), label: `${option} / page` })),
+        [availablePerPageOptions],
+    );
+
+    const tableColumns: ListingTableColumn[] = useMemo(
+        () => [
+            { id: 'index', label: '#', align: 'center' },
+            ...COLUMN_DEFINITIONS.map((column) => ({
+                id: column.id,
+                label: column.label,
+                sortable: column.sortable !== false,
+                sortKey: column.sortKey ?? column.id,
+                align: column.align,
+            })),
+            { id: 'actions', label: 'Actions', align: 'center' },
+        ],
+        [],
+    );
 
     const handleNavigate = useCallback((overrides: Partial<{
         search?: string;
@@ -284,21 +316,28 @@ export default function OutsourcePerformancesIndex({
         per_page?: number;
     }>) => {
         const params: Record<string, string | number | undefined> = {
-            search: overrides.search !== undefined
-                ? overrides.search
-                : (searchTerm.trim() ? searchTerm.trim() : undefined),
-            status: overrides.status !== undefined
-                ? overrides.status
-                : (selectedStatus !== 'all' ? selectedStatus : undefined),
-            outsource_id: overrides.outsource_id !== undefined
-                ? overrides.outsource_id
-                : (selectedOutsource !== 'all' ? selectedOutsource : undefined),
-            dispatched_from: overrides.dispatched_from !== undefined
-                ? overrides.dispatched_from
-                : (dateFrom || undefined),
-            dispatched_to: overrides.dispatched_to !== undefined
-                ? overrides.dispatched_to
-                : (dateTo || undefined),
+            search:
+                overrides.search !== undefined
+                    ? overrides.search
+                    : searchTerm.trim()
+                        ? searchTerm.trim()
+                        : undefined,
+            status:
+                overrides.status !== undefined
+                    ? overrides.status
+                    : selectedStatus !== 'all'
+                        ? selectedStatus
+                        : undefined,
+            outsource_id:
+                overrides.outsource_id !== undefined
+                    ? overrides.outsource_id
+                    : selectedOutsource !== 'all'
+                        ? selectedOutsource
+                        : undefined,
+            dispatched_from:
+                overrides.dispatched_from !== undefined ? overrides.dispatched_from : dateFrom || undefined,
+            dispatched_to:
+                overrides.dispatched_to !== undefined ? overrides.dispatched_to : dateTo || undefined,
             sort: overrides.sort ?? sortColumn,
             direction: overrides.direction ?? sortDirection,
             page: overrides.page,
@@ -316,6 +355,10 @@ export default function OutsourcePerformancesIndex({
                 delete params[key];
             }
         });
+
+        if (typeof window !== 'undefined') {
+            window.sessionStorage.setItem(SKELETON_FLAG_KEY, 'true');
+        }
 
         router.get('/outsource-performances', params, {
             preserveState: true,
@@ -355,18 +398,24 @@ export default function OutsourcePerformancesIndex({
         handleNavigate({ per_page: Number.isNaN(numericValue) ? undefined : numericValue, page: 1 });
     };
 
-    const handleSort = (column: ColumnConfig) => {
-        if (column.sortable === false) {
+    const handleSortToggle = useCallback((columnId: string) => {
+        const definition = COLUMN_DEFINITIONS.find((column) => {
+            const key = column.sortKey ?? column.id;
+            return key === columnId;
+        });
+
+        if (!definition || definition.sortable === false) {
             return;
         }
 
-        const sortKey = column.sortKey ?? column.key;
-        const nextDirection: SortDirection = sortColumn === sortKey && sortDirection === 'asc' ? 'desc' : 'asc';
+        const nextColumn = definition.sortKey ?? definition.id;
+        const nextDirection: SortDirection =
+            sortColumn === nextColumn && sortDirection === 'asc' ? 'desc' : 'asc';
 
-        setSortColumn(sortKey);
+        setSortColumn(nextColumn);
         setSortDirection(nextDirection);
-        handleNavigate({ sort: sortKey, direction: nextDirection });
-    };
+        handleNavigate({ sort: nextColumn, direction: nextDirection });
+    }, [handleNavigate, sortColumn, sortDirection]);
 
     const handleDeleteClick = (record: OutsourcePerformanceRecord) => {
         setSelectedRecord(record);
@@ -379,32 +428,52 @@ export default function OutsourcePerformancesIndex({
         }
 
         setIsDeleting(true);
-        router.delete(`/outsource-performances/${selectedRecord.id}`, {
+        const recordToDelete = selectedRecord;
+
+        router.delete(`/outsource-performances/${recordToDelete.id}`, {
             preserveScroll: true,
             onSuccess: () => {
+                toast({
+                    title: 'Trip deleted',
+                    description: recordToDelete.trip_number
+                        ? `Outsource trip ${recordToDelete.trip_number} was deleted successfully.`
+                        : 'The outsource performance record was removed successfully.',
+                });
+
                 setDeleteDialogOpen(false);
                 setSelectedRecord(null);
-                setIsDeleting(false);
             },
             onError: (errors) => {
-                setIsDeleting(false);
+                const fallback = 'Failed to delete outsource performance. Please try again.';
+
                 if (errors && typeof errors === 'object') {
-                    const messages = Object.values(errors).flat().join('\n');
-                    if (messages) {
-                        toast({
-                            title: 'Delete failed',
-                            description: messages,
-                            variant: 'destructive',
-                        });
-                    }
+                    const errorMessages = Object.values(errors)
+                        .flatMap((value) => (Array.isArray(value) ? value : [value]))
+                        .filter(Boolean)
+                        .join('\n');
+
+                    toast({
+                        title: 'Delete failed',
+                        description: errorMessages || fallback,
+                        variant: 'destructive',
+                    });
+                } else {
+                    toast({
+                        title: 'Delete failed',
+                        description: fallback,
+                        variant: 'destructive',
+                    });
                 }
+            },
+            onFinish: () => {
+                setIsDeleting(false);
             },
         });
     };
 
     const headerActions = (
         <>
-            {hasPermission('outsource-performances.create') && (
+            {canCreate && (
                 <Button asChild>
                     <Link href="/outsource-performances/create">
                         <Plus className="mr-2 h-4 w-4" />
@@ -415,145 +484,51 @@ export default function OutsourcePerformancesIndex({
         </>
     );
 
-    const statsCards = [
+    const statsDefinitions: ListingStatDefinition[] = [
         {
-            title: 'Trips Logged',
-            value: totalRecords.toLocaleString(),
-            description: `${activeRecords.toLocaleString()} active trips underway`,
+            id: 'trips',
+            label: 'Trips Logged',
             icon: <Activity className="h-3.5 w-3.5 text-indigo-600" />,
-            valueClassName: 'text-indigo-600',
+            value: isLoading ? <Skeleton className="h-5 w-20" /> : totalRecords.toLocaleString(),
+            description: isLoading
+                ? <Skeleton className="h-3 w-32" />
+                : `${activeRecords.toLocaleString()} active trips underway`,
+            valueClassName: isLoading ? undefined : 'text-indigo-600',
         },
         {
-            title: 'Cargo Moved',
-            value: formatNumberValue(totalCargo, 0, ' MT'),
-            description: 'Total tonnage handled by vendors',
+            id: 'cargo',
+            label: 'Cargo Moved',
             icon: <TrendingUp className="h-3.5 w-3.5 text-emerald-600" />,
-            valueClassName: 'text-emerald-600',
+            value: isLoading ? <Skeleton className="h-5 w-24" /> : formatNumberValue(totalCargo, 0, ' MT'),
+            description: isLoading ? <Skeleton className="h-3 w-28" /> : 'Total tonnage handled by vendors',
+            valueClassName: isLoading ? undefined : 'text-emerald-600',
         },
         {
-            title: 'Distance Covered',
-            value: formatNumberValue(totalDistance, 0, ' km'),
-            description: 'Kilometres logged across the period',
+            id: 'distance',
+            label: 'Distance Covered',
             icon: <MapPin className="h-3.5 w-3.5 text-rose-600" />,
-            valueClassName: 'text-rose-600',
+            value: isLoading ? <Skeleton className="h-5 w-24" /> : formatNumberValue(totalDistance, 0, ' km'),
+            description: isLoading ? <Skeleton className="h-3 w-32" /> : 'Kilometres logged across the period',
+            valueClassName: isLoading ? undefined : 'text-rose-600',
         },
         {
-            title: 'Total Cost',
-            value: formatCurrencyValue(totalCost),
-            description: 'Aggregate spend with vendors',
+            id: 'cost',
+            label: 'Total Cost',
             icon: <Coins className="h-3.5 w-3.5 text-amber-600" />,
-            valueClassName: 'text-amber-600',
+            value: isLoading ? <Skeleton className="h-5 w-28" /> : formatCurrencyValue(totalCost),
+            description: isLoading ? <Skeleton className="h-3 w-28" /> : 'Aggregate spend with vendors',
+            valueClassName: isLoading ? undefined : 'text-amber-600',
         },
     ];
 
-    const statsSection = (
-        <div className="hidden gap-2 md:grid md:grid-cols-2 xl:grid-cols-4">
-            {statsCards.map((card) => (
-                <Card key={card.title} className="gap-2 border border-slate-200 py-2 shadow-sm dark:border-slate-800">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 p-2">
-                        <CardTitle className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                            {card.title}
-                        </CardTitle>
-                        {card.icon}
-                    </CardHeader>
-                    <CardContent className="px-2 pb-2 pt-0">
-                        <div className={`text-sm font-semibold sm:text-base ${card.valueClassName}`}>{card.value}</div>
-                        <p className="text-[11px] text-muted-foreground">{card.description}</p>
-                    </CardContent>
-                </Card>
-            ))}
-        </div>
-    );
-
-    const tableHeaderExtras = (
-        <div className="flex flex-wrap items-center gap-2">
-            <div className="relative w-[260px] max-w-full">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                    placeholder="Search trips or vendors"
-                    value={searchTerm}
-                    onChange={(event) => handleSearchChange(event.target.value)}
-                    className="pl-10"
-                />
-            </div>
-            <Select value={selectedOutsource} onValueChange={handleOutsourceChange}>
-                <SelectTrigger className="w-[200px]">
-                    <SelectValue placeholder="Vendor" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="all">All vendors</SelectItem>
-                    {outsourceOptions?.map((option) => (
-                        <SelectItem key={option.value} value={String(option.value)}>
-                            {option.label}
-                        </SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
-            <Select value={selectedStatus} onValueChange={handleStatusChange}>
-                <SelectTrigger className="w-[150px]">
-                    <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="all">All statuses</SelectItem>
-                    {statusOptions?.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                        </SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
-            <div className="flex items-center gap-2">
-                <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <Input
-                        type="date"
-                        value={dateFrom}
-                        onChange={(event) => handleDateChange('from', event.target.value)}
-                        className="w-[150px]"
-                    />
-                </div>
-                <span className="text-muted-foreground">–</span>
-                <Input
-                    type="date"
-                    value={dateTo}
-                    onChange={(event) => handleDateChange('to', event.target.value)}
-                    className="w-[150px]"
-                />
-            </div>
-            <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                <span className="hidden sm:inline">Rows</span>
-                <Select value={perPage} onValueChange={handlePerPageChange}>
-                    <SelectTrigger className="w-[110px]">
-                        <SelectValue placeholder="Per page" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {availablePerPageOptions.map((option) => (
-                            <SelectItem key={option} value={String(option)}>
-                                {option} / page
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-            </div>
-        </div>
-    );
-
-    const renderCell = (record: OutsourcePerformanceRecord, column: ColumnKey): ReactNode => {
+    const renderColumnValue = useCallback((record: OutsourcePerformanceRecord, column: ColumnKey): ReactNode => {
         switch (column) {
             case 'trip_number':
                 return record.trip_number;
             case 'dispatch_date':
-                return (
-                    <span className="text-sm text-muted-foreground">
-                        {formatDateValue(record.dispatch_date)}
-                    </span>
-                );
+                return <span className="text-sm text-muted-foreground">{formatDateValue(record.dispatch_date)}</span>;
             case 'vendor':
-                return (
-                    <span className="text-sm text-muted-foreground">
-                        {record.outsource?.name ?? '—'}
-                    </span>
-                );
+                return <span className="text-sm text-muted-foreground">{record.outsource?.name ?? '—'}</span>;
             case 'route': {
                 const fromPlace = record.from_place?.name ?? record.fromPlace?.name ?? '—';
                 const toPlace = record.to_place?.name ?? record.toPlace?.name ?? '—';
@@ -566,17 +541,9 @@ export default function OutsourcePerformancesIndex({
                 );
             }
             case 'distance_km':
-                return (
-                    <span className="font-medium">
-                        {formatNumberValue(record.distance_km, 2, ' km')}
-                    </span>
-                );
+                return <span className="font-medium">{formatNumberValue(record.distance_km, 2, ' km')}</span>;
             case 'cargo_volume_mt':
-                return (
-                    <span className="font-medium">
-                        {formatNumberValue(record.cargo_volume_mt, 2, ' MT')}
-                    </span>
-                );
+                return <span className="font-medium">{formatNumberValue(record.cargo_volume_mt, 2, ' MT')}</span>;
             case 'tonkm':
                 return <span className="font-medium">{formatNumberValue(record.tonkm)}</span>;
             case 'cost':
@@ -586,103 +553,263 @@ export default function OutsourcePerformancesIndex({
             default:
                 return '—';
         }
-    };
+    }, []);
 
-    const renderHeaderCell = (column: ColumnConfig) => {
-        if (column.sortable === false) {
+    const tableRows = useMemo(() => {
+        if (isLoading) {
+            return Array.from({ length: 6 }).map((_, rowIndex) => (
+                <TableRow key={`outsource-performance-skeleton-${rowIndex}`} aria-hidden="true">
+                    {tableColumns.map((column) => (
+                        <TableCell
+                            key={`${column.id}-${rowIndex}`}
+                            className={
+                                column.align === 'center'
+                                    ? 'text-center'
+                                    : column.align === 'right'
+                                        ? 'text-right'
+                                        : undefined
+                            }
+                        >
+                            <Skeleton className="mx-auto h-4 w-24 max-w-full" />
+                        </TableCell>
+                    ))}
+                </TableRow>
+            ));
+        }
+
+        if (!outsourcePerformances?.data?.length) {
             return (
-                <TableHead
-                    key={column.key}
-                    className={`sticky top-0 z-20 bg-background ${column.align === 'right' ? 'text-right' : ''}`}
-                >
-                    {column.label}
-                </TableHead>
+                <TableRow>
+                    <TableCell colSpan={tableColumns.length} className="py-10 text-center text-muted-foreground">
+                        No outsource performance records found.
+                        {canCreate && (
+                            <Link href="/outsource-performances/create" className="ml-1 text-primary underline">
+                                Log one
+                            </Link>
+                        )}
+                    </TableCell>
+                </TableRow>
             );
         }
 
-        const sortKey = column.sortKey ?? column.key;
-        const isActive = sortColumn === sortKey;
+        return outsourcePerformances.data.map((record, index) => (
+            <TableRow key={record.id} className="hover:bg-muted/50">
+                <TableCell className="text-center font-medium text-muted-foreground">{rowOffset + index + 1}</TableCell>
+                {COLUMN_DEFINITIONS.map((column) => (
+                    <TableCell
+                        key={`${record.id}-${column.id}`}
+                        className={
+                            column.align === 'right'
+                                ? 'text-right'
+                                : column.align === 'center'
+                                    ? 'text-center'
+                                    : undefined
+                        }
+                    >
+                        {renderColumnValue(record, column.id)}
+                    </TableCell>
+                ))}
+                <TableCell className="text-center">
+                    <ListingRowActionsMenu
+                        actions={[
+                            {
+                                label: 'View',
+                                icon: <Eye className="h-4 w-4" />,
+                                href: `/outsource-performances/${record.id}`,
+                            },
+                            canEdit && {
+                                label: 'Edit',
+                                icon: <Edit className="h-4 w-4" />,
+                                href: `/outsource-performances/${record.id}/edit`,
+                            },
+                            canDelete && {
+                                label: 'Delete',
+                                icon: <Trash2 className="h-4 w-4" />,
+                                danger: true,
+                                disabled: isDeleting && selectedRecord?.id === record.id,
+                                onSelect: () => handleDeleteClick(record),
+                            },
+                        ]}
+                    />
+                </TableCell>
+            </TableRow>
+        ));
+    }, [
+        canCreate,
+        canDelete,
+        canEdit,
+        handleDeleteClick,
+        isDeleting,
+        isLoading,
+        outsourcePerformances,
+        renderColumnValue,
+        rowOffset,
+        selectedRecord?.id,
+        tableColumns,
+    ]);
 
-        return (
-            <TableHead
-                key={column.key}
-                className={`sticky top-0 z-20 cursor-pointer select-none bg-background transition-colors hover:bg-muted/70 ${column.align === 'right' ? 'text-right' : ''}`}
-                onClick={() => handleSort(column)}
-            >
-                <div className={`flex items-center gap-2 ${column.align === 'right' ? 'justify-end' : ''}`}>
-                    {column.label}
-                    <ArrowUpDown size={14} className={isActive ? 'text-primary' : 'text-muted-foreground opacity-50'} />
+    const mobileItems = useMemo(
+        () =>
+            (outsourcePerformances?.data ?? []).map((record, index) => ({
+                record,
+                position: rowOffset + index + 1,
+            })),
+        [outsourcePerformances?.data, rowOffset],
+    );
+
+    const mobileContent = isLoading ? (
+        <ListingLoadingPlaceholder showStats={false} filterItemCount={4} rowCount={4} className="p-4" />
+    ) : (
+        <ListingMobileItemList
+            items={mobileItems}
+            getKey={(item) => item.record.id}
+            renderTitle={(item) => (
+                <div className="flex items-center gap-2">
+                    <span className="text-xs uppercase tracking-wide text-muted-foreground">#{item.position}</span>
+                    <span className="text-base font-semibold text-foreground">{item.record.trip_number}</span>
+                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
                 </div>
-            </TableHead>
-        );
-    };
+            )}
+            renderSubtitle={(item) => item.record.outsource?.name ?? 'Vendor unknown'}
+            renderContent={(item) => (
+                <div className="space-y-3 text-sm text-muted-foreground">
+                    <div className="flex items-center justify-between">
+                        <span className="font-medium text-slate-600 dark:text-slate-300">Dispatch</span>
+                        <span className="text-right text-slate-900 dark:text-slate-100">
+                            {formatDateValue(item.record.dispatch_date)}
+                        </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <span className="font-medium text-slate-600 dark:text-slate-300">Route</span>
+                        <span className="text-right text-slate-900 dark:text-slate-100">
+                            {(item.record.from_place?.name ?? item.record.fromPlace?.name ?? '—')}
+                        </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <span className="font-medium text-slate-600 dark:text-slate-300">Distance</span>
+                        <span className="text-right text-slate-900 dark:text-slate-100">
+                            {formatNumberValue(item.record.distance_km, 2, ' km')}
+                        </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <span className="font-medium text-slate-600 dark:text-slate-300">Cost</span>
+                        <span className="text-right text-slate-900 dark:text-slate-100">
+                            {formatCurrencyValue(item.record.cost)}
+                        </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <span className="font-medium text-slate-600 dark:text-slate-300">Status</span>
+                        <span className="text-right text-slate-900 dark:text-slate-100">
+                            {renderStatusBadge(item.record.status ?? '')}
+                        </span>
+                    </div>
+                </div>
+            )}
+            renderFooter={(item) => (
+                <div className="flex w-full flex-wrap items-center gap-2">
+                    <Button asChild size="sm" variant="outline" className="flex-1 sm:flex-auto">
+                        <Link href={`/outsource-performances/${item.record.id}`}>
+                            <Eye className="mr-2 h-4 w-4" />
+                            View
+                        </Link>
+                    </Button>
+                    {canEdit && (
+                        <Button asChild size="sm" variant="secondary" className="flex-1 sm:flex-none">
+                            <Link href={`/outsource-performances/${item.record.id}/edit`}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                Edit
+                            </Link>
+                        </Button>
+                    )}
+                    {canDelete && (
+                        <Button
+                            size="sm"
+                            variant="destructive"
+                            className="flex-1 sm:flex-none"
+                            onClick={() => handleDeleteClick(item.record)}
+                            disabled={isDeleting && selectedRecord?.id === item.record.id}
+                        >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                        </Button>
+                    )}
+                </div>
+            )}
+            emptyState={
+                <div className="py-8 text-center text-muted-foreground">
+                    No outsource performance records found.
+                    {canCreate && (
+                        <Link href="/outsource-performances/create" className="ml-1 text-primary underline">
+                            Log one
+                        </Link>
+                    )}
+                </div>
+            }
+        />
+    );
 
-    const tableContent = (
-        <Table>
-            <TableHeader className="[&_tr]:sticky [&_tr]:top-0 [&_tr]:z-20 [&_tr]:bg-background [&_tr]:shadow-sm">
-                <TableRow className="border-b bg-background">
-                    <TableHead className="sticky top-0 z-20 w-16 bg-background text-center">No</TableHead>
-                    {columns.map((column) => renderHeaderCell(column))}
-                    <TableHead className="sticky top-0 z-20 bg-background text-center">Actions</TableHead>
-                </TableRow>
-            </TableHeader>
-            <TableBody>
-                {outsourcePerformances?.data && outsourcePerformances.data.length > 0 ? (
-                    outsourcePerformances.data.map((record, index) => (
-                        <TableRow key={record.id} className="hover:bg-muted/50">
-                            <TableCell className="text-center font-medium text-muted-foreground">
-                                {startIndex + index}
-                            </TableCell>
-                            {columns.map((column) => (
-                                <TableCell
-                                    key={`${record.id}-${column.key}`}
-                                    className={column.align === 'right' ? 'text-right' : ''}
-                                >
-                                    {renderCell(record, column.key)}
-                                </TableCell>
-                            ))}
-                            <TableCell className="text-center">
-                                <div className="flex justify-center gap-2">
-                                    <Button asChild size="sm" variant="ghost">
-                                        <Link href={`/outsource-performances/${record.id}`}>
-                                            <Eye className="h-4 w-4" />
-                                        </Link>
-                                    </Button>
-                                    {hasPermission('outsource-performances.edit') && (
-                                        <Button asChild size="sm" variant="ghost">
-                                            <Link href={`/outsource-performances/${record.id}/edit`}>
-                                                <Edit className="h-4 w-4" />
-                                            </Link>
-                                        </Button>
-                                    )}
-                                    {hasPermission('outsource-performances.destroy') && (
-                                        <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            className="text-destructive hover:bg-destructive/10"
-                                            onClick={() => handleDeleteClick(record)}
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                    )}
-                                </div>
-                            </TableCell>
-                        </TableRow>
-                    ))
-                ) : (
-                    <TableRow>
-                        <TableCell colSpan={columns.length + 2} className="py-8 text-center text-muted-foreground">
-                            No outsource performance records found.
-                            {hasPermission('outsource-performances.create') && (
-                                <Link href="/outsource-performances/create" className="ml-1 text-primary underline">
-                                    Log one
-                                </Link>
-                            )}
-                        </TableCell>
-                    </TableRow>
-                )}
-            </TableBody>
-        </Table>
+    const tableHeaderExtras = (
+        <ListingFilterBar
+            search={{
+                value: searchTerm,
+                placeholder: 'Search trips or vendors',
+                onChange: handleSearchChange,
+                icon: <Search className="h-4 w-4" />,
+            }}
+            perPage={{
+                value: perPage,
+                label: 'Rows',
+                onChange: handlePerPageChange,
+                options: perPageSelectOptions,
+            }}
+        >
+            <div className="flex flex-wrap items-center gap-2">
+                <Select value={selectedOutsource} onValueChange={handleOutsourceChange}>
+                    <SelectTrigger className="w-[200px]">
+                        <SelectValue placeholder="Vendor" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">All vendors</SelectItem>
+                        {outsourceOptions?.map((option) => (
+                            <SelectItem key={option.value} value={String(option.value)}>
+                                {option.label}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+                <Select value={selectedStatus} onValueChange={handleStatusChange}>
+                    <SelectTrigger className="w-[150px]">
+                        <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">All statuses</SelectItem>
+                        {statusOptions?.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                                {option.label}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+                <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <Input
+                            type="date"
+                            value={dateFrom}
+                            onChange={(event) => handleDateChange('from', event.target.value)}
+                            className="w-[150px]"
+                        />
+                    </div>
+                    <span className="text-muted-foreground">–</span>
+                    <Input
+                        type="date"
+                        value={dateTo}
+                        onChange={(event) => handleDateChange('to', event.target.value)}
+                        className="w-[150px]"
+                    />
+                </div>
+            </div>
+        </ListingFilterBar>
     );
 
     return (
@@ -693,31 +820,62 @@ export default function OutsourcePerformancesIndex({
                 description={`Manage vendor delivery performance (${totalRecords.toLocaleString()} records).`}
                 breadcrumbs={breadcrumbs}
                 actions={headerActions}
-                stats={statsSection}
+                stats={<ListingStatsHeader stats={statsDefinitions} />}
                 tableTitle="Outsource Trip Ledger"
                 tableDescription="Analyse partner performance across distance, volume, and spend"
                 tableHeaderExtras={tableHeaderExtras}
                 pagination={
-                    <InertiaPagination
-                        className="mt-4"
-                        links={outsourcePerformances.links}
-                        from={outsourcePerformances.from}
-                        to={outsourcePerformances.to}
-                        total={outsourcePerformances.total}
-                        currentPage={outsourcePerformances.current_page}
-                        lastPage={outsourcePerformances.last_page}
-                    />
+                    !isLoading && outsourcePerformances ? (
+                        <ListingPaginationFooter
+                            className="mt-4"
+                            links={outsourcePerformances.links}
+                            from={outsourcePerformances.from}
+                            to={outsourcePerformances.to}
+                            total={outsourcePerformances.total}
+                            extra={(
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <Badge variant="outline" className="bg-white/80 text-xs text-slate-600 dark:bg-slate-900/80 dark:text-slate-300">
+                                        Distance: {formatNumberValue(totalDistance, 0, ' km')}
+                                    </Badge>
+                                    <Badge variant="outline" className="bg-white/80 text-xs text-slate-600 dark:bg-slate-900/80 dark:text-slate-300">
+                                        Cargo: {formatNumberValue(totalCargo, 0, ' MT')}
+                                    </Badge>
+                                    <Badge variant="outline" className="bg-white/80 text-xs text-slate-600 dark:bg-slate-900/80 dark:text-slate-300">
+                                        Cost: {formatCurrencyValue(totalCost)}
+                                    </Badge>
+                                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                                        <ArrowDownRight className="h-3.5 w-3.5 text-emerald-600" />
+                                        Active: {activeRecords.toLocaleString()}
+                                    </span>
+                                </div>
+                            )}
+                        />
+                    ) : null
                 }
             >
-                {tableContent}
+                <div className="hidden md:block">
+                    <ListingTableShell
+                        columns={tableColumns}
+                        sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSortToggle }}
+                    >
+                        {tableRows}
+                    </ListingTableShell>
+                </div>
+                <div className="space-y-3 md:hidden">{mobileContent}</div>
             </ListPageLayout>
 
             <DeleteConfirmationDialog
                 open={deleteDialogOpen}
-                onOpenChange={setDeleteDialogOpen}
+                onOpenChange={(open) => {
+                    setDeleteDialogOpen(open);
+                    if (!open) {
+                        setSelectedRecord(null);
+                        setIsDeleting(false);
+                    }
+                }}
                 title="Delete Trip"
                 description="Are you sure you want to delete this outsource performance record? This action cannot be undone."
-                itemName={selectedRecord?.trip_number}
+                itemName={selectedRecord?.trip_number ?? undefined}
                 onConfirm={handleDeleteConfirm}
                 isLoading={isDeleting}
             />

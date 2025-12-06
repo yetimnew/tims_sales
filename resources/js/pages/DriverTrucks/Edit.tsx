@@ -1,270 +1,533 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { FormPageLayout } from '@/components/forms/form-page-layout';
+import { FormSection } from '@/components/forms/form-section';
+import { FormField } from '@/components/forms/form-field';
+import { FormActionsBar } from '@/components/forms/form-actions-bar';
+import { UnsavedChangesBadge } from '@/components/forms/unsaved-changes-badge';
+import { ScrollToTopFab } from '@/components/forms/scroll-to-top-fab';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import AppLayout from '@/layouts/app-layout';
-import { Head, Link, router, usePage } from '@inertiajs/react';
-import { route } from 'ziggy-js';
-import driverTrucks from '../../routes/driver-trucks/index';
+import { toast } from '@/hooks/use-toast';
+import { validateDriverTruck } from '@/lib/validation';
 import { type BreadcrumbItem } from '@/types';
-import { ArrowLeft, Save, Truck, User } from 'lucide-react';
-import { useState } from 'react';
+import { Link, useForm } from '@inertiajs/react';
+import { ArrowLeft, Calendar, CheckCircle, Info, Save, Share2 } from 'lucide-react';
+import { type FormEventHandler } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
-interface DriverTruck {
-    id: number;
-    driver_id: number;
-    truck_id: number;
-    plate: string;
-    driverid: string;
-    date_recived: string;
-    is_attached: boolean;
-    status: string;
-    driver: {
-        id: number;
-        name: string;
-        driverid: string;
-    };
-    truck: {
-        id: number;
-        plate: string;
-        vehicletype: {
-            name: string;
-        };
-    };
-}
-
-interface Truck {
-    id: number;
-    plate: string;
-    status: string;
-    vehicletype: {
-        name: string;
-    };
-}
-
-interface Driver {
+interface DriverSummary {
     id: number;
     name: string;
     driverid: string;
-    status: string;
+    status: number | string;
 }
 
-interface EditProps {
-    driverTruck: DriverTruck;
-    trucks: Truck[];
-    drivers: Driver[];
+interface TruckSummary {
+    id: number;
+    plate: string;
+    status: number | string;
 }
 
-export default function Edit({ driverTruck, trucks, drivers }: EditProps) {
-    const { errors } = usePage().props;
+interface DriverTruckResource {
+    id: number;
+    driver_id: number;
+    truck_id: number;
+    date_recived?: string | null;
+    driver?: DriverSummary | null;
+    truck?: TruckSummary | null;
+}
 
-    // Add null checks to prevent white space errors
-    if (!driverTruck || !driverTruck.driver || !driverTruck.truck) {
-        return (
-            <AppLayout breadcrumbs={[]}>
-                <div className="flex items-center justify-center h-64">
-                    <div className="text-center">
-                        <h2 className="text-lg font-semibold text-gray-900">Loading...</h2>
-                        <p className="text-gray-600">Please wait while we load the assignment data.</p>
-                    </div>
-                </div>
-            </AppLayout>
-        );
-    }
+interface DriverTruckEditProps {
+    driverTruck: DriverTruckResource;
+    drivers: DriverSummary[];
+    trucks: TruckSummary[];
+    error?: string;
+}
 
-    const [formData, setFormData] = useState({
-        truck_id: driverTruck.truck_id?.toString() || '',
-        driver_id: driverTruck.driver_id?.toString() || '',
-        date_recived: driverTruck.date_recived ? driverTruck.date_recived.split('T')[0] : new Date().toISOString().split('T')[0],
-    });
+type DriverTruckFormData = {
+    truck_id: string;
+    driver_id: string;
+    date_recived: string;
+};
 
+type DriverTruckFormField = keyof DriverTruckFormData;
+
+export default function DriverTrucksEdit({ driverTruck, drivers, trucks, error }: DriverTruckEditProps) {
     const breadcrumbs: BreadcrumbItem[] = [
-        {
-            title: 'Fleet Management',
-            href: '#',
-        },
         {
             title: 'Driver-Truck Assignments',
             href: '/driver-trucks',
         },
         {
-            title: 'Edit Assignment',
+            title: driverTruck?.driver?.name || driverTruck?.driver?.driverid || 'Assignment',
+            href: `/driver-trucks/${driverTruck.id}`,
+        },
+        {
+            title: 'Edit',
             href: `/driver-trucks/${driverTruck.id}/edit`,
         },
     ];
 
-    const handleInputChange = (name: string, value: string) => {
-        setFormData((prev) => ({ ...prev, [name]: value }));
+    const initialDate = driverTruck.date_recived ? toLocalDateString(new Date(driverTruck.date_recived)) : toLocalDateString(new Date());
+
+    const { data, setData, put, processing, errors, clearErrors, wasSuccessful } = useForm<DriverTruckFormData>({
+        truck_id: driverTruck.truck_id?.toString() ?? '',
+        driver_id: driverTruck.driver_id?.toString() ?? '',
+        date_recived: initialDate,
+    });
+
+    const [frontendErrors, setFrontendErrors] = useState<Partial<Record<DriverTruckFormField, string>>>({});
+    const [isDirty, setIsDirty] = useState(false);
+    const [showScrollTop, setShowScrollTop] = useState(false);
+    const [truckSearch, setTruckSearch] = useState('');
+    const [driverSearch, setDriverSearch] = useState('');
+    const scrollContainerRef = useRef<HTMLFormElement | null>(null);
+
+    const todayString = useMemo(() => toLocalDateString(new Date()), []);
+    const minDateString = useMemo(() => {
+        const base = new Date();
+        base.setHours(0, 0, 0, 0);
+        base.setDate(base.getDate() - 30);
+        return toLocalDateString(base);
+    }, []);
+
+    useEffect(() => {
+        if (!error) {
+            return;
+        }
+
+        toast({
+            title: '⚠️ Error',
+            description: error,
+            variant: 'destructive',
+        });
+    }, [error]);
+
+    useEffect(() => {
+        const messages = Object.values(errors)
+            .map((message) => (typeof message === 'string' ? message : String(message)))
+            .filter(Boolean);
+
+        if (messages.length === 0) {
+            return;
+        }
+
+        toast({
+            title: '⚠️ Validation Error',
+            description: messages.join(', '),
+            variant: 'destructive',
+        });
+    }, [errors]);
+
+    useEffect(() => {
+        const container = scrollContainerRef.current;
+        if (!container) {
+            return;
+        }
+
+        const handleScroll = () => setShowScrollTop(container.scrollTop > 240);
+        handleScroll();
+        container.addEventListener('scroll', handleScroll);
+
+        return () => container.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    useEffect(() => {
+        if (!wasSuccessful) {
+            return;
+        }
+
+        toast({
+            title: '✅ Assignment Updated',
+            description: 'Driver and truck pairing has been updated successfully.',
+        });
+    }, [wasSuccessful]);
+
+    const handleScrollToTop = () => {
+        const container = scrollContainerRef.current;
+        container?.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    const selectedTruck = trucks?.find((truck) => truck?.id?.toString() === formData.truck_id);
-    const selectedDriver = drivers?.find((driver) => driver?.id?.toString() === formData.driver_id);
+    const validateField = (field: DriverTruckFormField, nextState: DriverTruckFormData) => {
+        const result = validateDriverTruck(nextState);
+        const message = result[field];
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        router.put(driverTrucks.update(driverTruck.id).url, formData);
+        setFrontendErrors((prev) => {
+            const next = { ...prev };
+            if (message) {
+                next[field] = message;
+            } else {
+                delete next[field];
+            }
+            return next;
+        });
     };
+
+    const handleFieldChange = (field: DriverTruckFormField, value: string) => {
+        let nextValue = value;
+
+        if (field === 'date_recived') {
+            nextValue = value.slice(0, 10);
+        }
+
+        const nextState = { ...data, [field]: nextValue } as DriverTruckFormData;
+
+        setData(field, nextValue);
+        clearErrors(field);
+        validateField(field, nextState);
+        setIsDirty(true);
+    };
+
+    const submit: FormEventHandler = (event) => {
+        event.preventDefault();
+
+        const validationResult = validateDriverTruck(data);
+        if (Object.keys(validationResult).length > 0) {
+            setFrontendErrors(validationResult as Partial<Record<DriverTruckFormField, string>>);
+            toast({
+                title: '⚠️ Validation Error',
+                description: 'Please fix the validation errors before submitting.',
+                variant: 'destructive',
+            });
+            return;
+        }
+
+        put(`/driver-trucks/${driverTruck.id}`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                clearErrors();
+                setFrontendErrors({});
+                setIsDirty(false);
+            },
+        });
+    };
+
+    const getFieldError = (field: DriverTruckFormField): string => {
+        const backendError = errors[field];
+        if (backendError) {
+            return typeof backendError === 'string' ? backendError : String(backendError);
+        }
+
+        return frontendErrors[field] ?? '';
+    };
+
+    const safeTrucks = useMemo(() => (Array.isArray(trucks) ? trucks : []), [trucks]);
+    const safeDrivers = useMemo(() => (Array.isArray(drivers) ? drivers : []), [drivers]);
+
+    const filteredTrucks = useMemo(() => {
+        if (!truckSearch.trim()) {
+            return safeTrucks;
+        }
+
+        const query = truckSearch.toLowerCase();
+        return safeTrucks.filter((truck) => {
+            const plateMatch = truck.plate?.toLowerCase().includes(query);
+            const statusMatch = String(truck.status).toLowerCase().includes(query);
+            return Boolean(plateMatch || statusMatch);
+        });
+    }, [safeTrucks, truckSearch]);
+
+    const filteredDrivers = useMemo(() => {
+        if (!driverSearch.trim()) {
+            return safeDrivers;
+        }
+
+        const query = driverSearch.toLowerCase();
+        return safeDrivers.filter((driver) => {
+            const nameMatch = driver.name?.toLowerCase().includes(query);
+            const driverIdMatch = driver.driverid?.toLowerCase().includes(query);
+            const statusMatch = String(driver.status).toLowerCase().includes(query);
+            return Boolean(nameMatch || driverIdMatch || statusMatch);
+        });
+    }, [safeDrivers, driverSearch]);
+
+    const selectedTruck = safeTrucks.find((truck) => truck.id.toString() === data.truck_id);
+    const selectedDriver = safeDrivers.find((driver) => driver.id.toString() === data.driver_id);
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={`Edit Assignment - ${driverTruck.driver.name} & ${driverTruck.truck.plate}`} />
-            <div className="flex flex-1 flex-col gap-6">
-                <div className="flex items-center justify-between">
-                    <Link href={driverTrucks.show(driverTruck.id).url}>
-                        <Button variant="outline" size="sm" className="flex items-center gap-2">
-                            <ArrowLeft className="h-4 w-4" />
+        <FormPageLayout
+            title="Update Driver-Truck Assignment"
+            headTitle={`Edit Driver-Truck Assignment #${driverTruck.id}`}
+            description="Adjust the pairing between an active driver and truck, including the assignment date."
+            breadcrumbs={breadcrumbs}
+            icon={<Share2 className="h-5 w-5" />}
+            headerAside={
+                <>
+                    <Button variant="ghost" size="sm" asChild>
+                        <Link href={`/driver-trucks/${driverTruck.id}`}>
+                            <ArrowLeft className="mr-2 h-4 w-4" />
                             Back to Assignment
-                        </Button>
-                    </Link>
-                    <div>
-                        <h1 className="text-2xl font-bold">Edit Driver-Truck Assignment</h1>
-                        <p className="text-muted-foreground">
-                            Update assignment for {driverTruck.driver.name} and {driverTruck.truck.plate}
-                        </p>
+                        </Link>
+                    </Button>
+                    {isDirty && <UnsavedChangesBadge />}
+                    <div className="flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1.5 text-sm font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                        <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
+                        Assignment Operations
                     </div>
-                </div>
-
-                {/* Form */}
-                <form onSubmit={handleSubmit} className="grid gap-6 md:grid-cols-2">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <Truck className="h-5 w-5" />
-                                Select Truck
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="truck_id">Available Trucks</Label>
-                                <Select
-                                    value={formData.truck_id}
-                                    onValueChange={(value) => handleInputChange('truck_id', value)}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Choose a truck" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {trucks && trucks.length > 0 ? (
-                                            trucks.map((truck) => (
-                                                <SelectItem key={truck?.id || 'unknown'} value={truck?.id?.toString() || ''}>
-                                                    {truck?.plate || 'Unknown'} ({truck?.vehicletype?.name || 'Unknown'})
-                                                </SelectItem>
-                                            ))
-                                        ) : (
-                                            <SelectItem value="no-trucks" disabled>
-                                                No available trucks found
-                                            </SelectItem>
-                                        )}
-                                    </SelectContent>
-                                </Select>
-                                {errors.truck_id && (
-                                    <p className="text-sm text-red-500">{errors.truck_id}</p>
-                                )}
-                            </div>
-
-                            {selectedTruck && (
-                                <div className="rounded-lg border p-4 bg-muted/50">
-                                    <h4 className="font-medium mb-2">Selected Truck</h4>
-                                    <p className="text-sm text-muted-foreground">
-                                        <strong>Plate:</strong> {selectedTruck.plate}
-                                    </p>
-                                    <p className="text-sm text-muted-foreground">
-                                        <strong>Type:</strong> {selectedTruck.vehicletype?.name || 'Unknown'}
-                                    </p>
-                                    <p className="text-sm text-muted-foreground">
-                                        <strong>Status:</strong> {selectedTruck.status.charAt(0).toUpperCase() + selectedTruck.status.slice(1)}
-                                    </p>
+                </>
+            }
+        >
+            <form
+                ref={scrollContainerRef}
+                onSubmit={submit}
+                className="flex flex-1 flex-col gap-8 overflow-y-auto p-6 pb-24"
+                style={{ minHeight: 0 }}
+            >
+                <FormSection
+                    title="Assignment Selection"
+                    description="Choose the active truck and driver to keep paired together."
+                    icon={
+                        <div className="rounded-lg bg-blue-100 p-2 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+                            <Info className="h-4 w-4" />
+                        </div>
+                    }
+                >
+                    <FormField
+                        id="truck_id"
+                        label="Available Trucks"
+                        required
+                        tooltip="Only trucks currently marked as active are shown in this list."
+                        error={getFieldError('truck_id')}
+                    >
+                        <Select
+                            value={data.truck_id}
+                            onValueChange={(value) => handleFieldChange('truck_id', value)}
+                            onOpenChange={(open) => {
+                                if (!open) {
+                                    setTruckSearch('');
+                                }
+                            }}
+                        >
+                            <SelectTrigger
+                                className={`transition-all duration-200 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 focus:ring-blue-500/20 focus:border-blue-500 ${getFieldError('truck_id') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}
+                            >
+                                <SelectValue placeholder="Choose a truck" />
+                            </SelectTrigger>
+                            <SelectContent className="z-50 bg-white shadow-lg dark:bg-slate-800">
+                                <div className="sticky top-0 z-10 bg-white p-2 dark:bg-slate-800 dark:shadow-[0_1px_0_0_rgba(148,163,184,0.35)] shadow-[0_1px_0_0_rgba(148,163,184,0.35)]">
+                                    <Input
+                                        autoComplete="off"
+                                        value={truckSearch}
+                                        onChange={(event) => setTruckSearch(event.target.value)}
+                                        placeholder="Search trucks..."
+                                        className="h-9 w-full border-slate-200 bg-slate-50 text-sm focus-visible:ring-1 focus-visible:ring-blue-500 dark:border-slate-700 dark:bg-slate-900"
+                                    />
                                 </div>
-                            )}
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <User className="h-5 w-5" />
-                                Select Driver
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="driver_id">Available Drivers</Label>
-                                <Select
-                                    value={formData.driver_id}
-                                    onValueChange={(value) => handleInputChange('driver_id', value)}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Choose a driver" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {drivers && drivers.length > 0 ? (
-                                            drivers.map((driver) => (
-                                                <SelectItem key={driver?.id || 'unknown'} value={driver?.id?.toString() || ''}>
-                                                    {driver?.name || 'Unknown'} (ID: {driver?.driverid || 'Unknown'})
-                                                </SelectItem>
-                                            ))
-                                        ) : (
-                                            <SelectItem value="no-drivers" disabled>
-                                                No available drivers found
-                                            </SelectItem>
-                                        )}
-                                    </SelectContent>
-                                </Select>
-                                {errors.driver_id && (
-                                    <p className="text-sm text-red-500">{errors.driver_id}</p>
+                                {filteredTrucks.length > 0 ? (
+                                    filteredTrucks.map((truck) => (
+                                        <SelectItem
+                                            key={truck.id}
+                                            value={truck.id.toString()}
+                                            className="hover:bg-slate-100 focus:bg-slate-100 dark:hover:bg-slate-700 dark:focus:bg-slate-700"
+                                        >
+                                            {truck.plate}
+                                        </SelectItem>
+                                    ))
+                                ) : (
+                                    <SelectItem value="no-trucks" disabled>
+                                        No available trucks found
+                                    </SelectItem>
                                 )}
+                            </SelectContent>
+                        </Select>
+                        {selectedTruck && (
+                            <div className="rounded-lg border border-slate-200 bg-white/70 p-4 text-sm shadow-sm dark:border-slate-700 dark:bg-slate-900/50">
+                                <h4 className="mb-2 font-semibold text-slate-800 dark:text-slate-200">Selected Truck</h4>
+                                <p className="text-slate-600 dark:text-slate-400">
+                                    <strong>Plate:</strong> {selectedTruck.plate}
+                                </p>
+                                <p className="text-slate-600 dark:text-slate-400">
+                                    <strong>Status:</strong> {String(selectedTruck.status).toLowerCase() === '1' ? 'Active' : selectedTruck.status}
+                                </p>
                             </div>
+                        )}
+                    </FormField>
 
-                            {selectedDriver && (
-                                <div className="rounded-lg border p-4 bg-muted/50">
-                                    <h4 className="font-medium mb-2">Selected Driver</h4>
-                                    <p className="text-sm text-muted-foreground">
-                                        <strong>Name:</strong> {selectedDriver.name}
-                                    </p>
-                                    <p className="text-sm text-muted-foreground">
-                                        <strong>Driver ID:</strong> {selectedDriver.driverid}
-                                    </p>
-                                    <p className="text-sm text-muted-foreground">
-                                        <strong>Status:</strong> {selectedDriver.status.charAt(0).toUpperCase() + selectedDriver.status.slice(1)}
-                                    </p>
+                    <FormField
+                        id="driver_id"
+                        label="Available Drivers"
+                        required
+                        tooltip="Drivers already attached to another active truck are filtered out automatically."
+                        error={getFieldError('driver_id')}
+                    >
+                        <Select
+                            value={data.driver_id}
+                            onValueChange={(value) => handleFieldChange('driver_id', value)}
+                            onOpenChange={(open) => {
+                                if (!open) {
+                                    setDriverSearch('');
+                                }
+                            }}
+                        >
+                            <SelectTrigger
+                                className={`transition-all duration-200 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 focus:ring-blue-500/20 focus:border-blue-500 ${getFieldError('driver_id') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}
+                            >
+                                <SelectValue placeholder="Choose a driver" />
+                            </SelectTrigger>
+                            <SelectContent className="z-50 bg-white shadow-lg dark:bg-slate-800">
+                                <div className="sticky top-0 z-10 bg-white p-2 dark:bg-slate-800 dark:shadow-[0_1px_0_0_rgba(148,163,184,0.35)] shadow-[0_1px_0_0_rgba(148,163,184,0.35)]">
+                                    <Input
+                                        autoComplete="off"
+                                        value={driverSearch}
+                                        onChange={(event) => setDriverSearch(event.target.value)}
+                                        placeholder="Search drivers..."
+                                        className="h-9 w-full border-slate-200 bg-slate-50 text-sm focus-visible:ring-1 focus-visible:ring-blue-500 dark:border-slate-700 dark:bg-slate-900"
+                                    />
                                 </div>
-                            )}
-                        </CardContent>
-                    </Card>
-
-                    <Card className="md:col-span-2">
-                        <CardHeader>
-                            <CardTitle>Assignment Details</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="date_recived">Assignment Date</Label>
-                                <Input
-                                    id="date_recived"
-                                    type="date"
-                                    value={formData.date_recived}
-                                    onChange={(e) => handleInputChange('date_recived', e.target.value)}
-                                />
-                                {errors.date_recived && (
-                                    <p className="text-sm text-red-500">{errors.date_recived}</p>
+                                {filteredDrivers.length > 0 ? (
+                                    filteredDrivers.map((driver) => (
+                                        <SelectItem
+                                            key={driver.id}
+                                            value={driver.id.toString()}
+                                            className="hover:bg-slate-100 focus:bg-slate-100 dark:hover:bg-slate-700 dark:focus:bg-slate-700"
+                                        >
+                                            {driver.name} (ID: {driver.driverid})
+                                        </SelectItem>
+                                    ))
+                                ) : (
+                                    <SelectItem value="no-drivers" disabled>
+                                        No available drivers found
+                                    </SelectItem>
                                 )}
+                            </SelectContent>
+                        </Select>
+                        {selectedDriver && (
+                            <div className="rounded-lg border border-slate-200 bg-white/70 p-4 text-sm shadow-sm dark:border-slate-700 dark:bg-slate-900/50">
+                                <h4 className="mb-2 font-semibold text-slate-800 dark:text-slate-200">Selected Driver</h4>
+                                <p className="text-slate-600 dark:text-slate-400">
+                                    <strong>Name:</strong> {selectedDriver.name}
+                                </p>
+                                <p className="text-slate-600 dark:text-slate-400">
+                                    <strong>Driver ID:</strong> {selectedDriver.driverid}
+                                </p>
+                                <p className="text-slate-600 dark:text-slate-400">
+                                    <strong>Status:</strong> {String(selectedDriver.status).toLowerCase() === '1' ? 'Active' : selectedDriver.status}
+                                </p>
                             </div>
-                            <div className="flex justify-end gap-2">
-                                <Link href={driverTrucks.show(driverTruck.id).url}>
-                                    <Button type="button" variant="outline">
-                                        Cancel
-                                    </Button>
-                                </Link>
-                                <Button type="submit" disabled={!formData.truck_id || !formData.driver_id}>
-                                    <Save className="mr-2 h-4 w-4" />
-                                    Update Assignment
-                                </Button>
+                        )}
+                    </FormField>
+                </FormSection>
+
+                <FormSection
+                    title="Assignment Details"
+                    description="Confirm the effective date for this assignment and review the pairing summary."
+                    icon={
+                        <div className="rounded-lg bg-emerald-100 p-2 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
+                            <Calendar className="h-4 w-4" />
+                        </div>
+                    }
+                >
+                    <FormField
+                        id="date_recived"
+                        label="Assignment Date"
+                        required
+                        helperText="Must be today or within the last 30 days."
+                        error={getFieldError('date_recived')}
+                    >
+                        <div className="group relative">
+                            <Input
+                                id="date_recived"
+                                type="date"
+                                value={data.date_recived}
+                                onChange={(event) => handleFieldChange('date_recived', event.target.value)}
+                                min={minDateString}
+                                max={todayString}
+                                className={`pl-4 pr-10 py-2.5 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-3 [&::-webkit-calendar-picker-indicator]:h-4 [&::-webkit-calendar-picker-indicator]:w-4 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 ${getFieldError('date_recived') ? 'border-red-500 focus:border-red-500' : ''}`}
+                            />
+                            <button
+                                type="button"
+                                className="absolute right-3 top-1/2 z-20 -translate-y-1/2 text-slate-500 transition-colors duration-200 group-hover:text-slate-600 dark:text-slate-400 dark:group-hover:text-slate-300"
+                                onClick={() => {
+                                    const input = document.getElementById('date_recived') as HTMLInputElement | null;
+                                    input?.showPicker?.();
+                                }}
+                                aria-label="Open date picker"
+                            >
+                                <Calendar className="h-4 w-4" />
+                            </button>
+                        </div>
+                    </FormField>
+
+                    {(selectedTruck || selectedDriver) && (
+                        <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm shadow-sm dark:border-blue-800/60 dark:bg-blue-900/40">
+                            <h4 className="mb-3 font-semibold text-blue-900 dark:text-blue-200">Assignment Summary</h4>
+                            <div className="space-y-2 text-blue-900 dark:text-blue-100">
+                                {selectedDriver && (
+                                    <p>
+                                        <strong>Driver:</strong> {selectedDriver.name} ({selectedDriver.driverid})
+                                    </p>
+                                )}
+                                {selectedTruck && (
+                                    <p>
+                                        <strong>Truck:</strong> {selectedTruck.plate}
+                                    </p>
+                                )}
+                                {data.date_recived && (
+                                    <p>
+                                        <strong>Assignment Date:</strong> {new Date(data.date_recived).toLocaleDateString()}
+                                    </p>
+                                )}
+                                <p>
+                                    <strong>Status:</strong> Active Assignment
+                                </p>
                             </div>
-                        </CardContent>
-                    </Card>
-                </form>
-            </div>
-        </AppLayout>
+                        </div>
+                    )}
+                </FormSection>
+
+                <FormActionsBar
+                    left={
+                        <>
+                            <span className="text-red-500">*</span>
+                            <span>All required fields must be completed</span>
+                            {isDirty && (
+                                <span className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                                    <Save className="h-3 w-3" />
+                                    You have unsaved changes
+                                </span>
+                            )}
+                        </>
+                    }
+                    right={
+                        <>
+                            <Button type="button" variant="outline" asChild className="border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700">
+                                <Link href={`/driver-trucks/${driverTruck.id}`}>Cancel</Link>
+                            </Button>
+                            <Button
+                                type="submit"
+                                disabled={
+                                    processing ||
+                                    Object.keys(frontendErrors).length > 0 ||
+                                    !data.truck_id ||
+                                    !data.driver_id ||
+                                    !data.date_recived
+                                }
+                                className="min-w-[160px] bg-gradient-to-r from-blue-600 to-blue-700 px-6 text-white shadow-lg transition-all duration-200 hover:from-blue-700 hover:to-blue-800 hover:shadow-xl"
+                            >
+                                {processing ? (
+                                    <>
+                                        <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white"></div>
+                                        Updating...
+                                    </>
+                                ) : (
+                                    <>
+                                        <CheckCircle className="mr-2 h-4 w-4" />
+                                        Update Assignment
+                                    </>
+                                )}
+                            </Button>
+                        </>
+                    }
+                />
+            </form>
+            <ScrollToTopFab visible={showScrollTop} onClick={handleScrollToTop} />
+        </FormPageLayout>
     );
+}
+
+function toLocalDateString(date: Date) {
+    const year = date.getFullYear();
+    const month = `${date.getMonth() + 1}`.padStart(2, '0');
+    const day = `${date.getDate()}`.padStart(2, '0');
+    return `${year}-${month}-${day}`;
 }

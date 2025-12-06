@@ -1,47 +1,41 @@
-import { ChangeEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { TableCell, TableRow } from '@/components/ui/table';
+import ListPageLayout from '@/components/layouts/list-page-layout';
+import { ListingStatsHeader } from '@/components/listing/stats-header';
+import { ListingFilterBar } from '@/components/listing/filter-bar';
+import { ListingTableShell } from '@/components/listing/data-table-shell';
+import { ListingMobileItemList } from '@/components/listing/mobile-item-list';
+import { ListingLoadingPlaceholder } from '@/components/listing/loading-placeholder';
+import { ListingPaginationFooter } from '@/components/listing/pagination-footer';
+import { ListingRowActionsMenu } from '@/components/listing/row-actions-menu';
+import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
+import { usePermissions } from '@/hooks/use-permissions';
+import { useListingLoading } from '@/hooks/use-listing-loading';
+import { toast } from '@/hooks/use-toast';
 import { Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
-import ListPageLayout from '@/components/layouts/list-page-layout';
-import { usePermissions } from '@/hooks/use-permissions';
-import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { InertiaPagination } from '@/components/ui/pagination';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
+import * as React from 'react';
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuGroup,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-    ArrowUpDown,
+    Users as UsersIcon,
     CheckCircle,
-    Edit,
+    XCircle,
+    Shield,
     Eye,
-    FileDown,
-    Loader2,
-    MinusCircle,
-    MoreVertical,
+    Edit,
+    Trash2,
     Plus,
     Search,
-    Shield,
-    Trash2,
-    Users,
-    XCircle,
+    ChevronRight,
 } from 'lucide-react';
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Users',
-        href: '/users',
-    },
-];
+type ColumnKey = 'name' | 'email' | 'roles' | 'verified' | 'created_at';
+
+type FilterChipKey = 'role' | 'status' | 'perPage';
+
+type VerificationStatus = 'verified' | 'pending';
 
 interface RoleOption {
     label: string;
@@ -95,39 +89,132 @@ interface UsersIndexProps {
     statusOptions?: StatusOption[];
     perPageOptions?: number[];
     stats?: {
-        totalUsers: number;
-        verifiedUsers: number;
-        pendingUsers: number;
-        adminUsers: number;
-        managerUsers: number;
+        totalUsers?: number;
+        verifiedUsers?: number;
+        pendingUsers?: number;
+        adminUsers?: number;
+        managerUsers?: number;
     };
 }
 
-type FilterChipKey = 'role' | 'status' | 'perPage';
+const breadcrumbs: BreadcrumbItem[] = [
+    {
+        title: 'Users',
+        href: '/users',
+    },
+];
+
+const SKELETON_FLAG_KEY = 'users.index.shouldShowSkeleton';
+
+const COLUMN_DEFINITIONS: Array<{
+    id: ColumnKey;
+    label: string;
+    sortKey?: string;
+    align?: 'center' | 'right';
+}> = [
+    { id: 'name', label: 'Name', sortKey: 'name' },
+    { id: 'email', label: 'Email', sortKey: 'email' },
+    { id: 'roles', label: 'Roles' },
+    { id: 'verified', label: 'Verified', sortKey: 'email_verified_at', align: 'center' },
+    { id: 'created_at', label: 'Created', sortKey: 'created_at' },
+];
+
+const DEFAULT_STATUS_OPTIONS: StatusOption[] = [
+    { label: 'All statuses', value: 'all' },
+    { label: 'Verified', value: 'verified' },
+    { label: 'Pending', value: 'pending' },
+];
+
+const formatCount = (value?: number | string | null): string => {
+    if (value === null || value === undefined || value === '') {
+        return '0';
+    }
+
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) {
+        return '0';
+    }
+
+    return numeric.toLocaleString();
+};
+
+const formatDateValue = (value?: string | null): string => {
+    if (!value) {
+        return '—';
+    }
+
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+        return '—';
+    }
+
+    return parsed.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+    });
+};
+
+const resolveVerificationStatus = (user: UserData): VerificationStatus =>
+    user.email_verified_at ? 'verified' : 'pending';
+
+const getRoleBadgeClass = (roleName: string): string => {
+    switch (roleName.toLowerCase()) {
+        case 'admin':
+            return 'border-rose-200 bg-rose-100 text-rose-700 dark:border-rose-900/40 dark:bg-rose-900/30 dark:text-rose-200';
+        case 'manager':
+            return 'border-indigo-200 bg-indigo-100 text-indigo-700 dark:border-indigo-900/40 dark:bg-indigo-900/30 dark:text-indigo-200';
+        case 'user':
+            return 'border-emerald-200 bg-emerald-100 text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-900/30 dark:text-emerald-200';
+        default:
+            return 'border-slate-200 bg-slate-100 text-slate-700 dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-300';
+    }
+};
+
+const getVerificationBadge = (status: VerificationStatus): React.ReactNode => {
+    if (status === 'verified') {
+        return (
+            <Badge className="flex w-fit items-center gap-1 border-emerald-200 bg-emerald-100 text-xs text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-900/30 dark:text-emerald-200">
+                <CheckCircle className="h-3 w-3" />
+                Verified
+            </Badge>
+        );
+    }
+
+    return (
+        <Badge className="flex w-fit items-center gap-1 border-amber-200 bg-amber-100 text-xs text-amber-700 dark:border-amber-900/40 dark:bg-amber-900/30 dark:text-amber-200">
+            <XCircle className="h-3 w-3" />
+            Pending
+        </Badge>
+    );
+};
 
 export default function UsersIndex({ users, filters, roleOptions, statusOptions, perPageOptions, stats }: UsersIndexProps) {
     const { hasPermission } = usePermissions();
-    const [searchTerm, setSearchTerm] = useState(filters?.search ?? '');
-    const [selectedRole, setSelectedRole] = useState(() => {
+    const canViewUser = hasPermission('users.show');
+    const canCreateUser = hasPermission('users.create');
+    const canEditUser = hasPermission('users.edit');
+    const canDeleteUser = hasPermission('users.destroy');
+    const canExportUsers = hasPermission('users.export');
+
+    const [searchTerm, setSearchTerm] = React.useState(filters?.search ?? '');
+    const [selectedRole, setSelectedRole] = React.useState(() => {
         const role = filters?.role ?? null;
         return role && role !== '' ? role : 'all';
     });
-    const [selectedStatus, setSelectedStatus] = useState(() => {
+    const [selectedStatus, setSelectedStatus] = React.useState(() => {
         const status = filters?.status ?? null;
         return status && status !== '' ? status : 'all';
     });
-    const [sortBy, setSortBy] = useState(filters?.sort ?? 'name');
-    const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(filters?.direction ?? 'asc');
+    const [sortColumn, setSortColumn] = React.useState<string>(filters?.sort ?? 'name');
+    const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>(filters?.direction ?? 'asc');
 
-    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-    const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
-    const [isDeleting, setIsDeleting] = useState(false);
+    const availablePerPageOptions = React.useMemo(
+        () => (perPageOptions?.length ? perPageOptions : [10, 15, 25, 50]),
+        [perPageOptions],
+    );
 
-    const availablePerPageOptions = useMemo(() => (
-        perPageOptions?.length ? perPageOptions : [10, 15, 25, 50]
-    ), [perPageOptions]);
-
-    const resolvedPerPage = useMemo(() => {
+    const resolvedPerPage = React.useMemo(() => {
         const candidate = filters?.per_page ?? users?.per_page;
         if (typeof candidate === 'number' && availablePerPageOptions.includes(candidate)) {
             return candidate;
@@ -136,95 +223,95 @@ export default function UsersIndex({ users, filters, roleOptions, statusOptions,
         return availablePerPageOptions[0] ?? 15;
     }, [filters?.per_page, users?.per_page, availablePerPageOptions]);
 
-    const [perPage, setPerPage] = useState<string>(() => String(resolvedPerPage));
-    const [isLoading, setIsLoading] = useState<boolean>(() => ! users?.data);
+    const [perPage, setPerPage] = React.useState<string>(() => String(resolvedPerPage));
+    const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+    const [selectedUser, setSelectedUser] = React.useState<UserData | null>(null);
+    const [isDeleting, setIsDeleting] = React.useState(false);
 
-    useEffect(() => {
+    const isDataReady = Array.isArray(users?.data);
+    const { isLoading } = useListingLoading({
+        storageKey: SKELETON_FLAG_KEY,
+        isDataReady,
+    });
+
+    React.useEffect(() => {
         setPerPage(String(resolvedPerPage));
     }, [resolvedPerPage]);
 
-    useEffect(() => {
-        const handleStart = () => setIsLoading(true);
-        const handleFinish = () => setIsLoading(false);
+    const userData = users?.data ?? [];
+    const totalUsers = stats?.totalUsers ?? users?.total ?? userData.length ?? 0;
+    const verifiedUsers = stats?.verifiedUsers ?? userData.filter((user) => resolveVerificationStatus(user) === 'verified').length;
+    const pendingUsers = stats?.pendingUsers ?? userData.filter((user) => resolveVerificationStatus(user) === 'pending').length;
+    const adminUsers = stats?.adminUsers ?? userData.filter((user) => user.roles?.some((role) => role.name.toLowerCase() === 'admin')).length;
+    const managerUsers = stats?.managerUsers ?? userData.filter((user) => user.roles?.some((role) => role.name.toLowerCase() === 'manager')).length;
+    const rowOffset = Math.max((users?.from ?? 1) - 1, 0);
 
-        const unsubscribeStart = router.on('start', handleStart);
-        const unsubscribeFinish = router.on('finish', handleFinish);
-        const unsubscribeSuccess = router.on('success', handleFinish);
-        const unsubscribeError = router.on('error', handleFinish);
+    const handleNavigate = React.useCallback(
+        (overrides: {
+            search?: string;
+            role?: string;
+            status?: string;
+            sort?: string;
+            direction?: 'asc' | 'desc';
+            page?: number;
+            per_page?: number;
+        } = {}) => {
+            const hasOverride = (key: keyof typeof overrides) => Object.prototype.hasOwnProperty.call(overrides, key);
 
-        return () => {
-            unsubscribeStart();
-            unsubscribeFinish();
-            unsubscribeSuccess();
-            unsubscribeError();
-        };
-    }, []);
-
-    useEffect(() => {
-        if (users?.data) {
-            setIsLoading(false);
-        }
-    }, [users?.data]);
-
-    const handleNavigate = useCallback((overrides: Partial<{
-        search?: string;
-        role?: string;
-        status?: string;
-        sort?: string;
-        direction?: 'asc' | 'desc';
-        page?: number;
-        per_page?: number;
-    }> = {}) => {
-        const numericPerPage = Number(perPage);
-
-        const params: Record<string, string | number | undefined> = {
-            search: overrides.search !== undefined
+            const nextSearch = hasOverride('search')
                 ? overrides.search
-                : (searchTerm.trim() ? searchTerm.trim() : undefined),
-            role: overrides.role !== undefined
+                : searchTerm.trim()
+                    ? searchTerm.trim()
+                    : undefined;
+
+            const nextRole = hasOverride('role')
                 ? overrides.role
-                : (selectedRole !== 'all' ? selectedRole : undefined),
-            status: overrides.status !== undefined
+                : selectedRole !== 'all'
+                    ? selectedRole
+                    : undefined;
+
+            const nextStatus = hasOverride('status')
                 ? overrides.status
-                : (selectedStatus !== 'all' ? selectedStatus : undefined),
-            sort: overrides.sort ?? sortBy,
-            direction: overrides.direction ?? sortDirection,
-            page: overrides.page,
-            per_page: overrides.per_page !== undefined
-                ? overrides.per_page
-                : (Number.isFinite(numericPerPage) ? numericPerPage : undefined),
-        };
+                : selectedStatus !== 'all'
+                    ? selectedStatus
+                    : undefined;
 
-        Object.keys(params).forEach((key) => {
-            const value = params[key];
-            if (
-                value === undefined ||
-                value === null ||
-                value === '' ||
-                (key === 'per_page' && (typeof value !== 'number' || ! Number.isFinite(value) || value <= 0))
-            ) {
-                delete params[key];
+            const nextSort = hasOverride('sort') ? overrides.sort ?? sortColumn : sortColumn;
+            const nextDirection = hasOverride('direction') ? overrides.direction ?? sortDirection : sortDirection;
+            const nextPerPage = hasOverride('per_page') ? overrides.per_page : Number(perPage);
+            const nextPage = hasOverride('page') ? overrides.page : undefined;
+
+            const params: Record<string, string | number | undefined> = {
+                search: nextSearch,
+                role: nextRole,
+                status: nextStatus,
+                sort: nextSort,
+                direction: nextDirection,
+                page: nextPage,
+                per_page:
+                    typeof nextPerPage === 'number' && Number.isFinite(nextPerPage) && nextPerPage > 0
+                        ? nextPerPage
+                        : undefined,
+            };
+
+            Object.keys(params).forEach((key) => {
+                if (params[key] === undefined) {
+                    delete params[key];
+                }
+            });
+
+            if (typeof window !== 'undefined') {
+                window.sessionStorage.setItem(SKELETON_FLAG_KEY, 'true');
             }
-        });
 
-        router.get('/users', params, { preserveState: true, replace: false });
-    }, [searchTerm, selectedRole, selectedStatus, sortBy, sortDirection, perPage]);
+            router.get('/users', params, { preserveState: true, replace: false });
+        },
+        [perPage, searchTerm, selectedRole, selectedStatus, sortColumn, sortDirection],
+    );
 
-    const handleSearch = (event: ChangeEvent<HTMLInputElement>) => {
-        const value = event.target.value;
+    const handleSearchChange = (value: string) => {
         setSearchTerm(value);
         handleNavigate({ search: value.trim() ? value.trim() : undefined, page: 1 });
-    };
-
-    const handleSort = (column: string) => {
-        let newDirection: 'asc' | 'desc' = 'asc';
-        if (sortBy === column && sortDirection === 'asc') {
-            newDirection = 'desc';
-        }
-
-        setSortBy(column);
-        setSortDirection(newDirection);
-        handleNavigate({ sort: column, direction: newDirection });
     };
 
     const handleRoleChange = (value: string) => {
@@ -243,129 +330,53 @@ export default function UsersIndex({ users, filters, roleOptions, statusOptions,
         handleNavigate({ per_page: Number.isNaN(numericValue) ? undefined : numericValue, page: 1 });
     };
 
+    const handleSort = React.useCallback(
+        (column: string) => {
+            const newDirection: 'asc' | 'desc' = sortColumn === column && sortDirection === 'asc' ? 'desc' : 'asc';
+            setSortColumn(column);
+            setSortDirection(newDirection);
+            handleNavigate({ sort: column, direction: newDirection });
+        },
+        [handleNavigate, sortColumn, sortDirection],
+    );
+
     const handleDeleteClick = (user: UserData) => {
         setSelectedUser(user);
         setDeleteDialogOpen(true);
     };
 
     const handleDeleteConfirm = () => {
-        if (! selectedUser) {
+        if (!selectedUser) {
             return;
         }
 
         setIsDeleting(true);
+        const name = selectedUser.name;
+
         router.delete(`/users/${selectedUser.id}`, {
-            preserveState: true,
+            preserveScroll: true,
             onSuccess: () => {
+                toast({
+                    title: 'User deleted',
+                    description: `${name} has been removed.`,
+                });
                 setDeleteDialogOpen(false);
                 setSelectedUser(null);
-                setIsDeleting(false);
             },
             onError: () => {
+                toast({
+                    title: 'Unable to delete user',
+                    description: 'Please try again or contact support if the issue persists.',
+                    variant: 'destructive',
+                });
+            },
+            onFinish: () => {
                 setIsDeleting(false);
             },
         });
     };
 
-    const SortIcon = ({ column }: { column: string }) => {
-        if (sortBy !== column) {
-            return <ArrowUpDown className="ml-2 h-4 w-4 opacity-50" />;
-        }
-
-        return (
-            <ArrowUpDown
-                className={`ml-2 h-4 w-4 transition-transform ${
-                    sortDirection === 'desc' ? 'rotate-180' : ''
-                }`}
-            />
-        );
-    };
-
-    const userCount = stats?.totalUsers ?? users?.total ?? 0;
-    const verifiedCount = stats?.verifiedUsers ?? users?.data?.filter((user) => user.email_verified_at).length ?? 0;
-    const pendingCount = stats?.pendingUsers ?? users?.data?.filter((user) => ! user.email_verified_at).length ?? 0;
-    const adminCount = stats?.adminUsers ?? users?.data?.filter((user) => user.roles?.some((role) => role.name === 'admin')).length ?? 0;
-    const managerCount = stats?.managerUsers ?? users?.data?.filter((user) => user.roles?.some((role) => role.name === 'manager')).length ?? 0;
-
-    const currentPage = users?.current_page || 1;
-    const totalPages = users?.last_page || 1;
-
-    const getRoleBadgeColor = (roleName: string) => {
-        switch (roleName.toLowerCase()) {
-            case 'admin':
-                return 'bg-red-100 text-red-800 border-red-200 hover:bg-red-200';
-            case 'manager':
-                return 'bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200';
-            case 'user':
-                return 'bg-green-100 text-green-800 border-green-200 hover:bg-green-200';
-            default:
-                return 'bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200';
-        }
-    };
-
-    const statsCards = [
-        {
-            title: 'Total Users',
-            value: userCount,
-            description: 'All accounts',
-            icon: <Users className="h-5 w-5" />,
-            accentClassName: 'text-blue-600',
-            helperClassName: 'bg-blue-100 text-blue-600',
-        },
-        {
-            title: 'Verified',
-            value: verifiedCount,
-            description: 'Email confirmed',
-            icon: <CheckCircle className="h-5 w-5" />,
-            accentClassName: 'text-emerald-600',
-            helperClassName: 'bg-emerald-100 text-emerald-600',
-        },
-        {
-            title: 'Pending',
-            value: pendingCount,
-            description: 'Awaiting verification',
-            icon: <XCircle className="h-5 w-5" />,
-            accentClassName: 'text-amber-600',
-            helperClassName: 'bg-amber-100 text-amber-600',
-        },
-        {
-            title: 'Admins',
-            value: adminCount,
-            description: 'Full access roles',
-            icon: <Shield className="h-5 w-5" />,
-            accentClassName: 'text-rose-600',
-            helperClassName: 'bg-rose-100 text-rose-600',
-        },
-        {
-            title: 'Managers',
-            value: managerCount,
-            description: 'Management roles',
-            icon: <Shield className="h-5 w-5" />,
-            accentClassName: 'text-purple-600',
-            helperClassName: 'bg-purple-100 text-purple-600',
-        },
-    ];
-
-    const statsSection = (
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-            {statsCards.map((card) => (
-                <Card key={card.title} className="border border-slate-200/70 shadow-sm transition hover:shadow-md dark:border-slate-800/70">
-                    <CardContent className="flex items-center justify-between gap-4 p-4">
-                        <div>
-                            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{card.title}</p>
-                            <p className={`mt-2 text-2xl font-semibold ${card.accentClassName}`}>{card.value}</p>
-                            <p className="text-xs text-muted-foreground">{card.description}</p>
-                        </div>
-                        <div className={`flex h-10 w-10 items-center justify-center rounded-full ${card.helperClassName}`}>
-                            {card.icon}
-                        </div>
-                    </CardContent>
-                </Card>
-            ))}
-        </div>
-    );
-
-    const selectedRoleLabel = useMemo(() => {
+    const selectedRoleLabel = React.useMemo(() => {
         if (selectedRole === 'all') {
             return null;
         }
@@ -373,46 +384,446 @@ export default function UsersIndex({ users, filters, roleOptions, statusOptions,
         return roleOptions?.find((option) => option.value === selectedRole)?.label ?? selectedRole;
     }, [roleOptions, selectedRole]);
 
-    const selectedStatusLabel = useMemo(() => {
+    const selectedStatusLabel = React.useMemo(() => {
         if (selectedStatus === 'all') {
             return null;
         }
 
-        return statusOptions?.find((option) => option.value === selectedStatus)?.label ?? selectedStatus;
+        return (statusOptions ?? DEFAULT_STATUS_OPTIONS).find((option) => option.value === selectedStatus)?.label ?? selectedStatus;
     }, [selectedStatus, statusOptions]);
 
-    const activeFilterChips = useMemo(() => (
-        [
-            selectedRoleLabel ? { key: 'role' as FilterChipKey, label: `Role: ${selectedRoleLabel}` } : null,
-            selectedStatusLabel ? { key: 'status' as FilterChipKey, label: `Status: ${selectedStatusLabel}` } : null,
-            perPage !== String(resolvedPerPage)
-                ? { key: 'perPage' as FilterChipKey, label: `Rows: ${perPage}` }
-                : null,
-        ].filter(Boolean) as Array<{ key: FilterChipKey; label: string }>
-    ), [perPage, resolvedPerPage, selectedRoleLabel, selectedStatusLabel]);
+    const activeFilterChips = React.useMemo(
+        () =>
+            [
+                selectedRoleLabel ? { key: 'role' as FilterChipKey, label: `Role: ${selectedRoleLabel}` } : null,
+                selectedStatusLabel ? { key: 'status' as FilterChipKey, label: `Status: ${selectedStatusLabel}` } : null,
+                perPage !== String(resolvedPerPage)
+                    ? { key: 'perPage' as FilterChipKey, label: `Rows: ${perPage}` }
+                    : null,
+            ].filter(Boolean) as Array<{ key: FilterChipKey; label: string }>,
+        [perPage, resolvedPerPage, selectedRoleLabel, selectedStatusLabel],
+    );
 
-    const clearFilter = useCallback((key: FilterChipKey) => {
-        switch (key) {
-            case 'role':
-                setSelectedRole('all');
-                handleNavigate({ role: undefined, page: 1 });
-                break;
-            case 'status':
-                setSelectedStatus('all');
-                handleNavigate({ status: undefined, page: 1 });
-                break;
-            case 'perPage':
-                setPerPage(String(resolvedPerPage));
-                handleNavigate({ per_page: resolvedPerPage, page: 1 });
-                break;
+    const clearFilter = React.useCallback(
+        (key: FilterChipKey) => {
+            switch (key) {
+                case 'role':
+                    setSelectedRole('all');
+                    handleNavigate({ role: undefined, page: 1 });
+                    break;
+                case 'status':
+                    setSelectedStatus('all');
+                    handleNavigate({ status: undefined, page: 1 });
+                    break;
+                case 'perPage':
+                    setPerPage(String(resolvedPerPage));
+                    handleNavigate({ per_page: resolvedPerPage, page: 1 });
+                    break;
+                default:
+                    break;
+            }
+        },
+        [handleNavigate, resolvedPerPage],
+    );
+
+    const statsDefinitions = [
+        {
+            id: 'total-users',
+            label: 'Total Users',
+            icon: <UsersIcon className="h-3.5 w-3.5 text-sky-500" />,
+            className: 'min-w-0',
+            value: isLoading ? (
+                <Skeleton className="h-3.5 w-20" aria-hidden="true" />
+            ) : (
+                formatCount(totalUsers)
+            ),
+            description: isLoading ? (
+                <Skeleton className="h-3 w-24" aria-hidden="true" />
+            ) : (
+                'All accounts'
+            ),
+            valueClassName: isLoading ? undefined : 'text-sky-600',
+        },
+        {
+            id: 'verified-users',
+            label: 'Verified Users',
+            icon: <CheckCircle className="h-3.5 w-3.5 text-emerald-500" />,
+            className: 'min-w-0',
+            value: isLoading ? (
+                <Skeleton className="h-3.5 w-16" aria-hidden="true" />
+            ) : (
+                formatCount(verifiedUsers)
+            ),
+            description: isLoading ? (
+                <Skeleton className="h-3 w-28" aria-hidden="true" />
+            ) : (
+                'Email confirmed'
+            ),
+            valueClassName: isLoading ? undefined : 'text-emerald-600',
+        },
+        {
+            id: 'pending-users',
+            label: 'Pending Verification',
+            icon: <XCircle className="h-3.5 w-3.5 text-amber-500" />,
+            className: 'min-w-0',
+            value: isLoading ? (
+                <Skeleton className="h-3.5 w-16" aria-hidden="true" />
+            ) : (
+                formatCount(pendingUsers)
+            ),
+            description: isLoading ? (
+                <Skeleton className="h-3 w-32" aria-hidden="true" />
+            ) : (
+                'Awaiting confirmation'
+            ),
+            valueClassName: isLoading ? undefined : 'text-amber-600',
+        },
+        {
+            id: 'admin-users',
+            label: 'Admins',
+            icon: <Shield className="h-3.5 w-3.5 text-rose-500" />,
+            className: 'min-w-0',
+            value: isLoading ? (
+                <Skeleton className="h-3.5 w-16" aria-hidden="true" />
+            ) : (
+                formatCount(adminUsers)
+            ),
+            description: isLoading ? (
+                <Skeleton className="h-3 w-28" aria-hidden="true" />
+            ) : (
+                'Full access roles'
+            ),
+            valueClassName: isLoading ? undefined : 'text-rose-600',
+        },
+        {
+            id: 'manager-users',
+            label: 'Managers',
+            icon: <Shield className="h-3.5 w-3.5 text-indigo-500" />,
+            className: 'min-w-0',
+            value: isLoading ? (
+                <Skeleton className="h-3.5 w-16" aria-hidden="true" />
+            ) : (
+                formatCount(managerUsers)
+            ),
+            description: isLoading ? (
+                <Skeleton className="h-3 w-28" aria-hidden="true" />
+            ) : (
+                'Management roles'
+            ),
+            valueClassName: isLoading ? undefined : 'text-indigo-600',
+        },
+    ];
+
+    const statsSection = <ListingStatsHeader stats={statsDefinitions} orientation="row" />;
+
+    const tableColumns = React.useMemo(
+        () => [
+            { id: 'index', label: '#', align: 'center' as const },
+            ...COLUMN_DEFINITIONS.map((column) => ({
+                id: column.id,
+                label: column.label,
+                sortable: Boolean(column.sortKey),
+                sortKey: column.sortKey,
+                align: column.align,
+            })),
+            { id: 'actions', label: 'Actions', align: 'center' as const },
+        ],
+        [],
+    );
+
+    const renderColumnValue = React.useCallback((user: UserData, column: ColumnKey): React.ReactNode => {
+        switch (column) {
+            case 'name':
+                return (
+                    <div className="flex flex-col">
+                        <span className="font-medium text-foreground">{user.name}</span>
+                        <span className="text-xs text-muted-foreground">ID #{user.id}</span>
+                    </div>
+                );
+            case 'email':
+                return <span className="text-muted-foreground">{user.email}</span>;
+            case 'roles':
+                return user.roles && user.roles.length > 0 ? (
+                    <div className="flex flex-wrap gap-1">
+                        {user.roles.map((role) => (
+                            <Badge key={role.id} className={`flex w-fit items-center gap-1 ${getRoleBadgeClass(role.name)}`}>
+                                <Shield className="h-3 w-3" />
+                                {role.name.charAt(0).toUpperCase() + role.name.slice(1)}
+                            </Badge>
+                        ))}
+                    </div>
+                ) : (
+                    <span className="text-sm text-muted-foreground">No roles</span>
+                );
+            case 'verified':
+                return getVerificationBadge(resolveVerificationStatus(user));
+            case 'created_at':
+                return <span className="text-sm text-muted-foreground">{formatDateValue(user.created_at)}</span>;
             default:
-                break;
+                return '—';
         }
-    }, [handleNavigate, resolvedPerPage]);
+    }, []);
+
+    const tableRows = isLoading
+        ? Array.from({ length: 6 }).map((_, rowIndex) => (
+              <TableRow key={`users-skeleton-${rowIndex}`} aria-hidden="true">
+                  {tableColumns.map((column) => (
+                      <TableCell
+                          key={`${column.id}-${rowIndex}`}
+                          className={
+                              column.align === 'center'
+                                  ? 'text-center'
+                                  : column.align === 'right'
+                                      ? 'text-right'
+                                      : undefined
+                          }
+                      >
+                          <Skeleton className="mx-auto h-4 w-24 max-w-full" />
+                      </TableCell>
+                  ))}
+              </TableRow>
+          ))
+        : userData.length > 0
+            ? userData.map((user, index) => (
+                  <TableRow key={user.id} className="hover:bg-muted/50">
+                      <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
+                      {COLUMN_DEFINITIONS.map((column) => (
+                          <TableCell
+                              key={column.id}
+                              className={
+                                  column.align === 'center'
+                                      ? 'text-center'
+                                      : column.align === 'right'
+                                          ? 'text-right'
+                                          : undefined
+                              }
+                          >
+                              {renderColumnValue(user, column.id)}
+                          </TableCell>
+                      ))}
+                      <TableCell className="text-center">
+                          <ListingRowActionsMenu
+                              actions={[
+                                  canViewUser && {
+                                      label: 'View',
+                                      icon: <Eye className="h-4 w-4" />,
+                                      href: `/users/${user.id}`,
+                                  },
+                                  canEditUser && {
+                                      label: 'Edit',
+                                      icon: <Edit className="h-4 w-4" />,
+                                      href: `/users/${user.id}/edit`,
+                                  },
+                                  canDeleteUser && {
+                                      label: 'Delete',
+                                      icon: <Trash2 className="h-4 w-4" />,
+                                      danger: true,
+                                      disabled: isDeleting && selectedUser?.id === user.id,
+                                      onSelect: () => handleDeleteClick(user),
+                                  },
+                              ]}
+                          />
+                      </TableCell>
+                  </TableRow>
+              ))
+            : (
+                <TableRow>
+                    <TableCell colSpan={tableColumns.length} className="py-12">
+                        <div className="flex flex-col items-center justify-center text-center">
+                            <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-muted/50">
+                                <UsersIcon className="h-10 w-10 text-muted-foreground" />
+                            </div>
+                            <h3 className="mb-2 text-lg font-semibold">No users found</h3>
+                            <p className="mb-6 max-w-md text-sm text-muted-foreground">
+                                {searchTerm
+                                    ? `No users match "${searchTerm}". Try adjusting your filters or search terms.`
+                                    : 'Get started by adding your first user to the system. Manage access and permissions effectively.'}
+                            </p>
+                            {canCreateUser && (
+                                <Button asChild size="sm" className="shadow-sm">
+                                    <Link href="/users/create">
+                                        <Plus className="mr-2 h-4 w-4" />
+                                        {searchTerm ? 'Clear Filters & Add User' : 'Add First User'}
+                                    </Link>
+                                </Button>
+                            )}
+                        </div>
+                    </TableCell>
+                </TableRow>
+            );
+
+    const mobileItems = React.useMemo(
+        () =>
+            userData.map((user, index) => ({
+                record: user,
+                position: rowOffset + index + 1,
+            })),
+        [userData, rowOffset],
+    );
+
+    const mobileContent = isLoading ? (
+        <ListingLoadingPlaceholder showStats={false} filterItemCount={3} rowCount={4} />
+    ) : (
+        <ListingMobileItemList
+            items={mobileItems}
+            getKey={(item) => item.record.id}
+            renderTitle={(item) => (
+                <div className="flex items-center gap-2">
+                    <span className="text-xs uppercase tracking-wide text-muted-foreground">#{item.position}</span>
+                    <span className="text-base font-semibold text-foreground">{item.record.name}</span>
+                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+                </div>
+            )}
+            renderSubtitle={(item) => item.record.email}
+            renderContent={(item) => (
+                <div className="space-y-3 text-sm text-muted-foreground">
+                    <div className="flex items-center justify-between">
+                        <span className="font-medium text-slate-600 dark:text-slate-300">Roles</span>
+                        <span className="text-right text-slate-900 dark:text-slate-100">
+                            {item.record.roles && item.record.roles.length > 0 ? (
+                                item.record.roles.map((role) => role.name).join(', ')
+                            ) : (
+                                'No roles'
+                            )}
+                        </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <span className="font-medium text-slate-600 dark:text-slate-300">Verified</span>
+                        <span className="text-right text-slate-900 dark:text-slate-100">
+                            {getVerificationBadge(resolveVerificationStatus(item.record))}
+                        </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <span className="font-medium text-slate-600 dark:text-slate-300">Created</span>
+                        <span className="text-right text-slate-900 dark:text-slate-100">{formatDateValue(item.record.created_at)}</span>
+                    </div>
+                </div>
+            )}
+            renderFooter={(item) => (
+                <div className="flex w-full flex-wrap items-center justify-end gap-2">
+                    {canViewUser && (
+                        <Button asChild size="sm" variant="outline" className="flex-1 sm:flex-auto">
+                            <Link href={`/users/${item.record.id}`}>
+                                <Eye className="mr-2 h-4 w-4" />
+                                View
+                            </Link>
+                        </Button>
+                    )}
+                    {canEditUser && (
+                        <Button asChild size="sm" variant="secondary" className="flex-1 sm:flex-none">
+                            <Link href={`/users/${item.record.id}/edit`}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                Edit
+                            </Link>
+                        </Button>
+                    )}
+                    {canDeleteUser && (
+                        <Button
+                            size="sm"
+                            variant="destructive"
+                            className="flex-1 sm:flex-none"
+                            onClick={() => handleDeleteClick(item.record)}
+                            disabled={isDeleting && selectedUser?.id === item.record.id}
+                        >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                        </Button>
+                    )}
+                </div>
+            )}
+            emptyState={(
+                <div className="py-8 text-center text-muted-foreground">
+                    No users found.
+                    {canCreateUser && (
+                        <Link href="/users/create" className="ml-1 text-primary underline">
+                            Create one
+                        </Link>
+                    )}
+                </div>
+            )}
+        />
+    );
+
+    const filterChips =
+        (activeFilterChips.length || searchTerm) && !isLoading ? (
+            <div className="flex flex-1 flex-wrap items-center gap-2">
+                {activeFilterChips.map((chip) => (
+                    <button
+                        key={chip.key}
+                        type="button"
+                        onClick={() => clearFilter(chip.key)}
+                        className="flex items-center gap-1 rounded-full bg-muted px-3 py-1 text-xs text-muted-foreground transition hover:bg-muted/80"
+                    >
+                        {chip.label}
+                        <XCircle className="h-3 w-3" />
+                    </button>
+                ))}
+                {searchTerm && (
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setSearchTerm('');
+                            handleNavigate({ search: undefined, page: 1 });
+                        }}
+                        className="text-xs text-primary underline"
+                    >
+                        Clear search
+                    </button>
+                )}
+            </div>
+        ) : undefined;
+
+    const tableHeaderExtras = (
+        <ListingFilterBar
+            search={{
+                value: searchTerm,
+                placeholder: 'Search by name or email...',
+                onChange: handleSearchChange,
+                icon: <Search className="h-4 w-4" />,
+            }}
+            perPage={{
+                value: perPage,
+                label: 'Rows',
+                onChange: handlePerPageChange,
+                options: availablePerPageOptions.map((option) => ({
+                    value: String(option),
+                    label: `${option} / page`,
+                })),
+            }}
+            trailing={filterChips}
+        >
+            <Select value={selectedRole} onValueChange={handleRoleChange}>
+                <SelectTrigger className="w-full min-w-[160px] sm:w-auto">
+                    <SelectValue placeholder="Role" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">All roles</SelectItem>
+                    {(roleOptions ?? []).map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                        </SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+
+            <Select value={selectedStatus} onValueChange={handleStatusChange}>
+                <SelectTrigger className="w-full min-w-[150px] sm:w-auto">
+                    <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                    {(statusOptions ?? DEFAULT_STATUS_OPTIONS).map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                        </SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+        </ListingFilterBar>
+    );
 
     const headerActions = (
         <>
-            {hasPermission('users.export') && (
+            {canExportUsers && (
                 <Button
                     variant="outline"
                     onClick={() => {
@@ -426,8 +837,8 @@ export default function UsersIndex({ users, filters, roleOptions, statusOptions,
                         if (selectedStatus !== 'all') {
                             params.set('status', selectedStatus);
                         }
-                        if (sortBy) {
-                            params.set('sort', sortBy);
+                        if (sortColumn) {
+                            params.set('sort', sortColumn);
                         }
                         if (sortDirection) {
                             params.set('direction', sortDirection);
@@ -437,11 +848,10 @@ export default function UsersIndex({ users, filters, roleOptions, statusOptions,
                         window.location.href = query ? `/users/export/csv?${query}` : '/users/export/csv';
                     }}
                 >
-                    <FileDown className="mr-2 h-4 w-4" />
                     Export CSV
                 </Button>
             )}
-            {hasPermission('users.create') && (
+            {canCreateUser && (
                 <Button asChild>
                     <Link href="/users/create">
                         <Plus className="mr-2 h-4 w-4" />
@@ -452,314 +862,54 @@ export default function UsersIndex({ users, filters, roleOptions, statusOptions,
         </>
     );
 
-    const tableHeaderExtras = (
-        <div className="flex flex-col gap-3">
-            <div className="flex flex-wrap items-center gap-2">
-                <div className="relative w-[260px] max-w-full">
-                    <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                        placeholder="Search by name or email..."
-                        value={searchTerm}
-                        onChange={handleSearch}
-                        className="pl-10"
-                    />
-                    {searchTerm && (
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                            {users?.total ?? 0} results
-                        </span>
-                    )}
-                </div>
-                <Select value={selectedRole} onValueChange={handleRoleChange}>
-                    <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="Role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">All roles</SelectItem>
-                        {(roleOptions ?? []).map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                                {option.label}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-                <Select value={selectedStatus} onValueChange={handleStatusChange}>
-                    <SelectTrigger className="w-[170px]">
-                        <SelectValue placeholder="Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {(statusOptions ?? [
-                            { label: 'All statuses', value: 'all' },
-                            { label: 'Verified', value: 'verified' },
-                            { label: 'Pending', value: 'pending' },
-                        ]).map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                                {option.label}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-                <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                    <span className="hidden sm:inline">Rows</span>
-                    <Select value={perPage} onValueChange={handlePerPageChange}>
-                        <SelectTrigger className="w-[110px]">
-                            <SelectValue placeholder="Per page" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {availablePerPageOptions.map((option) => (
-                                <SelectItem key={option} value={String(option)}>
-                                    {option} / page
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-            </div>
-            {Boolean(activeFilterChips.length || searchTerm) && (
-                <div className="flex flex-wrap items-center gap-2">
-                    {activeFilterChips.map((chip) => (
-                        <button
-                            key={chip.key}
-                            type="button"
-                            onClick={() => clearFilter(chip.key)}
-                            className="flex items-center gap-1 rounded-full bg-muted px-3 py-1 text-xs text-muted-foreground transition hover:bg-muted/80"
-                        >
-                            {chip.label}
-                            <MinusCircle className="h-3 w-3" />
-                        </button>
-                    ))}
-                    {searchTerm && (
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setSearchTerm('');
-                                handleNavigate({ search: undefined, page: 1 });
-                            }}
-                            className="text-xs text-primary underline"
-                        >
-                            Clear search
-                        </button>
-                    )}
-                </div>
-            )}
-        </div>
-    );
-
     return (
         <>
             <ListPageLayout
                 headTitle="Users"
                 title="User Management"
-                description={`Manage ${userCount} system user${userCount === 1 ? '' : 's'}`}
+                description={`Manage ${formatCount(totalUsers)} system user${totalUsers === 1 ? '' : 's'}`}
                 breadcrumbs={breadcrumbs}
                 actions={headerActions}
                 stats={statsSection}
                 tableTitle="User Directory"
-                tableDescription={`${userCount} total user${userCount === 1 ? '' : 's'} in system`}
+                tableDescription={`${formatCount(totalUsers)} total user${totalUsers === 1 ? '' : 's'} in system`}
                 tableHeaderExtras={tableHeaderExtras}
                 pagination={
-                    users?.links?.length ? (
-                        <InertiaPagination
-                            from={users?.from ?? undefined}
-                            to={users?.to ?? undefined}
-                            total={userCount}
-                            links={users?.links ?? []}
-                            currentPage={currentPage}
-                            lastPage={totalPages}
-                            className="mt-0 border-t bg-muted/30 p-4"
+                    !isLoading && users?.links ? (
+                        <ListingPaginationFooter
+                            className="mt-4"
+                            links={users.links}
+                            from={users.from ?? undefined}
+                            to={users.to ?? undefined}
+                            total={users.total ?? undefined}
                         />
                     ) : null
                 }
             >
-                <div className="relative">
-                    {isLoading && (
-                        <div className="absolute inset-0 z-20 flex flex-col gap-3 rounded-lg border bg-background/80 p-4 backdrop-blur">
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                                Loading users...
-                            </div>
-                            <div className="space-y-2">
-                                {Array.from({ length: 5 }).map((_, index) => (
-                                    <div key={`user-skeleton-${index}`} className="grid grid-cols-7 items-center gap-3">
-                                        <Skeleton className="h-4 w-10" />
-                                        <Skeleton className="h-4" />
-                                        <Skeleton className="h-4" />
-                                        <Skeleton className="h-4" />
-                                        <Skeleton className="h-4" />
-                                        <Skeleton className="h-4" />
-                                        <Skeleton className="h-8 w-8 rounded-full" />
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    <Table className={isLoading ? 'opacity-50 transition-opacity' : undefined}>
-                        <TableHeader>
-                            <TableRow className="sticky top-0 z-40 bg-background border-b">
-                                <TableHead className="w-12 bg-background text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                                    No.
-                                </TableHead>
-                                <TableHead
-                                    onClick={() => handleSort('name')}
-                                    className="cursor-pointer select-none bg-background transition-colors hover:bg-muted/70"
-                                >
-                                    <div className="flex items-center">
-                                        Name <SortIcon column="name" />
-                                    </div>
-                                </TableHead>
-                                <TableHead
-                                    onClick={() => handleSort('email')}
-                                    className="cursor-pointer select-none bg-background transition-colors hover:bg-muted/70"
-                                >
-                                    <div className="flex items-center">
-                                        Email <SortIcon column="email" />
-                                    </div>
-                                </TableHead>
-                                <TableHead className="bg-background">Roles</TableHead>
-                                <TableHead className="bg-background">Verified</TableHead>
-                                <TableHead
-                                    onClick={() => handleSort('created_at')}
-                                    className="cursor-pointer select-none bg-background transition-colors hover:bg-muted/70"
-                                >
-                                    <div className="flex items-center">
-                                        Created <SortIcon column="created_at" />
-                                    </div>
-                                </TableHead>
-                                <TableHead className="bg-background text-center">Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {users?.data && users.data.length > 0 ? (
-                                users.data.map((user, index) => {
-                                    const rowNumber = (users.from ?? 1) + index;
-
-                                    return (
-                                        <TableRow key={user.id} className="hover:bg-muted/50">
-                                            <TableCell className="w-12 text-center text-sm font-semibold text-muted-foreground">
-                                                {rowNumber}
-                                            </TableCell>
-                                            <TableCell className="font-medium">{user.name}</TableCell>
-                                            <TableCell className="text-muted-foreground">{user.email}</TableCell>
-                                            <TableCell>
-                                                <div className="flex flex-wrap gap-1">
-                                                    {user.roles && user.roles.length > 0 ? (
-                                                        user.roles.map((role) => (
-                                                            <Badge
-                                                                key={role.id}
-                                                                className={`flex w-fit items-center gap-1 ${getRoleBadgeColor(role.name)}`}
-                                                            >
-                                                                <Shield className="h-3 w-3" />
-                                                                {role.name.charAt(0).toUpperCase() + role.name.slice(1)}
-                                                            </Badge>
-                                                        ))
-                                                    ) : (
-                                                        <span className="text-sm text-muted-foreground">No roles</span>
-                                                    )}
-                                                </div>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Badge
-                                                    className={`flex w-fit items-center gap-1 ${
-                                                        user.email_verified_at
-                                                            ? 'bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-200'
-                                                            : 'bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-200'
-                                                    }`}
-                                                >
-                                                    {user.email_verified_at ? (
-                                                        <>
-                                                            <CheckCircle className="h-3 w-3" />
-                                                            Verified
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <XCircle className="h-3 w-3" />
-                                                            Pending
-                                                        </>
-                                                    )}
-                                                </Badge>
-                                            </TableCell>
-                                            <TableCell className="text-sm text-muted-foreground">
-                                                {user.created_at ? new Date(user.created_at).toLocaleDateString() : '—'}
-                                            </TableCell>
-                                            <TableCell className="text-center">
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger asChild>
-                                                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
-                                                            <span className="sr-only">Open actions</span>
-                                                            <MoreVertical className="h-4 w-4" />
-                                                        </Button>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="end" className="w-44">
-                                                        <DropdownMenuGroup>
-                                                            <DropdownMenuItem asChild>
-                                                                <Link className="flex w-full items-center gap-2" href={`/users/${user.id}`}>
-                                                                    <Eye className="h-4 w-4" />
-                                                                    View
-                                                                </Link>
-                                                            </DropdownMenuItem>
-                                                            {hasPermission('users.edit') && (
-                                                                <DropdownMenuItem asChild>
-                                                                    <Link className="flex w-full items-center gap-2" href={`/users/${user.id}/edit`}>
-                                                                        <Edit className="h-4 w-4" />
-                                                                        Edit
-                                                                    </Link>
-                                                                </DropdownMenuItem>
-                                                            )}
-                                                            {hasPermission('users.destroy') && (
-                                                                <DropdownMenuItem
-                                                                    className="gap-2 text-red-600 focus:text-red-600"
-                                                                    onSelect={(event) => {
-                                                                        event.preventDefault();
-                                                                        handleDeleteClick(user);
-                                                                    }}
-                                                                >
-                                                                    <Trash2 className="h-4 w-4 text-red-600" />
-                                                                    Delete
-                                                                </DropdownMenuItem>
-                                                            )}
-                                                        </DropdownMenuGroup>
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
-                                            </TableCell>
-                                        </TableRow>
-                                    );
-                                })
-                            ) : (
-                                <TableRow>
-                                    <TableCell colSpan={7} className="py-16">
-                                        <div className="flex flex-col items-center justify-center text-center">
-                                            <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-muted/50">
-                                                <Users className="h-10 w-10 text-muted-foreground" />
-                                            </div>
-                                            <h3 className="mb-2 text-xl font-semibold">No users found</h3>
-                                            <p className="mb-6 max-w-md text-muted-foreground">
-                                                {searchTerm
-                                                    ? `No users match "${searchTerm}". Try adjusting your filters or search terms.`
-                                                    : 'Get started by adding your first user to the system. Manage access and permissions effectively.'}
-                                            </p>
-                                            {hasPermission('users.create') && (
-                                                <Button asChild size="lg" className="shadow-lg">
-                                                    <Link href="/users/create">
-                                                        <Plus className="mr-2 h-4 w-4" />
-                                                        {searchTerm ? 'Clear Filters & Add User' : 'Add First User'}
-                                                    </Link>
-                                                </Button>
-                                            )}
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
+                <div className="hidden md:block">
+                    <ListingTableShell
+                        columns={tableColumns}
+                        sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSort }}
+                    >
+                        {tableRows}
+                    </ListingTableShell>
                 </div>
+
+                <div className="space-y-3 md:hidden">{mobileContent}</div>
             </ListPageLayout>
 
             <DeleteConfirmationDialog
                 open={deleteDialogOpen}
-                onOpenChange={setDeleteDialogOpen}
+                onOpenChange={(open) => {
+                    setDeleteDialogOpen(open);
+                    if (!open) {
+                        setSelectedUser(null);
+                        setIsDeleting(false);
+                    }
+                }}
                 title="Delete User"
                 description="Are you sure you want to delete this user? This action cannot be undone."
-                itemName={selectedUser?.name ?? ''}
+                itemName={selectedUser?.name ?? undefined}
                 onConfirm={handleDeleteConfirm}
                 isLoading={isDeleting}
             />

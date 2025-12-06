@@ -1,24 +1,34 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
+import { TableCell, TableRow } from '@/components/ui/table';
 import ListPageLayout from '@/components/layouts/list-page-layout';
+import { ListingStatsHeader } from '@/components/listing/stats-header';
+import { ListingFilterBar } from '@/components/listing/filter-bar';
+import { ListingTableShell } from '@/components/listing/data-table-shell';
+import { ListingMobileItemList } from '@/components/listing/mobile-item-list';
+import { ListingLoadingPlaceholder } from '@/components/listing/loading-placeholder';
+import { ListingPaginationFooter } from '@/components/listing/pagination-footer';
+import { ListingRowActionsMenu } from '@/components/listing/row-actions-menu';
 import { usePermissions } from '@/hooks/use-permissions';
+import { useListingLoading } from '@/hooks/use-listing-loading';
 import { Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { toast } from '@/hooks/use-toast';
-import { Plus, Eye, Edit, Search, ArrowDown, ArrowUp, ArrowUpDown, Trash2, Truck, User, UserCheck, UserX } from 'lucide-react';
-import { InertiaPagination } from '@/components/ui/pagination';
+import {
+    Plus,
+    Eye,
+    Edit,
+    Search,
+    Trash2,
+    Truck,
+    User,
+    UserCheck,
+    UserX,
+    ChevronRight,
+} from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
 import * as React from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -53,8 +63,9 @@ interface DriverTrucksIndexProps {
         current_page: number;
         last_page: number;
         total: number;
-        from: number;
-        to: number;
+        from: number | null;
+        to: number | null;
+        per_page?: number | null;
         links: Array<{
             url: string | null;
             label: string;
@@ -79,26 +90,67 @@ interface DriverTrucksIndexProps {
     perPageOptions: number[];
 }
 
-const columns: Array<{ key: string; label: string; sortable?: boolean; sortKey?: string }> = [
-    { key: 'driver', label: 'Driver', sortable: true, sortKey: 'driver_name' },
-    { key: 'truck', label: 'Truck', sortable: true, sortKey: 'truck_plate' },
-    { key: 'date_recived', label: 'Assigned Date', sortable: true, sortKey: 'date_recived' },
-    { key: 'created_at', label: 'Created', sortable: true, sortKey: 'created_at' },
-    { key: 'status', label: 'Status', sortable: true, sortKey: 'is_attached' },
+const SKELETON_FLAG_KEY = 'driver-trucks.index.shouldShowSkeleton';
+
+const COLUMN_DEFINITIONS: Array<{ id: string; label: string; sortKey: string }> = [
+    { id: 'driver', label: 'Driver', sortKey: 'driver_name' },
+    { id: 'truck', label: 'Truck', sortKey: 'truck_plate' },
+    { id: 'date_recived', label: 'Assigned Date', sortKey: 'date_recived' },
+    { id: 'created_at', label: 'Created', sortKey: 'created_at' },
+    { id: 'status', label: 'Status', sortKey: 'is_attached' },
 ];
+
+type NavigateOverrides = {
+    search?: string;
+    status?: string;
+    sort?: string;
+    direction?: 'asc' | 'desc';
+    page?: number;
+    per_page?: number;
+};
+
+const formatDate = (value?: string | null): string => {
+    if (!value) {
+        return '—';
+    }
+
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+        return '—';
+    }
+
+    return parsed.toLocaleDateString();
+};
+
+const getAttachmentBadge = (isAttached?: boolean) => {
+    if (isAttached) {
+        return <Badge className="border-green-200 bg-green-100 text-xs font-medium text-green-700">Attached</Badge>;
+    }
+
+    return <Badge className="border-red-200 bg-red-100 text-xs font-medium text-red-700">Detached</Badge>;
+};
 
 export default function DriverTrucksIndex({ driverTrucks, metrics, filters, statusOptions, perPageOptions }: DriverTrucksIndexProps) {
     const { hasPermission } = usePermissions();
+    const canViewAssignment = hasPermission('driver-trucks.show');
+    const canEditAssignment = hasPermission('driver-trucks.edit');
+    const canDeleteAssignment = hasPermission('driver-trucks.destroy');
+    const canCreateAssignment = hasPermission('driver-trucks.create');
+
     const [searchTerm, setSearchTerm] = React.useState(filters?.search ?? '');
     const [selectedStatus, setSelectedStatus] = React.useState(filters?.status ?? 'all');
     const [sortColumn, setSortColumn] = React.useState<string>(filters?.sort ?? 'created_at');
     const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>(filters?.direction ?? 'desc');
-    const availablePerPageOptions = React.useMemo(() => (perPageOptions?.length ? perPageOptions : [15, 25, 50, 100]), [perPageOptions]);
+    const availablePerPageOptions = React.useMemo(
+        () => (perPageOptions?.length ? perPageOptions : [15, 25, 50, 100]),
+        [perPageOptions],
+    );
     const resolvedPerPage = React.useMemo(() => {
         const candidate = filters?.per_page;
         if (typeof candidate === 'number' && availablePerPageOptions.includes(candidate)) {
             return candidate;
         }
+
         return availablePerPageOptions[0] ?? 15;
     }, [filters?.per_page, availablePerPageOptions]);
     const [perPage, setPerPage] = React.useState<string>(() => String(resolvedPerPage));
@@ -106,39 +158,73 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
     const [selectedAssignment, setSelectedAssignment] = React.useState<DriverTruckData | null>(null);
     const [isDeleting, setIsDeleting] = React.useState(false);
 
+    const isDataReady = Array.isArray(driverTrucks?.data);
+    const { isLoading } = useListingLoading({
+        storageKey: SKELETON_FLAG_KEY,
+        isDataReady,
+    });
+
     React.useEffect(() => {
         setPerPage(String(resolvedPerPage));
     }, [resolvedPerPage]);
 
-    const totalAssignments = metrics?.total ?? driverTrucks?.total ?? 0;
-    const currentPage = driverTrucks?.current_page ?? 1;
-    const lastPage = driverTrucks?.last_page ?? 1;
+    const assignments = driverTrucks?.data ?? [];
+    const totalAssignments = metrics?.total ?? driverTrucks?.total ?? assignments.length ?? 0;
+    const attachedAssignments = metrics?.attached ?? 0;
+    const detachedAssignments = metrics?.detached ?? 0;
+    const availableDrivers = metrics?.availableDrivers ?? 0;
+    const availableTrucks = metrics?.availableTrucks ?? 0;
 
-    const handleNavigate = React.useCallback((overrides: Partial<{ search?: string; status?: string; sort?: string; direction?: 'asc' | 'desc'; page?: number; per_page?: number }>) => {
-        const perPageValue = overrides.per_page !== undefined ? overrides.per_page : Number(perPage);
-        const params: Record<string, string | number | undefined> = {
-            search: overrides.search !== undefined ? overrides.search : (searchTerm.trim() ? searchTerm.trim() : undefined),
-            status: overrides.status !== undefined ? overrides.status : (selectedStatus !== 'all' ? selectedStatus : undefined),
-            sort: overrides.sort ?? sortColumn,
-            direction: overrides.direction ?? sortDirection,
-            page: overrides.page,
-            per_page: perPageValue,
-        };
+    const rowOffset = Math.max((driverTrucks?.from ?? 1) - 1, 0);
 
-        Object.keys(params).forEach((key) => {
-            const value = params[key];
-            if (
-                value === undefined ||
-                value === null ||
-                value === '' ||
-                (key === 'per_page' && (typeof value !== 'number' || !Number.isFinite(value) || value <= 0))
-            ) {
-                delete params[key];
+    const handleNavigate = React.useCallback(
+        (overrides: NavigateOverrides = {}) => {
+            const hasOverride = (key: keyof NavigateOverrides) =>
+                Object.prototype.hasOwnProperty.call(overrides, key);
+
+            const nextSearch = hasOverride('search')
+                ? overrides.search
+                : searchTerm.trim()
+                    ? searchTerm.trim()
+                    : undefined;
+
+            const nextStatus = hasOverride('status')
+                ? overrides.status
+                : selectedStatus !== 'all'
+                    ? selectedStatus
+                    : undefined;
+
+            const nextSort = hasOverride('sort') ? overrides.sort ?? sortColumn : sortColumn;
+            const nextDirection = hasOverride('direction') ? overrides.direction ?? sortDirection : sortDirection;
+            const nextPerPage = hasOverride('per_page') ? overrides.per_page : Number(perPage);
+            const nextPage = hasOverride('page') ? overrides.page : undefined;
+
+            const params: Record<string, string | number | undefined> = {
+                search: nextSearch && nextSearch !== '' ? nextSearch : undefined,
+                status: nextStatus && nextStatus !== 'all' ? nextStatus : undefined,
+                sort: nextSort,
+                direction: nextDirection,
+                page: nextPage,
+                per_page:
+                    typeof nextPerPage === 'number' && Number.isFinite(nextPerPage) && nextPerPage > 0
+                        ? nextPerPage
+                        : undefined,
+            };
+
+            Object.keys(params).forEach((key) => {
+                if (params[key] === undefined) {
+                    delete params[key];
+                }
+            });
+
+            if (typeof window !== 'undefined') {
+                window.sessionStorage.setItem(SKELETON_FLAG_KEY, 'true');
             }
-        });
 
-        router.get('/driver-trucks', params, { preserveState: true, replace: false });
-    }, [searchTerm, selectedStatus, sortColumn, sortDirection, perPage]);
+            router.get('/driver-trucks', params, { preserveState: true, replace: false });
+        },
+        [perPage, searchTerm, selectedStatus, sortColumn, sortDirection],
+    );
 
     const handleSearchChange = (value: string) => {
         setSearchTerm(value);
@@ -156,12 +242,15 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
         handleNavigate({ per_page: Number.isNaN(numericValue) ? undefined : numericValue, page: 1 });
     };
 
-    const handleSort = (column: string) => {
-        const newDirection = sortColumn === column && sortDirection === 'asc' ? 'desc' : 'asc';
-        setSortColumn(column);
-        setSortDirection(newDirection);
-        handleNavigate({ sort: column, direction: newDirection });
-    };
+    const handleSort = React.useCallback(
+        (column: string) => {
+            const newDirection: 'asc' | 'desc' = sortColumn === column && sortDirection === 'asc' ? 'desc' : 'asc';
+            setSortColumn(column);
+            setSortDirection(newDirection);
+            handleNavigate({ sort: column, direction: newDirection });
+        },
+        [handleNavigate, sortColumn, sortDirection],
+    );
 
     const handleDeleteClick = (assignment: DriverTruckData) => {
         setSelectedAssignment(assignment);
@@ -183,51 +272,33 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
             },
             onError: (errors) => {
                 setIsDeleting(false);
+
+                const fallback = 'Failed to delete assignment. Please try again.';
                 if (errors && typeof errors === 'object') {
-                    const errorMessages = Object.values(errors).flat().join('\n');
-                    if (errorMessages) {
-                        toast({
-                            title: '❌ Delete Failed',
-                            description: errorMessages,
-                            variant: 'destructive',
-                        });
-                    }
+                    const errorMessages = Object.values(errors)
+                        .flatMap((value) => (Array.isArray(value) ? value : [value]))
+                        .filter(Boolean)
+                        .join('\n');
+
+                    toast({
+                        title: '❌ Delete Failed',
+                        description: errorMessages || fallback,
+                        variant: 'destructive',
+                    });
+                } else {
+                    toast({
+                        title: '❌ Delete Failed',
+                        description: fallback,
+                        variant: 'destructive',
+                    });
                 }
             },
         });
     };
 
-    const renderHeaderCell = (column: { key: string; label: string; sortable?: boolean; sortKey?: string }) => {
-        const sortable = column.sortable ?? false;
-        const columnKey = column.sortKey ?? column.key;
-        const isActive = sortColumn === columnKey;
-        const SortIcon = !sortable
-            ? null
-            : isActive
-                ? (sortDirection === 'asc' ? ArrowUp : ArrowDown)
-                : ArrowUpDown;
-        return (
-            <TableHead
-                key={column.key}
-                className={`sticky top-0 z-20 bg-background ${sortable ? 'cursor-pointer hover:bg-muted/70' : 'cursor-default'} select-none transition-colors`}
-                onClick={sortable ? () => handleSort(columnKey) : undefined}
-            >
-                <div className="flex items-center gap-2">
-                    {column.label}
-                    {SortIcon && (
-                        <SortIcon
-                            size={14}
-                            className={isActive ? 'text-primary' : 'text-muted-foreground opacity-50'}
-                        />
-                    )}
-                </div>
-            </TableHead>
-        );
-    };
-
     const headerActions = (
         <>
-            {hasPermission('driver-trucks.create') && (
+            {canCreateAssignment && (
                 <Button asChild>
                     <Link href="/driver-trucks/create">
                         <Plus className="mr-2 h-4 w-4" />
@@ -238,76 +309,298 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
         </>
     );
 
-    const statsCards = [
+    const statsDefinitions = [
         {
-            title: 'Assignments',
-            value: metrics?.total ?? 0,
-            description: 'Driver-truck pairs',
+            id: 'total-assignments',
+            label: 'Assignments',
             icon: <UserCheck className="h-3.5 w-3.5 text-blue-600" />,
-            valueClassName: 'text-blue-600',
+            className: 'min-w-0',
+            value: isLoading ? <Skeleton className="h-3.5 w-20" aria-hidden="true" /> : totalAssignments.toLocaleString(),
+            description: isLoading ? (
+                <Skeleton className="h-3 w-28" aria-hidden="true" />
+            ) : (
+                'Driver-truck pairs'
+            ),
+            valueClassName: isLoading ? undefined : 'text-blue-600',
         },
         {
-            title: 'Attached',
-            value: metrics?.attached ?? 0,
-            description: 'Currently active links',
+            id: 'attached-assignments',
+            label: 'Attached',
             icon: <Truck className="h-3.5 w-3.5 text-green-600" />,
-            valueClassName: 'text-green-600',
+            className: 'min-w-0',
+            value: isLoading ? <Skeleton className="h-3.5 w-16" aria-hidden="true" /> : attachedAssignments.toLocaleString(),
+            description: isLoading ? (
+                <Skeleton className="h-3 w-24" aria-hidden="true" />
+            ) : (
+                'Currently active links'
+            ),
+            valueClassName: isLoading ? undefined : 'text-green-600',
         },
         {
-            title: 'Detached',
-            value: metrics?.detached ?? 0,
-            description: 'Awaiting reassignment',
+            id: 'detached-assignments',
+            label: 'Detached',
             icon: <UserX className="h-3.5 w-3.5 text-red-600" />,
-            valueClassName: 'text-red-600',
+            className: 'min-w-0',
+            value: isLoading ? <Skeleton className="h-3.5 w-16" aria-hidden="true" /> : detachedAssignments.toLocaleString(),
+            description: isLoading ? (
+                <Skeleton className="h-3 w-24" aria-hidden="true" />
+            ) : (
+                'Awaiting reassignment'
+            ),
+            valueClassName: isLoading ? undefined : 'text-red-600',
         },
         {
-            title: 'Free Drivers',
-            value: metrics?.availableDrivers ?? 0,
-            description: 'Ready to deploy',
+            id: 'available-drivers',
+            label: 'Free Drivers',
             icon: <User className="h-3.5 w-3.5 text-purple-600" />,
-            valueClassName: 'text-purple-600',
+            className: 'min-w-0',
+            value: isLoading ? <Skeleton className="h-3.5 w-16" aria-hidden="true" /> : availableDrivers.toLocaleString(),
+            description: isLoading ? (
+                <Skeleton className="h-3 w-24" aria-hidden="true" />
+            ) : (
+                'Ready to deploy'
+            ),
+            valueClassName: isLoading ? undefined : 'text-purple-600',
         },
         {
-            title: 'Free Trucks',
-            value: metrics?.availableTrucks ?? 0,
-            description: 'Available fleet',
-            icon: <Truck className="h-3.5 w-3.5 text-amber-600" />,
-            valueClassName: 'text-amber-600',
+            id: 'available-trucks',
+            label: 'Free Trucks',
+            icon: <Truck className="h-3.5 w-3.5 text-amber-500" />,
+            className: 'min-w-0',
+            value: isLoading ? <Skeleton className="h-3.5 w-16" aria-hidden="true" /> : availableTrucks.toLocaleString(),
+            description: isLoading ? (
+                <Skeleton className="h-3 w-24" aria-hidden="true" />
+            ) : (
+                'Available fleet'
+            ),
+            valueClassName: isLoading ? undefined : 'text-amber-600',
         },
     ];
 
-    const statsSection = (
-        <div className="hidden gap-2 md:grid md:grid-cols-2 xl:grid-cols-5">
-            {statsCards.map((card) => (
-                <Card key={card.title} className="gap-2 border border-slate-200 py-2 shadow-sm sm:py-3">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 p-1.5 sm:p-2">
-                        <CardTitle className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                            {card.title}
-                        </CardTitle>
-                        {card.icon}
-                    </CardHeader>
-                    <CardContent className="px-2 pb-2 pt-0 sm:px-3 sm:pb-2">
-                        <div className={`text-sm font-semibold sm:text-base ${card.valueClassName}`}>{card.value}</div>
-                        <p className="text-[11px] text-muted-foreground">{card.description}</p>
-                    </CardContent>
-                </Card>
-            ))}
-        </div>
+    const statsSection = <ListingStatsHeader stats={statsDefinitions} orientation="row" />;
+
+    const perPageSelectOptions = React.useMemo(
+        () =>
+            availablePerPageOptions.map((option) => ({
+                value: String(option),
+                label: `${option} / page`,
+            })),
+        [availablePerPageOptions],
+    );
+
+    const tableColumns = React.useMemo(
+        () => [
+            { id: 'index', label: '#', align: 'center' as const },
+            ...COLUMN_DEFINITIONS.map((column) => ({
+                id: column.id,
+                label: column.label,
+                sortable: true,
+                sortKey: column.sortKey,
+            })),
+            { id: 'actions', label: 'Actions', align: 'center' as const },
+        ],
+        [],
+    );
+
+    const tableRows = isLoading
+        ? Array.from({ length: 6 }).map((_, rowIndex) => (
+              <TableRow key={`driver-truck-skeleton-${rowIndex}`} aria-hidden="true">
+                  {tableColumns.map((column) => (
+                      <TableCell
+                          key={`${column.id}-${rowIndex}`}
+                          className={column.align === 'center' ? 'text-center' : undefined}
+                      >
+                          <Skeleton className="mx-auto h-4 w-24 max-w-full" />
+                      </TableCell>
+                  ))}
+              </TableRow>
+          ))
+        : assignments.length > 0
+            ? assignments.map((assignment, index) => {
+                  const assignedDate = assignment.date_recived ?? assignment.assigned_at;
+
+                  return (
+                      <TableRow key={assignment.id} className="hover:bg-muted/50">
+                          <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
+                          <TableCell className="font-medium">
+                              <div className="flex flex-col">
+                                  <span>{assignment.driver.name}</span>
+                                  <span className="text-xs text-muted-foreground">{assignment.driver.driverid}</span>
+                              </div>
+                          </TableCell>
+                          <TableCell className="font-mono text-muted-foreground">{assignment.truck.plate}</TableCell>
+                          <TableCell className="text-muted-foreground">{formatDate(assignedDate)}</TableCell>
+                          <TableCell className="text-muted-foreground">{formatDate(assignment.created_at)}</TableCell>
+                          <TableCell>
+                              <div className="flex flex-col items-start gap-1">
+                                  {getAttachmentBadge(assignment.is_attached)}
+                                  <span className="text-xs text-muted-foreground capitalize">
+                                      {assignment.status ?? 'n/a'}
+                                  </span>
+                                  {assignment.date_detach && (
+                                      <span className="text-xs text-muted-foreground">
+                                          Detached: {formatDate(assignment.date_detach)}
+                                      </span>
+                                  )}
+                              </div>
+                          </TableCell>
+                          <TableCell className="text-center">
+                              <ListingRowActionsMenu
+                                  actions={[
+                                      canViewAssignment && {
+                                          label: 'View',
+                                          icon: <Eye className="h-4 w-4" />,
+                                          href: `/driver-trucks/${assignment.id}`,
+                                      },
+                                      canEditAssignment && {
+                                          label: 'Edit',
+                                          icon: <Edit className="h-4 w-4" />,
+                                          href: `/driver-trucks/${assignment.id}/edit`,
+                                      },
+                                      canDeleteAssignment && {
+                                          label: 'Delete',
+                                          icon: <Trash2 className="h-4 w-4" />,
+                                          danger: true,
+                                          disabled: isDeleting && selectedAssignment?.id === assignment.id,
+                                          onSelect: () => handleDeleteClick(assignment),
+                                      },
+                                  ]}
+                              />
+                          </TableCell>
+                      </TableRow>
+                  );
+              })
+            : (
+                <TableRow>
+                    <TableCell colSpan={tableColumns.length} className="py-8 text-center text-muted-foreground">
+                        No assignments found.
+                        {canCreateAssignment && (
+                            <Link href="/driver-trucks/create" className="ml-1 text-primary underline">
+                                Create one
+                            </Link>
+                        )}
+                    </TableCell>
+                </TableRow>
+            );
+
+    const mobileItems = React.useMemo(
+        () =>
+            assignments.map((assignment, index) => ({
+                assignment,
+                position: rowOffset + index + 1,
+            })),
+        [assignments, rowOffset],
+    );
+
+    const mobileContent = isLoading ? (
+        <ListingLoadingPlaceholder showStats={false} filterItemCount={3} rowCount={4} />
+    ) : (
+        <ListingMobileItemList
+            items={mobileItems}
+            getKey={(item) => item.assignment.id}
+            renderTitle={(item) => (
+                <div className="flex items-center gap-2">
+                    <span className="text-xs uppercase tracking-wide text-muted-foreground">#{item.position}</span>
+                    <span className="text-base">{item.assignment.driver.name}</span>
+                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+                </div>
+            )}
+            renderSubtitle={(item) => item.assignment.truck.plate || 'Truck pending'}
+            renderContent={(item) => (
+                <div className="space-y-3 text-sm text-muted-foreground">
+                    <div className="flex items-center justify-between">
+                        <span className="font-medium text-slate-600 dark:text-slate-300">Status</span>
+                        {getAttachmentBadge(item.assignment.is_attached)}
+                    </div>
+                    <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                            <span className="font-medium text-slate-600 dark:text-slate-300">Assigned</span>
+                            <span className="text-right font-semibold text-slate-900 dark:text-slate-100">
+                                {formatDate(item.assignment.date_recived ?? item.assignment.assigned_at)}
+                            </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <span className="font-medium text-slate-600 dark:text-slate-300">Created</span>
+                            <span className="text-right font-semibold text-slate-900 dark:text-slate-100">
+                                {formatDate(item.assignment.created_at)}
+                            </span>
+                        </div>
+                        {item.assignment.date_detach && (
+                            <div className="flex items-center justify-between">
+                                <span className="font-medium text-slate-600 dark:text-slate-300">Detached</span>
+                                <span className="text-right font-semibold text-slate-900 dark:text-slate-100">
+                                    {formatDate(item.assignment.date_detach)}
+                                </span>
+                            </div>
+                        )}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                        {item.assignment.status ? `Status: ${item.assignment.status}` : 'Status pending'}
+                    </div>
+                </div>
+            )}
+            renderFooter={(item) => (
+                <div className="flex w-full flex-wrap items-center justify-end gap-2">
+                    {canViewAssignment && (
+                        <Button asChild size="sm" variant="outline" className="flex-1 sm:flex-auto">
+                            <Link href={`/driver-trucks/${item.assignment.id}`}>
+                                <Eye className="mr-2 h-4 w-4" />
+                                View
+                            </Link>
+                        </Button>
+                    )}
+                    {canEditAssignment && (
+                        <Button asChild size="sm" variant="secondary" className="flex-1 sm:flex-none">
+                            <Link href={`/driver-trucks/${item.assignment.id}/edit`}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                Edit
+                            </Link>
+                        </Button>
+                    )}
+                    {canDeleteAssignment && (
+                        <Button
+                            size="sm"
+                            variant="destructive"
+                            className="flex-1 sm:flex-none"
+                            onClick={() => handleDeleteClick(item.assignment)}
+                            disabled={isDeleting && selectedAssignment?.id === item.assignment.id}
+                        >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                        </Button>
+                    )}
+                </div>
+            )}
+            emptyState={(
+                <div className="py-8 text-center text-muted-foreground">
+                    No assignments found.
+                    {canCreateAssignment && (
+                        <Link href="/driver-trucks/create" className="ml-1 text-primary underline">
+                            Create one
+                        </Link>
+                    )}
+                </div>
+            )}
+        />
     );
 
     const tableHeaderExtras = (
-        <div className="flex flex-wrap items-center gap-2">
-            <div className="relative w-[260px] max-w-full">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                    placeholder="Search assignments..."
-                    value={searchTerm}
-                    onChange={(event) => handleSearchChange(event.target.value)}
-                    className="pl-10"
-                />
-            </div>
+        <ListingFilterBar
+            search={{
+                value: searchTerm,
+                placeholder: 'Search assignments...',
+                onChange: handleSearchChange,
+                icon: <Search className="h-4 w-4" />,
+            }}
+            perPage={{
+                value: perPage,
+                label: 'Rows',
+                onChange: handlePerPageChange,
+                options: perPageSelectOptions,
+            }}
+        >
             <Select value={selectedStatus} onValueChange={handleStatusChange}>
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-full min-w-[150px] sm:w-auto">
                     <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -319,123 +612,7 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
                     ))}
                 </SelectContent>
             </Select>
-            <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                <span className="hidden sm:inline">Rows</span>
-                <Select value={perPage} onValueChange={handlePerPageChange}>
-                    <SelectTrigger className="w-[110px]">
-                        <SelectValue placeholder="Per page" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {availablePerPageOptions.map((option) => (
-                            <SelectItem key={option} value={String(option)}>
-                                {option} / page
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-            </div>
-        </div>
-    );
-
-    const getAttachmentBadge = (isAttached?: boolean) => {
-        if (isAttached) {
-            return <Badge className="border-green-200 bg-green-100 text-xs font-medium text-green-700">Attached</Badge>;
-        }
-        return <Badge className="border-red-200 bg-red-100 text-xs font-medium text-red-700">Detached</Badge>;
-    };
-
-    // TODO: Evaluate infinite scrolling if assignment volumes increase notably.
-    const rowOffset = Math.max((driverTrucks.from ?? 1) - 1, 0);
-
-    const tableContent = (
-        <Table>
-            <TableHeader className="[&_tr]:sticky [&_tr]:top-0 [&_tr]:z-20 [&_tr]:bg-background [&_tr]:shadow-sm">
-                <TableRow className="border-b bg-background">
-                    <TableHead className="sticky top-0 z-20 w-12 bg-background text-center">#</TableHead>
-                    {columns.map((column) => renderHeaderCell(column))}
-                    <TableHead className="sticky top-0 z-20 bg-background text-center">Actions</TableHead>
-                </TableRow>
-            </TableHeader>
-            <TableBody>
-                {driverTrucks?.data && driverTrucks.data.length > 0 ? (
-                    driverTrucks.data.map((assignment, index) => {
-                        const assignedDate = assignment.date_recived ?? assignment.assigned_at;
-                        return (
-                            <TableRow key={assignment.id} className="hover:bg-muted/50">
-                                <TableCell className="text-center font-medium">
-                                    {rowOffset + index + 1}
-                                </TableCell>
-                                <TableCell className="font-medium">
-                                    <div className="flex flex-col">
-                                        <span>{assignment.driver.name}</span>
-                                        <span className="text-xs text-muted-foreground">{assignment.driver.driverid}</span>
-                                    </div>
-                                </TableCell>
-                                <TableCell className="font-mono text-muted-foreground">
-                                    {assignment.truck.plate}
-                                </TableCell>
-                                <TableCell className="text-muted-foreground">
-                                    {assignedDate ? new Date(assignedDate).toLocaleDateString() : '-'}
-                                </TableCell>
-                                <TableCell className="text-muted-foreground">
-                                    {assignment.created_at ? new Date(assignment.created_at).toLocaleDateString() : '-'}
-                                </TableCell>
-                                <TableCell>
-                                    <div className="flex flex-col items-start gap-1">
-                                        {getAttachmentBadge(assignment.is_attached)}
-                                        <span className="text-xs text-muted-foreground capitalize">
-                                            {assignment.status ?? 'n/a'}
-                                        </span>
-                                        {assignment.date_detach && (
-                                            <span className="text-xs text-muted-foreground">
-                                                Detached: {new Date(assignment.date_detach).toLocaleDateString()}
-                                            </span>
-                                        )}
-                                    </div>
-                                </TableCell>
-                                <TableCell className="text-center">
-                                    <div className="flex justify-center gap-2">
-                                        <Button asChild size="sm" variant="ghost">
-                                            <Link href={`/driver-trucks/${assignment.id}`}>
-                                                <Eye className="h-4 w-4" />
-                                            </Link>
-                                        </Button>
-                                        {hasPermission('driver-trucks.edit') && (
-                                            <Button asChild size="sm" variant="ghost">
-                                                <Link href={`/driver-trucks/${assignment.id}/edit`}>
-                                                    <Edit className="h-4 w-4" />
-                                                </Link>
-                                            </Button>
-                                        )}
-                                        {hasPermission('driver-trucks.destroy') && (
-                                            <Button
-                                                size="sm"
-                                                variant="ghost"
-                                                className="text-red-600 hover:bg-red-50 hover:text-red-700"
-                                                onClick={() => handleDeleteClick(assignment)}
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                        )}
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        );
-                    })
-                ) : (
-                    <TableRow>
-                        <TableCell colSpan={columns.length + 2} className="py-8 text-center text-muted-foreground">
-                            No assignments found.
-                            {hasPermission('driver-trucks.create') && (
-                                <Link href="/driver-trucks/create" className="ml-1 text-primary underline">
-                                    Create one
-                                </Link>
-                            )}
-                        </TableCell>
-                    </TableRow>
-                )}
-            </TableBody>
-        </Table>
+        </ListingFilterBar>
     );
 
     return (
@@ -448,26 +625,40 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
                 actions={headerActions}
                 stats={statsSection}
                 tableTitle="Assignments"
-                tableDescription="List of all driver-truck assignments"
+                tableDescription="All driver-truck assignment records"
                 tableHeaderExtras={tableHeaderExtras}
                 pagination={
-                    <InertiaPagination
-                        className="mt-4"
-                        from={driverTrucks.from}
-                        to={driverTrucks.to}
-                        total={driverTrucks.total}
-                        links={driverTrucks.links}
-                        currentPage={currentPage}
-                        lastPage={lastPage}
-                    />
+                    !isLoading && driverTrucks?.links ? (
+                        <ListingPaginationFooter
+                            className="mt-4"
+                            links={driverTrucks.links}
+                            from={driverTrucks.from ?? undefined}
+                            to={driverTrucks.to ?? undefined}
+                            total={driverTrucks.total ?? undefined}
+                        />
+                    ) : null
                 }
             >
-                {tableContent}
+                <div className="hidden md:block">
+                    <ListingTableShell
+                        columns={tableColumns}
+                        sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSort }}
+                    >
+                        {tableRows}
+                    </ListingTableShell>
+                </div>
+
+                <div className="space-y-3 md:hidden">{mobileContent}</div>
             </ListPageLayout>
 
             <DeleteConfirmationDialog
                 open={deleteDialogOpen}
-                onOpenChange={setDeleteDialogOpen}
+                onOpenChange={(open) => {
+                    setDeleteDialogOpen(open);
+                    if (!open) {
+                        setSelectedAssignment(null);
+                    }
+                }}
                 title="Delete Assignment"
                 description="Are you sure you want to delete this driver-truck assignment? This action cannot be undone."
                 itemName={selectedAssignment ? `${selectedAssignment.driver.name} ↔ ${selectedAssignment.truck.plate}` : undefined}
@@ -477,3 +668,4 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
         </>
     );
 }
+

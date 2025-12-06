@@ -1,25 +1,24 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { TableCell, TableRow } from '@/components/ui/table';
 import ListPageLayout from '@/components/layouts/list-page-layout';
+import { ListingStatsHeader } from '@/components/listing/stats-header';
+import { ListingFilterBar } from '@/components/listing/filter-bar';
+import { ListingTableShell } from '@/components/listing/data-table-shell';
+import { ListingMobileItemList } from '@/components/listing/mobile-item-list';
+import { ListingLoadingPlaceholder } from '@/components/listing/loading-placeholder';
+import { ListingPaginationFooter } from '@/components/listing/pagination-footer';
+import { ListingRowActionsMenu } from '@/components/listing/row-actions-menu';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { usePermissions } from '@/hooks/use-permissions';
+import { useListingLoading } from '@/hooks/use-listing-loading';
+import { toast } from '@/hooks/use-toast';
 import { Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
-import { toast } from '@/hooks/use-toast';
-import { Plus, Eye, Edit, Trash2, Search, ArrowUpDown, Users, CheckCircle, XCircle, Briefcase } from 'lucide-react';
-import { InertiaPagination } from '@/components/ui/pagination';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
 import * as React from 'react';
+import { Plus, Eye, Edit, Trash2, Search, Users, CheckCircle, XCircle, Briefcase, ChevronRight } from 'lucide-react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -28,16 +27,25 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
+type ColumnKey =
+    | 'name'
+    | 'contact_person'
+    | 'phone'
+    | 'email'
+    | 'operations_count'
+    | 'status'
+    | 'created_at';
+
 interface CustomerData {
     id: number;
     name: string;
-    contact_person?: string;
-    phone?: string;
-    email?: string;
-    address?: string;
+    contact_person?: string | null;
+    phone?: string | null;
+    email?: string | null;
+    address?: string | null;
     status: string;
-    created_at?: string;
-    operations_count?: number;
+    created_at?: string | null;
+    operations_count?: number | null;
 }
 
 interface CustomersIndexProps {
@@ -45,10 +53,10 @@ interface CustomersIndexProps {
         data: CustomerData[];
         current_page: number;
         last_page: number;
-        per_page: number;
         total: number;
-        from: number;
-        to: number;
+        from: number | null;
+        to: number | null;
+        per_page?: number | null;
         links: Array<{
             url: string | null;
             label: string;
@@ -72,30 +80,96 @@ interface CustomersIndexProps {
     perPageOptions?: number[];
 }
 
-const perPageFallback = [10, 15, 25, 50];
+const SKELETON_FLAG_KEY = 'customers.index.shouldShowSkeleton';
 
-const sortableColumns = new Set(['name', 'status', 'operations_count', 'created_at']);
-
-const columns: Array<{ key: keyof CustomerData | 'status' | 'actions' | 'operations_count' | 'created_at' | 'name'; label: string; sortable?: boolean }> = [
-    { key: 'name', label: 'Customer', sortable: true },
-    { key: 'contact_person', label: 'Relationship Owner' },
-    { key: 'phone', label: 'Phone' },
-    { key: 'email', label: 'Email' },
-    { key: 'operations_count', label: 'Operations', sortable: true },
-    { key: 'status', label: 'Status', sortable: true },
-    { key: 'created_at', label: 'Created', sortable: true },
+const COLUMN_DEFINITIONS: Array<{
+    id: ColumnKey;
+    label: string;
+    sortKey?: string;
+    align?: 'center' | 'right';
+}> = [
+    { id: 'name', label: 'Customer', sortKey: 'name' },
+    { id: 'contact_person', label: 'Relationship Owner' },
+    { id: 'phone', label: 'Phone' },
+    { id: 'email', label: 'Email' },
+    { id: 'operations_count', label: 'Operations', sortKey: 'operations_count', align: 'center' },
+    { id: 'status', label: 'Status', sortKey: 'status', align: 'center' },
+    { id: 'created_at', label: 'Created', sortKey: 'created_at' },
 ];
+
+const formatDateValue = (value?: string | null): string => {
+    if (!value) {
+        return '—';
+    }
+
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+        return '—';
+    }
+
+    return parsed.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+    });
+};
+
+const formatCount = (value?: number | null): string => {
+    if (typeof value !== 'number' || Number.isNaN(value)) {
+        return '0';
+    }
+
+    return value.toLocaleString();
+};
+
+const getStatusBadge = (status?: string | null): React.ReactNode => {
+    if (!status) {
+        return (
+            <Badge variant="outline" className="bg-muted text-muted-foreground">
+                Unknown
+            </Badge>
+        );
+    }
+
+    const normalized = status.toLowerCase();
+    if (normalized === 'active') {
+        return (
+            <Badge className="flex items-center gap-1 border-emerald-200 bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:border-emerald-900/50 dark:bg-emerald-900/30 dark:text-emerald-200">
+                <CheckCircle className="h-3 w-3" /> Active
+            </Badge>
+        );
+    }
+
+    if (normalized === 'inactive') {
+        return (
+            <Badge className="flex items-center gap-1 border-rose-200 bg-rose-100 text-rose-700 hover:bg-rose-200 dark:border-rose-900/50 dark:bg-rose-900/30 dark:text-rose-200">
+                <XCircle className="h-3 w-3" /> Inactive
+            </Badge>
+        );
+    }
+
+    return (
+        <Badge variant="outline" className="capitalize">
+            {status}
+        </Badge>
+    );
+};
 
 export default function CustomersIndex({ customers, metrics, filters, statusOptions, perPageOptions }: CustomersIndexProps) {
     const { hasPermission } = usePermissions();
+    const canViewCustomer = hasPermission('customers.show');
+    const canCreateCustomer = hasPermission('customers.create');
+    const canEditCustomer = hasPermission('customers.edit');
+    const canDeleteCustomer = hasPermission('customers.destroy');
+
     const [searchTerm, setSearchTerm] = React.useState(filters?.search ?? '');
     const [selectedStatus, setSelectedStatus] = React.useState(filters?.status ?? 'all');
-    const [sortBy, setSortBy] = React.useState(filters?.sort ?? 'name');
+    const [sortColumn, setSortColumn] = React.useState<string>(filters?.sort ?? 'name');
     const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>(filters?.direction ?? 'asc');
-    const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
-    const [selectedCustomer, setSelectedCustomer] = React.useState<CustomerData | null>(null);
-    const [isDeleting, setIsDeleting] = React.useState(false);
-    const availablePerPageOptions = React.useMemo(() => (perPageOptions?.length ? perPageOptions : perPageFallback), [perPageOptions]);
+    const availablePerPageOptions = React.useMemo(
+        () => (perPageOptions?.length ? perPageOptions : [10, 15, 25, 50]),
+        [perPageOptions],
+    );
     const resolvedPerPage = React.useMemo(() => {
         const candidate = filters?.per_page;
         if (typeof candidate === 'number' && availablePerPageOptions.includes(candidate)) {
@@ -106,85 +180,81 @@ export default function CustomersIndex({ customers, metrics, filters, statusOpti
     }, [filters?.per_page, availablePerPageOptions]);
     const [perPage, setPerPage] = React.useState<string>(() => String(resolvedPerPage));
 
+    const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+    const [selectedCustomer, setSelectedCustomer] = React.useState<CustomerData | null>(null);
+    const [isDeleting, setIsDeleting] = React.useState(false);
+
+    const isDataReady = Array.isArray(customers?.data);
+    const { isLoading } = useListingLoading({
+        storageKey: SKELETON_FLAG_KEY,
+        isDataReady,
+    });
+
     React.useEffect(() => {
         setPerPage(String(resolvedPerPage));
     }, [resolvedPerPage]);
 
-    React.useEffect(() => {
-        if (selectedCustomer && !deleteDialogOpen) {
-            setSelectedCustomer(null);
-        }
-    }, [deleteDialogOpen, selectedCustomer]);
+    const customerData = customers?.data ?? [];
+    const totalRecords = metrics?.total ?? customers?.total ?? customerData.length ?? 0;
+    const activeCount = metrics?.active ?? 0;
+    const inactiveCount = metrics?.inactive ?? 0;
+    const withOperationsCount = metrics?.with_operations ?? 0;
+    const rowOffset = Math.max((customers?.from ?? 1) - 1, 0);
 
-    const customerCount = metrics?.total ?? customers.total;
-    const currentPage = customers.current_page;
-    const lastPage = customers.last_page;
-    const perPageCountRaw = customers.per_page ?? Number(perPage);
-    const perPageCount = Number.isFinite(perPageCountRaw) && perPageCountRaw > 0
-        ? perPageCountRaw
-        : customers.data?.length ?? 1;
-    const rowOffset = (currentPage - 1) * perPageCount;
+    const handleNavigate = React.useCallback(
+        (overrides: {
+            search?: string;
+            status?: string;
+            sort?: string;
+            direction?: 'asc' | 'desc';
+            page?: number;
+            per_page?: number;
+        } = {}) => {
+            const hasOverride = (key: keyof typeof overrides) => Object.prototype.hasOwnProperty.call(overrides, key);
 
-    const statusFilterOptions = React.useMemo(() => {
-        const base = statusOptions?.length ? statusOptions : [
-            { label: 'Active', value: 'active' },
-            { label: 'Inactive', value: 'inactive' },
-        ];
+            const nextSearch = hasOverride('search')
+                ? overrides.search
+                : searchTerm.trim()
+                    ? searchTerm.trim()
+                    : undefined;
 
-        return base;
-    }, [statusOptions]);
+            const nextStatus = hasOverride('status')
+                ? overrides.status
+                : selectedStatus !== 'all'
+                    ? selectedStatus
+                    : undefined;
 
-    const handleNavigate = React.useCallback((overrides: Partial<{ search?: string; status?: string; sort?: string; direction?: 'asc' | 'desc'; page?: number; per_page?: number }>) => {
-        const params: Record<string, string | number | undefined> = {};
+            const nextSort = hasOverride('sort') ? overrides.sort ?? sortColumn : sortColumn;
+            const nextDirection = hasOverride('direction') ? overrides.direction ?? sortDirection : sortDirection;
+            const nextPerPage = hasOverride('per_page') ? overrides.per_page : Number(perPage);
+            const nextPage = hasOverride('page') ? overrides.page : undefined;
 
-        if (Object.prototype.hasOwnProperty.call(overrides, 'search')) {
-            params.search = overrides.search;
-        } else {
-            params.search = searchTerm.trim() ? searchTerm.trim() : undefined;
-        }
+            const params: Record<string, string | number | undefined> = {
+                search: nextSearch && nextSearch !== '' ? nextSearch : undefined,
+                status: nextStatus && nextStatus !== 'all' ? nextStatus : undefined,
+                sort: nextSort,
+                direction: nextDirection,
+                page: nextPage,
+                per_page:
+                    typeof nextPerPage === 'number' && Number.isFinite(nextPerPage) && nextPerPage > 0
+                        ? nextPerPage
+                        : undefined,
+            };
 
-        if (Object.prototype.hasOwnProperty.call(overrides, 'status')) {
-            params.status = overrides.status;
-        } else {
-            params.status = selectedStatus !== 'all' ? selectedStatus : undefined;
-        }
+            Object.keys(params).forEach((key) => {
+                if (params[key] === undefined) {
+                    delete params[key];
+                }
+            });
 
-        if (Object.prototype.hasOwnProperty.call(overrides, 'sort')) {
-            params.sort = overrides.sort;
-        } else {
-            params.sort = sortBy;
-        }
-
-        if (Object.prototype.hasOwnProperty.call(overrides, 'direction')) {
-            params.direction = overrides.direction;
-        } else {
-            params.direction = sortDirection;
-        }
-
-        if (Object.prototype.hasOwnProperty.call(overrides, 'page')) {
-            params.page = overrides.page;
-        }
-
-        if (Object.prototype.hasOwnProperty.call(overrides, 'per_page')) {
-            params.per_page = overrides.per_page;
-        } else {
-            params.per_page = Number(perPage);
-        }
-
-        Object.keys(params).forEach((key) => {
-            const value = params[key];
-            if (
-                value === undefined ||
-                value === null ||
-                value === '' ||
-                (key === 'per_page' && (typeof value !== 'number' || !Number.isFinite(value) || value <= 0))
-            ) {
-                delete params[key];
+            if (typeof window !== 'undefined') {
+                window.sessionStorage.setItem(SKELETON_FLAG_KEY, 'true');
             }
-        });
 
-        router.get('/customers', params, { preserveState: true, replace: false });
-    }, [searchTerm, selectedStatus, sortBy, sortDirection, perPage]);
+            router.get('/customers', params, { preserveState: true, replace: false });
+        },
+        [perPage, searchTerm, selectedStatus, sortColumn, sortDirection],
+    );
 
     const handleSearchChange = (value: string) => {
         setSearchTerm(value);
@@ -198,136 +268,362 @@ export default function CustomersIndex({ customers, metrics, filters, statusOpti
 
     const handlePerPageChange = (value: string) => {
         setPerPage(value);
-        const numeric = Number(value);
-        handleNavigate({ per_page: Number.isNaN(numeric) ? undefined : numeric, page: 1 });
+        const numericValue = Number(value);
+        handleNavigate({ per_page: Number.isNaN(numericValue) ? undefined : numericValue, page: 1 });
     };
 
-    const handleSort = (column: string) => {
-        if (!sortableColumns.has(column)) {
+    const handleSort = React.useCallback(
+        (column: string) => {
+            const newDirection: 'asc' | 'desc' = sortColumn === column && sortDirection === 'asc' ? 'desc' : 'asc';
+            setSortColumn(column);
+            setSortDirection(newDirection);
+            handleNavigate({ sort: column, direction: newDirection });
+        },
+        [handleNavigate, sortColumn, sortDirection],
+    );
+
+    const handleDeleteClick = (customer: CustomerData) => {
+        setSelectedCustomer(customer);
+        setDeleteDialogOpen(true);
+    };
+
+    const handleDeleteConfirm = () => {
+        if (!selectedCustomer) {
             return;
         }
 
-        const newDirection: 'asc' | 'desc' = sortBy === column && sortDirection === 'asc' ? 'desc' : 'asc';
-        setSortBy(column);
-        setSortDirection(newDirection);
-        handleNavigate({ sort: column, direction: newDirection });
+        setIsDeleting(true);
+
+        router.delete(`/customers/${selectedCustomer.id}`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setDeleteDialogOpen(false);
+                setSelectedCustomer(null);
+                setIsDeleting(false);
+                toast({
+                    title: 'Customer deleted',
+                    description: selectedCustomer.name
+                        ? `${selectedCustomer.name} was removed successfully.`
+                        : 'The customer was removed successfully.',
+                });
+            },
+            onError: (errors) => {
+                setIsDeleting(false);
+
+                const fallback = 'Failed to delete customer. Please try again.';
+                if (errors && typeof errors === 'object') {
+                    const errorMessages = Object.values(errors)
+                        .flatMap((value) => (Array.isArray(value) ? value : [value]))
+                        .filter(Boolean)
+                        .join('\n');
+
+                    toast({
+                        title: 'Delete failed',
+                        description: errorMessages || fallback,
+                        variant: 'destructive',
+                    });
+                } else {
+                    toast({
+                        title: 'Delete failed',
+                        description: fallback,
+                        variant: 'destructive',
+                    });
+                }
+            },
+        });
     };
 
-    const renderHeaderCell = (column: string, label: string, sortable?: boolean) => {
-        if (!sortable) {
-            return (
-                <TableHead key={column} className="sticky top-0 z-20 bg-background">
-                    {label}
-                </TableHead>
-            );
-        }
-
-        return (
-            <TableHead
-                key={column}
-                className="sticky top-0 z-20 cursor-pointer select-none bg-background transition-colors hover:bg-muted/70"
-                onClick={() => handleSort(column)}
-            >
-                <div className="flex items-center gap-2">
-                    {label}
-                    <ArrowUpDown
-                        size={14}
-                        className={sortBy === column ? 'text-primary' : 'text-muted-foreground opacity-50'}
-                    />
-                </div>
-            </TableHead>
-        );
-    };
-
-    const formatDate = (value?: string | null) => {
-        if (!value) {
-            return '—';
-        }
-
-        try {
-            return new Date(value).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-            });
-        } catch (error) {
-            console.error('Failed to format date', error);
-            return value;
-        }
-    };
-
-    const headerActions = hasPermission('customers.create') ? (
-        <Button asChild>
-            <Link href="/customers/create">
-                <Plus className="mr-2 h-4 w-4" />
-                Add Customer
-            </Link>
-        </Button>
-    ) : null;
-
-    const statsCards = [
+    const statsDefinitions = [
         {
-            title: 'Total Customers',
-            value: customerCount,
-            description: 'Full commercial portfolio',
-            icon: <Users className="h-3.5 w-3.5 text-blue-600" />,
-            valueClassName: 'text-blue-600',
+            id: 'total-customers',
+            label: 'Total Customers',
+            icon: <Users className="h-3.5 w-3.5 text-slate-600" />,
+            className: 'min-w-0',
+            value: isLoading ? (
+                <Skeleton className="h-3.5 w-20" aria-hidden="true" />
+            ) : (
+                formatCount(totalRecords)
+            ),
+            description: isLoading ? (
+                <Skeleton className="h-3 w-28" aria-hidden="true" />
+            ) : (
+                'Full portfolio'
+            ),
+            valueClassName: isLoading ? undefined : 'text-slate-700',
         },
         {
-            title: 'Active Accounts',
-            value: metrics?.active ?? 0,
-            description: 'Currently engaged',
+            id: 'active-customers',
+            label: 'Active Accounts',
             icon: <CheckCircle className="h-3.5 w-3.5 text-emerald-600" />,
-            valueClassName: 'text-emerald-600',
+            className: 'min-w-0',
+            value: isLoading ? (
+                <Skeleton className="h-3.5 w-16" aria-hidden="true" />
+            ) : (
+                formatCount(activeCount)
+            ),
+            description: isLoading ? (
+                <Skeleton className="h-3 w-24" aria-hidden="true" />
+            ) : (
+                'Currently engaged'
+            ),
+            valueClassName: isLoading ? undefined : 'text-emerald-600',
         },
         {
-            title: 'Inactive Accounts',
-            value: metrics?.inactive ?? 0,
-            description: 'On pause or churned',
-            icon: <XCircle className="h-3.5 w-3.5 text-rose-600" />,
-            valueClassName: 'text-rose-600',
+            id: 'inactive-customers',
+            label: 'Inactive Accounts',
+            icon: <XCircle className="h-3.5 w-3.5 text-rose-500" />,
+            className: 'min-w-0',
+            value: isLoading ? (
+                <Skeleton className="h-3.5 w-16" aria-hidden="true" />
+            ) : (
+                formatCount(inactiveCount)
+            ),
+            description: isLoading ? (
+                <Skeleton className="h-3 w-24" aria-hidden="true" />
+            ) : (
+                'On pause or churned'
+            ),
+            valueClassName: isLoading ? undefined : 'text-rose-500',
         },
         {
-            title: 'With Operations',
-            value: metrics?.with_operations ?? 0,
-            description: 'Accounts driving volume',
+            id: 'with-operations',
+            label: 'With Operations',
             icon: <Briefcase className="h-3.5 w-3.5 text-indigo-600" />,
-            valueClassName: 'text-indigo-600',
+            className: 'min-w-0',
+            value: isLoading ? (
+                <Skeleton className="h-3.5 w-16" aria-hidden="true" />
+            ) : (
+                formatCount(withOperationsCount)
+            ),
+            description: isLoading ? (
+                <Skeleton className="h-3 w-28" aria-hidden="true" />
+            ) : (
+                'Driving volume'
+            ),
+            valueClassName: isLoading ? undefined : 'text-indigo-600',
         },
     ];
 
-    const statsSection = (
-        <div className="hidden gap-2 md:grid md:grid-cols-2 xl:grid-cols-4">
-            {statsCards.map((card) => (
-                <Card key={card.title} className="gap-2 border border-slate-200 py-2 shadow-sm dark:border-slate-800">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 px-2 pb-1">
-                        <CardTitle className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                            {card.title}
-                        </CardTitle>
-                        {card.icon}
-                    </CardHeader>
-                    <CardContent className="px-2 pb-2 pt-0">
-                        <div className={`text-sm font-semibold sm:text-base ${card.valueClassName}`}>{card.value}</div>
-                        <p className="text-[11px] text-muted-foreground">{card.description}</p>
-                    </CardContent>
-                </Card>
-            ))}
-        </div>
+    const statsSection = <ListingStatsHeader stats={statsDefinitions} orientation="row" />;
+
+    const perPageSelectOptions = React.useMemo(
+        () =>
+            availablePerPageOptions.map((option) => ({
+                value: String(option),
+                label: `${option} / page`,
+            })),
+        [availablePerPageOptions],
+    );
+
+    const tableColumns = React.useMemo(
+        () => [
+            { id: 'index', label: '#', align: 'center' as const },
+            ...COLUMN_DEFINITIONS.map((column) => ({
+                id: column.id,
+                label: column.label,
+                sortable: Boolean(column.sortKey),
+                sortKey: column.sortKey,
+                align: column.align,
+            })),
+            { id: 'actions', label: 'Actions', align: 'center' as const },
+        ],
+        [],
+    );
+
+    const tableRows = isLoading
+        ? Array.from({ length: 6 }).map((_, rowIndex) => (
+              <TableRow key={`customer-skeleton-${rowIndex}`} aria-hidden="true">
+                  {tableColumns.map((column) => (
+                      <TableCell
+                          key={`${column.id}-${rowIndex}`}
+                          className={
+                              column.align === 'center'
+                                  ? 'text-center'
+                                  : column.align === 'right'
+                                      ? 'text-right'
+                                      : undefined
+                          }
+                      >
+                          <Skeleton className="mx-auto h-4 w-24 max-w-full" />
+                      </TableCell>
+                  ))}
+              </TableRow>
+          ))
+        : customerData.length > 0
+            ? customerData.map((customer, index) => (
+                  <TableRow key={customer.id} className="hover:bg-muted/50">
+                      <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
+                      <TableCell className="font-medium text-foreground">{customer.name}</TableCell>
+                      <TableCell className="text-muted-foreground">
+                          {customer.contact_person ? customer.contact_person : '—'}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{customer.phone || '—'}</TableCell>
+                      <TableCell className="max-w-[200px] truncate text-muted-foreground">
+                          {customer.email || '—'}
+                      </TableCell>
+                      <TableCell className="text-center">
+                          <Badge variant="outline" className="border-slate-200 bg-slate-100 text-slate-700 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-200">
+                              {formatCount(customer.operations_count ?? 0)}
+                          </Badge>
+                      </TableCell>
+                      <TableCell className="text-center">{getStatusBadge(customer.status)}</TableCell>
+                      <TableCell className="text-muted-foreground">{formatDateValue(customer.created_at)}</TableCell>
+                      <TableCell className="text-center">
+                          <ListingRowActionsMenu
+                              actions={[
+                                  canViewCustomer && {
+                                      label: 'View',
+                                      icon: <Eye className="h-4 w-4" />,
+                                      href: `/customers/${customer.id}`,
+                                  },
+                                  canEditCustomer && {
+                                      label: 'Edit',
+                                      icon: <Edit className="h-4 w-4" />,
+                                      href: `/customers/${customer.id}/edit`,
+                                  },
+                                  canDeleteCustomer && {
+                                      label: 'Delete',
+                                      icon: <Trash2 className="h-4 w-4" />,
+                                      danger: true,
+                                      disabled: isDeleting && selectedCustomer?.id === customer.id,
+                                      onSelect: () => handleDeleteClick(customer),
+                                  },
+                              ]}
+                          />
+                      </TableCell>
+                  </TableRow>
+              ))
+            : (
+                <TableRow>
+                    <TableCell colSpan={tableColumns.length} className="py-8 text-center text-muted-foreground">
+                        No customers found.
+                        {canCreateCustomer && (
+                            <Link href="/customers/create" className="ml-1 text-primary underline">
+                                Create one
+                            </Link>
+                        )}
+                    </TableCell>
+                </TableRow>
+            );
+
+    const mobileItems = React.useMemo(
+        () =>
+            customerData.map((customer, index) => ({
+                record: customer,
+                position: rowOffset + index + 1,
+            })),
+        [customerData, rowOffset],
+    );
+
+    const mobileContent = isLoading ? (
+        <ListingLoadingPlaceholder showStats={false} filterItemCount={3} rowCount={4} />
+    ) : (
+        <ListingMobileItemList
+            items={mobileItems}
+            getKey={(item) => item.record.id}
+            renderTitle={(item) => (
+                <div className="flex items-center gap-2">
+                    <span className="text-xs uppercase tracking-wide text-muted-foreground">#{item.position}</span>
+                    <span className="text-base font-semibold text-foreground">{item.record.name}</span>
+                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+                </div>
+            )}
+            renderSubtitle={(item) => item.record.contact_person || 'No relationship owner'}
+            renderContent={(item) => (
+                <div className="space-y-3 text-sm text-muted-foreground">
+                    <div className="flex items-center justify-between">
+                        <span className="font-medium text-slate-600 dark:text-slate-300">Status</span>
+                        <span className="text-right text-slate-900 dark:text-slate-100">
+                            {item.record.status ? item.record.status : 'Unknown'}
+                        </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <span className="font-medium text-slate-600 dark:text-slate-300">Operations</span>
+                        <span className="text-right text-slate-900 dark:text-slate-100">
+                            {formatCount(item.record.operations_count ?? 0)}
+                        </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <span className="font-medium text-slate-600 dark:text-slate-300">Created</span>
+                        <span className="text-right text-slate-900 dark:text-slate-100">
+                            {formatDateValue(item.record.created_at)}
+                        </span>
+                    </div>
+                </div>
+            )}
+            renderFooter={(item) => (
+                <div className="flex w-full flex-wrap items-center justify-end gap-2">
+                    {canViewCustomer && (
+                        <Button asChild size="sm" variant="outline" className="flex-1 sm:flex-auto">
+                            <Link href={`/customers/${item.record.id}`}>
+                                <Eye className="mr-2 h-4 w-4" />
+                                View
+                            </Link>
+                        </Button>
+                    )}
+                    {canEditCustomer && (
+                        <Button asChild size="sm" variant="secondary" className="flex-1 sm:flex-none">
+                            <Link href={`/customers/${item.record.id}/edit`}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                Edit
+                            </Link>
+                        </Button>
+                    )}
+                    {canDeleteCustomer && (
+                        <Button
+                            size="sm"
+                            variant="destructive"
+                            className="flex-1 sm:flex-none"
+                            onClick={() => handleDeleteClick(item.record)}
+                            disabled={isDeleting && selectedCustomer?.id === item.record.id}
+                        >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                        </Button>
+                    )}
+                </div>
+            )}
+            emptyState={(
+                <div className="py-8 text-center text-muted-foreground">
+                    No customers found.
+                    {canCreateCustomer && (
+                        <Link href="/customers/create" className="ml-1 text-primary underline">
+                            Create one
+                        </Link>
+                    )}
+                </div>
+            )}
+        />
+    );
+
+    const statusFilterOptions = React.useMemo(
+        () =>
+            (statusOptions?.length
+                ? statusOptions
+                : [
+                      { label: 'Active', value: 'active' },
+                      { label: 'Inactive', value: 'inactive' },
+                  ]) || [],
+        [statusOptions],
     );
 
     const tableHeaderExtras = (
-        <div className="flex flex-wrap items-center gap-2">
-            <div className="relative w-[260px] max-w-full">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                    placeholder="Search customers..."
-                    value={searchTerm}
-                    onChange={(event) => handleSearchChange(event.target.value)}
-                    className="pl-10"
-                />
-            </div>
+        <ListingFilterBar
+            search={{
+                value: searchTerm,
+                placeholder: 'Search customers...',
+                onChange: handleSearchChange,
+                icon: <Search className="h-4 w-4" />,
+            }}
+            perPage={{
+                value: perPage,
+                label: 'Rows',
+                onChange: handlePerPageChange,
+                options: perPageSelectOptions,
+            }}
+        >
             <Select value={selectedStatus} onValueChange={handleStatusChange}>
-                <SelectTrigger className="w-[160px]">
+                <SelectTrigger className="w-full min-w-[160px] sm:w-auto">
                     <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -339,172 +635,28 @@ export default function CustomersIndex({ customers, metrics, filters, statusOpti
                     ))}
                 </SelectContent>
             </Select>
-            <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                <span className="hidden sm:inline">Rows</span>
-                <Select value={perPage} onValueChange={handlePerPageChange}>
-                    <SelectTrigger className="w-[120px]">
-                        <SelectValue placeholder="Per page" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {availablePerPageOptions.map((option) => (
-                            <SelectItem key={option} value={String(option)}>
-                                {option} / page
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-            </div>
-        </div>
+        </ListingFilterBar>
     );
 
-    const tableContent = (
-        <Table>
-            <TableHeader className="[&_tr]:sticky [&_tr]:top-0 [&_tr]:z-20 [&_tr]:bg-background [&_tr]:shadow-sm">
-                <TableRow className="border-b bg-background">
-                    <TableHead className="sticky top-0 z-20 w-12 bg-background text-center">#</TableHead>
-                    {columns.map(({ key, label, sortable }) => renderHeaderCell(String(key), label, sortable))}
-                    <TableHead className="sticky top-0 z-20 bg-background text-center">Actions</TableHead>
-                </TableRow>
-            </TableHeader>
-            <TableBody>
-                {customers?.data && customers.data.length > 0 ? (
-                    customers.data.map((customer, index) => (
-                        <TableRow key={customer.id} className="hover:bg-muted/50">
-                            <TableCell className="text-center font-medium">
-                                {rowOffset + index + 1}
-                            </TableCell>
-                            <TableCell className="font-medium text-foreground">{customer.name}</TableCell>
-                            <TableCell className="text-muted-foreground text-sm">{customer.contact_person || 'N/A'}</TableCell>
-                            <TableCell className="text-muted-foreground text-sm">{customer.phone || '—'}</TableCell>
-                            <TableCell className="text-muted-foreground text-sm truncate max-w-[180px]">{customer.email || '—'}</TableCell>
-                            <TableCell>
-                                <Badge variant="outline" className="border-slate-200 bg-slate-100 text-slate-700 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-200">
-                                    {customer.operations_count ?? 0}
-                                </Badge>
-                            </TableCell>
-                            <TableCell>
-                                <Badge
-                                    className={`flex w-fit items-center gap-1 ${
-                                        customer.status === 'active'
-                                            ? 'border-emerald-200 bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:border-emerald-900/50 dark:bg-emerald-900/30 dark:text-emerald-200'
-                                            : 'border-rose-200 bg-rose-100 text-rose-700 hover:bg-rose-200 dark:border-rose-900/50 dark:bg-rose-900/30 dark:text-rose-200'
-                                    }`}
-                                >
-                                    {customer.status === 'active' && <CheckCircle className="h-3 w-3" />}
-                                    {customer.status === 'inactive' && <XCircle className="h-3 w-3" />}
-                                    {customer.status.charAt(0).toUpperCase() + customer.status.slice(1)}
-                                </Badge>
-                            </TableCell>
-                            <TableCell className="text-muted-foreground text-sm">
-                                {formatDate(customer.created_at)}
-                            </TableCell>
-                            <TableCell className="text-center">
-                                <div className="flex justify-center gap-2">
-                                    {hasPermission('customers.show') && (
-                                        <Button asChild size="sm" variant="ghost">
-                                            <Link href={`/customers/${customer.id}`}>
-                                                <Eye className="h-4 w-4" />
-                                            </Link>
-                                        </Button>
-                                    )}
-                                    {hasPermission('customers.edit') && (
-                                        <Button asChild size="sm" variant="ghost">
-                                            <Link href={`/customers/${customer.id}/edit`}>
-                                                <Edit className="h-4 w-4" />
-                                            </Link>
-                                        </Button>
-                                    )}
-                                    {hasPermission('customers.destroy') && (
-                                        <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                            onClick={() => {
-                                                setSelectedCustomer(customer);
-                                                setDeleteDialogOpen(true);
-                                            }}
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                    )}
-                                </div>
-                            </TableCell>
-                        </TableRow>
-                    ))
-                ) : (
-                    <TableRow>
-                        <TableCell colSpan={columns.length + 2} className="py-8 text-center text-muted-foreground">
-                            No customers found.
-                            {hasPermission('customers.create') && (
-                                <Link href="/customers/create" className="ml-1 text-primary underline">
-                                    Create one
-                                </Link>
-                            )}
-                        </TableCell>
-                    </TableRow>
-                )}
-            </TableBody>
-        </Table>
+    const headerActions = (
+        <>
+            {canCreateCustomer && (
+                <Button asChild>
+                    <Link href="/customers/create">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Customer
+                    </Link>
+                </Button>
+            )}
+        </>
     );
-
-    const handleDeleteConfirm = async () => {
-        if (!selectedCustomer) return;
-        setIsDeleting(true);
-        router.delete(`/customers/${selectedCustomer.id}`, {
-            onSuccess: () => {
-                toast({
-                    title: 'Customer deleted',
-                    description: 'The customer was removed successfully.',
-                });
-                setDeleteDialogOpen(false);
-                setSelectedCustomer(null);
-                setIsDeleting(false);
-            },
-            onError: (errorBag) => {
-                setIsDeleting(false);
-                if (errorBag && typeof errorBag === 'object') {
-                    const messages = Object.values(errorBag).flat().join(', ');
-                    if (messages) {
-                        toast({
-                            title: 'Delete failed',
-                            description: messages,
-                            variant: 'destructive',
-                        });
-                    }
-                }
-            },
-        });
-    };
-
-    const buildPageHref = React.useCallback((page: number) => {
-        const params = new URLSearchParams();
-        if (searchTerm.trim()) {
-            params.set('search', searchTerm.trim());
-        }
-        if (selectedStatus !== 'all') {
-            params.set('status', selectedStatus);
-        }
-        if (sortBy) {
-            params.set('sort', sortBy);
-        }
-        if (sortDirection) {
-            params.set('direction', sortDirection);
-        }
-        if (perPage) {
-            params.set('per_page', perPage);
-        }
-        params.set('page', String(page));
-
-        const queryString = params.toString();
-        return queryString ? `/customers?${queryString}` : `/customers?page=${page}`;
-    }, [searchTerm, selectedStatus, sortBy, sortDirection, perPage]);
 
     return (
         <>
             <ListPageLayout
                 headTitle="Customers"
                 title="Customers"
-                description={`Manage ${customerCount} customer${customerCount !== 1 ? 's' : ''} and monitor relationship health.`}
+                description={`Manage ${formatCount(totalRecords)} customer${totalRecords === 1 ? '' : 's'} and monitor relationship health.`}
                 breadcrumbs={breadcrumbs}
                 actions={headerActions}
                 stats={statsSection}
@@ -512,29 +664,45 @@ export default function CustomersIndex({ customers, metrics, filters, statusOpti
                 tableDescription="Track commercial accounts, their status, and operational engagement."
                 tableHeaderExtras={tableHeaderExtras}
                 pagination={
-                    <InertiaPagination
-                        from={customers.from}
-                        to={customers.to}
-                        total={customers.total}
-                        links={customers.links}
-                        currentPage={currentPage}
-                        lastPage={lastPage}
-                        buildHref={buildPageHref}
-                    />
+                    !isLoading && customers?.links ? (
+                        <ListingPaginationFooter
+                            className="mt-4"
+                            links={customers.links}
+                            from={customers.from ?? undefined}
+                            to={customers.to ?? undefined}
+                            total={customers.total ?? undefined}
+                        />
+                    ) : null
                 }
             >
-                {tableContent}
+                <div className="hidden md:block">
+                    <ListingTableShell
+                        columns={tableColumns}
+                        sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSort }}
+                    >
+                        {tableRows}
+                    </ListingTableShell>
+                </div>
+
+                <div className="space-y-3 md:hidden">{mobileContent}</div>
             </ListPageLayout>
 
             <DeleteConfirmationDialog
                 open={deleteDialogOpen}
-                onOpenChange={setDeleteDialogOpen}
+                onOpenChange={(open) => {
+                    setDeleteDialogOpen(open);
+                    if (!open) {
+                        setSelectedCustomer(null);
+                        setIsDeleting(false);
+                    }
+                }}
                 title="Delete Customer"
                 description="Are you sure you want to delete this customer? This action cannot be undone."
-                itemName={selectedCustomer?.name}
+                itemName={selectedCustomer ? selectedCustomer.name : undefined}
                 onConfirm={handleDeleteConfirm}
                 isLoading={isDeleting}
             />
         </>
     );
 }
+

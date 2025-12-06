@@ -1,36 +1,35 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, router } from '@inertiajs/react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
+import { TableCell, TableRow } from '@/components/ui/table';
 import ListPageLayout from '@/components/layouts/list-page-layout';
-import { Input } from '@/components/ui/input';
-import { InertiaPagination } from '@/components/ui/pagination';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
+import { ListingStatsHeader } from '@/components/listing/stats-header';
+import { ListingFilterBar } from '@/components/listing/filter-bar';
+import { ListingTableShell } from '@/components/listing/data-table-shell';
+import { ListingMobileItemList } from '@/components/listing/mobile-item-list';
+import { ListingLoadingPlaceholder } from '@/components/listing/loading-placeholder';
+import { ListingPaginationFooter } from '@/components/listing/pagination-footer';
+import { ListingRowActionsMenu } from '@/components/listing/row-actions-menu';
+import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { usePermissions } from '@/hooks/use-permissions';
-import { useToast } from '@/hooks/use-toast';
+import { useListingLoading } from '@/hooks/use-listing-loading';
+import { toast } from '@/hooks/use-toast';
+import { Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
+import * as React from 'react';
 import {
-    ArrowUpDown,
-    Building,
-    CheckCircle,
-    Eye,
     Globe,
-    Pencil,
+    CheckCircle,
+    XCircle,
+    Target,
+    Building,
+    Eye,
+    Edit,
+    Trash2,
     Plus,
     Search,
-    Target,
-    Trash2,
-    XCircle,
+    ChevronRight,
 } from 'lucide-react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -40,13 +39,23 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
+type ColumnKey =
+    | 'name'
+    | 'code'
+    | 'status'
+    | 'capital'
+    | 'population'
+    | 'accessibility_score'
+    | 'zones_count'
+    | 'last_surveyed_at';
+
 interface RegionData {
     id: number;
     name: string;
-    code?: string;
+    code?: string | null;
     status: 'active' | 'inactive';
-    zones_count?: number;
-    created_at?: string;
+    zones_count?: number | null;
+    created_at?: string | null;
     capital?: string | null;
     area_km2?: number | string | null;
     population?: number | string | null;
@@ -59,10 +68,10 @@ interface RegionsIndexProps {
         data: RegionData[];
         current_page: number;
         last_page: number;
-        per_page: number;
         total: number;
-        from: number;
-        to: number;
+        from: number | null;
+        to: number | null;
+        per_page?: number | null;
         links: Array<{
             url: string | null;
             label: string;
@@ -89,37 +98,25 @@ interface RegionsIndexProps {
     perPageOptions?: number[];
 }
 
-const perPageFallback = [10, 15, 25, 50];
+const SKELETON_FLAG_KEY = 'regions.index.shouldShowSkeleton';
 
-type ColumnKey =
-    | 'name'
-    | 'code'
-    | 'status'
-    | 'capital'
-    | 'population'
-    | 'accessibility_score'
-    | 'zones_count'
-    | 'last_surveyed_at';
-
-interface ColumnConfig {
-    key: ColumnKey;
+const COLUMN_DEFINITIONS: Array<{
+    id: ColumnKey;
     label: string;
-    sortable?: boolean;
     sortKey?: string;
-}
-
-const columns: ColumnConfig[] = [
-    { key: 'name', label: 'Region', sortable: true },
-    { key: 'code', label: 'Code', sortable: true },
-    { key: 'status', label: 'Status', sortable: true },
-    { key: 'capital', label: 'Capital', sortable: false },
-    { key: 'population', label: 'Population', sortable: true },
-    { key: 'accessibility_score', label: 'Accessibility', sortable: true },
-    { key: 'zones_count', label: 'Zones', sortable: true, sortKey: 'zones_count' },
-    { key: 'last_surveyed_at', label: 'Last Surveyed', sortable: true, sortKey: 'last_surveyed_at' },
+    align?: 'center' | 'right';
+}> = [
+    { id: 'name', label: 'Region', sortKey: 'name' },
+    { id: 'code', label: 'Code', sortKey: 'code' },
+    { id: 'status', label: 'Status', sortKey: 'status', align: 'center' },
+    { id: 'capital', label: 'Capital', sortKey: 'capital' },
+    { id: 'population', label: 'Population', sortKey: 'population', align: 'right' },
+    { id: 'accessibility_score', label: 'Accessibility', sortKey: 'accessibility_score', align: 'center' },
+    { id: 'zones_count', label: 'Zones', sortKey: 'zones_count', align: 'center' },
+    { id: 'last_surveyed_at', label: 'Last Surveyed', sortKey: 'last_surveyed_at' },
 ];
 
-const formatNumberValue = (value?: number | string | null, fractionDigits = 0) => {
+const formatNumberValue = (value?: number | string | null, fractionDigits = 0): string => {
     if (value === null || value === undefined || value === '') {
         return '—';
     }
@@ -135,35 +132,77 @@ const formatNumberValue = (value?: number | string | null, fractionDigits = 0) =
     });
 };
 
-const formatDate = (value?: string | null) => {
+const formatDateValue = (value?: string | null): string => {
     if (!value) {
         return '—';
     }
 
-    try {
-        return new Date(value).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-        });
-    } catch {
-        return value;
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+        return '—';
     }
+
+    return parsed.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+    });
+};
+
+const formatCount = (value?: number | string | null): string => {
+    if (value === null || value === undefined || value === '') {
+        return '0';
+    }
+
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) {
+        return '0';
+    }
+
+    return numeric.toLocaleString();
+};
+
+const getStatusBadge = (status?: string | null): React.ReactNode => {
+    if (!status) {
+        return (
+            <Badge variant="outline" className="bg-muted text-muted-foreground">
+                Unknown
+            </Badge>
+        );
+    }
+
+    const normalized = status.toLowerCase();
+    if (normalized === 'active') {
+        return (
+            <Badge className="flex items-center gap-1 border-emerald-200 bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:border-emerald-900/50 dark:bg-emerald-900/30 dark:text-emerald-200">
+                <CheckCircle className="h-3 w-3" /> Active
+            </Badge>
+        );
+    }
+
+    return (
+        <Badge className="flex items-center gap-1 border-slate-300 bg-slate-200 text-slate-700 hover:bg-slate-300 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-200">
+            <XCircle className="h-3 w-3" /> Inactive
+        </Badge>
+    );
 };
 
 export default function RegionsIndex({ regions, metrics, filters, statusOptions, perPageOptions }: RegionsIndexProps) {
     const { hasPermission } = usePermissions();
-    const { toast } = useToast();
+    const canViewRegion = hasPermission('regions.show');
+    const canCreateRegion = hasPermission('regions.create');
+    const canEditRegion = hasPermission('regions.edit');
+    const canDeleteRegion = hasPermission('regions.destroy');
 
-    const [searchTerm, setSearchTerm] = useState(filters?.search ?? '');
-    const [selectedStatus, setSelectedStatus] = useState(filters?.status ?? 'all');
-    const [sortColumn, setSortColumn] = useState(filters?.sort ?? 'name');
-    const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(filters?.direction ?? 'asc');
-    const availablePerPageOptions = useMemo(
-        () => (perPageOptions?.length ? perPageOptions : perPageFallback),
-        [perPageOptions]
+    const [searchTerm, setSearchTerm] = React.useState(filters?.search ?? '');
+    const [selectedStatus, setSelectedStatus] = React.useState(filters?.status ?? 'all');
+    const [sortColumn, setSortColumn] = React.useState<string>(filters?.sort ?? 'name');
+    const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>(filters?.direction ?? 'asc');
+    const availablePerPageOptions = React.useMemo(
+        () => (perPageOptions?.length ? perPageOptions : [10, 15, 25, 50]),
+        [perPageOptions],
     );
-    const resolvedPerPage = useMemo(() => {
+    const resolvedPerPage = React.useMemo(() => {
         const candidate = filters?.per_page;
         if (typeof candidate === 'number' && availablePerPageOptions.includes(candidate)) {
             return candidate;
@@ -171,107 +210,95 @@ export default function RegionsIndex({ regions, metrics, filters, statusOptions,
 
         return availablePerPageOptions[0] ?? 15;
     }, [filters?.per_page, availablePerPageOptions]);
-    const [perPage, setPerPage] = useState<string>(() => String(resolvedPerPage));
+    const [perPage, setPerPage] = React.useState<string>(() => String(resolvedPerPage));
 
-    useEffect(() => {
+    const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+    const [selectedRegion, setSelectedRegion] = React.useState<RegionData | null>(null);
+    const [isDeleting, setIsDeleting] = React.useState(false);
+
+    const isDataReady = Array.isArray(regions?.data);
+    const { isLoading } = useListingLoading({
+        storageKey: SKELETON_FLAG_KEY,
+        isDataReady,
+    });
+
+    React.useEffect(() => {
         setPerPage(String(resolvedPerPage));
     }, [resolvedPerPage]);
 
-    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-    const [selectedRegion, setSelectedRegion] = useState<RegionData | null>(null);
-    const [isDeleting, setIsDeleting] = useState(false);
-
     const regionData = regions?.data ?? [];
-    const totalRecords = metrics?.total ?? regions?.total ?? 0;
-    const currentPage = regions?.current_page ?? 1;
-    const lastPage = regions?.last_page ?? 1;
-    const perPageCountRaw = typeof regions?.per_page === 'number' ? regions.per_page : Number(perPage);
-    const perPageCount = Number.isFinite(perPageCountRaw) && perPageCountRaw > 0
-        ? perPageCountRaw
-        : regionData.length || 1;
-    const rowOffset = (currentPage - 1) * perPageCount;
+    const totalRecords = metrics?.total ?? regions?.total ?? regionData.length ?? 0;
+    const activeCount = metrics?.active ?? 0;
+    const inactiveCount = metrics?.inactive ?? 0;
+    const surveyedCount = metrics?.surveyedCount ?? 0;
+    const totalZones = metrics?.totalZones ?? 0;
+    const totalPopulation = metrics?.totalPopulation ?? 0;
 
-    const statusFilterOptions = useMemo(() => {
-        if (statusOptions?.length) {
-            return statusOptions;
-        }
+    const rowOffset = Math.max((regions?.from ?? 1) - 1, 0);
 
-        return [
-            { label: 'Active', value: 'active' },
-            { label: 'Inactive', value: 'inactive' },
-        ];
-    }, [statusOptions]);
-
-    const getStatusBadge = (status: string) => {
-        const baseClasses =
-            'flex w-fit items-center gap-1 border text-xs font-medium px-2 py-0.5 rounded-full transition-colors';
-
-        if (status === 'active') {
-            return (
-                <Badge className={`${baseClasses} border-emerald-200 bg-emerald-100 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-900/30 dark:text-emerald-200`}>
-                    <CheckCircle className="h-3 w-3" />
-                    Active
-                </Badge>
-            );
-        }
-
-        return (
-            <Badge className={`${baseClasses} border-slate-300 bg-slate-200 text-slate-700 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-200`}>
-                <XCircle className="h-3 w-3" />
-                Inactive
-            </Badge>
-        );
-    };
-
-    const handleNavigate = useCallback(
-        (overrides: Partial<{
+    const handleNavigate = React.useCallback(
+        (overrides: {
             search?: string;
             status?: string;
             sort?: string;
             direction?: 'asc' | 'desc';
             page?: number;
             per_page?: number;
-        }>) => {
-            const nextSearch = overrides.search !== undefined ? overrides.search : searchTerm.trim();
-            const nextStatus = overrides.status !== undefined ? overrides.status : selectedStatus;
-            const nextSort = overrides.sort ?? sortColumn;
-            const nextDirection = overrides.direction ?? sortDirection;
-            const perPageValue = overrides.per_page !== undefined ? overrides.per_page : Number(perPage);
+        } = {}) => {
+            const hasOverride = (key: keyof typeof overrides) => Object.prototype.hasOwnProperty.call(overrides, key);
+
+            const nextSearch = hasOverride('search')
+                ? overrides.search
+                : searchTerm.trim()
+                    ? searchTerm.trim()
+                    : undefined;
+
+            const nextStatus = hasOverride('status')
+                ? overrides.status
+                : selectedStatus !== 'all'
+                    ? selectedStatus
+                    : undefined;
+
+            const nextSort = hasOverride('sort') ? overrides.sort ?? sortColumn : sortColumn;
+            const nextDirection = hasOverride('direction') ? overrides.direction ?? sortDirection : sortDirection;
+            const nextPerPage = hasOverride('per_page') ? overrides.per_page : Number(perPage);
+            const nextPage = hasOverride('page') ? overrides.page : undefined;
 
             const params: Record<string, string | number | undefined> = {
-                search: nextSearch ? nextSearch : undefined,
-                status: nextStatus !== 'all' ? nextStatus : undefined,
+                search: nextSearch && nextSearch !== '' ? nextSearch : undefined,
+                status: nextStatus && nextStatus !== 'all' ? nextStatus : undefined,
                 sort: nextSort,
                 direction: nextDirection,
-                page: overrides.page,
-                per_page: perPageValue,
+                page: nextPage,
+                per_page:
+                    typeof nextPerPage === 'number' && Number.isFinite(nextPerPage) && nextPerPage > 0
+                        ? nextPerPage
+                        : undefined,
             };
 
             Object.keys(params).forEach((key) => {
-                const value = params[key];
-                if (
-                    value === undefined ||
-                    value === null ||
-                    value === '' ||
-                    (key === 'per_page' && (typeof value !== 'number' || Number.isNaN(value) || value <= 0))
-                ) {
+                if (params[key] === undefined) {
                     delete params[key];
                 }
             });
 
-            router.get('/regions', params, { preserveState: true, preserveScroll: true, replace: false });
+            if (typeof window !== 'undefined') {
+                window.sessionStorage.setItem(SKELETON_FLAG_KEY, 'true');
+            }
+
+            router.get('/regions', params, { preserveState: true, replace: false });
         },
-        [searchTerm, selectedStatus, sortColumn, sortDirection, perPage]
+        [perPage, searchTerm, selectedStatus, sortColumn, sortDirection],
     );
 
     const handleSearchChange = (value: string) => {
         setSearchTerm(value);
-        handleNavigate({ search: value.trim(), page: 1 });
+        handleNavigate({ search: value.trim() ? value.trim() : undefined, page: 1 });
     };
 
     const handleStatusChange = (value: string) => {
         setSelectedStatus(value);
-        handleNavigate({ status: value, page: 1 });
+        handleNavigate({ status: value !== 'all' ? value : undefined, page: 1 });
     };
 
     const handlePerPageChange = (value: string) => {
@@ -280,151 +307,366 @@ export default function RegionsIndex({ regions, metrics, filters, statusOptions,
         handleNavigate({ per_page: Number.isNaN(numericValue) ? undefined : numericValue, page: 1 });
     };
 
-    const handleSort = (column: ColumnConfig) => {
-        if (column.sortable === false) {
+    const handleSort = React.useCallback(
+        (column: string) => {
+            const newDirection: 'asc' | 'desc' = sortColumn === column && sortDirection === 'asc' ? 'desc' : 'asc';
+            setSortColumn(column);
+            setSortDirection(newDirection);
+            handleNavigate({ sort: column, direction: newDirection });
+        },
+        [handleNavigate, sortColumn, sortDirection],
+    );
+
+    const handleDeleteClick = (region: RegionData) => {
+        setSelectedRegion(region);
+        setDeleteDialogOpen(true);
+    };
+
+    const handleDeleteConfirm = () => {
+        if (!selectedRegion) {
             return;
         }
 
-        const sortKey = column.sortKey ?? column.key;
-        const newDirection: 'asc' | 'desc' = sortColumn === sortKey && sortDirection === 'asc' ? 'desc' : 'asc';
-        setSortColumn(sortKey);
-        setSortDirection(newDirection);
-        handleNavigate({ sort: sortKey, direction: newDirection });
+        setIsDeleting(true);
+
+        router.delete(`/regions/${selectedRegion.id}`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setDeleteDialogOpen(false);
+                toast({
+                    title: 'Region deleted',
+                    description: `${selectedRegion.name} has been removed.`,
+                });
+                setSelectedRegion(null);
+                setIsDeleting(false);
+            },
+            onError: (errors) => {
+                setIsDeleting(false);
+
+                const fallback = 'Failed to delete region. Please try again.';
+                if (errors && typeof errors === 'object') {
+                    const errorMessages = Object.values(errors)
+                        .flatMap((value) => (Array.isArray(value) ? value : [value]))
+                        .filter(Boolean)
+                        .join('\n');
+
+                    toast({
+                        title: 'Delete failed',
+                        description: errorMessages || fallback,
+                        variant: 'destructive',
+                    });
+                } else {
+                    toast({
+                        title: 'Delete failed',
+                        description: fallback,
+                        variant: 'destructive',
+                    });
+                }
+            },
+        });
     };
 
-    const renderHeaderCell = (column: ColumnConfig) => {
-        const sortKey = column.sortKey ?? column.key;
-        const isActive = sortColumn === sortKey;
-
-        if (column.sortable === false) {
-            return (
-                <TableHead key={column.key} className="sticky top-0 z-20 bg-background">
-                    {column.label}
-                </TableHead>
-            );
-        }
-
-        return (
-            <TableHead
-                key={column.key}
-                className="sticky top-0 z-20 cursor-pointer select-none bg-background transition-colors hover:bg-muted/70"
-                onClick={() => handleSort(column)}
-            >
-                <div className="flex items-center gap-2">
-                    {column.label}
-                    <ArrowUpDown
-                        size={14}
-                        className={isActive ? 'text-primary' : 'text-muted-foreground opacity-50'}
-                    />
-                </div>
-            </TableHead>
-        );
-    };
-
-    const renderCell = (region: RegionData, column: ColumnKey) => {
-        switch (column) {
-            case 'name':
-                return (
-                    <div className="flex items-center gap-2">
-                        <Building className="h-4 w-4 text-primary" />
-                        <span className="font-medium">{region.name}</span>
-                    </div>
-                );
-            case 'code':
-                return region.code || '—';
-            case 'status':
-                return getStatusBadge(region.status);
-            case 'capital':
-                return region.capital || '—';
-            case 'population':
-                return formatNumberValue(region.population);
-            case 'accessibility_score':
-                return region.accessibility_score ?? '—';
-            case 'zones_count':
-                return formatNumberValue(region.zones_count ?? 0);
-            case 'last_surveyed_at':
-                return formatDate(region.last_surveyed_at);
-            default:
-                return null;
-        }
-    };
-
-    const headerActions = (
-        <>
-            {hasPermission('regions.create') && (
-                <Button asChild>
-                    <Link href="/regions/create">
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add Region
-                    </Link>
-                </Button>
-            )}
-        </>
-    );
-
-    const statsCards = [
+    const statsDefinitions = [
         {
-            title: 'Total Regions',
-            value: formatNumberValue(totalRecords),
-            description: `${formatNumberValue(metrics?.totalZones ?? 0)} zones mapped`,
+            id: 'total-regions',
+            label: 'Total Regions',
             icon: <Globe className="h-3.5 w-3.5 text-blue-600" />,
-            valueClassName: 'text-blue-600',
+            className: 'min-w-0',
+            value: isLoading ? (
+                <Skeleton className="h-3.5 w-20" aria-hidden="true" />
+            ) : (
+                formatCount(totalRecords)
+            ),
+            description: isLoading ? (
+                <Skeleton className="h-3 w-28" aria-hidden="true" />
+            ) : (
+                `${formatCount(totalZones)} zones`
+            ),
+            valueClassName: isLoading ? undefined : 'text-blue-600',
         },
         {
-            title: 'Active Regions',
-            value: formatNumberValue(metrics?.active ?? 0),
-            description: 'Operational coverage',
+            id: 'active-regions',
+            label: 'Active Regions',
             icon: <CheckCircle className="h-3.5 w-3.5 text-emerald-600" />,
-            valueClassName: 'text-emerald-600',
+            className: 'min-w-0',
+            value: isLoading ? (
+                <Skeleton className="h-3.5 w-16" aria-hidden="true" />
+            ) : (
+                formatCount(activeCount)
+            ),
+            description: isLoading ? (
+                <Skeleton className="h-3 w-24" aria-hidden="true" />
+            ) : (
+                'Operational coverage'
+            ),
+            valueClassName: isLoading ? undefined : 'text-emerald-600',
         },
         {
-            title: 'Inactive Regions',
-            value: formatNumberValue(metrics?.inactive ?? 0),
-            description: 'Pending validation',
+            id: 'inactive-regions',
+            label: 'Inactive Regions',
             icon: <XCircle className="h-3.5 w-3.5 text-rose-500" />,
-            valueClassName: 'text-rose-500',
+            className: 'min-w-0',
+            value: isLoading ? (
+                <Skeleton className="h-3.5 w-16" aria-hidden="true" />
+            ) : (
+                formatCount(inactiveCount)
+            ),
+            description: isLoading ? (
+                <Skeleton className="h-3 w-24" aria-hidden="true" />
+            ) : (
+                'Pending validation'
+            ),
+            valueClassName: isLoading ? undefined : 'text-rose-500',
         },
         {
-            title: 'Surveyed Regions',
-            value: formatNumberValue(metrics?.surveyedCount ?? 0),
-            description: `${formatNumberValue(metrics?.totalPopulation ?? 0)} residents tracked`,
+            id: 'surveyed-regions',
+            label: 'Surveyed Regions',
             icon: <Target className="h-3.5 w-3.5 text-indigo-500" />,
-            valueClassName: 'text-indigo-600',
+            className: 'min-w-0',
+            value: isLoading ? (
+                <Skeleton className="h-3.5 w-16" aria-hidden="true" />
+            ) : (
+                formatCount(surveyedCount)
+            ),
+            description: isLoading ? (
+                <Skeleton className="h-3 w-32" aria-hidden="true" />
+            ) : (
+                `${formatCount(totalPopulation)} residents`
+            ),
+            valueClassName: isLoading ? undefined : 'text-indigo-600',
         },
     ];
 
-    const statsSection = (
-        <div className="hidden gap-2 md:grid md:grid-cols-2 xl:grid-cols-4">
-            {statsCards.map((card) => (
-                <Card key={card.title} className="gap-2 border border-slate-200 py-2 shadow-sm dark:border-slate-800">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 px-2 pb-1">
-                        <CardTitle className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                            {card.title}
-                        </CardTitle>
-                        {card.icon}
-                    </CardHeader>
-                    <CardContent className="px-2 pb-2 pt-0">
-                        <div className={`text-sm font-semibold sm:text-base ${card.valueClassName}`}>{card.value}</div>
-                        <p className="text-[11px] text-muted-foreground">{card.description}</p>
-                    </CardContent>
-                </Card>
-            ))}
-        </div>
+    const statsSection = <ListingStatsHeader stats={statsDefinitions} orientation="row" />;
+
+    const perPageSelectOptions = React.useMemo(
+        () =>
+            availablePerPageOptions.map((option) => ({
+                value: String(option),
+                label: `${option} / page`,
+            })),
+        [availablePerPageOptions],
+    );
+
+    const tableColumns = React.useMemo(
+        () => [
+            { id: 'index', label: '#', align: 'center' as const },
+            ...COLUMN_DEFINITIONS.map((column) => ({
+                id: column.id,
+                label: column.label,
+                sortable: Boolean(column.sortKey),
+                sortKey: column.sortKey,
+                align: column.align,
+            })),
+            { id: 'actions', label: 'Actions', align: 'center' as const },
+        ],
+        [],
+    );
+
+    const tableRows = isLoading
+        ? Array.from({ length: 6 }).map((_, rowIndex) => (
+              <TableRow key={`region-skeleton-${rowIndex}`} aria-hidden="true">
+                  {tableColumns.map((column) => (
+                      <TableCell
+                          key={`${column.id}-${rowIndex}`}
+                          className={
+                              column.align === 'center'
+                                  ? 'text-center'
+                                  : column.align === 'right'
+                                      ? 'text-right'
+                                      : undefined
+                          }
+                      >
+                          <Skeleton className="mx-auto h-4 w-24 max-w-full" />
+                      </TableCell>
+                  ))}
+              </TableRow>
+          ))
+        : regionData.length > 0
+            ? regionData.map((region, index) => (
+                  <TableRow key={region.id} className="hover:bg-muted/50">
+                      <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
+                      <TableCell>
+                          <div className="flex items-center gap-2">
+                              <Building className="h-4 w-4 text-primary" />
+                              <span className="font-medium text-foreground">{region.name}</span>
+                          </div>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{region.code || '—'}</TableCell>
+                      <TableCell className="text-center">{getStatusBadge(region.status)}</TableCell>
+                      <TableCell className="text-muted-foreground">{region.capital || '—'}</TableCell>
+                      <TableCell className="text-right text-muted-foreground">
+                          {formatNumberValue(region.population)}
+                      </TableCell>
+                      <TableCell className="text-center text-muted-foreground">
+                          {region.accessibility_score ?? '—'}
+                      </TableCell>
+                      <TableCell className="text-center text-muted-foreground">
+                          {formatNumberValue(region.zones_count ?? 0)}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{formatDateValue(region.last_surveyed_at)}</TableCell>
+                      <TableCell className="text-center">
+                          <ListingRowActionsMenu
+                              actions={[
+                                  canViewRegion && {
+                                      label: 'View',
+                                      icon: <Eye className="h-4 w-4" />,
+                                      href: `/regions/${region.id}`,
+                                  },
+                                  canEditRegion && {
+                                      label: 'Edit',
+                                      icon: <Edit className="h-4 w-4" />,
+                                      href: `/regions/${region.id}/edit`,
+                                  },
+                                  canDeleteRegion && {
+                                      label: 'Delete',
+                                      icon: <Trash2 className="h-4 w-4" />,
+                                      danger: true,
+                                      disabled: isDeleting && selectedRegion?.id === region.id,
+                                      onSelect: () => handleDeleteClick(region),
+                                  },
+                              ]}
+                          />
+                      </TableCell>
+                  </TableRow>
+              ))
+            : (
+                <TableRow>
+                    <TableCell colSpan={tableColumns.length} className="py-8 text-center text-muted-foreground">
+                        No regions found.
+                        {canCreateRegion && (
+                            <Link href="/regions/create" className="ml-1 text-primary underline">
+                                Create one
+                            </Link>
+                        )}
+                    </TableCell>
+                </TableRow>
+            );
+
+    const mobileItems = React.useMemo(
+        () =>
+            regionData.map((region, index) => ({
+                record: region,
+                position: rowOffset + index + 1,
+            })),
+        [regionData, rowOffset],
+    );
+
+    const mobileContent = isLoading ? (
+        <ListingLoadingPlaceholder showStats={false} filterItemCount={3} rowCount={4} />
+    ) : (
+        <ListingMobileItemList
+            items={mobileItems}
+            getKey={(item) => item.record.id}
+            renderTitle={(item) => (
+                <div className="flex items-center gap-2">
+                    <span className="text-xs uppercase tracking-wide text-muted-foreground">#{item.position}</span>
+                    <span className="text-base font-semibold text-foreground">{item.record.name}</span>
+                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+                </div>
+            )}
+            renderSubtitle={(item) => item.record.capital || 'No capital set'}
+            renderContent={(item) => (
+                <div className="space-y-3 text-sm text-muted-foreground">
+                    <div className="flex items-center justify-between">
+                        <span className="font-medium text-slate-600 dark:text-slate-300">Status</span>
+                        <span className="text-right text-slate-900 dark:text-slate-100">
+                            {item.record.status}
+                        </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <span className="font-medium text-slate-600 dark:text-slate-300">Population</span>
+                        <span className="text-right text-slate-900 dark:text-slate-100">
+                            {formatNumberValue(item.record.population)}
+                        </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <span className="font-medium text-slate-600 dark:text-slate-300">Zones</span>
+                        <span className="text-right text-slate-900 dark:text-slate-100">
+                            {formatNumberValue(item.record.zones_count ?? 0)}
+                        </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <span className="font-medium text-slate-600 dark:text-slate-300">Last Surveyed</span>
+                        <span className="text-right text-slate-900 dark:text-slate-100">
+                            {formatDateValue(item.record.last_surveyed_at)}
+                        </span>
+                    </div>
+                </div>
+            )}
+            renderFooter={(item) => (
+                <div className="flex w-full flex-wrap items-center justify-end gap-2">
+                    {canViewRegion && (
+                        <Button asChild size="sm" variant="outline" className="flex-1 sm:flex-auto">
+                            <Link href={`/regions/${item.record.id}`}>
+                                <Eye className="mr-2 h-4 w-4" />
+                                View
+                            </Link>
+                        </Button>
+                    )}
+                    {canEditRegion && (
+                        <Button asChild size="sm" variant="secondary" className="flex-1 sm:flex-none">
+                            <Link href={`/regions/${item.record.id}/edit`}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                Edit
+                            </Link>
+                        </Button>
+                    )}
+                    {canDeleteRegion && (
+                        <Button
+                            size="sm"
+                            variant="destructive"
+                            className="flex-1 sm:flex-none"
+                            onClick={() => handleDeleteClick(item.record)}
+                            disabled={isDeleting && selectedRegion?.id === item.record.id}
+                        >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                        </Button>
+                    )}
+                </div>
+            )}
+            emptyState={(
+                <div className="py-8 text-center text-muted-foreground">
+                    No regions found.
+                    {canCreateRegion && (
+                        <Link href="/regions/create" className="ml-1 text-primary underline">
+                            Create one
+                        </Link>
+                    )}
+                </div>
+            )}
+        />
+    );
+
+    const statusFilterOptions = React.useMemo(
+        () =>
+            (statusOptions?.length
+                ? statusOptions
+                : [
+                      { label: 'Active', value: 'active' },
+                      { label: 'Inactive', value: 'inactive' },
+                  ]) || [],
+        [statusOptions],
     );
 
     const tableHeaderExtras = (
-        <div className="flex flex-wrap items-center gap-2">
-            <div className="relative w-[260px] max-w-full">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                    placeholder="Search regions..."
-                    value={searchTerm}
-                    onChange={(event) => handleSearchChange(event.target.value)}
-                    className="pl-10"
-                />
-            </div>
+        <ListingFilterBar
+            search={{
+                value: searchTerm,
+                placeholder: 'Search regions...',
+                onChange: handleSearchChange,
+                icon: <Search className="h-4 w-4" />,
+            }}
+            perPage={{
+                value: perPage,
+                label: 'Rows',
+                onChange: handlePerPageChange,
+                options: perPageSelectOptions,
+            }}
+        >
             <Select value={selectedStatus} onValueChange={handleStatusChange}>
-                <SelectTrigger className="w-[160px]">
+                <SelectTrigger className="w-full min-w-[160px] sm:w-auto">
                     <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -436,124 +678,28 @@ export default function RegionsIndex({ regions, metrics, filters, statusOptions,
                     ))}
                 </SelectContent>
             </Select>
-            <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                <span className="hidden sm:inline">Rows</span>
-                <Select value={perPage} onValueChange={handlePerPageChange}>
-                    <SelectTrigger className="w-[120px]">
-                        <SelectValue placeholder="Per page" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {availablePerPageOptions.map((option) => (
-                            <SelectItem key={option} value={String(option)}>
-                                {option} / page
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-            </div>
-        </div>
+        </ListingFilterBar>
     );
 
-    const tableContent = (
-        <Table>
-            <TableHeader className="[&_tr]:sticky [&_tr]:top-0 [&_tr]:z-20 [&_tr]:bg-background [&_tr]:shadow-sm">
-                <TableRow className="border-b bg-background">
-                    <TableHead className="sticky top-0 z-20 w-12 bg-background text-center">#</TableHead>
-                    {columns.map((column) => renderHeaderCell(column))}
-                    <TableHead className="sticky top-0 z-20 bg-background text-center">Actions</TableHead>
-                </TableRow>
-            </TableHeader>
-            <TableBody>
-                {regionData.length > 0 ? (
-                    regionData.map((region, index) => (
-                        <TableRow key={region.id} className="hover:bg-muted/50">
-                            <TableCell className="text-center font-medium">
-                                {rowOffset + index + 1}
-                            </TableCell>
-                            {columns.map(({ key }) => (
-                                <TableCell key={key}>{renderCell(region, key)}</TableCell>
-                            ))}
-                            <TableCell className="text-center">
-                                <div className="flex justify-center gap-2">
-                                    {hasPermission('regions.show') && (
-                                        <Button asChild size="sm" variant="ghost">
-                                            <Link href={`/regions/${region.id}`}>
-                                                <Eye className="h-4 w-4" />
-                                            </Link>
-                                        </Button>
-                                    )}
-                                    {hasPermission('regions.edit') && (
-                                        <Button asChild size="sm" variant="ghost">
-                                            <Link href={`/regions/${region.id}/edit`}>
-                                                <Pencil className="h-4 w-4" />
-                                            </Link>
-                                        </Button>
-                                    )}
-                                    {hasPermission('regions.destroy') && (
-                                        <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                            onClick={() => {
-                                                setSelectedRegion(region);
-                                                setDeleteDialogOpen(true);
-                                            }}
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                    )}
-                                </div>
-                            </TableCell>
-                        </TableRow>
-                    ))
-                ) : (
-                    <TableRow>
-                        <TableCell colSpan={columns.length + 2} className="py-8 text-center text-muted-foreground">
-                            No regions found.
-                            {hasPermission('regions.create') && (
-                                <Link href="/regions/create" className="ml-1 text-primary underline">
-                                    Create one
-                                </Link>
-                            )}
-                        </TableCell>
-                    </TableRow>
-                )}
-            </TableBody>
-        </Table>
+    const headerActions = (
+        <>
+            {canCreateRegion && (
+                <Button asChild>
+                    <Link href="/regions/create">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Region
+                    </Link>
+                </Button>
+            )}
+        </>
     );
-
-    const handleDeleteConfirm = useCallback(() => {
-        if (!selectedRegion) {
-            return;
-        }
-
-        setIsDeleting(true);
-        router.delete(`/regions/${selectedRegion.id}`, {
-            preserveScroll: true,
-            onSuccess: () => {
-                toast({ title: 'Region deleted', description: `${selectedRegion.name} has been removed.` });
-                setDeleteDialogOpen(false);
-                setSelectedRegion(null);
-            },
-            onError: () => {
-                toast({
-                    title: 'Unable to delete region',
-                    description: 'Please try again or contact support if the issue persists.',
-                    variant: 'destructive',
-                });
-            },
-            onFinish: () => {
-                setIsDeleting(false);
-            },
-        });
-    }, [selectedRegion, toast]);
 
     return (
         <>
             <ListPageLayout
                 headTitle="Regions"
                 title="Regions"
-                description={`Manage ${formatNumberValue(totalRecords)} regions and track readiness signals.`}
+                description={`Manage ${formatCount(totalRecords)} region${totalRecords === 1 ? '' : 's'} and track readiness signals.`}
                 breadcrumbs={breadcrumbs}
                 actions={headerActions}
                 stats={statsSection}
@@ -561,28 +707,45 @@ export default function RegionsIndex({ regions, metrics, filters, statusOptions,
                 tableDescription="Monitor coverage, readiness, and survey data across the network"
                 tableHeaderExtras={tableHeaderExtras}
                 pagination={
-                    <InertiaPagination
-                        from={regions.from}
-                        to={regions.to}
-                        total={regions.total}
-                        links={regions.links}
-                        currentPage={currentPage}
-                        lastPage={lastPage}
-                    />
+                    !isLoading && regions?.links ? (
+                        <ListingPaginationFooter
+                            className="mt-4"
+                            links={regions.links}
+                            from={regions.from ?? undefined}
+                            to={regions.to ?? undefined}
+                            total={regions.total ?? undefined}
+                        />
+                    ) : null
                 }
             >
-                {tableContent}
+                <div className="hidden md:block">
+                    <ListingTableShell
+                        columns={tableColumns}
+                        sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSort }}
+                    >
+                        {tableRows}
+                    </ListingTableShell>
+                </div>
+
+                <div className="space-y-3 md:hidden">{mobileContent}</div>
             </ListPageLayout>
 
             <DeleteConfirmationDialog
                 open={deleteDialogOpen}
-                onOpenChange={setDeleteDialogOpen}
+                onOpenChange={(open) => {
+                    setDeleteDialogOpen(open);
+                    if (!open) {
+                        setSelectedRegion(null);
+                        setIsDeleting(false);
+                    }
+                }}
                 title="Delete Region"
                 description="Are you sure you want to delete this region? This action cannot be undone."
-                itemName={selectedRegion?.name}
+                itemName={selectedRegion ? selectedRegion.name : undefined}
                 onConfirm={handleDeleteConfirm}
                 isLoading={isDeleting}
             />
         </>
     );
 }
+

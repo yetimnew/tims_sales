@@ -1,24 +1,33 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
+import { TableCell, TableRow } from '@/components/ui/table';
 import ListPageLayout from '@/components/layouts/list-page-layout';
+import { ListingStatsHeader } from '@/components/listing/stats-header';
+import { ListingFilterBar } from '@/components/listing/filter-bar';
+import { ListingTableShell } from '@/components/listing/data-table-shell';
+import { ListingMobileItemList } from '@/components/listing/mobile-item-list';
+import { ListingLoadingPlaceholder } from '@/components/listing/loading-placeholder';
+import { ListingPaginationFooter } from '@/components/listing/pagination-footer';
+import { ListingRowActionsMenu } from '@/components/listing/row-actions-menu';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { usePermissions } from '@/hooks/use-permissions';
+import { useListingLoading } from '@/hooks/use-listing-loading';
+import { toast } from '@/hooks/use-toast';
 import { Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
-import { Plus, Eye, Edit, Trash2, Search, ArrowUpDown, Truck, CheckCircle, Package, Settings } from 'lucide-react';
-import { InertiaPagination } from '@/components/ui/pagination';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+    Plus,
+    Eye,
+    Edit,
+    Search,
+    Trash2,
+    Truck,
+    CheckCircle,
+    Package,
+    Settings,
+    ChevronRight,
+} from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import * as React from 'react';
-import { useToast } from '@/hooks/use-toast';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -43,8 +52,8 @@ interface VehicleTypesIndexProps {
         last_page: number;
         per_page: number;
         total: number;
-        from: number;
-        to: number;
+        from: number | null;
+        to: number | null;
         links: Array<{
             url: string | null;
             label: string;
@@ -67,16 +76,25 @@ interface VehicleTypesIndexProps {
     perPageOptions: number[];
 }
 
-const columns: Array<{ key: keyof VehicleType | 'actions'; label: string; sortable?: boolean; sortKey?: string }> = [
-    { key: 'name', label: 'Vehicle Type', sortable: true },
-    { key: 'description', label: 'Description' },
-    { key: 'trucks_count', label: 'Total Trucks', sortable: true },
-    { key: 'active_trucks_count', label: 'Active Trucks', sortable: true },
-    { key: 'created_at', label: 'Created', sortable: true },
-    { key: 'actions', label: 'Actions' },
+const SKELETON_FLAG_KEY = 'vehicle-types.index.shouldShowSkeleton';
+
+const COLUMN_DEFINITIONS: Array<{ id: keyof VehicleType | 'description'; label: string; sortKey?: string }> = [
+    { id: 'name', label: 'Vehicle Type', sortKey: 'name' },
+    { id: 'description', label: 'Description' },
+    { id: 'trucks_count', label: 'Total Trucks', sortKey: 'trucks_count' },
+    { id: 'active_trucks_count', label: 'Active Trucks', sortKey: 'active_trucks_count' },
+    { id: 'created_at', label: 'Created', sortKey: 'created_at' },
 ];
 
-const formatNumber = (value: number | null | undefined) => {
+type NavigateOverrides = {
+    search?: string;
+    sort?: string;
+    direction?: 'asc' | 'desc';
+    page?: number;
+    per_page?: number;
+};
+
+const formatNumber = (value: number | null | undefined): string => {
     if (typeof value !== 'number' || Number.isNaN(value)) {
         return '0';
     }
@@ -84,16 +102,32 @@ const formatNumber = (value: number | null | undefined) => {
     return value.toLocaleString();
 };
 
+const formatDate = (value?: string | null): string => {
+    if (!value) {
+        return '—';
+    }
+
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+        return '—';
+    }
+
+    return parsed.toLocaleDateString();
+};
+
 export default function VehicleTypesIndex({ vehicleTypes, metrics, filters, perPageOptions }: VehicleTypesIndexProps) {
     const { hasPermission } = usePermissions();
-    const { toast } = useToast();
+    const canEditVehicleType = hasPermission('vehicletypes.edit');
+    const canDeleteVehicleType = hasPermission('vehicletypes.destroy');
+    const canCreateVehicleType = hasPermission('vehicletypes.create');
+
     const [searchTerm, setSearchTerm] = React.useState(filters?.search ?? '');
     const [sortColumn, setSortColumn] = React.useState<string>(filters?.sort ?? 'created_at');
     const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>(filters?.direction ?? 'desc');
-    const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
-    const [selectedVehicleType, setSelectedVehicleType] = React.useState<VehicleType | null>(null);
-    const [isDeleting, setIsDeleting] = React.useState(false);
-    const availablePerPageOptions = React.useMemo(() => (perPageOptions?.length ? perPageOptions : [15, 25, 50, 100]), [perPageOptions]);
+    const availablePerPageOptions = React.useMemo(
+        () => (perPageOptions?.length ? perPageOptions : [15, 25, 50, 100]),
+        [perPageOptions],
+    );
     const resolvedPerPage = React.useMemo(() => {
         const candidate = filters?.per_page;
         if (typeof candidate === 'number' && availablePerPageOptions.includes(candidate)) {
@@ -104,45 +138,67 @@ export default function VehicleTypesIndex({ vehicleTypes, metrics, filters, perP
     }, [filters?.per_page, availablePerPageOptions]);
     const [perPage, setPerPage] = React.useState<string>(() => String(resolvedPerPage));
 
+    const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+    const [selectedVehicleType, setSelectedVehicleType] = React.useState<VehicleType | null>(null);
+    const [isDeleting, setIsDeleting] = React.useState(false);
+
+    const isDataReady = Array.isArray(vehicleTypes?.data);
+    const { isLoading } = useListingLoading({
+        storageKey: SKELETON_FLAG_KEY,
+        isDataReady,
+    });
+
     React.useEffect(() => {
         setPerPage(String(resolvedPerPage));
     }, [resolvedPerPage]);
 
     const vehicleTypeData = vehicleTypes?.data ?? [];
-    const totalVehicleTypes = metrics?.total ?? vehicleTypes?.total ?? 0;
+    const totalVehicleTypes = metrics?.total ?? vehicleTypes?.total ?? vehicleTypeData.length ?? 0;
     const currentPage = vehicleTypes?.current_page ?? 1;
-    const lastPage = vehicleTypes?.last_page ?? 1;
     const perPageCountRaw = vehicleTypes?.per_page ?? Number(perPage);
-    const perPageCountNumber = Number(perPageCountRaw);
-    const perPageCount = Number.isFinite(perPageCountNumber) && perPageCountNumber > 0
-        ? perPageCountNumber
-        : vehicleTypeData.length || 1;
+    const perPageCount = Number.isFinite(perPageCountRaw) && perPageCountRaw > 0 ? Number(perPageCountRaw) : vehicleTypeData.length || 1;
     const rowOffset = (currentPage - 1) * perPageCount;
 
-    const handleNavigate = React.useCallback((overrides: Partial<{ search?: string; sort?: string; direction?: 'asc' | 'desc'; page?: number; per_page?: number }>) => {
-        const perPageValue = overrides.per_page !== undefined ? overrides.per_page : Number(perPage);
-        const params: Record<string, string | number | undefined> = {
-            search: overrides.search !== undefined ? overrides.search : (searchTerm.trim() ? searchTerm.trim() : undefined),
-            sort: overrides.sort ?? sortColumn,
-            direction: overrides.direction ?? sortDirection,
-            page: overrides.page,
-            per_page: perPageValue,
-        };
+    const handleNavigate = React.useCallback(
+        (overrides: NavigateOverrides = {}) => {
+            const hasOverride = (key: keyof NavigateOverrides) => Object.prototype.hasOwnProperty.call(overrides, key);
 
-        Object.keys(params).forEach((key) => {
-            const value = params[key];
-            if (
-                value === undefined ||
-                value === null ||
-                value === '' ||
-                (key === 'per_page' && (typeof value !== 'number' || !Number.isFinite(value) || value <= 0))
-            ) {
-                delete params[key];
+            const nextSearch = hasOverride('search')
+                ? overrides.search
+                : searchTerm.trim()
+                    ? searchTerm.trim()
+                    : undefined;
+
+            const nextSort = hasOverride('sort') ? overrides.sort ?? sortColumn : sortColumn;
+            const nextDirection = hasOverride('direction') ? overrides.direction ?? sortDirection : sortDirection;
+            const nextPerPage = hasOverride('per_page') ? overrides.per_page : Number(perPage);
+            const nextPage = hasOverride('page') ? overrides.page : undefined;
+
+            const params: Record<string, string | number | undefined> = {
+                search: nextSearch && nextSearch !== '' ? nextSearch : undefined,
+                sort: nextSort,
+                direction: nextDirection,
+                page: nextPage,
+                per_page:
+                    typeof nextPerPage === 'number' && Number.isFinite(nextPerPage) && nextPerPage > 0
+                        ? nextPerPage
+                        : undefined,
+            };
+
+            Object.keys(params).forEach((key) => {
+                if (params[key] === undefined) {
+                    delete params[key];
+                }
+            });
+
+            if (typeof window !== 'undefined') {
+                window.sessionStorage.setItem(SKELETON_FLAG_KEY, 'true');
             }
-        });
 
-        router.get('/vehicletypes', params, { preserveState: true, replace: false });
-    }, [searchTerm, sortColumn, sortDirection, perPage]);
+            router.get('/vehicletypes', params, { preserveState: true, replace: false });
+        },
+        [perPage, searchTerm, sortColumn, sortDirection],
+    );
 
     const handleSearchChange = (value: string) => {
         setSearchTerm(value);
@@ -155,12 +211,15 @@ export default function VehicleTypesIndex({ vehicleTypes, metrics, filters, perP
         handleNavigate({ per_page: Number.isNaN(numericValue) ? undefined : numericValue, page: 1 });
     };
 
-    const handleSort = (column: string) => {
-        const newDirection: 'asc' | 'desc' = sortColumn === column && sortDirection === 'asc' ? 'desc' : 'asc';
-        setSortColumn(column);
-        setSortDirection(newDirection);
-        handleNavigate({ sort: column, direction: newDirection });
-    };
+    const handleSort = React.useCallback(
+        (column: string) => {
+            const newDirection: 'asc' | 'desc' = sortColumn === column && sortDirection === 'asc' ? 'desc' : 'asc';
+            setSortColumn(column);
+            setSortDirection(newDirection);
+            handleNavigate({ sort: column, direction: newDirection });
+        },
+        [handleNavigate, sortColumn, sortDirection],
+    );
 
     const handleDeleteClick = (vehicleType: VehicleType) => {
         setSelectedVehicleType(vehicleType);
@@ -173,6 +232,7 @@ export default function VehicleTypesIndex({ vehicleTypes, metrics, filters, perP
         }
 
         setIsDeleting(true);
+
         router.delete(`/vehicletypes/${selectedVehicleType.id}`, {
             preserveScroll: true,
             onSuccess: () => {
@@ -182,26 +242,37 @@ export default function VehicleTypesIndex({ vehicleTypes, metrics, filters, perP
                 toast({
                     title: 'Vehicle type removed',
                     description: 'The vehicle type was deleted successfully.',
-                    variant: 'success',
                 });
             },
             onError: (errors) => {
                 setIsDeleting(false);
-                const errorMessages = errors && typeof errors === 'object'
-                    ? Object.values(errors).flat().join('\n')
-                    : 'Failed to delete vehicle type.';
-                toast({
-                    title: 'Delete failed',
-                    description: errorMessages,
-                    variant: 'destructive',
-                });
+
+                const fallback = 'Failed to delete vehicle type. Please try again.';
+                if (errors && typeof errors === 'object') {
+                    const errorMessages = Object.values(errors)
+                        .flatMap((value) => (Array.isArray(value) ? value : [value]))
+                        .filter(Boolean)
+                        .join('\n');
+
+                    toast({
+                        title: 'Delete failed',
+                        description: errorMessages || fallback,
+                        variant: 'destructive',
+                    });
+                } else {
+                    toast({
+                        title: 'Delete failed',
+                        description: fallback,
+                        variant: 'destructive',
+                    });
+                }
             },
         });
     };
 
     const headerActions = (
         <>
-            {hasPermission('vehicletypes.create') && (
+            {canCreateVehicleType && (
                 <Button asChild>
                     <Link href="/vehicletypes/create">
                         <Plus className="mr-2 h-4 w-4" />
@@ -212,183 +283,255 @@ export default function VehicleTypesIndex({ vehicleTypes, metrics, filters, perP
         </>
     );
 
-    const statsCards = [
+    const totalVehicleTypesCount = metrics?.total ?? 0;
+    const typesWithTrucks = metrics?.with_trucks ?? 0;
+    const emptyTypes = metrics?.without_trucks ?? 0;
+    const totalTrucks = metrics?.total_trucks ?? 0;
+    const activeTrucks = metrics?.active_trucks ?? 0;
+
+    const statsDefinitions = [
         {
-            title: 'Vehicle Types',
-            value: formatNumber(metrics?.total ?? 0),
-            description: `${formatNumber(metrics?.with_trucks ?? 0)} types with trucks`,
+            id: 'vehicle-types',
+            label: 'Vehicle Types',
             icon: <Settings className="h-3.5 w-3.5 text-blue-600" />,
-            valueClassName: 'text-blue-600',
+            className: 'min-w-0',
+            value: isLoading ? <Skeleton className="h-3.5 w-20" aria-hidden="true" /> : formatNumber(totalVehicleTypesCount),
+            description: isLoading ? (
+                <Skeleton className="h-3 w-28" aria-hidden="true" />
+            ) : (
+                `${formatNumber(typesWithTrucks)} types with trucks`
+            ),
+            valueClassName: isLoading ? undefined : 'text-blue-600',
         },
         {
-            title: 'Total Trucks',
-            value: formatNumber(metrics?.total_trucks ?? 0),
-            description: 'Across filtered types',
+            id: 'total-trucks',
+            label: 'Total Trucks',
             icon: <Truck className="h-3.5 w-3.5 text-emerald-600" />,
-            valueClassName: 'text-emerald-600',
+            className: 'min-w-0',
+            value: isLoading ? <Skeleton className="h-3.5 w-20" aria-hidden="true" /> : formatNumber(totalTrucks),
+            description: isLoading ? (
+                <Skeleton className="h-3 w-24" aria-hidden="true" />
+            ) : (
+                'Across filtered types'
+            ),
+            valueClassName: isLoading ? undefined : 'text-emerald-600',
         },
         {
-            title: 'Active Trucks',
-            value: formatNumber(metrics?.active_trucks ?? 0),
-            description: 'Currently active',
+            id: 'active-trucks',
+            label: 'Active Trucks',
             icon: <CheckCircle className="h-3.5 w-3.5 text-purple-600" />,
-            valueClassName: 'text-purple-600',
+            className: 'min-w-0',
+            value: isLoading ? <Skeleton className="h-3.5 w-20" aria-hidden="true" /> : formatNumber(activeTrucks),
+            description: isLoading ? (
+                <Skeleton className="h-3 w-24" aria-hidden="true" />
+            ) : (
+                'Currently active'
+            ),
+            valueClassName: isLoading ? undefined : 'text-purple-600',
         },
         {
-            title: 'Empty Types',
-            value: formatNumber(metrics?.without_trucks ?? 0),
-            description: 'No trucks assigned',
+            id: 'empty-types',
+            label: 'Empty Types',
             icon: <Package className="h-3.5 w-3.5 text-amber-600" />,
-            valueClassName: 'text-amber-600',
+            className: 'min-w-0',
+            value: isLoading ? <Skeleton className="h-3.5 w-20" aria-hidden="true" /> : formatNumber(emptyTypes),
+            description: isLoading ? (
+                <Skeleton className="h-3 w-24" aria-hidden="true" />
+            ) : (
+                'No trucks assigned'
+            ),
+            valueClassName: isLoading ? undefined : 'text-amber-600',
         },
     ];
 
-    const statsSection = (
-        <div className="hidden gap-2 md:grid md:grid-cols-2 xl:grid-cols-4">
-            {statsCards.map((card) => (
-                <Card key={card.title} className="gap-2 border border-slate-200 py-2 shadow-sm sm:py-3">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 p-1.5 sm:p-2">
-                        <CardTitle className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                            {card.title}
-                        </CardTitle>
-                        {card.icon}
-                    </CardHeader>
-                    <CardContent className="px-2 pb-2 pt-0 sm:px-3 sm:pb-2">
-                        <div className={`text-sm font-semibold sm:text-base ${card.valueClassName}`}>{card.value}</div>
-                        <p className="text-[11px] text-muted-foreground">{card.description}</p>
-                    </CardContent>
-                </Card>
-            ))}
-        </div>
+    const statsSection = <ListingStatsHeader stats={statsDefinitions} orientation="row" />;
+
+    const perPageSelectOptions = React.useMemo(
+        () =>
+            availablePerPageOptions.map((option) => ({
+                value: String(option),
+                label: `${option} / page`,
+            })),
+        [availablePerPageOptions],
+    );
+
+    const tableColumns = React.useMemo(
+        () => [
+            { id: 'index', label: '#', align: 'center' as const },
+            ...COLUMN_DEFINITIONS.map((column) => ({
+                id: column.id === 'description' ? 'description' : String(column.id),
+                label: column.label,
+                sortable: Boolean(column.sortKey),
+                sortKey: column.sortKey ? String(column.sortKey) : undefined,
+            })),
+            { id: 'actions', label: 'Actions', align: 'center' as const },
+        ],
+        [],
+    );
+
+    const tableRows = isLoading
+        ? Array.from({ length: 6 }).map((_, rowIndex) => (
+              <TableRow key={`vehicle-type-skeleton-${rowIndex}`} aria-hidden="true">
+                  {tableColumns.map((column) => (
+                      <TableCell
+                          key={`${column.id}-${rowIndex}`}
+                          className={column.align === 'center' ? 'text-center' : undefined}
+                      >
+                          <Skeleton className="mx-auto h-4 w-24 max-w-full" />
+                      </TableCell>
+                  ))}
+              </TableRow>
+          ))
+        : vehicleTypeData.length > 0
+            ? vehicleTypeData.map((vehicleType, index) => (
+                  <TableRow key={vehicleType.id} className="hover:bg-muted/50">
+                      <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
+                      <TableCell className="font-medium">{vehicleType.name}</TableCell>
+                      <TableCell className="text-muted-foreground">{vehicleType.description || '—'}</TableCell>
+                      <TableCell className="font-medium">{formatNumber(vehicleType.trucks_count)}</TableCell>
+                      <TableCell className="text-muted-foreground">{formatNumber(vehicleType.active_trucks_count)}</TableCell>
+                      <TableCell className="text-muted-foreground">{formatDate(vehicleType.created_at)}</TableCell>
+                      <TableCell className="text-center">
+                          <ListingRowActionsMenu
+                              actions={[
+                                  {
+                                      label: 'View',
+                                      icon: <Eye className="h-4 w-4" />,
+                                      href: `/vehicletypes/${vehicleType.id}`,
+                                  },
+                                  canEditVehicleType && {
+                                      label: 'Edit',
+                                      icon: <Edit className="h-4 w-4" />,
+                                      href: `/vehicletypes/${vehicleType.id}/edit`,
+                                  },
+                                  canDeleteVehicleType && {
+                                      label: 'Delete',
+                                      icon: <Trash2 className="h-4 w-4" />,
+                                      danger: true,
+                                      disabled: isDeleting && selectedVehicleType?.id === vehicleType.id,
+                                      onSelect: () => handleDeleteClick(vehicleType),
+                                  },
+                              ]}
+                          />
+                      </TableCell>
+                  </TableRow>
+              ))
+            : (
+                <TableRow>
+                    <TableCell colSpan={tableColumns.length} className="py-8 text-center text-muted-foreground">
+                        No vehicle types found.
+                        {canCreateVehicleType && (
+                            <Link href="/vehicletypes/create" className="ml-1 text-primary underline">
+                                Create one
+                            </Link>
+                        )}
+                    </TableCell>
+                </TableRow>
+            );
+
+    const mobileItems = React.useMemo(
+        () =>
+            vehicleTypeData.map((vehicleType, index) => ({
+                vehicleType,
+                position: rowOffset + index + 1,
+            })),
+        [rowOffset, vehicleTypeData],
+    );
+
+    const mobileContent = isLoading ? (
+        <ListingLoadingPlaceholder showStats={false} filterItemCount={2} rowCount={4} />
+    ) : (
+        <ListingMobileItemList
+            items={mobileItems}
+            getKey={(item) => item.vehicleType.id}
+            renderTitle={(item) => (
+                <div className="flex items-center gap-2">
+                    <span className="text-xs uppercase tracking-wide text-muted-foreground">#{item.position}</span>
+                    <span className="text-base">{item.vehicleType.name}</span>
+                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+                </div>
+            )}
+            renderSubtitle={(item) => item.vehicleType.description || 'Description pending'}
+            renderContent={(item) => (
+                <div className="space-y-3 text-sm text-muted-foreground">
+                    <div className="flex items-center justify-between">
+                        <span className="font-medium text-slate-600 dark:text-slate-300">Total Trucks</span>
+                        <span className="text-right font-semibold text-slate-900 dark:text-slate-100">
+                            {formatNumber(item.vehicleType.trucks_count)}
+                        </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <span className="font-medium text-slate-600 dark:text-slate-300">Active Trucks</span>
+                        <span className="text-right font-semibold text-slate-900 dark:text-slate-100">
+                            {formatNumber(item.vehicleType.active_trucks_count)}
+                        </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <span className="font-medium text-slate-600 dark:text-slate-300">Created</span>
+                        <span className="text-right font-semibold text-slate-900 dark:text-slate-100">
+                            {formatDate(item.vehicleType.created_at)}
+                        </span>
+                    </div>
+                </div>
+            )}
+            renderFooter={(item) => (
+                <div className="flex w-full flex-wrap items-center justify-end gap-2">
+                    <Button asChild size="sm" variant="outline" className="flex-1 sm:flex-auto">
+                        <Link href={`/vehicletypes/${item.vehicleType.id}`}>
+                            <Eye className="mr-2 h-4 w-4" />
+                            View
+                        </Link>
+                    </Button>
+                    {canEditVehicleType && (
+                        <Button asChild size="sm" variant="secondary" className="flex-1 sm:flex-none">
+                            <Link href={`/vehicletypes/${item.vehicleType.id}/edit`}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                Edit
+                            </Link>
+                        </Button>
+                    )}
+                    {canDeleteVehicleType && (
+                        <Button
+                            size="sm"
+                            variant="destructive"
+                            className="flex-1 sm:flex-none"
+                            onClick={() => handleDeleteClick(item.vehicleType)}
+                            disabled={isDeleting && selectedVehicleType?.id === item.vehicleType.id}
+                        >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                        </Button>
+                    )}
+                </div>
+            )}
+            emptyState={(
+                <div className="py-8 text-center text-muted-foreground">
+                    No vehicle types found.
+                    {canCreateVehicleType && (
+                        <Link href="/vehicletypes/create" className="ml-1 text-primary underline">
+                            Create one
+                        </Link>
+                    )}
+                </div>
+            )}
+        />
     );
 
     const tableHeaderExtras = (
-        <div className="flex flex-wrap items-center gap-2">
-            <div className="relative w-[260px] max-w-full">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                    placeholder="Search vehicle types..."
-                    value={searchTerm}
-                    onChange={(event) => handleSearchChange(event.target.value)}
-                    className="pl-10"
-                />
-            </div>
-            <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                <span className="hidden sm:inline">Rows</span>
-                <Select value={perPage} onValueChange={handlePerPageChange}>
-                    <SelectTrigger className="w-[110px]">
-                        <SelectValue placeholder="Per page" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {availablePerPageOptions.map((option) => (
-                            <SelectItem key={option} value={String(option)}>
-                                {option} / page
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-            </div>
-        </div>
-    );
-
-    const renderHeaderCell = (column: { key: keyof VehicleType | 'actions'; label: string; sortable?: boolean; sortKey?: string }) => {
-        const sortable = column.sortable ?? false;
-        const columnKey = column.sortKey ?? column.key;
-        const isActive = sortColumn === columnKey;
-
-        return (
-            <TableHead
-                key={column.key}
-                className={`sticky top-0 z-20 bg-background ${sortable ? 'cursor-pointer hover:bg-muted/70' : 'cursor-default'} select-none transition-colors`}
-                onClick={sortable ? () => handleSort(String(columnKey)) : undefined}
-            >
-                <div className="flex items-center gap-2">
-                    {column.label}
-                    {sortable && (
-                        <ArrowUpDown
-                            size={14}
-                            className={isActive ? 'text-primary' : 'text-muted-foreground opacity-50'}
-                        />
-                    )}
-                </div>
-            </TableHead>
-        );
-    };
-
-    const tableContent = (
-        <Table>
-            <TableHeader className="[&_tr]:sticky [&_tr]:top-0 [&_tr]:z-20 [&_tr]:bg-background [&_tr]:shadow-sm">
-                <TableRow className="border-b bg-background">
-                    <TableHead className="sticky top-0 z-20 w-12 bg-background text-center">#</TableHead>
-                    {columns.map((column) =>
-                        column.key === 'actions' ? (
-                            <TableHead key={column.key} className="sticky top-0 z-20 bg-background text-center">
-                                {column.label}
-                            </TableHead>
-                        ) : (renderHeaderCell(column))
-                    )}
-                </TableRow>
-            </TableHeader>
-            <TableBody>
-                {vehicleTypeData.length > 0 ? (
-                    vehicleTypeData.map((vehicleType, index) => (
-                        <TableRow key={vehicleType.id} className="hover:bg-muted/50">
-                            <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
-                            <TableCell className="font-medium">{vehicleType.name}</TableCell>
-                            <TableCell className="text-muted-foreground">
-                                {vehicleType.description || '—'}
-                            </TableCell>
-                            <TableCell className="font-medium">
-                                {formatNumber(vehicleType.trucks_count)}
-                            </TableCell>
-                            <TableCell className="text-muted-foreground">
-                                {formatNumber(vehicleType.active_trucks_count)}
-                            </TableCell>
-                            <TableCell className="text-muted-foreground">
-                                {vehicleType.created_at ? new Date(vehicleType.created_at).toLocaleDateString() : '—'}
-                            </TableCell>
-                            <TableCell className="text-center">
-                                <div className="flex justify-center gap-2">
-                                    <Button asChild size="sm" variant="ghost">
-                                        <Link href={`/vehicletypes/${vehicleType.id}`}>
-                                            <Eye className="h-4 w-4" />
-                                        </Link>
-                                    </Button>
-                                    {hasPermission('vehicletypes.edit') && (
-                                        <Button asChild size="sm" variant="ghost">
-                                            <Link href={`/vehicletypes/${vehicleType.id}/edit`}>
-                                                <Edit className="h-4 w-4" />
-                                            </Link>
-                                        </Button>
-                                    )}
-                                    {hasPermission('vehicletypes.destroy') && (
-                                        <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            onClick={() => handleDeleteClick(vehicleType)}
-                                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                    )}
-                                </div>
-                            </TableCell>
-                        </TableRow>
-                    ))
-                ) : (
-                    <TableRow>
-                        <TableCell colSpan={columns.length + 1} className="py-8 text-center text-muted-foreground">
-                            No vehicle types found.
-                            {hasPermission('vehicletypes.create') && (
-                                <Link href="/vehicletypes/create" className="ml-1 text-primary underline">
-                                    Create one
-                                </Link>
-                            )}
-                        </TableCell>
-                    </TableRow>
-                )}
-            </TableBody>
-        </Table>
+        <ListingFilterBar
+            search={{
+                value: searchTerm,
+                placeholder: 'Search vehicle types...',
+                onChange: handleSearchChange,
+                icon: <Search className="h-4 w-4" />,
+            }}
+            perPage={{
+                value: perPage,
+                label: 'Rows',
+                onChange: handlePerPageChange,
+                options: perPageSelectOptions,
+            }}
+        />
     );
 
     return (
@@ -404,32 +547,44 @@ export default function VehicleTypesIndex({ vehicleTypes, metrics, filters, perP
                 tableDescription="Manage your fleet of vehicle types"
                 tableHeaderExtras={tableHeaderExtras}
                 pagination={
-                    <InertiaPagination
-                        className="mt-4"
-                        links={vehicleTypes.links}
-                        from={vehicleTypes.from}
-                        to={vehicleTypes.to}
-                        total={vehicleTypes.total}
-                        currentPage={currentPage}
-                        lastPage={lastPage}
-                    />
+                    !isLoading && vehicleTypes?.links ? (
+                        <ListingPaginationFooter
+                            className="mt-4"
+                            links={vehicleTypes.links}
+                            from={vehicleTypes.from ?? undefined}
+                            to={vehicleTypes.to ?? undefined}
+                            total={vehicleTypes.total ?? undefined}
+                        />
+                    ) : null
                 }
             >
-                {tableContent}
+                <div className="hidden md:block">
+                    <ListingTableShell
+                        columns={tableColumns}
+                        sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSort }}
+                    >
+                        {tableRows}
+                    </ListingTableShell>
+                </div>
+
+                <div className="space-y-3 md:hidden">{mobileContent}</div>
             </ListPageLayout>
 
             <DeleteConfirmationDialog
                 open={deleteDialogOpen}
-                onOpenChange={setDeleteDialogOpen}
+                onOpenChange={(open) => {
+                    setDeleteDialogOpen(open);
+                    if (!open) {
+                        setSelectedVehicleType(null);
+                    }
+                }}
                 title="Delete Vehicle Type"
                 description="Are you sure you want to delete this vehicle type? This action cannot be undone."
-                itemName={selectedVehicleType?.name || ''}
+                itemName={selectedVehicleType?.name || undefined}
                 onConfirm={handleDeleteConfirm}
                 isLoading={isDeleting}
             />
         </>
     );
 }
-
-
 

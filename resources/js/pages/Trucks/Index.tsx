@@ -1,18 +1,17 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
+import { TableCell, TableRow } from '@/components/ui/table';
 import ListPageLayout from '@/components/layouts/list-page-layout';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
+import { ListingStatsHeader } from '@/components/listing/stats-header';
+import { ListingFilterBar } from '@/components/listing/filter-bar';
+import { ListingTableShell } from '@/components/listing/data-table-shell';
+import { ListingMobileItemList } from '@/components/listing/mobile-item-list';
+import { ListingLoadingPlaceholder } from '@/components/listing/loading-placeholder';
+import { ListingPaginationFooter } from '@/components/listing/pagination-footer';
+import { ListingRowActionsMenu } from '@/components/listing/row-actions-menu';
 import { usePermissions } from '@/hooks/use-permissions';
+import { useListingLoading } from '@/hooks/use-listing-loading';
 import { Link, router } from '@inertiajs/react';
 import { toast } from '@/hooks/use-toast';
 import { type BreadcrumbItem } from '@/types';
@@ -22,7 +21,6 @@ import {
     Edit,
     Trash2,
     Search,
-    ArrowUpDown,
     Truck,
     CheckCircle,
     Wrench,
@@ -32,9 +30,7 @@ import {
     Gauge,
     TrendingUp,
     Users,
-    Loader2,
 } from 'lucide-react';
-import { InertiaPagination } from '@/components/ui/pagination';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import * as React from 'react';
@@ -195,18 +191,6 @@ export default function TrucksIndex({
 }: TrucksIndexProps) {
     const { hasPermission } = usePermissions();
 
-    const getTimestamp = React.useCallback(() => {
-        if (typeof window === 'undefined') {
-            return Date.now();
-        }
-
-        if ('performance' in window && typeof window.performance.now === 'function') {
-            return window.performance.now();
-        }
-
-        return Date.now();
-    }, []);
-
     const [searchTerm, setSearchTerm] = React.useState(filters?.search ?? '');
     const [selectedStatus, setSelectedStatus] = React.useState(filters?.status ?? 'all');
     const [selectedVehicleType, setSelectedVehicleType] = React.useState(
@@ -220,65 +204,11 @@ export default function TrucksIndex({
     const [isDeleting, setIsDeleting] = React.useState(false);
     const [deleteError, setDeleteError] = React.useState<string | null>(null);
 
-    const initialShouldShowSkeleton = React.useMemo(() => {
-        if (typeof window === 'undefined') {
-            return true;
-        }
-
-        const stored = window.sessionStorage.getItem(SKELETON_FLAG_KEY);
-        return stored === 'true' || stored === null;
-    }, []);
-
-    const [isLoading, setIsLoading] = React.useState<boolean>(initialShouldShowSkeleton);
-    const loadingStartedAtRef = React.useRef<number | null>(initialShouldShowSkeleton ? getTimestamp() : null);
-    const loadingTimeoutRef = React.useRef<number | null>(null);
-
-    const clearLoadingTimeout = React.useCallback(() => {
-        if (loadingTimeoutRef.current === null) {
-            return;
-        }
-
-        if (typeof window !== 'undefined') {
-            window.clearTimeout(loadingTimeoutRef.current);
-        }
-
-        loadingTimeoutRef.current = null;
-    }, []);
-
-    const beginLoading = React.useCallback(() => {
-        if (loadingStartedAtRef.current === null) {
-            loadingStartedAtRef.current = getTimestamp();
-        }
-
-        clearLoadingTimeout();
-        setIsLoading((current) => (current ? current : true));
-    }, [clearLoadingTimeout, getTimestamp]);
-
-    const finishLoading = React.useCallback(() => {
-        const minimumDuration = 350;
-        const startedAt = loadingStartedAtRef.current;
-        const now = getTimestamp();
-        const elapsed = startedAt === null ? minimumDuration : now - startedAt;
-        const remaining = Math.max(minimumDuration - elapsed, 0);
-
-        if (remaining <= 0 || typeof window === 'undefined') {
-            clearLoadingTimeout();
-            loadingStartedAtRef.current = null;
-            setIsLoading(false);
-            return;
-        }
-
-        clearLoadingTimeout();
-        loadingTimeoutRef.current = window.setTimeout(() => {
-            loadingStartedAtRef.current = null;
-            setIsLoading(false);
-            loadingTimeoutRef.current = null;
-        }, remaining);
-    }, [clearLoadingTimeout, getTimestamp]);
-
-    React.useEffect(() => () => {
-        clearLoadingTimeout();
-    }, [clearLoadingTimeout]);
+    const isDataReady = Array.isArray(trucks?.data);
+    const { isLoading } = useListingLoading({
+        storageKey: SKELETON_FLAG_KEY,
+        isDataReady,
+    });
 
     const availablePerPageOptions = React.useMemo(
         () => (perPageOptions?.length ? perPageOptions : [10, 15, 25, 50]),
@@ -295,55 +225,6 @@ export default function TrucksIndex({
 
     const [perPage, setPerPage] = React.useState<string>(() => String(resolvedPerPage));
 
-    // Listen for Inertia visits to toggle loading state.
-    React.useEffect(() => {
-        const isPrefetchVisit = (event: unknown): boolean => {
-            if (!event || typeof event !== 'object' || event === null) {
-                return false;
-            }
-            const detail = (event as { detail?: { visit?: { prefetch?: boolean } } }).detail;
-            return Boolean(detail?.visit?.prefetch);
-        };
-
-        const handleStart = (event: unknown) => {
-            if (isPrefetchVisit(event)) return;
-
-            if (typeof window !== 'undefined') {
-                window.sessionStorage.setItem(SKELETON_FLAG_KEY, 'true');
-            }
-            beginLoading();
-        };
-
-        const handleFinish = (event: unknown) => {
-            if (isPrefetchVisit(event)) return;
-            finishLoading();
-        };
-
-        const unsubscribeStart = router.on('start', handleStart);
-        const unsubscribeFinish = router.on('finish', handleFinish);
-        const unsubscribeSuccess = router.on('success', handleFinish);
-        const unsubscribeError = router.on('error', handleFinish);
-
-        return () => {
-            unsubscribeStart();
-            unsubscribeFinish();
-            unsubscribeSuccess();
-            unsubscribeError();
-        };
-    }, [beginLoading, finishLoading]);
-
-    React.useEffect(() => {
-        if (!Array.isArray(trucks?.data)) {
-            return;
-        }
-
-        finishLoading();
-
-        if (typeof window !== 'undefined') {
-            window.sessionStorage.removeItem(SKELETON_FLAG_KEY);
-        }
-    }, [finishLoading, trucks?.data]);
-
     // Keep perPage synced with server-provided filter changes
     React.useEffect(() => {
         setPerPage(String(resolvedPerPage));
@@ -351,7 +232,6 @@ export default function TrucksIndex({
 
     const truckCount = metrics?.total ?? trucks?.meta?.total ?? trucks?.data?.length ?? 0;
     const currentPage = trucks?.meta?.current_page ?? 1;
-    const lastPage = trucks?.meta?.last_page ?? 1;
 
     const perPageCountRaw = trucks?.meta?.per_page ?? Number(perPage);
     const perPageCount =
@@ -569,404 +449,365 @@ export default function TrucksIndex({
         maximumFractionDigits: 2,
     });
 
-    const statsCards = [
+    const statsDefinitions = [
         {
-            title: 'Total Trucks',
-            value: truckCount,
-            description: 'All vehicles',
+            id: 'total-trucks',
+            label: 'Total Trucks',
             icon: <Truck className="h-3.5 w-3.5 text-blue-600" />,
-            valueClassName: 'text-blue-600',
+            className: 'min-w-[220px] flex-shrink-0',
+            value: isLoading ? <Skeleton className="h-3.5 w-20" aria-hidden="true" /> : truckCount.toLocaleString(),
+            description: isLoading ? (
+                <Skeleton className="h-3 w-24" aria-hidden="true" />
+            ) : (
+                'All vehicles'
+            ),
+            valueClassName: isLoading ? undefined : 'text-blue-600',
         },
         {
-            title: 'Active',
-            value: activeCount,
-            description: 'Operational',
+            id: 'active-trucks',
+            label: 'Active',
             icon: <CheckCircle className="h-3.5 w-3.5 text-green-600" />,
-            valueClassName: 'text-green-600',
+            className: 'min-w-[220px] flex-shrink-0',
+            value: isLoading ? <Skeleton className="h-3.5 w-16" aria-hidden="true" /> : activeCount.toLocaleString(),
+            description: isLoading ? (
+                <Skeleton className="h-3 w-28" aria-hidden="true" />
+            ) : (
+                `${maintenanceCount.toLocaleString()} in maintenance`
+            ),
+            valueClassName: isLoading ? undefined : 'text-green-600',
         },
         {
-            title: 'Fleet Value',
-            value: fleetValueDisplay,
-            description: 'Total fleet value',
+            id: 'fleet-value',
+            label: 'Fleet Value',
             icon: <DollarSign className="h-3.5 w-3.5 text-purple-600" />,
-            valueClassName: 'text-purple-600',
+            className: 'min-w-[220px] flex-shrink-0',
+            value: isLoading ? <Skeleton className="h-3.5 w-24" aria-hidden="true" /> : fleetValueDisplay,
+            description: isLoading ? (
+                <Skeleton className="h-3 w-20" aria-hidden="true" />
+            ) : (
+                'Total fleet value'
+            ),
+            valueClassName: isLoading ? undefined : 'text-purple-600',
         },
         {
-            title: `Revenue (${financialWindowDays}d)`,
-            value: revenueDisplay,
-            description: tonKmPerBirrDisplay,
+            id: 'revenue',
+            label: `Revenue (${financialWindowDays}d)`,
             icon: <TrendingUp className="h-3.5 w-3.5 text-emerald-600" />,
-            valueClassName: 'text-emerald-600',
+            className: 'min-w-[220px] flex-shrink-0',
+            value: isLoading ? <Skeleton className="h-3.5 w-24" aria-hidden="true" /> : revenueDisplay,
+            description: isLoading ? (
+                <Skeleton className="h-3 w-28" aria-hidden="true" />
+            ) : (
+                tonKmPerBirrDisplay
+            ),
+            valueClassName: isLoading ? undefined : 'text-emerald-600',
         },
         {
-            title: `Driver Churn (${churnWindowDays}d)`,
-            value: averageTenureDisplay,
-            description: highChurnDescription,
+            id: 'driver-churn',
+            label: `Driver Churn (${churnWindowDays}d)`,
             icon: <Users className="h-3.5 w-3.5 text-rose-600" />,
-            valueClassName: churnValueClass,
+            className: 'min-w-[220px] flex-shrink-0',
+            value: isLoading ? <Skeleton className="h-3.5 w-24" aria-hidden="true" /> : averageTenureDisplay,
+            description: isLoading ? (
+                <Skeleton className="h-3 w-28" aria-hidden="true" />
+            ) : (
+                highChurnDescription
+            ),
+            valueClassName: isLoading ? undefined : churnValueClass,
         },
         {
-            title: `Utilization (${utilization?.window_days ?? 30}d)`,
-            value: utilizationRateDisplay,
-            description: utilizationDescription,
+            id: 'utilization',
+            label: `Utilization (${utilization?.window_days ?? 30}d)`,
             icon: <Gauge className="h-3.5 w-3.5 text-slate-600" />,
-            valueClassName: utilizationValueClass,
+            className: 'min-w-[220px] flex-shrink-0',
+            value: isLoading ? <Skeleton className="h-3.5 w-20" aria-hidden="true" /> : utilizationRateDisplay,
+            description: isLoading ? (
+                <Skeleton className="h-3 w-28" aria-hidden="true" />
+            ) : (
+                utilizationDescription
+            ),
+            valueClassName: isLoading ? undefined : utilizationValueClass,
         },
     ];
 
     const canViewTruckDetails = hasPermission('trucks.show');
 
-    const statsSection = (
-        <div className="flex w-full gap-2 overflow-x-auto pb-1">
-            {statsCards.map((card) => (
-                <Card
-                    key={card.title}
-                    className="min-w-[180px] flex-1 border border-slate-200/70 bg-white/90 shadow-sm dark:border-slate-800/50 dark:bg-slate-900/60"
-                >
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 p-2">
-                        <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                            {card.title}
-                        </CardTitle>
-                        {card.icon}
-                    </CardHeader>
-                    <CardContent className="px-2 pb-2 pt-0">
-                        <div className="min-h-[1.1rem]">
-                            {isLoading ? (
-                                <Skeleton className="h-3.5 w-20" aria-hidden="true" />
-                            ) : (
-                                <div className={`text-sm font-semibold ${card.valueClassName}`}>{card.value}</div>
-                            )}
-                        </div>
-                        <div className="mt-1 min-h-[0.9rem]">
-                            {isLoading ? (
-                                <Skeleton className="h-3 w-28" aria-hidden="true" />
-                            ) : (
-                                <p className="text-[11px] text-muted-foreground">{card.description}</p>
-                            )}
-                        </div>
-                    </CardContent>
-                </Card>
-            ))}
-        </div>
+    const statsSection = <ListingStatsHeader stats={statsDefinitions} orientation="row" />;
+
+    const tableColumns = React.useMemo(
+        () => [
+            { id: 'index', label: '#', align: 'center' as const },
+            ...columns.map(({ key, label }) => ({
+                id: key,
+                label,
+                sortable: true,
+            })),
+            { id: 'actions', label: 'Actions', align: 'center' as const },
+        ],
+        [],
     );
 
-    const tableHeaderExtras = (
-        <div className="flex w-full flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div className="relative w-full md:max-w-sm">
-                <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                    placeholder="Search trucks..."
-                    value={searchTerm}
-                    onChange={(event) => handleSearchChange(event.target.value)}
-                    className="w-full pl-10"
-                />
-            </div>
-            <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap md:w-auto md:flex-nowrap md:items-center md:justify-end md:gap-4">
-                <Select value={selectedStatus} onValueChange={handleStatusChange}>
-                    <SelectTrigger className="w-full min-w-[150px] sm:w-auto">
-                        <SelectValue placeholder="Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">All statuses</SelectItem>
-                        {statusOptions.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                                {option.label}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-                <Select value={selectedVehicleType} onValueChange={handleVehicleTypeChange}>
-                    <SelectTrigger className="w-full min-w-[180px] sm:w-auto">
-                        <SelectValue placeholder="Vehicle type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">All vehicle types</SelectItem>
-                        {vehicleTypes.map((type) => (
-                            <SelectItem key={type.id} value={String(type.id)}>
-                                {type.name}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
+    const renderStatusBadge = (status: string) => {
+        const baseClasses = 'flex items-center gap-1 w-fit';
 
-                <div className="flex w-full items-center justify-between gap-2 text-sm text-muted-foreground sm:w-auto md:w-auto md:justify-start">
-                    <span className="text-xs uppercase tracking-wide text-muted-foreground sm:text-sm">Rows</span>
-                    <Select value={perPage} onValueChange={handlePerPageChange}>
-                        <SelectTrigger className="w-full sm:w-[130px] md:w-[120px]">
-                            <SelectValue placeholder="Per page" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {availablePerPageOptions.map((option) => (
-                                <SelectItem key={option} value={String(option)}>
-                                    {option} / page
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-            </div>
-        </div>
-    );
+        if (status === 'active') {
+            return (
+                <Badge className={`${baseClasses} bg-green-100 text-green-800 border-green-200 hover:bg-green-200`}>
+                    <CheckCircle className="h-3 w-3" />
+                    Active
+                </Badge>
+            );
+        }
 
-    const renderHeaderCell = (column: string, label: string) => (
-        <TableHead
-            key={column}
-            className="sticky top-0 z-20 cursor-pointer select-none bg-background transition-colors hover:bg-muted/70"
-            onClick={() => handleSort(column)}
-        >
-            <div className="flex items-center gap-2">
-                {label}
-                <ArrowUpDown
-                    size={14}
-                    className={sortBy === column ? 'text-primary' : 'text-muted-foreground opacity-50'}
-                />
-            </div>
-        </TableHead>
-    );
+        if (status === 'maintenance') {
+            return (
+                <Badge className={`${baseClasses} bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200`}>
+                    <Wrench className="h-3 w-3" />
+                    Maintenance
+                </Badge>
+            );
+        }
 
-    const tableContent = (
-        <Table className="transition-opacity">
-            <TableHeader className="[&_tr]:sticky [&_tr]:top-0 [&_tr]:z-20 [&_tr]:bg-background [&_tr]:shadow-sm">
-                <TableRow className="border-b bg-background">
-                    <TableHead className="sticky top-0 z-20 w-12 bg-background text-center">#</TableHead>
-                    {columns.map(({ key, label }) => renderHeaderCell(key, label))}
-                    <TableHead className="sticky top-0 z-20 bg-background text-center">Actions</TableHead>
+        return (
+            <Badge className={`${baseClasses} bg-red-100 text-red-800 border-red-200 hover:bg-red-200`}>
+                <XCircle className="h-3 w-3" />
+                {status.charAt(0).toUpperCase() + status.slice(1)}
+            </Badge>
+        );
+    };
+
+    const tableRows = isLoading
+        ? Array.from({ length: 6 }).map((_, rowIndex) => (
+              <TableRow key={`truck-skeleton-${rowIndex}`} aria-hidden="true">
+                  {tableColumns.map((column) => (
+                      <TableCell
+                          key={`${column.id}-${rowIndex}`}
+                          className={column.align === 'center' ? 'text-center' : undefined}
+                      >
+                          <Skeleton className="mx-auto h-4 w-24 max-w-full" />
+                      </TableCell>
+                  ))}
+              </TableRow>
+          ))
+        : trucks?.data && trucks.data.length > 0
+            ? trucks.data.map((truck, index) => (
+                  <TableRow key={truck.id} className="hover:bg-muted/50">
+                      <TableCell className="text-center font-medium">
+                          {rowOffset + index + 1}
+                      </TableCell>
+                      <TableCell className="font-medium">{truck.plate}</TableCell>
+                      <TableCell className="text-muted-foreground">
+                          {truck.vehicleType?.name || 'N/A'}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                          {truck.chasisNumber || '—'}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                          {truck.engineNumber || '—'}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                          {truck.serviceIntervalKM
+                              ? `${truck.serviceIntervalKM.toLocaleString()} km`
+                              : '—'}
+                      </TableCell>
+                      <TableCell className="font-medium">
+                          {formatETBCurrency(truck.purchasePrice)}
+                      </TableCell>
+                      <TableCell className="text-center">{renderStatusBadge(truck.status)}</TableCell>
+                      <TableCell className="text-center">
+                          <ListingRowActionsMenu
+                              actions={[
+                                  canViewTruckDetails && {
+                                      label: 'View',
+                                      icon: <Eye className="h-4 w-4" />,
+                                      href: `/trucks/${truck.id}`,
+                                  },
+                                  hasPermission('trucks.edit') && {
+                                      label: 'Edit',
+                                      icon: <Edit className="h-4 w-4" />,
+                                      href: `/trucks/${truck.id}/edit`,
+                                  },
+                                  hasPermission('trucks.destroy') && {
+                                      label: 'Delete',
+                                      icon: <Trash2 className="h-4 w-4" />,
+                                      danger: true,
+                                      onSelect: () => handleDeleteClick(truck),
+                                  },
+                              ]}
+                          />
+                      </TableCell>
+                  </TableRow>
+              ))
+            : (
+                <TableRow>
+                    <TableCell colSpan={tableColumns.length} className="py-8 text-center text-muted-foreground">
+                        No trucks found.
+                        {hasPermission('trucks.create') && (
+                            <Link href="/trucks/create" className="ml-1 text-primary underline">
+                                Create one
+                            </Link>
+                        )}
+                    </TableCell>
                 </TableRow>
-            </TableHeader>
-            <TableBody>
-                {isLoading ? (
-                    // Show skeleton while loading
-                    Array.from({ length: 6 }).map((_, index) => (
-                        <TableRow key={`truck-skeleton-row-${index}`}>
-                            <TableCell className="text-center">
-                                <Skeleton className="mx-auto h-4 w-6" aria-hidden="true" />
-                            </TableCell>
-                            {Array.from({ length: columns.length + 1 }).map((__, cellIndex) => (
-                                <TableCell key={`truck-skeleton-cell-${index}-${cellIndex}`}>
-                                    <Skeleton className="h-4 w-full" aria-hidden="true" />
-                                </TableCell>
-                            ))}
-                        </TableRow>
-                    ))
-                ) : trucks?.data && trucks.data.length > 0 ? (
-                    // Show actual data
-                    trucks.data.map((truck, index) => (
-                        <TableRow key={truck.id} className="hover:bg-muted/50">
-                            <TableCell className="text-center font-medium">
-                                {rowOffset + index + 1}
-                            </TableCell>
-                            <TableCell className="font-medium">
-                                {truck.plate}
-                            </TableCell>
-                            <TableCell className="text-muted-foreground">
-                                {truck.vehicleType?.name || 'N/A'}
-                            </TableCell>
-                            <TableCell className="text-muted-foreground text-sm">
-                                {truck.chasisNumber || '—'}
-                            </TableCell>
-                            <TableCell className="text-muted-foreground text-sm">
-                                {truck.engineNumber || '—'}
-                            </TableCell>
-                            <TableCell className="text-muted-foreground">
-                                {truck.serviceIntervalKM
-                                    ? `${truck.serviceIntervalKM.toLocaleString()} km`
-                                    : '—'
-                                }
-                            </TableCell>
-                            <TableCell className="font-medium">
-                                {formatETBCurrency(truck.purchasePrice)}
-                            </TableCell>
-                            <TableCell>
-                                <Badge
-                                    className={`flex items-center gap-1 w-fit ${truck.status === 'active'
-                                        ? 'bg-green-100 text-green-800 border-green-200 hover:bg-green-200'
-                                        : truck.status === 'maintenance'
-                                            ? 'bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200'
-                                            : 'bg-red-100 text-red-800 border-red-200 hover:bg-red-200'
-                                        }`}
-                                >
-                                    {truck.status === 'active' && <CheckCircle className="h-3 w-3" />}
-                                    {truck.status === 'maintenance' && <Wrench className="h-3 w-3" />}
-                                    {truck.status === 'inactive' && <XCircle className="h-3 w-3" />}
-                                    {truck.status.charAt(0).toUpperCase() + truck.status.slice(1)}
-                                </Badge>
-                            </TableCell>
-                            <TableCell className="text-center">
-                                <div className="flex justify-center gap-2">
-                                    {canViewTruckDetails && (
-                                        <Button asChild size="sm" variant="ghost">
-                                            <Link href={`/trucks/${truck.id}`}>
-                                                <Eye className="h-4 w-4" />
-                                            </Link>
-                                        </Button>
-                                    )}
-                                    {hasPermission('trucks.edit') && (
-                                        <Button asChild size="sm" variant="ghost">
-                                            <Link href={`/trucks/${truck.id}/edit`}>
-                                                <Edit className="h-4 w-4" />
-                                            </Link>
-                                        </Button>
-                                    )}
-                                    {hasPermission('trucks.destroy') && (
-                                        <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            onClick={() => handleDeleteClick(truck)}
-                                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                    )}
-                                </div>
-                            </TableCell>
-                        </TableRow>
-                    ))
-                ) : (
-                    <TableRow>
-                        <TableCell colSpan={9} className="py-8 text-center text-muted-foreground">
-                            No trucks found.
-                            {hasPermission('trucks.create') && (
-                                <Link href="/trucks/create" className="ml-1 text-primary underline">
-                                    Create one
-                                </Link>
-                            )}
-                        </TableCell>
-                    </TableRow>
-                )}
-            </TableBody>
-        </Table>
-    );
+            );
 
-    const mobileSkeletonContent = (
-        <div className="flex flex-col gap-3" aria-hidden="true">
-            {Array.from({ length: 3 }).map((_, index) => (
-                <Card key={`truck-card-skeleton-${index}`} className="border border-slate-200/70 shadow-sm dark:border-slate-800">
-                    <CardHeader className="space-y-3">
-                        <Skeleton className="h-3 w-16" />
-                        <Skeleton className="h-5 w-32" />
-                        <Skeleton className="h-4 w-24" />
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                        {Array.from({ length: 4 }).map((__, infoIndex) => (
-                            <Skeleton key={`truck-card-detail-${infoIndex}`} className="h-3.5 w-full" />
-                        ))}
-                        <Skeleton className="h-9 w-full" />
-                    </CardContent>
-                </Card>
-            ))}
-        </div>
+    const mobileItems = React.useMemo(
+        () =>
+            trucks?.data?.map((truck, index) => ({
+                truck,
+                position: rowOffset + index + 1,
+            })) ?? [],
+        [rowOffset, trucks?.data],
     );
 
     const mobileContent = isLoading ? (
-        mobileSkeletonContent
-    ) : trucks?.data && trucks.data.length > 0 ? (
-        <div className="flex flex-col gap-3 transition-opacity">
-            {trucks.data.map((truck, index) => (
-                <Card key={truck.id} className="border border-slate-200/70 shadow-sm dark:border-slate-800">
-                    <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 p-4">
-                        <div className="space-y-1">
-                            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                                <span>#{rowOffset + index + 1}</span>
-                                <span className="hidden sm:inline-flex">Truck</span>
-                            </div>
-                            <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-                                {truck.plate}
-                                <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                            </CardTitle>
-                            <p className="text-sm text-muted-foreground">
-                                {truck.vehicleType?.name || 'Vehicle type pending'}
-                            </p>
-                        </div>
-                        <Badge
-                            className={`flex items-center gap-1 whitespace-nowrap ${truck.status === 'active'
-                                ? 'bg-green-100 text-green-800 border-green-200 hover:bg-green-200'
-                                : truck.status === 'maintenance'
-                                    ? 'bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200'
-                                    : 'bg-red-100 text-red-800 border-red-200 hover:bg-red-200'
-                                }`}
-                        >
-                            {truck.status === 'active' && <CheckCircle className="h-3 w-3" />}
-                            {truck.status === 'maintenance' && <Wrench className="h-3 w-3" />}
-                            {truck.status === 'inactive' && <XCircle className="h-3 w-3" />}
-                            {truck.status.charAt(0).toUpperCase() + truck.status.slice(1)}
-                        </Badge>
-                    </CardHeader>
-                    <CardContent className="space-y-4 p-4 pt-0">
-                        <div className="grid grid-cols-1 gap-3 text-sm text-muted-foreground">
-                            <div className="flex items-center justify-between">
-                                <span className="font-medium text-slate-600 dark:text-slate-300">Chassis</span>
-                                <span className="text-right font-semibold text-slate-900 dark:text-slate-100">
-                                    {truck.chasisNumber || '—'}
-                                </span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <span className="font-medium text-slate-600 dark:text-slate-300">Engine</span>
-                                <span className="text-right font-semibold text-slate-900 dark:text-slate-100">
-                                    {truck.engineNumber || '—'}
-                                </span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <span className="font-medium text-slate-600 dark:text-slate-300">Service Interval</span>
-                                <span className="text-right font-semibold text-slate-900 dark:text-slate-100">
-                                    {truck.serviceIntervalKM
-                                        ? `${truck.serviceIntervalKM.toLocaleString()} km`
-                                        : '—'}
-                                </span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <span className="font-medium text-slate-600 dark:text-slate-300">Purchase Price</span>
-                                <span className="text-right font-semibold text-slate-900 dark:text-slate-100">
-                                    {formatETBCurrency(truck.purchasePrice)}
-                                </span>
-                            </div>
-                        </div>
-
-                        <div className="flex flex-wrap items-center justify-end gap-2">
-                            {canViewTruckDetails && (
-                                <Button asChild size="sm" variant="outline" className="flex-1 sm:flex-auto">
-                                    <Link href={`/trucks/${truck.id}`}>
-                                        <Eye className="mr-2 h-4 w-4" />
-                                        View
-                                    </Link>
-                                </Button>
-                            )}
-                            {hasPermission('trucks.edit') && (
-                                <Button asChild size="sm" variant="secondary" className="flex-1 sm:flex-none">
-                                    <Link href={`/trucks/${truck.id}/edit`}>
-                                        <Edit className="mr-2 h-4 w-4" />
-                                        Edit
-                                    </Link>
-                                </Button>
-                            )}
-                            {hasPermission('trucks.destroy') && (
-                                <Button
-                                    size="sm"
-                                    variant="destructive"
-                                    className="flex-1 sm:flex-none"
-                                    onClick={() => handleDeleteClick(truck)}
-                                    disabled={isDeleting && selectedTruck?.id === truck.id}
-                                >
-                                    <Trash2 className="mr-2 h-4 w-4" />
-                                    Delete
-                                </Button>
-                            )}
-                        </div>
-                    </CardContent>
-                </Card>
-            ))}
-        </div>
+        <ListingLoadingPlaceholder showStats={false} filterItemCount={0} rowCount={4} />
     ) : (
-        <Card className="border border-slate-200/70 shadow-sm dark:border-slate-800">
-            <CardContent className="py-8 text-center text-muted-foreground">
-                No trucks found.
-                {hasPermission('trucks.create') && (
-                    <Link href="/trucks/create" className="ml-1 text-primary underline">
-                        Create one
-                    </Link>
-                )}
-            </CardContent>
-        </Card>
+        <ListingMobileItemList
+            items={mobileItems}
+            getKey={(item) => item.truck.id}
+            renderTitle={(item) => (
+                <div className="flex items-center gap-2">
+                    <span className="text-xs uppercase tracking-wide text-muted-foreground">#{item.position}</span>
+                    <span className="text-base">{item.truck.plate}</span>
+                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+                </div>
+            )}
+            renderSubtitle={(item) => item.truck.vehicleType?.name || 'Vehicle type pending'}
+            renderContent={(item) => (
+                <div className="space-y-3">
+                    <div className="flex items-center justify-between text-sm">
+                        <span className="font-medium text-slate-600 dark:text-slate-300">Status</span>
+                        {renderStatusBadge(item.truck.status)}
+                    </div>
+                    <div className="grid grid-cols-1 gap-3 text-sm text-muted-foreground">
+                        <div className="flex items-center justify-between">
+                            <span className="font-medium text-slate-600 dark:text-slate-300">Chassis</span>
+                            <span className="text-right font-semibold text-slate-900 dark:text-slate-100">
+                                {item.truck.chasisNumber || '—'}
+                            </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <span className="font-medium text-slate-600 dark:text-slate-300">Engine</span>
+                            <span className="text-right font-semibold text-slate-900 dark:text-slate-100">
+                                {item.truck.engineNumber || '—'}
+                            </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <span className="font-medium text-slate-600 dark:text-slate-300">Service Interval</span>
+                            <span className="text-right font-semibold text-slate-900 dark:text-slate-100">
+                                {item.truck.serviceIntervalKM
+                                    ? `${item.truck.serviceIntervalKM.toLocaleString()} km`
+                                    : '—'}
+                            </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <span className="font-medium text-slate-600 dark:text-slate-300">Purchase Price</span>
+                            <span className="text-right font-semibold text-slate-900 dark:text-slate-100">
+                                {formatETBCurrency(item.truck.purchasePrice)}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            )}
+            renderFooter={(item) => (
+                <div className="flex w-full flex-wrap items-center justify-end gap-2">
+                    {canViewTruckDetails && (
+                        <Button asChild size="sm" variant="outline" className="flex-1 sm:flex-auto">
+                            <Link href={`/trucks/${item.truck.id}`}>
+                                <Eye className="mr-2 h-4 w-4" />
+                                View
+                            </Link>
+                        </Button>
+                    )}
+                    {hasPermission('trucks.edit') && (
+                        <Button asChild size="sm" variant="secondary" className="flex-1 sm:flex-none">
+                            <Link href={`/trucks/${item.truck.id}/edit`}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                Edit
+                            </Link>
+                        </Button>
+                    )}
+                    {hasPermission('trucks.destroy') && (
+                        <Button
+                            size="sm"
+                            variant="destructive"
+                            className="flex-1 sm:flex-none"
+                            onClick={() => handleDeleteClick(item.truck)}
+                            disabled={isDeleting && selectedTruck?.id === item.truck.id}
+                        >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                        </Button>
+                    )}
+                </div>
+            )}
+            emptyState={(
+                <div className="py-8 text-center text-muted-foreground">
+                    No trucks found.
+                    {hasPermission('trucks.create') && (
+                        <Link href="/trucks/create" className="ml-1 text-primary underline">
+                            Create one
+                        </Link>
+                    )}
+                </div>
+            )}
+        />
     );
+
+    const perPageSelectOptions = React.useMemo(
+        () =>
+            availablePerPageOptions.map((option) => ({
+                value: String(option),
+                label: `${option} / page`,
+            })),
+        [availablePerPageOptions],
+    );
+
+    const tableHeaderExtras = (
+        <ListingFilterBar
+            search={{
+                value: searchTerm,
+                placeholder: 'Search trucks...',
+                onChange: handleSearchChange,
+                icon: <Search className="h-4 w-4" />,
+            }}
+            perPage={{
+                value: perPage,
+                label: 'Rows',
+                onChange: handlePerPageChange,
+                options: perPageSelectOptions,
+            }}
+        >
+            <Select value={selectedStatus} onValueChange={handleStatusChange}>
+                <SelectTrigger className="w-full min-w-[150px] sm:w-auto">
+                    <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">All statuses</SelectItem>
+                    {statusOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                        </SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+            <Select value={selectedVehicleType} onValueChange={handleVehicleTypeChange}>
+                <SelectTrigger className="w-full min-w-[180px] sm:w-auto">
+                    <SelectValue placeholder="Vehicle type" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">All vehicle types</SelectItem>
+                    {vehicleTypes.map((type) => (
+                        <SelectItem key={type.id} value={String(type.id)}>
+                            {type.name}
+                        </SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+        </ListingFilterBar>
+    );
+
 
     return (
         <>
@@ -981,38 +822,24 @@ export default function TrucksIndex({
                 tableDescription="Manage and track all vehicles in your fleet"
                 tableHeaderExtras={tableHeaderExtras}
                 pagination={
-                    !isLoading && trucks?.links && (
-                        <InertiaPagination
+                    !isLoading && trucks?.links ? (
+                        <ListingPaginationFooter
                             className="mt-4"
                             links={trucks.links}
                             from={trucks.meta?.from ?? undefined}
                             to={trucks.meta?.to ?? undefined}
                             total={trucks.meta?.total ?? undefined}
-                            currentPage={currentPage}
-                            lastPage={lastPage}
                         />
-                    )
+                    ) : null
                 }
             >
                 <div className="hidden md:block">
-                    {isLoading && (
-                        <div className="mb-3 flex items-center gap-2 text-sm text-muted-foreground" aria-live="polite">
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                            Loading trucks...
-                        </div>
-                    )}
-                    {tableContent}
+                    <ListingTableShell columns={tableColumns} sort={{ column: sortBy, direction: sortDirection, onToggle: handleSort }}>
+                        {tableRows}
+                    </ListingTableShell>
                 </div>
 
-                <div className="space-y-3 md:hidden">
-                    {isLoading && (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground" aria-live="polite">
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                            Loading trucks...
-                        </div>
-                    )}
-                    {mobileContent}
-                </div>
+                <div className="space-y-3 md:hidden">{mobileContent}</div>
             </ListPageLayout>
 
             <DeleteConfirmationDialog

@@ -1,24 +1,25 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
+import { TableCell, TableRow } from '@/components/ui/table';
 import ListPageLayout from '@/components/layouts/list-page-layout';
 import { usePermissions } from '@/hooks/use-permissions';
+import { ListingStatsHeader, type ListingStatDefinition } from '@/components/listing/stats-header';
+import { ListingFilterBar } from '@/components/listing/filter-bar';
+import { ListingTableShell, type ListingTableColumn } from '@/components/listing/data-table-shell';
+import { ListingMobileItemList } from '@/components/listing/mobile-item-list';
+import { ListingPaginationFooter } from '@/components/listing/pagination-footer';
+import { ListingRowActionsMenu } from '@/components/listing/row-actions-menu';
+import { ListingLoadingPlaceholder } from '@/components/listing/loading-placeholder';
+import { useListingLoading } from '@/hooks/use-listing-loading';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { InertiaPagination } from '@/components/ui/pagination';
-import { Input } from '@/components/ui/input';
 import * as React from 'react';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
-import { AlertTriangle, ArrowUpDown, CheckCircle, Clock, DollarSign, Eye, Plus, User, Wrench, Edit, Search, Trash2 } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Clock, DollarSign, Edit, Eye, Plus, Search, Trash2, User, Wrench } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+
+const SKELETON_FLAG_KEY = 'maintenance.index.shouldShowSkeleton';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -57,6 +58,7 @@ interface MaintenanceIndexProps {
         total: number;
         from: number;
         to: number;
+        per_page?: number;
         links: Array<{
             url: string | null;
             label: string;
@@ -84,17 +86,6 @@ interface MaintenanceIndexProps {
     maintenanceTypeOptions: Array<{ id: number; name: string }>;
     perPageOptions: number[];
 }
-
-const columns: Array<{ key: string; label: string; sortable?: boolean; sortKey?: string }> = [
-    { key: 'truck', label: 'Truck' },
-    { key: 'maintenanceType', label: 'Type' },
-    { key: 'category', label: 'Category' },
-    { key: 'scheduled_date', label: 'Scheduled', sortable: true, sortKey: 'scheduled_date' },
-    { key: 'completed_date', label: 'Completed', sortable: true, sortKey: 'completed_date' },
-    { key: 'cost', label: 'Cost', sortable: true, sortKey: 'cost' },
-    { key: 'status', label: 'Status', sortable: true, sortKey: 'status' },
-    { key: 'mechanic', label: 'Mechanic' },
-];
 
 const toNumeric = (value: number | string | null | undefined): number | null => {
     if (value === null || value === undefined) {
@@ -196,8 +187,22 @@ const getCategoryClass = (category?: string | null) => {
     }
 };
 
+type NavigateOverrides = {
+    search?: string;
+    status?: string;
+    maintenance_type?: string | number;
+    sort?: string;
+    direction?: 'asc' | 'desc';
+    page?: number;
+    per_page?: number;
+};
+
 export default function MaintenanceIndex({ maintenanceRecords, metrics, filters, statusOptions, maintenanceTypeOptions, perPageOptions }: MaintenanceIndexProps) {
     const { hasPermission } = usePermissions();
+    const canCreateMaintenance = hasPermission('maintenance.create');
+    const canEditMaintenance = hasPermission('maintenance.edit');
+    const canDeleteMaintenance = hasPermission('maintenance.delete');
+
     const [searchTerm, setSearchTerm] = React.useState(filters?.search ?? '');
     const [selectedStatus, setSelectedStatus] = React.useState(filters?.status ?? 'all');
     const [selectedType, setSelectedType] = React.useState(
@@ -205,7 +210,11 @@ export default function MaintenanceIndex({ maintenanceRecords, metrics, filters,
     );
     const [sortColumn, setSortColumn] = React.useState<string>(filters?.sort ?? 'scheduled_date');
     const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>(filters?.direction ?? 'desc');
-    const availablePerPageOptions = React.useMemo(() => (perPageOptions?.length ? perPageOptions : [15, 25, 50, 100]), [perPageOptions]);
+
+    const availablePerPageOptions = React.useMemo(
+        () => (perPageOptions?.length ? perPageOptions : [15, 25, 50, 100]),
+        [perPageOptions],
+    );
     const resolvedPerPage = React.useMemo(() => {
         const candidate = filters?.per_page;
         if (typeof candidate === 'number' && availablePerPageOptions.includes(candidate)) {
@@ -219,6 +228,12 @@ export default function MaintenanceIndex({ maintenanceRecords, metrics, filters,
     const [recordToDelete, setRecordToDelete] = React.useState<MaintenanceRecord | null>(null);
     const [isDeleting, setIsDeleting] = React.useState(false);
 
+    const isDataReady = Array.isArray(maintenanceRecords?.data);
+    const { isLoading } = useListingLoading({
+        storageKey: SKELETON_FLAG_KEY,
+        isDataReady,
+    });
+
     React.useEffect(() => {
         setPerPage(String(resolvedPerPage));
     }, [resolvedPerPage]);
@@ -228,32 +243,75 @@ export default function MaintenanceIndex({ maintenanceRecords, metrics, filters,
     const currentPage = maintenanceRecords?.current_page ?? 1;
     const lastPage = maintenanceRecords?.last_page ?? 1;
 
-    const handleNavigate = React.useCallback((overrides: Partial<{ search?: string; status?: string; maintenance_type?: string | number; sort?: string; direction?: 'asc' | 'desc'; page?: number; per_page?: number }>) => {
-        const perPageValue = overrides.per_page !== undefined ? overrides.per_page : Number(perPage);
-        const params: Record<string, string | number | undefined> = {
-            search: overrides.search !== undefined ? overrides.search : (searchTerm.trim() ? searchTerm.trim() : undefined),
-            status: overrides.status !== undefined ? overrides.status : (selectedStatus !== 'all' ? selectedStatus : undefined),
-            maintenance_type: overrides.maintenance_type !== undefined ? overrides.maintenance_type : (selectedType !== 'all' ? selectedType : undefined),
-            sort: overrides.sort ?? sortColumn,
-            direction: overrides.direction ?? sortDirection,
-            page: overrides.page,
-            per_page: perPageValue,
-        };
+    const perPageCountRaw =
+        typeof maintenanceRecords?.per_page === 'number'
+            ? maintenanceRecords.per_page
+            : maintenanceRecords?.from && maintenanceRecords?.to
+                ? maintenanceRecords.to - maintenanceRecords.from + 1
+                : Number(perPage);
+    const perPageCount =
+        Number.isFinite(perPageCountRaw) && perPageCountRaw && perPageCountRaw > 0
+            ? Number(perPageCountRaw)
+            : maintenanceData.length || 1;
+    const rowOffset =
+        typeof maintenanceRecords?.from === 'number'
+            ? Math.max(maintenanceRecords.from - 1, 0)
+            : Math.max((currentPage - 1) * perPageCount, 0);
 
-        Object.keys(params).forEach((key) => {
-            const value = params[key];
-            if (
-                value === undefined ||
-                value === null ||
-                value === '' ||
-                (key === 'per_page' && (typeof value !== 'number' || !Number.isFinite(value) || value <= 0))
-            ) {
-                delete params[key];
+    const handleNavigate = React.useCallback(
+        (overrides: NavigateOverrides = {}) => {
+            const hasOverride = (key: keyof NavigateOverrides) => Object.prototype.hasOwnProperty.call(overrides, key);
+
+            const nextSearch = hasOverride('search')
+                ? overrides.search
+                : searchTerm.trim()
+                    ? searchTerm.trim()
+                    : undefined;
+
+            const nextStatus = hasOverride('status')
+                ? overrides.status
+                : selectedStatus !== 'all'
+                    ? selectedStatus
+                    : undefined;
+
+            const nextType = hasOverride('maintenance_type')
+                ? overrides.maintenance_type
+                : selectedType !== 'all'
+                    ? selectedType
+                    : undefined;
+
+            const nextSort = hasOverride('sort') ? overrides.sort ?? sortColumn : sortColumn;
+            const nextDirection = hasOverride('direction') ? overrides.direction ?? sortDirection : sortDirection;
+            const nextPerPage = hasOverride('per_page') ? overrides.per_page : Number(perPage);
+            const nextPage = hasOverride('page') ? overrides.page : undefined;
+
+            const params: Record<string, string | number | undefined> = {
+                search: nextSearch && nextSearch !== '' ? nextSearch : undefined,
+                status: nextStatus && nextStatus !== 'all' ? nextStatus : undefined,
+                maintenance_type: nextType && nextType !== 'all' ? nextType : undefined,
+                sort: nextSort,
+                direction: nextDirection,
+                page: nextPage,
+                per_page:
+                    typeof nextPerPage === 'number' && Number.isFinite(nextPerPage) && nextPerPage > 0
+                        ? nextPerPage
+                        : undefined,
+            };
+
+            Object.keys(params).forEach((key) => {
+                if (params[key] === undefined) {
+                    delete params[key];
+                }
+            });
+
+            if (typeof window !== 'undefined') {
+                window.sessionStorage.setItem(SKELETON_FLAG_KEY, 'true');
             }
-        });
 
-        router.get('/maintenance', params, { preserveState: true, replace: false });
-    }, [searchTerm, selectedStatus, selectedType, sortColumn, sortDirection, perPage]);
+            router.get('/maintenance', params, { preserveState: true, replace: false });
+        },
+        [perPage, searchTerm, selectedStatus, selectedType, sortColumn, sortDirection],
+    );
 
     const handleSearchChange = (value: string) => {
         setSearchTerm(value);
@@ -283,10 +341,16 @@ export default function MaintenanceIndex({ maintenanceRecords, metrics, filters,
         handleNavigate({ sort: column, direction: newDirection });
     };
 
+    const handleDeleteClick = React.useCallback((record: MaintenanceRecord) => {
+        setRecordToDelete(record);
+        setDeleteDialogOpen(true);
+    }, []);
+
     const handleDeleteDialogChange = React.useCallback((open: boolean) => {
         setDeleteDialogOpen(open);
         if (!open) {
             setRecordToDelete(null);
+            setIsDeleting(false);
         }
     }, []);
 
@@ -301,6 +365,7 @@ export default function MaintenanceIndex({ maintenanceRecords, metrics, filters,
             onSuccess: () => {
                 setDeleteDialogOpen(false);
                 setRecordToDelete(null);
+                setIsDeleting(false);
             },
             onError: () => {
                 setIsDeleting(false);
@@ -323,82 +388,312 @@ export default function MaintenanceIndex({ maintenanceRecords, metrics, filters,
         return scheduled ? `${typeName} for ${truckPlate} (${scheduled})` : `${typeName} for ${truckPlate}`;
     }, [recordToDelete]);
 
-    const headerActions = (
-        <>
-            {hasPermission('maintenance.create') && (
-                <Button asChild>
-                    <Link href="/maintenance/create">
-                        <Plus className="mr-2 h-4 w-4" />
-                        Schedule Maintenance
-                    </Link>
-                </Button>
-            )}
-        </>
+    const statsDefinitions = React.useMemo<ListingStatDefinition[]>(
+        () => [
+            {
+                id: 'total-records',
+                label: 'Total Records',
+                value: isLoading ? (
+                    <Skeleton className="h-4 w-16" aria-hidden="true" />
+                ) : (
+                    formatNumber(metrics?.total ?? 0)
+                ),
+                description: isLoading ? (
+                    <Skeleton className="h-3 w-28" aria-hidden="true" />
+                ) : (
+                    'All maintenance entries'
+                ),
+                icon: <Wrench className="h-3.5 w-3.5 text-blue-600" />,
+                valueClassName: isLoading ? undefined : 'text-blue-600',
+            },
+            {
+                id: 'scheduled-records',
+                label: 'Scheduled',
+                value: isLoading ? (
+                    <Skeleton className="h-4 w-14" aria-hidden="true" />
+                ) : (
+                    formatNumber(metrics?.scheduled ?? 0)
+                ),
+                description: isLoading ? (
+                    <Skeleton className="h-3 w-24" aria-hidden="true" />
+                ) : (
+                    `${formatNumber(metrics?.overdue ?? 0)} overdue`
+                ),
+                icon: <Clock className="h-3.5 w-3.5 text-amber-600" />,
+                valueClassName: isLoading ? undefined : 'text-amber-600',
+            },
+            {
+                id: 'completed-records',
+                label: 'Completed',
+                value: isLoading ? (
+                    <Skeleton className="h-4 w-16" aria-hidden="true" />
+                ) : (
+                    formatNumber(metrics?.completed ?? 0)
+                ),
+                description: isLoading ? (
+                    <Skeleton className="h-3 w-32" aria-hidden="true" />
+                ) : (
+                    `Avg cost ${formatCurrency(metrics?.average_cost ?? 0)}`
+                ),
+                icon: <CheckCircle className="h-3.5 w-3.5 text-emerald-600" />,
+                valueClassName: isLoading ? undefined : 'text-emerald-600',
+            },
+            {
+                id: 'total-cost',
+                label: 'Total Cost',
+                value: isLoading ? (
+                    <Skeleton className="h-4 w-20" aria-hidden="true" />
+                ) : (
+                    formatCurrency(metrics?.total_cost ?? 0)
+                ),
+                description: isLoading ? (
+                    <Skeleton className="h-3 w-28" aria-hidden="true" />
+                ) : (
+                    `${formatNumber(metrics?.in_progress ?? 0)} in progress`
+                ),
+                icon: <DollarSign className="h-3.5 w-3.5 text-purple-600" />,
+                valueClassName: isLoading ? undefined : 'text-purple-600',
+            },
+        ],
+        [isLoading, metrics?.average_cost, metrics?.completed, metrics?.in_progress, metrics?.overdue, metrics?.scheduled, metrics?.total, metrics?.total_cost],
     );
 
-    const statsCards = [
-        {
-            title: 'Total Records',
-            value: formatNumber(metrics?.total ?? 0),
-            description: 'All maintenance entries',
-            icon: <Wrench className="h-3.5 w-3.5 text-blue-600" />,
-            valueClassName: 'text-blue-600',
-        },
-        {
-            title: 'Scheduled',
-            value: formatNumber(metrics?.scheduled ?? 0),
-            description: `${formatNumber(metrics?.overdue ?? 0)} overdue`,
-            icon: <Clock className="h-3.5 w-3.5 text-amber-600" />,
-            valueClassName: 'text-amber-600',
-        },
-        {
-            title: 'Completed',
-            value: formatNumber(metrics?.completed ?? 0),
-            description: `Avg cost ${formatCurrency(metrics?.average_cost ?? 0)}`,
-            icon: <CheckCircle className="h-3.5 w-3.5 text-emerald-600" />,
-            valueClassName: 'text-emerald-600',
-        },
-        {
-            title: 'Total Cost',
-            value: formatCurrency(metrics?.total_cost ?? 0),
-            description: `${formatNumber(metrics?.in_progress ?? 0)} in progress`,
-            icon: <DollarSign className="h-3.5 w-3.5 text-purple-600" />,
-            valueClassName: 'text-purple-600',
-        },
-    ];
+    const statsSection = <ListingStatsHeader stats={statsDefinitions} orientation="row" />;
 
-    const statsSection = (
-        <div className="hidden gap-2 md:grid md:grid-cols-2 xl:grid-cols-4">
-            {statsCards.map((card) => (
-                <Card key={card.title} className="gap-2 border border-slate-200 py-2 shadow-sm sm:py-3">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 p-1.5 sm:p-2">
-                        <CardTitle className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                            {card.title}
-                        </CardTitle>
-                        {card.icon}
-                    </CardHeader>
-                    <CardContent className="px-2 pb-2 pt-0 sm:px-3 sm:pb-2">
-                        <div className={`text-sm font-semibold sm:text-base ${card.valueClassName}`}>{card.value}</div>
-                        <p className="text-[11px] text-muted-foreground">{card.description}</p>
-                    </CardContent>
-                </Card>
-            ))}
-        </div>
+    const perPageSelectOptions = React.useMemo(
+        () => availablePerPageOptions.map((option) => ({ value: String(option), label: `${option} / page` })),
+        [availablePerPageOptions],
+    );
+
+    const tableColumns = React.useMemo<ListingTableColumn[]>(
+        () => [
+            { id: 'index', label: '#', align: 'center' },
+            { id: 'truck', label: 'Truck' },
+            { id: 'maintenanceType', label: 'Type' },
+            { id: 'category', label: 'Category' },
+            { id: 'scheduled_date', label: 'Scheduled', sortable: true },
+            { id: 'completed_date', label: 'Completed', sortable: true },
+            { id: 'cost', label: 'Cost', sortable: true, align: 'right' },
+            { id: 'status', label: 'Status', sortable: true },
+            { id: 'mechanic', label: 'Mechanic' },
+            { id: 'actions', label: 'Actions', align: 'center' },
+        ],
+        [],
+    );
+
+    const tableRows = React.useMemo(() => {
+        if (isLoading) {
+            return Array.from({ length: 6 }).map((_, rowIndex) => (
+                <TableRow key={`maintenance-skeleton-${rowIndex}`} aria-hidden="true">
+                    {tableColumns.map((column) => (
+                        <TableCell
+                            key={`${column.id}-${rowIndex}`}
+                            className={
+                                column.align === 'center'
+                                    ? 'text-center'
+                                    : column.align === 'right'
+                                        ? 'text-right'
+                                        : undefined
+                            }
+                        >
+                            <Skeleton className="mx-auto h-4 w-24 max-w-full" aria-hidden="true" />
+                        </TableCell>
+                    ))}
+                </TableRow>
+            ));
+        }
+
+        if (maintenanceData.length === 0) {
+            return [
+                <TableRow key="maintenance-empty">
+                    <TableCell colSpan={tableColumns.length} className="py-8 text-center text-muted-foreground">
+                        No maintenance records found.
+                        {canCreateMaintenance && (
+                            <Link href="/maintenance/create" className="ml-1 text-primary underline">
+                                Create one
+                            </Link>
+                        )}
+                    </TableCell>
+                </TableRow>,
+            ];
+        }
+
+        return maintenanceData.map((record, index) => (
+            <TableRow key={record.id} className="hover:bg-muted/50">
+                <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
+                <TableCell className="font-mono font-medium">{record.truck?.plate ?? '—'}</TableCell>
+                <TableCell className="text-muted-foreground">{record.maintenanceType?.name ?? '—'}</TableCell>
+                <TableCell className={`${getCategoryClass(record.maintenanceType?.category)} text-sm font-medium`}>
+                    {record.maintenanceType?.category ?? '—'}
+                </TableCell>
+                <TableCell className="text-muted-foreground">{formatDate(record.scheduled_date)}</TableCell>
+                <TableCell className="text-muted-foreground">{formatDate(record.completed_date)}</TableCell>
+                <TableCell className="text-right font-medium">
+                    {record.cost === null || record.cost === undefined ? '—' : formatCurrency(record.cost)}
+                </TableCell>
+                <TableCell>{getStatusBadge(record.status)}</TableCell>
+                <TableCell className="text-muted-foreground">
+                    {record.assignedMechanic?.name ? (
+                        <span className="flex items-center gap-1">
+                            <User className="h-3.5 w-3.5 text-muted-foreground" />
+                            {record.assignedMechanic.name}
+                        </span>
+                    ) : (
+                        '—'
+                    )}
+                </TableCell>
+                <TableCell className="text-center">
+                    <ListingRowActionsMenu
+                        actions={[
+                            {
+                                label: 'View',
+                                icon: <Eye className="h-4 w-4" />,
+                                href: `/maintenance/${record.id}`,
+                            },
+                            canEditMaintenance && {
+                                label: 'Edit',
+                                icon: <Edit className="h-4 w-4" />,
+                                href: `/maintenance/${record.id}/edit`,
+                            },
+                            canDeleteMaintenance && {
+                                label: 'Delete',
+                                icon: <Trash2 className="h-4 w-4" />,
+                                danger: true,
+                                disabled: isDeleting && recordToDelete?.id === record.id,
+                                onSelect: () => handleDeleteClick(record),
+                            },
+                        ]}
+                    />
+                </TableCell>
+            </TableRow>
+        ));
+    }, [
+        canCreateMaintenance,
+        canDeleteMaintenance,
+        canEditMaintenance,
+        handleDeleteClick,
+        isDeleting,
+        isLoading,
+        maintenanceData,
+        recordToDelete,
+        rowOffset,
+        tableColumns,
+    ]);
+
+    const mobileItems = React.useMemo(
+        () => maintenanceData.map((record, index) => ({ record, position: rowOffset + index + 1 })),
+        [maintenanceData, rowOffset],
+    );
+
+    const mobileContent = isLoading ? (
+        <ListingLoadingPlaceholder showStats={false} filterItemCount={0} rowCount={4} />
+    ) : (
+        <ListingMobileItemList
+            items={mobileItems}
+            getKey={(item) => item.record.id}
+            renderTitle={(item) => (
+                <div className="flex items-center gap-2">
+                    <span className="text-xs uppercase tracking-wide text-muted-foreground">#{item.position}</span>
+                    <span className="text-base font-semibold">{item.record.truck?.plate ?? '—'}</span>
+                </div>
+            )}
+            renderSubtitle={(item) => item.record.maintenanceType?.name ?? 'Maintenance type pending'}
+            renderContent={(item) => (
+                <div className="space-y-3">
+                    <div className="flex items-center justify-between text-sm">
+                        <span className="font-medium text-slate-600 dark:text-slate-300">Status</span>
+                        {getStatusBadge(item.record.status)}
+                    </div>
+                    <div className="grid grid-cols-1 gap-3 text-sm text-muted-foreground">
+                        <div className="flex items-center justify-between">
+                            <span className="font-medium text-slate-600 dark:text-slate-300">Scheduled</span>
+                            <span className="text-right font-semibold text-slate-900 dark:text-slate-100">
+                                {formatDate(item.record.scheduled_date)}
+                            </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <span className="font-medium text-slate-600 dark:text-slate-300">Completed</span>
+                            <span className="text-right font-semibold text-slate-900 dark:text-slate-100">
+                                {formatDate(item.record.completed_date)}
+                            </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <span className="font-medium text-slate-600 dark:text-slate-300">Cost</span>
+                            <span className="text-right font-semibold text-slate-900 dark:text-slate-100">
+                                {item.record.cost === null || item.record.cost === undefined
+                                    ? '—'
+                                    : formatCurrency(item.record.cost)}
+                            </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <span className="font-medium text-slate-600 dark:text-slate-300">Mechanic</span>
+                            <span className="text-right font-semibold text-slate-900 dark:text-slate-100">
+                                {item.record.assignedMechanic?.name ?? '—'}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            )}
+            renderFooter={(item) => (
+                <div className="flex w-full flex-wrap items-center justify-end gap-2">
+                    <Button asChild size="sm" variant="outline" className="flex-1 sm:flex-auto">
+                        <Link href={`/maintenance/${item.record.id}`}>
+                            <Eye className="mr-2 h-4 w-4" />
+                            View
+                        </Link>
+                    </Button>
+                    {canEditMaintenance && (
+                        <Button asChild size="sm" variant="secondary" className="flex-1 sm:flex-none">
+                            <Link href={`/maintenance/${item.record.id}/edit`}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                Edit
+                            </Link>
+                        </Button>
+                    )}
+                    {canDeleteMaintenance && (
+                        <Button
+                            size="sm"
+                            variant="destructive"
+                            className="flex-1 sm:flex-none"
+                            onClick={() => handleDeleteClick(item.record)}
+                            disabled={isDeleting && recordToDelete?.id === item.record.id}
+                        >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                        </Button>
+                    )}
+                </div>
+            )}
+            emptyState={(
+                <div className="py-8 text-center text-muted-foreground">
+                    No maintenance records found.
+                    {canCreateMaintenance && (
+                        <Link href="/maintenance/create" className="ml-1 text-primary underline">
+                            Create one
+                        </Link>
+                    )}
+                </div>
+            )}
+        />
     );
 
     const tableHeaderExtras = (
-        <div className="flex flex-wrap items-center gap-2">
-            <div className="relative w-[260px] max-w-full">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                    placeholder="Search maintenance records..."
-                    value={searchTerm}
-                    onChange={(event) => handleSearchChange(event.target.value)}
-                    className="pl-10"
-                />
-            </div>
+        <ListingFilterBar
+            search={{
+                value: searchTerm,
+                placeholder: 'Search maintenance records...',
+                onChange: handleSearchChange,
+                icon: <Search className="h-4 w-4" />,
+            }}
+            perPage={{
+                value: perPage,
+                label: 'Rows',
+                onChange: handlePerPageChange,
+                options: perPageSelectOptions,
+            }}
+        >
             <Select value={selectedStatus} onValueChange={handleStatusChange}>
-                <SelectTrigger className="w-[160px]">
+                <SelectTrigger className="w-full min-w-[160px] sm:w-auto">
                     <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -411,10 +706,10 @@ export default function MaintenanceIndex({ maintenanceRecords, metrics, filters,
                 </SelectContent>
             </Select>
             <Select value={selectedType} onValueChange={handleTypeChange}>
-                <SelectTrigger className="w-[200px]">
+                <SelectTrigger className="w-full min-w-[200px] sm:w-auto">
                     <SelectValue placeholder="Maintenance type" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-72">
                     <SelectItem value="all">All types</SelectItem>
                     {maintenanceTypeOptions.map((type) => (
                         <SelectItem key={type.id} value={String(type.id)}>
@@ -423,177 +718,58 @@ export default function MaintenanceIndex({ maintenanceRecords, metrics, filters,
                     ))}
                 </SelectContent>
             </Select>
-            <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                <span className="hidden sm:inline">Rows</span>
-                <Select value={perPage} onValueChange={handlePerPageChange}>
-                    <SelectTrigger className="w-[110px]">
-                        <SelectValue placeholder="Per page" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {availablePerPageOptions.map((option) => (
-                            <SelectItem key={option} value={String(option)}>
-                                {option} / page
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-            </div>
-        </div>
+        </ListingFilterBar>
     );
 
-    const renderHeaderCell = (column: { key: string; label: string; sortable?: boolean; sortKey?: string }) => {
-        const sortable = column.sortable ?? false;
-        const columnKey = column.sortKey ?? column.key;
-        const isActive = sortColumn === columnKey;
-
-        if (!sortable) {
-            return (
-                <TableHead key={column.key} className="sticky top-0 z-20 bg-background text-muted-foreground">
-                    {column.label}
-                </TableHead>
-            );
-        }
-
-        return (
-            <TableHead
-                key={column.key}
-                className="sticky top-0 z-20 cursor-pointer select-none bg-background transition-colors hover:bg-muted/70"
-                onClick={() => handleSort(columnKey)}
-            >
-                <div className="flex items-center gap-2">
-                    {column.label}
-                    <ArrowUpDown size={14} className={isActive ? 'text-primary' : 'text-muted-foreground opacity-50'} />
-                </div>
-            </TableHead>
-        );
-    };
-
-    const rowOffset = React.useMemo(() => {
-        const firstRecordIndex = maintenanceRecords?.from ?? 0;
-        if (typeof firstRecordIndex !== 'number' || Number.isNaN(firstRecordIndex)) {
-            return 0;
-        }
-
-        return Math.max(firstRecordIndex - 1, 0);
-    }, [maintenanceRecords?.from]);
-
-    const tableContent = (
-        <Table>
-            <TableHeader className="[&_tr]:sticky [&_tr]:top-0 [&_tr]:z-20 [&_tr]:bg-background [&_tr]:shadow-sm">
-                <TableRow className="border-b bg-background">
-                    <TableHead className="sticky top-0 z-20 w-12 bg-background text-center">#</TableHead>
-                    {columns.map((column) => renderHeaderCell(column))}
-                    <TableHead className="sticky top-0 z-20 bg-background text-center">Actions</TableHead>
-                </TableRow>
-            </TableHeader>
-            <TableBody>
-                {maintenanceData.length > 0 ? (
-                    maintenanceData.map((record, index) => (
-                        <TableRow key={record.id} className="hover:bg-muted/50">
-                            <TableCell className="text-center font-medium">
-                                {rowOffset + index + 1}
-                            </TableCell>
-                            <TableCell className="font-mono font-medium">
-                                {record.truck?.plate || '—'}
-                            </TableCell>
-                            <TableCell className="text-muted-foreground">
-                                {record.maintenanceType?.name || '—'}
-                            </TableCell>
-                            <TableCell className={`${getCategoryClass(record.maintenanceType?.category)} text-sm font-medium`}>
-                                {record.maintenanceType?.category || '—'}
-                            </TableCell>
-                            <TableCell className="text-muted-foreground">
-                                {formatDate(record.scheduled_date)}
-                            </TableCell>
-                            <TableCell className="text-muted-foreground">
-                                {formatDate(record.completed_date)}
-                            </TableCell>
-                            <TableCell className="font-medium">
-                                {record.cost === null || record.cost === undefined ? '—' : formatCurrency(record.cost)}
-                            </TableCell>
-                            <TableCell>{getStatusBadge(record.status)}</TableCell>
-                            <TableCell className="text-muted-foreground">
-                                {record.assignedMechanic?.name ? (
-                                    <span className="flex items-center gap-1">
-                                        <User className="h-3.5 w-3.5 text-muted-foreground" />
-                                        {record.assignedMechanic.name}
-                                    </span>
-                                ) : '—'}
-                            </TableCell>
-                            <TableCell className="text-center">
-                                <div className="flex justify-center gap-2">
-                                    <Button asChild size="sm" variant="ghost">
-                                        <Link href={`/maintenance/${record.id}`}>
-                                            <Eye className="h-4 w-4" />
-                                        </Link>
-                                    </Button>
-                                    {hasPermission('maintenance.edit') && (
-                                        <Button asChild size="sm" variant="ghost">
-                                            <Link href={`/maintenance/${record.id}/edit`}>
-                                                <Edit className="h-4 w-4" />
-                                            </Link>
-                                        </Button>
-                                    )}
-                                    {hasPermission('maintenance.delete') && (
-                                        <Button
-                                            type="button"
-                                            size="sm"
-                                            variant="ghost"
-                                            className="text-destructive hover:bg-destructive/10"
-                                            onClick={() => {
-                                                setRecordToDelete(record);
-                                                setDeleteDialogOpen(true);
-                                            }}
-                                            disabled={isDeleting && recordToDelete?.id === record.id}
-                                            aria-label="Delete maintenance record"
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                    )}
-                                </div>
-                            </TableCell>
-                        </TableRow>
-                    ))
-                ) : (
-                    <TableRow>
-                        <TableCell colSpan={columns.length + 2} className="py-8 text-center text-muted-foreground">
-                            No maintenance records found.
-                            {hasPermission('maintenance.create') && (
-                                <Link href="/maintenance/create" className="ml-1 text-primary underline">
-                                    Create one
-                                </Link>
-                            )}
-                        </TableCell>
-                    </TableRow>
-                )}
-            </TableBody>
-        </Table>
+    const headerActions = (
+        <>
+            {canCreateMaintenance && (
+                <Button asChild>
+                    <Link href="/maintenance/create">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Schedule Maintenance
+                    </Link>
+                </Button>
+            )}
+        </>
     );
 
     return (
-        <ListPageLayout
-            headTitle="Maintenance"
-            title="Maintenance"
-            description={`Manage maintenance records and schedules. Total: ${totalRecords}`}
-            breadcrumbs={breadcrumbs}
-            actions={headerActions}
-            stats={statsSection}
-            tableTitle="Maintenance Records"
-            tableDescription="Track scheduled and completed maintenance"
-            tableHeaderExtras={tableHeaderExtras}
-            pagination={
-                <InertiaPagination
-                    className="mt-4"
-                    links={maintenanceRecords.links}
-                    from={maintenanceRecords.from}
-                    to={maintenanceRecords.to}
-                    total={maintenanceRecords.total}
-                    currentPage={currentPage}
-                    lastPage={lastPage}
-                />
-            }
-        >
-            {tableContent}
+        <>
+            <ListPageLayout
+                headTitle="Maintenance"
+                title="Maintenance"
+                description={`Manage maintenance records and schedules. Total: ${totalRecords}`}
+                breadcrumbs={breadcrumbs}
+                actions={headerActions}
+                stats={statsSection}
+                tableTitle="Maintenance Records"
+                tableDescription="Track scheduled and completed maintenance"
+                tableHeaderExtras={tableHeaderExtras}
+                pagination={
+                    !isLoading && maintenanceRecords?.links?.length ? (
+                        <ListingPaginationFooter
+                            className="mt-4"
+                            links={maintenanceRecords.links}
+                            from={maintenanceRecords.from}
+                            to={maintenanceRecords.to}
+                            total={maintenanceRecords.total}
+                        />
+                    ) : null
+                }
+            >
+                <div className="hidden md:block">
+                    <ListingTableShell
+                        columns={tableColumns}
+                        sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSort }}
+                    >
+                        {tableRows}
+                    </ListingTableShell>
+                </div>
+
+                <div className="space-y-3 md:hidden">{mobileContent}</div>
+            </ListPageLayout>
+
             <DeleteConfirmationDialog
                 open={deleteDialogOpen}
                 onOpenChange={handleDeleteDialogChange}
@@ -603,7 +779,7 @@ export default function MaintenanceIndex({ maintenanceRecords, metrics, filters,
                 onConfirm={handleDeleteConfirm}
                 isLoading={isDeleting}
             />
-        </ListPageLayout>
+        </>
     );
 }
 

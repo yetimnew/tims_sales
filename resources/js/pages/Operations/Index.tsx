@@ -1,23 +1,23 @@
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import ListPageLayout from '@/components/layouts/list-page-layout'
-import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { InertiaPagination } from '@/components/ui/pagination'
-import { usePermissions } from '@/hooks/use-permissions'
-import { useToast } from '@/hooks/use-toast'
-import { Link, router } from '@inertiajs/react'
-import { type BreadcrumbItem } from '@/types'
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { TableCell, TableRow } from '@/components/ui/table';
+import ListPageLayout from '@/components/layouts/list-page-layout';
+import { ListingStatsHeader } from '@/components/listing/stats-header';
+import { ListingFilterBar } from '@/components/listing/filter-bar';
+import { ListingTableShell } from '@/components/listing/data-table-shell';
+import { ListingMobileItemList } from '@/components/listing/mobile-item-list';
+import { ListingLoadingPlaceholder } from '@/components/listing/loading-placeholder';
+import { ListingPaginationFooter } from '@/components/listing/pagination-footer';
+import { ListingRowActionsMenu } from '@/components/listing/row-actions-menu';
+import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
+import { usePermissions } from '@/hooks/use-permissions';
+import { useListingLoading } from '@/hooks/use-listing-loading';
+import { toast } from '@/hooks/use-toast';
+import { Link, router } from '@inertiajs/react';
+import { type BreadcrumbItem } from '@/types';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
+import * as React from 'react';
 import {
     ArrowUpDown,
     CheckCircle,
@@ -29,109 +29,141 @@ import {
     SquarePen,
     Trash2,
     XCircle,
-} from 'lucide-react'
-import * as React from 'react'
+    ChevronRight,
+} from 'lucide-react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Operations',
         href: '/operations',
     },
-]
+];
+
+interface OperationCustomer {
+    id: number;
+    name: string;
+}
 
 interface OperationData {
-    id: number
-    operationid: string
-    customer?: { id: number; name: string } | null
-    description?: string | null
-    status: string
-    volume?: number | null
-    km?: number | null
-    startdate?: string | null
-    enddate?: string | null
-    closed?: boolean | null
-    created_at?: string | null
-    deliveredVolume?: number | null
-    remainingVolume?: number | null
-    volumeCompletion?: number | null
+    id: number;
+    operationid: string;
+    customer?: OperationCustomer | null;
+    description?: string | null;
+    status: string;
+    volume?: number | null;
+    km?: number | null;
+    startdate?: string | null;
+    enddate?: string | null;
+    closed?: boolean | null;
+    created_at?: string | null;
+    deliveredVolume?: number | null;
+    remainingVolume?: number | null;
+    volumeCompletion?: number | null;
 }
 
 interface OperationsIndexProps {
     operations: {
-        data: OperationData[]
-        current_page: number
-        last_page: number
-        total: number
-        from: number
-        to: number
+        data: OperationData[];
+        current_page: number;
+        last_page: number;
+        total: number;
+        from: number | null;
+        to: number | null;
+        per_page?: number | null;
         links: Array<{
-            url: string | null
-            label: string
-            active: boolean
-        }>
-    }
+            url: string | null;
+            label: string;
+            active: boolean;
+        }>;
+    };
     metrics: {
-        total: number
-        active: number
-        inactive: number
-        closed: number
-        open: number
-    }
+        total: number;
+        active: number;
+        inactive: number;
+        closed: number;
+        open: number;
+    };
     filters: {
-        search?: string | null
-        status?: string | null
-        customer?: string | number | null
-        sort?: string | null
-        direction?: 'asc' | 'desc' | null
-        per_page?: number | null
-    }
-    statusOptions: Array<{ label: string; value: string }>
-    customerOptions: Array<{ id: number; name: string }>
-    perPageOptions: number[]
-    totalCount?: number
+        search?: string | null;
+        status?: string | null;
+        customer?: string | number | null;
+        sort?: string | null;
+        direction?: 'asc' | 'desc' | null;
+        per_page?: number | null;
+    };
+    statusOptions: Array<{ label: string; value: string }>;
+    customerOptions: Array<{ id: number; name: string }>;
+    perPageOptions: number[];
+    totalCount?: number;
 }
 
-type ColumnKey = 'operationid' | 'customer' | 'status' | 'startdate' | 'volume' | 'km' | 'tonnageProgress'
+const SKELETON_FLAG_KEY = 'operations.index.shouldShowSkeleton';
 
-interface ColumnConfig {
-    key: ColumnKey
-    label: string
-    sortable?: boolean
-    sortKey?: string
-}
+const COLUMN_DEFINITIONS: Array<{
+    id:
+        | 'operationid'
+        | 'customer'
+        | 'status'
+        | 'startdate'
+        | 'volume'
+        | 'km'
+        | 'tonnageProgress';
+    label: string;
+    sortKey?: string;
+    align?: 'center' | 'right';
+}> = [
+    { id: 'operationid', label: 'Operation ID', sortKey: 'operationid' },
+    { id: 'customer', label: 'Customer' },
+    { id: 'status', label: 'Status', sortKey: 'status', align: 'center' },
+    { id: 'startdate', label: 'Start Date', sortKey: 'startdate' },
+    { id: 'volume', label: 'Volume (MT)', sortKey: 'volume', align: 'right' },
+    { id: 'km', label: 'Distance (KM)', sortKey: 'km', align: 'right' },
+    { id: 'tonnageProgress', label: 'Uplift Progress' },
+];
 
-const columns: ColumnConfig[] = [
-    { key: 'operationid', label: 'Operation ID', sortable: true, sortKey: 'operationid' },
-    { key: 'customer', label: 'Customer', sortable: false },
-    { key: 'status', label: 'Status', sortable: true, sortKey: 'status' },
-    { key: 'startdate', label: 'Start Date', sortable: true, sortKey: 'startdate' },
-    { key: 'volume', label: 'Volume (MT)', sortable: true, sortKey: 'volume' },
-    { key: 'km', label: 'Distance (KM)', sortable: true, sortKey: 'km' },
-    { key: 'tonnageProgress', label: 'Uplift Progress', sortable: false },
-]
-
-const formatNumberValue = (value?: number | null, fractionDigits = 2) => {
+const formatNumberValue = (value?: number | null, fractionDigits = 2): string => {
     if (value === null || value === undefined || Number.isNaN(Number(value))) {
-        return '—'
+        return '—';
     }
 
     return Number(value).toLocaleString('en-US', {
         minimumFractionDigits: fractionDigits,
         maximumFractionDigits: fractionDigits,
-    })
-}
+    });
+};
 
-const clampPercentage = (value: number) => Math.max(0, Math.min(value, 100))
+const clampPercentage = (value: number) => Math.max(0, Math.min(value, 100));
 
-const renderTonnageProgress = (operation: OperationData) => {
-    const planned = operation.volume ?? null
-    const delivered = operation.deliveredVolume ?? null
-    const remaining = operation.remainingVolume ?? null
-    const completion = operation.volumeCompletion ?? null
-    const progressWidth = completion !== null ? `${clampPercentage(completion)}%` : '0%'
+const formatDateValue = (value?: string | null): string => {
+    if (!value) {
+        return '—';
+    }
+
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+        return '—';
+    }
+
+    return parsed.toLocaleDateString();
+};
+
+const formatCount = (value?: number | null): string => {
+    if (typeof value !== 'number' || Number.isNaN(value)) {
+        return '0';
+    }
+
+    return value.toLocaleString();
+};
+
+const renderTonnageProgress = (operation: OperationData): React.ReactNode => {
+    const planned = operation.volume ?? null;
+    const delivered = operation.deliveredVolume ?? null;
+    const remaining = operation.remainingVolume ?? null;
+    const completion = operation.volumeCompletion ?? null;
+    const progressWidth = completion !== null ? `${clampPercentage(completion)}%` : '0%';
 
     if ((planned === null || planned === 0) && (delivered === null || delivered === 0)) {
-        return <span className="text-muted-foreground">—</span>
+        return <span className="text-muted-foreground">—</span>;
     }
 
     return (
@@ -154,8 +186,26 @@ const renderTonnageProgress = (operation: OperationData) => {
                 )}
             </div>
         </div>
-    )
-}
+    );
+};
+
+const getStatusBadge = (status: string): React.ReactNode => {
+    const normalized = status.toLowerCase();
+    if (normalized === 'active') {
+        return <Badge className="bg-emerald-600 text-white hover:bg-emerald-700">Active</Badge>;
+    }
+    if (normalized === 'inactive') {
+        return <Badge className="bg-amber-500 text-white hover:bg-amber-600">Inactive</Badge>;
+    }
+    if (normalized === 'closed') {
+        return <Badge className="bg-slate-500 text-white hover:bg-slate-600">Closed</Badge>;
+    }
+    if (normalized === 'open') {
+        return <Badge className="bg-blue-500 text-white hover:bg-blue-600">Open</Badge>;
+    }
+
+    return <Badge variant="outline">{status}</Badge>;
+};
 
 export default function OperationsIndex({
     operations,
@@ -166,268 +216,481 @@ export default function OperationsIndex({
     perPageOptions,
     totalCount,
 }: OperationsIndexProps) {
-    const { hasPermission } = usePermissions()
-    const { toast } = useToast()
-    const [searchTerm, setSearchTerm] = React.useState(filters?.search ?? '')
-    const [selectedStatus, setSelectedStatus] = React.useState(filters?.status ?? 'all')
-    const [selectedCustomer, setSelectedCustomer] = React.useState(() =>
-        filters?.customer ? String(filters.customer) : 'all'
-    )
-    const [sortColumn, setSortColumn] = React.useState<string>(filters?.sort ?? 'operationid')
-    const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>(filters?.direction ?? 'asc')
+    const { hasPermission } = usePermissions();
+    const canCreateOperation = hasPermission('operations.create');
+    const canViewOperation = hasPermission('operations.show');
+    const canEditOperation = hasPermission('operations.edit');
+    const canDeleteOperation = hasPermission('operations.destroy');
+
+    const [searchTerm, setSearchTerm] = React.useState(filters?.search ?? '');
+    const [selectedStatus, setSelectedStatus] = React.useState(filters?.status ?? 'all');
+    const [selectedCustomer, setSelectedCustomer] = React.useState(
+        filters?.customer ? String(filters.customer) : 'all',
+    );
+    const [sortColumn, setSortColumn] = React.useState<string>(filters?.sort ?? 'operationid');
+    const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>(filters?.direction ?? 'asc');
     const availablePerPageOptions = React.useMemo(
         () => (perPageOptions?.length ? perPageOptions : [15, 25, 50, 100]),
-        [perPageOptions]
-    )
+        [perPageOptions],
+    );
     const resolvedPerPage = React.useMemo(() => {
-        const candidate = filters?.per_page
+        const candidate = filters?.per_page;
         if (typeof candidate === 'number' && availablePerPageOptions.includes(candidate)) {
-            return candidate
+            return candidate;
         }
 
-        return availablePerPageOptions[0] ?? 15
-    }, [filters?.per_page, availablePerPageOptions])
-    const [perPage, setPerPage] = React.useState<string>(() => String(resolvedPerPage))
-    const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false)
-    const [selectedOperation, setSelectedOperation] = React.useState<OperationData | null>(null)
-    const [isDeleting, setIsDeleting] = React.useState(false)
+        return availablePerPageOptions[0] ?? 15;
+    }, [filters?.per_page, availablePerPageOptions]);
+    const [perPage, setPerPage] = React.useState<string>(() => String(resolvedPerPage));
+
+    const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+    const [selectedOperation, setSelectedOperation] = React.useState<OperationData | null>(null);
+    const [isDeleting, setIsDeleting] = React.useState(false);
+
+    const isDataReady = Array.isArray(operations?.data);
+    const { isLoading } = useListingLoading({
+        storageKey: SKELETON_FLAG_KEY,
+        isDataReady,
+    });
 
     React.useEffect(() => {
-        setPerPage(String(resolvedPerPage))
-    }, [resolvedPerPage])
+        setPerPage(String(resolvedPerPage));
+    }, [resolvedPerPage]);
 
-    const operationData = operations?.data ?? []
-    const totalRecords = totalCount ?? metrics?.total ?? operations?.total ?? 0
-    const currentPage = operations?.current_page ?? 1
-    const lastPage = operations?.last_page ?? 1
-
-    const resolvedPerPageNumeric = React.useMemo(() => {
-        const numeric = Number(perPage)
-        if (!Number.isFinite(numeric) || numeric <= 0) {
-            return operationData.length || 1
-        }
-
-        return numeric
-    }, [perPage, operationData.length])
-
-    const rowOffset = React.useMemo(() => {
-        if (typeof operations?.from === 'number' && Number.isFinite(operations.from)) {
-            return Math.max(operations.from - 1, 0)
-        }
-
-        return Math.max((currentPage - 1) * resolvedPerPageNumeric, 0)
-    }, [operations?.from, currentPage, resolvedPerPageNumeric])
-
-    const getStatusBadge = (status: string) => {
-        switch (status) {
-            case 'active':
-                return <Badge variant="default">Active</Badge>
-            case 'inactive':
-                return <Badge variant="secondary">Inactive</Badge>
-            case 'closed':
-                return <Badge variant="outline">Closed</Badge>
-            default:
-                return <Badge variant="outline">{status}</Badge>
-        }
-    }
+    const operationData = operations?.data ?? [];
+    const totalRecords = totalCount ?? metrics?.total ?? operations?.total ?? operationData.length ?? 0;
+    const currentPage = operations?.current_page ?? 1;
+    const perPageCountRaw = operations?.per_page ?? Number(perPage);
+    const perPageCount =
+        Number.isFinite(perPageCountRaw) && perPageCountRaw && perPageCountRaw > 0
+            ? Number(perPageCountRaw)
+            : operationData.length || 1;
+    const rowOffset = (currentPage - 1) * perPageCount;
 
     const handleNavigate = React.useCallback(
-        (overrides: Partial<{
-            search?: string
-            status?: string
-            customer?: string
-            sort?: string
-            direction?: 'asc' | 'desc'
-            page?: number
-            per_page?: number
-        }>) => {
-            const nextSearch = overrides.search !== undefined ? overrides.search : searchTerm.trim()
-            const nextStatus = overrides.status !== undefined ? overrides.status : selectedStatus
-            const nextCustomer = overrides.customer !== undefined ? overrides.customer : selectedCustomer
-            const nextSort = overrides.sort ?? sortColumn
-            const nextDirection = overrides.direction ?? sortDirection
-            const perPageValue = overrides.per_page !== undefined ? overrides.per_page : Number(perPage)
+        (overrides: {
+            search?: string;
+            status?: string;
+            customer?: string;
+            sort?: string;
+            direction?: 'asc' | 'desc';
+            page?: number;
+            per_page?: number;
+        } = {}) => {
+            const hasOverride = (key: keyof typeof overrides) => Object.prototype.hasOwnProperty.call(overrides, key);
+
+            const nextSearch = hasOverride('search')
+                ? overrides.search
+                : searchTerm.trim()
+                    ? searchTerm.trim()
+                    : undefined;
+
+            const nextStatus = hasOverride('status')
+                ? overrides.status
+                : selectedStatus !== 'all'
+                    ? selectedStatus
+                    : undefined;
+
+            const nextCustomer = hasOverride('customer')
+                ? overrides.customer
+                : selectedCustomer !== 'all'
+                    ? selectedCustomer
+                    : undefined;
+
+            const nextSort = hasOverride('sort') ? overrides.sort ?? sortColumn : sortColumn;
+            const nextDirection = hasOverride('direction') ? overrides.direction ?? sortDirection : sortDirection;
+            const nextPerPage = hasOverride('per_page') ? overrides.per_page : Number(perPage);
+            const nextPage = hasOverride('page') ? overrides.page : undefined;
 
             const params: Record<string, string | number | undefined> = {
-                search: nextSearch ? nextSearch : undefined,
-                status: nextStatus !== 'all' ? nextStatus : undefined,
-                customer: nextCustomer !== 'all' ? nextCustomer : undefined,
+                search: nextSearch && nextSearch !== '' ? nextSearch : undefined,
+                status: nextStatus && nextStatus !== 'all' ? nextStatus : undefined,
+                customer: nextCustomer && nextCustomer !== 'all' ? nextCustomer : undefined,
                 sort: nextSort,
                 direction: nextDirection,
-                page: overrides.page,
-                per_page: perPageValue,
-            }
+                page: nextPage,
+                per_page:
+                    typeof nextPerPage === 'number' && Number.isFinite(nextPerPage) && nextPerPage > 0
+                        ? nextPerPage
+                        : undefined,
+            };
 
             Object.keys(params).forEach((key) => {
-                const value = params[key]
-                if (
-                    value === undefined ||
-                    value === null ||
-                    value === '' ||
-                    (key === 'per_page' && (typeof value !== 'number' || Number.isNaN(value) || value <= 0))
-                ) {
-                    delete params[key]
+                if (params[key] === undefined) {
+                    delete params[key];
                 }
-            })
+            });
 
-            router.get('/operations', params, { preserveState: true, preserveScroll: true, replace: false })
+            if (typeof window !== 'undefined') {
+                window.sessionStorage.setItem(SKELETON_FLAG_KEY, 'true');
+            }
+
+            router.get('/operations', params, { preserveState: true, replace: false });
         },
-    [searchTerm, selectedStatus, selectedCustomer, sortColumn, sortDirection, perPage]
-    )
+        [perPage, searchTerm, selectedStatus, selectedCustomer, sortColumn, sortDirection],
+    );
 
     const handleSearchChange = (value: string) => {
-        setSearchTerm(value)
-        handleNavigate({ search: value.trim(), page: 1 })
-    }
+        setSearchTerm(value);
+        handleNavigate({ search: value.trim() ? value.trim() : undefined, page: 1 });
+    };
 
     const handleStatusChange = (value: string) => {
-        setSelectedStatus(value)
-        handleNavigate({ status: value, page: 1 })
-    }
+        setSelectedStatus(value);
+        handleNavigate({ status: value !== 'all' ? value : undefined, page: 1 });
+    };
 
     const handleCustomerChange = (value: string) => {
-        setSelectedCustomer(value)
-        handleNavigate({ customer: value, page: 1 })
-    }
+        setSelectedCustomer(value);
+        handleNavigate({ customer: value !== 'all' ? value : undefined, page: 1 });
+    };
 
     const handlePerPageChange = (value: string) => {
-        setPerPage(value)
-        const numericValue = Number(value)
-        handleNavigate({ per_page: Number.isNaN(numericValue) ? undefined : numericValue, page: 1 })
-    }
+        setPerPage(value);
+        const numericValue = Number(value);
+        handleNavigate({ per_page: Number.isNaN(numericValue) ? undefined : numericValue, page: 1 });
+    };
 
-    const handleSort = (column: ColumnConfig) => {
-        if (column.sortable === false) {
-            return
+    const handleSort = React.useCallback(
+        (column: string) => {
+            const newDirection: 'asc' | 'desc' = sortColumn === column && sortDirection === 'asc' ? 'desc' : 'asc';
+            setSortColumn(column);
+            setSortDirection(newDirection);
+            handleNavigate({ sort: column, direction: newDirection });
+        },
+        [handleNavigate, sortColumn, sortDirection],
+    );
+
+    const handleDeleteClick = (operation: OperationData) => {
+        setSelectedOperation(operation);
+        setDeleteDialogOpen(true);
+    };
+
+    const handleDeleteConfirm = () => {
+        if (!selectedOperation) {
+            return;
         }
 
-        const sortKey = column.sortKey ?? column.key
-        const newDirection: 'asc' | 'desc' = sortColumn === sortKey && sortDirection === 'asc' ? 'desc' : 'asc'
-        setSortColumn(sortKey)
-        setSortDirection(newDirection)
-        handleNavigate({ sort: sortKey, direction: newDirection })
-    }
+        setIsDeleting(true);
 
-    const renderHeaderCell = (column: ColumnConfig) => {
-        const sortKey = column.sortKey ?? column.key
-        const isActive = sortColumn === sortKey
+        router.delete(`/operations/${selectedOperation.id}`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setDeleteDialogOpen(false);
+                setSelectedOperation(null);
+                setIsDeleting(false);
+                toast({
+                    title: 'Operation deleted',
+                    description: 'The operation was removed successfully.',
+                });
+            },
+            onError: (errors) => {
+                setIsDeleting(false);
 
-        return (
-            <TableHead
-                key={column.key}
-                className={`select-none bg-background ${column.sortable !== false ? 'cursor-pointer transition-colors hover:bg-muted/70' : ''}`}
-                onClick={column.sortable !== false ? () => handleSort(column) : undefined}
-            >
+                const fallback = 'Failed to delete operation. Please try again.';
+                if (errors && typeof errors === 'object') {
+                    const errorMessages = Object.values(errors)
+                        .flatMap((value) => (Array.isArray(value) ? value : [value]))
+                        .filter(Boolean)
+                        .join('\n');
+
+                    toast({
+                        title: 'Delete failed',
+                        description: errorMessages || fallback,
+                        variant: 'destructive',
+                    });
+                } else {
+                    toast({
+                        title: 'Delete failed',
+                        description: fallback,
+                        variant: 'destructive',
+                    });
+                }
+            },
+        });
+    };
+
+    const statsDefinitions = [
+        {
+            id: 'total-operations',
+            label: 'Total Operations',
+            icon: <Square className="h-3.5 w-3.5 text-slate-500" />,
+            className: 'min-w-0',
+            value: isLoading ? (
+                <Skeleton className="h-3.5 w-20" aria-hidden="true" />
+            ) : (
+                formatCount(totalRecords)
+            ),
+            description: isLoading ? (
+                <Skeleton className="h-3 w-32" aria-hidden="true" />
+            ) : (
+                `${formatCount(metrics?.open)} currently open`
+            ),
+            valueClassName: isLoading ? undefined : 'text-slate-600',
+        },
+        {
+            id: 'active-operations',
+            label: 'Active',
+            icon: <CheckCircle className="h-3.5 w-3.5 text-emerald-600" />,
+            className: 'min-w-0',
+            value: isLoading ? (
+                <Skeleton className="h-3.5 w-16" aria-hidden="true" />
+            ) : (
+                formatCount(metrics?.active)
+            ),
+            description: isLoading ? (
+                <Skeleton className="h-3 w-28" aria-hidden="true" />
+            ) : (
+                'Operations in motion'
+            ),
+            valueClassName: isLoading ? undefined : 'text-emerald-600',
+        },
+        {
+            id: 'inactive-operations',
+            label: 'Inactive',
+            icon: <XCircle className="h-3.5 w-3.5 text-rose-500" />,
+            className: 'min-w-0',
+            value: isLoading ? (
+                <Skeleton className="h-3.5 w-16" aria-hidden="true" />
+            ) : (
+                formatCount(metrics?.inactive)
+            ),
+            description: isLoading ? (
+                <Skeleton className="h-3 w-28" aria-hidden="true" />
+            ) : (
+                'Temporarily paused'
+            ),
+            valueClassName: isLoading ? undefined : 'text-rose-500',
+        },
+        {
+            id: 'closed-operations',
+            label: 'Closed',
+            icon: <Gauge className="h-3.5 w-3.5 text-purple-600" />,
+            className: 'min-w-0',
+            value: isLoading ? (
+                <Skeleton className="h-3.5 w-16" aria-hidden="true" />
+            ) : (
+                formatCount(metrics?.closed)
+            ),
+            description: isLoading ? (
+                <Skeleton className="h-3 w-32" aria-hidden="true" />
+            ) : (
+                'Completed and archived'
+            ),
+            valueClassName: isLoading ? undefined : 'text-purple-600',
+        },
+    ];
+
+    const statsSection = <ListingStatsHeader stats={statsDefinitions} orientation="row" />;
+
+    const perPageSelectOptions = React.useMemo(
+        () =>
+            availablePerPageOptions.map((option) => ({
+                value: String(option),
+                label: `${option} / page`,
+            })),
+        [availablePerPageOptions],
+    );
+
+    const tableColumns = React.useMemo(
+        () => [
+            { id: 'index', label: '#', align: 'center' as const },
+            ...COLUMN_DEFINITIONS.map((column) => ({
+                id: column.id,
+                label: column.label,
+                sortable: Boolean(column.sortKey),
+                sortKey: column.sortKey,
+                align: column.align,
+            })),
+            { id: 'actions', label: 'Actions', align: 'center' as const },
+        ],
+        [],
+    );
+
+    const tableRows = isLoading
+        ? Array.from({ length: 6 }).map((_, rowIndex) => (
+              <TableRow key={`operation-skeleton-${rowIndex}`} aria-hidden="true">
+                  {tableColumns.map((column) => (
+                      <TableCell
+                          key={`${column.id}-${rowIndex}`}
+                          className={
+                              column.align === 'center'
+                                  ? 'text-center'
+                                  : column.align === 'right'
+                                      ? 'text-right'
+                                      : undefined
+                          }
+                      >
+                          <Skeleton className="mx-auto h-4 w-24 max-w-full" />
+                      </TableCell>
+                  ))}
+              </TableRow>
+          ))
+        : operationData.length > 0
+            ? operationData.map((operation, index) => (
+                  <TableRow key={operation.id} className="hover:bg-muted/50">
+                      <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
+                      <TableCell className="font-medium">{operation.operationid}</TableCell>
+                      <TableCell className="text-muted-foreground">
+                          {operation.customer?.name || '—'}
+                      </TableCell>
+                      <TableCell className="text-center">{getStatusBadge(operation.status)}</TableCell>
+                      <TableCell className="text-muted-foreground">{formatDateValue(operation.startdate)}</TableCell>
+                      <TableCell className="text-right font-medium">{formatNumberValue(operation.volume)}</TableCell>
+                      <TableCell className="text-right text-muted-foreground">{formatNumberValue(operation.km)}</TableCell>
+                      <TableCell>{renderTonnageProgress(operation)}</TableCell>
+                      <TableCell className="text-center">
+                          <ListingRowActionsMenu
+                              actions={[
+                                  canViewOperation && {
+                                      label: 'View',
+                                      icon: <Eye className="h-4 w-4" />,
+                                      href: `/operations/${operation.id}`,
+                                  },
+                                  canEditOperation && {
+                                      label: 'Edit',
+                                      icon: <SquarePen className="h-4 w-4" />,
+                                      href: `/operations/${operation.id}/edit`,
+                                  },
+                                  canDeleteOperation && {
+                                      label: 'Delete',
+                                      icon: <Trash2 className="h-4 w-4" />,
+                                      danger: true,
+                                      disabled: isDeleting && selectedOperation?.id === operation.id,
+                                      onSelect: () => handleDeleteClick(operation),
+                                  },
+                              ]}
+                          />
+                      </TableCell>
+                  </TableRow>
+              ))
+            : (
+                <TableRow>
+                    <TableCell colSpan={tableColumns.length} className="py-8 text-center text-muted-foreground">
+                        No operations found.
+                        {canCreateOperation && (
+                            <Link href="/operations/create" className="ml-1 text-primary underline">
+                                Create one
+                            </Link>
+                        )}
+                    </TableCell>
+                </TableRow>
+            );
+
+    const mobileItems = React.useMemo(
+        () =>
+            operationData.map((operation, index) => ({
+                record: operation,
+                position: rowOffset + index + 1,
+            })),
+        [operationData, rowOffset],
+    );
+
+    const mobileContent = isLoading ? (
+        <ListingLoadingPlaceholder showStats={false} filterItemCount={4} rowCount={4} />
+    ) : (
+        <ListingMobileItemList
+            items={mobileItems}
+            getKey={(item) => item.record.id}
+            renderTitle={(item) => (
                 <div className="flex items-center gap-2">
-                    {column.label}
-                    {column.sortable !== false && (
-                        <ArrowUpDown
-                            size={14}
-                            className={isActive ? 'text-primary' : 'text-muted-foreground opacity-50'}
-                        />
+                    <span className="text-xs uppercase tracking-wide text-muted-foreground">#{item.position}</span>
+                    <span className="text-base">{item.record.operationid}</span>
+                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+                </div>
+            )}
+            renderSubtitle={(item) => item.record.customer?.name || 'Unassigned customer'}
+            renderContent={(item) => (
+                <div className="space-y-3 text-sm text-muted-foreground">
+                    <div className="flex items-center justify-between">
+                        <span className="font-medium text-slate-600 dark:text-slate-300">Status</span>
+                        <span className="text-right text-slate-900 dark:text-slate-100">
+                            {item.record.status}
+                        </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <span className="font-medium text-slate-600 dark:text-slate-300">Start Date</span>
+                        <span className="text-right text-slate-900 dark:text-slate-100">
+                            {formatDateValue(item.record.startdate)}
+                        </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <span className="font-medium text-slate-600 dark:text-slate-300">Volume</span>
+                        <span className="text-right text-slate-900 dark:text-slate-100">
+                            {formatNumberValue(item.record.volume)} MT
+                        </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <span className="font-medium text-slate-600 dark:text-slate-300">Distance</span>
+                        <span className="text-right text-slate-900 dark:text-slate-100">
+                            {formatNumberValue(item.record.km, 0)} KM
+                        </span>
+                    </div>
+                    <div>{renderTonnageProgress(item.record)}</div>
+                </div>
+            )}
+            renderFooter={(item) => (
+                <div className="flex w-full flex-wrap items-center justify-end gap-2">
+                    {canViewOperation && (
+                        <Button asChild size="sm" variant="outline" className="flex-1 sm:flex-auto">
+                            <Link href={`/operations/${item.record.id}`}>
+                                <Eye className="mr-2 h-4 w-4" />
+                                View
+                            </Link>
+                        </Button>
+                    )}
+                    {canEditOperation && (
+                        <Button asChild size="sm" variant="secondary" className="flex-1 sm:flex-none">
+                            <Link href={`/operations/${item.record.id}/edit`}>
+                                <SquarePen className="mr-2 h-4 w-4" />
+                                Edit
+                            </Link>
+                        </Button>
+                    )}
+                    {canDeleteOperation && (
+                        <Button
+                            size="sm"
+                            variant="destructive"
+                            className="flex-1 sm:flex-none"
+                            onClick={() => handleDeleteClick(item.record)}
+                            disabled={isDeleting && selectedOperation?.id === item.record.id}
+                        >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                        </Button>
                     )}
                 </div>
-            </TableHead>
-        )
-    }
-
-    const renderCell = (operation: OperationData, column: ColumnKey): React.ReactNode => {
-        switch (column) {
-            case 'operationid':
-                return <span className="font-medium">{operation.operationid}</span>
-            case 'customer':
-                return operation.customer?.name || '—'
-            case 'status':
-                return getStatusBadge(operation.status)
-            case 'startdate':
-                return operation.startdate ? new Date(operation.startdate).toLocaleDateString() : '—'
-            case 'volume':
-                return formatNumberValue(operation.volume)
-            case 'km':
-                return formatNumberValue(operation.km)
-            case 'tonnageProgress':
-                return renderTonnageProgress(operation)
-            default:
-                return null
-        }
-    }
-
-    const headerActions = (
-        <>
-            {hasPermission('operations.create') && (
-                <Button asChild>
-                    <Link href="/operations/create">
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add Operation
-                    </Link>
-                </Button>
             )}
-        </>
-    )
-
-    const statsCards = [
-        {
-            title: 'Total Operations',
-            value: totalRecords.toLocaleString(),
-            description: `${(metrics?.open ?? 0).toLocaleString()} currently open`,
-            icon: <Square className="h-3.5 w-3.5 text-muted-foreground" />,
-            valueClassName: 'text-foreground',
-        },
-        {
-            title: 'Active',
-            value: (metrics?.active ?? 0).toLocaleString(),
-            description: 'Operations in motion',
-            icon: <CheckCircle className="h-3.5 w-3.5 text-emerald-600" />,
-            valueClassName: 'text-emerald-600',
-        },
-        {
-            title: 'Inactive',
-            value: (metrics?.inactive ?? 0).toLocaleString(),
-            description: 'Temporarily paused',
-            icon: <XCircle className="h-3.5 w-3.5 text-rose-500" />,
-            valueClassName: 'text-rose-500',
-        },
-        {
-            title: 'Closed',
-            value: (metrics?.closed ?? 0).toLocaleString(),
-            description: 'Completed and archived',
-            icon: <Gauge className="h-3.5 w-3.5 text-slate-500" />,
-            valueClassName: 'text-slate-600',
-        },
-    ]
-
-    const statsSection = (
-        <div className="hidden gap-2 md:grid md:grid-cols-2 xl:grid-cols-4">
-            {statsCards.map((card) => (
-                <Card key={card.title} className="gap-2 border border-slate-200 py-2 shadow-sm sm:py-3">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 p-1.5 sm:p-2">
-                        <CardTitle className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                            {card.title}
-                        </CardTitle>
-                        {card.icon}
-                    </CardHeader>
-                    <CardContent className="px-2 pb-2 pt-0 sm:px-3 sm:pb-2">
-                        <div className={`text-sm font-semibold sm:text-base ${card.valueClassName}`}>{card.value}</div>
-                        <p className="text-[11px] text-muted-foreground">{card.description}</p>
-                    </CardContent>
-                </Card>
-            ))}
-        </div>
-    )
+            emptyState={(
+                <div className="py-8 text-center text-muted-foreground">
+                    No operations found.
+                    {canCreateOperation && (
+                        <Link href="/operations/create" className="ml-1 text-primary underline">
+                            Create one
+                        </Link>
+                    )}
+                </div>
+            )}
+        />
+    );
 
     const tableHeaderExtras = (
-        <div className="flex flex-wrap items-center gap-2">
-            <div className="relative w-[260px] max-w-full">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                    placeholder="Search operations..."
-                    value={searchTerm}
-                    onChange={(event) => handleSearchChange(event.target.value)}
-                    className="pl-10"
-                />
-            </div>
+        <ListingFilterBar
+            search={{
+                value: searchTerm,
+                placeholder: 'Search operations...',
+                onChange: handleSearchChange,
+                icon: <Search className="h-4 w-4" />,
+            }}
+            perPage={{
+                value: perPage,
+                label: 'Rows',
+                onChange: handlePerPageChange,
+                options: perPageSelectOptions,
+            }}
+        >
             <Select value={selectedStatus} onValueChange={handleStatusChange}>
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-full min-w-[180px] sm:w-auto">
                     <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -440,7 +703,7 @@ export default function OperationsIndex({
                 </SelectContent>
             </Select>
             <Select value={selectedCustomer} onValueChange={handleCustomerChange}>
-                <SelectTrigger className="w-[220px]">
+                <SelectTrigger className="w-full min-w-[220px] sm:w-auto">
                     <SelectValue placeholder="Customer" />
                 </SelectTrigger>
                 <SelectContent className="max-h-72">
@@ -452,122 +715,28 @@ export default function OperationsIndex({
                     ))}
                 </SelectContent>
             </Select>
-            <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                <span className="hidden sm:inline">Rows</span>
-                <Select value={perPage} onValueChange={handlePerPageChange}>
-                    <SelectTrigger className="w-[110px]">
-                        <SelectValue placeholder="Per page" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {availablePerPageOptions.map((option) => (
-                            <SelectItem key={option} value={String(option)}>
-                                {option} / page
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-            </div>
-        </div>
-    )
+        </ListingFilterBar>
+    );
 
-    const tableContent = (
-        <Table>
-            <TableHeader className="[&_tr]:sticky [&_tr]:top-0 [&_tr]:z-20 [&_tr]:bg-background [&_tr]:shadow-sm">
-                <TableRow className="border-b bg-background">
-                    <TableHead className="sticky top-0 z-20 w-12 bg-background text-center">#</TableHead>
-                    {columns.map((column) => renderHeaderCell(column))}
-                    <TableHead className="sticky top-0 z-20 bg-background text-center">Actions</TableHead>
-                </TableRow>
-            </TableHeader>
-            <TableBody>
-                {operationData.length > 0 ? (
-                    operationData.map((operation, index) => (
-                        <TableRow key={operation.id} className="hover:bg-muted/50">
-                            <TableCell className="text-center font-medium">
-                                {rowOffset + index + 1}
-                            </TableCell>
-                            {columns.map(({ key }) => (
-                                <TableCell key={key}>{renderCell(operation, key)}</TableCell>
-                            ))}
-                            <TableCell className="text-center">
-                                <div className="flex justify-center gap-2">
-                                    <Button asChild size="sm" variant="ghost">
-                                        <Link href={`/operations/${operation.id}`}>
-                                            <Eye className="h-4 w-4" />
-                                        </Link>
-                                    </Button>
-                                    {hasPermission('operations.edit') && (
-                                        <Button asChild size="sm" variant="ghost">
-                                            <Link href={`/operations/${operation.id}/edit`}>
-                                                <SquarePen className="h-4 w-4" />
-                                            </Link>
-                                        </Button>
-                                    )}
-                                    {hasPermission('operations.destroy') && (
-                                        <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                            onClick={() => {
-                                                setSelectedOperation(operation)
-                                                setDeleteDialogOpen(true)
-                                            }}
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                    )}
-                                </div>
-                            </TableCell>
-                        </TableRow>
-                    ))
-                ) : (
-                    <TableRow>
-                        <TableCell colSpan={columns.length + 2} className="py-8 text-center text-muted-foreground">
-                            No operations found.
-                            {hasPermission('operations.create') && (
-                                <Link href="/operations/create" className="ml-1 text-primary underline">
-                                    Create one
-                                </Link>
-                            )}
-                        </TableCell>
-                    </TableRow>
-                )}
-            </TableBody>
-        </Table>
-    )
-
-    const handleDeleteConfirm = React.useCallback(() => {
-        if (!selectedOperation) {
-            return
-        }
-
-        setIsDeleting(true)
-        router.delete(`/operations/${selectedOperation.id}`, {
-            preserveScroll: true,
-            onSuccess: () => {
-                toast({ title: 'Operation deleted', description: 'The operation was removed successfully.' })
-                setDeleteDialogOpen(false)
-                setSelectedOperation(null)
-            },
-            onError: () => {
-                toast({
-                    title: 'Unable to delete operation',
-                    description: 'Please try again or contact support if the issue persists.',
-                    variant: 'destructive',
-                })
-            },
-            onFinish: () => {
-                setIsDeleting(false)
-            },
-        })
-    }, [selectedOperation, toast])
+    const headerActions = (
+        <>
+            {canCreateOperation && (
+                <Button asChild>
+                    <Link href="/operations/create">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Operation
+                    </Link>
+                </Button>
+            )}
+        </>
+    );
 
     return (
         <>
             <ListPageLayout
                 headTitle="Operations"
                 title="Operations"
-                description={`Manage your operations (${totalRecords.toLocaleString()})`}
+                description={`Manage your operations (${formatCount(totalRecords)})`}
                 breadcrumbs={breadcrumbs}
                 actions={headerActions}
                 stats={statsSection}
@@ -575,29 +744,45 @@ export default function OperationsIndex({
                 tableDescription="Complete list of all operations"
                 tableHeaderExtras={tableHeaderExtras}
                 pagination={
-                    <InertiaPagination
-                        className="mt-4"
-                        links={operations.links}
-                        from={operations.from}
-                        to={operations.to}
-                        total={operations.total}
-                        currentPage={currentPage}
-                        lastPage={lastPage}
-                    />
+                    !isLoading && operations?.links ? (
+                        <ListingPaginationFooter
+                            className="mt-4"
+                            links={operations.links}
+                            from={operations.from ?? undefined}
+                            to={operations.to ?? undefined}
+                            total={operations.total ?? undefined}
+                        />
+                    ) : null
                 }
             >
-                {tableContent}
+                <div className="hidden md:block">
+                    <ListingTableShell
+                        columns={tableColumns}
+                        sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSort }}
+                    >
+                        {tableRows}
+                    </ListingTableShell>
+                </div>
+
+                <div className="space-y-3 md:hidden">{mobileContent}</div>
             </ListPageLayout>
 
             <DeleteConfirmationDialog
                 open={deleteDialogOpen}
-                onOpenChange={setDeleteDialogOpen}
+                onOpenChange={(open) => {
+                    setDeleteDialogOpen(open);
+                    if (!open) {
+                        setSelectedOperation(null);
+                        setIsDeleting(false);
+                    }
+                }}
                 title="Delete Operation"
                 description="Are you sure you want to delete this operation? This action cannot be undone."
-                itemName={selectedOperation ? selectedOperation.operationid : ''}
+                itemName={selectedOperation ? selectedOperation.operationid : undefined}
                 onConfirm={handleDeleteConfirm}
                 isLoading={isDeleting}
             />
         </>
-    )
+    );
 }
+
