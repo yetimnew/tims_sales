@@ -7,12 +7,14 @@ import { UnsavedChangesBadge } from '@/components/forms/unsaved-changes-badge';
 import { Button } from '@/components/ui/button';
 import { CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
 import { validateDriverSafety } from '@/lib/validation';
+import { cn } from '@/lib/utils';
 import { type BreadcrumbItem } from '@/types';
 import { Link, useForm } from '@inertiajs/react';
 import type { LucideIcon } from 'lucide-react';
@@ -336,13 +338,16 @@ export default function DriverSafetyCreate({ drivers }: DriverSafetyCreateProps)
                     </FormField>
 
                     <FormField id="incident_date" label="Incident Date" required error={getFieldError('incident_date')}>
-                        <Input
-                            id="incident_date"
-                            name="incident_date"
-                            type="date"
+                        <DatePicker
+                            fullWidth
                             value={data.incident_date}
-                            onChange={(event) => handleFieldChange('incident_date', event.target.value)}
-                            className={`border-slate-300 focus:border-rose-500 focus:ring-rose-500/20 dark:border-slate-700 dark:focus:border-rose-400 ${getFieldError('incident_date') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20 dark:border-red-500' : ''}`}
+                            onChange={(next) => handleFieldChange('incident_date', next ?? '')}
+                            fieldClassName={cn(
+                                'h-11 border-slate-300 focus-within:border-rose-500 focus-within:ring-rose-500/20 dark:border-slate-700 dark:focus-within:border-rose-400',
+                                getFieldError('incident_date')
+                                    ? 'border-red-500 focus-within:border-red-500 focus-within:ring-red-500/20'
+                                    : undefined,
+                            )}
                         />
                     </FormField>
 

@@ -54,16 +54,24 @@ export default function CustomersCreate() {
     }, []);
 
     useEffect(() => {
-        const errorMessages = Object.values(errors)
-            .map((message) =>
-                typeof message === 'string' ? message : Array.isArray(message) ? message.join(', ') : String(message),
-            )
-            .filter(Boolean);
+        const normalizedMessages = (Object.values(errors) as unknown[])
+            .map((message) => {
+                if (typeof message === 'string') {
+                    return message;
+                }
 
-        if (errorMessages.length > 0) {
+                if (Array.isArray(message)) {
+                    return message.join(', ');
+                }
+
+                return String(message ?? '');
+            })
+            .filter((message) => Boolean(message));
+
+        if (normalizedMessages.length > 0) {
             toast({
                 title: '⚠️ Validation Error',
-                description: errorMessages.join(', '),
+                description: normalizedMessages.join(', '),
                 variant: 'destructive',
             });
         }

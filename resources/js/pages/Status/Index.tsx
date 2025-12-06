@@ -2,6 +2,7 @@ import AppLayout from '@/layouts/app-layout';
 import { Head, router } from '@inertiajs/react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -323,13 +324,13 @@ export default function TruckStatusBoard({ trucksByStatus, statuses, selectedDat
                     <div className="flex items-center gap-3">
                         <div className="flex items-center gap-2">
                             <Calendar className="h-5 w-5 text-gray-600" />
-                            <Input
-                                type="date"
-                                value={selectedDate}
-                                onChange={(e) => {
-                                    router.get('/truck-status-board', { date: e.target.value });
-                                }}
+                            <DatePicker
                                 className="w-40"
+                                fieldClassName="h-10"
+                                value={selectedDate}
+                                onChange={(next) => {
+                                    router.get('/truck-status-board', { date: next ?? '' });
+                                }}
                             />
                         </div>
                     </div>

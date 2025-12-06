@@ -6,6 +6,7 @@ import { ScrollToTopFab } from '@/components/forms/scroll-to-top-fab';
 import { UnsavedChangesBadge } from '@/components/forms/unsaved-changes-badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
@@ -15,6 +16,7 @@ import { Link, useForm } from '@inertiajs/react';
 import { ArrowLeft, CheckCircle, DollarSign, Edit3, Fuel, Info, MapPin, Save, Truck } from 'lucide-react';
 import { type FormEventHandler } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { cn } from '@/lib/utils';
 
 interface FuelRecord {
     id: number;
@@ -366,13 +368,16 @@ export default function FuelRecordsEdit({ fuelRecord, driverTrucks }: FuelRecord
                     contentClassName="gap-6 md:grid-cols-2"
                 >
                     <FormField id="fuel_date" label="Fuel Date" required error={getFieldError('fuel_date')}>
-                        <Input
-                            id="fuel_date"
-                            name="fuel_date"
-                            type="date"
+                        <DatePicker
+                            fullWidth
                             value={data.fuel_date}
-                            onChange={(event) => handleFieldChange('fuel_date', event.target.value)}
-                            className={`border-slate-300 focus:border-orange-500 focus:ring-orange-500/20 dark:border-slate-700 dark:focus:border-orange-400 ${getFieldError('fuel_date') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20 dark:border-red-500' : ''}`}
+                            onChange={(next) => handleFieldChange('fuel_date', next ?? '')}
+                            fieldClassName={cn(
+                                'h-11 border-slate-300 focus-within:border-orange-500 focus-within:ring-orange-500/20 dark:border-slate-700 dark:focus-within:border-orange-400',
+                                getFieldError('fuel_date')
+                                    ? 'border-red-500 focus-within:border-red-500 focus-within:ring-red-500/20'
+                                    : undefined,
+                            )}
                         />
                     </FormField>
                     <FormField

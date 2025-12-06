@@ -7,6 +7,7 @@ import ListPageLayout from '@/components/layouts/list-page-layout';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -15,7 +16,6 @@ import { toast } from '@/hooks/use-toast';
 import {
     Activity,
     ArrowDownRight,
-    Calendar,
     ChevronRight,
     Coins,
     MapPin,
@@ -791,21 +791,18 @@ export default function OutsourcePerformancesIndex({
                     </SelectContent>
                 </Select>
                 <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <Input
-                            type="date"
-                            value={dateFrom}
-                            onChange={(event) => handleDateChange('from', event.target.value)}
-                            className="w-[150px]"
-                        />
-                    </div>
-                    <span className="text-muted-foreground">–</span>
-                    <Input
-                        type="date"
-                        value={dateTo}
-                        onChange={(event) => handleDateChange('to', event.target.value)}
+                    <DatePicker
                         className="w-[150px]"
+                        value={dateFrom}
+                        onChange={(next) => handleDateChange('from', next ?? '')}
+                        fieldClassName="h-9"
+                    />
+                    <span className="text-muted-foreground">–</span>
+                    <DatePicker
+                        className="w-[150px]"
+                        value={dateTo}
+                        onChange={(next) => handleDateChange('to', next ?? '')}
+                        fieldClassName="h-9"
                     />
                 </div>
             </div>

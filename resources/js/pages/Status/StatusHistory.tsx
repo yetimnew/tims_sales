@@ -1,9 +1,9 @@
 import AppLayout from '@/layouts/app-layout'
-import { Head, Link } from '@inertiajs/react'
+import { Head, Link, router } from '@inertiajs/react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
+import { DatePicker } from '@/components/ui/date-picker'
 import { ArrowLeft, Clock, Tag } from 'lucide-react'
 
 interface TimelineItem {
@@ -28,6 +28,26 @@ interface Paginated<T> {
 type TruckSummary = { id: number; plate: string }
 
 export default function StatusHistory({ truck, history, filters }: { truck: TruckSummary; history: Paginated<TimelineItem>; filters: { from?: string; to?: string } }) {
+  const handleDateChange = (key: 'from' | 'to') => (next: string | null) => {
+    const params: Record<string, string> = {}
+
+    const fromValue = key === 'from' ? next ?? '' : filters?.from ?? ''
+    const toValue = key === 'to' ? next ?? '' : filters?.to ?? ''
+
+    if (fromValue) {
+      params.from = fromValue
+    }
+
+    if (toValue) {
+      params.to = toValue
+    }
+
+    router.get(`/trucks/${truck.id}/status-history`, params, {
+      preserveScroll: true,
+      preserveState: true,
+    })
+  }
+
   return (
     <AppLayout breadcrumbs={[{ title: 'Trucks', href: '/trucks' }, { title: `History ${truck?.plate}`, href: '#' }]}>
       <Head title={`Status History - ${truck?.plate}`} />
@@ -46,8 +66,20 @@ export default function StatusHistory({ truck, history, filters }: { truck: Truc
             <CardTitle className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground">Filter</span>
-                <Input type="date" defaultValue={filters?.from} className="h-8 w-40"/>
-                <Input type="date" defaultValue={filters?.to} className="h-8 w-40"/>
+                <DatePicker
+                  className="w-40"
+                  fieldClassName="h-8 text-sm"
+                  buttonClassName="h-7 w-7"
+                  value={filters?.from ?? ''}
+                  onChange={handleDateChange('from')}
+                />
+                <DatePicker
+                  className="w-40"
+                  fieldClassName="h-8 text-sm"
+                  buttonClassName="h-7 w-7"
+                  value={filters?.to ?? ''}
+                  onChange={handleDateChange('to')}
+                />
               </div>
             </CardTitle>
           </CardHeader>

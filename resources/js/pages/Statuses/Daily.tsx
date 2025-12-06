@@ -3,7 +3,7 @@ import { Head, Link, router } from '@inertiajs/react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
+import { DatePicker } from '@/components/ui/date-picker'
 import { ArrowLeft, Calendar, Truck } from 'lucide-react'
 
 interface TruckRow {
@@ -36,7 +36,13 @@ export default function StatusDaily({ status, date, trucks }: { status: any; dat
           </div>
           <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4 text-muted-foreground" />
-            <Input type="date" value={date} onChange={(e) => router.get(`/statuses/${status.id}/daily`, { date: e.target.value })} className="h-8 w-40" />
+            <DatePicker
+              className="w-40"
+              fieldClassName="h-8 text-sm"
+              buttonClassName="h-7 w-7"
+              value={date}
+              onChange={(next) => router.get(`/statuses/${status.id}/daily`, { date: next ?? '' })}
+            />
           </div>
         </div>
 

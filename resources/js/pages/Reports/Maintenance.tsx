@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { Input } from '@/components/ui/input';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -385,8 +385,20 @@ export default function MaintenanceReport({
                                 <div className="space-y-2">
                                     <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Date range</span>
                                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                        <Input type="date" value={from} onChange={(event) => setFrom(event.target.value)} />
-                                        <Input type="date" value={to} onChange={(event) => setTo(event.target.value)} />
+                                        <DatePicker
+                                            value={from || ''}
+                                            onChange={(next) => setFrom(next ?? '')}
+                                            placeholder="Select date"
+                                            className="w-full"
+                                            fieldClassName="h-10 border-slate-300 hover:border-slate-400 focus-within:border-blue-500 focus-within:ring-blue-500/20 dark:border-slate-600 dark:hover:border-slate-500"
+                                        />
+                                        <DatePicker
+                                            value={to || ''}
+                                            onChange={(next) => setTo(next ?? '')}
+                                            placeholder="Select date"
+                                            className="w-full"
+                                            fieldClassName="h-10 border-slate-300 hover:border-slate-400 focus-within:border-blue-500 focus-within:ring-blue-500/20 dark:border-slate-600 dark:hover:border-slate-500"
+                                        />
                                     </div>
                                 </div>
 
