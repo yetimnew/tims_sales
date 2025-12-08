@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AlertCircle, Ban, BarChart3, History, ShieldCheck, CheckCircle, XCircle, Calendar, User, ArrowLeft, Edit, Trash2, Hash, Activity, Truck, ArrowUpRight } from 'lucide-react';
+import { AlertCircle, Ban, BarChart3, History, ShieldCheck, CheckCircle, Calendar, User, ArrowLeft, Edit, Trash2, Hash, Activity, Truck, ArrowUpRight } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { Head, Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
@@ -20,7 +20,7 @@ interface ActivityLog {
     description: string;
     causer?: { name?: string };
     created_at: string;
-    properties?: Record<string, any>;
+    properties?: Record<string, unknown>;
 }
 
 type DriverAssignment = {

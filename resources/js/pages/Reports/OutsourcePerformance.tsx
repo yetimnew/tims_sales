@@ -1,541 +1,436 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Head, router } from '@inertiajs/react';
-import { endOfMonth, startOfMonth, startOfToday, subDays, subMonths } from 'date-fns';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { DatePicker } from '@/components/ui/date-picker';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Separator } from '@/components/ui/separator';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { ReportFiltersDialog } from '@/components/reports/report-filters-dialog';
+import { ReportSummaryGrid, type ReportSummaryItem } from '@/components/reports/report-summary-grid';
+import { ReportDispatchTable, type ReportDispatchRow, type ReportSummary as ReportSummaryData } from '@/components/reports/report-dispatch-table';
+import type { ReportSelectionOption } from '@/components/reports/types';
+import { formatCurrency, formatDecimal, formatInteger, formatPercentage } from '@/components/reports/formatters';
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
-import {
-    ArrowDownRight,
-    ArrowUpRight,
     Building2,
     CircleDollarSign,
-    Filter,
-    TrendingDown,
+    ClipboardList,
+    Download,
+    FileDigit,
+    FileSpreadsheet,
+    FileType2,
+    Flame,
+    RefreshCcw,
+    Route,
     TrendingUp,
 } from 'lucide-react';
+import { usePermissions } from '@/hooks/use-permissions';
 
-interface OutsourceOption {
+interface VendorOption {
     id: number;
     name: string;
     status?: string | null;
 }
 
-interface OutsourcePerformanceFilters {
-    from: string;
-    to: string;
+interface OperationOption {
+    id: number;
+    code: string;
+    status?: string | null;
+    customer?: string | null;
+}
+
+interface DestinationOption {
+    id: number;
+    name: string;
+    status?: string | null;
+}
+
+interface StatusOption {
+    value: string;
+    label: string;
+}
+
+interface Filters {
+    from?: string | null;
+    to?: string | null;
     outsource_ids?: number[];
+    operation_ids?: number[];
+    destination_ids?: number[];
     statuses?: string[];
+    limit?: number;
 }
 
-interface OutsourcePerformanceTotals {
-    trips: number;
-    completed_trips: number;
-    vendor_count: number;
-    distance_km: number;
-    cost: number;
-    tonkm: number;
-    cost_per_km: number | null;
-    average_completion_rate_pct: number | null;
-}
-
-interface OutsourcePerformanceSummary {
-    outsourced_cost_per_km: number | null;
-    internal_cost_per_km: number | null;
-    cost_delta_per_km: number | null;
-    import { useCallback, useMemo, useState } from 'react';
-    import { Head, router } from '@inertiajs/react';
-    import AppLayout from '@/layouts/app-layout';
-    import { type BreadcrumbItem } from '@/types';
-    import { Button } from '@/components/ui/button';
-    import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-    import { ReportFiltersDialog } from '@/components/reports/report-filters-dialog';
-    import { ReportSummaryGrid, type ReportSummaryItem } from '@/components/reports/report-summary-grid';
-    import { ReportDispatchTable, type ReportDispatchRow, type ReportSummary as ReportSummaryData } from '@/components/reports/report-dispatch-table';
-    import type { ReportSelectionOption } from '@/components/reports/types';
-    import { formatCurrency, formatDecimal, formatInteger, formatPercentage } from '@/components/reports/formatters';
-    import { Building2, CircleDollarSign, ClipboardList, Download, FileDigit, FileSpreadsheet, FileType2, Flame, RefreshCcw, Route, TrendingUp } from 'lucide-react';
-    import { usePermissions } from '@/hooks/use-permissions';
-
-    interface VendorOption {
-        id: number;
-        name: string;
-        status?: string | null;
-    }
-
-    interface OperationOption {
-        id: number;
-        code: string;
-        status?: string | null;
-        customer?: string | null;
-    }
-
-    interface DestinationOption {
-        id: number;
-        name: string;
-        status?: string | null;
-    }
-
-    interface StatusOption {
-        value: string;
-        label: string;
-    }
-
-    interface Filters {
-        from?: string | null;
-        to?: string | null;
-        outsource_ids?: number[];
-        operation_ids?: number[];
-        destination_ids?: number[];
-        statuses?: string[];
-        limit?: number;
-    }
-
-    interface OutsourcePerformanceProps {
-        filters: Filters;
-        rows: ReportDispatchRow[];
-        summary: ReportSummaryData;
-        highlights?: unknown;
-        options: {
-            vendors: VendorOption[];
-            operations: OperationOption[];
-            destinations: DestinationOption[];
-            statuses: StatusOption[];
-        };
-    }
-
-    const breadcrumbs: BreadcrumbItem[] = [
-        { title: 'Reports', href: '/reports/outsource-performance' },
-        { title: 'Outsource Performance', href: '/reports/outsource-performance' },
-    ];
-
-    const toParamsArray = (key: string, values: Array<number | string>, params: URLSearchParams) => {
-        values.forEach((value) => params.append(`${key}[]`, String(value)));
+interface OutsourcePerformanceProps {
+    filters: Filters;
+    rows: ReportDispatchRow[];
+    summary: ReportSummaryData;
+    highlights?: unknown;
+    options: {
+        vendors: VendorOption[];
+        operations: OperationOption[];
+        destinations: DestinationOption[];
+        statuses: StatusOption[];
     };
+}
 
-    export default function OutsourcePerformance({ filters, rows = [], summary, options }: OutsourcePerformanceProps) {
-        const { hasPermission } = usePermissions();
-        const canExport = hasPermission('reports.outsource-performance.export');
+const breadcrumbs: BreadcrumbItem[] = [
+    { title: 'Reports', href: '/reports/outsource-performance' },
+    { title: 'Outsource Performance', href: '/reports/outsource-performance' },
+];
 
-        const vendorOptions = Array.isArray(options?.vendors) ? options.vendors : [];
-        const operationOptions = Array.isArray(options?.operations) ? options.operations : [];
-        const destinationOptions = Array.isArray(options?.destinations) ? options.destinations : [];
-        const statusOptions = Array.isArray(options?.statuses) ? options.statuses : [];
+const toParamsArray = (key: string, values: Array<number | string>, params: URLSearchParams) => {
+    values.forEach((value) => params.append(`${key}[]`, String(value)));
+};
 
-        const safeRows = Array.isArray(rows) ? rows : [];
+export default function OutsourcePerformance({ filters, rows = [], summary, options }: OutsourcePerformanceProps) {
+    const { hasPermission } = usePermissions();
+    const canExport = hasPermission('reports.outsource-performance.export');
 
-        const vendorSelectionOptions = useMemo<ReportSelectionOption[]>(
-            () =>
-                vendorOptions.map((option) => ({
-                    id: option.id,
-                    label: option.name ?? `Vendor #${option.id}`,
-                    badge: option.status ?? undefined,
-                })),
-            [vendorOptions],
-        );
+    const vendorOptions = Array.isArray(options?.vendors) ? options.vendors : [];
+    const operationOptions = Array.isArray(options?.operations) ? options.operations : [];
+    const destinationOptions = Array.isArray(options?.destinations) ? options.destinations : [];
+    const statusOptions = Array.isArray(options?.statuses) ? options.statuses : [];
 
-        const operationSelectionOptions = useMemo<ReportSelectionOption[]>(
-            () =>
-                operationOptions.map((option) => ({
-                    id: option.id,
-                    label: option.code,
-                    description: option.customer ?? undefined,
-                    badge: option.status ?? undefined,
-                })),
-            [operationOptions],
-        );
+    const safeRows = Array.isArray(rows) ? rows : [];
 
-        const destinationSelectionOptions = useMemo<ReportSelectionOption[]>(
-            () =>
-                destinationOptions.map((option) => ({
-                    id: option.id,
-                    label: option.name ?? '—',
-                    badge: option.status ?? undefined,
-                })),
-            [destinationOptions],
-        );
+    const vendorSelectionOptions = useMemo<ReportSelectionOption[]>(
+        () =>
+            vendorOptions.map((option) => ({
+                id: option.id,
+                label: option.name ?? `Vendor #${option.id}`,
+                badge: option.status ?? undefined,
+            })),
+        [vendorOptions],
+    );
 
-        const statusSelectionOptions = useMemo<ReportSelectionOption[]>(
-            () =>
-                statusOptions.map((option) => ({
-                    id: option.value,
-                    label: option.label,
-                })),
-            [statusOptions],
-        );
+    const operationSelectionOptions = useMemo<ReportSelectionOption[]>(
+        () =>
+            operationOptions.map((option) => ({
+                id: option.id,
+                label: option.code,
+                description: option.customer ?? undefined,
+                badge: option.status ?? undefined,
+            })),
+        [operationOptions],
+    );
 
-        const [from, setFrom] = useState(filters?.from ?? '');
-        const [to, setTo] = useState(filters?.to ?? '');
-        const [limit, setLimit] = useState<number>(filters?.limit ?? 200);
-        const [selectedVendors, setSelectedVendors] = useState<number[]>(filters?.outsource_ids ?? []);
-        const [selectedOperations, setSelectedOperations] = useState<number[]>(filters?.operation_ids ?? []);
-        const [selectedDestinations, setSelectedDestinations] = useState<number[]>(filters?.destination_ids ?? []);
-        const [selectedStatuses, setSelectedStatuses] = useState<string[]>(filters?.statuses ?? []);
+    const destinationSelectionOptions = useMemo<ReportSelectionOption[]>(
+        () =>
+            destinationOptions.map((option) => ({
+                id: option.id,
+                label: option.name ?? '—',
+                badge: option.status ?? undefined,
+            })),
+        [destinationOptions],
+    );
 
-        const [filtersOpen, setFiltersOpen] = useState(false);
-        const [dateError, setDateError] = useState<string | null>(null);
+    const statusSelectionOptions = useMemo<ReportSelectionOption[]>(
+        () =>
+            statusOptions.map((option) => ({
+                id: option.value,
+                label: option.label,
+            })),
+        [statusOptions],
+    );
 
-        const activeFilterCount = useMemo(() => {
-            let count = 0;
+    const [from, setFrom] = useState(filters?.from ?? '');
+    const [to, setTo] = useState(filters?.to ?? '');
+    const [limit, setLimit] = useState<number>(filters?.limit ?? 200);
+    const [selectedVendors, setSelectedVendors] = useState<number[]>(filters?.outsource_ids ?? []);
+    const [selectedOperations, setSelectedOperations] = useState<number[]>(filters?.operation_ids ?? []);
+    const [selectedDestinations, setSelectedDestinations] = useState<number[]>(filters?.destination_ids ?? []);
+    const [selectedStatuses, setSelectedStatuses] = useState<string[]>(filters?.statuses ?? []);
 
-            if (from && from !== (filters?.from ?? '')) count += 1;
-            if (to && to !== (filters?.to ?? '')) count += 1;
-            if (limit !== (filters?.limit ?? 200)) count += 1;
-            if (selectedVendors.length > 0) count += 1;
-            if (selectedOperations.length > 0) count += 1;
-            if (selectedDestinations.length > 0) count += 1;
-            if (selectedStatuses.length > 0) count += 1;
+    const [filtersOpen, setFiltersOpen] = useState(false);
+    const [dateError, setDateError] = useState<string | null>(null);
 
-            return count;
-        }, [filters?.from, filters?.to, filters?.limit, from, limit, selectedDestinations.length, selectedOperations.length, selectedStatuses.length, selectedVendors.length, to]);
+    const activeFilterCount = useMemo(() => {
+        let count = 0;
 
-        const summaryItems = useMemo<ReportSummaryItem[]>(
-            () => [
-                {
-                    label: 'Dispatches',
-                    value: formatInteger(summary?.records ?? safeRows.length),
-                    icon: ClipboardList,
-                    tone: 'bg-sky-100 text-sky-600 dark:bg-sky-500/20 dark:text-sky-200',
-                },
-                {
-                    label: 'Total tonnage (MT)',
-                    value: formatDecimal(summary?.tonnage ?? 0),
-                    icon: Building2,
-                    tone: 'bg-indigo-100 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-200',
-                },
-                {
-                    label: 'Distance (km)',
-                    value: formatDecimal(summary?.distance_total ?? 0),
-                    icon: Route,
-                    tone: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200',
-                },
-                {
-                    label: 'Vendor spend',
-                    value: formatCurrency(summary?.expense ?? 0),
-                    icon: CircleDollarSign,
-                    tone: 'bg-cyan-100 text-cyan-600 dark:bg-cyan-500/20 dark:text-cyan-200',
-                },
-                {
-                    label: 'Revenue',
-                    value: formatCurrency(summary?.revenue ?? 0),
-                    icon: Flame,
-                    tone: 'bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-200',
-                },
-                {
-                    label: 'Margin %',
-                    value: formatPercentage(summary?.margin_percent ?? null),
-                    icon: TrendingUp,
-                    tone: 'bg-rose-100 text-rose-600 dark:bg-rose-500/20 dark:text-rose-200',
-                },
-            ],
-            [safeRows.length, summary],
-        );
+        if (from && from !== (filters?.from ?? '')) count += 1;
+        if (to && to !== (filters?.to ?? '')) count += 1;
+        if (limit !== (filters?.limit ?? 200)) count += 1;
+        if (selectedVendors.length > 0) count += 1;
+        if (selectedOperations.length > 0) count += 1;
+        if (selectedDestinations.length > 0) count += 1;
+        if (selectedStatuses.length > 0) count += 1;
 
-        const validateDateRange = useCallback(
-            (nextFrom: string, nextTo: string) => {
-                if (nextFrom && nextTo) {
-                    const fromTimestamp = Date.parse(nextFrom);
-                    const toTimestamp = Date.parse(nextTo);
+        return count;
+    }, [filters?.from, filters?.limit, filters?.to, from, limit, selectedDestinations.length, selectedOperations.length, selectedStatuses.length, selectedVendors.length, to]);
 
-                    if (!Number.isNaN(fromTimestamp) && !Number.isNaN(toTimestamp) && fromTimestamp > toTimestamp) {
-                        setDateError('Start date must be before or equal to the end date.');
-
-                        return false;
-                    }
-                }
-
-                setDateError(null);
-
-                return true;
+    const summaryItems = useMemo<ReportSummaryItem[]>(
+        () => [
+            {
+                label: 'Dispatches',
+                value: formatInteger(summary?.records ?? safeRows.length),
+                icon: ClipboardList,
+                tone: 'bg-sky-100 text-sky-600 dark:bg-sky-500/20 dark:text-sky-200',
             },
-            [],
-        );
+            {
+                label: 'Total tonnage (MT)',
+                value: formatDecimal(summary?.tonnage ?? 0),
+                icon: Building2,
+                tone: 'bg-indigo-100 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-200',
+            },
+            {
+                label: 'Distance (km)',
+                value: formatDecimal(summary?.distance_total ?? 0),
+                icon: Route,
+                tone: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200',
+            },
+            {
+                label: 'Vendor spend',
+                value: formatCurrency(summary?.expense ?? 0),
+                icon: CircleDollarSign,
+                tone: 'bg-cyan-100 text-cyan-600 dark:bg-cyan-500/20 dark:text-cyan-200',
+            },
+            {
+                label: 'Revenue',
+                value: formatCurrency(summary?.revenue ?? 0),
+                icon: Flame,
+                tone: 'bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-200',
+            },
+            {
+                label: 'Margin %',
+                value: formatPercentage(summary?.margin_percent ?? null),
+                icon: TrendingUp,
+                tone: 'bg-rose-100 text-rose-600 dark:bg-rose-500/20 dark:text-rose-200',
+            },
+        ],
+        [safeRows.length, summary],
+    );
 
-        const handleApplyFilters = () => {
-            if (!validateDateRange(from, to)) {
-                setFiltersOpen(true);
+    const validateDateRange = useCallback(
+        (nextFrom: string, nextTo: string) => {
+            if (nextFrom && nextTo) {
+                const fromTimestamp = Date.parse(nextFrom);
+                const toTimestamp = Date.parse(nextTo);
 
-                return;
+                if (!Number.isNaN(fromTimestamp) && !Number.isNaN(toTimestamp) && fromTimestamp > toTimestamp) {
+                    setDateError('Start date must be before or equal to the end date.');
+
+                    return false;
+                }
             }
 
-            setFiltersOpen(false);
-
-            const params: Record<string, unknown> = {
-                from,
-                to,
-                limit,
-            };
-
-            if (selectedVendors.length > 0) params.outsource_ids = selectedVendors;
-            if (selectedOperations.length > 0) params.operation_ids = selectedOperations;
-            if (selectedDestinations.length > 0) params.destination_ids = selectedDestinations;
-            if (selectedStatuses.length > 0) params.statuses = selectedStatuses;
-
-            router.get('/reports/outsource-performance', params, {
-                preserveState: true,
-                preserveScroll: true,
-            });
-        };
-
-        const handleReset = () => {
-            setFrom(filters?.from ?? '');
-            setTo(filters?.to ?? '');
-            setLimit(filters?.limit ?? 200);
-            setSelectedVendors(filters?.outsource_ids ?? []);
-            setSelectedOperations(filters?.operation_ids ?? []);
-            setSelectedDestinations(filters?.destination_ids ?? []);
-            setSelectedStatuses(filters?.statuses ?? []);
-            setFiltersOpen(false);
             setDateError(null);
 
-            router.get('/reports/outsource-performance', {}, { preserveState: false, preserveScroll: true });
+            return true;
+        },
+        [],
+    );
+
+    const handleApplyFilters = () => {
+        if (!validateDateRange(from, to)) {
+            setFiltersOpen(true);
+
+            return;
+        }
+
+        setFiltersOpen(false);
+
+        const params: Record<string, unknown> = {
+            from,
+            to,
+            limit,
         };
 
-        const handleExport = (format: 'csv' | 'xlsx' | 'pdf') => {
-            if (!validateDateRange(from, to)) {
-                return;
-            }
+        if (selectedVendors.length > 0) params.outsource_ids = selectedVendors;
+        if (selectedOperations.length > 0) params.operation_ids = selectedOperations;
+        if (selectedDestinations.length > 0) params.destination_ids = selectedDestinations;
+        if (selectedStatuses.length > 0) params.statuses = selectedStatuses;
 
-            if (!canExport) {
-                return;
-            }
+        router.get('/reports/outsource-performance', params, {
+            preserveState: true,
+            preserveScroll: true,
+        });
+    };
 
-            const params = new URLSearchParams();
+    const handleReset = () => {
+        setFrom(filters?.from ?? '');
+        setTo(filters?.to ?? '');
+        setLimit(filters?.limit ?? 200);
+        setSelectedVendors(filters?.outsource_ids ?? []);
+        setSelectedOperations(filters?.operation_ids ?? []);
+        setSelectedDestinations(filters?.destination_ids ?? []);
+        setSelectedStatuses(filters?.statuses ?? []);
+        setFiltersOpen(false);
+        setDateError(null);
 
-            if (from) params.set('from', from);
-            if (to) params.set('to', to);
-            if (limit) params.set('limit', String(limit));
+        router.get('/reports/outsource-performance', {}, { preserveState: false, preserveScroll: true });
+    };
 
-            if (selectedVendors.length > 0) toParamsArray('outsource_ids', selectedVendors, params);
-            if (selectedOperations.length > 0) toParamsArray('operation_ids', selectedOperations, params);
-            if (selectedDestinations.length > 0) toParamsArray('destination_ids', selectedDestinations, params);
-            if (selectedStatuses.length > 0) toParamsArray('statuses', selectedStatuses, params);
+    const handleExport = (format: 'csv' | 'xlsx' | 'pdf') => {
+        if (!validateDateRange(from, to)) {
+            return;
+        }
 
-            const query = params.toString();
-            const url = `/reports/outsource-performance/export/${format}${query ? `?${query}` : ''}`;
-            window.location.href = url;
-        };
+        if (!canExport) {
+            return;
+        }
 
-        const appliedFrom = filters?.from ?? '';
-        const appliedTo = filters?.to ?? '';
-        const appliedVendorCount = filters?.outsource_ids?.length ?? 0;
-        const appliedOperationCount = filters?.operation_ids?.length ?? 0;
-        const appliedDestinationCount = filters?.destination_ids?.length ?? 0;
-        const appliedStatuses = filters?.statuses ?? [];
-        const summaryMargin = summary?.margin_percent ?? null;
+        const params = new URLSearchParams();
 
-        const filterBadges = useMemo(
-            () => [
-                `From ${appliedFrom || '—'}`,
-                `To ${appliedTo || '—'}`,
-                appliedVendorCount > 0 ? `${appliedVendorCount} vendor${appliedVendorCount > 1 ? 's' : ''}` : 'All vendors',
-                appliedOperationCount > 0 ? `${appliedOperationCount} operation${appliedOperationCount > 1 ? 's' : ''}` : 'All operations',
-                appliedDestinationCount > 0 ? `${appliedDestinationCount} destination${appliedDestinationCount > 1 ? 's' : ''}` : 'All destinations',
-                appliedStatuses.length > 0 ? `${appliedStatuses.length} status${appliedStatuses.length > 1 ? 'es' : ''}` : 'All statuses',
-            ],
-            [appliedDestinationCount, appliedFrom, appliedOperationCount, appliedStatuses.length, appliedTo, appliedVendorCount],
-        );
+        if (from) params.set('from', from);
+        if (to) params.set('to', to);
+        if (limit) params.set('limit', String(limit));
 
-        const handleDateChange = (field: 'from' | 'to', value: string) => {
-            if (field === 'from') {
-                setFrom(value);
-                validateDateRange(value, to);
-                return;
-            }
+        if (selectedVendors.length > 0) toParamsArray('outsource_ids', selectedVendors, params);
+        if (selectedOperations.length > 0) toParamsArray('operation_ids', selectedOperations, params);
+        if (selectedDestinations.length > 0) toParamsArray('destination_ids', selectedDestinations, params);
+        if (selectedStatuses.length > 0) toParamsArray('statuses', selectedStatuses, params);
 
-            setTo(value);
-            validateDateRange(from, value);
-        };
+        const query = params.toString();
+        const url = `/reports/outsource-performance/export/${format}${query ? `?${query}` : ''}`;
+        window.location.href = url;
+    };
 
-        return (
-            <AppLayout breadcrumbs={breadcrumbs}>
-                <Head title="Outsource Performance" />
-                <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-slate-100/60 dark:bg-slate-900/40">
-                    <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-4 pb-10 sm:p-6 lg:p-10">
-                        <header className="rounded-2xl border border-slate-200 bg-white/95 px-6 py-6 shadow-sm backdrop-blur dark:border-slate-800/70 dark:bg-slate-900/70">
-                            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                                <div className="space-y-2">
-                                    <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">Vendor Dispatch Intelligence</p>
-                                    <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-50">Outsource Dispatch Performance</h1>
-                                    <p className="max-w-3xl text-sm text-slate-600 dark:text-slate-300">
-                                        Review every outsource dispatch alongside internal benchmarks. Filter by vendor, route, and status to reconcile spend, revenue, and profitability.
-                                    </p>
-                                </div>
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <ReportFiltersDialog
-                                        open={filtersOpen}
-                                        onOpenChange={setFiltersOpen}
-                                        activeFilterCount={activeFilterCount}
-                                        from={from}
-                                        to={to}
-                                        onDateChange={handleDateChange}
-                                        onReset={handleReset}
-                                        onApply={handleApplyFilters}
-                                        limit={limit}
-                                        onLimitChange={setLimit}
-                                        driverOptions={vendorSelectionOptions}
-                                        operationOptions={operationSelectionOptions}
-                                        destinationOptions={destinationSelectionOptions}
-                                        statusOptions={statusSelectionOptions}
-                                        selectedDrivers={selectedVendors}
-                                        selectedOperations={selectedOperations}
-                                        selectedDestinations={selectedDestinations}
-                                        selectedStatuses={selectedStatuses}
-                                        onDriversChange={setSelectedVendors}
-                                        onOperationsChange={setSelectedOperations}
-                                        onDestinationsChange={setSelectedDestinations}
-                                        onStatusesChange={(ids) => setSelectedStatuses(ids.map(String))}
-                                        showTruckFilter={false}
-                                        driverFilterText={{
-                                            label: 'Vendors',
-                                            triggerLabelWhenAll: 'All vendors',
-                                            summaryLabelWhenAll: 'All vendors included',
-                                            heading: 'Vendors',
-                                            searchPlaceholder: 'Search vendor...',
-                                            emptyMessage: 'No vendors found.',
-                                            icon: Building2,
-                                        }}
-                                        destinationFilterText={{
-                                            label: 'Destinations',
-                                            summaryLabelWhenAll: 'All destinations included',
-                                        }}
-                                        statusFilterText={{
-                                            label: 'Statuses',
-                                            triggerLabelWhenAll: 'All statuses',
-                                            summaryLabelWhenAll: 'All statuses included',
-                                            heading: 'Statuses',
-                                            searchPlaceholder: 'Search status...',
-                                        }}
-                                        dateError={dateError}
-                                    />
-                                    {canExport && (
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button type="button" variant="secondary" className="gap-2">
-                                                    <Download className="h-4 w-4" />
-                                                    Export
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end" className="w-44">
-                                                <DropdownMenuItem onSelect={() => handleExport('csv')} className="gap-2">
-                                                    <FileDigit className="h-4 w-4 text-amber-500" />
-                                                    CSV
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem onSelect={() => handleExport('xlsx')} className="gap-2">
-                                                    <FileSpreadsheet className="h-4 w-4 text-emerald-500" />
-                                                    Excel
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem onSelect={() => handleExport('pdf')} className="gap-2">
-                                                    <FileType2 className="h-4 w-4 text-rose-500" />
-                                                    PDF
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    )}
-                                    <Button type="button" variant="outline" className="gap-2" onClick={handleReset}>
-                                        <RefreshCcw className="h-4 w-4" />
-                                        Reset
-                                    </Button>
-                                </div>
+    const appliedFrom = filters?.from ?? '';
+    const appliedTo = filters?.to ?? '';
+    const appliedVendorCount = filters?.outsource_ids?.length ?? 0;
+    const appliedOperationCount = filters?.operation_ids?.length ?? 0;
+    const appliedDestinationCount = filters?.destination_ids?.length ?? 0;
+    const appliedStatuses = filters?.statuses ?? [];
+    const appliedLimit = filters?.limit ?? 200;
+    const summaryMargin = summary?.margin_percent ?? null;
+
+    const filterBadges = useMemo(
+        () => {
+            const badges: string[] = [];
+
+            badges.push(`From ${appliedFrom || '—'}`);
+            badges.push(`To ${appliedTo || '—'}`);
+            badges.push(appliedVendorCount > 0 ? `${appliedVendorCount} vendor${appliedVendorCount > 1 ? 's' : ''}` : 'All vendors');
+            badges.push(appliedOperationCount > 0 ? `${appliedOperationCount} operation${appliedOperationCount > 1 ? 's' : ''}` : 'All operations');
+            badges.push(appliedDestinationCount > 0 ? `${appliedDestinationCount} destination${appliedDestinationCount > 1 ? 's' : ''}` : 'All destinations');
+            badges.push(appliedStatuses.length > 0 ? `${appliedStatuses.length} status${appliedStatuses.length > 1 ? 'es' : ''}` : 'All statuses');
+            badges.push(`Limit ${appliedLimit}`);
+
+            return badges;
+        },
+        [appliedDestinationCount, appliedFrom, appliedLimit, appliedOperationCount, appliedStatuses.length, appliedTo, appliedVendorCount],
+    );
+
+    const handleDateChange = (field: 'from' | 'to', value: string) => {
+        if (field === 'from') {
+            setFrom(value);
+            validateDateRange(value, to);
+
+            return;
+        }
+
+        setTo(value);
+        validateDateRange(from, value);
+    };
+
+    return (
+        <AppLayout breadcrumbs={breadcrumbs}>
+            <Head title="Outsource Performance" />
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-slate-100/60 dark:bg-slate-900/40">
+                <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-4 pb-10 sm:p-6 lg:p-10">
+                    <header className="rounded-2xl border border-slate-200 bg-white/95 px-6 py-6 shadow-sm backdrop-blur dark:border-slate-800/70 dark:bg-slate-900/70">
+                        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                            <div className="space-y-2">
+                                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">Vendor Dispatch Intelligence</p>
+                                <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-50">Outsource Dispatch Performance</h1>
+                                <p className="max-w-3xl text-sm text-slate-600 dark:text-slate-300">
+                                    Review every outsource dispatch alongside internal benchmarks. Filter by vendor, route, and status to reconcile spend, revenue, and profitability.
+                                </p>
                             </div>
-                        </header>
+                            <div className="flex flex-wrap items-center gap-2">
+                                <ReportFiltersDialog
+                                    open={filtersOpen}
+                                    onOpenChange={setFiltersOpen}
+                                    activeFilterCount={activeFilterCount}
+                                    from={from}
+                                    to={to}
+                                    onDateChange={handleDateChange}
+                                    onReset={handleReset}
+                                    onApply={handleApplyFilters}
+                                    limit={limit}
+                                    onLimitChange={setLimit}
+                                    dateError={dateError}
+                                    driverOptions={vendorSelectionOptions}
+                                    operationOptions={operationSelectionOptions}
+                                    destinationOptions={destinationSelectionOptions}
+                                    statusOptions={statusSelectionOptions}
+                                    selectedDrivers={selectedVendors}
+                                    selectedOperations={selectedOperations}
+                                    selectedDestinations={selectedDestinations}
+                                    selectedStatuses={selectedStatuses}
+                                    onDriversChange={setSelectedVendors}
+                                    onOperationsChange={setSelectedOperations}
+                                    onDestinationsChange={setSelectedDestinations}
+                                    onStatusesChange={(ids) => setSelectedStatuses(ids.map(String))}
+                                    showTruckFilter={false}
+                                    driverFilterText={{
+                                        label: 'Vendors',
+                                        triggerLabelWhenAll: 'All vendors',
+                                        summaryLabelWhenAll: 'All vendors included',
+                                        heading: 'Vendors',
+                                        searchPlaceholder: 'Search vendor...',
+                                        emptyMessage: 'No vendors found.',
+                                        icon: Building2,
+                                    }}
+                                    destinationFilterText={{
+                                        label: 'Destinations',
+                                        summaryLabelWhenAll: 'All destinations included',
+                                    }}
+                                    statusFilterText={{
+                                        label: 'Statuses',
+                                        triggerLabelWhenAll: 'All statuses',
+                                        summaryLabelWhenAll: 'All statuses included',
+                                        heading: 'Statuses',
+                                        searchPlaceholder: 'Search status...',
+                                    }}
+                                />
+                                {canExport && (
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button type="button" variant="secondary" className="gap-2">
+                                                <Download className="h-4 w-4" />
+                                                Export
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end" className="w-44">
+                                            <DropdownMenuItem onSelect={() => handleExport('csv')} className="gap-2">
+                                                <FileDigit className="h-4 w-4 text-amber-500" />
+                                                CSV
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onSelect={() => handleExport('xlsx')} className="gap-2">
+                                                <FileSpreadsheet className="h-4 w-4 text-emerald-500" />
+                                                Excel
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onSelect={() => handleExport('pdf')} className="gap-2">
+                                                <FileType2 className="h-4 w-4 text-rose-500" />
+                                                PDF
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                )}
+                                <Button type="button" variant="outline" className="gap-2" onClick={handleReset}>
+                                    <RefreshCcw className="h-4 w-4" />
+                                    Reset
+                                </Button>
+                            </div>
+                        </div>
+                    </header>
 
-                        <ReportSummaryGrid items={summaryItems} />
+                    <ReportSummaryGrid items={summaryItems} />
 
-                        <ReportDispatchTable
-                            rows={safeRows}
-                            summary={summary}
-                            summaryMargin={summaryMargin}
-                            filterBadges={filterBadges}
-                            columnLabelOverrides={{
-                                driver_name: 'Vendor',
-                                truck_plate: 'Vendor Status',
-                                fuel_litres: 'Fuel (L)',
-                                other_cost: 'Vendor Cost',
-                            }}
-                        />
-                    </div>
-                </div>
-            </AppLayout>
-        );
-    }
-                                            )}
-                                            {breakdown.map((vendor) => (
-                                                <TableRow key={vendor.outsource_id}>
-                                                    <TableCell className="font-semibold text-slate-900 dark:text-slate-100">{vendor.name}</TableCell>
-                                                    <TableCell className="capitalize text-muted-foreground">{vendor.status ?? '—'}</TableCell>
-                                                    <TableCell className="text-right font-medium">{formatNumber(vendor.trips)}</TableCell>
-                                                    <TableCell className="text-right">{formatNumber(vendor.completed_trips)}</TableCell>
-                                                    <TableCell className="text-right">{formatOptionalPercent(vendor.completion_rate_pct)}</TableCell>
-                                                    <TableCell className="text-right">{formatDecimal(vendor.total_distance_km)}</TableCell>
-                                                    <TableCell className="text-right">{formatDecimal(vendor.total_tonkm)}</TableCell>
-                                                    <TableCell className="text-right">{formatCurrency(vendor.total_cost)}</TableCell>
-                                                    <TableCell className="text-right">{formatOptionalCurrency(vendor.cost_per_km, ' / km')}</TableCell>
-                                                    <TableCell className="text-right">{formatOptionalCurrency(vendor.cost_per_tonkm, ' / ton-km')}</TableCell>
-                                                    <TableCell className="text-right">{formatOptionalCurrency(vendor.cost_delta_per_km, ' / km')}</TableCell>
-                                                    <TableCell className="text-right">{formatOptionalCurrency(vendor.total_cost_delta)}</TableCell>
-                                                    <TableCell className="text-right">{formatOptionalCurrency(vendor.average_cost_per_trip)}</TableCell>
-                                                    <TableCell className="text-right">{formatOptionalDecimal(vendor.average_distance_per_trip, ' km')}</TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
-                                </div>
-                            </CardContent>
-                            <CardFooter className="flex flex-wrap items-center gap-4 border-t border-slate-200/80 bg-slate-50/60 px-4 py-3 text-sm dark:border-slate-800/70 dark:bg-slate-900/40">
-                                <div className="flex items-center gap-2">
-                                    <Badge variant="outline" className="bg-white/80 text-xs text-slate-600 dark:bg-slate-900/80 dark:text-slate-300">
-                                        Trips: {formatNumber(totals?.trips ?? 0)}
-                                    </Badge>
-                                    <Badge variant="outline" className="bg-white/80 text-xs text-slate-600 dark:bg-slate-900/80 dark:text-slate-300">
-                                        Vendors: {formatNumber(totals?.vendor_count ?? 0)}
-                                    </Badge>
-                                </div>
-                                <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                                    <span className="flex items-center gap-1">
-                                        <ArrowUpRight className="h-3.5 w-3.5 text-emerald-500" />
-                                        Completion: {formatOptionalPercent(totals?.average_completion_rate_pct ?? null)}
-                                    </span>
-                                    <span className="flex items-center gap-1">
-                                        <CircleDollarSign className="h-3.5 w-3.5 text-slate-500" />
-                                        Cost / km: {formatOptionalCurrency(totals?.cost_per_km, ' / km')}
-                                    </span>
-                                    <span className="flex items-center gap-1">
-                                        <ArrowDownRight className="h-3.5 w-3.5 text-amber-500" />
-                                        Distance: {formatDecimal(totals?.distance_km ?? 0)} km
-                                    </span>
-                                </div>
-                            </CardFooter>
-                        </Card>
-                    </section>
+                    <ReportDispatchTable
+                        rows={safeRows}
+                        summary={summary}
+                        summaryMargin={summaryMargin}
+                        filterBadges={filterBadges}
+                        columnLabelOverrides={{
+                            driver_name: 'Vendor',
+                            truck_plate: 'Vendor Status',
+                            fuel_litres: 'Fuel (L)',
+                            other_cost: 'Vendor Cost',
+                        }}
+                    />
                 </div>
             </div>
         </AppLayout>
     );
 }
-
-
-
-
-
-
-
-
-
-
-
 

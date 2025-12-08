@@ -133,7 +133,10 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
         setPerPage(String(resolvedPerPage));
     }, [resolvedPerPage]);
 
-    const driverData = drivers?.data ?? [];
+    const driverData = React.useMemo<DriverData[]>(
+        () => (Array.isArray(drivers?.data) ? drivers.data : []),
+        [drivers],
+    );
     const totalDrivers = metrics?.total ?? drivers?.meta?.total ?? driverData.length ?? 0;
     const currentPage = drivers?.meta?.current_page ?? 1;
     const perPageCountRaw = drivers?.meta?.per_page ?? Number(perPage);

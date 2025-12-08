@@ -22,9 +22,9 @@ interface ReportFiltersDialogProps {
     open: boolean;
     onOpenChange: (value: boolean) => void;
     activeFilterCount: number;
-    from: string;
-    to: string;
-    onDateChange: (field: 'from' | 'to', value: string) => void;
+    from?: string;
+    to?: string;
+    onDateChange?: (field: 'from' | 'to', value: string) => void;
     onReset: () => void;
     onApply: () => void;
     title?: string;
@@ -60,19 +60,21 @@ interface ReportFiltersDialogProps {
     operationFilterText?: FilterTextOverrides;
     destinationFilterText?: FilterTextOverrides;
     statusFilterText?: FilterTextOverrides;
+    showDateRange?: boolean;
+    dateRangeDescription?: string;
 }
 
 export function ReportFiltersDialog({
     open,
     onOpenChange,
     activeFilterCount,
-    from,
-    to,
+    from = '',
+    to = '',
     onDateChange,
     onReset,
     onApply,
     title = 'Filter report data',
-    description = 'Adjust the date window, asset selections, and other filters before regenerating the report.',
+    description = 'Adjust the selections and filters before regenerating the report.',
     limit,
     onLimitChange,
     showLimit,
@@ -104,6 +106,8 @@ export function ReportFiltersDialog({
     operationFilterText,
     destinationFilterText,
     statusFilterText,
+    showDateRange = true,
+    dateRangeDescription = 'Select the inclusive reporting window.',
 }: ReportFiltersDialogProps) {
     const driverOptionsList = driverOptions ?? [];
     const truckOptionsList = truckOptions ?? [];
@@ -138,6 +142,7 @@ export function ReportFiltersDialog({
     };
 
     const shouldShowLimit = showLimit ?? (typeof limit !== 'undefined' && typeof onLimitChange === 'function');
+    const shouldShowDateRange = (showDateRange ?? true) && typeof onDateChange === 'function';
     const shouldShowDriver = showDriverFilter ?? driverOptionsList.length > 0;
     const shouldShowTruck = showTruckFilter ?? truckOptionsList.length > 0;
     const shouldShowOperation = showOperationFilter ?? operationOptionsList.length > 0;
@@ -299,7 +304,17 @@ export function ReportFiltersDialog({
                 <div className="grid gap-6">
                     <div className="grid gap-8 rounded-xl border border-slate-200 bg-white/95 p-6 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
                         <div className="flex flex-wrap items-start gap-6">
-                            <ReportDateRangePicker from={from} to={to} onChange={onDateChange} error={dateError} description="Select the inclusive reporting window." />
+                            {shouldShowDateRange ? (
+                                <ReportDateRangePicker
+                                    from={from}
+                                    to={to}
+                                    onChange={(field, value) => {
+                                        onDateChange?.(field, value);
+                                    }}
+                                    error={dateError}
+                                    description={dateRangeDescription}
+                                />
+                            ) : null}
                             {shouldShowLimit ? (
                                 <div className="flex min-w-[220px] flex-col gap-3">
                                     <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{limitLabel}</span>

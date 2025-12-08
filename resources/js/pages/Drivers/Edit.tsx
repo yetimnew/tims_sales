@@ -95,7 +95,7 @@ export default function DriversEdit({ driver }: DriversEditProps) {
     };
 
     useEffect(() => {
-        const errorMessages = Object.entries(errors).map(([_, message]) =>
+        const errorMessages = Object.entries(errors).map(([, message]) =>
             typeof message === 'string' ? message : String(message),
         );
 

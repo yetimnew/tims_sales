@@ -345,10 +345,9 @@ export default function TrucksIndex({
                 window.sessionStorage.setItem(SKELETON_FLAG_KEY, 'true');
             }
 
-            beginLoading();
             router.get('/trucks', params, { preserveState: true, replace: false });
         },
-        [beginLoading, searchTerm, selectedStatus, selectedVehicleType, sortBy, sortDirection, perPage],
+        [searchTerm, selectedStatus, selectedVehicleType, sortBy, sortDirection, perPage],
     );
 
     const handleSearchChange = (value: string) => {

@@ -30,8 +30,23 @@ interface TrucksCreateProps {
     vehicleTypes: VehicleType[];
 }
 
+type TruckFormData = {
+    plate: string;
+    vehicletype_id: string;
+    chasisNumber: string;
+    engineNumber: string;
+    tyreSyze: string;
+    serviceIntervalKM: string;
+    purchasePrice: string;
+    productionDate: string;
+    serviceStartDate: string;
+    status: string;
+};
+
+type TruckFormField = keyof TruckFormData;
+
 export default function TrucksCreate({ vehicleTypes }: TrucksCreateProps) {
-    const { data, setData, post, processing, errors, clearErrors } = useForm({
+    const { data, setData, post, processing, errors, clearErrors } = useForm<TruckFormData>({
         plate: '',
         vehicletype_id: '',
         chasisNumber: '',
@@ -50,7 +65,7 @@ export default function TrucksCreate({ vehicleTypes }: TrucksCreateProps) {
     const [isDirty, setIsDirty] = useState(false);
 
     // Real-time frontend validation - only validate the specific field
-    const validateField = (field: string, value: string) => {
+    const validateField = (field: TruckFormField, value: string) => {
         const fieldErrors = { ...frontendErrors };
         if (field === 'plate') {
             const error = truckValidation.plate(value);
@@ -76,7 +91,7 @@ export default function TrucksCreate({ vehicleTypes }: TrucksCreateProps) {
     };
 
     useEffect(() => {
-        const errorMessages = Object.entries(errors).map(([field, message]) => typeof message === 'string' ? message : String(message));
+        const errorMessages = Object.entries(errors).map(([, message]) => typeof message === 'string' ? message : String(message));
         if (errorMessages.length > 0) {
             toast({ title: '⚠️ Validation Error', description: errorMessages.join(', '), variant: 'destructive' });
         }
@@ -96,8 +111,8 @@ export default function TrucksCreate({ vehicleTypes }: TrucksCreateProps) {
         container?.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    const handleFieldChange = (field: string, value: string) => {
-        setData(field as any, value);
+    const handleFieldChange = (field: TruckFormField, value: string) => {
+        setData(field, value);
         clearErrors(field);
         validateField(field, value);
         setIsDirty(true);
@@ -122,7 +137,8 @@ export default function TrucksCreate({ vehicleTypes }: TrucksCreateProps) {
         });
     };
 
-    const getFieldError = (fieldName: string) => errors[fieldName as keyof typeof errors] || frontendErrors[fieldName] || '';
+    const getFieldError = (fieldName: TruckFormField): string =>
+        (errors[fieldName] as string | undefined) || frontendErrors[fieldName] || '';
 
     return (
         <FormPageLayout

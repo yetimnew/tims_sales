@@ -40,6 +40,21 @@ interface TrucksEditProps {
     vehicleTypes: VehicleType[];
 }
 
+type TruckFormData = {
+    plate: string;
+    vehicletype_id: string;
+    chasisNumber: string;
+    engineNumber: string;
+    tyreSyze: string;
+    serviceIntervalKM: string;
+    purchasePrice: string;
+    productionDate: string;
+    serviceStartDate: string;
+    status: string;
+};
+
+type TruckFormField = keyof TruckFormData;
+
 export default function TrucksEdit({ truck, vehicleTypes }: TrucksEditProps) {
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Trucks', href: '/trucks' },
@@ -47,7 +62,7 @@ export default function TrucksEdit({ truck, vehicleTypes }: TrucksEditProps) {
         { title: 'Edit', href: `/trucks/${truck.id}/edit` },
     ];
 
-    const { data, setData, put, processing, errors, clearErrors } = useForm({
+    const { data, setData, put, processing, errors, clearErrors } = useForm<TruckFormData>({
         plate: truck.plate ?? '',
         vehicletype_id: truck.vehicletype_id ? String(truck.vehicletype_id) : '',
         chasisNumber: truck.chasisNumber ?? '',
@@ -65,7 +80,7 @@ export default function TrucksEdit({ truck, vehicleTypes }: TrucksEditProps) {
     const scrollContainerRef = useRef<HTMLFormElement | null>(null);
     const [isDirty, setIsDirty] = useState(false);
 
-    const validateField = (field: string, value: string) => {
+    const validateField = (field: TruckFormField, value: string) => {
         const fieldErrors = { ...frontendErrors };
         if (field === 'plate') {
             const error = truckValidation.plate(value);
@@ -92,7 +107,7 @@ export default function TrucksEdit({ truck, vehicleTypes }: TrucksEditProps) {
 
     useEffect(() => {
         const errorMessages = Object.entries(errors)
-            .map(([field, message]) => typeof message === 'string' ? message : String(message));
+            .map(([, message]) => typeof message === 'string' ? message : String(message));
         if (errorMessages.length > 0) {
             toast({ title: '⚠️ Validation Error', description: errorMessages.join(', '), variant: 'destructive' });
         }
@@ -114,8 +129,8 @@ export default function TrucksEdit({ truck, vehicleTypes }: TrucksEditProps) {
         container?.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    const handleFieldChange = (field: string, value: string) => {
-        setData(field as never, value);
+    const handleFieldChange = (field: TruckFormField, value: string) => {
+        setData(field, value);
         clearErrors(field);
         validateField(field, value);
         setIsDirty(true);
@@ -150,7 +165,8 @@ export default function TrucksEdit({ truck, vehicleTypes }: TrucksEditProps) {
         });
     };
 
-    const getFieldError = (fieldName: string) => errors[fieldName as keyof typeof errors] || frontendErrors[fieldName] || '';
+    const getFieldError = (fieldName: TruckFormField): string =>
+        (errors[fieldName] as string | undefined) || frontendErrors[fieldName] || '';
 
     return (
         <FormPageLayout
