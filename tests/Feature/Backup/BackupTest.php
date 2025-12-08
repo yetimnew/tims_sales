@@ -3,11 +3,10 @@
 namespace Tests\Feature\Backup;
 
 use App\Models\User;
-use App\Models\Truck;
-use App\Models\Driver;
-use App\Models\Role;
-use App\Models\Permission;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class BackupTest extends TestCase
@@ -20,6 +19,10 @@ class BackupTest extends TestCase
     {
         parent::setUp();
 
+        if (! class_exists(\App\Models\Backup::class)) {
+            $this->markTestSkipped('Backup module is not available in this installation.');
+        }
+
         // Create user with permissions
         $this->user = User::factory()->create();
 
@@ -27,7 +30,7 @@ class BackupTest extends TestCase
         $permissions = [
             'backup.view', 'backup.create', 'backup.edit', 'backup.destroy',
             'backup.show', 'backup.store', 'backup.update', 'backup.export',
-            'backup.download', 'backup.restore', 'backup.schedule'
+            'backup.download', 'backup.restore', 'backup.schedule',
         ];
 
         foreach ($permissions as $permission) {
@@ -40,7 +43,7 @@ class BackupTest extends TestCase
         $this->user->assignRole($role);
     }
 
-    /** @test */
+    #[Test]
     public function user_can_view_backups()
     {
         $response = $this->actingAs($this->user)
@@ -53,7 +56,7 @@ class BackupTest extends TestCase
         );
     }
 
-    /** @test */
+    #[Test]
     public function user_can_create_backup()
     {
         $response = $this->actingAs($this->user)
@@ -63,7 +66,7 @@ class BackupTest extends TestCase
                 'type' => 'full',
                 'include_files' => true,
                 'include_database' => true,
-                'compression' => 'gzip'
+                'compression' => 'gzip',
             ]);
 
         $response->assertRedirect();
@@ -72,11 +75,11 @@ class BackupTest extends TestCase
         $this->assertDatabaseHas('backups', [
             'name' => 'Test Backup',
             'description' => 'Test backup description',
-            'type' => 'full'
+            'type' => 'full',
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function user_can_view_backup_details()
     {
         $backup = \App\Models\Backup::create([
@@ -86,11 +89,11 @@ class BackupTest extends TestCase
             'status' => 'completed',
             'size' => 1024000,
             'file_path' => 'backups/test-backup.tar.gz',
-            'created_by' => $this->user->id
+            'created_by' => $this->user->id,
         ]);
 
         $response = $this->actingAs($this->user)
-            ->get('/backups/' . $backup->id);
+            ->get('/backups/'.$backup->id);
 
         $response->assertStatus(200);
         $response->assertInertia(fn ($page) => $page
@@ -99,7 +102,7 @@ class BackupTest extends TestCase
         );
     }
 
-    /** @test */
+    #[Test]
     public function user_can_download_backup()
     {
         $backup = \App\Models\Backup::create([
@@ -109,17 +112,17 @@ class BackupTest extends TestCase
             'status' => 'completed',
             'size' => 1024000,
             'file_path' => 'backups/test-backup.tar.gz',
-            'created_by' => $this->user->id
+            'created_by' => $this->user->id,
         ]);
 
         $response = $this->actingAs($this->user)
-            ->get('/backups/' . $backup->id . '/download');
+            ->get('/backups/'.$backup->id.'/download');
 
         $response->assertStatus(200);
         $response->assertHeader('Content-Type', 'application/gzip');
     }
 
-    /** @test */
+    #[Test]
     public function user_can_restore_backup()
     {
         $backup = \App\Models\Backup::create([
@@ -129,21 +132,21 @@ class BackupTest extends TestCase
             'status' => 'completed',
             'size' => 1024000,
             'file_path' => 'backups/test-backup.tar.gz',
-            'created_by' => $this->user->id
+            'created_by' => $this->user->id,
         ]);
 
         $response = $this->actingAs($this->user)
-            ->post('/backups/' . $backup->id . '/restore', [
+            ->post('/backups/'.$backup->id.'/restore', [
                 'confirm' => true,
                 'restore_files' => true,
-                'restore_database' => true
+                'restore_database' => true,
             ]);
 
         $response->assertRedirect();
         $response->assertSessionHas('success');
     }
 
-    /** @test */
+    #[Test]
     public function user_can_delete_backup()
     {
         $backup = \App\Models\Backup::create([
@@ -153,21 +156,21 @@ class BackupTest extends TestCase
             'status' => 'completed',
             'size' => 1024000,
             'file_path' => 'backups/test-backup.tar.gz',
-            'created_by' => $this->user->id
+            'created_by' => $this->user->id,
         ]);
 
         $response = $this->actingAs($this->user)
-            ->delete('/backups/' . $backup->id);
+            ->delete('/backups/'.$backup->id);
 
         $response->assertRedirect();
         $response->assertSessionHas('success');
 
         $this->assertDatabaseMissing('backups', [
-            'id' => $backup->id
+            'id' => $backup->id,
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function user_can_schedule_backup()
     {
         $response = $this->actingAs($this->user)
@@ -177,7 +180,7 @@ class BackupTest extends TestCase
                 'type' => 'incremental',
                 'frequency' => 'daily',
                 'time' => '02:00',
-                'retention_days' => 30
+                'retention_days' => 30,
             ]);
 
         $response->assertRedirect();
@@ -187,11 +190,11 @@ class BackupTest extends TestCase
             'name' => 'Scheduled Backup',
             'description' => 'Scheduled backup description',
             'type' => 'incremental',
-            'frequency' => 'daily'
+            'frequency' => 'daily',
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function user_can_view_backup_schedules()
     {
         $response = $this->actingAs($this->user)
@@ -204,7 +207,7 @@ class BackupTest extends TestCase
         );
     }
 
-    /** @test */
+    #[Test]
     public function user_can_edit_backup_schedule()
     {
         $schedule = \App\Models\BackupSchedule::create([
@@ -215,17 +218,17 @@ class BackupTest extends TestCase
             'time' => '02:00',
             'retention_days' => 30,
             'enabled' => true,
-            'created_by' => $this->user->id
+            'created_by' => $this->user->id,
         ]);
 
         $response = $this->actingAs($this->user)
-            ->put('/backups/schedules/' . $schedule->id, [
+            ->put('/backups/schedules/'.$schedule->id, [
                 'name' => 'Updated Schedule',
                 'description' => 'Updated schedule description',
                 'type' => 'incremental',
                 'frequency' => 'weekly',
                 'time' => '03:00',
-                'retention_days' => 60
+                'retention_days' => 60,
             ]);
 
         $response->assertRedirect();
@@ -236,11 +239,11 @@ class BackupTest extends TestCase
             'name' => 'Updated Schedule',
             'description' => 'Updated schedule description',
             'type' => 'incremental',
-            'frequency' => 'weekly'
+            'frequency' => 'weekly',
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function user_can_delete_backup_schedule()
     {
         $schedule = \App\Models\BackupSchedule::create([
@@ -251,21 +254,21 @@ class BackupTest extends TestCase
             'time' => '02:00',
             'retention_days' => 30,
             'enabled' => true,
-            'created_by' => $this->user->id
+            'created_by' => $this->user->id,
         ]);
 
         $response = $this->actingAs($this->user)
-            ->delete('/backups/schedules/' . $schedule->id);
+            ->delete('/backups/schedules/'.$schedule->id);
 
         $response->assertRedirect();
         $response->assertSessionHas('success');
 
         $this->assertDatabaseMissing('backup_schedules', [
-            'id' => $schedule->id
+            'id' => $schedule->id,
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function user_can_enable_backup_schedule()
     {
         $schedule = \App\Models\BackupSchedule::create([
@@ -276,22 +279,22 @@ class BackupTest extends TestCase
             'time' => '02:00',
             'retention_days' => 30,
             'enabled' => false,
-            'created_by' => $this->user->id
+            'created_by' => $this->user->id,
         ]);
 
         $response = $this->actingAs($this->user)
-            ->post('/backups/schedules/' . $schedule->id . '/enable');
+            ->post('/backups/schedules/'.$schedule->id.'/enable');
 
         $response->assertRedirect();
         $response->assertSessionHas('success');
 
         $this->assertDatabaseHas('backup_schedules', [
             'id' => $schedule->id,
-            'enabled' => true
+            'enabled' => true,
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function user_can_disable_backup_schedule()
     {
         $schedule = \App\Models\BackupSchedule::create([
@@ -302,22 +305,22 @@ class BackupTest extends TestCase
             'time' => '02:00',
             'retention_days' => 30,
             'enabled' => true,
-            'created_by' => $this->user->id
+            'created_by' => $this->user->id,
         ]);
 
         $response = $this->actingAs($this->user)
-            ->post('/backups/schedules/' . $schedule->id . '/disable');
+            ->post('/backups/schedules/'.$schedule->id.'/disable');
 
         $response->assertRedirect();
         $response->assertSessionHas('success');
 
         $this->assertDatabaseHas('backup_schedules', [
             'id' => $schedule->id,
-            'enabled' => false
+            'enabled' => false,
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function user_can_view_backup_settings()
     {
         $response = $this->actingAs($this->user)
@@ -330,7 +333,7 @@ class BackupTest extends TestCase
         );
     }
 
-    /** @test */
+    #[Test]
     public function user_can_update_backup_settings()
     {
         $response = $this->actingAs($this->user)
@@ -341,14 +344,14 @@ class BackupTest extends TestCase
                 'encryption_key' => 'test-key',
                 'retention_days' => 30,
                 'max_backups' => 10,
-                'notification_email' => 'admin@example.com'
+                'notification_email' => 'admin@example.com',
             ]);
 
         $response->assertRedirect();
         $response->assertSessionHas('success');
     }
 
-    /** @test */
+    #[Test]
     public function user_can_view_backup_storage()
     {
         $response = $this->actingAs($this->user)
@@ -361,7 +364,7 @@ class BackupTest extends TestCase
         );
     }
 
-    /** @test */
+    #[Test]
     public function user_can_test_backup_storage()
     {
         $response = $this->actingAs($this->user)
@@ -370,14 +373,14 @@ class BackupTest extends TestCase
                 'bucket' => 'test-bucket',
                 'region' => 'us-east-1',
                 'access_key' => 'test-access-key',
-                'secret_key' => 'test-secret-key'
+                'secret_key' => 'test-secret-key',
             ]);
 
         $response->assertRedirect();
         $response->assertSessionHas('success');
     }
 
-    /** @test */
+    #[Test]
     public function user_can_view_backup_logs()
     {
         $response = $this->actingAs($this->user)
@@ -390,7 +393,7 @@ class BackupTest extends TestCase
         );
     }
 
-    /** @test */
+    #[Test]
     public function user_can_export_backup_logs()
     {
         $response = $this->actingAs($this->user)
@@ -400,7 +403,7 @@ class BackupTest extends TestCase
         $response->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
     }
 
-    /** @test */
+    #[Test]
     public function user_can_clear_backup_logs()
     {
         $response = $this->actingAs($this->user)
@@ -410,7 +413,7 @@ class BackupTest extends TestCase
         $response->assertSessionHas('success');
     }
 
-    /** @test */
+    #[Test]
     public function user_can_view_backup_statistics()
     {
         $response = $this->actingAs($this->user)
@@ -423,7 +426,7 @@ class BackupTest extends TestCase
         );
     }
 
-    /** @test */
+    #[Test]
     public function user_can_view_backup_dashboard()
     {
         $response = $this->actingAs($this->user)
@@ -436,7 +439,7 @@ class BackupTest extends TestCase
         );
     }
 
-    /** @test */
+    #[Test]
     public function user_can_view_backup_charts()
     {
         $response = $this->actingAs($this->user)
@@ -449,7 +452,7 @@ class BackupTest extends TestCase
         );
     }
 
-    /** @test */
+    #[Test]
     public function user_can_view_backup_reports()
     {
         $response = $this->actingAs($this->user)
@@ -462,38 +465,38 @@ class BackupTest extends TestCase
         );
     }
 
-    /** @test */
+    #[Test]
     public function user_can_generate_backup_report()
     {
         $response = $this->actingAs($this->user)
             ->post('/backups/reports/generate', [
                 'start_date' => '2023-01-01',
                 'end_date' => '2023-12-31',
-                'type' => 'summary'
+                'type' => 'summary',
             ]);
 
         $response->assertRedirect();
         $response->assertSessionHas('success');
     }
 
-    /** @test */
+    #[Test]
     public function user_can_download_backup_report()
     {
         $report = \App\Models\BackupReport::create([
             'name' => 'Test Backup Report',
             'type' => 'summary',
             'data' => ['test' => 'data'],
-            'generated_at' => now()
+            'generated_at' => now(),
         ]);
 
         $response = $this->actingAs($this->user)
-            ->get('/backups/reports/' . $report->id . '/download');
+            ->get('/backups/reports/'.$report->id.'/download');
 
         $response->assertStatus(200);
         $response->assertHeader('Content-Type', 'application/pdf');
     }
 
-    /** @test */
+    #[Test]
     public function user_can_view_backup_alerts()
     {
         $response = $this->actingAs($this->user)
@@ -506,7 +509,7 @@ class BackupTest extends TestCase
         );
     }
 
-    /** @test */
+    #[Test]
     public function user_can_create_backup_alert()
     {
         $response = $this->actingAs($this->user)
@@ -515,10 +518,10 @@ class BackupTest extends TestCase
                 'type' => 'backup_failed',
                 'conditions' => [
                     'status' => 'failed',
-                    'duration' => '> 1 hour'
+                    'duration' => '> 1 hour',
                 ],
                 'notification_method' => 'email',
-                'notification_recipients' => ['admin@example.com']
+                'notification_recipients' => ['admin@example.com'],
             ]);
 
         $response->assertRedirect();
@@ -526,11 +529,11 @@ class BackupTest extends TestCase
 
         $this->assertDatabaseHas('backup_alerts', [
             'name' => 'Test Alert',
-            'type' => 'backup_failed'
+            'type' => 'backup_failed',
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function user_can_edit_backup_alert()
     {
         $alert = \App\Models\BackupAlert::create([
@@ -538,19 +541,19 @@ class BackupTest extends TestCase
             'type' => 'backup_failed',
             'conditions' => ['test' => 'data'],
             'notification_method' => 'email',
-            'notification_recipients' => ['admin@example.com']
+            'notification_recipients' => ['admin@example.com'],
         ]);
 
         $response = $this->actingAs($this->user)
-            ->put('/backups/alerts/' . $alert->id, [
+            ->put('/backups/alerts/'.$alert->id, [
                 'name' => 'Updated Alert',
                 'type' => 'backup_success',
                 'conditions' => [
                     'status' => 'completed',
-                    'duration' => '< 30 minutes'
+                    'duration' => '< 30 minutes',
                 ],
                 'notification_method' => 'sms',
-                'notification_recipients' => ['updated@example.com']
+                'notification_recipients' => ['updated@example.com'],
             ]);
 
         $response->assertRedirect();
@@ -559,11 +562,11 @@ class BackupTest extends TestCase
         $this->assertDatabaseHas('backup_alerts', [
             'id' => $alert->id,
             'name' => 'Updated Alert',
-            'type' => 'backup_success'
+            'type' => 'backup_success',
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function user_can_delete_backup_alert()
     {
         $alert = \App\Models\BackupAlert::create([
@@ -571,21 +574,21 @@ class BackupTest extends TestCase
             'type' => 'backup_failed',
             'conditions' => ['test' => 'data'],
             'notification_method' => 'email',
-            'notification_recipients' => ['admin@example.com']
+            'notification_recipients' => ['admin@example.com'],
         ]);
 
         $response = $this->actingAs($this->user)
-            ->delete('/backups/alerts/' . $alert->id);
+            ->delete('/backups/alerts/'.$alert->id);
 
         $response->assertRedirect();
         $response->assertSessionHas('success');
 
         $this->assertDatabaseMissing('backup_alerts', [
-            'id' => $alert->id
+            'id' => $alert->id,
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function user_can_view_backup_permissions()
     {
         $response = $this->actingAs($this->user)
@@ -598,7 +601,7 @@ class BackupTest extends TestCase
         );
     }
 
-    /** @test */
+    #[Test]
     public function user_can_assign_backup_permissions()
     {
         $user = User::factory()->create();
@@ -606,14 +609,14 @@ class BackupTest extends TestCase
         $response = $this->actingAs($this->user)
             ->post('/backups/permissions', [
                 'user_id' => $user->id,
-                'permissions' => ['backup.view', 'backup.download']
+                'permissions' => ['backup.view', 'backup.download'],
             ]);
 
         $response->assertRedirect();
         $response->assertSessionHas('success');
     }
 
-    /** @test */
+    #[Test]
     public function user_can_view_backup_api()
     {
         $response = $this->actingAs($this->user)
@@ -626,7 +629,7 @@ class BackupTest extends TestCase
         );
     }
 
-    /** @test */
+    #[Test]
     public function user_can_generate_backup_api_key()
     {
         $response = $this->actingAs($this->user)
@@ -636,28 +639,28 @@ class BackupTest extends TestCase
         $response->assertSessionHas('success');
     }
 
-    /** @test */
+    #[Test]
     public function user_can_revoke_backup_api_key()
     {
         $apiKey = \App\Models\BackupApiKey::create([
             'user_id' => $this->user->id,
             'name' => 'Test API Key',
             'key' => 'test-key',
-            'permissions' => ['backup.view']
+            'permissions' => ['backup.view'],
         ]);
 
         $response = $this->actingAs($this->user)
-            ->delete('/backups/api/keys/' . $apiKey->id);
+            ->delete('/backups/api/keys/'.$apiKey->id);
 
         $response->assertRedirect();
         $response->assertSessionHas('success');
 
         $this->assertDatabaseMissing('backup_api_keys', [
-            'id' => $apiKey->id
+            'id' => $apiKey->id,
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function user_can_search_backups()
     {
         \App\Models\Backup::create([
@@ -667,7 +670,7 @@ class BackupTest extends TestCase
             'status' => 'completed',
             'size' => 1024000,
             'file_path' => 'backups/important-backup.tar.gz',
-            'created_by' => $this->user->id
+            'created_by' => $this->user->id,
         ]);
         \App\Models\Backup::create([
             'name' => 'Regular Backup',
@@ -676,7 +679,7 @@ class BackupTest extends TestCase
             'status' => 'completed',
             'size' => 512000,
             'file_path' => 'backups/regular-backup.tar.gz',
-            'created_by' => $this->user->id
+            'created_by' => $this->user->id,
         ]);
 
         $response = $this->actingAs($this->user)
@@ -689,7 +692,7 @@ class BackupTest extends TestCase
         );
     }
 
-    /** @test */
+    #[Test]
     public function user_can_sort_backups()
     {
         \App\Models\Backup::create([
@@ -700,7 +703,7 @@ class BackupTest extends TestCase
             'size' => 1024000,
             'file_path' => 'backups/first-backup.tar.gz',
             'created_by' => $this->user->id,
-            'created_at' => now()->subHour()
+            'created_at' => now()->subHour(),
         ]);
         \App\Models\Backup::create([
             'name' => 'Second Backup',
@@ -710,7 +713,7 @@ class BackupTest extends TestCase
             'size' => 512000,
             'file_path' => 'backups/second-backup.tar.gz',
             'created_by' => $this->user->id,
-            'created_at' => now()
+            'created_at' => now(),
         ]);
 
         $response = $this->actingAs($this->user)
@@ -723,7 +726,7 @@ class BackupTest extends TestCase
         );
     }
 
-    /** @test */
+    #[Test]
     public function user_can_paginate_backups()
     {
         // Create 25 backups
@@ -735,7 +738,7 @@ class BackupTest extends TestCase
                 'status' => 'completed',
                 'size' => 1024000,
                 'file_path' => "backups/backup-{$i}.tar.gz",
-                'created_by' => $this->user->id
+                'created_by' => $this->user->id,
             ]);
         }
 
@@ -750,7 +753,7 @@ class BackupTest extends TestCase
         );
     }
 
-    /** @test */
+    #[Test]
     public function user_can_filter_backups_by_type()
     {
         \App\Models\Backup::create([
@@ -760,7 +763,7 @@ class BackupTest extends TestCase
             'status' => 'completed',
             'size' => 1024000,
             'file_path' => 'backups/full-backup.tar.gz',
-            'created_by' => $this->user->id
+            'created_by' => $this->user->id,
         ]);
         \App\Models\Backup::create([
             'name' => 'Incremental Backup',
@@ -769,7 +772,7 @@ class BackupTest extends TestCase
             'status' => 'completed',
             'size' => 512000,
             'file_path' => 'backups/incremental-backup.tar.gz',
-            'created_by' => $this->user->id
+            'created_by' => $this->user->id,
         ]);
 
         $response = $this->actingAs($this->user)
@@ -782,7 +785,7 @@ class BackupTest extends TestCase
         );
     }
 
-    /** @test */
+    #[Test]
     public function user_can_filter_backups_by_status()
     {
         \App\Models\Backup::create([
@@ -792,7 +795,7 @@ class BackupTest extends TestCase
             'status' => 'completed',
             'size' => 1024000,
             'file_path' => 'backups/completed-backup.tar.gz',
-            'created_by' => $this->user->id
+            'created_by' => $this->user->id,
         ]);
         \App\Models\Backup::create([
             'name' => 'Failed Backup',
@@ -801,7 +804,7 @@ class BackupTest extends TestCase
             'status' => 'failed',
             'size' => 0,
             'file_path' => null,
-            'created_by' => $this->user->id
+            'created_by' => $this->user->id,
         ]);
 
         $response = $this->actingAs($this->user)
@@ -814,7 +817,7 @@ class BackupTest extends TestCase
         );
     }
 
-    /** @test */
+    #[Test]
     public function user_can_filter_backups_by_date_range()
     {
         \App\Models\Backup::create([
@@ -825,7 +828,7 @@ class BackupTest extends TestCase
             'size' => 1024000,
             'file_path' => 'backups/old-backup.tar.gz',
             'created_by' => $this->user->id,
-            'created_at' => now()->subMonth()
+            'created_at' => now()->subMonth(),
         ]);
         \App\Models\Backup::create([
             'name' => 'Recent Backup',
@@ -835,11 +838,11 @@ class BackupTest extends TestCase
             'size' => 1024000,
             'file_path' => 'backups/recent-backup.tar.gz',
             'created_by' => $this->user->id,
-            'created_at' => now()
+            'created_at' => now(),
         ]);
 
         $response = $this->actingAs($this->user)
-            ->get('/backups?start_date=' . now()->subWeek()->format('Y-m-d') . '&end_date=' . now()->format('Y-m-d'));
+            ->get('/backups?start_date='.now()->subWeek()->format('Y-m-d').'&end_date='.now()->format('Y-m-d'));
 
         $response->assertStatus(200);
         $response->assertInertia(fn ($page) => $page

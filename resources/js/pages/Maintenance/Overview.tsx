@@ -85,7 +85,7 @@ const formatDate = (value: string | null) => {
     try {
         const date = new Date(value);
         return new Intl.DateTimeFormat(undefined, { year: 'numeric', month: 'short', day: 'numeric' }).format(date);
-    } catch (error) {
+    } catch {
         return value;
     }
 };

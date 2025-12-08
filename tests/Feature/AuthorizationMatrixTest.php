@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\User;
 use Database\Seeders\CheckPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -18,7 +19,7 @@ class AuthorizationMatrixTest extends TestCase
         $this->seed(CheckPermissionSeeder::class);
     }
 
-    /** @test */
+    #[Test]
     public function admin_can_manage_users_roles_and_view_permissions()
     {
         $admin = User::factory()->create();
@@ -46,7 +47,7 @@ class AuthorizationMatrixTest extends TestCase
         $this->actingAs($admin)->get(route('permissions.index'))->assertOk();
     }
 
-    /** @test */
+    #[Test]
     public function manager_can_manage_but_cannot_destroy_users_and_roles()
     {
         $manager = User::factory()->create();
@@ -74,7 +75,7 @@ class AuthorizationMatrixTest extends TestCase
         $this->actingAs($manager)->get(route('permissions.index'))->assertOk();
     }
 
-    /** @test */
+    #[Test]
     public function basic_user_has_view_only_access()
     {
         $basic = User::factory()->create();
@@ -98,6 +99,3 @@ class AuthorizationMatrixTest extends TestCase
         $this->actingAs($basic)->get(route('permissions.index'))->assertOk();
     }
 }
-
-
-

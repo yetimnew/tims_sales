@@ -54,7 +54,11 @@ interface ActivityLog {
     event: string;
     created_at: string;
     causer?: User;
-    properties?: Record<string, any>;
+    properties?: {
+        old?: Record<string, unknown>;
+        attributes?: Record<string, unknown>;
+        [key: string]: unknown;
+    } | null;
 }
 
 interface SafetyRecord {
@@ -176,8 +180,8 @@ export default function DriverSafetyShow({ driverSafety, activityLogs = [] }: Dr
                 name: log.causer?.name ?? 'System',
             },
             created_at: log.created_at,
-            old_values: (log.properties?.old as Record<string, unknown>) ?? undefined,
-            new_values: (log.properties?.attributes as Record<string, unknown>) ?? undefined,
+            old_values: log.properties?.old,
+            new_values: log.properties?.attributes,
         }));
     }, [activityLogs]);
 

@@ -21,12 +21,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import * as React from 'react';
 import {
     Route,
-    GaugeCircle,
     TrendingDown,
     ShieldAlert,
     Navigation2,
     Gauge,
-    Timer,
     CircleDot,
     Eye,
     Edit,
@@ -337,7 +335,10 @@ export default function DistancesIndex({ distances, metrics, filters, perPageOpt
         setPerPage(String(resolvedPerPage));
     }, [resolvedPerPage]);
 
-    const distanceData = distances?.data ?? [];
+    const distanceData = React.useMemo(() => {
+        const records = distances?.data;
+        return Array.isArray(records) ? records : [];
+    }, [distances?.data]);
     const totalRecords = distances?.total ?? distanceData.length ?? 0;
     const averageSpeed = metrics?.averageSpeed ?? 0;
     const averageRoadQuality = metrics?.averageRoadQuality ?? 0;

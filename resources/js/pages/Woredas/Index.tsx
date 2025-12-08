@@ -22,7 +22,6 @@ import {
     Layers,
     Users,
     Target,
-    BarChart3,
     MapPin,
     CheckCircle,
     XCircle,
@@ -232,7 +231,10 @@ export default function WoredasIndex({ woredas, metrics, filters, statusOptions,
         setPerPage(String(resolvedPerPage));
     }, [resolvedPerPage]);
 
-    const woredaData = woredas?.data ?? [];
+    const woredaData = React.useMemo(() => {
+        const records = woredas?.data;
+        return Array.isArray(records) ? records : [];
+    }, [woredas?.data]);
     const totalRecords = woredas?.total ?? woredaData.length ?? 0;
     const activeCount = metrics?.activeCount ?? 0;
     const inactiveCount = metrics?.inactiveCount ?? 0;

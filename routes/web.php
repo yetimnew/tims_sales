@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DriverController;
 use App\Http\Controllers\FleetAnalyticsController;
@@ -646,6 +647,26 @@ Route::middleware(['auth'])->group(function () {
     Route::get('reports/driver-truck-attach-detach', [\App\Http\Controllers\ReportController::class, 'driverTruckAttachDetach'])
         ->middleware('can:reports.attach-detach.view')
         ->name('reports.attach-detach');
+
+    // Activity Logs
+    Route::middleware(['throttle:60,1'])->group(function () {
+        Route::get('activity-logs', [ActivityLogController::class, 'index'])
+            ->middleware('can:activity-logs.view')
+            ->name('activity-logs.index');
+
+        Route::get('activity-logs/export/excel', [ActivityLogController::class, 'exportExcel'])
+            ->middleware('can:activity-logs.export')
+            ->name('activity-logs.export-excel');
+
+        Route::get('activity-logs/export/csv', [ActivityLogController::class, 'exportCsv'])
+            ->middleware('can:activity-logs.export')
+            ->name('activity-logs.export-csv');
+
+        Route::get('activity-logs/{activity}', [ActivityLogController::class, 'show'])
+            ->whereNumber('activity')
+            ->middleware('can:activity-logs.show')
+            ->name('activity-logs.show');
+    });
 
     // User Management
     Route::middleware(['throttle:60,1'])->group(function () {

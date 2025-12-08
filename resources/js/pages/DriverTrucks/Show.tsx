@@ -25,7 +25,6 @@ import {
     ArrowUpRight,
     Award,
     BarChart3,
-    Calendar,
     CheckCircle,
     Clock,
     Edit,
@@ -315,10 +314,46 @@ const gradeCategoryConfig: Record<GradeCategoryKey, GradeCategoryConfigEntry> = 
 };
 
 export default function Show({ driverTruck, performances, dateDifference, activityLogs, gradeReport }: Props) {
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const overallGrade = gradeReport?.overall ?? null;
+    const gradeWeights = gradeReport?.weights ?? null;
+
+    const gradeCategories: GradeCategoryView[] = useMemo(() => {
+        if (!gradeReport?.categories) {
+            return [];
+        }
+
+        return (Object.entries(gradeCategoryConfig) as Array<[GradeCategoryKey, GradeCategoryConfigEntry]>)
+            .map(([key, config]) => {
+                const category = gradeReport.categories?.[key];
+
+                if (!category) {
+                    return null;
+                }
+
+                const weightKey = `${key}_weight` as keyof GradeWeights;
+
+                return {
+                    key,
+                    label: config.label,
+                    description: config.description,
+                    score: category.score,
+                    weight: gradeWeights ? gradeWeights[weightKey] : null,
+                    metrics: config.metrics.map(metric => ({
+                        label: metric.label,
+                        value: metric.formatter(category.metrics?.[metric.key] ?? null),
+                    })),
+                } satisfies GradeCategoryView;
+            })
+            .filter((category): category is GradeCategoryView => Boolean(category));
+    }, [gradeReport, gradeWeights]);
+
     if (!driverTruck || !driverTruck.driver || !driverTruck.truck) {
         return (
             <AppLayout breadcrumbs={[]}>
-                <div className="flex items-center justify-center h-64">
+                <div className="flex h-64 items-center justify-center">
                     <div className="text-center">
                         <h2 className="text-lg font-semibold text-gray-900">Loading...</h2>
                         <p className="text-gray-600">Please wait while we load the assignment data.</p>
@@ -327,9 +362,6 @@ export default function Show({ driverTruck, performances, dateDifference, activi
             </AppLayout>
         );
     }
-
-    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-    const [isDeleting, setIsDeleting] = useState(false);
 
     const breadcrumbs: BreadcrumbItem[] = [
         {
@@ -375,40 +407,6 @@ export default function Show({ driverTruck, performances, dateDifference, activi
     const assignmentStatusCardClass = driverTruck.is_attached
         ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/20 dark:text-emerald-200'
         : 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-800 dark:bg-rose-950/20 dark:text-rose-200';
-
-    const overallGrade = gradeReport?.overall ?? null;
-    const gradeWeights = gradeReport?.weights ?? null;
-
-    const gradeCategories: GradeCategoryView[] = useMemo(() => {
-        if (!gradeReport?.categories) {
-            return [];
-        }
-
-        return (Object.entries(gradeCategoryConfig) as Array<[GradeCategoryKey, GradeCategoryConfigEntry]>)
-            .map(([key, config]) => {
-                const category = gradeReport.categories?.[key];
-
-                if (!category) {
-                    return null;
-                }
-
-                const weightKey = `${key}_weight` as keyof GradeWeights;
-
-                return {
-                    key,
-                    label: config.label,
-                    description: config.description,
-                    score: category.score,
-                    weight: gradeWeights ? gradeWeights[weightKey] : null,
-                    metrics: config.metrics.map(metric => ({
-                        label: metric.label,
-                        value: metric.formatter(category.metrics?.[metric.key] ?? null),
-                    })),
-                } satisfies GradeCategoryView;
-            })
-            .filter((category): category is GradeCategoryView => Boolean(category));
-    }, [gradeReport, gradeWeights]);
-
     const overviewSummaryItems = [
         {
             key: 'assignment-id',

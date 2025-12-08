@@ -7,13 +7,14 @@ use App\Http\Requests\UpdateTruckRequest;
 use App\Models\VehicleType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Validator;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class TruckValidationTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** @test */
+    #[Test]
     public function it_validates_truck_store_request()
     {
         $vehicleType = VehicleType::factory()->create();
@@ -28,28 +29,28 @@ class TruckValidationTest extends TestCase
             'purchasePrice' => 500000.50,
             'productionDate' => '2023-01-01',
             'serviceStartDate' => '2023-02-01',
-            'status' => 'active'
+            'status' => 'active',
         ];
 
-        $request = new StoreTruckRequest();
+        $request = new StoreTruckRequest;
         $validator = Validator::make($validData, $request->rules());
 
         $this->assertTrue($validator->passes());
     }
 
-    /** @test */
+    #[Test]
     public function it_requires_plate_field()
     {
         $data = [];
 
-        $request = new StoreTruckRequest();
+        $request = new StoreTruckRequest;
         $validator = Validator::make($data, $request->rules());
 
         $this->assertTrue($validator->fails());
         $this->assertArrayHasKey('plate', $validator->errors()->toArray());
     }
 
-    /** @test */
+    #[Test]
     public function it_validates_plate_format()
     {
         $invalidPlates = [
@@ -63,14 +64,14 @@ class TruckValidationTest extends TestCase
 
         foreach ($invalidPlates as $plate) {
             $data = ['plate' => $plate];
-            $request = new StoreTruckRequest();
+            $request = new StoreTruckRequest;
             $validator = Validator::make($data, $request->rules());
 
             $this->assertTrue($validator->fails(), "Plate '{$plate}' should fail validation");
         }
     }
 
-    /** @test */
+    #[Test]
     public function it_validates_plate_uniqueness()
     {
         $vehicleType = VehicleType::factory()->create();
@@ -81,57 +82,57 @@ class TruckValidationTest extends TestCase
         $data = [
             'plate' => 'EXIST-123', // duplicate
             'vehicletype_id' => $vehicleType->id,
-            'status' => 'active'
+            'status' => 'active',
         ];
 
-        $request = new StoreTruckRequest();
+        $request = new StoreTruckRequest;
         $validator = Validator::make($data, $request->rules());
 
         $this->assertTrue($validator->fails());
         $this->assertArrayHasKey('plate', $validator->errors()->toArray());
     }
 
-    /** @test */
+    #[Test]
     public function it_requires_vehicletype_id_field()
     {
         $data = ['plate' => 'ABC-123'];
 
-        $request = new StoreTruckRequest();
+        $request = new StoreTruckRequest;
         $validator = Validator::make($data, $request->rules());
 
         $this->assertTrue($validator->fails());
         $this->assertArrayHasKey('vehicletype_id', $validator->errors()->toArray());
     }
 
-    /** @test */
+    #[Test]
     public function it_validates_vehicletype_id_exists()
     {
         $data = [
             'plate' => 'ABC-123',
             'vehicletype_id' => 99999, // non-existent
-            'status' => 'active'
+            'status' => 'active',
         ];
 
-        $request = new StoreTruckRequest();
+        $request = new StoreTruckRequest;
         $validator = Validator::make($data, $request->rules());
 
         $this->assertTrue($validator->fails());
         $this->assertArrayHasKey('vehicletype_id', $validator->errors()->toArray());
     }
 
-    /** @test */
+    #[Test]
     public function it_requires_status_field()
     {
         $data = ['plate' => 'ABC-123'];
 
-        $request = new StoreTruckRequest();
+        $request = new StoreTruckRequest;
         $validator = Validator::make($data, $request->rules());
 
         $this->assertTrue($validator->fails());
         $this->assertArrayHasKey('status', $validator->errors()->toArray());
     }
 
-    /** @test */
+    #[Test]
     public function it_validates_status_values()
     {
         $vehicleType = VehicleType::factory()->create();
@@ -142,17 +143,17 @@ class TruckValidationTest extends TestCase
             $data = [
                 'plate' => 'ABC-123',
                 'vehicletype_id' => $vehicleType->id,
-                'status' => $status
+                'status' => $status,
             ];
 
-            $request = new StoreTruckRequest();
+            $request = new StoreTruckRequest;
             $validator = Validator::make($data, $request->rules());
 
             $this->assertTrue($validator->fails(), "Status '{$status}' should fail validation");
         }
     }
 
-    /** @test */
+    #[Test]
     public function it_validates_numeric_fields()
     {
         $vehicleType = VehicleType::factory()->create();
@@ -167,17 +168,17 @@ class TruckValidationTest extends TestCase
                 'plate' => 'ABC-123',
                 'vehicletype_id' => $vehicleType->id,
                 'status' => 'active',
-                $field => $value
+                $field => $value,
             ];
 
-            $request = new StoreTruckRequest();
+            $request = new StoreTruckRequest;
             $validator = Validator::make($data, $request->rules());
 
             $this->assertTrue($validator->fails(), "Field '{$field}' with value '{$value}' should fail validation");
         }
     }
 
-    /** @test */
+    #[Test]
     public function it_validates_date_fields()
     {
         $vehicleType = VehicleType::factory()->create();
@@ -192,17 +193,17 @@ class TruckValidationTest extends TestCase
                 'plate' => 'ABC-123',
                 'vehicletype_id' => $vehicleType->id,
                 'status' => 'active',
-                $field => $value
+                $field => $value,
             ];
 
-            $request = new StoreTruckRequest();
+            $request = new StoreTruckRequest;
             $validator = Validator::make($data, $request->rules());
 
             $this->assertTrue($validator->fails(), "Field '{$field}' with value '{$value}' should fail validation");
         }
     }
 
-    /** @test */
+    #[Test]
     public function it_validates_service_start_date_after_production_date()
     {
         $vehicleType = VehicleType::factory()->create();
@@ -212,17 +213,17 @@ class TruckValidationTest extends TestCase
             'vehicletype_id' => $vehicleType->id,
             'status' => 'active',
             'productionDate' => '2023-02-01',
-            'serviceStartDate' => '2023-01-01' // before production date
+            'serviceStartDate' => '2023-01-01', // before production date
         ];
 
-        $request = new StoreTruckRequest();
+        $request = new StoreTruckRequest;
         $validator = Validator::make($data, $request->rules());
 
         $this->assertTrue($validator->fails());
         $this->assertArrayHasKey('serviceStartDate', $validator->errors()->toArray());
     }
 
-    /** @test */
+    #[Test]
     public function it_validates_truck_update_request()
     {
         $truck = \App\Models\Truck::factory()->create();
@@ -231,16 +232,16 @@ class TruckValidationTest extends TestCase
         $validData = [
             'plate' => 'UPD-123',
             'vehicletype_id' => $vehicleType->id,
-            'status' => 'maintenance'
+            'status' => 'maintenance',
         ];
 
-        $request = new UpdateTruckRequest();
+        $request = new UpdateTruckRequest;
         $validator = Validator::make($validData, $request->rules());
 
         $this->assertTrue($validator->passes());
     }
 
-    /** @test */
+    #[Test]
     public function it_allows_plate_update_with_same_value()
     {
         $truck = \App\Models\Truck::factory()->create(['plate' => 'SAME-123']);
@@ -249,10 +250,10 @@ class TruckValidationTest extends TestCase
         $data = [
             'plate' => 'SAME-123', // same as existing
             'vehicletype_id' => $vehicleType->id,
-            'status' => 'active'
+            'status' => 'active',
         ];
 
-        $request = new UpdateTruckRequest();
+        $request = new UpdateTruckRequest;
         $rules = $request->rules();
 
         // Update the unique rule to ignore current truck
@@ -263,7 +264,7 @@ class TruckValidationTest extends TestCase
         $this->assertTrue($validator->passes());
     }
 
-    /** @test */
+    #[Test]
     public function it_validates_optional_fields()
     {
         $vehicleType = VehicleType::factory()->create();
@@ -271,16 +272,16 @@ class TruckValidationTest extends TestCase
         $minimalData = [
             'plate' => 'MIN-123',
             'vehicletype_id' => $vehicleType->id,
-            'status' => 'active'
+            'status' => 'active',
         ];
 
-        $request = new StoreTruckRequest();
+        $request = new StoreTruckRequest;
         $validator = Validator::make($minimalData, $request->rules());
 
         $this->assertTrue($validator->passes());
     }
 
-    /** @test */
+    #[Test]
     public function it_validates_string_length_limits()
     {
         $vehicleType = VehicleType::factory()->create();
@@ -296,17 +297,17 @@ class TruckValidationTest extends TestCase
                 'plate' => 'ABC-123',
                 'vehicletype_id' => $vehicleType->id,
                 'status' => 'active',
-                $field => $value
+                $field => $value,
             ];
 
-            $request = new StoreTruckRequest();
+            $request = new StoreTruckRequest;
             $validator = Validator::make($data, $request->rules());
 
             $this->assertTrue($validator->fails(), "Field '{$field}' with long value should fail validation");
         }
     }
 
-    /** @test */
+    #[Test]
     public function it_validates_positive_numeric_values()
     {
         $vehicleType = VehicleType::factory()->create();
@@ -321,10 +322,10 @@ class TruckValidationTest extends TestCase
                 'plate' => 'ABC-123',
                 'vehicletype_id' => $vehicleType->id,
                 'status' => 'active',
-                $field => $value
+                $field => $value,
             ];
 
-            $request = new StoreTruckRequest();
+            $request = new StoreTruckRequest;
             $validator = Validator::make($data, $request->rules());
 
             $this->assertTrue($validator->fails(), "Field '{$field}' with negative value should fail validation");

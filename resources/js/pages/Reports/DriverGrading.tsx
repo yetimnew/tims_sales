@@ -17,7 +17,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { InertiaPagination } from '@/components/ui/pagination';
-import { CalendarClock, Gauge, LineChart, ListFilter, Loader2, RefreshCcw, Settings, User } from 'lucide-react';
+import { CalendarClock, Gauge, LineChart, ListFilter, Loader2, RefreshCcw, Settings, User, type LucideIcon } from 'lucide-react';
 
 type GradeDetails = {
     overall?: { score?: number | null; letter?: string | null };
@@ -140,9 +140,9 @@ const resolveCsrfTokens = (): { header?: string; cookie?: string } => {
 };
 
 export default function DriverGradingReport({ filters, filterOptions, paginator, latestCalculation, perPageOptions, can }: Props) {
-    const rows = Array.isArray(paginator?.data) ? paginator.data ?? [] : [];
-    const snapshotDates = Array.isArray(filterOptions?.dates) ? filterOptions.dates ?? [] : [];
-    const statusOptions = Array.isArray(filterOptions?.statuses) ? filterOptions.statuses ?? [] : [];
+    const rows = useMemo<DriverRow[]>(() => (Array.isArray(paginator?.data) ? paginator.data : []), [paginator?.data]);
+    const snapshotDates = useMemo<string[]>(() => (Array.isArray(filterOptions?.dates) ? filterOptions.dates : []), [filterOptions?.dates]);
+    const statusOptions = useMemo<string[]>(() => (Array.isArray(filterOptions?.statuses) ? filterOptions.statuses : []), [filterOptions?.statuses]);
     const availablePerPageOptions = useMemo(() => (perPageOptions && perPageOptions.length > 0 ? perPageOptions : fallBackPerPageOptions), [perPageOptions]);
     const canRecalculate = can?.recalculate ?? false;
 
@@ -231,7 +231,7 @@ export default function DriverGradingReport({ filters, filterOptions, paginator,
             setRecalculationNotice({ status: 'error', message: 'Failed to recalculate driver grades. Please try again shortly.' });
             setRecalculating(false);
         }
-    }, [canRecalculate, appliedSnapshotDate, appliedStatus, recalculating, router]);
+    }, [canRecalculate, appliedSnapshotDate, appliedStatus, recalculating]);
 
     const averageScore = useMemo(() => {
         let total = 0; let count = 0;
@@ -246,7 +246,9 @@ export default function DriverGradingReport({ filters, filterOptions, paginator,
         return priority.find((letter) => letters.includes(letter)) ?? letters[0];
     }, [rows]);
 
-    const kpiCards = useMemo(() => {
+    const kpiCards = useMemo<
+        ReadonlyArray<{ label: string; value: string; icon: LucideIcon; tone: string }>
+    >(() => {
         const totalDrivers = paginator?.meta?.total ?? rows.length;
         const lastCalculatedAt = latestCalculation?.calculated_at ?? rows[0]?.snapshot?.calculated_at ?? null;
         const calculatedBy = latestCalculation?.calculated_by?.name ?? rows[0]?.snapshot?.calculated_by?.name ?? null;
@@ -389,7 +391,7 @@ export default function DriverGradingReport({ filters, filterOptions, paginator,
 
                     <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
                         {kpiCards.map((card) => {
-                            const Icon = card.icon as any;
+                            const Icon = card.icon;
                             return (
                                 <Card key={card.label} className="border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
                                     <CardContent className="flex items-center gap-3 p-4">

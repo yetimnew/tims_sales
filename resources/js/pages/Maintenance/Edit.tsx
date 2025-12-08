@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type FormEventHandler } from 'react';
+import { useEffect, useMemo, useRef, useState, useTransition, type FormEventHandler } from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -130,6 +130,7 @@ const completedDateMessage = (
 export default function MaintenanceEdit({ maintenance, trucks, maintenanceTypes, mechanics, statusOptions }: MaintenanceEditProps) {
     const { toast } = useToast();
     const formDefaults = useMemo(() => buildFormState(maintenance), [maintenance]);
+    const [, startTransition] = useTransition();
     const {
         data,
         setData,
@@ -179,11 +180,13 @@ export default function MaintenanceEdit({ maintenance, trucks, maintenanceTypes,
     );
 
     useEffect(() => {
-        setData(formDefaults);
-        setDefaults(formDefaults);
-        setFrontendErrors({});
-        setIsDirty(false);
-    }, [formDefaults, setData, setDefaults]);
+        startTransition(() => {
+            setData(formDefaults);
+            setDefaults(formDefaults);
+            setFrontendErrors({});
+            setIsDirty(false);
+        });
+    }, [formDefaults, setData, setDefaults, startTransition]);
 
     useEffect(() => {
         const backendErrors = Object.values(errors)

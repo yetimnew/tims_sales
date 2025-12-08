@@ -6,7 +6,6 @@ import { useListingLoading } from '@/hooks/use-listing-loading';
 import ListPageLayout from '@/components/layouts/list-page-layout';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TableCell, TableRow } from '@/components/ui/table';
@@ -417,10 +416,10 @@ export default function OutsourcePerformancesIndex({
         handleNavigate({ sort: nextColumn, direction: nextDirection });
     }, [handleNavigate, sortColumn, sortDirection]);
 
-    const handleDeleteClick = (record: OutsourcePerformanceRecord) => {
+    const handleDeleteClick = useCallback((record: OutsourcePerformanceRecord) => {
         setSelectedRecord(record);
         setDeleteDialogOpen(true);
-    };
+    }, []);
 
     const handleDeleteConfirm = () => {
         if (!selectedRecord) {

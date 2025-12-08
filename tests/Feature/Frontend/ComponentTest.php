@@ -6,6 +6,7 @@ use App\Models\Driver;
 use App\Models\Truck;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -100,7 +101,7 @@ class ComponentTest extends TestCase
         $this->user->assignRole($adminRole);
     }
 
-    /** @test */
+    #[Test]
     public function trucks_index_page_displays_correctly()
     {
         Truck::factory()->count(3)->create();
@@ -117,7 +118,7 @@ class ComponentTest extends TestCase
             );
     }
 
-    /** @test */
+    #[Test]
     public function trucks_create_page_displays_correctly()
     {
         $response = $this->actingAs($this->user)
@@ -130,7 +131,7 @@ class ComponentTest extends TestCase
             );
     }
 
-    /** @test */
+    #[Test]
     public function trucks_show_page_displays_correctly()
     {
         $truck = Truck::factory()->create();
@@ -147,7 +148,7 @@ class ComponentTest extends TestCase
             );
     }
 
-    /** @test */
+    #[Test]
     public function trucks_edit_page_displays_correctly()
     {
         $truck = Truck::factory()->create();
@@ -164,7 +165,7 @@ class ComponentTest extends TestCase
             );
     }
 
-    /** @test */
+    #[Test]
     public function drivers_index_page_displays_correctly()
     {
         Driver::factory()->count(3)->create();
@@ -181,7 +182,7 @@ class ComponentTest extends TestCase
             );
     }
 
-    /** @test */
+    #[Test]
     public function drivers_create_page_displays_correctly()
     {
         $response = $this->actingAs($this->user)
@@ -195,7 +196,7 @@ class ComponentTest extends TestCase
             );
     }
 
-    /** @test */
+    #[Test]
     public function drivers_show_page_displays_correctly()
     {
         $driver = Driver::factory()->create();
@@ -212,7 +213,7 @@ class ComponentTest extends TestCase
             );
     }
 
-    /** @test */
+    #[Test]
     public function drivers_edit_page_displays_correctly()
     {
         $driver = Driver::factory()->create();
@@ -230,7 +231,7 @@ class ComponentTest extends TestCase
             );
     }
 
-    /** @test */
+    #[Test]
     public function dashboard_displays_correctly()
     {
         $response = $this->actingAs($this->user)
@@ -247,7 +248,7 @@ class ComponentTest extends TestCase
             );
     }
 
-    /** @test */
+    #[Test]
     public function maintenance_index_page_displays_correctly()
     {
         \App\Models\VehicleMaintenanceRecord::factory()->count(3)->create();
@@ -263,7 +264,7 @@ class ComponentTest extends TestCase
             );
     }
 
-    /** @test */
+    #[Test]
     public function fuel_index_page_displays_correctly()
     {
         \App\Models\FuelRecord::factory()->count(3)->create();
@@ -278,7 +279,7 @@ class ComponentTest extends TestCase
             );
     }
 
-    /** @test */
+    #[Test]
     public function financial_index_page_displays_correctly()
     {
         \App\Models\TruckFinancialRecord::factory()->count(3)->create();
@@ -293,7 +294,7 @@ class ComponentTest extends TestCase
             );
     }
 
-    /** @test */
+    #[Test]
     public function vehicle_types_index_page_displays_correctly()
     {
         \App\Models\VehicleType::factory()->count(3)->create();
@@ -308,7 +309,7 @@ class ComponentTest extends TestCase
             );
     }
 
-    /** @test */
+    #[Test]
     public function cargo_types_index_page_displays_correctly()
     {
         \App\Models\CargoType::factory()->count(3)->create();
@@ -323,7 +324,7 @@ class ComponentTest extends TestCase
             );
     }
 
-    /** @test */
+    #[Test]
     public function regions_index_page_displays_correctly()
     {
         \App\Models\Region::factory()->count(3)->create();
@@ -338,7 +339,7 @@ class ComponentTest extends TestCase
             );
     }
 
-    /** @test */
+    #[Test]
     public function zones_index_page_displays_correctly()
     {
         \App\Models\Zone::factory()->count(3)->create();
@@ -353,7 +354,7 @@ class ComponentTest extends TestCase
             );
     }
 
-    /** @test */
+    #[Test]
     public function woredas_index_page_displays_correctly()
     {
         \App\Models\Woreda::factory()->count(3)->create();
@@ -368,7 +369,7 @@ class ComponentTest extends TestCase
             );
     }
 
-    /** @test */
+    #[Test]
     public function places_index_page_displays_correctly()
     {
         \App\Models\Place::factory()->count(3)->create();
@@ -383,7 +384,7 @@ class ComponentTest extends TestCase
             );
     }
 
-    /** @test */
+    #[Test]
     public function customers_index_page_displays_correctly()
     {
         \App\Models\Customer::factory()->count(3)->create();
@@ -398,7 +399,7 @@ class ComponentTest extends TestCase
             );
     }
 
-    /** @test */
+    #[Test]
     public function users_index_page_displays_correctly()
     {
         User::factory()->count(3)->create();
@@ -413,7 +414,7 @@ class ComponentTest extends TestCase
             );
     }
 
-    /** @test */
+    #[Test]
     public function roles_index_page_displays_correctly()
     {
         $response = $this->actingAs($this->user)
@@ -426,7 +427,7 @@ class ComponentTest extends TestCase
             );
     }
 
-    /** @test */
+    #[Test]
     public function permissions_index_page_displays_correctly()
     {
         $response = $this->actingAs($this->user)
@@ -440,7 +441,7 @@ class ComponentTest extends TestCase
             );
     }
 
-    /** @test */
+    #[Test]
     public function status_types_index_page_displays_correctly()
     {
         \App\Models\StatusType::factory()->count(3)->create();
@@ -455,7 +456,7 @@ class ComponentTest extends TestCase
             );
     }
 
-    /** @test */
+    #[Test]
     public function statuses_index_page_displays_correctly()
     {
         \App\Models\Status::factory()->count(3)->create();
@@ -470,7 +471,7 @@ class ComponentTest extends TestCase
             );
     }
 
-    /** @test */
+    #[Test]
     public function page_components_have_correct_props()
     {
         $truck = Truck::factory()->create();
@@ -490,7 +491,7 @@ class ComponentTest extends TestCase
             );
     }
 
-    /** @test */
+    #[Test]
     public function page_components_have_correct_layout()
     {
         $response = $this->actingAs($this->user)
@@ -507,7 +508,7 @@ class ComponentTest extends TestCase
             );
     }
 
-    /** @test */
+    #[Test]
     public function page_components_handle_empty_data()
     {
         $response = $this->actingAs($this->user)
@@ -521,7 +522,7 @@ class ComponentTest extends TestCase
             );
     }
 
-    /** @test */
+    #[Test]
     public function page_components_handle_search_results()
     {
         Truck::factory()->create(['plate' => 'ABC-123']);
@@ -538,7 +539,7 @@ class ComponentTest extends TestCase
             );
     }
 
-    /** @test */
+    #[Test]
     public function page_components_handle_sort_results()
     {
         Truck::factory()->create(['plate' => 'ZYX-999']);
@@ -556,7 +557,7 @@ class ComponentTest extends TestCase
             );
     }
 
-    /** @test */
+    #[Test]
     public function page_components_handle_pagination()
     {
         Truck::factory()->count(25)->create();
@@ -573,7 +574,7 @@ class ComponentTest extends TestCase
             );
     }
 
-    /** @test */
+    #[Test]
     public function page_components_handle_permissions()
     {
         /** @var User $userWithoutPermission */
@@ -586,7 +587,7 @@ class ComponentTest extends TestCase
         $response->assertStatus(403);
     }
 
-    /** @test */
+    #[Test]
     public function page_components_handle_validation_errors()
     {
         $response = $this->actingAs($this->user)
@@ -595,7 +596,7 @@ class ComponentTest extends TestCase
         $response->assertSessionHasErrors(['plate', 'vehicletype_id', 'status']);
     }
 
-    /** @test */
+    #[Test]
     public function page_components_handle_flash_messages()
     {
         $truckData = [

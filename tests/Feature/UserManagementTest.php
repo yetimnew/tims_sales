@@ -8,6 +8,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class UserManagementTest extends TestCase
@@ -58,7 +59,7 @@ class UserManagementTest extends TestCase
         return 'Aa1!'.Str::random(20);
     }
 
-    /** @test */
+    #[Test]
     public function admin_can_view_users_index()
     {
         $response = $this->actingAs($this->admin)->get(route('users.index'));
@@ -67,7 +68,7 @@ class UserManagementTest extends TestCase
         $response->assertInertia(fn ($page) => $page->component('Users/Index'));
     }
 
-    /** @test */
+    #[Test]
     public function admin_can_create_user_with_role()
     {
         $password = $this->strongPassword();
@@ -94,7 +95,7 @@ class UserManagementTest extends TestCase
         $this->assertTrue($createdUser->hasRole('user'));
     }
 
-    /** @test */
+    #[Test]
     public function admin_can_update_user()
     {
         $user = User::factory()->create();
@@ -117,7 +118,7 @@ class UserManagementTest extends TestCase
         $this->assertTrue($user->hasRole('manager'));
     }
 
-    /** @test */
+    #[Test]
     public function admin_can_update_user_with_new_password()
     {
         $user = User::factory()->create();
@@ -143,7 +144,7 @@ class UserManagementTest extends TestCase
         $this->assertTrue(Hash::check($newPassword, $user->password));
     }
 
-    /** @test */
+    #[Test]
     public function admin_can_delete_user()
     {
         $user = User::factory()->create();
@@ -157,7 +158,7 @@ class UserManagementTest extends TestCase
         $this->assertDatabaseMissing('users', ['id' => $user->id]);
     }
 
-    /** @test */
+    #[Test]
     public function admin_cannot_delete_themselves()
     {
         $response = $this->actingAs($this->admin)->delete(route('users.destroy', $this->admin));
@@ -168,7 +169,7 @@ class UserManagementTest extends TestCase
         $this->assertDatabaseHas('users', ['id' => $this->admin->id]);
     }
 
-    /** @test */
+    #[Test]
     public function admin_can_export_users_to_csv()
     {
         $response = $this->actingAs($this->admin)->get(route('users.export'));
@@ -178,7 +179,7 @@ class UserManagementTest extends TestCase
         $response->assertHeader('Content-Disposition', 'attachment; filename="users_'.now()->format('Y-m-d_H-i-s').'.csv"');
     }
 
-    /** @test */
+    #[Test]
     public function manager_cannot_delete_users()
     {
         $user = User::factory()->create();
@@ -189,7 +190,7 @@ class UserManagementTest extends TestCase
         $response->assertStatus(403);
     }
 
-    /** @test */
+    #[Test]
     public function regular_user_can_view_users_but_cannot_create()
     {
         $response = $this->actingAs($this->user)->get(route('users.index'));
@@ -211,7 +212,7 @@ class UserManagementTest extends TestCase
         $response->assertStatus(403);
     }
 
-    /** @test */
+    #[Test]
     public function unauthenticated_user_cannot_access_user_management()
     {
         $response = $this->get(route('users.index'));
@@ -219,7 +220,7 @@ class UserManagementTest extends TestCase
         $response->assertRedirect(route('login'));
     }
 
-    /** @test */
+    #[Test]
     public function registration_routes_are_disabled()
     {
         $response = $this->get('/register');
@@ -227,7 +228,7 @@ class UserManagementTest extends TestCase
         $response->assertStatus(404);
     }
 
-    /** @test */
+    #[Test]
     public function unauthenticated_users_cannot_register()
     {
         $userData = [
@@ -242,7 +243,7 @@ class UserManagementTest extends TestCase
         $response->assertStatus(404);
     }
 
-    /** @test */
+    #[Test]
     public function user_creation_requires_authentication()
     {
         $password = $this->strongPassword();
@@ -260,7 +261,7 @@ class UserManagementTest extends TestCase
         $response->assertRedirect(route('login'));
     }
 
-    /** @test */
+    #[Test]
     public function user_creation_requires_permission()
     {
         $password = $this->strongPassword();
@@ -278,7 +279,7 @@ class UserManagementTest extends TestCase
         $response->assertStatus(403);
     }
 
-    /** @test */
+    #[Test]
     public function user_update_requires_permission()
     {
         $user = User::factory()->create();
@@ -295,7 +296,7 @@ class UserManagementTest extends TestCase
         $response->assertStatus(403);
     }
 
-    /** @test */
+    #[Test]
     public function user_deletion_requires_permission()
     {
         $user = User::factory()->create();
@@ -306,7 +307,7 @@ class UserManagementTest extends TestCase
         $response->assertStatus(403);
     }
 
-    /** @test */
+    #[Test]
     public function user_can_export_users()
     {
         $response = $this->actingAs($this->user)->get(route('users.export'));
@@ -315,7 +316,7 @@ class UserManagementTest extends TestCase
         $response->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
     }
 
-    /** @test */
+    #[Test]
     public function user_creation_validates_required_fields()
     {
         $response = $this->actingAs($this->admin)->post(route('users.store'), []);
@@ -323,7 +324,7 @@ class UserManagementTest extends TestCase
         $response->assertSessionHasErrors(['name', 'email', 'password', 'role']);
     }
 
-    /** @test */
+    #[Test]
     public function user_creation_validates_email_uniqueness()
     {
         $existingUser = User::factory()->create(['email' => 'existing@example.com']);
@@ -343,7 +344,7 @@ class UserManagementTest extends TestCase
         $response->assertSessionHasErrors(['email']);
     }
 
-    /** @test */
+    #[Test]
     public function user_creation_validates_password_confirmation()
     {
         $password = $this->strongPassword();
@@ -361,7 +362,7 @@ class UserManagementTest extends TestCase
         $response->assertSessionHasErrors(['password']);
     }
 
-    /** @test */
+    #[Test]
     public function user_creation_validates_role_exists()
     {
         $password = $this->strongPassword();

@@ -3,16 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import AppLayout from '@/layouts/app-layout';
 import { Head, Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
-import {
-    Settings,
-    Edit,
-    Trash2,
-    Truck,
-    Calendar,
-    ArrowLeft,
-    Activity,
-    ChevronRight,
-} from 'lucide-react';
+import { Settings, Edit, Trash2, Truck, ArrowLeft, Activity, ChevronRight } from 'lucide-react';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { ActivityLogTable } from '@/components/activity-log-table';
 import { useMemo, useState } from 'react';
@@ -29,8 +20,8 @@ interface ActivityLog {
         name: string;
     };
     created_at: string;
-    old_values?: Record<string, any>;
-    new_values?: Record<string, any>;
+    old_values?: Record<string, unknown>;
+    new_values?: Record<string, unknown>;
 }
 
 interface VehicleTypeTruck {

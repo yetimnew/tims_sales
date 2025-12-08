@@ -10,6 +10,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
+use PHPUnit\Framework\Attributes\Test;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -51,7 +52,7 @@ class DriverControllerTest extends TestCase
         $this->woreda = Woreda::factory()->create(['zone_id' => $this->zone->id]);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_display_drivers_index_page()
     {
         Driver::factory()->count(5)->create();
@@ -66,7 +67,7 @@ class DriverControllerTest extends TestCase
             );
     }
 
-    /** @test */
+    #[Test]
     public function it_can_search_drivers()
     {
         Driver::factory()->create(['name' => 'John Doe']);
@@ -83,7 +84,7 @@ class DriverControllerTest extends TestCase
             );
     }
 
-    /** @test */
+    #[Test]
     public function it_can_sort_drivers_by_name()
     {
         Driver::factory()->create(['name' => 'Zoe Wilson']);
@@ -101,7 +102,7 @@ class DriverControllerTest extends TestCase
             );
     }
 
-    /** @test */
+    #[Test]
     public function it_can_display_driver_create_page()
     {
         $response = $this->actingAs($this->user)
@@ -113,7 +114,7 @@ class DriverControllerTest extends TestCase
             );
     }
 
-    /** @test */
+    #[Test]
     public function it_can_store_a_new_driver()
     {
         $driverData = [
@@ -137,7 +138,7 @@ class DriverControllerTest extends TestCase
         $this->assertDatabaseHas('drivers', ['driverid' => 'DRV001', 'name' => 'John Doe']);
     }
 
-    /** @test */
+    #[Test]
     public function it_validates_driver_store_request()
     {
         $response = $this->actingAs($this->user)
@@ -146,7 +147,7 @@ class DriverControllerTest extends TestCase
         $response->assertSessionHasErrors(['error']);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_display_driver_show_page()
     {
         $driver = Driver::factory()->create();
@@ -173,7 +174,7 @@ class DriverControllerTest extends TestCase
             );
     }
 
-    /** @test */
+    #[Test]
     public function it_can_display_driver_edit_page()
     {
         $driver = Driver::factory()->create();
@@ -189,7 +190,7 @@ class DriverControllerTest extends TestCase
             );
     }
 
-    /** @test */
+    #[Test]
     public function it_can_update_a_driver()
     {
         $driver = Driver::factory()->create(['name' => 'Old Name']);
@@ -219,7 +220,7 @@ class DriverControllerTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_delete_a_driver()
     {
         $driver = Driver::factory()->create();
@@ -231,7 +232,7 @@ class DriverControllerTest extends TestCase
         $this->assertSoftDeleted('drivers', ['id' => $driver->id]);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_export_drivers_to_csv()
     {
         Driver::factory()->count(3)->create();
@@ -248,7 +249,7 @@ class DriverControllerTest extends TestCase
         $this->assertTrue(Str::endsWith($contentDisposition, '.csv"'));
     }
 
-    /** @test */
+    #[Test]
     public function it_requires_permission_to_view_drivers()
     {
         $userWithoutPermission = User::factory()->create();
@@ -259,7 +260,7 @@ class DriverControllerTest extends TestCase
         $response->assertStatus(403);
     }
 
-    /** @test */
+    #[Test]
     public function it_requires_permission_to_create_drivers()
     {
         $userWithoutPermission = User::factory()->create();
@@ -270,7 +271,7 @@ class DriverControllerTest extends TestCase
         $response->assertStatus(403);
     }
 
-    /** @test */
+    #[Test]
     public function it_requires_permission_to_edit_drivers()
     {
         $driver = Driver::factory()->create();
@@ -282,7 +283,7 @@ class DriverControllerTest extends TestCase
         $response->assertStatus(403);
     }
 
-    /** @test */
+    #[Test]
     public function it_requires_permission_to_delete_drivers()
     {
         $driver = Driver::factory()->create();
@@ -294,7 +295,7 @@ class DriverControllerTest extends TestCase
         $response->assertStatus(403);
     }
 
-    /** @test */
+    #[Test]
     public function it_logs_activity_when_creating_driver()
     {
         $driverData = [
@@ -319,7 +320,7 @@ class DriverControllerTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function it_logs_activity_when_updating_driver()
     {
         $driver = Driver::factory()->create();
@@ -346,7 +347,7 @@ class DriverControllerTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function it_logs_activity_when_deleting_driver()
     {
         $driver = Driver::factory()->create();
@@ -363,7 +364,7 @@ class DriverControllerTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_filter_drivers_by_status()
     {
         Driver::factory()->create(['status' => 'active']);
@@ -381,7 +382,7 @@ class DriverControllerTest extends TestCase
             );
     }
 
-    /** @test */
+    #[Test]
     public function it_can_filter_drivers_by_zone()
     {
         Driver::factory()->create(['zone' => 'Zone One']);

@@ -2,28 +2,29 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
-use App\Models\Truck;
-use App\Models\Driver;
-use App\Models\VehicleType;
-use App\Models\Zone;
-use App\Models\Woreda;
-use App\Models\Region;
-use App\Models\VehicleMaintenanceRecord;
-use App\Models\FuelRecord;
-use App\Models\Performance;
-use App\Models\Operation;
 use App\Models\Customer;
-use App\Models\Place;
 use App\Models\Distance;
+use App\Models\Driver;
+use App\Models\FuelRecord;
+use App\Models\Operation;
+use App\Models\Performance;
+use App\Models\Place;
+use App\Models\Region;
+use App\Models\Truck;
+use App\Models\User;
+use App\Models\VehicleMaintenanceRecord;
+use App\Models\VehicleType;
+use App\Models\Woreda;
+use App\Models\Zone;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class DatabaseRelationshipTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** @test */
+    #[Test]
     public function truck_belongs_to_vehicle_type()
     {
         $vehicleType = VehicleType::factory()->create();
@@ -33,7 +34,7 @@ class DatabaseRelationshipTest extends TestCase
         $this->assertEquals($vehicleType->id, $truck->vehicleType->id);
     }
 
-    /** @test */
+    #[Test]
     public function truck_has_many_drivers_through_pivot()
     {
         $truck = Truck::factory()->create();
@@ -42,11 +43,11 @@ class DatabaseRelationshipTest extends TestCase
 
         $truck->drivers()->attach($driver1->id, [
             'assigned_date' => now(),
-            'status' => 'active'
+            'status' => 'active',
         ]);
         $truck->drivers()->attach($driver2->id, [
             'assigned_date' => now(),
-            'status' => 'active'
+            'status' => 'active',
         ]);
 
         $this->assertCount(2, $truck->drivers);
@@ -54,7 +55,7 @@ class DatabaseRelationshipTest extends TestCase
         $this->assertTrue($truck->drivers->contains($driver2));
     }
 
-    /** @test */
+    #[Test]
     public function driver_has_many_trucks_through_pivot()
     {
         $driver = Driver::factory()->create();
@@ -63,11 +64,11 @@ class DatabaseRelationshipTest extends TestCase
 
         $driver->trucks()->attach($truck1->id, [
             'assigned_date' => now(),
-            'status' => 'active'
+            'status' => 'active',
         ]);
         $driver->trucks()->attach($truck2->id, [
             'assigned_date' => now(),
-            'status' => 'active'
+            'status' => 'active',
         ]);
 
         $this->assertCount(2, $driver->trucks);
@@ -75,7 +76,7 @@ class DatabaseRelationshipTest extends TestCase
         $this->assertTrue($driver->trucks->contains($truck2));
     }
 
-    /** @test */
+    #[Test]
     public function truck_has_many_maintenance_records()
     {
         $truck = Truck::factory()->create();
@@ -85,7 +86,7 @@ class DatabaseRelationshipTest extends TestCase
         $this->assertInstanceOf(VehicleMaintenanceRecord::class, $truck->maintenanceRecords->first());
     }
 
-    /** @test */
+    #[Test]
     public function truck_has_many_fuel_records()
     {
         $truck = Truck::factory()->create();
@@ -95,7 +96,7 @@ class DatabaseRelationshipTest extends TestCase
         $this->assertInstanceOf(FuelRecord::class, $truck->fuelRecords->first());
     }
 
-    /** @test */
+    #[Test]
     public function driver_belongs_to_zone()
     {
         $zone = Zone::factory()->create();
@@ -105,7 +106,7 @@ class DatabaseRelationshipTest extends TestCase
         $this->assertEquals($zone->id, $driver->zone->id);
     }
 
-    /** @test */
+    #[Test]
     public function driver_belongs_to_woreda()
     {
         $woreda = Woreda::factory()->create();
@@ -115,7 +116,7 @@ class DatabaseRelationshipTest extends TestCase
         $this->assertEquals($woreda->id, $driver->woreda->id);
     }
 
-    /** @test */
+    #[Test]
     public function zone_belongs_to_region()
     {
         $region = Region::factory()->create();
@@ -125,7 +126,7 @@ class DatabaseRelationshipTest extends TestCase
         $this->assertEquals($region->id, $zone->region->id);
     }
 
-    /** @test */
+    #[Test]
     public function woreda_belongs_to_zone()
     {
         $zone = Zone::factory()->create();
@@ -135,7 +136,7 @@ class DatabaseRelationshipTest extends TestCase
         $this->assertEquals($zone->id, $woreda->zone->id);
     }
 
-    /** @test */
+    #[Test]
     public function place_belongs_to_woreda()
     {
         $woreda = Woreda::factory()->create();
@@ -145,7 +146,7 @@ class DatabaseRelationshipTest extends TestCase
         $this->assertEquals($woreda->id, $place->woreda->id);
     }
 
-    /** @test */
+    #[Test]
     public function region_has_many_zones()
     {
         $region = Region::factory()->create();
@@ -155,7 +156,7 @@ class DatabaseRelationshipTest extends TestCase
         $this->assertInstanceOf(Zone::class, $region->zones->first());
     }
 
-    /** @test */
+    #[Test]
     public function zone_has_many_woredas()
     {
         $zone = Zone::factory()->create();
@@ -165,7 +166,7 @@ class DatabaseRelationshipTest extends TestCase
         $this->assertInstanceOf(Woreda::class, $zone->woredas->first());
     }
 
-    /** @test */
+    #[Test]
     public function woreda_has_many_places()
     {
         $woreda = Woreda::factory()->create();
@@ -175,7 +176,7 @@ class DatabaseRelationshipTest extends TestCase
         $this->assertInstanceOf(Place::class, $woreda->places->first());
     }
 
-    /** @test */
+    #[Test]
     public function performance_belongs_to_operation()
     {
         $operation = Operation::factory()->create();
@@ -185,7 +186,7 @@ class DatabaseRelationshipTest extends TestCase
         $this->assertEquals($operation->id, $performance->operation->id);
     }
 
-    /** @test */
+    #[Test]
     public function operation_belongs_to_customer()
     {
         $customer = Customer::factory()->create();
@@ -195,7 +196,7 @@ class DatabaseRelationshipTest extends TestCase
         $this->assertEquals($customer->id, $operation->customer->id);
     }
 
-    /** @test */
+    #[Test]
     public function customer_has_many_operations()
     {
         $customer = Customer::factory()->create();
@@ -205,7 +206,7 @@ class DatabaseRelationshipTest extends TestCase
         $this->assertInstanceOf(Operation::class, $customer->operations->first());
     }
 
-    /** @test */
+    #[Test]
     public function operation_has_many_performances()
     {
         $operation = Operation::factory()->create();
@@ -215,7 +216,7 @@ class DatabaseRelationshipTest extends TestCase
         $this->assertInstanceOf(Performance::class, $operation->performances->first());
     }
 
-    /** @test */
+    #[Test]
     public function performance_belongs_to_origin_place()
     {
         $place = Place::factory()->create();
@@ -225,7 +226,7 @@ class DatabaseRelationshipTest extends TestCase
         $this->assertEquals($place->id, $performance->origin->id);
     }
 
-    /** @test */
+    #[Test]
     public function performance_belongs_to_destination_place()
     {
         $place = Place::factory()->create();
@@ -235,7 +236,7 @@ class DatabaseRelationshipTest extends TestCase
         $this->assertEquals($place->id, $performance->destination->id);
     }
 
-    /** @test */
+    #[Test]
     public function distance_belongs_to_origin_place()
     {
         $place = Place::factory()->create();
@@ -245,7 +246,7 @@ class DatabaseRelationshipTest extends TestCase
         $this->assertEquals($place->id, $distance->origin->id);
     }
 
-    /** @test */
+    #[Test]
     public function distance_belongs_to_destination_place()
     {
         $place = Place::factory()->create();
@@ -255,7 +256,7 @@ class DatabaseRelationshipTest extends TestCase
         $this->assertEquals($place->id, $distance->destination->id);
     }
 
-    /** @test */
+    #[Test]
     public function user_has_many_performances()
     {
         $user = User::factory()->create();
@@ -265,7 +266,7 @@ class DatabaseRelationshipTest extends TestCase
         $this->assertInstanceOf(Performance::class, $user->performances->first());
     }
 
-    /** @test */
+    #[Test]
     public function user_has_many_operations()
     {
         $user = User::factory()->create();
@@ -275,7 +276,7 @@ class DatabaseRelationshipTest extends TestCase
         $this->assertInstanceOf(Operation::class, $user->operations->first());
     }
 
-    /** @test */
+    #[Test]
     public function vehicle_type_has_many_trucks()
     {
         $vehicleType = VehicleType::factory()->create();
@@ -285,7 +286,7 @@ class DatabaseRelationshipTest extends TestCase
         $this->assertInstanceOf(Truck::class, $vehicleType->trucks->first());
     }
 
-    /** @test */
+    #[Test]
     public function zone_has_many_drivers()
     {
         $zone = Zone::factory()->create();
@@ -295,7 +296,7 @@ class DatabaseRelationshipTest extends TestCase
         $this->assertInstanceOf(Driver::class, $zone->drivers->first());
     }
 
-    /** @test */
+    #[Test]
     public function woreda_has_many_drivers()
     {
         $woreda = Woreda::factory()->create();
@@ -305,7 +306,7 @@ class DatabaseRelationshipTest extends TestCase
         $this->assertInstanceOf(Driver::class, $woreda->drivers->first());
     }
 
-    /** @test */
+    #[Test]
     public function pivot_table_has_correct_data()
     {
         $truck = Truck::factory()->create();
@@ -314,7 +315,7 @@ class DatabaseRelationshipTest extends TestCase
         $truck->drivers()->attach($driver->id, [
             'assigned_date' => now(),
             'unassigned_date' => null,
-            'status' => 'active'
+            'status' => 'active',
         ]);
 
         $pivot = $truck->drivers()->where('driver_id', $driver->id)->first()->pivot;
@@ -326,7 +327,7 @@ class DatabaseRelationshipTest extends TestCase
         $this->assertNull($pivot->unassigned_date);
     }
 
-    /** @test */
+    #[Test]
     public function relationship_cascading_deletes()
     {
         $region = Region::factory()->create();
@@ -344,7 +345,7 @@ class DatabaseRelationshipTest extends TestCase
         $this->assertDatabaseHas('places', ['id' => $place->id]);
     }
 
-    /** @test */
+    #[Test]
     public function relationship_with_count()
     {
         $vehicleType = VehicleType::factory()->create();
@@ -355,17 +356,17 @@ class DatabaseRelationshipTest extends TestCase
         $this->assertEquals(5, $vehicleTypeWithCount->trucks_count);
     }
 
-    /** @test */
+    #[Test]
     public function relationship_with_aggregates()
     {
         $truck = Truck::factory()->create();
         VehicleMaintenanceRecord::factory()->create([
             'truck_id' => $truck->id,
-            'cost' => 1000.00
+            'cost' => 1000.00,
         ]);
         VehicleMaintenanceRecord::factory()->create([
             'truck_id' => $truck->id,
-            'cost' => 500.00
+            'cost' => 500.00,
         ]);
 
         $truckWithSum = Truck::withSum('maintenanceRecords', 'cost')->find($truck->id);
@@ -373,17 +374,17 @@ class DatabaseRelationshipTest extends TestCase
         $this->assertEquals(1500.00, $truckWithSum->maintenance_records_sum_cost);
     }
 
-    /** @test */
+    #[Test]
     public function relationship_with_max()
     {
         $truck = Truck::factory()->create();
         FuelRecord::factory()->create([
             'truck_id' => $truck->id,
-            'fuel_quantity_liters' => 50.0
+            'fuel_quantity_liters' => 50.0,
         ]);
         FuelRecord::factory()->create([
             'truck_id' => $truck->id,
-            'fuel_quantity_liters' => 75.0
+            'fuel_quantity_liters' => 75.0,
         ]);
 
         $truckWithMax = Truck::withMax('fuelRecords', 'fuel_quantity_liters')->find($truck->id);
@@ -391,17 +392,17 @@ class DatabaseRelationshipTest extends TestCase
         $this->assertEquals(75.0, $truckWithMax->fuel_records_max_fuel_quantity_liters);
     }
 
-    /** @test */
+    #[Test]
     public function relationship_with_min()
     {
         $truck = Truck::factory()->create();
         FuelRecord::factory()->create([
             'truck_id' => $truck->id,
-            'fuel_quantity_liters' => 50.0
+            'fuel_quantity_liters' => 50.0,
         ]);
         FuelRecord::factory()->create([
             'truck_id' => $truck->id,
-            'fuel_quantity_liters' => 75.0
+            'fuel_quantity_liters' => 75.0,
         ]);
 
         $truckWithMin = Truck::withMin('fuelRecords', 'fuel_quantity_liters')->find($truck->id);
@@ -409,17 +410,17 @@ class DatabaseRelationshipTest extends TestCase
         $this->assertEquals(50.0, $truckWithMin->fuel_records_min_fuel_quantity_liters);
     }
 
-    /** @test */
+    #[Test]
     public function relationship_with_avg()
     {
         $truck = Truck::factory()->create();
         FuelRecord::factory()->create([
             'truck_id' => $truck->id,
-            'fuel_quantity_liters' => 50.0
+            'fuel_quantity_liters' => 50.0,
         ]);
         FuelRecord::factory()->create([
             'truck_id' => $truck->id,
-            'fuel_quantity_liters' => 75.0
+            'fuel_quantity_liters' => 75.0,
         ]);
 
         $truckWithAvg = Truck::withAvg('fuelRecords', 'fuel_quantity_liters')->find($truck->id);
@@ -427,17 +428,17 @@ class DatabaseRelationshipTest extends TestCase
         $this->assertEquals(62.5, $truckWithAvg->fuel_records_avg_fuel_quantity_liters);
     }
 
-    /** @test */
+    #[Test]
     public function relationship_loading_with_constraints()
     {
         $truck = Truck::factory()->create();
         VehicleMaintenanceRecord::factory()->create([
             'truck_id' => $truck->id,
-            'status' => 'completed'
+            'status' => 'completed',
         ]);
         VehicleMaintenanceRecord::factory()->create([
             'truck_id' => $truck->id,
-            'status' => 'pending'
+            'status' => 'pending',
         ]);
 
         $truckWithCompletedMaintenance = Truck::with(['maintenanceRecords' => function ($query) {
@@ -448,21 +449,21 @@ class DatabaseRelationshipTest extends TestCase
         $this->assertEquals('completed', $truckWithCompletedMaintenance->maintenanceRecords->first()->status);
     }
 
-    /** @test */
+    #[Test]
     public function relationship_loading_with_ordering()
     {
         $truck = Truck::factory()->create();
         VehicleMaintenanceRecord::factory()->create([
             'truck_id' => $truck->id,
-            'scheduled_date' => '2023-01-01'
+            'scheduled_date' => '2023-01-01',
         ]);
         VehicleMaintenanceRecord::factory()->create([
             'truck_id' => $truck->id,
-            'scheduled_date' => '2023-01-03'
+            'scheduled_date' => '2023-01-03',
         ]);
         VehicleMaintenanceRecord::factory()->create([
             'truck_id' => $truck->id,
-            'scheduled_date' => '2023-01-02'
+            'scheduled_date' => '2023-01-02',
         ]);
 
         $truckWithOrderedMaintenance = Truck::with(['maintenanceRecords' => function ($query) {

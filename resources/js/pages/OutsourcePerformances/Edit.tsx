@@ -24,7 +24,6 @@ import {
     ArrowLeft,
     CheckCircle,
     ClipboardList,
-    Loader2,
     MapPin,
     Package,
     Pencil,
@@ -158,7 +157,6 @@ export default function OutsourcePerformancesEdit({ outsourcePerformance, outsou
         data,
         setData,
         put,
-        processing,
         errors,
         reset,
         transform,
@@ -180,7 +178,6 @@ export default function OutsourcePerformancesEdit({ outsourcePerformance, outsou
         limit: 20,
     });
 
-    const statusOptionValues = useMemo(() => (statusOptions.length ? statusOptions : [{ label: 'Active', value: 'active' }]), [statusOptions]);
 
     useEffect(() => {
         if (Object.keys(errors).length === 0) {

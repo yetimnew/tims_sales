@@ -15,6 +15,7 @@ use App\Models\VehicleType;
 use Database\Seeders\CheckPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class SecurityTest extends TestCase
@@ -126,7 +127,7 @@ class SecurityTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function unauthenticated_users_cannot_access_protected_routes()
     {
         $protectedRoutes = [
@@ -150,7 +151,7 @@ class SecurityTest extends TestCase
         }
     }
 
-    /** @test */
+    #[Test]
     public function authenticated_users_can_access_protected_routes()
     {
         $protectedRoutes = [
@@ -173,7 +174,7 @@ class SecurityTest extends TestCase
         }
     }
 
-    /** @test */
+    #[Test]
     public function csrf_protection_is_enabled()
     {
         $response = $this->actingAs($this->user)
@@ -187,7 +188,7 @@ class SecurityTest extends TestCase
         $response->assertStatus(419);
     }
 
-    /** @test */
+    #[Test]
     public function sql_injection_attempts_are_blocked()
     {
         $maliciousInput = "'; DROP TABLE trucks; --";
@@ -206,7 +207,7 @@ class SecurityTest extends TestCase
         $this->assertDatabaseHas('trucks', ['id' => $this->truck->id]);
     }
 
-    /** @test */
+    #[Test]
     public function xss_attempts_are_sanitized()
     {
         $xssPayload = '<script>alert("XSS")</script>';
@@ -228,7 +229,7 @@ class SecurityTest extends TestCase
         $this->assertStringNotContainsString('<script>', $driver->name);
     }
 
-    /** @test */
+    #[Test]
     public function rate_limiting_works_for_trucks_endpoint()
     {
         // Make multiple requests quickly
@@ -244,7 +245,7 @@ class SecurityTest extends TestCase
         }
     }
 
-    /** @test */
+    #[Test]
     public function file_upload_security_is_enforced()
     {
         $maliciousFile = 'test.php';
@@ -262,7 +263,7 @@ class SecurityTest extends TestCase
         $response->assertSessionHasErrors();
     }
 
-    /** @test */
+    #[Test]
     public function password_requirements_are_enforced()
     {
         $weakPasswords = [
@@ -284,7 +285,7 @@ class SecurityTest extends TestCase
         }
     }
 
-    /** @test */
+    #[Test]
     public function email_validation_prevents_invalid_emails()
     {
         $invalidEmails = [
@@ -306,7 +307,7 @@ class SecurityTest extends TestCase
         }
     }
 
-    /** @test */
+    #[Test]
     public function input_length_limits_are_enforced()
     {
         $longString = str_repeat('a', 1000);
@@ -324,7 +325,7 @@ class SecurityTest extends TestCase
         $response->assertSessionHasErrors(['name']);
     }
 
-    /** @test */
+    #[Test]
     public function foreign_key_constraints_prevent_orphaned_records()
     {
         $response = $this->actingAs($this->user)
@@ -337,7 +338,7 @@ class SecurityTest extends TestCase
         $response->assertSessionHasErrors(['vehicletype_id']);
     }
 
-    /** @test */
+    #[Test]
     public function unique_constraints_prevent_duplicates()
     {
         // Try to create truck with existing plate
@@ -351,7 +352,7 @@ class SecurityTest extends TestCase
         $response->assertSessionHasErrors(['plate']);
     }
 
-    /** @test */
+    #[Test]
     public function soft_deletes_prevent_data_loss()
     {
         $response = $this->actingAs($this->user)
@@ -364,7 +365,7 @@ class SecurityTest extends TestCase
         $this->assertDatabaseHas('trucks', ['id' => $this->truck->id]);
     }
 
-    /** @test */
+    #[Test]
     public function audit_logging_tracks_important_actions()
     {
         $response = $this->actingAs($this->user)
@@ -383,7 +384,7 @@ class SecurityTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function session_security_is_enforced()
     {
         // Test session timeout
@@ -399,7 +400,7 @@ class SecurityTest extends TestCase
         $response->assertRedirect('/login');
     }
 
-    /** @test */
+    #[Test]
     public function https_redirects_work_in_production()
     {
         // This test would need to be run in production environment
@@ -407,7 +408,7 @@ class SecurityTest extends TestCase
         $this->assertTrue(class_exists('App\Http\Middleware\HttpsProtocol'));
     }
 
-    /** @test */
+    #[Test]
     public function content_security_policy_headers_are_set()
     {
         $response = $this->actingAs($this->user)
@@ -418,7 +419,7 @@ class SecurityTest extends TestCase
         $response->assertHeader('X-XSS-Protection', '1; mode=block');
     }
 
-    /** @test */
+    #[Test]
     public function two_factor_authentication_is_available()
     {
         /** @var User $user */
@@ -433,7 +434,7 @@ class SecurityTest extends TestCase
         $response->assertStatus(200);
     }
 
-    /** @test */
+    #[Test]
     public function password_reset_security_is_enforced()
     {
         $response = $this->post('/forgot-password', [
@@ -445,7 +446,7 @@ class SecurityTest extends TestCase
         $response->assertSee('We have emailed your password reset link');
     }
 
-    /** @test */
+    #[Test]
     public function brute_force_protection_works()
     {
         // Attempt multiple failed logins
@@ -463,7 +464,7 @@ class SecurityTest extends TestCase
         }
     }
 
-    /** @test */
+    #[Test]
     public function api_rate_limiting_works()
     {
         // Make multiple API requests
@@ -479,7 +480,7 @@ class SecurityTest extends TestCase
         }
     }
 
-    /** @test */
+    #[Test]
     public function sensitive_data_is_not_logged()
     {
         $response = $this->actingAs($this->user)

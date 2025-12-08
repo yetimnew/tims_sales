@@ -14,6 +14,7 @@ use App\Models\VehicleType;
 use Database\Seeders\CheckPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class BasicTimsTest extends TestCase
@@ -120,7 +121,7 @@ class BasicTimsTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function user_can_view_dashboard()
     {
         $response = $this->actingAs($this->user)
@@ -129,7 +130,7 @@ class BasicTimsTest extends TestCase
         $response->assertStatus(200);
     }
 
-    /** @test */
+    #[Test]
     public function user_can_create_vehicle_type()
     {
         $vehicleTypeData = [
@@ -144,7 +145,7 @@ class BasicTimsTest extends TestCase
         $this->assertDatabaseHas('vehicletypes', $vehicleTypeData);
     }
 
-    /** @test */
+    #[Test]
     public function user_can_create_truck()
     {
         $truckData = [
@@ -164,7 +165,7 @@ class BasicTimsTest extends TestCase
         $this->assertDatabaseHas('trucks', $truckData);
     }
 
-    /** @test */
+    #[Test]
     public function user_can_create_driver()
     {
         $driverData = [
@@ -183,7 +184,7 @@ class BasicTimsTest extends TestCase
         $this->assertDatabaseHas('drivers', $driverData);
     }
 
-    /** @test */
+    #[Test]
     public function user_can_create_customer()
     {
         $customerData = [
@@ -201,7 +202,7 @@ class BasicTimsTest extends TestCase
         $this->assertDatabaseHas('customers', $customerData);
     }
 
-    /** @test */
+    #[Test]
     public function user_can_create_operation()
     {
         $operationData = [
@@ -233,7 +234,7 @@ class BasicTimsTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function truck_validation_works_correctly()
     {
         $invalidData = [
@@ -248,7 +249,7 @@ class BasicTimsTest extends TestCase
         $response->assertSessionHasErrors(['plate', 'vehicletype_id', 'status']);
     }
 
-    /** @test */
+    #[Test]
     public function system_handles_soft_deletes_correctly()
     {
         // Create a truck
@@ -271,7 +272,7 @@ class BasicTimsTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function database_relationships_work_correctly()
     {
         // Test truck belongs to vehicle type
@@ -280,14 +281,15 @@ class BasicTimsTest extends TestCase
         // Test operation belongs to customer
         $this->assertEquals($this->customer->id, $this->operation->customer->id);
 
-        // Test operation belongs to region
-        $this->assertEquals($this->region->id, $this->operation->region->id);
+        // Test operation destination resolves to region
+        $this->assertInstanceOf(Region::class, $this->operation->destinationReference);
+        $this->assertEquals($this->region->id, $this->operation->destinationReference->id);
 
         // Test operation belongs to user
         $this->assertEquals($this->user->id, $this->operation->user->id);
     }
 
-    /** @test */
+    #[Test]
     public function system_performance_is_acceptable()
     {
         $startTime = microtime(true);
@@ -317,7 +319,7 @@ class BasicTimsTest extends TestCase
         $this->assertCount(100, $vehicleTypes);
     }
 
-    /** @test */
+    #[Test]
     public function unauthenticated_users_cannot_access_protected_routes()
     {
         $protectedRoutes = [
@@ -334,7 +336,7 @@ class BasicTimsTest extends TestCase
         }
     }
 
-    /** @test */
+    #[Test]
     public function authenticated_users_can_access_protected_routes()
     {
         $protectedRoutes = [
@@ -351,21 +353,24 @@ class BasicTimsTest extends TestCase
         }
     }
 
-    /** @test */
+    #[Test]
     public function csrf_protection_is_enabled()
     {
-        $response = $this->actingAs($this->user)
+        $this->actingAs($this->user);
+
+        $response = $this->withSession(['_token' => 'valid-token'])
             ->post('/trucks', [
+                '_token' => 'invalid-token',
                 'plate' => 'BB-5678',
                 'vehicletype_id' => $this->vehicleType->id,
                 'status' => 'active',
             ]);
 
-        // Should redirect back with CSRF error
+        // Should fail verification when token mismatches
         $response->assertStatus(419);
     }
 
-    /** @test */
+    #[Test]
     public function sql_injection_attempts_are_blocked()
     {
         $maliciousInput = "'; DROP TABLE trucks; --";
@@ -384,7 +389,7 @@ class BasicTimsTest extends TestCase
         $this->assertDatabaseHas('trucks', ['id' => $this->truck->id]);
     }
 
-    /** @test */
+    #[Test]
     public function unique_constraints_prevent_duplicates()
     {
         // Try to create truck with existing plate
@@ -398,7 +403,7 @@ class BasicTimsTest extends TestCase
         $response->assertSessionHasErrors(['plate']);
     }
 
-    /** @test */
+    #[Test]
     public function foreign_key_constraints_prevent_orphaned_records()
     {
         $response = $this->actingAs($this->user)

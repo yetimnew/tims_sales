@@ -152,7 +152,10 @@ export default function VehicleTypesIndex({ vehicleTypes, metrics, filters, perP
         setPerPage(String(resolvedPerPage));
     }, [resolvedPerPage]);
 
-    const vehicleTypeData = vehicleTypes?.data ?? [];
+    const vehicleTypeData = React.useMemo(
+        () => (Array.isArray(vehicleTypes?.data) ? vehicleTypes.data : []),
+        [vehicleTypes],
+    );
     const totalVehicleTypes = metrics?.total ?? vehicleTypes?.total ?? vehicleTypeData.length ?? 0;
     const currentPage = vehicleTypes?.current_page ?? 1;
     const perPageCountRaw = vehicleTypes?.per_page ?? Number(perPage);

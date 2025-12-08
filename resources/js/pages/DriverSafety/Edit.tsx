@@ -17,7 +17,7 @@ import { validateDriverSafety } from '@/lib/validation';
 import { type BreadcrumbItem } from '@/types';
 import { Link, useForm } from '@inertiajs/react';
 import type { FormEventHandler } from 'react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import type { LucideIcon } from 'lucide-react';
 import {
@@ -83,6 +83,74 @@ type DriverSafetyFormData = {
 };
 
 type DriverSafetyFormField = keyof DriverSafetyFormData;
+
+type FrontendErrorState = Partial<Record<DriverSafetyFormField, string>>;
+
+type FrontendErrorAction =
+    | { type: 'set'; field: DriverSafetyFormField; message?: string }
+    | { type: 'clear'; field: DriverSafetyFormField }
+    | { type: 'reset' }
+    | { type: 'replace'; payload: FrontendErrorState }
+    | { type: 'merge'; payload: FrontendErrorState };
+
+const frontendErrorReducer = (state: FrontendErrorState, action: FrontendErrorAction): FrontendErrorState => {
+    switch (action.type) {
+        case 'set': {
+            const message = action.message?.trim();
+            if (!message) {
+                if (!(action.field in state)) {
+                    return state;
+                }
+
+                const next = { ...state };
+                delete next[action.field];
+                return next;
+            }
+            if (state[action.field] === message) {
+                return state;
+            }
+            return {
+                ...state,
+                [action.field]: message,
+            };
+        }
+        case 'clear': {
+            if (!(action.field in state)) {
+                return state;
+            }
+            const next = { ...state };
+            delete next[action.field];
+            return next;
+        }
+        case 'reset':
+            if (Object.keys(state).length === 0) {
+                return state;
+            }
+            return {};
+        case 'replace': {
+            const nextEntries = Object.entries(action.payload).filter(([, value]) => typeof value === 'string' && value.trim().length > 0) as Array<[
+                DriverSafetyFormField,
+                string
+            ]>;
+            return nextEntries.length > 0 ? Object.fromEntries(nextEntries) : {};
+        }
+        case 'merge': {
+            const next: FrontendErrorState = { ...state };
+            Object.entries(action.payload).forEach(([key, value]) => {
+                const field = key as DriverSafetyFormField;
+                const message = typeof value === 'string' ? value.trim() : '';
+                if (message) {
+                    next[field] = message;
+                } else {
+                    delete next[field];
+                }
+            });
+            return next;
+        }
+        default:
+            return state;
+    }
+};
 
 const formatDateForInput = (value: string): string => {
     if (!value) {
@@ -177,17 +245,24 @@ export default function DriverSafetyEdit({ driverSafety, drivers }: DriverSafety
 
     const { data, setData, setDefaults, put, processing, errors, clearErrors } = useForm<DriverSafetyFormData>(initialFormData);
 
-    const [frontendErrors, setFrontendErrors] = useState<Partial<Record<DriverSafetyFormField, string>>>({});
-    const [isDirty, setIsDirty] = useState(false);
+    const [frontendErrors, dispatchFrontendErrors] = useReducer(frontendErrorReducer, {});
+    const [baselineData, setBaselineData] = useState<DriverSafetyFormData>(initialFormData);
     const [showScrollTop, setShowScrollTop] = useState(false);
 
     useEffect(() => {
         const nextDefaults = { ...initialFormData };
-        setDefaults(nextDefaults);
-        setData(() => ({ ...nextDefaults }));
-        initialDataRef.current = { ...nextDefaults };
-        setFrontendErrors({});
-        setIsDirty(false);
+        if (areFormValuesEqual(initialDataRef.current, nextDefaults)) {
+            return;
+        }
+
+        initialDataRef.current = nextDefaults;
+
+        queueMicrotask(() => {
+            setDefaults({ ...nextDefaults });
+            setData(() => ({ ...nextDefaults }));
+            setBaselineData({ ...nextDefaults });
+            dispatchFrontendErrors({ type: 'reset' });
+        });
     }, [initialFormData, setDefaults, setData]);
 
     useEffect(() => {
@@ -264,16 +339,7 @@ export default function DriverSafetyEdit({ driverSafety, drivers }: DriverSafety
     const validateField = (field: DriverSafetyFormField, value: string) => {
         const result = validateDriverSafety({ ...data, [field]: value });
         const message = result[field];
-
-        setFrontendErrors((prev) => {
-            const next = { ...prev };
-            if (message) {
-                next[field] = message;
-            } else {
-                delete next[field];
-            }
-            return next;
-        });
+        dispatchFrontendErrors({ type: 'set', field, message });
     };
 
     const handleFieldChange = (field: DriverSafetyFormField, value: string, options?: { validate?: boolean }) => {
@@ -284,14 +350,8 @@ export default function DriverSafetyEdit({ driverSafety, drivers }: DriverSafety
         if (options?.validate ?? true) {
             validateField(field, value);
         } else {
-            setFrontendErrors((prev) => {
-                const next = { ...prev };
-                delete next[field];
-                return next;
-            });
+            dispatchFrontendErrors({ type: 'clear', field });
         }
-
-        setIsDirty(!areFormValuesEqual(nextData, initialDataRef.current));
     };
 
     const handleSubmit: FormEventHandler<HTMLFormElement> = (event) => {
@@ -299,7 +359,7 @@ export default function DriverSafetyEdit({ driverSafety, drivers }: DriverSafety
 
         const validationResult = validateDriverSafety(data);
         if (Object.keys(validationResult).length > 0) {
-            setFrontendErrors(validationResult as Partial<Record<DriverSafetyFormField, string>>);
+            dispatchFrontendErrors({ type: 'replace', payload: validationResult as FrontendErrorState });
             toast({
                 title: '⚠️ Validation Error',
                 description: 'Please resolve the highlighted issues before saving.',
@@ -314,8 +374,8 @@ export default function DriverSafetyEdit({ driverSafety, drivers }: DriverSafety
                 const nextDefaults = { ...data };
                 setDefaults(nextDefaults);
                 initialDataRef.current = nextDefaults;
-                setFrontendErrors({});
-                setIsDirty(false);
+                setBaselineData({ ...nextDefaults });
+                dispatchFrontendErrors({ type: 'reset' });
                 clearErrors();
                 toast({
                     title: '✅ Safety Record Updated',
@@ -323,16 +383,14 @@ export default function DriverSafetyEdit({ driverSafety, drivers }: DriverSafety
                 });
             },
             onError: (pageErrors) => {
-                setFrontendErrors((prev) => ({
-                    ...prev,
-                    ...(pageErrors as Partial<Record<DriverSafetyFormField, string>>),
-                }));
+                dispatchFrontendErrors({ type: 'merge', payload: pageErrors as FrontendErrorState });
             },
         });
     };
 
     const getFieldError = (field: DriverSafetyFormField): string => fieldErrors[field] ?? '';
     const hasErrors = Object.values(fieldErrors).some(Boolean);
+    const isDirty = useMemo(() => !areFormValuesEqual(data, baselineData), [data, baselineData]);
 
     return (
         <FormPageLayout

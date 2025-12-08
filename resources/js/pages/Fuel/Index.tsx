@@ -254,7 +254,10 @@ export default function FuelIndex({
         setPerPage(String(resolvedPerPage));
     }, [resolvedPerPage]);
 
-    const fuelData = fuelRecords?.data ?? [];
+    const fuelData = React.useMemo(
+        () => (Array.isArray(fuelRecords?.data) ? fuelRecords.data : []),
+        [fuelRecords],
+    );
     const totalRecords = metrics?.total ?? fuelRecords?.total ?? fuelData.length ?? 0;
     const totalLiters = metrics?.total_liters ?? 0;
     const totalCost = metrics?.total_cost ?? 0;

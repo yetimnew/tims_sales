@@ -113,7 +113,7 @@ export default function PlacesCreate({ woredas }: PlacesCreateProps) {
         variant: 'destructive',
       })
     }
-  }, [errors, toast])
+  }, [errors])
 
   const setFieldError = useCallback((field: keyof PlaceFormData, message: string) => {
     setFrontendErrors(prev => {

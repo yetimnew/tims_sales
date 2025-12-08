@@ -1,17 +1,13 @@
-import { useMemo } from 'react'
 import { Head, Link } from '@inertiajs/react'
 import {
   ArrowLeft,
-  Edit,
   MapPin,
   Clock,
   Route,
   Navigation,
-  Gauge,
-  ScrollText,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { usePermissions } from '@/hooks/use-permissions'
 import { InteractiveMap } from '@/components/InteractiveMap'
@@ -68,7 +64,6 @@ const formatHierarchy = (hierarchy?: HierarchySummary | null) => {
 export default function DistancesShow({ distance }: DistancesShowProps) {
   const { hasPermission } = usePermissions()
 
-  // Prepare places data for the map
   const places = [
     {
       id: distance.from_place?.id || 0,
@@ -89,8 +84,11 @@ export default function DistancesShow({ distance }: DistancesShowProps) {
   const selectedFromPlace = places[0] || null
   const selectedToPlace = places[1] || null
 
+  const distanceTitle = `${distance.from_place?.name ?? 'Unknown'} → ${distance.to_place?.name ?? 'Unknown'}`
+
   return (
-    <AppLayout>
+    <AppLayout breadcrumbs={breadcrumbs}>
+      <Head title={`Distance Details: ${distanceTitle}`} />
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
@@ -168,17 +166,13 @@ export default function DistancesShow({ distance }: DistancesShowProps) {
                 <div>
                   <label className="text-sm font-medium text-gray-500">From Place</label>
                   <p className="text-lg font-semibold">{distance.from_place?.name || 'N/A'}</p>
-                  <p className="text-sm text-gray-600">
-                    {distance.from_place?.woreda?.name}, {distance.from_place?.woreda?.zone?.name}, {distance.from_place?.woreda?.zone?.region?.name}
-                  </p>
+                  <p className="text-sm text-gray-600">{formatHierarchy(distance.from_place?.woreda)}</p>
                 </div>
 
                 <div>
                   <label className="text-sm font-medium text-gray-500">To Place</label>
                   <p className="text-lg font-semibold">{distance.to_place?.name || 'N/A'}</p>
-                  <p className="text-sm text-gray-600">
-                    {distance.to_place?.woreda?.name}, {distance.to_place?.woreda?.zone?.name}, {distance.to_place?.woreda?.zone?.region?.name}
-                  </p>
+                  <p className="text-sm text-gray-600">{formatHierarchy(distance.to_place?.woreda)}</p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">

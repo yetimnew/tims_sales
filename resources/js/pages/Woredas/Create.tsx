@@ -113,7 +113,7 @@ export default function WoredasCreate({ zones }: WoredasCreateProps) {
         variant: 'destructive',
       })
     }
-  }, [errors, toast])
+  }, [errors])
 
   const setFieldError = useCallback((field: keyof WoredaFormData, message: string) => {
     setFrontendErrors(prev => {

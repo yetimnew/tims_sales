@@ -8,13 +8,14 @@ use App\Models\OutsourcePerformance;
 use App\Models\Place;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class ShowOutsourcePerformanceTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** @test */
+    #[Test]
     public function it_renders_the_outsource_performance_detail_with_vendor_metrics(): void
     {
         /** @var User $user */

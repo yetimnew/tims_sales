@@ -8,13 +8,14 @@ use App\Models\Truck;
 use App\Models\VehicleMaintenanceRecord;
 use App\Models\VehicleType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class TruckTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** @test */
+    #[Test]
     public function it_can_create_a_truck()
     {
         $truck = Truck::factory()->create([
@@ -27,7 +28,7 @@ class TruckTest extends TestCase
         $this->assertEquals('active', $truck->status);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_soft_delete_a_truck()
     {
         $truck = Truck::factory()->create();
@@ -39,7 +40,7 @@ class TruckTest extends TestCase
         $this->assertDatabaseHas('trucks', ['id' => $truckId]);
     }
 
-    /** @test */
+    #[Test]
     public function it_belongs_to_a_vehicle_type()
     {
         $vehicleType = VehicleType::factory()->create();
@@ -49,7 +50,7 @@ class TruckTest extends TestCase
         $this->assertEquals($vehicleType->id, $truck->vehicleType->id);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_have_many_drivers()
     {
         $truck = Truck::factory()->create();
@@ -70,7 +71,7 @@ class TruckTest extends TestCase
         $this->assertTrue($truck->drivers->contains($driver2));
     }
 
-    /** @test */
+    #[Test]
     public function it_has_many_maintenance_records()
     {
         $truck = Truck::factory()->create();
@@ -80,7 +81,7 @@ class TruckTest extends TestCase
         $this->assertInstanceOf(VehicleMaintenanceRecord::class, $truck->maintenanceRecords->first());
     }
 
-    /** @test */
+    #[Test]
     public function it_has_many_fuel_records()
     {
         $truck = Truck::factory()->create();
@@ -90,7 +91,7 @@ class TruckTest extends TestCase
         $this->assertInstanceOf(FuelRecord::class, $truck->fuelRecords->first());
     }
 
-    /** @test */
+    #[Test]
     public function it_casts_dates_correctly()
     {
         $truck = Truck::factory()->create([
@@ -102,7 +103,7 @@ class TruckTest extends TestCase
         $this->assertInstanceOf(\Carbon\Carbon::class, $truck->serviceStartDate);
     }
 
-    /** @test */
+    #[Test]
     public function it_casts_purchase_price_as_decimal()
     {
         $truck = Truck::factory()->create(['purchasePrice' => 150000.50]);
@@ -112,7 +113,7 @@ class TruckTest extends TestCase
         $this->assertEquals(150000.50, (float) $truck->purchasePrice);
     }
 
-    /** @test */
+    #[Test]
     public function it_has_fillable_attributes()
     {
         $fillable = [
@@ -132,7 +133,7 @@ class TruckTest extends TestCase
         $this->assertEquals($fillable, $truck->getFillable());
     }
 
-    /** @test */
+    #[Test]
     public function it_can_scope_active_trucks()
     {
         Truck::factory()->create(['status' => 'active']);
@@ -145,7 +146,7 @@ class TruckTest extends TestCase
         $this->assertEquals('active', $activeTrucks->first()->status);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_get_total_maintenance_cost()
     {
         $truck = Truck::factory()->create();
@@ -163,7 +164,7 @@ class TruckTest extends TestCase
         $this->assertEquals(1500.00, $totalCost);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_get_total_fuel_cost()
     {
         $truck = Truck::factory()->create();

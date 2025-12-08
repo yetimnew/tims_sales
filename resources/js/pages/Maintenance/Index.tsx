@@ -238,10 +238,12 @@ export default function MaintenanceIndex({ maintenanceRecords, metrics, filters,
         setPerPage(String(resolvedPerPage));
     }, [resolvedPerPage]);
 
-    const maintenanceData = maintenanceRecords?.data ?? [];
+    const maintenanceDataSource = maintenanceRecords?.data;
+    const maintenanceData = React.useMemo(() => (
+        Array.isArray(maintenanceDataSource) ? maintenanceDataSource : []
+    ), [maintenanceDataSource]);
     const totalRecords = metrics?.total ?? maintenanceRecords?.total ?? 0;
     const currentPage = maintenanceRecords?.current_page ?? 1;
-    const lastPage = maintenanceRecords?.last_page ?? 1;
 
     const perPageCountRaw =
         typeof maintenanceRecords?.per_page === 'number'

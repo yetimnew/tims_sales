@@ -10,6 +10,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class FileUploadTest extends TestCase
@@ -46,7 +47,7 @@ class FileUploadTest extends TestCase
         Storage::fake('public');
     }
 
-    /** @test */
+    #[Test]
     public function user_can_upload_profile_picture()
     {
         $file = UploadedFile::fake()->image('profile.jpg', 200, 200);
@@ -62,7 +63,7 @@ class FileUploadTest extends TestCase
         Storage::disk('public')->assertExists('profile-pictures/'.$file->hashName());
     }
 
-    /** @test */
+    #[Test]
     public function user_can_upload_document()
     {
         $file = UploadedFile::fake()->create('document.pdf', 1000);
@@ -80,7 +81,7 @@ class FileUploadTest extends TestCase
         Storage::disk('public')->assertExists('documents/'.$file->hashName());
     }
 
-    /** @test */
+    #[Test]
     public function truck_can_have_documents_uploaded()
     {
         $truck = Truck::factory()->create();
@@ -99,7 +100,7 @@ class FileUploadTest extends TestCase
         Storage::disk('public')->assertExists('truck-documents/'.$file->hashName());
     }
 
-    /** @test */
+    #[Test]
     public function driver_can_have_documents_uploaded()
     {
         $driver = Driver::factory()->create();
@@ -118,7 +119,7 @@ class FileUploadTest extends TestCase
         Storage::disk('public')->assertExists('driver-documents/'.$file->hashName());
     }
 
-    /** @test */
+    #[Test]
     public function maintenance_record_can_have_images_uploaded()
     {
         $maintenance = \App\Models\VehicleMaintenanceRecord::factory()->create();
@@ -136,7 +137,7 @@ class FileUploadTest extends TestCase
         Storage::disk('public')->assertExists('maintenance-images/'.$file->hashName());
     }
 
-    /** @test */
+    #[Test]
     public function fuel_record_can_have_receipt_uploaded()
     {
         $fuel = \App\Models\FuelRecord::factory()->create();
@@ -153,7 +154,7 @@ class FileUploadTest extends TestCase
         Storage::disk('public')->assertExists('fuel-receipts/'.$file->hashName());
     }
 
-    /** @test */
+    #[Test]
     public function file_upload_validates_file_type()
     {
         $file = UploadedFile::fake()->create('malicious.exe', 1000);
@@ -168,7 +169,7 @@ class FileUploadTest extends TestCase
         $response->assertSessionHasErrors(['document']);
     }
 
-    /** @test */
+    #[Test]
     public function file_upload_validates_file_size()
     {
         $file = UploadedFile::fake()->create('large-file.pdf', 10000); // 10MB
@@ -183,7 +184,7 @@ class FileUploadTest extends TestCase
         $response->assertSessionHasErrors(['document']);
     }
 
-    /** @test */
+    #[Test]
     public function file_upload_validates_image_dimensions()
     {
         $file = UploadedFile::fake()->image('profile.jpg', 100, 100); // Too small
@@ -196,7 +197,7 @@ class FileUploadTest extends TestCase
         $response->assertSessionHasErrors(['profile_picture']);
     }
 
-    /** @test */
+    #[Test]
     public function file_upload_generates_unique_filename()
     {
         $file1 = UploadedFile::fake()->create('document.pdf', 1000);
@@ -224,7 +225,7 @@ class FileUploadTest extends TestCase
         $this->assertNotEquals($files[0], $files[1]);
     }
 
-    /** @test */
+    #[Test]
     public function file_upload_creates_database_record()
     {
         $file = UploadedFile::fake()->create('document.pdf', 1000);
@@ -246,7 +247,7 @@ class FileUploadTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function file_can_be_downloaded()
     {
         $file = UploadedFile::fake()->create('document.pdf', 1000);
@@ -268,7 +269,7 @@ class FileUploadTest extends TestCase
         $response->assertHeader('Content-Type', 'application/pdf');
     }
 
-    /** @test */
+    #[Test]
     public function file_can_be_deleted()
     {
         $file = UploadedFile::fake()->create('document.pdf', 1000);
@@ -297,7 +298,7 @@ class FileUploadTest extends TestCase
         Storage::disk('public')->assertMissing('documents/'.$file->hashName());
     }
 
-    /** @test */
+    #[Test]
     public function file_upload_requires_authentication()
     {
         $file = UploadedFile::fake()->create('document.pdf', 1000);
@@ -311,7 +312,7 @@ class FileUploadTest extends TestCase
         $response->assertRedirect('/login');
     }
 
-    /** @test */
+    #[Test]
     public function file_upload_requires_permission()
     {
         $userWithoutPermission = User::factory()->create();
@@ -327,7 +328,7 @@ class FileUploadTest extends TestCase
         $response->assertStatus(403);
     }
 
-    /** @test */
+    #[Test]
     public function file_upload_handles_virus_scanning()
     {
         $file = UploadedFile::fake()->create('document.pdf', 1000);
@@ -344,7 +345,7 @@ class FileUploadTest extends TestCase
         $response->assertSessionHas('success');
     }
 
-    /** @test */
+    #[Test]
     public function file_upload_handles_compression()
     {
         $file = UploadedFile::fake()->image('large-image.jpg', 2000, 2000);
@@ -359,7 +360,7 @@ class FileUploadTest extends TestCase
         $response->assertSessionHas('success');
     }
 
-    /** @test */
+    #[Test]
     public function file_upload_handles_watermarking()
     {
         $file = UploadedFile::fake()->image('image.jpg', 800, 600);
@@ -375,7 +376,7 @@ class FileUploadTest extends TestCase
         $response->assertSessionHas('success');
     }
 
-    /** @test */
+    #[Test]
     public function file_upload_handles_metadata_extraction()
     {
         $file = UploadedFile::fake()->image('image.jpg', 800, 600);
@@ -390,7 +391,7 @@ class FileUploadTest extends TestCase
         $response->assertSessionHas('success');
     }
 
-    /** @test */
+    #[Test]
     public function file_upload_handles_batch_upload()
     {
         $files = [
@@ -412,7 +413,7 @@ class FileUploadTest extends TestCase
         $this->assertDatabaseCount('file_uploads', 3);
     }
 
-    /** @test */
+    #[Test]
     public function file_upload_handles_zip_extraction()
     {
         $file = UploadedFile::fake()->create('documents.zip', 1000);
@@ -428,7 +429,7 @@ class FileUploadTest extends TestCase
         $response->assertSessionHas('success');
     }
 
-    /** @test */
+    #[Test]
     public function file_upload_handles_conversion()
     {
         $file = UploadedFile::fake()->create('document.doc', 1000);
@@ -443,7 +444,7 @@ class FileUploadTest extends TestCase
         $response->assertSessionHas('success');
     }
 
-    /** @test */
+    #[Test]
     public function file_upload_handles_ocr()
     {
         $file = UploadedFile::fake()->image('scanned-document.jpg', 800, 600);
@@ -458,7 +459,7 @@ class FileUploadTest extends TestCase
         $response->assertSessionHas('success');
     }
 
-    /** @test */
+    #[Test]
     public function file_upload_handles_thumbnail_generation()
     {
         $file = UploadedFile::fake()->image('image.jpg', 800, 600);
@@ -475,7 +476,7 @@ class FileUploadTest extends TestCase
         Storage::disk('public')->assertExists('thumbnails/'.$file->hashName());
     }
 
-    /** @test */
+    #[Test]
     public function file_upload_handles_preview_generation()
     {
         $file = UploadedFile::fake()->create('document.pdf', 1000);
@@ -494,7 +495,7 @@ class FileUploadTest extends TestCase
         Storage::disk('public')->assertExists('previews/'.$file->hashName().'.jpg');
     }
 
-    /** @test */
+    #[Test]
     public function file_upload_handles_versioning()
     {
         $file1 = UploadedFile::fake()->create('document.pdf', 1000);
@@ -529,7 +530,7 @@ class FileUploadTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function file_upload_handles_sharing()
     {
         $file = UploadedFile::fake()->create('document.pdf', 1000);
@@ -557,7 +558,7 @@ class FileUploadTest extends TestCase
         $response->assertSessionHas('success');
     }
 
-    /** @test */
+    #[Test]
     public function file_upload_handles_permissions()
     {
         $file = UploadedFile::fake()->create('document.pdf', 1000);
@@ -578,7 +579,7 @@ class FileUploadTest extends TestCase
         $response->assertSessionHas('success');
     }
 
-    /** @test */
+    #[Test]
     public function file_upload_handles_encryption()
     {
         $file = UploadedFile::fake()->create('document.pdf', 1000);
@@ -595,7 +596,7 @@ class FileUploadTest extends TestCase
         $response->assertSessionHas('success');
     }
 
-    /** @test */
+    #[Test]
     public function file_upload_handles_backup()
     {
         $file = UploadedFile::fake()->create('document.pdf', 1000);
@@ -612,7 +613,7 @@ class FileUploadTest extends TestCase
         $response->assertSessionHas('success');
     }
 
-    /** @test */
+    #[Test]
     public function file_upload_handles_cleanup()
     {
         $file = UploadedFile::fake()->create('document.pdf', 1000);

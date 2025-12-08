@@ -26,6 +26,7 @@ use Database\Seeders\CheckPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Support\Carbon;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class TimsSystemTest extends TestCase
@@ -197,7 +198,7 @@ class TimsSystemTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function user_can_view_dashboard()
     {
         $response = $this->actingAs($this->user)
@@ -208,7 +209,7 @@ class TimsSystemTest extends TestCase
         );
     }
 
-    /** @test */
+    #[Test]
     public function user_can_create_vehicle_type()
     {
         $vehicleTypeData = [
@@ -226,7 +227,7 @@ class TimsSystemTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function user_can_create_truck()
     {
         $truckData = [
@@ -248,7 +249,7 @@ class TimsSystemTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function user_can_create_driver()
     {
         $driverData = [
@@ -272,7 +273,7 @@ class TimsSystemTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function user_can_create_customer()
     {
         $customerData = [
@@ -294,7 +295,7 @@ class TimsSystemTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function user_can_create_operation()
     {
         $operationData = [
@@ -325,7 +326,7 @@ class TimsSystemTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function user_can_create_maintenance_record()
     {
         $maintenanceType = MaintenanceType::create([
@@ -360,7 +361,7 @@ class TimsSystemTest extends TestCase
         $this->assertEquals($scheduledDate, $record->scheduled_date->toDateString());
     }
 
-    /** @test */
+    #[Test]
     public function user_can_create_fuel_record()
     {
         $fuelDate = Carbon::now()->subDay()->toDateString();
@@ -395,7 +396,7 @@ class TimsSystemTest extends TestCase
         $this->assertEquals($fuelDate, $fuelRecord->fuel_date->toDateString());
     }
 
-    /** @test */
+    #[Test]
     public function user_can_create_driver_performance_record()
     {
         $recordDate = Carbon::now()->subDay()->toDateString();
@@ -435,7 +436,7 @@ class TimsSystemTest extends TestCase
         $this->assertEquals($recordDate, $record->record_date->toDateString());
     }
 
-    /** @test */
+    #[Test]
     public function user_can_create_cargo_type()
     {
         $cargoData = [
@@ -458,7 +459,7 @@ class TimsSystemTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function user_can_create_financial_record()
     {
         $recordDate = Carbon::now()->toDateString();
@@ -498,7 +499,7 @@ class TimsSystemTest extends TestCase
         $this->assertEquals($expectedProfit, (float) $financialRecord->net_profit);
     }
 
-    /** @test */
+    #[Test]
     public function user_can_create_route_plan()
     {
         $plannedDate = Carbon::now()->addDays(2)->toDateString();
@@ -537,7 +538,7 @@ class TimsSystemTest extends TestCase
         $this->assertSame('planned', $routePlan->status);
     }
 
-    /** @test */
+    #[Test]
     public function user_can_view_trucks_index()
     {
         $response = $this->actingAs($this->user)
@@ -549,7 +550,7 @@ class TimsSystemTest extends TestCase
         );
     }
 
-    /** @test */
+    #[Test]
     public function user_can_view_drivers_index()
     {
         $response = $this->actingAs($this->user)
@@ -561,7 +562,7 @@ class TimsSystemTest extends TestCase
         );
     }
 
-    /** @test */
+    #[Test]
     public function user_can_view_customers_index()
     {
         $response = $this->actingAs($this->user)
@@ -573,7 +574,7 @@ class TimsSystemTest extends TestCase
         );
     }
 
-    /** @test */
+    #[Test]
     public function user_can_view_operations_index()
     {
         $response = $this->actingAs($this->user)
@@ -585,7 +586,7 @@ class TimsSystemTest extends TestCase
         );
     }
 
-    /** @test */
+    #[Test]
     public function user_can_view_maintenance_index()
     {
         $response = $this->actingAs($this->user)
@@ -597,7 +598,7 @@ class TimsSystemTest extends TestCase
         );
     }
 
-    /** @test */
+    #[Test]
     public function user_can_view_fuel_index()
     {
         $response = $this->actingAs($this->user)
@@ -609,7 +610,7 @@ class TimsSystemTest extends TestCase
         );
     }
 
-    /** @test */
+    #[Test]
     public function user_can_view_reports()
     {
         $reports = [
@@ -629,7 +630,7 @@ class TimsSystemTest extends TestCase
         }
     }
 
-    /** @test */
+    #[Test]
     public function truck_validation_works_correctly()
     {
         $invalidData = [
@@ -644,7 +645,7 @@ class TimsSystemTest extends TestCase
         $response->assertSessionHasErrors(['plate', 'vehicletype_id', 'status']);
     }
 
-    /** @test */
+    #[Test]
     public function driver_validation_works_correctly()
     {
         $invalidData = [
@@ -660,7 +661,7 @@ class TimsSystemTest extends TestCase
         $response->assertSessionHasErrors(['error']);
     }
 
-    /** @test */
+    #[Test]
     public function system_handles_soft_deletes_correctly()
     {
         // Create a truck
@@ -683,7 +684,7 @@ class TimsSystemTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function database_relationships_work_correctly()
     {
         // Test truck belongs to vehicle type
@@ -701,7 +702,7 @@ class TimsSystemTest extends TestCase
         $this->assertEquals($this->user->id, $this->operation->user->id);
     }
 
-    /** @test */
+    #[Test]
     public function system_performance_is_acceptable()
     {
         $startTime = microtime(true);

@@ -9,13 +9,14 @@ use App\Models\DriverTruck;
 use App\Models\Performance;
 use App\Models\Truck;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class DriverTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** @test */
+    #[Test]
     public function it_can_create_a_driver()
     {
         $driver = Driver::factory()->create([
@@ -28,7 +29,7 @@ class DriverTest extends TestCase
         $this->assertEquals('active', $driver->status);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_soft_delete_a_driver()
     {
         $driver = Driver::factory()->create();
@@ -40,7 +41,7 @@ class DriverTest extends TestCase
         $this->assertDatabaseHas('drivers', ['id' => $driverId]);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_have_many_trucks()
     {
         $driver = Driver::factory()->create();
@@ -61,7 +62,7 @@ class DriverTest extends TestCase
         $this->assertTrue($driver->trucks->contains($truck2));
     }
 
-    /** @test */
+    #[Test]
     public function it_has_many_performances()
     {
         $driver = Driver::factory()->create();
@@ -78,7 +79,7 @@ class DriverTest extends TestCase
         $this->assertInstanceOf(Performance::class, $driver->performances->first());
     }
 
-    /** @test */
+    #[Test]
     public function it_has_many_performance_records()
     {
         $driver = Driver::factory()->create();
@@ -93,7 +94,7 @@ class DriverTest extends TestCase
         $this->assertInstanceOf(DriverPerformanceRecord::class, $driver->performanceRecords->first());
     }
 
-    /** @test */
+    #[Test]
     public function it_has_many_safety_records()
     {
         $driver = Driver::factory()->create();
@@ -104,7 +105,7 @@ class DriverTest extends TestCase
         $this->assertInstanceOf(DriverSafetyRecord::class, $driver->safetyRecords->first());
     }
 
-    /** @test */
+    #[Test]
     public function it_casts_dates_correctly()
     {
         $driver = Driver::factory()->create([
@@ -116,7 +117,7 @@ class DriverTest extends TestCase
         $this->assertInstanceOf(\Carbon\Carbon::class, $driver->hireddate);
     }
 
-    /** @test */
+    #[Test]
     public function it_has_fillable_attributes()
     {
         $fillable = [
@@ -137,7 +138,7 @@ class DriverTest extends TestCase
         $this->assertEquals($fillable, $driver->getFillable());
     }
 
-    /** @test */
+    #[Test]
     public function it_can_scope_active_drivers()
     {
         Driver::factory()->create(['status' => 'active']);
@@ -150,7 +151,7 @@ class DriverTest extends TestCase
         $this->assertEquals('active', $activeDrivers->first()->status);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_calculate_total_performance_tonnage()
     {
         $driver = Driver::factory()->create();
@@ -175,7 +176,7 @@ class DriverTest extends TestCase
         $this->assertEquals(25.5, $totalTonnage);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_get_current_assigned_truck()
     {
         $driver = Driver::factory()->create();
@@ -192,7 +193,7 @@ class DriverTest extends TestCase
         $this->assertEquals($truck->id, $currentTruck->id);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_get_performance_average_rating()
     {
         $driver = Driver::factory()->create();

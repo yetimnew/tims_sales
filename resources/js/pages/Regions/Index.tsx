@@ -226,7 +226,10 @@ export default function RegionsIndex({ regions, metrics, filters, statusOptions,
         setPerPage(String(resolvedPerPage));
     }, [resolvedPerPage]);
 
-    const regionData = regions?.data ?? [];
+    const regionData = React.useMemo(() => {
+        const records = regions?.data;
+        return Array.isArray(records) ? records : [];
+    }, [regions?.data]);
     const totalRecords = metrics?.total ?? regions?.total ?? regionData.length ?? 0;
     const activeCount = metrics?.active ?? 0;
     const inactiveCount = metrics?.inactive ?? 0;

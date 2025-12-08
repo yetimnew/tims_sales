@@ -9,7 +9,6 @@ import {
   ScrollText,
   Compass,
   Pin,
-  Calendar,
   Navigation,
   Users,
   Mountain,

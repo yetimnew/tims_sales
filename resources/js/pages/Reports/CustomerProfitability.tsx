@@ -138,8 +138,6 @@ const formatDecimal = (value: number) =>
 const formatCurrency = (value: number) =>
     new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(value);
 
-const formatOptionalDecimal = (value: number | null) => (value === null ? '—' : formatDecimal(value));
-
 const formatOptionalCurrency = (value: number | null) => (value === null ? '—' : formatCurrency(value));
 
 const formatPercentage = (value: number | null) => (value === null ? '—' : `${value.toFixed(2)}%`);

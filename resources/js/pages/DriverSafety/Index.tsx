@@ -240,13 +240,14 @@ export default function DriverSafetyIndex({
         setPerPage(String(resolvedPerPage));
     }, [resolvedPerPage]);
 
-    const safetyData = safetyRecords?.data ?? [];
+    const safetyData = React.useMemo(() => {
+        const records = safetyRecords?.data;
+        return Array.isArray(records) ? records : [];
+    }, [safetyRecords?.data]);
     const totalRecords = metrics?.total ?? safetyRecords?.total ?? safetyData.length ?? 0;
     const accidents = metrics?.accidents ?? 0;
-    const violations = metrics?.violations ?? 0;
     const warnings = metrics?.warnings ?? 0;
     const critical = metrics?.critical ?? 0;
-    const major = metrics?.major ?? 0;
     const minor = metrics?.minor ?? 0;
     const totalDamageCost = metrics?.total_damage_cost ?? 0;
     const averageDamageCost = metrics?.average_damage_cost ?? 0;
@@ -445,7 +446,7 @@ export default function DriverSafetyIndex({
             description: isLoading ? (
                 <Skeleton className="h-3 w-36" aria-hidden="true" />
             ) : (
-                `${formatCount(violations)} violations`
+                `${formatCount(major)} major incidents`
             ),
             valueClassName: isLoading ? undefined : 'text-rose-600',
         },

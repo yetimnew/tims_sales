@@ -17,6 +17,7 @@ use App\Models\Zone;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Validator;
+use PHPUnit\Framework\Attributes\Test;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -56,7 +57,7 @@ class ValidationTest extends TestCase
         $this->user->assignRole($role);
     }
 
-    /** @test */
+    #[Test]
     public function truck_validation_rules_work()
     {
         $vehicleType = VehicleType::factory()->create();
@@ -94,7 +95,7 @@ class ValidationTest extends TestCase
         $response->assertSessionHasErrors(['plate', 'vehicletype_id', 'status']);
     }
 
-    /** @test */
+    #[Test]
     public function driver_validation_rules_work()
     {
         $zone = Zone::factory()->create();
@@ -136,7 +137,7 @@ class ValidationTest extends TestCase
         $response->assertSessionHasErrors(['name', 'driver_id', 'mobile', 'sex', 'status']);
     }
 
-    /** @test */
+    #[Test]
     public function maintenance_validation_rules_work()
     {
         $truck = Truck::factory()->create();
@@ -199,7 +200,7 @@ class ValidationTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function fuel_validation_rules_work()
     {
         $truck = Truck::factory()->create();
@@ -244,7 +245,7 @@ class ValidationTest extends TestCase
         $response->assertSessionHasErrors(['truck_id', 'driver_id', 'fuel_date', 'fuel_quantity_liters', 'fuel_price_per_liter', 'total_cost', 'fuel_type', 'odometer_reading']);
     }
 
-    /** @test */
+    #[Test]
     public function financial_validation_rules_work()
     {
         $truck = Truck::factory()->create();
@@ -290,7 +291,7 @@ class ValidationTest extends TestCase
         $response->assertSessionHasErrors(['truck_id', 'record_date', 'period_type', 'revenue', 'fuel_cost', 'maintenance_cost', 'driver_salary', 'insurance_cost', 'depreciation', 'other_costs']);
     }
 
-    /** @test */
+    #[Test]
     public function user_validation_rules_work()
     {
         // Test valid data
@@ -321,7 +322,7 @@ class ValidationTest extends TestCase
         $response->assertSessionHasErrors(['name', 'email', 'password']);
     }
 
-    /** @test */
+    #[Test]
     public function role_validation_rules_work()
     {
         // Test valid data
@@ -348,7 +349,7 @@ class ValidationTest extends TestCase
         $response->assertSessionHasErrors(['name', 'guard_name']);
     }
 
-    /** @test */
+    #[Test]
     public function permission_validation_rules_work()
     {
         // Test valid data
@@ -375,7 +376,7 @@ class ValidationTest extends TestCase
         $response->assertSessionHasErrors(['name', 'guard_name']);
     }
 
-    /** @test */
+    #[Test]
     public function customer_validation_rules_work()
     {
         // Test valid data
@@ -408,7 +409,7 @@ class ValidationTest extends TestCase
         $response->assertSessionHasErrors(['name', 'email', 'phone', 'status']);
     }
 
-    /** @test */
+    #[Test]
     public function region_validation_rules_work()
     {
         // Test valid data
@@ -433,7 +434,7 @@ class ValidationTest extends TestCase
         $response->assertSessionHasErrors(['name']);
     }
 
-    /** @test */
+    #[Test]
     public function zone_validation_rules_work()
     {
         $region = Region::factory()->create();
@@ -462,7 +463,7 @@ class ValidationTest extends TestCase
         $response->assertSessionHasErrors(['name', 'region_id']);
     }
 
-    /** @test */
+    #[Test]
     public function woreda_validation_rules_work()
     {
         $zone = Zone::factory()->create();
@@ -491,7 +492,7 @@ class ValidationTest extends TestCase
         $response->assertSessionHasErrors(['name', 'zone_id']);
     }
 
-    /** @test */
+    #[Test]
     public function place_validation_rules_work()
     {
         $woreda = Woreda::factory()->create();
@@ -520,7 +521,7 @@ class ValidationTest extends TestCase
         $response->assertSessionHasErrors(['name', 'woreda_id']);
     }
 
-    /** @test */
+    #[Test]
     public function cargo_type_validation_rules_work()
     {
         // Test valid data
@@ -553,7 +554,7 @@ class ValidationTest extends TestCase
         $response->assertSessionHasErrors(['name', 'category', 'weight_per_cubic_meter', 'handling_requirements', 'safety_requirements']);
     }
 
-    /** @test */
+    #[Test]
     public function vehicle_type_validation_rules_work()
     {
         // Test valid data
@@ -580,7 +581,7 @@ class ValidationTest extends TestCase
         $response->assertSessionHasErrors(['name', 'description']);
     }
 
-    /** @test */
+    #[Test]
     public function status_type_validation_rules_work()
     {
         // Test valid data
@@ -607,7 +608,7 @@ class ValidationTest extends TestCase
         $response->assertSessionHasErrors(['name', 'description']);
     }
 
-    /** @test */
+    #[Test]
     public function status_validation_rules_work()
     {
         $statusType = \App\Models\StatusType::factory()->create();
@@ -638,7 +639,7 @@ class ValidationTest extends TestCase
         $response->assertSessionHasErrors(['name', 'statustype_id', 'description']);
     }
 
-    /** @test */
+    #[Test]
     public function operation_validation_rules_work()
     {
         $customer = Customer::factory()->create();
@@ -706,7 +707,7 @@ class ValidationTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function performance_validation_rules_work()
     {
         $operation = Operation::factory()->create();
@@ -792,7 +793,7 @@ class ValidationTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function distance_validation_rules_work()
     {
         $origin = Place::factory()->create();
@@ -830,7 +831,7 @@ class ValidationTest extends TestCase
         $response->assertSessionHasErrors(['origin_id', 'destination_id', 'distance_km', 'estimated_time_hours', 'road_condition', 'notes']);
     }
 
-    /** @test */
+    #[Test]
     public function custom_validation_rules_work()
     {
         // Test custom validation rules
@@ -871,7 +872,7 @@ class ValidationTest extends TestCase
         $this->assertArrayHasKey('number', $validator->errors()->toArray());
     }
 
-    /** @test */
+    #[Test]
     public function validation_error_messages_are_customized()
     {
         $invalidData = [
@@ -901,7 +902,7 @@ class ValidationTest extends TestCase
         $this->assertEquals('Please enter a valid Ethiopian phone number', $errors->first('phone'));
     }
 
-    /** @test */
+    #[Test]
     public function validation_works_with_form_requests()
     {
         $vehicleType = VehicleType::factory()->create();

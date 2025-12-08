@@ -11,6 +11,7 @@ use App\Models\Woreda;
 use App\Models\Zone;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Routing\Middleware\ThrottleRequests;
+use PHPUnit\Framework\Attributes\Test;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -64,7 +65,7 @@ class EndToEndTest extends TestCase
         $this->woreda = Woreda::factory()->create(['zone_id' => $this->zone->id]);
     }
 
-    /** @test */
+    #[Test]
     public function complete_fleet_management_workflow()
     {
         $this->withoutMiddleware(ThrottleRequests::class);
@@ -298,7 +299,7 @@ class EndToEndTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function complete_user_management_workflow()
     {
         // 1. Create a new user
@@ -375,7 +376,7 @@ class EndToEndTest extends TestCase
         $response->assertStatus(403);
     }
 
-    /** @test */
+    #[Test]
     public function complete_geographic_management_workflow()
     {
         // 1. Create a region
@@ -460,7 +461,7 @@ class EndToEndTest extends TestCase
             );
     }
 
-    /** @test */
+    #[Test]
     public function complete_cargo_management_workflow()
     {
         // 1. Create a cargo type
@@ -548,7 +549,7 @@ class EndToEndTest extends TestCase
             );
     }
 
-    /** @test */
+    #[Test]
     public function complete_status_management_workflow()
     {
         // 1. Create a status type
@@ -606,7 +607,7 @@ class EndToEndTest extends TestCase
             );
     }
 
-    /** @test */
+    #[Test]
     public function complete_reporting_workflow()
     {
         // Create test data

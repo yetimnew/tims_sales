@@ -6,19 +6,20 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class EmailTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** @test */
+    #[Test]
     public function verification_email_can_be_sent()
     {
         Mail::fake();
 
         $user = User::factory()->create([
-            'email_verified_at' => null
+            'email_verified_at' => null,
         ]);
 
         $response = $this->actingAs($user)
@@ -30,7 +31,7 @@ class EmailTest extends TestCase
         Mail::assertSent(\Illuminate\Auth\Notifications\VerifyEmail::class);
     }
 
-    /** @test */
+    #[Test]
     public function password_reset_email_can_be_sent()
     {
         Mail::fake();
@@ -38,7 +39,7 @@ class EmailTest extends TestCase
         $user = User::factory()->create(['email' => 'test@example.com']);
 
         $response = $this->post('/forgot-password', [
-            'email' => 'test@example.com'
+            'email' => 'test@example.com',
         ]);
 
         $response->assertRedirect();
@@ -47,7 +48,7 @@ class EmailTest extends TestCase
         Mail::assertSent(\Illuminate\Auth\Notifications\ResetPassword::class);
     }
 
-    /** @test */
+    #[Test]
     public function welcome_email_can_be_sent()
     {
         Mail::fake();
@@ -56,7 +57,7 @@ class EmailTest extends TestCase
             'name' => 'Test User',
             'email' => 'test@example.com',
             'password' => 'password123',
-            'password_confirmation' => 'password123'
+            'password_confirmation' => 'password123',
         ];
 
         $response = $this->post('/register', $userData);
@@ -67,7 +68,7 @@ class EmailTest extends TestCase
         Mail::assertSent(\App\Mail\WelcomeEmail::class);
     }
 
-    /** @test */
+    #[Test]
     public function account_created_notification_can_be_sent()
     {
         Notification::fake();
@@ -76,7 +77,7 @@ class EmailTest extends TestCase
             'name' => 'Test User',
             'email' => 'test@example.com',
             'password' => 'password123',
-            'password_confirmation' => 'password123'
+            'password_confirmation' => 'password123',
         ];
 
         $response = $this->post('/register', $userData);
@@ -87,20 +88,20 @@ class EmailTest extends TestCase
         Notification::assertSentTo($user, \App\Notifications\AccountCreated::class);
     }
 
-    /** @test */
+    #[Test]
     public function password_changed_notification_can_be_sent()
     {
         Notification::fake();
 
         $user = User::factory()->create([
-            'password' => \Illuminate\Support\Facades\Hash::make('oldpassword123')
+            'password' => \Illuminate\Support\Facades\Hash::make('oldpassword123'),
         ]);
 
         $response = $this->actingAs($user)
             ->put('/user/password', [
                 'current_password' => 'oldpassword123',
                 'password' => 'newpassword123',
-                'password_confirmation' => 'newpassword123'
+                'password_confirmation' => 'newpassword123',
             ]);
 
         $response->assertRedirect();
@@ -108,19 +109,19 @@ class EmailTest extends TestCase
         Notification::assertSentTo($user, \App\Notifications\PasswordChanged::class);
     }
 
-    /** @test */
+    #[Test]
     public function email_changed_notification_can_be_sent()
     {
         Notification::fake();
 
         $user = User::factory()->create([
-            'email' => 'old@example.com'
+            'email' => 'old@example.com',
         ]);
 
         $response = $this->actingAs($user)
             ->put('/user/profile-information', [
                 'name' => $user->name,
-                'email' => 'new@example.com'
+                'email' => 'new@example.com',
             ]);
 
         $response->assertRedirect();
@@ -128,7 +129,7 @@ class EmailTest extends TestCase
         Notification::assertSentTo($user, \App\Notifications\EmailChanged::class);
     }
 
-    /** @test */
+    #[Test]
     public function two_factor_enabled_notification_can_be_sent()
     {
         Notification::fake();
@@ -143,14 +144,14 @@ class EmailTest extends TestCase
         Notification::assertSentTo($user, \App\Notifications\TwoFactorEnabled::class);
     }
 
-    /** @test */
+    #[Test]
     public function two_factor_disabled_notification_can_be_sent()
     {
         Notification::fake();
 
         $user = User::factory()->create([
             'two_factor_secret' => 'secret',
-            'two_factor_recovery_codes' => ['code1', 'code2']
+            'two_factor_recovery_codes' => ['code1', 'code2'],
         ]);
 
         $response = $this->actingAs($user)
@@ -161,19 +162,19 @@ class EmailTest extends TestCase
         Notification::assertSentTo($user, \App\Notifications\TwoFactorDisabled::class);
     }
 
-    /** @test */
+    #[Test]
     public function login_notification_can_be_sent()
     {
         Notification::fake();
 
         $user = User::factory()->create([
             'email' => 'test@example.com',
-            'password' => \Illuminate\Support\Facades\Hash::make('password123')
+            'password' => \Illuminate\Support\Facades\Hash::make('password123'),
         ]);
 
         $response = $this->post('/login', [
             'email' => 'test@example.com',
-            'password' => 'password123'
+            'password' => 'password123',
         ]);
 
         $response->assertRedirect('/dashboard');
@@ -181,22 +182,22 @@ class EmailTest extends TestCase
         Notification::assertSentTo($user, \App\Notifications\LoginNotification::class);
     }
 
-    /** @test */
+    #[Test]
     public function suspicious_login_notification_can_be_sent()
     {
         Notification::fake();
 
         $user = User::factory()->create([
             'email' => 'test@example.com',
-            'password' => \Illuminate\Support\Facades\Hash::make('password123')
+            'password' => \Illuminate\Support\Facades\Hash::make('password123'),
         ]);
 
         // Simulate login from different IP
         $response = $this->post('/login', [
             'email' => 'test@example.com',
-            'password' => 'password123'
+            'password' => 'password123',
         ], [
-            'HTTP_X_FORWARDED_FOR' => '192.168.1.100'
+            'HTTP_X_FORWARDED_FOR' => '192.168.1.100',
         ]);
 
         $response->assertRedirect('/dashboard');
@@ -204,28 +205,28 @@ class EmailTest extends TestCase
         Notification::assertSentTo($user, \App\Notifications\SuspiciousLogin::class);
     }
 
-    /** @test */
+    #[Test]
     public function account_locked_notification_can_be_sent()
     {
         Notification::fake();
 
         $user = User::factory()->create([
             'email' => 'test@example.com',
-            'password' => \Illuminate\Support\Facades\Hash::make('password123')
+            'password' => \Illuminate\Support\Facades\Hash::make('password123'),
         ]);
 
         // Simulate multiple failed login attempts
         for ($i = 0; $i < 5; $i++) {
             $this->post('/login', [
                 'email' => 'test@example.com',
-                'password' => 'wrongpassword'
+                'password' => 'wrongpassword',
             ]);
         }
 
         Notification::assertSentTo($user, \App\Notifications\AccountLocked::class);
     }
 
-    /** @test */
+    #[Test]
     public function account_unlocked_notification_can_be_sent()
     {
         Notification::fake();
@@ -233,7 +234,7 @@ class EmailTest extends TestCase
         $user = User::factory()->create([
             'email' => 'test@example.com',
             'password' => \Illuminate\Support\Facades\Hash::make('password123'),
-            'locked_until' => now()->addMinutes(30)
+            'locked_until' => now()->addMinutes(30),
         ]);
 
         $response = $this->actingAs($user)
@@ -244,7 +245,7 @@ class EmailTest extends TestCase
         Notification::assertSentTo($user, \App\Notifications\AccountUnlocked::class);
     }
 
-    /** @test */
+    #[Test]
     public function data_export_notification_can_be_sent()
     {
         Notification::fake();
@@ -259,7 +260,7 @@ class EmailTest extends TestCase
         Notification::assertSentTo($user, \App\Notifications\DataExportReady::class);
     }
 
-    /** @test */
+    #[Test]
     public function data_deletion_notification_can_be_sent()
     {
         Notification::fake();
@@ -268,7 +269,7 @@ class EmailTest extends TestCase
 
         $response = $this->actingAs($user)
             ->post('/user/delete-request', [
-                'reason' => 'No longer needed'
+                'reason' => 'No longer needed',
             ]);
 
         $response->assertRedirect();
@@ -276,7 +277,7 @@ class EmailTest extends TestCase
         Notification::assertSentTo($user, \App\Notifications\DataDeletionRequested::class);
     }
 
-    /** @test */
+    #[Test]
     public function backup_completed_notification_can_be_sent()
     {
         Notification::fake();
@@ -291,7 +292,7 @@ class EmailTest extends TestCase
         Notification::assertSentTo($user, \App\Notifications\BackupCompleted::class);
     }
 
-    /** @test */
+    #[Test]
     public function maintenance_notification_can_be_sent()
     {
         Notification::fake();
@@ -306,7 +307,7 @@ class EmailTest extends TestCase
         Notification::assertSentTo($user, \App\Notifications\MaintenanceScheduled::class);
     }
 
-    /** @test */
+    #[Test]
     public function system_update_notification_can_be_sent()
     {
         Notification::fake();
@@ -321,7 +322,7 @@ class EmailTest extends TestCase
         Notification::assertSentTo($user, \App\Notifications\SystemUpdate::class);
     }
 
-    /** @test */
+    #[Test]
     public function security_alert_notification_can_be_sent()
     {
         Notification::fake();
@@ -336,7 +337,7 @@ class EmailTest extends TestCase
         Notification::assertSentTo($user, \App\Notifications\SecurityAlert::class);
     }
 
-    /** @test */
+    #[Test]
     public function email_templates_are_rendered_correctly()
     {
         $user = User::factory()->create();
@@ -351,11 +352,11 @@ class EmailTest extends TestCase
         $this->assertStringContainsString($token, $resetEmail->render());
 
         // Test verification email template
-        $verificationEmail = new \Illuminate\Auth\Notifications\VerifyEmail();
+        $verificationEmail = new \Illuminate\Auth\Notifications\VerifyEmail;
         $this->assertStringContainsString('Verify Email', $verificationEmail->render());
     }
 
-    /** @test */
+    #[Test]
     public function email_queue_works()
     {
         \Illuminate\Support\Facades\Queue::fake();
@@ -370,7 +371,7 @@ class EmailTest extends TestCase
         \Illuminate\Support\Facades\Queue::assertPushed(\App\Jobs\SendNotificationJob::class);
     }
 
-    /** @test */
+    #[Test]
     public function email_batching_works()
     {
         \Illuminate\Support\Facades\Queue::fake();
@@ -379,7 +380,7 @@ class EmailTest extends TestCase
 
         $response = $this->post('/admin/send-bulk-notification', [
             'users' => $users->pluck('id')->toArray(),
-            'message' => 'Test message'
+            'message' => 'Test message',
         ]);
 
         $response->assertRedirect();
@@ -387,7 +388,7 @@ class EmailTest extends TestCase
         \Illuminate\Support\Facades\Queue::assertPushed(\App\Jobs\SendBulkNotificationJob::class);
     }
 
-    /** @test */
+    #[Test]
     public function email_scheduling_works()
     {
         \Illuminate\Support\Facades\Queue::fake();
@@ -396,7 +397,7 @@ class EmailTest extends TestCase
 
         $response = $this->actingAs($user)
             ->post('/user/schedule-notification', [
-                'send_at' => now()->addHour()
+                'send_at' => now()->addHour(),
             ]);
 
         $response->assertRedirect();
@@ -404,7 +405,7 @@ class EmailTest extends TestCase
         \Illuminate\Support\Facades\Queue::assertPushed(\App\Jobs\SendScheduledNotificationJob::class);
     }
 
-    /** @test */
+    #[Test]
     public function email_delivery_failure_handling()
     {
         Mail::fake();
@@ -420,60 +421,60 @@ class EmailTest extends TestCase
         $response->assertSessionHas('error');
     }
 
-    /** @test */
+    #[Test]
     public function email_bounce_handling()
     {
         $user = User::factory()->create();
 
         $response = $this->post('/webhook/email-bounce', [
             'email' => $user->email,
-            'reason' => 'bounced'
+            'reason' => 'bounced',
         ]);
 
         $response->assertStatus(200);
         $this->assertDatabaseHas('email_bounces', [
             'email' => $user->email,
-            'reason' => 'bounced'
+            'reason' => 'bounced',
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function email_complaint_handling()
     {
         $user = User::factory()->create();
 
         $response = $this->post('/webhook/email-complaint', [
             'email' => $user->email,
-            'reason' => 'spam'
+            'reason' => 'spam',
         ]);
 
         $response->assertStatus(200);
         $this->assertDatabaseHas('email_complaints', [
             'email' => $user->email,
-            'reason' => 'spam'
+            'reason' => 'spam',
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function email_unsubscribe_handling()
     {
         $user = User::factory()->create();
 
         $response = $this->post('/webhook/email-unsubscribe', [
-            'email' => $user->email
+            'email' => $user->email,
         ]);
 
         $response->assertStatus(200);
         $this->assertDatabaseHas('email_unsubscribes', [
-            'email' => $user->email
+            'email' => $user->email,
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function email_preferences_are_respected()
     {
         $user = User::factory()->create([
-            'email_notifications' => false
+            'email_notifications' => false,
         ]);
 
         Notification::fake();
@@ -486,7 +487,7 @@ class EmailTest extends TestCase
         Notification::assertNotSentTo($user, \App\Notifications\TestNotification::class);
     }
 
-    /** @test */
+    #[Test]
     public function email_frequency_limits_are_respected()
     {
         $user = User::factory()->create();
@@ -505,35 +506,35 @@ class EmailTest extends TestCase
         Notification::assertSentTo($user, \App\Notifications\TestNotification::class, 1);
     }
 
-    /** @test */
+    #[Test]
     public function email_content_filtering_works()
     {
         $user = User::factory()->create();
 
         $response = $this->actingAs($user)
             ->post('/user/send-notification', [
-                'content' => 'This is spam content'
+                'content' => 'This is spam content',
             ]);
 
         $response->assertRedirect();
         $response->assertSessionHas('error');
     }
 
-    /** @test */
+    #[Test]
     public function email_attachment_handling_works()
     {
         $user = User::factory()->create();
 
         $response = $this->actingAs($user)
             ->post('/user/send-notification', [
-                'attachment' => 'test-file.pdf'
+                'attachment' => 'test-file.pdf',
             ]);
 
         $response->assertRedirect();
         $response->assertSessionHas('success');
     }
 
-    /** @test */
+    #[Test]
     public function email_encryption_works()
     {
         $user = User::factory()->create();
@@ -545,7 +546,7 @@ class EmailTest extends TestCase
         $response->assertSessionHas('success');
     }
 
-    /** @test */
+    #[Test]
     public function email_digital_signature_works()
     {
         $user = User::factory()->create();

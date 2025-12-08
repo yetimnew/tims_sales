@@ -99,7 +99,7 @@ export default function ZonesCreate({ regions }: ZonesCreateProps) {
         variant: 'destructive',
       })
     }
-  }, [errors, toast])
+  }, [errors])
 
   useEffect(() => {
     const container = scrollContainerRef.current

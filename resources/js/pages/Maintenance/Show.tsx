@@ -31,8 +31,8 @@ interface ActivityLog {
         name: string;
     };
     created_at: string;
-    old_values?: Record<string, any>;
-    new_values?: Record<string, any>;
+    old_values?: Record<string, unknown>;
+    new_values?: Record<string, unknown>;
 }
 
 interface Truck {
@@ -63,7 +63,11 @@ interface MaintenanceRecord {
     updated_at?: string;
     truck?: Truck;
     maintenanceType?: MaintenanceType;
-    assignedMechanic?: any;
+    assignedMechanic?: {
+        id?: number | null;
+        name?: string | null;
+        email?: string | null;
+    } | null;
 }
 
 interface MaintenanceShowProps {

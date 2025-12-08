@@ -30,7 +30,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { InertiaPagination } from '@/components/ui/pagination';
-import { CalendarClock, Gauge, LineChart, ListFilter, Loader2, RefreshCcw, Settings, Truck } from 'lucide-react';
+import { CalendarClock, Gauge, LineChart, ListFilter, Loader2, RefreshCcw, Settings, Truck, type LucideIcon } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 
 type GradeCategory = {
@@ -302,10 +302,13 @@ export default function TruckGradingReport({
     perPageOptions,
     can,
 }: TruckGradingReportProps) {
-    const rows = Array.isArray(paginator?.data) ? paginator.data ?? [] : [];
-    const snapshotDates = Array.isArray(filterOptions?.dates) ? filterOptions.dates ?? [] : [];
-    const vehicleTypes = Array.isArray(filterOptions?.vehicle_types) ? filterOptions.vehicle_types ?? [] : [];
-    const statusOptions = Array.isArray(filterOptions?.statuses) ? filterOptions.statuses ?? [] : [];
+    const rows = useMemo<TruckGradingRow[]>(() => (Array.isArray(paginator?.data) ? paginator.data : []), [paginator?.data]);
+    const snapshotDates = useMemo<string[]>(() => (Array.isArray(filterOptions?.dates) ? filterOptions.dates : []), [filterOptions?.dates]);
+    const vehicleTypes = useMemo<VehicleTypeOption[]>(
+        () => (Array.isArray(filterOptions?.vehicle_types) ? filterOptions.vehicle_types : []),
+        [filterOptions?.vehicle_types],
+    );
+    const statusOptions = useMemo<string[]>(() => (Array.isArray(filterOptions?.statuses) ? filterOptions.statuses : []), [filterOptions?.statuses]);
 
     const availablePerPageOptions = useMemo(
         () => (perPageOptions && perPageOptions.length > 0 ? perPageOptions : fallBackPerPageOptions),
@@ -455,7 +458,7 @@ export default function TruckGradingReport({
             });
             setRecalculating(false);
         }
-    }, [canRecalculate, appliedSnapshotDate, appliedVehicleTypeId, appliedStatus, recalculating, router]);
+    }, [canRecalculate, appliedSnapshotDate, appliedVehicleTypeId, appliedStatus, recalculating]);
 
     const averageScore = useMemo(() => {
         let total = 0;
@@ -486,7 +489,9 @@ export default function TruckGradingReport({
         return priority.find((letter) => letters.includes(letter)) ?? letters[0];
     }, [rows]);
 
-    const kpiCards = useMemo(() => {
+    const kpiCards = useMemo<
+        ReadonlyArray<{ label: string; value: string; icon: LucideIcon; tone: string }>
+    >(() => {
         const totalTrucks = paginator?.meta?.total ?? rows.length;
         const lastCalculatedAt = latestCalculation?.calculated_at ?? rows[0]?.snapshot?.calculated_at ?? null;
         const calculatedBy = latestCalculation?.calculated_by?.name ?? rows[0]?.snapshot?.calculated_by?.name ?? null;

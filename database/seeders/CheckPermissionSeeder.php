@@ -208,6 +208,11 @@ class CheckPermissionSeeder extends Seeder
             'permissions.view', 'permissions.show', 'permissions.export',
         ];
 
+        // ==================== ACTIVITY LOG PERMISSIONS ====================
+        $activityLogPermissions = [
+            'activity-logs.view', 'activity-logs.show', 'activity-logs.export',
+        ];
+
         // ==================== TELESCOPE PERMISSIONS ====================
         $telescopePermissions = [
             'view telescope',
@@ -242,6 +247,7 @@ class CheckPermissionSeeder extends Seeder
             $userPermissions,
             $rolePermissions,
             $permissionPermissions,
+            $activityLogPermissions,
             $telescopePermissions
         );
 

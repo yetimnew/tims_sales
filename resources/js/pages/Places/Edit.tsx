@@ -119,7 +119,7 @@ export default function PlacesEdit({ place, woredas }: PlacesEditProps) {
         variant: 'destructive',
       })
     }
-  }, [errors, toast])
+  }, [errors])
 
   useEffect(() => {
     const container = scrollContainerRef.current

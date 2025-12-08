@@ -17,7 +17,7 @@ class MaintenanceTypeFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => $this->faker->unique()->randomElement([
+            'name' => $this->faker->randomElement([
                 'Oil Change',
                 'Brake Service',
                 'Transmission Inspection',

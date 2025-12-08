@@ -89,7 +89,7 @@ export default function RegionsCreate() {
                 variant: 'destructive',
             });
         }
-    }, [errors, toast]);
+    }, [errors]);
 
     useEffect(() => {
         const container = scrollContainerRef.current;

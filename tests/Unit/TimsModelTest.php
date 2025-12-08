@@ -17,13 +17,14 @@ use App\Models\User;
 use App\Models\VehicleMaintenanceRecord;
 use App\Models\VehicleType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class TimsModelTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** @test */
+    #[Test]
     public function vehicle_type_can_be_created()
     {
         $vehicleType = VehicleType::create([
@@ -36,7 +37,7 @@ class TimsModelTest extends TestCase
         $this->assertEquals('Large cargo truck', $vehicleType->description);
     }
 
-    /** @test */
+    #[Test]
     public function truck_can_be_created()
     {
         $vehicleType = VehicleType::create([
@@ -57,7 +58,7 @@ class TimsModelTest extends TestCase
         $this->assertEquals($vehicleType->id, $truck->vehicletype_id);
     }
 
-    /** @test */
+    #[Test]
     public function truck_belongs_to_vehicle_type()
     {
         $vehicleType = VehicleType::create([
@@ -75,7 +76,7 @@ class TimsModelTest extends TestCase
         $this->assertEquals($vehicleType->id, $truck->vehicleType->id);
     }
 
-    /** @test */
+    #[Test]
     public function vehicle_type_has_many_trucks()
     {
         $vehicleType = VehicleType::create([
@@ -100,7 +101,7 @@ class TimsModelTest extends TestCase
         $this->assertTrue($vehicleType->trucks->contains($truck2));
     }
 
-    /** @test */
+    #[Test]
     public function driver_can_be_created()
     {
         $driver = Driver::create([
@@ -117,7 +118,7 @@ class TimsModelTest extends TestCase
         $this->assertEquals('John Doe', $driver->name);
     }
 
-    /** @test */
+    #[Test]
     public function customer_can_be_created()
     {
         $customer = Customer::create([
@@ -133,7 +134,7 @@ class TimsModelTest extends TestCase
         $this->assertEquals('contact@abctransport.com', $customer->email);
     }
 
-    /** @test */
+    #[Test]
     public function region_can_be_created()
     {
         $region = Region::create([
@@ -145,7 +146,7 @@ class TimsModelTest extends TestCase
         $this->assertEquals('ADDISE ABABA', $region->name);
     }
 
-    /** @test */
+    #[Test]
     public function operation_can_be_created()
     {
         $user = User::factory()->create();
@@ -193,7 +194,7 @@ class TimsModelTest extends TestCase
         $this->assertEquals($customer->id, $operation->customer_id);
     }
 
-    /** @test */
+    #[Test]
     public function operation_belongs_to_customer()
     {
         $user = User::factory()->create();
@@ -240,7 +241,7 @@ class TimsModelTest extends TestCase
         $this->assertEquals($customer->id, $operation->customer->id);
     }
 
-    /** @test */
+    #[Test]
     public function maintenance_type_can_be_created()
     {
         $maintenanceType = MaintenanceType::create([
@@ -256,7 +257,7 @@ class TimsModelTest extends TestCase
         $this->assertEquals('Preventive', $maintenanceType->category);
     }
 
-    /** @test */
+    #[Test]
     public function maintenance_record_can_be_created()
     {
         $user = User::factory()->create();
@@ -295,7 +296,7 @@ class TimsModelTest extends TestCase
         $this->assertEquals($maintenanceType->id, $maintenanceRecord->maintenance_type_id);
     }
 
-    /** @test */
+    #[Test]
     public function fuel_record_can_be_created()
     {
         $user = User::factory()->create();
@@ -339,7 +340,7 @@ class TimsModelTest extends TestCase
         $this->assertEquals($driver->id, $fuelRecord->driver_id);
     }
 
-    /** @test */
+    #[Test]
     public function cargo_type_can_be_created()
     {
         $cargoType = CargoType::create([
@@ -356,7 +357,7 @@ class TimsModelTest extends TestCase
         $this->assertTrue($cargoType->category === CargoCategory::Construction);
     }
 
-    /** @test */
+    #[Test]
     public function financial_record_can_be_created()
     {
         $vehicleType = VehicleType::create([
@@ -389,7 +390,7 @@ class TimsModelTest extends TestCase
         $this->assertEquals(50000.00, $financialRecord->revenue);
     }
 
-    /** @test */
+    #[Test]
     public function route_plan_can_be_created()
     {
         $user = User::factory()->create();
@@ -481,7 +482,7 @@ class TimsModelTest extends TestCase
         $this->assertEquals($driver->id, $routePlan->driver_id);
     }
 
-    /** @test */
+    #[Test]
     public function models_use_soft_deletes()
     {
         $vehicleType = VehicleType::create([
@@ -508,7 +509,7 @@ class TimsModelTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function models_have_correct_fillable_attributes()
     {
         $vehicleType = new VehicleType;
@@ -526,7 +527,7 @@ class TimsModelTest extends TestCase
         $this->assertContains('sex', $driver->getFillable());
     }
 
-    /** @test */
+    #[Test]
     public function models_have_correct_casts()
     {
         $truck = new Truck;

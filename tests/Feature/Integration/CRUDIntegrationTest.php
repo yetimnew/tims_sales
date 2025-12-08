@@ -11,6 +11,7 @@ use App\Models\Zone;
 use Carbon\Carbon;
 use Database\Seeders\CheckPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class CRUDIntegrationTest extends TestCase
@@ -42,7 +43,7 @@ class CRUDIntegrationTest extends TestCase
         $this->woreda = Woreda::factory()->create(['zone_id' => $this->zone->id]);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_perform_complete_truck_crud_workflow()
     {
         // CREATE
@@ -103,7 +104,7 @@ class CRUDIntegrationTest extends TestCase
         $this->assertSoftDeleted('trucks', ['id' => $truck->id]);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_perform_complete_driver_crud_workflow()
     {
         // CREATE
@@ -167,7 +168,7 @@ class CRUDIntegrationTest extends TestCase
         $this->assertSoftDeleted('drivers', ['id' => $driver->id]);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_perform_complete_maintenance_crud_workflow()
     {
         $truck = Truck::factory()->create(['status' => 'active']);
@@ -230,7 +231,7 @@ class CRUDIntegrationTest extends TestCase
         $this->assertSoftDeleted('vehicle_maintenance_records', ['id' => $maintenance->id]);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_perform_complete_fuel_crud_workflow()
     {
         $truck = Truck::factory()->create();
@@ -302,7 +303,7 @@ class CRUDIntegrationTest extends TestCase
         $this->assertSoftDeleted('fuel_records', ['id' => $fuel->id]);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_perform_complete_financial_crud_workflow()
     {
         $truck = Truck::factory()->create();
@@ -372,7 +373,7 @@ class CRUDIntegrationTest extends TestCase
         $this->assertSoftDeleted('truck_financial_records', ['id' => $financial->id]);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_perform_search_and_sort_operations()
     {
         // Create test data
@@ -415,7 +416,7 @@ class CRUDIntegrationTest extends TestCase
             );
     }
 
-    /** @test */
+    #[Test]
     public function it_can_perform_pagination_operations()
     {
         // Create more than 15 trucks for pagination
@@ -446,7 +447,7 @@ class CRUDIntegrationTest extends TestCase
             );
     }
 
-    /** @test */
+    #[Test]
     public function it_confirms_truck_export_endpoint_is_disabled()
     {
         Truck::factory()->count(5)->create();
@@ -457,7 +458,7 @@ class CRUDIntegrationTest extends TestCase
         $exportResponse->assertNotFound();
     }
 
-    /** @test */
+    #[Test]
     public function it_can_perform_relationship_operations()
     {
         $truck = Truck::factory()->create();
@@ -492,7 +493,7 @@ class CRUDIntegrationTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_perform_activity_logging_operations()
     {
         $truck = Truck::factory()->create();
@@ -524,7 +525,7 @@ class CRUDIntegrationTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_perform_permission_operations()
     {
         /** @var User $userWithoutPermission */
@@ -544,7 +545,7 @@ class CRUDIntegrationTest extends TestCase
         $response->assertStatus(200);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_perform_validation_operations()
     {
         // Test validation on create

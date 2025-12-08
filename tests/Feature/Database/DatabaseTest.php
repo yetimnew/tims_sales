@@ -2,35 +2,28 @@
 
 namespace Tests\Feature\Database;
 
-use App\Models\User;
-use App\Models\Truck;
 use App\Models\Driver;
+use App\Models\Region;
+use App\Models\Truck;
+use App\Models\User;
 use App\Models\VehicleType;
 use App\Models\Zone;
-use App\Models\Woreda;
-use App\Models\Region;
-use App\Models\VehicleMaintenanceRecord;
-use App\Models\FuelRecord;
-use App\Models\Performance;
-use App\Models\Operation;
-use App\Models\Customer;
-use App\Models\Place;
-use App\Models\Distance;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class DatabaseTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** @test */
+    #[Test]
     public function database_connection_works()
     {
         $this->assertTrue(DB::connection()->getPdo() !== null);
     }
 
-    /** @test */
+    #[Test]
     public function all_tables_exist()
     {
         $tables = [
@@ -59,7 +52,7 @@ class DatabaseTest extends TestCase
             'model_has_permissions',
             'model_has_roles',
             'role_has_permissions',
-            'activity_log'
+            'activity_log',
         ];
 
         foreach ($tables as $table) {
@@ -67,7 +60,7 @@ class DatabaseTest extends TestCase
         }
     }
 
-    /** @test */
+    #[Test]
     public function foreign_key_constraints_work()
     {
         // Test truck -> vehicletype foreign key
@@ -89,7 +82,7 @@ class DatabaseTest extends TestCase
         $this->assertEquals($region->id, $zone->region_id);
     }
 
-    /** @test */
+    #[Test]
     public function unique_constraints_work()
     {
         // Test unique email constraint
@@ -99,7 +92,7 @@ class DatabaseTest extends TestCase
         User::factory()->create(['email' => 'test@example.com']);
     }
 
-    /** @test */
+    #[Test]
     public function soft_deletes_work()
     {
         $truck = Truck::factory()->create();
@@ -113,7 +106,7 @@ class DatabaseTest extends TestCase
         $this->assertNotNull(Truck::withTrashed()->find($truckId));
     }
 
-    /** @test */
+    #[Test]
     public function database_transactions_work()
     {
         DB::beginTransaction();
@@ -131,7 +124,7 @@ class DatabaseTest extends TestCase
         }
     }
 
-    /** @test */
+    #[Test]
     public function database_indexes_exist()
     {
         $indexes = [
@@ -141,7 +134,7 @@ class DatabaseTest extends TestCase
             'performances' => ['operation_id', 'driver_truck_id', 'DateDispach'],
             'fuel_records' => ['truck_id', 'driver_id', 'fuel_date'],
             'vehicle_maintenance_records' => ['truck_id', 'scheduled_date', 'status'],
-            'truck_financial_records' => ['truck_id', 'record_date', 'period_type']
+            'truck_financial_records' => ['truck_id', 'record_date', 'period_type'],
         ];
 
         foreach ($indexes as $table => $columns) {
@@ -152,17 +145,17 @@ class DatabaseTest extends TestCase
         }
     }
 
-    /** @test */
+    #[Test]
     public function database_triggers_work()
     {
         // Test if any triggers exist and work properly
-        $triggers = DB::select("SHOW TRIGGERS");
+        $triggers = DB::select('SHOW TRIGGERS');
 
         // This test ensures triggers can be queried
         $this->assertIsArray($triggers);
     }
 
-    /** @test */
+    #[Test]
     public function database_views_exist()
     {
         // Test if any views exist
@@ -172,79 +165,79 @@ class DatabaseTest extends TestCase
         $this->assertIsArray($views);
     }
 
-    /** @test */
+    #[Test]
     public function database_stored_procedures_exist()
     {
         // Test if any stored procedures exist
-        $procedures = DB::select("SHOW PROCEDURE STATUS");
+        $procedures = DB::select('SHOW PROCEDURE STATUS');
 
         // This test ensures stored procedures can be queried
         $this->assertIsArray($procedures);
     }
 
-    /** @test */
+    #[Test]
     public function database_functions_exist()
     {
         // Test if any functions exist
-        $functions = DB::select("SHOW FUNCTION STATUS");
+        $functions = DB::select('SHOW FUNCTION STATUS');
 
         // This test ensures functions can be queried
         $this->assertIsArray($functions);
     }
 
-    /** @test */
+    #[Test]
     public function database_events_exist()
     {
         // Test if any events exist
-        $events = DB::select("SHOW EVENTS");
+        $events = DB::select('SHOW EVENTS');
 
         // This test ensures events can be queried
         $this->assertIsArray($events);
     }
 
-    /** @test */
+    #[Test]
     public function database_character_set_is_utf8()
     {
-        $charset = DB::select("SELECT DEFAULT_CHARACTER_SET_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME = DATABASE()");
+        $charset = DB::select('SELECT DEFAULT_CHARACTER_SET_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME = DATABASE()');
 
         $this->assertEquals('utf8mb4', $charset[0]->DEFAULT_CHARACTER_SET_NAME);
     }
 
-    /** @test */
+    #[Test]
     public function database_collation_is_utf8()
     {
-        $collation = DB::select("SELECT DEFAULT_COLLATION_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME = DATABASE()");
+        $collation = DB::select('SELECT DEFAULT_COLLATION_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME = DATABASE()');
 
         $this->assertEquals('utf8mb4_unicode_ci', $collation[0]->DEFAULT_COLLATION_NAME);
     }
 
-    /** @test */
+    #[Test]
     public function database_timezone_is_set()
     {
-        $timezone = DB::select("SELECT @@time_zone as timezone");
+        $timezone = DB::select('SELECT @@time_zone as timezone');
 
         $this->assertNotEmpty($timezone[0]->timezone);
     }
 
-    /** @test */
+    #[Test]
     public function database_max_connections_is_set()
     {
-        $maxConnections = DB::select("SELECT @@max_connections as max_connections");
+        $maxConnections = DB::select('SELECT @@max_connections as max_connections');
 
         $this->assertGreaterThan(0, $maxConnections[0]->max_connections);
     }
 
-    /** @test */
+    #[Test]
     public function database_query_cache_is_enabled()
     {
         $queryCache = DB::select("SHOW VARIABLES LIKE 'query_cache_type'");
 
-        if (!empty($queryCache)) {
+        if (! empty($queryCache)) {
             $this->assertNotEmpty($queryCache[0]->Value);
         }
     }
 
-    /** @test */
+    #[Test]
     public function database_innodb_buffer_pool_size_is_set()
     {
         $bufferPoolSize = DB::select("SHOW VARIABLES LIKE 'innodb_buffer_pool_size'");
@@ -252,7 +245,7 @@ class DatabaseTest extends TestCase
         $this->assertNotEmpty($bufferPoolSize[0]->Value);
     }
 
-    /** @test */
+    #[Test]
     public function database_innodb_log_file_size_is_set()
     {
         $logFileSize = DB::select("SHOW VARIABLES LIKE 'innodb_log_file_size'");
@@ -260,7 +253,7 @@ class DatabaseTest extends TestCase
         $this->assertNotEmpty($logFileSize[0]->Value);
     }
 
-    /** @test */
+    #[Test]
     public function database_innodb_flush_log_at_trx_commit_is_set()
     {
         $flushLogAtTrxCommit = DB::select("SHOW VARIABLES LIKE 'innodb_flush_log_at_trx_commit'");
@@ -268,7 +261,7 @@ class DatabaseTest extends TestCase
         $this->assertNotEmpty($flushLogAtTrxCommit[0]->Value);
     }
 
-    /** @test */
+    #[Test]
     public function database_slow_query_log_is_enabled()
     {
         $slowQueryLog = DB::select("SHOW VARIABLES LIKE 'slow_query_log'");
@@ -276,7 +269,7 @@ class DatabaseTest extends TestCase
         $this->assertNotEmpty($slowQueryLog[0]->Value);
     }
 
-    /** @test */
+    #[Test]
     public function database_long_query_time_is_set()
     {
         $longQueryTime = DB::select("SHOW VARIABLES LIKE 'long_query_time'");
@@ -284,7 +277,7 @@ class DatabaseTest extends TestCase
         $this->assertNotEmpty($longQueryTime[0]->Value);
     }
 
-    /** @test */
+    #[Test]
     public function database_binlog_format_is_set()
     {
         $binlogFormat = DB::select("SHOW VARIABLES LIKE 'binlog_format'");
@@ -292,7 +285,7 @@ class DatabaseTest extends TestCase
         $this->assertNotEmpty($binlogFormat[0]->Value);
     }
 
-    /** @test */
+    #[Test]
     public function database_expire_logs_days_is_set()
     {
         $expireLogsDays = DB::select("SHOW VARIABLES LIKE 'expire_logs_days'");
@@ -300,7 +293,7 @@ class DatabaseTest extends TestCase
         $this->assertNotEmpty($expireLogsDays[0]->Value);
     }
 
-    /** @test */
+    #[Test]
     public function database_max_binlog_size_is_set()
     {
         $maxBinlogSize = DB::select("SHOW VARIABLES LIKE 'max_binlog_size'");
@@ -308,7 +301,7 @@ class DatabaseTest extends TestCase
         $this->assertNotEmpty($maxBinlogSize[0]->Value);
     }
 
-    /** @test */
+    #[Test]
     public function database_innodb_file_per_table_is_enabled()
     {
         $filePerTable = DB::select("SHOW VARIABLES LIKE 'innodb_file_per_table'");
@@ -316,7 +309,7 @@ class DatabaseTest extends TestCase
         $this->assertEquals('ON', $filePerTable[0]->Value);
     }
 
-    /** @test */
+    #[Test]
     public function database_innodb_flush_method_is_set()
     {
         $flushMethod = DB::select("SHOW VARIABLES LIKE 'innodb_flush_method'");
@@ -324,7 +317,7 @@ class DatabaseTest extends TestCase
         $this->assertNotEmpty($flushMethod[0]->Value);
     }
 
-    /** @test */
+    #[Test]
     public function database_innodb_io_capacity_is_set()
     {
         $ioCapacity = DB::select("SHOW VARIABLES LIKE 'innodb_io_capacity'");
@@ -332,7 +325,7 @@ class DatabaseTest extends TestCase
         $this->assertNotEmpty($ioCapacity[0]->Value);
     }
 
-    /** @test */
+    #[Test]
     public function database_innodb_read_io_threads_is_set()
     {
         $readIoThreads = DB::select("SHOW VARIABLES LIKE 'innodb_read_io_threads'");
@@ -340,7 +333,7 @@ class DatabaseTest extends TestCase
         $this->assertNotEmpty($readIoThreads[0]->Value);
     }
 
-    /** @test */
+    #[Test]
     public function database_innodb_write_io_threads_is_set()
     {
         $writeIoThreads = DB::select("SHOW VARIABLES LIKE 'innodb_write_io_threads'");
@@ -348,7 +341,7 @@ class DatabaseTest extends TestCase
         $this->assertNotEmpty($writeIoThreads[0]->Value);
     }
 
-    /** @test */
+    #[Test]
     public function database_innodb_thread_concurrency_is_set()
     {
         $threadConcurrency = DB::select("SHOW VARIABLES LIKE 'innodb_thread_concurrency'");
@@ -356,7 +349,7 @@ class DatabaseTest extends TestCase
         $this->assertNotEmpty($threadConcurrency[0]->Value);
     }
 
-    /** @test */
+    #[Test]
     public function database_innodb_lock_wait_timeout_is_set()
     {
         $lockWaitTimeout = DB::select("SHOW VARIABLES LIKE 'innodb_lock_wait_timeout'");
@@ -364,7 +357,7 @@ class DatabaseTest extends TestCase
         $this->assertNotEmpty($lockWaitTimeout[0]->Value);
     }
 
-    /** @test */
+    #[Test]
     public function database_innodb_deadlock_detect_is_enabled()
     {
         $deadlockDetect = DB::select("SHOW VARIABLES LIKE 'innodb_deadlock_detect'");
@@ -372,7 +365,7 @@ class DatabaseTest extends TestCase
         $this->assertEquals('ON', $deadlockDetect[0]->Value);
     }
 
-    /** @test */
+    #[Test]
     public function database_innodb_print_all_deadlocks_is_set()
     {
         $printAllDeadlocks = DB::select("SHOW VARIABLES LIKE 'innodb_print_all_deadlocks'");
@@ -380,7 +373,7 @@ class DatabaseTest extends TestCase
         $this->assertNotEmpty($printAllDeadlocks[0]->Value);
     }
 
-    /** @test */
+    #[Test]
     public function database_innodb_rollback_on_timeout_is_set()
     {
         $rollbackOnTimeout = DB::select("SHOW VARIABLES LIKE 'innodb_rollback_on_timeout'");
@@ -388,7 +381,7 @@ class DatabaseTest extends TestCase
         $this->assertNotEmpty($rollbackOnTimeout[0]->Value);
     }
 
-    /** @test */
+    #[Test]
     public function database_innodb_status_output_is_set()
     {
         $statusOutput = DB::select("SHOW VARIABLES LIKE 'innodb_status_output'");
@@ -396,7 +389,7 @@ class DatabaseTest extends TestCase
         $this->assertNotEmpty($statusOutput[0]->Value);
     }
 
-    /** @test */
+    #[Test]
     public function database_innodb_status_output_locks_is_set()
     {
         $statusOutputLocks = DB::select("SHOW VARIABLES LIKE 'innodb_status_output_locks'");
@@ -404,7 +397,7 @@ class DatabaseTest extends TestCase
         $this->assertNotEmpty($statusOutputLocks[0]->Value);
     }
 
-    /** @test */
+    #[Test]
     public function database_innodb_buffer_pool_instances_is_set()
     {
         $bufferPoolInstances = DB::select("SHOW VARIABLES LIKE 'innodb_buffer_pool_instances'");
@@ -412,7 +405,7 @@ class DatabaseTest extends TestCase
         $this->assertNotEmpty($bufferPoolInstances[0]->Value);
     }
 
-    /** @test */
+    #[Test]
     public function database_innodb_old_blocks_time_is_set()
     {
         $oldBlocksTime = DB::select("SHOW VARIABLES LIKE 'innodb_old_blocks_time'");
@@ -420,7 +413,7 @@ class DatabaseTest extends TestCase
         $this->assertNotEmpty($oldBlocksTime[0]->Value);
     }
 
-    /** @test */
+    #[Test]
     public function database_innodb_old_blocks_pct_is_set()
     {
         $oldBlocksPct = DB::select("SHOW VARIABLES LIKE 'innodb_old_blocks_pct'");
@@ -428,7 +421,7 @@ class DatabaseTest extends TestCase
         $this->assertNotEmpty($oldBlocksPct[0]->Value);
     }
 
-    /** @test */
+    #[Test]
     public function database_innodb_change_buffering_is_set()
     {
         $changeBuffering = DB::select("SHOW VARIABLES LIKE 'innodb_change_buffering'");
@@ -436,7 +429,7 @@ class DatabaseTest extends TestCase
         $this->assertNotEmpty($changeBuffering[0]->Value);
     }
 
-    /** @test */
+    #[Test]
     public function database_innodb_change_buffer_max_size_is_set()
     {
         $changeBufferMaxSize = DB::select("SHOW VARIABLES LIKE 'innodb_change_buffer_max_size'");
@@ -444,7 +437,7 @@ class DatabaseTest extends TestCase
         $this->assertNotEmpty($changeBufferMaxSize[0]->Value);
     }
 
-    /** @test */
+    #[Test]
     public function database_innodb_adaptive_flushing_is_enabled()
     {
         $adaptiveFlushing = DB::select("SHOW VARIABLES LIKE 'innodb_adaptive_flushing'");
@@ -452,7 +445,7 @@ class DatabaseTest extends TestCase
         $this->assertEquals('ON', $adaptiveFlushing[0]->Value);
     }
 
-    /** @test */
+    #[Test]
     public function database_innodb_adaptive_flushing_lwm_is_set()
     {
         $adaptiveFlushingLwm = DB::select("SHOW VARIABLES LIKE 'innodb_adaptive_flushing_lwm'");
@@ -460,7 +453,7 @@ class DatabaseTest extends TestCase
         $this->assertNotEmpty($adaptiveFlushingLwm[0]->Value);
     }
 
-    /** @test */
+    #[Test]
     public function database_innodb_flush_neighbors_is_set()
     {
         $flushNeighbors = DB::select("SHOW VARIABLES LIKE 'innodb_flush_neighbors'");
@@ -468,7 +461,7 @@ class DatabaseTest extends TestCase
         $this->assertNotEmpty($flushNeighbors[0]->Value);
     }
 
-    /** @test */
+    #[Test]
     public function database_innodb_random_read_ahead_is_enabled()
     {
         $randomReadAhead = DB::select("SHOW VARIABLES LIKE 'innodb_random_read_ahead'");
@@ -476,7 +469,7 @@ class DatabaseTest extends TestCase
         $this->assertEquals('OFF', $randomReadAhead[0]->Value);
     }
 
-    /** @test */
+    #[Test]
     public function database_innodb_read_ahead_threshold_is_set()
     {
         $readAheadThreshold = DB::select("SHOW VARIABLES LIKE 'innodb_read_ahead_threshold'");
@@ -484,7 +477,7 @@ class DatabaseTest extends TestCase
         $this->assertNotEmpty($readAheadThreshold[0]->Value);
     }
 
-    /** @test */
+    #[Test]
     public function database_innodb_use_native_aio_is_enabled()
     {
         $useNativeAio = DB::select("SHOW VARIABLES LIKE 'innodb_use_native_aio'");
@@ -492,7 +485,7 @@ class DatabaseTest extends TestCase
         $this->assertEquals('ON', $useNativeAio[0]->Value);
     }
 
-    /** @test */
+    #[Test]
     public function database_innodb_io_capacity_max_is_set()
     {
         $ioCapacityMax = DB::select("SHOW VARIABLES LIKE 'innodb_io_capacity_max'");
@@ -500,7 +493,7 @@ class DatabaseTest extends TestCase
         $this->assertNotEmpty($ioCapacityMax[0]->Value);
     }
 
-    /** @test */
+    #[Test]
     public function database_innodb_lru_scan_depth_is_set()
     {
         $lruScanDepth = DB::select("SHOW VARIABLES LIKE 'innodb_lru_scan_depth'");
@@ -508,7 +501,7 @@ class DatabaseTest extends TestCase
         $this->assertNotEmpty($lruScanDepth[0]->Value);
     }
 
-    /** @test */
+    #[Test]
     public function database_innodb_checksum_algorithm_is_set()
     {
         $checksumAlgorithm = DB::select("SHOW VARIABLES LIKE 'innodb_checksum_algorithm'");
@@ -516,7 +509,7 @@ class DatabaseTest extends TestCase
         $this->assertNotEmpty($checksumAlgorithm[0]->Value);
     }
 
-    /** @test */
+    #[Test]
     public function database_innodb_log_checksums_is_enabled()
     {
         $logChecksums = DB::select("SHOW VARIABLES LIKE 'innodb_log_checksums'");
@@ -524,7 +517,7 @@ class DatabaseTest extends TestCase
         $this->assertEquals('ON', $logChecksums[0]->Value);
     }
 
-    /** @test */
+    #[Test]
     public function database_innodb_fast_shutdown_is_set()
     {
         $fastShutdown = DB::select("SHOW VARIABLES LIKE 'innodb_fast_shutdown'");
@@ -532,7 +525,7 @@ class DatabaseTest extends TestCase
         $this->assertNotEmpty($fastShutdown[0]->Value);
     }
 
-    /** @test */
+    #[Test]
     public function database_innodb_force_recovery_is_set()
     {
         $forceRecovery = DB::select("SHOW VARIABLES LIKE 'innodb_force_recovery'");
@@ -540,7 +533,7 @@ class DatabaseTest extends TestCase
         $this->assertEquals('0', $forceRecovery[0]->Value);
     }
 
-    /** @test */
+    #[Test]
     public function database_innodb_compression_level_is_set()
     {
         $compressionLevel = DB::select("SHOW VARIABLES LIKE 'innodb_compression_level'");
@@ -548,7 +541,7 @@ class DatabaseTest extends TestCase
         $this->assertNotEmpty($compressionLevel[0]->Value);
     }
 
-    /** @test */
+    #[Test]
     public function database_innodb_compression_failure_threshold_pct_is_set()
     {
         $compressionFailureThresholdPct = DB::select("SHOW VARIABLES LIKE 'innodb_compression_failure_threshold_pct'");
@@ -556,7 +549,7 @@ class DatabaseTest extends TestCase
         $this->assertNotEmpty($compressionFailureThresholdPct[0]->Value);
     }
 
-    /** @test */
+    #[Test]
     public function database_innodb_compression_pad_pct_max_is_set()
     {
         $compressionPadPctMax = DB::select("SHOW VARIABLES LIKE 'innodb_compression_pad_pct_max'");
@@ -564,7 +557,7 @@ class DatabaseTest extends TestCase
         $this->assertNotEmpty($compressionPadPctMax[0]->Value);
     }
 
-    /** @test */
+    #[Test]
     public function database_innodb_compression_algorithm_is_set()
     {
         $compressionAlgorithm = DB::select("SHOW VARIABLES LIKE 'innodb_compression_algorithm'");

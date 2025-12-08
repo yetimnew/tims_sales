@@ -6,6 +6,7 @@ use App\Models\NotificationType;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
+use PHPUnit\Framework\Attributes\Test;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -21,7 +22,7 @@ class UserNotificationPreferencesTest extends TestCase
         config(['broadcasting.default' => 'log']);
     }
 
-    /** @test */
+    #[Test]
     public function it_assigns_notification_preferences_for_non_admin_user(): void
     {
         $admin = User::factory()->create();
@@ -72,7 +73,7 @@ class UserNotificationPreferencesTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function it_ignores_notification_preferences_without_enabled_channels(): void
     {
         $admin = User::factory()->create();
@@ -119,7 +120,7 @@ class UserNotificationPreferencesTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function it_assigns_all_notifications_when_the_new_user_role_is_admin(): void
     {
         $admin = User::factory()->create();

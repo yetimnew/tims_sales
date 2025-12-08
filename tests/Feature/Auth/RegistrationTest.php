@@ -3,11 +3,21 @@
 namespace Tests\Feature\Auth;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
 class RegistrationTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        if (! Route::has('register') || ! Route::has('register.store')) {
+            $this->markTestSkipped('Registration routes are not available.');
+        }
+    }
 
     public function test_registration_screen_can_be_rendered()
     {

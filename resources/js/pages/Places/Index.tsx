@@ -277,7 +277,10 @@ export default function PlacesIndex({ places, metrics, filters, statusOptions, p
         setPerPage(String(resolvedPerPage));
     }, [resolvedPerPage]);
 
-    const placeData = places?.data ?? [];
+    const placeData = React.useMemo(() => {
+        const records = places?.data;
+        return Array.isArray(records) ? records : [];
+    }, [places?.data]);
     const totalRecords = places?.total ?? placeData.length ?? 0;
     const hubCount = metrics?.hubCount ?? 0;
     const totalPopulation = metrics?.totalPopulation ?? 0;

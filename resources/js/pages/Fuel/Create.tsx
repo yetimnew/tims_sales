@@ -14,7 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { DatePicker } from '@/components/ui/date-picker';
-import { Fuel, Truck, User, Calendar, GaugeCircle, AlertCircle, Save, ArrowUp, Receipt, NotepadText, Calculator, ArrowLeft } from 'lucide-react';
+import { Fuel, Truck, User, GaugeCircle, AlertCircle, Save, ArrowUp, Receipt, NotepadText, Calculator, ArrowLeft } from 'lucide-react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {

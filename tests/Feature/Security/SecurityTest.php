@@ -6,6 +6,7 @@ use App\Models\Truck;
 use App\Models\User;
 use Database\Seeders\CheckPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -29,7 +30,7 @@ class SecurityTest extends TestCase
         return $user;
     }
 
-    /** @test */
+    #[Test]
     public function it_prevents_unauthorized_access()
     {
         $truck = Truck::factory()->create();
@@ -44,7 +45,7 @@ class SecurityTest extends TestCase
         $response->assertRedirect('/login');
     }
 
-    /** @test */
+    #[Test]
     public function it_prevents_access_without_permissions()
     {
         $userWithoutPermission = $this->createUser();
@@ -66,7 +67,7 @@ class SecurityTest extends TestCase
         $response->assertStatus(403);
     }
 
-    /** @test */
+    #[Test]
     public function it_prevents_cross_user_data_access()
     {
         $user1 = $this->createUser();
@@ -101,7 +102,7 @@ class SecurityTest extends TestCase
         $response2->assertStatus(200);
     }
 
-    /** @test */
+    #[Test]
     public function it_prevents_sql_injection_attacks()
     {
         $user = $this->createUser();
@@ -125,7 +126,7 @@ class SecurityTest extends TestCase
         $this->assertGreaterThan(0, Truck::count());
     }
 
-    /** @test */
+    #[Test]
     public function it_prevents_xss_attacks()
     {
         $user = $this->createUser();
@@ -154,7 +155,7 @@ class SecurityTest extends TestCase
         $this->assertDatabaseHas('trucks', ['plate' => $xssPayload]);
     }
 
-    /** @test */
+    #[Test]
     public function it_prevents_csrf_attacks()
     {
         $user = $this->createUser();
@@ -184,7 +185,7 @@ class SecurityTest extends TestCase
         $this->assertDatabaseHas('trucks', ['plate' => 'CSRF-TEST']);
     }
 
-    /** @test */
+    #[Test]
     public function it_prevents_mass_assignment_attacks()
     {
         $user = $this->createUser();
@@ -217,7 +218,7 @@ class SecurityTest extends TestCase
         $this->assertNotEquals('2020-01-01', $truck->created_at->format('Y-m-d'));
     }
 
-    /** @test */
+    #[Test]
     public function it_prevents_directory_traversal_attacks()
     {
         $user = $this->createUser();
@@ -230,7 +231,7 @@ class SecurityTest extends TestCase
         $response->assertNotFound();
     }
 
-    /** @test */
+    #[Test]
     public function it_prevents_file_upload_attacks()
     {
         $user = $this->createUser();
@@ -261,7 +262,7 @@ class SecurityTest extends TestCase
         $this->assertDatabaseHas('trucks', ['description' => $maliciousFile]);
     }
 
-    /** @test */
+    #[Test]
     public function it_prevents_brute_force_attacks()
     {
         // Test login rate limiting
@@ -283,7 +284,7 @@ class SecurityTest extends TestCase
         $response->assertSessionHasErrors('email');
     }
 
-    /** @test */
+    #[Test]
     public function it_prevents_session_fixation()
     {
         $user = $this->createUser();
@@ -299,7 +300,7 @@ class SecurityTest extends TestCase
         $this->assertTrue($this->app['session']->has('login_web_'.sha1('App\Models\User')));
     }
 
-    /** @test */
+    #[Test]
     public function it_prevents_clickjacking()
     {
         $user = $this->createUser();
@@ -320,7 +321,7 @@ class SecurityTest extends TestCase
         $response->assertHeader('X-Frame-Options', 'SAMEORIGIN');
     }
 
-    /** @test */
+    #[Test]
     public function it_prevents_information_disclosure()
     {
         $truck = Truck::factory()->create();
@@ -338,7 +339,7 @@ class SecurityTest extends TestCase
         $response->assertSessionHasErrors('email');
     }
 
-    /** @test */
+    #[Test]
     public function it_prevents_http_parameter_pollution()
     {
         $user = $this->createUser();
@@ -363,7 +364,7 @@ class SecurityTest extends TestCase
         $this->assertStringNotContainsString('test', $response->getContent());
     }
 
-    /** @test */
+    #[Test]
     public function it_prevents_open_redirect_attacks()
     {
         $user = $this->createUser();
@@ -386,7 +387,7 @@ class SecurityTest extends TestCase
         $this->assertStringNotContainsString($maliciousRedirect, $response->getContent());
     }
 
-    /** @test */
+    #[Test]
     public function it_prevents_timing_attacks()
     {
         $user = $this->createUser();
@@ -412,7 +413,7 @@ class SecurityTest extends TestCase
         $this->assertGreaterThan(0.001, $responseTime);
     }
 
-    /** @test */
+    #[Test]
     public function it_prevents_ldap_injection()
     {
         $user = $this->createUser();
@@ -435,7 +436,7 @@ class SecurityTest extends TestCase
         $this->assertStringNotContainsString('objectClass', $response->getContent());
     }
 
-    /** @test */
+    #[Test]
     public function it_prevents_command_injection()
     {
         $user = $this->createUser();
@@ -464,7 +465,7 @@ class SecurityTest extends TestCase
         $this->assertDatabaseHas('trucks', ['plate' => $commandPayload]);
     }
 
-    /** @test */
+    #[Test]
     public function it_prevents_xml_external_entity_attacks()
     {
         $user = $this->createUser();
@@ -487,7 +488,7 @@ class SecurityTest extends TestCase
         $this->assertStringNotContainsString('root:', $response->getContent());
     }
 
-    /** @test */
+    #[Test]
     public function it_prevents_server_side_request_forgery()
     {
         $user = $this->createUser();

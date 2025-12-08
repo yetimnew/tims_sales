@@ -3,12 +3,12 @@
 namespace Tests\Unit;
 
 use App\Http\Requests\StoreUserRequest;
-use App\Http\Requests\UpdateUserRequest;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules\Password;
+use PHPUnit\Framework\Attributes\Test;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -26,10 +26,10 @@ class UserManagementTest extends TestCase
         Role::create(['name' => 'user', 'guard_name' => 'web']);
     }
 
-    /** @test */
+    #[Test]
     public function it_validates_user_creation_required_fields()
     {
-        $request = new StoreUserRequest();
+        $request = new StoreUserRequest;
 
         $validator = Validator::make([], [
             'name' => 'required|string|max:255',
@@ -45,7 +45,7 @@ class UserManagementTest extends TestCase
         $this->assertArrayHasKey('role', $validator->errors()->toArray());
     }
 
-    /** @test */
+    #[Test]
     public function it_validates_user_creation_with_valid_data()
     {
         $data = [
@@ -65,7 +65,7 @@ class UserManagementTest extends TestCase
                 Password::min(8)
                     ->mixedCase()
                     ->numbers()
-                    ->symbols()
+                    ->symbols(),
             ],
             'role' => 'required|string|exists:roles,name',
         ]);
@@ -73,7 +73,7 @@ class UserManagementTest extends TestCase
         $this->assertFalse($validator->fails());
     }
 
-    /** @test */
+    #[Test]
     public function it_validates_email_uniqueness()
     {
         User::factory()->create(['email' => 'existing@example.com']);
@@ -96,7 +96,7 @@ class UserManagementTest extends TestCase
                     ->mixedCase()
                     ->numbers()
                     ->symbols()
-                    ->uncompromised()
+                    ->uncompromised(),
             ],
             'role' => 'required|string|exists:roles,name',
         ]);
@@ -105,7 +105,7 @@ class UserManagementTest extends TestCase
         $this->assertArrayHasKey('email', $validator->errors()->toArray());
     }
 
-    /** @test */
+    #[Test]
     public function it_validates_password_minimum_length()
     {
         $data = [
@@ -126,7 +126,7 @@ class UserManagementTest extends TestCase
                     ->mixedCase()
                     ->numbers()
                     ->symbols()
-                    ->uncompromised()
+                    ->uncompromised(),
             ],
             'role' => 'required|string|exists:roles,name',
         ]);
@@ -135,7 +135,7 @@ class UserManagementTest extends TestCase
         $this->assertArrayHasKey('password', $validator->errors()->toArray());
     }
 
-    /** @test */
+    #[Test]
     public function it_validates_password_confirmation()
     {
         $data = [
@@ -156,7 +156,7 @@ class UserManagementTest extends TestCase
                     ->mixedCase()
                     ->numbers()
                     ->symbols()
-                    ->uncompromised()
+                    ->uncompromised(),
             ],
             'role' => 'required|string|exists:roles,name',
         ]);
@@ -165,7 +165,7 @@ class UserManagementTest extends TestCase
         $this->assertArrayHasKey('password', $validator->errors()->toArray());
     }
 
-    /** @test */
+    #[Test]
     public function it_requires_mixed_case_password()
     {
         $data = [
@@ -186,7 +186,7 @@ class UserManagementTest extends TestCase
                     ->mixedCase()
                     ->numbers()
                     ->symbols()
-                    ->uncompromised()
+                    ->uncompromised(),
             ],
             'role' => 'required|string|exists:roles,name',
         ]);
@@ -195,7 +195,7 @@ class UserManagementTest extends TestCase
         $this->assertArrayHasKey('password', $validator->errors()->toArray());
     }
 
-    /** @test */
+    #[Test]
     public function it_requires_numbers_in_password()
     {
         $data = [
@@ -216,7 +216,7 @@ class UserManagementTest extends TestCase
                     ->mixedCase()
                     ->numbers()
                     ->symbols()
-                    ->uncompromised()
+                    ->uncompromised(),
             ],
             'role' => 'required|string|exists:roles,name',
         ]);
@@ -225,7 +225,7 @@ class UserManagementTest extends TestCase
         $this->assertArrayHasKey('password', $validator->errors()->toArray());
     }
 
-    /** @test */
+    #[Test]
     public function it_requires_symbols_in_password()
     {
         $data = [
@@ -246,7 +246,7 @@ class UserManagementTest extends TestCase
                     ->mixedCase()
                     ->numbers()
                     ->symbols()
-                    ->uncompromised()
+                    ->uncompromised(),
             ],
             'role' => 'required|string|exists:roles,name',
         ]);
@@ -255,7 +255,7 @@ class UserManagementTest extends TestCase
         $this->assertArrayHasKey('password', $validator->errors()->toArray());
     }
 
-    /** @test */
+    #[Test]
     public function it_validates_role_exists()
     {
         $data = [
@@ -276,7 +276,7 @@ class UserManagementTest extends TestCase
                     ->mixedCase()
                     ->numbers()
                     ->symbols()
-                    ->uncompromised()
+                    ->uncompromised(),
             ],
             'role' => 'required|string|exists:roles,name',
         ]);
@@ -285,7 +285,7 @@ class UserManagementTest extends TestCase
         $this->assertArrayHasKey('role', $validator->errors()->toArray());
     }
 
-    /** @test */
+    #[Test]
     public function it_validates_user_update_with_valid_data()
     {
         $user = User::factory()->create();
@@ -300,14 +300,14 @@ class UserManagementTest extends TestCase
 
         $validator = Validator::make($data, [
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
+            'email' => 'required|string|email|max:255|unique:users,email,'.$user->id,
             'password' => [
                 'nullable',
                 'confirmed',
                 Password::min(8)
                     ->mixedCase()
                     ->numbers()
-                    ->symbols()
+                    ->symbols(),
             ],
             'role' => 'required|string|exists:roles,name',
         ]);
@@ -315,7 +315,7 @@ class UserManagementTest extends TestCase
         $this->assertFalse($validator->fails());
     }
 
-    /** @test */
+    #[Test]
     public function it_validates_user_update_without_password()
     {
         $user = User::factory()->create();
@@ -328,7 +328,7 @@ class UserManagementTest extends TestCase
 
         $validator = Validator::make($data, [
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
+            'email' => 'required|string|email|max:255|unique:users,email,'.$user->id,
             'password' => 'nullable|string|min:8|confirmed',
             'role' => 'required|string|exists:roles,name',
         ]);
@@ -336,7 +336,7 @@ class UserManagementTest extends TestCase
         $this->assertFalse($validator->fails());
     }
 
-    /** @test */
+    #[Test]
     public function it_hashes_password_correctly()
     {
         $password = 'password123';
@@ -346,7 +346,7 @@ class UserManagementTest extends TestCase
         $this->assertTrue(Hash::check($password, $hashedPassword));
     }
 
-    /** @test */
+    #[Test]
     public function it_assigns_role_to_user()
     {
         $user = User::factory()->create();
@@ -358,7 +358,7 @@ class UserManagementTest extends TestCase
         $this->assertTrue($user->hasRole($role));
     }
 
-    /** @test */
+    #[Test]
     public function it_syncs_user_roles()
     {
         $user = User::factory()->create();
@@ -375,7 +375,7 @@ class UserManagementTest extends TestCase
         $this->assertTrue($user->hasRole('manager'));
     }
 
-    /** @test */
+    #[Test]
     public function it_prevents_user_from_deleting_themselves()
     {
         $user = User::factory()->create();
@@ -383,7 +383,7 @@ class UserManagementTest extends TestCase
         $this->assertTrue($user->id === $user->id); // This would be the check in the controller
     }
 
-    /** @test */
+    #[Test]
     public function it_gets_user_roles_correctly()
     {
         $user = User::factory()->create();
@@ -395,4 +395,3 @@ class UserManagementTest extends TestCase
         $this->assertEquals('user', $user->roles->first()->name);
     }
 }
-

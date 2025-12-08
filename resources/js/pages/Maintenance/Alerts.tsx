@@ -5,7 +5,6 @@ import { type BreadcrumbItem } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertTriangle, ArrowUpRight, CalendarClock, Clock3, Filter, RefreshCcw, Wrench } from 'lucide-react';
@@ -66,7 +65,7 @@ const formatDate = (value: string | null) => {
     try {
         const date = new Date(value);
         return new Intl.DateTimeFormat(undefined, { year: 'numeric', month: 'short', day: 'numeric' }).format(date);
-    } catch (error) {
+    } catch {
         return value;
     }
 };

@@ -84,12 +84,17 @@ export default function OutsourcePerformance({ filters, rows = [], summary, opti
     const { hasPermission } = usePermissions();
     const canExport = hasPermission('reports.outsource-performance.export');
 
-    const vendorOptions = Array.isArray(options?.vendors) ? options.vendors : [];
-    const operationOptions = Array.isArray(options?.operations) ? options.operations : [];
-    const destinationOptions = Array.isArray(options?.destinations) ? options.destinations : [];
-    const statusOptions = Array.isArray(options?.statuses) ? options.statuses : [];
+    const vendorSource = options?.vendors;
+    const operationSource = options?.operations;
+    const destinationSource = options?.destinations;
+    const statusSource = options?.statuses;
 
-    const safeRows = Array.isArray(rows) ? rows : [];
+    const vendorOptions = useMemo<VendorOption[]>(() => (Array.isArray(vendorSource) ? vendorSource : []), [vendorSource]);
+    const operationOptions = useMemo<OperationOption[]>(() => (Array.isArray(operationSource) ? operationSource : []), [operationSource]);
+    const destinationOptions = useMemo<DestinationOption[]>(() => (Array.isArray(destinationSource) ? destinationSource : []), [destinationSource]);
+    const statusOptions = useMemo<StatusOption[]>(() => (Array.isArray(statusSource) ? statusSource : []), [statusSource]);
+
+    const safeRows = useMemo<ReportDispatchRow[]>(() => (Array.isArray(rows) ? rows : []), [rows]);
 
     const vendorSelectionOptions = useMemo<ReportSelectionOption[]>(
         () =>

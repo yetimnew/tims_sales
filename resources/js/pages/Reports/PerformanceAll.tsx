@@ -25,9 +25,9 @@ interface OperationOption {
     customer?: string | null;
 }
 
-interface DestinationOption extends OptionBase {}
+type DestinationOption = OptionBase;
 
-interface DriverOption extends OptionBase {}
+type DriverOption = OptionBase;
 
 interface TruckOption extends OptionBase {
     plate: string;
@@ -68,12 +68,17 @@ const toParamsArray = (key: string, values: Array<number | string>, params: URLS
 export default function PerformanceAll({ filters, rows = [], summary, options }: PerformanceAllProps) {
     const { hasPermission } = usePermissions();
     const canExport = hasPermission('reports.performance-all.export');
-    const driverOptions = Array.isArray(options?.drivers) ? options.drivers : [];
-    const truckOptions = Array.isArray(options?.trucks) ? options.trucks : [];
-    const operationOptions = Array.isArray(options?.operations) ? options.operations : [];
-    const destinationOptions = Array.isArray(options?.destinations) ? options.destinations : [];
+    const driverSource = options?.drivers;
+    const truckSource = options?.trucks;
+    const operationSource = options?.operations;
+    const destinationSource = options?.destinations;
 
-    const safeRows = Array.isArray(rows) ? rows : [];
+    const driverOptions = useMemo<DriverOption[]>(() => (Array.isArray(driverSource) ? driverSource : []), [driverSource]);
+    const truckOptions = useMemo<TruckOption[]>(() => (Array.isArray(truckSource) ? truckSource : []), [truckSource]);
+    const operationOptions = useMemo<OperationOption[]>(() => (Array.isArray(operationSource) ? operationSource : []), [operationSource]);
+    const destinationOptions = useMemo<DestinationOption[]>(() => (Array.isArray(destinationSource) ? destinationSource : []), [destinationSource]);
+
+    const safeRows = useMemo<ReportDispatchRow[]>(() => (Array.isArray(rows) ? rows : []), [rows]);
 
     const driverSelectionOptions = useMemo<ReportSelectionOption[]>(
         () =>

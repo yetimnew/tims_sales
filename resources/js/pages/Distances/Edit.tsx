@@ -1,6 +1,4 @@
-import { useState } from 'react'
 import { useForm } from '@inertiajs/react'
-import { route } from 'ziggy-js'
 import { ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -38,36 +36,6 @@ export default function DistancesEdit({ distance, places }: DistancesEditProps) 
     distance_km: distance.distance_km.toString(),
     estimated_time_hours: distance.estimated_time_hours.toString(),
   })
-
-  const validateField = (field: string, value: string) => {
-    const fieldErrors: { [key: string]: string } = {}
-
-    switch (field) {
-      case 'from_place_id':
-        if (!value) fieldErrors.from_place_id = 'From place is required'
-        break
-      case 'to_place_id':
-        if (!value) fieldErrors.to_place_id = 'To place is required'
-        if (value && value === data.from_place_id) {
-          fieldErrors.to_place_id = 'To place must be different from from place'
-        }
-        break
-      case 'distance_km':
-        if (!value) fieldErrors.distance_km = 'Distance is required'
-        else if (isNaN(Number(value)) || Number(value) <= 0) {
-          fieldErrors.distance_km = 'Distance must be a positive number'
-        }
-        break
-      case 'estimated_time_hours':
-        if (!value) fieldErrors.estimated_time_hours = 'Estimated time is required'
-        else if (isNaN(Number(value)) || Number(value) <= 0) {
-          fieldErrors.estimated_time_hours = 'Estimated time must be a positive number'
-        }
-        break
-    }
-
-    return fieldErrors
-  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()

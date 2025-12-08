@@ -12,7 +12,7 @@ import { validateVehicleType } from '@/lib/validation';
 import { type BreadcrumbItem } from '@/types';
 import { Link, useForm } from '@inertiajs/react';
 import { ArrowLeft, CheckCircle, Info, Package, Save } from 'lucide-react';
-import { type FormEventHandler, useEffect, useMemo, useRef, useState } from 'react';
+import { type FormEventHandler, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 interface VehicleType {
     id: number;
@@ -123,17 +123,17 @@ export default function VehicleTypesEdit({ vehicleType }: VehicleTypesEditProps)
         });
     };
 
-    const getFieldError = (field: VehicleTypeFormField): string => {
+    const getFieldError = useCallback((field: VehicleTypeFormField): string => {
         const backendError = errors[field];
         if (backendError) {
             return typeof backendError === 'string' ? backendError : String(backendError);
         }
 
         return frontendErrors[field] ?? '';
-    };
+    }, [errors, frontendErrors]);
 
-    const nameError = useMemo(() => getFieldError('name'), [errors, frontendErrors, data.name]);
-    const descriptionError = useMemo(() => getFieldError('description'), [errors, frontendErrors, data.description]);
+    const nameError = useMemo(() => getFieldError('name'), [getFieldError]);
+    const descriptionError = useMemo(() => getFieldError('description'), [getFieldError]);
     const hasErrors = Boolean(nameError || descriptionError);
 
     return (

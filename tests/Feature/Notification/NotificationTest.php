@@ -7,6 +7,7 @@ use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class NotificationTest extends TestCase
@@ -42,7 +43,7 @@ class NotificationTest extends TestCase
         Notification::fake();
     }
 
-    /** @test */
+    #[Test]
     public function user_can_receive_notifications()
     {
         $user = User::factory()->create();
@@ -52,7 +53,7 @@ class NotificationTest extends TestCase
         Notification::assertSentTo($user, \App\Notifications\TestNotification::class);
     }
 
-    /** @test */
+    #[Test]
     public function user_can_mark_notification_as_read()
     {
         $user = User::factory()->create();
@@ -69,7 +70,7 @@ class NotificationTest extends TestCase
         $this->assertNotNull($notification->fresh()->read_at);
     }
 
-    /** @test */
+    #[Test]
     public function user_can_mark_all_notifications_as_read()
     {
         $user = User::factory()->create();
@@ -91,7 +92,7 @@ class NotificationTest extends TestCase
         $this->assertEquals(2, $user->fresh()->unreadNotifications->count());
     }
 
-    /** @test */
+    #[Test]
     public function user_can_delete_notification()
     {
         $user = User::factory()->create();
@@ -107,7 +108,7 @@ class NotificationTest extends TestCase
         $this->assertDatabaseMissing('notifications', ['id' => $notification->id]);
     }
 
-    /** @test */
+    #[Test]
     public function user_can_delete_all_notifications()
     {
         $user = User::factory()->create();
@@ -127,7 +128,7 @@ class NotificationTest extends TestCase
         $this->assertEquals(0, $user->fresh()->notifications->count());
     }
 
-    /** @test */
+    #[Test]
     public function user_can_view_notifications()
     {
         $user = User::factory()->create();
@@ -146,7 +147,7 @@ class NotificationTest extends TestCase
         );
     }
 
-    /** @test */
+    #[Test]
     public function user_can_filter_notifications_by_type()
     {
         $user = User::factory()->create();
@@ -169,7 +170,7 @@ class NotificationTest extends TestCase
         );
     }
 
-    /** @test */
+    #[Test]
     public function user_can_filter_notifications_by_status()
     {
         $user = User::factory()->create();
@@ -194,7 +195,7 @@ class NotificationTest extends TestCase
         );
     }
 
-    /** @test */
+    #[Test]
     public function user_can_search_notifications()
     {
         $user = User::factory()->create();
@@ -217,7 +218,7 @@ class NotificationTest extends TestCase
         );
     }
 
-    /** @test */
+    #[Test]
     public function user_can_sort_notifications()
     {
         $user = User::factory()->create();
@@ -242,7 +243,7 @@ class NotificationTest extends TestCase
         );
     }
 
-    /** @test */
+    #[Test]
     public function user_can_paginate_notifications()
     {
         $user = User::factory()->create();
@@ -266,7 +267,7 @@ class NotificationTest extends TestCase
         );
     }
 
-    /** @test */
+    #[Test]
     public function user_can_export_notifications()
     {
         $user = User::factory()->create();
@@ -282,7 +283,7 @@ class NotificationTest extends TestCase
         $response->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
     }
 
-    /** @test */
+    #[Test]
     public function user_can_set_notification_preferences()
     {
         $user = User::factory()->create();
@@ -308,7 +309,7 @@ class NotificationTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function user_can_send_notification()
     {
         $user = User::factory()->create();
@@ -326,7 +327,7 @@ class NotificationTest extends TestCase
         Notification::assertSentTo($user, \App\Notifications\TestNotification::class);
     }
 
-    /** @test */
+    #[Test]
     public function user_can_send_bulk_notification()
     {
         $users = User::factory()->count(5)->create();
@@ -346,7 +347,7 @@ class NotificationTest extends TestCase
         }
     }
 
-    /** @test */
+    #[Test]
     public function user_can_schedule_notification()
     {
         $user = User::factory()->create();
@@ -363,7 +364,7 @@ class NotificationTest extends TestCase
         $response->assertSessionHas('success');
     }
 
-    /** @test */
+    #[Test]
     public function user_can_cancel_scheduled_notification()
     {
         $user = User::factory()->create();
@@ -385,7 +386,7 @@ class NotificationTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function user_can_view_notification_statistics()
     {
         $user = User::factory()->create();
@@ -405,7 +406,7 @@ class NotificationTest extends TestCase
         );
     }
 
-    /** @test */
+    #[Test]
     public function user_can_view_notification_templates()
     {
         $response = $this->actingAs($this->user)
@@ -418,7 +419,7 @@ class NotificationTest extends TestCase
         );
     }
 
-    /** @test */
+    #[Test]
     public function user_can_create_notification_template()
     {
         $response = $this->actingAs($this->user)
@@ -440,7 +441,7 @@ class NotificationTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function user_can_edit_notification_template()
     {
         $template = \App\Models\NotificationTemplate::create([
@@ -469,7 +470,7 @@ class NotificationTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function user_can_delete_notification_template()
     {
         $template = \App\Models\NotificationTemplate::create([
@@ -490,7 +491,7 @@ class NotificationTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function user_can_preview_notification_template()
     {
         $template = \App\Models\NotificationTemplate::create([
@@ -510,7 +511,7 @@ class NotificationTest extends TestCase
         );
     }
 
-    /** @test */
+    #[Test]
     public function user_can_test_notification_template()
     {
         $template = \App\Models\NotificationTemplate::create([
@@ -534,7 +535,7 @@ class NotificationTest extends TestCase
         );
     }
 
-    /** @test */
+    #[Test]
     public function user_can_view_notification_logs()
     {
         $response = $this->actingAs($this->user)
@@ -547,7 +548,7 @@ class NotificationTest extends TestCase
         );
     }
 
-    /** @test */
+    #[Test]
     public function user_can_export_notification_logs()
     {
         $response = $this->actingAs($this->user)
@@ -557,7 +558,7 @@ class NotificationTest extends TestCase
         $response->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
     }
 
-    /** @test */
+    #[Test]
     public function user_can_clear_notification_logs()
     {
         $response = $this->actingAs($this->user)
@@ -567,7 +568,7 @@ class NotificationTest extends TestCase
         $response->assertSessionHas('success');
     }
 
-    /** @test */
+    #[Test]
     public function user_can_view_notification_settings()
     {
         $response = $this->actingAs($this->user)
@@ -580,7 +581,7 @@ class NotificationTest extends TestCase
         );
     }
 
-    /** @test */
+    #[Test]
     public function user_can_update_notification_settings()
     {
         $response = $this->actingAs($this->user)
@@ -597,7 +598,7 @@ class NotificationTest extends TestCase
         $response->assertSessionHas('success');
     }
 
-    /** @test */
+    #[Test]
     public function user_can_view_notification_channels()
     {
         $response = $this->actingAs($this->user)
@@ -610,7 +611,7 @@ class NotificationTest extends TestCase
         );
     }
 
-    /** @test */
+    #[Test]
     public function user_can_create_notification_channel()
     {
         $response = $this->actingAs($this->user)
@@ -634,7 +635,7 @@ class NotificationTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function user_can_test_notification_channel()
     {
         $channel = \App\Models\NotificationChannel::create([
@@ -657,7 +658,7 @@ class NotificationTest extends TestCase
         $response->assertSessionHas('success');
     }
 
-    /** @test */
+    #[Test]
     public function user_can_view_notification_analytics()
     {
         $response = $this->actingAs($this->user)
@@ -670,7 +671,7 @@ class NotificationTest extends TestCase
         );
     }
 
-    /** @test */
+    #[Test]
     public function user_can_view_notification_reports()
     {
         $response = $this->actingAs($this->user)
@@ -683,7 +684,7 @@ class NotificationTest extends TestCase
         );
     }
 
-    /** @test */
+    #[Test]
     public function user_can_generate_notification_report()
     {
         $response = $this->actingAs($this->user)
@@ -697,7 +698,7 @@ class NotificationTest extends TestCase
         $response->assertSessionHas('success');
     }
 
-    /** @test */
+    #[Test]
     public function user_can_download_notification_report()
     {
         $report = \App\Models\NotificationReport::create([

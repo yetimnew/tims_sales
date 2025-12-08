@@ -1,5 +1,4 @@
 import * as React from 'react';
-import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import {
@@ -15,8 +14,6 @@ import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
 import { usePermissions } from '@/hooks/use-permissions';
 import {
-    BookOpen,
-    Folder,
     LayoutGrid,
     Truck,
     Users,
@@ -32,7 +29,6 @@ import {
     Navigation,
     Map,
     Target,
-    Calendar,
     DollarSign,
     Wrench,
     Fuel,
@@ -40,7 +36,8 @@ import {
     ClipboardCheck,
     LineChart,
     AlertTriangle,
-    Bell
+    Bell,
+    History
 } from 'lucide-react';
 import AppLogo from './app-logo';
 
@@ -66,8 +63,7 @@ const filterNavItems = (items: NavItem[], permissions: Set<string>): NavItem[] =
 };
 
 const getMainNavItems = (currentUrl: string): NavItem[] => {
-    try {
-        return [
+    return [
             {
                 title: 'Dashboard',
                 href: '/dashboard',
@@ -396,6 +392,13 @@ const getMainNavItems = (currentUrl: string): NavItem[] => {
                 ],
             },
             {
+                title: 'Activity Logs',
+                href: '/activity-logs',
+                icon: History,
+                requiredPermissions: ['activity-logs.view'],
+                isActive: currentUrl.startsWith('/activity-logs'),
+            },
+            {
                 title: 'User Management',
                 icon: Shield,
                 isActive:
@@ -431,10 +434,6 @@ const getMainNavItems = (currentUrl: string): NavItem[] => {
                 ],
             },
         ];
-    } catch (error) {
-        console.error('Error loading main nav items:', error);
-        return [];
-    }
 };
 
 // const footerNavItems: NavItem[] = [
@@ -458,37 +457,36 @@ export function AppSidebar({ className }: AppSidebarProps) {
     const { permissions } = usePermissions();
     const page = usePage();
     const currentUrl = page?.url ?? (typeof window !== 'undefined' ? window.location.pathname : '/');
-    const filteredItems = React.useMemo(
-        () => filterNavItems(getMainNavItems(currentUrl), new Set(permissions)),
-        [currentUrl, permissions],
+    const filteredItems = React.useMemo(() => {
+        try {
+            return filterNavItems(getMainNavItems(currentUrl), new Set(permissions));
+        } catch (error) {
+            console.error('Error filtering sidebar items:', error);
+            return [];
+        }
+    }, [currentUrl, permissions]);
+
+    return (
+        <Sidebar collapsible="icon" variant="inset" className={className}>
+            <SidebarHeader>
+                <SidebarMenu>
+                    <SidebarMenuItem>
+                        <SidebarMenuButton size="lg" asChild>
+                            <Link href="/dashboard" prefetch>
+                                <AppLogo />
+                            </Link>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                </SidebarMenu>
+            </SidebarHeader>
+
+            <SidebarContent>
+                <NavMain items={filteredItems} />
+            </SidebarContent>
+
+            <SidebarFooter>
+                <NavUser />
+            </SidebarFooter>
+        </Sidebar>
     );
-
-    try {
-        return (
-            <Sidebar collapsible="icon" variant="inset" className={className}>
-                <SidebarHeader>
-                    <SidebarMenu>
-                        <SidebarMenuItem>
-                            <SidebarMenuButton size="lg" asChild>
-                                <Link href="/dashboard" prefetch>
-                                    <AppLogo />
-                                </Link>
-                            </SidebarMenuButton>
-                        </SidebarMenuItem>
-                    </SidebarMenu>
-                </SidebarHeader>
-
-                <SidebarContent>
-                    <NavMain items={filteredItems} />
-                </SidebarContent>
-
-                <SidebarFooter>
-                    <NavUser />
-                </SidebarFooter>
-            </Sidebar>
-        );
-    } catch (error) {
-        console.error('Error rendering AppSidebar:', error);
-        return null;
-    }
 }

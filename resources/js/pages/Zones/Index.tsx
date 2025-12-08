@@ -221,7 +221,10 @@ export default function ZonesIndex({ zones, metrics, filters, statusOptions, per
         setPerPage(String(resolvedPerPage));
     }, [resolvedPerPage]);
 
-    const zoneData = zones?.data ?? [];
+    const zoneData = React.useMemo(() => {
+        const records = zones?.data;
+        return Array.isArray(records) ? records : [];
+    }, [zones?.data]);
     const totalRecords = metrics?.totalZones ?? zones?.total ?? zoneData.length ?? 0;
     const activeCount = metrics?.activeCount ?? 0;
     const inactiveCount = metrics?.inactiveCount ?? 0;
@@ -395,6 +398,23 @@ export default function ZonesIndex({ zones, metrics, filters, statusOptions, per
                 'Operational coverage'
             ),
             valueClassName: isLoading ? undefined : 'text-emerald-600',
+        },
+        {
+            id: 'inactive-zones',
+            label: 'Inactive Zones',
+            icon: <XCircle className="h-3.5 w-3.5 text-rose-600" />,
+            className: 'min-w-0',
+            value: isLoading ? (
+                <Skeleton className="h-3.5 w-16" aria-hidden="true" />
+            ) : (
+                formatCount(inactiveCount)
+            ),
+            description: isLoading ? (
+                <Skeleton className="h-3 w-28" aria-hidden="true" />
+            ) : (
+                'Awaiting activation'
+            ),
+            valueClassName: isLoading ? undefined : 'text-rose-600',
         },
         {
             id: 'population-reach',

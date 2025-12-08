@@ -7,6 +7,7 @@ use App\Models\User;
 use Database\Seeders\CheckPermissionSeeder;
 use Database\Seeders\ReportPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -22,7 +23,7 @@ class PermissionTest extends TestCase
         $this->seed(ReportPermissionSeeder::class);
     }
 
-    /** @test */
+    #[Test]
     public function it_seeds_default_roles_and_core_permissions()
     {
         $this->assertNotNull(Role::where('name', 'admin')->first());
@@ -35,7 +36,7 @@ class PermissionTest extends TestCase
         $this->assertTrue(Permission::where('name', 'trucks.show')->exists());
     }
 
-    /** @test */
+    #[Test]
     public function admin_role_has_all_permissions()
     {
         $admin = Role::where('name', 'admin')->firstOrFail();
@@ -46,7 +47,7 @@ class PermissionTest extends TestCase
         }
     }
 
-    /** @test */
+    #[Test]
     public function manager_role_has_all_except_destroy()
     {
         $manager = Role::where('name', 'manager')->firstOrFail();
@@ -61,7 +62,7 @@ class PermissionTest extends TestCase
         }
     }
 
-    /** @test */
+    #[Test]
     public function user_role_is_view_show_export_only()
     {
         $userRole = Role::where('name', 'user')->firstOrFail();
@@ -79,7 +80,7 @@ class PermissionTest extends TestCase
         }
     }
 
-    /** @test */
+    #[Test]
     public function it_can_assign_and_revoke_permissions_via_role()
     {
         $role = Role::create(['name' => 'custom', 'guard_name' => 'web']);
@@ -92,7 +93,7 @@ class PermissionTest extends TestCase
         $this->assertFalse($role->hasPermissionTo('trucks.create'));
     }
 
-    /** @test */
+    #[Test]
     public function a_users_effective_permissions_come_from_roles()
     {
         $user = User::factory()->create();
@@ -116,7 +117,7 @@ class PermissionTest extends TestCase
         $this->assertNotContains('trucks.destroy', $names);
     }
 
-    /** @test */
+    #[Test]
     public function unauthenticated_user_is_redirected_to_login_for_protected_pages()
     {
         $response = $this->get(route('users.index'));
@@ -124,7 +125,7 @@ class PermissionTest extends TestCase
         $response->assertRedirectContains('login');
     }
 
-    /** @test */
+    #[Test]
     public function user_without_permission_gets_403_on_truck_show()
     {
         $user = User::factory()->create();
@@ -134,7 +135,7 @@ class PermissionTest extends TestCase
         $response->assertStatus(403);
     }
 
-    /** @test */
+    #[Test]
     public function user_with_permission_can_access_truck_show()
     {
         $user = User::factory()->create();
@@ -146,7 +147,7 @@ class PermissionTest extends TestCase
         $response->assertOk();
     }
 
-    /** @test */
+    #[Test]
     public function manager_cannot_destroy_users_but_admin_can()
     {
         $target = User::factory()->create();
@@ -164,7 +165,7 @@ class PermissionTest extends TestCase
         $this->assertTrue(in_array($respAdmin->getStatusCode(), [200, 302, 204], true));
     }
 
-    /** @test */
+    #[Test]
     public function basic_users_can_only_view_users_index_and_show()
     {
         $basic = User::factory()->create();

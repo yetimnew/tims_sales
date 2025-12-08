@@ -168,7 +168,10 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
         setPerPage(String(resolvedPerPage));
     }, [resolvedPerPage]);
 
-    const assignments = driverTrucks?.data ?? [];
+    const assignments = React.useMemo(
+        () => (Array.isArray(driverTrucks?.data) ? driverTrucks.data : []),
+        [driverTrucks],
+    );
     const totalAssignments = metrics?.total ?? driverTrucks?.total ?? assignments.length ?? 0;
     const attachedAssignments = metrics?.attached ?? 0;
     const detachedAssignments = metrics?.detached ?? 0;
