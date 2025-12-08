@@ -20,6 +20,10 @@ class ShowOutsourcePerformanceTest extends TestCase
     {
         /** @var User $user */
         $user = User::factory()->create();
+        $this->givePermissions($user, [
+            'outsource-performances.view',
+            'outsource-performances.view-own',
+        ]);
 
         /** @var Outsource $outsource */
         $outsource = Outsource::factory()->create([

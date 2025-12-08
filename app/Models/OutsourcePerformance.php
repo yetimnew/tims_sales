@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -74,7 +75,12 @@ class OutsourcePerformance extends Model
     {
         return $this->belongsTo(Place::class, 'to_place_id');
     }
+
+    /**
+     * Scope a query to only include outsource performances owned by the given user.
+     */
+    public function scopeOwnedBy(Builder $query, int $userId): Builder
+    {
+        return $query->where('user_id', $userId);
+    }
 }
-
-
-

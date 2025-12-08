@@ -2,13 +2,15 @@ import AppLayout from '@/layouts/app-layout';
 import { Head, Link } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import { ActivityLogTable } from '@/components/activity-log-table';
+import { DetailHeader } from '@/components/detail/detail-header';
+import { DetailSectionCard } from '@/components/detail/detail-section-card';
+import { DetailSummaryGrid, type DetailSummaryItem } from '@/components/detail/detail-summary-grid';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
-import { Activity, ArrowLeft, CalendarClock, FileText, UserCircle } from 'lucide-react';
+import { Activity, ArrowLeft, FileText, History, UserCircle } from 'lucide-react';
 
 interface ActivityLogSubject {
     id?: number | string | null;
@@ -143,141 +145,187 @@ export default function ActivityLogsShow({ activity, related }: ActivityLogsShow
     const oldValues = activity.properties?.old ?? activity.old_values ?? null;
     const newValues = activity.properties?.new ?? activity.new_values ?? null;
 
+    const actionLabel = toActionLabel(action);
+    const occurredAt = dateFormatter.format(new Date(activity.created_at));
+    const subjectLabel = activity.subject?.label ?? activity.subject_label ?? '—';
+    const subjectType = activity.subject?.type ?? activity.subject_type_label ?? activity.subject_type ?? null;
+    const subjectId = activity.subject?.id ?? activity.subject_id ?? null;
+    const subjectHelperParts = [
+        subjectType ?? undefined,
+        subjectId !== null && subjectId !== undefined ? `ID ${subjectId}` : undefined,
+    ].filter((value): value is string => Boolean(value));
+
+    const summaryItems: DetailSummaryItem[] = [
+        {
+            key: 'occurred',
+            label: 'Occurred At',
+            value: occurredAt,
+            helper: `Entry #${activity.id}`,
+        },
+        {
+            key: 'actor',
+            label: 'Triggered By',
+            value: activity.causer?.name ?? 'System',
+            helper: activity.causer?.email ?? undefined,
+        },
+        {
+            key: 'subject',
+            label: 'Subject',
+            value: subjectLabel,
+            helper: subjectHelperParts.length ? subjectHelperParts.join(' · ') : undefined,
+        },
+        {
+            key: 'log',
+            label: 'Log Name',
+            value: activity.log_name ?? '—',
+            helper: actionLabel,
+        },
+    ];
+
+    if (activity.batch_uuid) {
+        summaryItems.push({
+            key: 'batch',
+            label: 'Batch UUID',
+            value: activity.batch_uuid,
+            helper: 'Correlates grouped changes',
+        });
+    }
+
+    const subjectIdDisplay = subjectId !== null && subjectId !== undefined ? String(subjectId) : '—';
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`Activity Log #${activity.id}`} />
-            <div className="flex flex-col gap-6 p-4">
-                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                    <div className="flex flex-col gap-2">
-                        <span className="text-sm text-muted-foreground">Audit Entry</span>
-                        <div className="flex items-center gap-3">
-                            <Badge className={cn('text-sm font-semibold capitalize', badgeClass)}>
-                                {toActionLabel(action)}
-                            </Badge>
-                            <h1 className="text-3xl font-bold">{activity.description}</h1>
+            <div className="flex min-h-0 flex-1 flex-col gap-6 p-4">
+                <DetailHeader
+                    leading={(
+                        <Button
+                            asChild
+                            variant="outline"
+                            size="sm"
+                            className="border-slate-300 hover:bg-slate-100 dark:border-slate-600 dark:hover:bg-slate-800"
+                        >
+                            <Link href="/activity-logs" className="inline-flex items-center gap-2">
+                                <ArrowLeft className="h-4 w-4" />
+                                Back to Activity Logs
+                            </Link>
+                        </Button>
+                    )}
+                    icon={<Activity className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />}
+                    title={`Log #${activity.id}`}
+                    subtitle={activity.description}
+                    actions={(
+                        <Badge className={cn('text-sm font-semibold capitalize', badgeClass)}>
+                            {actionLabel}
+                        </Badge>
+                    )}
+                />
+                <DetailSummaryGrid items={summaryItems} />
+                <DetailSectionCard
+                    title="Trigger Details"
+                    icon={<UserCircle className="h-5 w-5 text-slate-500" />}
+                    description="Understand who performed this action and the impacted subject."
+                >
+                    <dl className="grid gap-4 sm:grid-cols-2">
+                        <div className="space-y-1">
+                            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">User</span>
+                            <span className="text-sm text-foreground">{activity.causer?.name ?? 'System'}</span>
                         </div>
-                        <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-                            <span className="inline-flex items-center gap-1">
-                                <CalendarClock className="h-4 w-4" />
-                                {dateFormatter.format(new Date(activity.created_at))}
-                            </span>
-                            {activity.log_name ? (
-                                <span className="inline-flex items-center gap-1">
-                                    <FileText className="h-4 w-4" />
-                                    {activity.log_name}
-                                </span>
-                            ) : null}
-                            {activity.batch_uuid ? (
-                                <span className="inline-flex items-center gap-1">
-                                    <Activity className="h-4 w-4" />
-                                    Batch {activity.batch_uuid}
-                                </span>
-                            ) : null}
+                        {activity.causer?.email ? (
+                            <div className="space-y-1">
+                                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Email</span>
+                                <span className="text-sm text-foreground">{activity.causer.email}</span>
+                            </div>
+                        ) : null}
+                        <div className="space-y-1">
+                            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Subject</span>
+                            <span className="text-sm text-foreground">{subjectLabel}</span>
                         </div>
-                    </div>
-                    <Button asChild variant="outline" size="sm" className="self-start">
-                        <Link href="/activity-logs" className="inline-flex items-center gap-2">
-                            <ArrowLeft className="h-4 w-4" />
-                            Back to list
-                        </Link>
-                    </Button>
-                </div>
-
-                <Card className="shadow-sm">
-                    <CardHeader className="space-y-1">
-                        <CardTitle className="flex items-center gap-2 text-lg">
-                            <UserCircle className="h-5 w-5 text-slate-500" />
-                            Triggered By
-                        </CardTitle>
-                        <p className="text-sm text-muted-foreground">
-                            Understand who performed this action and how to contact them.
-                        </p>
-                    </CardHeader>
-                    <CardContent className="flex flex-col gap-3">
-                        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
-                            <div>
-                                <span className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground">User</span>
-                                <span className="text-base font-medium text-foreground">{activity.causer?.name ?? 'System'}</span>
+                        {subjectType ? (
+                            <div className="space-y-1">
+                                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Subject Type</span>
+                                <span className="text-sm text-foreground">{subjectType}</span>
                             </div>
-                            {activity.causer?.email ? (
-                                <div>
-                                    <span className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Email</span>
-                                    <span>{activity.causer.email}</span>
-                                </div>
-                            ) : null}
-                            <div>
-                                <span className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Subject</span>
-                                <span>{activity.subject?.label ?? activity.subject_label ?? '—'}</span>
-                            </div>
-                            <div>
-                                <span className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Subject Type</span>
-                                <span>{activity.subject?.type ?? activity.subject_type_label ?? activity.subject_type ?? '—'}</span>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <div className="grid gap-4 lg:grid-cols-2">
-                    <Card className="shadow-sm">
-                        <CardHeader>
-                            <CardTitle>New Values</CardTitle>
-                        </CardHeader>
-                        <CardContent>{renderKeyValueList(newValues)}</CardContent>
-                    </Card>
-                    <Card className="shadow-sm">
-                        <CardHeader>
-                            <CardTitle>Previous Values</CardTitle>
-                        </CardHeader>
-                        <CardContent>{renderKeyValueList(oldValues)}</CardContent>
-                    </Card>
-                </div>
-
-                <Card className="shadow-sm">
-                    <CardHeader>
-                        <CardTitle>Change Summary</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        {activity.changed_fields && activity.changed_fields.length > 0 ? (
-                            <div className="flex flex-wrap gap-2">
-                                {activity.changed_fields.map((field) => (
-                                    <Badge key={field} variant="outline" className="text-xs">
-                                        {field}
-                                    </Badge>
-                                ))}
-                            </div>
-                        ) : (
-                            <p className="text-sm text-muted-foreground">No specific property changes were tracked for this event.</p>
-                        )}
-                        <Separator className="my-4" />
-                        <dl className="grid gap-2 sm:grid-cols-2">
-                            <div className="flex flex-col gap-1">
-                                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Log Name</span>
-                                <span className="text-sm">{activity.log_name ?? '—'}</span>
-                            </div>
-                            <div className="flex flex-col gap-1">
+                        ) : null}
+                        {subjectId !== null && subjectId !== undefined ? (
+                            <div className="space-y-1">
                                 <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Subject Identifier</span>
-                                <span className="text-sm">{activity.subject?.id ?? activity.subject_id ?? '—'}</span>
+                                <span className="text-sm text-foreground">{subjectIdDisplay}</span>
                             </div>
-                            <div className="flex flex-col gap-1">
-                                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Event</span>
-                                <span className="text-sm capitalize">{toActionLabel(action)}</span>
-                            </div>
-                            <div className="flex flex-col gap-1">
+                        ) : null}
+                        <div className="space-y-1">
+                            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Log Name</span>
+                            <span className="text-sm text-foreground">{activity.log_name ?? '—'}</span>
+                        </div>
+                        {activity.batch_uuid ? (
+                            <div className="space-y-1">
                                 <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Batch UUID</span>
-                                <span className="text-sm">{activity.batch_uuid ?? '—'}</span>
+                                <span className="text-sm text-foreground">{activity.batch_uuid}</span>
                             </div>
-                        </dl>
-                    </CardContent>
-                </Card>
+                        ) : null}
+                    </dl>
+                </DetailSectionCard>
+                <div className="grid gap-4 lg:grid-cols-2">
+                    <DetailSectionCard
+                        title="New Values"
+                        icon={<FileText className="h-5 w-5 text-emerald-600" />}
+                        description="Properties after this activity executed."
+                    >
+                        {renderKeyValueList(newValues)}
+                    </DetailSectionCard>
+                    <DetailSectionCard
+                        title="Previous Values"
+                        icon={<History className="h-5 w-5 text-slate-500" />}
+                        description="Values recorded before this activity."
+                    >
+                        {renderKeyValueList(oldValues)}
+                    </DetailSectionCard>
+                </div>
 
-                <Card className="shadow-sm">
-                    <CardHeader>
-                        <CardTitle>Recent Activity for this Subject</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <ActivityLogTable logs={related} />
-                    </CardContent>
-                </Card>
+                <DetailSectionCard
+                    title="Change Summary"
+                    icon={<Activity className="h-5 w-5 text-indigo-600" />}
+                    description="Quick reference for the properties touched by this change."
+                >
+                    {activity.changed_fields && activity.changed_fields.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                            {activity.changed_fields.map((field) => (
+                                <Badge key={field} variant="outline" className="text-xs">
+                                    {field}
+                                </Badge>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="text-sm text-muted-foreground">No specific property changes were tracked for this event.</p>
+                    )}
+                    <Separator className="my-4" />
+                    <dl className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
+                        <div className="space-y-1">
+                            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Event</span>
+                            <span className="text-sm text-foreground">{actionLabel}</span>
+                        </div>
+                        <div className="space-y-1">
+                            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Log Name</span>
+                            <span className="text-sm text-foreground">{activity.log_name ?? '—'}</span>
+                        </div>
+                        <div className="space-y-1">
+                            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Subject Identifier</span>
+                            <span className="text-sm text-foreground">{subjectIdDisplay}</span>
+                        </div>
+                        <div className="space-y-1">
+                            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Batch UUID</span>
+                            <span className="text-sm text-foreground">{activity.batch_uuid ?? '—'}</span>
+                        </div>
+                    </dl>
+                </DetailSectionCard>
+
+                <DetailSectionCard
+                    title="Recent Activity for this Subject"
+                    icon={<Activity className="h-5 w-5 text-slate-500" />}
+                    description="Compare this change to other recent modifications."
+                >
+                    <ActivityLogTable logs={related} />
+                </DetailSectionCard>
             </div>
         </AppLayout>
     );

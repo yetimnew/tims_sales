@@ -23,7 +23,11 @@ class OutsourcePerformanceController extends Controller
      */
     public function index(Request $request): Response
     {
+        $this->authorize('viewAny', OutsourcePerformance::class);
+
         $perPageOptions = [10, 15, 25, 50];
+
+        $user = $request->user();
 
         $query = OutsourcePerformance::query()
             ->with([
@@ -31,6 +35,10 @@ class OutsourcePerformanceController extends Controller
                 'fromPlace:id,name',
                 'toPlace:id,name',
             ]);
+
+        if ($user && ! $user->can('outsource-performances.view-any')) {
+            $query->ownedBy($user->id);
+        }
 
         $search = $request->string('search')->trim()->value();
         if ($search !== '') {
@@ -149,6 +157,9 @@ class OutsourcePerformanceController extends Controller
             'statusOptions' => $statusOptions,
             'outsourceOptions' => $outsourceOptions,
             'perPageOptions' => $perPageOptions,
+            'can' => [
+                'viewOthers' => $user ? $user->can('outsource-performances.view-any') : false,
+            ],
         ]);
     }
 
@@ -157,6 +168,8 @@ class OutsourcePerformanceController extends Controller
      */
     public function create(): Response
     {
+        $this->authorize('create', OutsourcePerformance::class);
+
         $outsources = Outsource::query()
             ->select('id', 'name')
             ->orderBy('name')
@@ -191,6 +204,8 @@ class OutsourcePerformanceController extends Controller
      */
     public function store(Request $request)
     {
+        $this->authorize('create', OutsourcePerformance::class);
+
         try {
             $validated = $request->validate([
                 'outsource_id' => 'required|exists:outsources,id',
@@ -242,6 +257,8 @@ class OutsourcePerformanceController extends Controller
      */
     public function show(OutsourcePerformance $outsourcePerformance): Response
     {
+        $this->authorize('view', $outsourcePerformance);
+
         $outsourcePerformance->load([
             'outsource:id,name',
             'operation:id,operationid,customer_id',
@@ -407,6 +424,8 @@ class OutsourcePerformanceController extends Controller
      */
     public function edit(OutsourcePerformance $outsourcePerformance): Response
     {
+        $this->authorize('update', $outsourcePerformance);
+
         $outsourcePerformance->load([
             'outsource:id,name',
             'operation:id,operationid,customer_id',
@@ -478,6 +497,8 @@ class OutsourcePerformanceController extends Controller
      */
     public function update(Request $request, OutsourcePerformance $outsourcePerformance)
     {
+        $this->authorize('update', $outsourcePerformance);
+
         try {
             $validated = $request->validate([
                 'outsource_id' => 'required|exists:outsources,id',
@@ -546,6 +567,8 @@ class OutsourcePerformanceController extends Controller
      */
     public function destroy(OutsourcePerformance $outsourcePerformance)
     {
+        $this->authorize('delete', $outsourcePerformance);
+
         try {
             $actor = Auth::user();
 

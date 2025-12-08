@@ -29,6 +29,8 @@ class OutsourcePerformanceControllerTest extends TestCase
         $this->user = User::factory()->create();
         $this->givePermissions($this->user, [
             'outsource-performances.view',
+            'outsource-performances.view-any',
+            'outsource-performances.view-own',
             'outsource-performances.store',
             'outsource-performances.update',
             'outsource-performances.destroy',

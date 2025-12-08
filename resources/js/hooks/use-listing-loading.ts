@@ -5,11 +5,12 @@ interface UseListingLoadingOptions {
     storageKey: string;
     isDataReady: boolean;
     minimumDuration?: number;
+    onlySamePath?: boolean;
 }
 
 const DEFAULT_MINIMUM_DURATION = 350;
 
-export function useListingLoading({ storageKey, isDataReady, minimumDuration = DEFAULT_MINIMUM_DURATION }: UseListingLoadingOptions) {
+export function useListingLoading({ storageKey, isDataReady, minimumDuration = DEFAULT_MINIMUM_DURATION, onlySamePath = false }: UseListingLoadingOptions) {
     const getTimestamp = React.useCallback(() => {
         if (typeof window === 'undefined') {
             return Date.now();
@@ -81,6 +82,37 @@ export function useListingLoading({ storageKey, isDataReady, minimumDuration = D
         clearLoadingTimeout();
     }, [clearLoadingTimeout]);
 
+    const resolveVisitPathname = React.useCallback((event: unknown): string | null => {
+        if (!event || typeof event !== 'object' || event === null) {
+            return null;
+        }
+
+        const visit = (event as { detail?: { visit?: { url?: URL | string | null } } }).detail?.visit;
+        if (!visit) {
+            return null;
+        }
+
+        const urlLike = visit.url;
+
+        if (urlLike instanceof URL) {
+            return urlLike.pathname;
+        }
+
+        if (typeof urlLike === 'string') {
+            try {
+                if (typeof window !== 'undefined') {
+                    return new URL(urlLike, window.location.origin).pathname;
+                }
+
+                return new URL(urlLike).pathname;
+            } catch (error) {
+                console.error('Failed to parse visit URL for loading tracker', error);
+            }
+        }
+
+        return null;
+    }, []);
+
     React.useEffect(() => {
         const isPrefetchVisit = (event: unknown): boolean => {
             if (!event || typeof event !== 'object' || event === null) {
@@ -94,6 +126,13 @@ export function useListingLoading({ storageKey, isDataReady, minimumDuration = D
         const handleStart = (event: unknown) => {
             if (isPrefetchVisit(event)) {
                 return;
+            }
+
+            if (onlySamePath && typeof window !== 'undefined') {
+                const visitPath = resolveVisitPathname(event);
+                if (visitPath && visitPath !== window.location.pathname) {
+                    return;
+                }
             }
 
             if (typeof window !== 'undefined') {
@@ -122,7 +161,7 @@ export function useListingLoading({ storageKey, isDataReady, minimumDuration = D
             unsubscribeSuccess();
             unsubscribeError();
         };
-    }, [beginLoading, finishLoading, storageKey]);
+    }, [beginLoading, finishLoading, onlySamePath, resolveVisitPathname, storageKey]);
 
     React.useEffect(() => {
         if (!isDataReady) {

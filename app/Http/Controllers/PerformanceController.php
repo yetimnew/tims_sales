@@ -23,6 +23,8 @@ class PerformanceController extends Controller
      */
     public function index(Request $request): Response
     {
+        $this->authorize('viewAny', Performance::class);
+
         $search = trim((string) $request->input('search'));
         $status = $request->input('status');
         $loadPhase = $request->input('load_phase');
@@ -58,6 +60,8 @@ class PerformanceController extends Controller
             $sort = 'DateDispach';
         }
 
+        $user = $request->user();
+
         $baseQuery = Performance::query()
             ->select([
                 'id',
@@ -72,7 +76,12 @@ class PerformanceController extends Controller
                 'fuelInBirr',
                 'fuelInLitter',
                 'created_at',
+                'user_id',
             ]);
+
+        if (! $user->can('performances.view-any')) {
+            $baseQuery->ownedBy($user->id);
+        }
 
         if ($search !== '') {
             $baseQuery->where(function ($query) use ($search) {
@@ -159,6 +168,9 @@ class PerformanceController extends Controller
             'loadPhaseOptions' => $loadPhaseOptions,
             'perPageOptions' => $perPageOptions,
             'totalCount' => $performancesPaginator->total(),
+            'can' => [
+                'viewOthers' => $user->can('performances.view-any'),
+            ],
         ]);
     }
 
@@ -249,6 +261,8 @@ class PerformanceController extends Controller
      */
     public function show(Performance $performance): Response
     {
+        $this->authorize('view', $performance);
+
         $performance->load([
             'operation.customer',
             'driverTruck.driver',
@@ -468,6 +482,8 @@ class PerformanceController extends Controller
      */
     public function edit(Performance $performance): Response
     {
+        $this->authorize('update', $performance);
+
         $driverTrucks = DriverTruck::with(['driver', 'truck'])
             ->active()
             ->isAttached()
@@ -495,6 +511,8 @@ class PerformanceController extends Controller
      */
     public function update(Request $request, Performance $performance)
     {
+        $this->authorize('update', $performance);
+
         $validated = $request->validate([
             'load_phase' => 'required|string|in:main,return',
             'load_completion' => 'required|string|in:full,partial',
@@ -550,6 +568,8 @@ class PerformanceController extends Controller
      */
     public function destroy(Performance $performance)
     {
+        $this->authorize('delete', $performance);
+
         $performance->delete();
 
         return redirect()->route('performances.index')
@@ -620,9 +640,17 @@ class PerformanceController extends Controller
      */
     public function export(Request $request)
     {
+        $this->authorize('viewAny', Performance::class);
+
+        $user = $request->user();
+
         $query = Performance::with([
             'operation.customer', 'driverTruck.driver', 'driverTruck.truck', 'origin', 'destination',
         ]);
+
+        if (! $user->can('performances.view-any')) {
+            $query->ownedBy($user->id);
+        }
 
         $search = trim((string) $request->input('search'));
         if ($search !== '') {
@@ -741,6 +769,8 @@ class PerformanceController extends Controller
      */
     public function deactivate(Performance $performance)
     {
+        $this->authorize('update', $performance);
+
         try {
             $performance->update(['satus' => 'inactive']);
 
@@ -757,11 +787,20 @@ class PerformanceController extends Controller
      */
     public function activePerformances()
     {
+        $this->authorize('viewAny', Performance::class);
+
         try {
-            $activePerformances = Performance::where('satus', 'active')
+            $user = Auth::user();
+
+            $activeQuery = Performance::where('satus', 'active')
                 ->with(['operation.customer', 'driverTruck.driver', 'driverTruck.truck', 'origin', 'destination'])
-                ->orderBy('FOnumber')
-                ->get();
+                ->orderBy('FOnumber');
+
+            if ($user && ! $user->can('performances.view-any')) {
+                $activeQuery->ownedBy($user->id);
+            }
+
+            $activePerformances = $activeQuery->get();
 
             return response()->json([
                 'success' => true,

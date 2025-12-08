@@ -67,7 +67,7 @@ class PermissionTest extends TestCase
     {
         $userRole = Role::where('name', 'user')->firstOrFail();
 
-        $viewLike = ['view', 'show', 'export'];
+        $viewLike = ['view', 'view-own', 'show', 'export'];
         foreach (Permission::all() as $permission) {
             $segments = explode('.', $permission->name);
             $action = end($segments);

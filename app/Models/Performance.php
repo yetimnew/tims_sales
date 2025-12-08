@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -111,6 +112,14 @@ class Performance extends Model
     public function cargoType(): BelongsTo
     {
         return $this->belongsTo(CargoType::class);
+    }
+
+    /**
+     * Scope a query to only include performances owned by the given user.
+     */
+    public function scopeOwnedBy(Builder $query, int $userId): Builder
+    {
+        return $query->where('user_id', $userId);
     }
 
     /**

@@ -162,7 +162,7 @@ class CheckPermissionSeeder extends Seeder
 
         // ==================== PERFORMANCE PERMISSIONS ====================
         $performancePermissions = [
-            'performances.view', 'performances.show', 'performances.create', 'performances.store',
+            'performances.view', 'performances.show', 'performances.view-own', 'performances.view-any', 'performances.create', 'performances.store',
             'performances.edit', 'performances.update', 'performances.destroy',
             'performances.deactivate', 'performances.active',
         ];
@@ -189,6 +189,13 @@ class CheckPermissionSeeder extends Seeder
         $outsourcePermissions = [
             'outsources.view', 'outsources.show', 'outsources.create', 'outsources.store',
             'outsources.edit', 'outsources.update', 'outsources.destroy', 'outsources.export',
+        ];
+
+        // ==================== OUTSOURCE PERFORMANCE PERMISSIONS ====================
+        $outsourcePerformancePermissions = [
+            'outsource-performances.view', 'outsource-performances.show', 'outsource-performances.view-own', 'outsource-performances.view-any',
+            'outsource-performances.create', 'outsource-performances.store', 'outsource-performances.edit', 'outsource-performances.update',
+            'outsource-performances.destroy',
         ];
 
         // ==================== USER MANAGEMENT PERMISSIONS ====================
@@ -244,6 +251,7 @@ class CheckPermissionSeeder extends Seeder
             $driverSafetyPermissions,
             $routePlanPermissions,
             $outsourcePermissions,
+            $outsourcePerformancePermissions,
             $userPermissions,
             $rolePermissions,
             $permissionPermissions,
@@ -279,9 +287,9 @@ class CheckPermissionSeeder extends Seeder
         // USER: Only view, show, export
         $userPermissions = array_filter(
             $allPermissions,
-            fn ($permission) => str_contains($permission, '.view') ||
-                               str_contains($permission, '.show') ||
-                               str_contains($permission, '.export')
+            fn ($permission) => (str_contains($permission, '.view') && ! str_contains($permission, '.view-any'))
+                               || str_contains($permission, '.show')
+                               || str_contains($permission, '.export')
         );
         $userRole = Role::firstOrCreate(['name' => 'user', 'guard_name' => 'web']);
         $userRole->syncPermissions($userPermissions);

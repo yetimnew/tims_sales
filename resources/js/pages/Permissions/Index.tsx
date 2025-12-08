@@ -8,15 +8,14 @@ import { ListingTableShell } from '@/components/listing/data-table-shell';
 import { ListingMobileItemList } from '@/components/listing/mobile-item-list';
 import { ListingLoadingPlaceholder } from '@/components/listing/loading-placeholder';
 import { ListingPaginationFooter } from '@/components/listing/pagination-footer';
-import { ListingRowActionsMenu } from '@/components/listing/row-actions-menu';
 import { usePermissions as usePermissionChecker } from '@/hooks/use-permissions';
 import { useListingLoading } from '@/hooks/use-listing-loading';
-import { Link, router } from '@inertiajs/react';
+import { router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import * as React from 'react';
-import { ArrowUpDown, Eye, FileDown, Layers, Search, Shield } from 'lucide-react';
+import { ArrowUpDown, FileDown, Layers, Search, Shield } from 'lucide-react';
 
 type ColumnKey = 'name' | 'module' | 'action' | 'guard' | 'created_at';
 
@@ -169,7 +168,6 @@ const getActionBadgeClass = (action: string): string => {
 
 export default function PermissionsIndex({ permissions, filters, moduleOptions, perPageOptions, stats }: PermissionsIndexProps) {
     const { hasPermission } = usePermissionChecker();
-    const canViewPermission = hasPermission('permissions.show');
     const canExportPermissions = hasPermission('permissions.export');
 
     const [searchTerm, setSearchTerm] = React.useState(filters?.search ?? '');
@@ -395,7 +393,6 @@ export default function PermissionsIndex({ permissions, filters, moduleOptions, 
                 sortKey: column.sortKey,
                 align: column.align,
             })),
-            { id: 'actions', label: 'Actions', align: 'center' as const },
         ],
         [],
     );
@@ -469,17 +466,6 @@ export default function PermissionsIndex({ permissions, filters, moduleOptions, 
                               {renderColumnValue(permission, column.id)}
                           </TableCell>
                       ))}
-                      <TableCell className="text-center">
-                          <ListingRowActionsMenu
-                              actions={[
-                                  canViewPermission && {
-                                      label: 'View',
-                                      icon: <Eye className="h-4 w-4" />,
-                                      href: `/permissions/${permission.id}`,
-                                  },
-                              ]}
-                          />
-                      </TableCell>
                   </TableRow>
               ))
             : (
@@ -543,18 +529,6 @@ export default function PermissionsIndex({ permissions, filters, moduleOptions, 
                     </div>
                 );
             }}
-            renderFooter={(item) => (
-                <div className="flex w-full flex-wrap items-center justify-end gap-2">
-                    {canViewPermission && (
-                        <Button asChild size="sm" variant="outline" className="flex-1 sm:flex-auto">
-                            <Link href={`/permissions/${item.record.id}`}>
-                                <Eye className="mr-2 h-4 w-4" />
-                                View
-                            </Link>
-                        </Button>
-                    )}
-                </div>
-            )}
             emptyState={(
                 <div className="py-8 text-center text-muted-foreground">
                     No permissions found.
