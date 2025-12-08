@@ -1,12 +1,13 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/app-layout';
 import { Head, router, useForm } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import { toast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 import {
     AlertTriangle,
     ArrowLeft,
@@ -17,6 +18,7 @@ import {
     User,
     UserX,
 } from 'lucide-react';
+import { isValid, parseISO, startOfDay, startOfToday } from 'date-fns';
 import { useEffect, useMemo } from 'react';
 
 interface DriverTruck {
@@ -117,6 +119,22 @@ export default function Detach({ driverTruck }: Props) {
         ],
         [assignmentDuration, driverTruck.driver.name, driverTruck.truck.plate, formattedAssignmentDate]
     );
+
+    const minDetachmentDate = useMemo(() => {
+        if (!driverTruck.date_recived) {
+            return undefined;
+        }
+
+        const parsed = parseISO(driverTruck.date_recived);
+
+        if (!isValid(parsed)) {
+            return undefined;
+        }
+
+        return startOfDay(parsed);
+    }, [driverTruck.date_recived]);
+
+    const maxDetachmentDate = useMemo(() => startOfToday(), []);
 
     useEffect(() => {
         if (wasSuccessful) {
@@ -304,18 +322,21 @@ export default function Detach({ driverTruck }: Props) {
                             <form className="space-y-6" onSubmit={handleSubmit}>
                                 <div className="space-y-4">
                                     <div className="space-y-2">
-                                        <Label htmlFor="date_detach" className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                                        <Label className="text-sm font-semibold text-slate-700 dark:text-slate-200">
                                             Detachment Date<span className="text-red-500"> *</span>
                                         </Label>
-                                        <Input
-                                            id="date_detach"
-                                            type="date"
-                                            value={data.date_detach}
-                                            min={toInputDate(driverTruck.date_recived)}
-                                            max={todayString()}
-                                            onChange={(event) => setData('date_detach', event.target.value)}
-                                            className={`bg-white dark:bg-slate-900/60 ${errors.date_detach ? 'border-red-500 focus-visible:ring-red-500/40' : 'border-slate-300 focus-visible:ring-blue-500/30 dark:border-slate-600'}`}
-                                            required
+                                        <DatePicker
+                                            value={data.date_detach || ''}
+                                            onChange={(next) => setData('date_detach', next ?? '')}
+                                            fromDate={minDetachmentDate}
+                                            toDate={maxDetachmentDate}
+                                            placeholder="Select detachment date"
+                                            className={cn(
+                                                'h-11 w-full justify-start rounded-md border border-slate-300 bg-white text-left hover:border-slate-400 focus-visible:border-blue-500 focus-visible:ring-blue-500/20 dark:border-slate-600 dark:bg-slate-900/60 dark:hover:border-slate-500',
+                                                errors.date_detach
+                                                    ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500/40'
+                                                    : undefined,
+                                            )}
                                         />
                                         {errors.date_detach && (
                                             <p className="text-sm text-red-500">{toMessage(errors.date_detach)}</p>
@@ -483,19 +504,4 @@ function toMessage(value: unknown): string {
     }
 
     return String(value ?? '');
-}
-
-function toInputDate(value?: string) {
-    if (!value) {
-        return undefined;
-    }
-
-    const parsed = new Date(value);
-
-    if (Number.isNaN(parsed.getTime())) {
-        return undefined;
-    }
-
-    const iso = parsed.toISOString();
-    return iso.split('T')[0] ?? undefined;
 }

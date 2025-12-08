@@ -16,6 +16,7 @@ import { Link, useForm } from '@inertiajs/react';
 import { ArrowLeft, Calendar, CheckCircle, Info, Save, Share2 } from 'lucide-react';
 import { type FormEventHandler } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { parseISO } from 'date-fns';
 
 interface DriverSummary {
     id: number;
@@ -92,6 +93,9 @@ export default function DriverTrucksEdit({ driverTruck, drivers, trucks, error }
         base.setDate(base.getDate() - 30);
         return toLocalDateString(base);
     }, []);
+
+    const minDate = useMemo(() => parseISO(minDateString), [minDateString]);
+    const maxDate = useMemo(() => parseISO(todayString), [todayString]);
 
     useEffect(() => {
         if (!error) {
@@ -427,14 +431,14 @@ export default function DriverTrucksEdit({ driverTruck, drivers, trucks, error }
                         error={getFieldError('date_recived')}
                     >
                         <DatePicker
-                            fullWidth
-                            value={data.date_recived}
+                            value={data.date_recived || ''}
                             onChange={(next) => handleFieldChange('date_recived', next ?? '')}
-                            minValue={minDateString}
-                            maxValue={todayString}
-                            fieldClassName={cn(
-                                'h-11 border-slate-300 dark:border-slate-600 hover:border-slate-400 focus-within:border-blue-500 dark:hover:border-slate-500',
-                                getFieldError('date_recived') ? 'border-red-500 focus-within:border-red-500' : undefined,
+                            fromDate={minDate}
+                            toDate={maxDate}
+                            disabledDays={[{ before: minDate }, { after: maxDate }]}
+                            className={cn(
+                                'w-full justify-start text-left h-11 border-slate-300 dark:border-slate-600 hover:border-slate-400 focus-visible:border-blue-500 focus-visible:ring-blue-500/20 dark:hover:border-slate-500',
+                                getFieldError('date_recived') ? 'border-red-500 focus-visible:border-red-500' : undefined,
                             )}
                         />
                     </FormField>

@@ -389,15 +389,13 @@ export default function MaintenanceReport({
                                             value={from || ''}
                                             onChange={(next) => setFrom(next ?? '')}
                                             placeholder="Select date"
-                                            className="w-full"
-                                            fieldClassName="h-10 border-slate-300 hover:border-slate-400 focus-within:border-blue-500 focus-within:ring-blue-500/20 dark:border-slate-600 dark:hover:border-slate-500"
+                                            className="w-full justify-start text-left h-10 border-slate-300 hover:border-slate-400 focus-visible:border-blue-500 focus-visible:ring-blue-500/20 dark:border-slate-600 dark:hover:border-slate-500"
                                         />
                                         <DatePicker
                                             value={to || ''}
                                             onChange={(next) => setTo(next ?? '')}
                                             placeholder="Select date"
-                                            className="w-full"
-                                            fieldClassName="h-10 border-slate-300 hover:border-slate-400 focus-within:border-blue-500 focus-within:ring-blue-500/20 dark:border-slate-600 dark:hover:border-slate-500"
+                                            className="w-full justify-start text-left h-10 border-slate-300 hover:border-slate-400 focus-visible:border-blue-500 focus-visible:ring-blue-500/20 dark:border-slate-600 dark:hover:border-slate-500"
                                         />
                                     </div>
                                 </div>

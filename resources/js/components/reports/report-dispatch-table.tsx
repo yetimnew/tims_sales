@@ -48,16 +48,75 @@ export interface ReportSummary {
     margin_percent: number | null;
 }
 
+type ReportDispatchColumnKey =
+    | 'fo_number'
+    | 'dispatch_date'
+    | 'driver_name'
+    | 'truck_plate'
+    | 'vehicle_type'
+    | 'operation_code'
+    | 'customer_name'
+    | 'origin_name'
+    | 'destination_name'
+    | 'tonnage'
+    | 'ton_km'
+    | 'distance_wc'
+    | 'distance_wo'
+    | 'distance_total'
+    | 'fuel_litres'
+    | 'fuel_cost'
+    | 'perdiem'
+    | 'work_on_going'
+    | 'other_cost'
+    | 'expense'
+    | 'revenue'
+    | 'profit'
+    | 'margin_percent';
+
 interface ReportDispatchTableProps {
     rows: ReportDispatchRow[];
     summary: ReportSummary;
     summaryMargin: number | null;
     filterBadges: string[];
     emptyMessage?: string;
+    columnLabelOverrides?: Partial<Record<ReportDispatchColumnKey, string>>;
 }
 
-export function ReportDispatchTable({ rows, summary, summaryMargin, filterBadges, emptyMessage = 'No dispatch records match the selected filters.' }: ReportDispatchTableProps) {
+export function ReportDispatchTable({
+    rows,
+    summary,
+    summaryMargin,
+    filterBadges,
+    emptyMessage = 'No dispatch records match the selected filters.',
+    columnLabelOverrides,
+}: ReportDispatchTableProps) {
     const safeRows = Array.isArray(rows) ? rows : [];
+
+    const columnLabels: Record<ReportDispatchColumnKey, string> = {
+        fo_number: columnLabelOverrides?.fo_number ?? 'FO Number',
+        dispatch_date: columnLabelOverrides?.dispatch_date ?? 'Dispatch Date',
+        driver_name: columnLabelOverrides?.driver_name ?? 'Driver',
+        truck_plate: columnLabelOverrides?.truck_plate ?? 'Truck',
+        vehicle_type: columnLabelOverrides?.vehicle_type ?? 'Vehicle Type',
+        operation_code: columnLabelOverrides?.operation_code ?? 'Operation',
+        customer_name: columnLabelOverrides?.customer_name ?? 'Customer',
+        origin_name: columnLabelOverrides?.origin_name ?? 'Origin',
+        destination_name: columnLabelOverrides?.destination_name ?? 'Destination',
+        tonnage: columnLabelOverrides?.tonnage ?? 'Tonnage (MT)',
+        ton_km: columnLabelOverrides?.ton_km ?? 'Ton-KM',
+        distance_wc: columnLabelOverrides?.distance_wc ?? 'Distance (WC)',
+        distance_wo: columnLabelOverrides?.distance_wo ?? 'Distance (WO)',
+        distance_total: columnLabelOverrides?.distance_total ?? 'Total Distance',
+        fuel_litres: columnLabelOverrides?.fuel_litres ?? 'Fuel (L)',
+        fuel_cost: columnLabelOverrides?.fuel_cost ?? 'Fuel Cost',
+        perdiem: columnLabelOverrides?.perdiem ?? 'Perdiem',
+        work_on_going: columnLabelOverrides?.work_on_going ?? 'Work Ongoing',
+        other_cost: columnLabelOverrides?.other_cost ?? 'Other Cost',
+        expense: columnLabelOverrides?.expense ?? 'Total Expense',
+        revenue: columnLabelOverrides?.revenue ?? 'Revenue',
+        profit: columnLabelOverrides?.profit ?? 'Profit',
+        margin_percent: columnLabelOverrides?.margin_percent ?? 'Margin %',
+    };
 
     return (
         <Card className="border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
@@ -79,29 +138,29 @@ export function ReportDispatchTable({ rows, summary, summaryMargin, filterBadges
                     <Table>
                         <TableHeader className="bg-slate-50/60 text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-900/60 dark:text-slate-400">
                             <TableRow className="divide-x divide-slate-200/40 dark:divide-slate-800/50">
-                                <TableHead className="whitespace-nowrap">FO Number</TableHead>
-                                <TableHead className="whitespace-nowrap">Dispatch Date</TableHead>
-                                <TableHead className="whitespace-nowrap">Driver</TableHead>
-                                <TableHead className="whitespace-nowrap">Truck</TableHead>
-                                <TableHead className="whitespace-nowrap">Vehicle Type</TableHead>
-                                <TableHead className="whitespace-nowrap">Operation</TableHead>
-                                <TableHead className="whitespace-nowrap">Customer</TableHead>
-                                <TableHead className="whitespace-nowrap">Origin</TableHead>
-                                <TableHead className="whitespace-nowrap">Destination</TableHead>
-                                <TableHead className="whitespace-nowrap text-right">Tonnage (MT)</TableHead>
-                                <TableHead className="whitespace-nowrap text-right">Ton-KM</TableHead>
-                                <TableHead className="whitespace-nowrap text-right">Distance (WC)</TableHead>
-                                <TableHead className="whitespace-nowrap text-right">Distance (WO)</TableHead>
-                                <TableHead className="whitespace-nowrap text-right">Total Distance</TableHead>
-                                <TableHead className="whitespace-nowrap text-right">Fuel (L)</TableHead>
-                                <TableHead className="whitespace-nowrap text-right">Fuel Cost</TableHead>
-                                <TableHead className="whitespace-nowrap text-right">Perdiem</TableHead>
-                                <TableHead className="whitespace-nowrap text-right">Work Ongoing</TableHead>
-                                <TableHead className="whitespace-nowrap text-right">Other Cost</TableHead>
-                                <TableHead className="whitespace-nowrap text-right">Total Expense</TableHead>
-                                <TableHead className="whitespace-nowrap text-right">Revenue</TableHead>
-                                <TableHead className="whitespace-nowrap text-right">Profit</TableHead>
-                                <TableHead className="whitespace-nowrap text-right">Margin %</TableHead>
+                                <TableHead className="whitespace-nowrap">{columnLabels.fo_number}</TableHead>
+                                <TableHead className="whitespace-nowrap">{columnLabels.dispatch_date}</TableHead>
+                                <TableHead className="whitespace-nowrap">{columnLabels.driver_name}</TableHead>
+                                <TableHead className="whitespace-nowrap">{columnLabels.truck_plate}</TableHead>
+                                <TableHead className="whitespace-nowrap">{columnLabels.vehicle_type}</TableHead>
+                                <TableHead className="whitespace-nowrap">{columnLabels.operation_code}</TableHead>
+                                <TableHead className="whitespace-nowrap">{columnLabels.customer_name}</TableHead>
+                                <TableHead className="whitespace-nowrap">{columnLabels.origin_name}</TableHead>
+                                <TableHead className="whitespace-nowrap">{columnLabels.destination_name}</TableHead>
+                                <TableHead className="whitespace-nowrap text-right">{columnLabels.tonnage}</TableHead>
+                                <TableHead className="whitespace-nowrap text-right">{columnLabels.ton_km}</TableHead>
+                                <TableHead className="whitespace-nowrap text-right">{columnLabels.distance_wc}</TableHead>
+                                <TableHead className="whitespace-nowrap text-right">{columnLabels.distance_wo}</TableHead>
+                                <TableHead className="whitespace-nowrap text-right">{columnLabels.distance_total}</TableHead>
+                                <TableHead className="whitespace-nowrap text-right">{columnLabels.fuel_litres}</TableHead>
+                                <TableHead className="whitespace-nowrap text-right">{columnLabels.fuel_cost}</TableHead>
+                                <TableHead className="whitespace-nowrap text-right">{columnLabels.perdiem}</TableHead>
+                                <TableHead className="whitespace-nowrap text-right">{columnLabels.work_on_going}</TableHead>
+                                <TableHead className="whitespace-nowrap text-right">{columnLabels.other_cost}</TableHead>
+                                <TableHead className="whitespace-nowrap text-right">{columnLabels.expense}</TableHead>
+                                <TableHead className="whitespace-nowrap text-right">{columnLabels.revenue}</TableHead>
+                                <TableHead className="whitespace-nowrap text-right">{columnLabels.profit}</TableHead>
+                                <TableHead className="whitespace-nowrap text-right">{columnLabels.margin_percent}</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>

@@ -6,12 +6,14 @@ import { UnsavedChangesBadge } from '@/components/forms/unsaved-changes-badge';
 import { ScrollToTopFab } from '@/components/forms/scroll-to-top-fab';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Link, useForm } from '@inertiajs/react';
 import { FormEventHandler, useEffect, useRef, useState } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { validateDriver } from '@/lib/validation';
-import { Info, User, MapPin, Calendar, CheckCircle, Save, User as UserIcon, Hash, ArrowLeft } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Info, User, MapPin, CheckCircle, Save, User as UserIcon, Hash, ArrowLeft } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 
 interface Driver {
@@ -287,44 +289,24 @@ export default function DriversEdit({ driver }: DriversEditProps) {
                     contentClassName="grid-cols-1 gap-4 md:grid-cols-2"
                 >
                     <FormField id="birthdate" label="Date of Birth" error={getFieldError('birthdate')}>
-                        <div className="group relative">
-                            <Input
-                                id="birthdate"
-                                type="date"
-                                value={data.birthdate}
-                                onChange={(event) => handleFieldChange('birthdate', event.target.value)}
-                                className={`pl-4 pr-10 py-2.5 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-3 [&::-webkit-calendar-picker-indicator]:h-4 [&::-webkit-calendar-picker-indicator]:w-4 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 ${getFieldError('birthdate') ? 'border-red-500 focus:border-red-500' : ''}`}
-                            />
-                            <div
-                                className="absolute right-3 top-1/2 z-20 -translate-y-1/2 cursor-pointer"
-                                onClick={() => {
-                                    const input = document.getElementById('birthdate') as HTMLInputElement | null;
-                                    input?.showPicker?.();
-                                }}
-                            >
-                                <Calendar className="h-4 w-4 text-slate-500 transition-colors duration-200 group-hover:text-slate-600 dark:text-slate-400 dark:group-hover:text-slate-300" />
-                            </div>
-                        </div>
+                        <DatePicker
+                            value={data.birthdate || ''}
+                            onChange={(next) => handleFieldChange('birthdate', next ?? '')}
+                            className={cn(
+                                'w-full justify-start text-left h-11 border-slate-300 hover:border-slate-400 focus-visible:border-blue-500 focus-visible:ring-blue-500/20 dark:border-slate-600 dark:hover:border-slate-500',
+                                getFieldError('birthdate') ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500/20' : undefined,
+                            )}
+                        />
                     </FormField>
                     <FormField id="hireddate" label="Hire Date" error={getFieldError('hireddate')}>
-                        <div className="group relative">
-                            <Input
-                                id="hireddate"
-                                type="date"
-                                value={data.hireddate}
-                                onChange={(event) => handleFieldChange('hireddate', event.target.value)}
-                                className={`pl-4 pr-10 py-2.5 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-3 [&::-webkit-calendar-picker-indicator]:h-4 [&::-webkit-calendar-picker-indicator]:w-4 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 ${getFieldError('hireddate') ? 'border-red-500 focus:border-red-500' : ''}`}
-                            />
-                            <div
-                                className="absolute right-3 top-1/2 z-20 -translate-y-1/2 cursor-pointer"
-                                onClick={() => {
-                                    const input = document.getElementById('hireddate') as HTMLInputElement | null;
-                                    input?.showPicker?.();
-                                }}
-                            >
-                                <Calendar className="h-4 w-4 text-slate-500 transition-colors duration-200 group-hover:text-slate-600 dark:text-slate-400 dark:group-hover:text-slate-300" />
-                            </div>
-                        </div>
+                        <DatePicker
+                            value={data.hireddate || ''}
+                            onChange={(next) => handleFieldChange('hireddate', next ?? '')}
+                            className={cn(
+                                'w-full justify-start text-left h-11 border-slate-300 hover:border-slate-400 focus-visible:border-blue-500 focus-visible:ring-blue-500/20 dark:border-slate-600 dark:hover:border-slate-500',
+                                getFieldError('hireddate') ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500/20' : undefined,
+                            )}
+                        />
                     </FormField>
                 </FormSection>
 

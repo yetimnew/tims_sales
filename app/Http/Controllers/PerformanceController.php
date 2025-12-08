@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Distance;
 use App\Models\DriverTruck;
-use App\Models\Operation;
 use App\Models\Performance;
 use App\Models\Place;
 use Carbon\Carbon;
@@ -168,12 +167,22 @@ class PerformanceController extends Controller
      */
     public function create(): Response
     {
-        $operations = Operation::with('customer')->get();
-        $driverTrucks = DriverTruck::with(['driver', 'truck'])->active()->isAttached()->get();
-        $places = Place::all();
+        $driverTrucks = DriverTruck::with(['driver', 'truck'])
+            ->active()
+            ->isAttached()
+            ->get();
+
+        $places = Place::query()
+            ->select(['id', 'name'])
+            ->orderBy('name')
+            ->get()
+            ->map(fn (Place $place) => [
+                'id' => $place->id,
+                'name' => $place->name,
+            ])
+            ->values();
 
         return Inertia::render('Performances/Create', [
-            'operations' => $operations,
             'driverTrucks' => $driverTrucks,
             'places' => $places,
         ]);
@@ -459,13 +468,23 @@ class PerformanceController extends Controller
      */
     public function edit(Performance $performance): Response
     {
-        $operations = Operation::with('customer')->get();
-        $driverTrucks = DriverTruck::with(['driver', 'truck'])->active()->isAttached()->get();
-        $places = Place::all();
+        $driverTrucks = DriverTruck::with(['driver', 'truck'])
+            ->active()
+            ->isAttached()
+            ->get();
+
+        $places = Place::query()
+            ->select(['id', 'name'])
+            ->orderBy('name')
+            ->get()
+            ->map(fn (Place $place) => [
+                'id' => $place->id,
+                'name' => $place->name,
+            ])
+            ->values();
 
         return Inertia::render('Performances/Edit', [
             'performance' => $performance,
-            'operations' => $operations,
             'driverTrucks' => $driverTrucks,
             'places' => $places,
         ]);

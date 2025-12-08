@@ -8,11 +8,16 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { SearchableEntityCombobox } from '@/components/searchable-entity-combobox';
 import { PlaceCombobox } from '@/components/place-combobox';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { usePermissions } from '@/hooks/use-permissions';
+import { useRemoteLookup } from '@/hooks/use-remote-lookup';
+import { search as operationsSearch } from '@/routes/operations';
 import { validateOutsourcePerformance, type ValidationErrors } from '@/lib/validation';
+import { DatePicker } from '@/components/ui/date-picker';
+import { cn } from '@/lib/utils';
 import type { BreadcrumbItem } from '@/types';
 import {
     AlertCircle,
@@ -36,7 +41,7 @@ interface OutsourceOption {
 
 interface OperationOption {
     id: number;
-    label: string;
+    operationid: string;
     customer?: {
         id: number;
         name: string;
@@ -74,9 +79,8 @@ interface OutsourcePerformanceResource {
 interface OutsourcePerformancesEditProps {
     outsourcePerformance: OutsourcePerformanceResource;
     outsources: OutsourceOption[];
-    operations: OperationOption[];
-    places: PlaceOption[];
     statusOptions: StatusOption[];
+    places: PlaceOption[];
 }
 
 type OutsourcePerformanceFormData = {
@@ -121,7 +125,7 @@ const computeTonKilometers = (distance: string, cargo: string): string => {
     return tonKm.toFixed(2);
 };
 
-export default function OutsourcePerformancesEdit({ outsourcePerformance, outsources, operations, places, statusOptions }: OutsourcePerformancesEditProps) {
+export default function OutsourcePerformancesEdit({ outsourcePerformance, outsources, statusOptions, places }: OutsourcePerformancesEditProps) {
     const { toast } = useToast();
     const { hasPermission } = usePermissions();
 
@@ -166,6 +170,15 @@ export default function OutsourcePerformancesEdit({ outsourcePerformance, outsou
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [isDirty, setIsDirty] = useState(false);
+
+    const operationSelectedIds = useMemo(() => (data.operation_id ? [data.operation_id] : []), [data.operation_id]);
+
+    const operationsLookup = useRemoteLookup<OperationOption>({
+        endpoint: operationsSearch.url(),
+        getId: operation => operation.id,
+        selectedIds: operationSelectedIds,
+        limit: 20,
+    });
 
     const statusOptionValues = useMemo(() => (statusOptions.length ? statusOptions : [{ label: 'Active', value: 'active' }]), [statusOptions]);
 
@@ -487,28 +500,28 @@ export default function OutsourcePerformancesEdit({ outsourcePerformance, outsou
                                     </div>
 
                                     <div className="space-y-2">
-                                        <Label htmlFor="operation_id">
-                                            Operation <span className="text-red-500">*</span>
-                                        </Label>
-                                        <Select value={data.operation_id} onValueChange={value => handleFieldChange('operation_id', value)}>
-                                            <SelectTrigger id="operation_id" className={clientErrors.operation_id ? 'border-red-500 focus-visible:ring-red-500/20' : ''}>
-                                                <SelectValue placeholder="Select operation" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {operations.map(operation => (
-                                                    <SelectItem key={operation.id} value={operation.id.toString()}>
-                                                        {operation.label}
-                                                        {operation.customer?.name ? ` — ${operation.customer.name}` : ''}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        {clientErrors.operation_id && (
-                                            <p className="flex items-center gap-1 text-xs text-red-500">
-                                                <AlertCircle className="h-3 w-3" />
-                                                {clientErrors.operation_id}
-                                            </p>
-                                        )}
+                                        <SearchableEntityCombobox
+                                            id="operation_id"
+                                            label="Operation"
+                                            required
+                                            value={data.operation_id}
+                                            items={operationsLookup.items}
+                                            getValue={operation => operation.id}
+                                            getLabel={operation => operation.operationid}
+                                            getDescription={operation => operation.customer?.name}
+                                            getKeywords={operation => [operation.operationid, operation.customer?.name]}
+                                            placeholder="Search operation..."
+                                            searchPlaceholder="Search operations..."
+                                            searchValue={operationsLookup.query}
+                                            onSearchChange={operationsLookup.setQuery}
+                                            isLoading={operationsLookup.isLoading}
+                                            loadingMessage="Searching operations..."
+                                            onSelect={value => {
+                                                handleFieldChange('operation_id', value);
+                                                operationsLookup.setQuery('');
+                                            }}
+                                            error={typeof clientErrors.operation_id === 'string' ? clientErrors.operation_id : undefined}
+                                        />
                                     </div>
 
                                     <div className="space-y-2">
@@ -532,15 +545,19 @@ export default function OutsourcePerformancesEdit({ outsourcePerformance, outsou
 
                                 <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
                                     <div className="space-y-2">
-                                        <Label htmlFor="dispatch_date">
+                                        <span className="flex items-center gap-1 text-sm font-medium text-slate-700 dark:text-slate-200">
                                             Dispatch Date <span className="text-red-500">*</span>
-                                        </Label>
-                                        <Input
-                                            id="dispatch_date"
-                                            type="date"
-                                            value={data.dispatch_date}
-                                            onChange={event => handleFieldChange('dispatch_date', event.target.value)}
-                                            className={clientErrors.dispatch_date ? 'border-red-500 focus-visible:ring-red-500/20' : ''}
+                                        </span>
+                                        <DatePicker
+                                            value={data.dispatch_date || ''}
+                                            onChange={next => handleFieldChange('dispatch_date', next ?? '')}
+                                            placeholder="Select dispatch date"
+                                            className={cn(
+                                                'w-full justify-start text-left h-11 border-slate-300 hover:border-slate-400 focus-visible:border-emerald-500 focus-visible:ring-emerald-500/20 dark:border-slate-600 dark:hover:border-slate-500',
+                                                clientErrors.dispatch_date
+                                                    ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500/20'
+                                                    : undefined,
+                                            )}
                                         />
                                         {clientErrors.dispatch_date && (
                                             <p className="flex items-center gap-1 text-xs text-red-500">
@@ -548,30 +565,28 @@ export default function OutsourcePerformancesEdit({ outsourcePerformance, outsou
                                                 {clientErrors.dispatch_date}
                                             </p>
                                         )}
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <Label htmlFor="status">
-                                            Trip Status <span className="text-red-500">*</span>
-                                        </Label>
-                                        <Select value={data.status} onValueChange={value => handleFieldChange('status', value)}>
-                                            <SelectTrigger id="status" className={clientErrors.status ? 'border-red-500 focus-visible:ring-red-500/20' : ''}>
-                                                <SelectValue placeholder="Select status" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {statusOptionValues.map(option => (
-                                                    <SelectItem key={option.value} value={option.value}>
-                                                        {option.label}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        {clientErrors.status && (
-                                            <p className="flex items-center gap-1 text-xs text-red-500">
-                                                <AlertCircle className="h-3 w-3" />
-                                                {clientErrors.status}
-                                            </p>
-                                        )}
+                                        <SearchableEntityCombobox
+                                            id="operation_id"
+                                            label="Operation"
+                                            required
+                                            value={data.operation_id}
+                                            items={operationsLookup.items}
+                                            getValue={operation => operation.id}
+                                            getLabel={operation => operation.operationid}
+                                            getDescription={operation => operation.customer?.name}
+                                            getKeywords={operation => [operation.operationid, operation.customer?.name]}
+                                            placeholder="Search operation..."
+                                            searchPlaceholder="Search operations..."
+                                            searchValue={operationsLookup.query}
+                                            onSearchChange={operationsLookup.setQuery}
+                                            isLoading={operationsLookup.isLoading}
+                                            loadingMessage="Searching operations..."
+                                            onSelect={value => {
+                                                handleFieldChange('operation_id', value);
+                                                operationsLookup.setQuery('');
+                                            }}
+                                            error={typeof clientErrors.operation_id === 'string' ? clientErrors.operation_id : undefined}
+                                        />
                                     </div>
                                 </div>
                             </section>
@@ -594,7 +609,7 @@ export default function OutsourcePerformancesEdit({ outsourcePerformance, outsou
                                         required
                                         value={data.from_place_id}
                                         places={places}
-                                        placeholder="Search origin..."
+                                        placeholder="Select origin"
                                         onSelect={value => handleFieldChange('from_place_id', value)}
                                         error={clientErrors.from_place_id}
                                     />
@@ -604,7 +619,7 @@ export default function OutsourcePerformancesEdit({ outsourcePerformance, outsou
                                         required
                                         value={data.to_place_id}
                                         places={places}
-                                        placeholder="Search destination..."
+                                        placeholder="Select destination"
                                         onSelect={value => handleFieldChange('to_place_id', value)}
                                         error={clientErrors.to_place_id}
                                     />
@@ -716,27 +731,29 @@ export default function OutsourcePerformancesEdit({ outsourcePerformance, outsou
                                     <span className="text-red-500">*</span>
                                     <span>Required fields must be completed</span>
                                 </div>
-                                <div className="flex gap-3">
-                                    <Button type="button" variant="outline" onClick={resetForm} className="border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800">
-                                        Reset
-                                    </Button>
-                                    <Button
-                                        type="submit"
-                                        disabled={processing}
-                                        className="min-w-[160px] bg-gradient-to-r from-blue-600 to-indigo-600 px-6 text-white shadow-lg transition-all duration-200 hover:from-blue-700 hover:to-indigo-700 hover:shadow-xl disabled:cursor-not-allowed"
-                                    >
-                                        {processing ? (
-                                            <>
-                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                                Saving...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Save className="mr-2 h-4 w-4" />
-                                                Save Changes
-                                            </>
-                                        )}
-                                    </Button>
+                                <div className="space-y-2">
+                                    <SearchableEntityCombobox
+                                        id="operation_id"
+                                        label="Operation"
+                                        required
+                                        value={data.operation_id}
+                                        items={operationsLookup.items}
+                                        getValue={operation => operation.id}
+                                        getLabel={operation => operation.operationid}
+                                        getDescription={operation => operation.customer?.name}
+                                        getKeywords={operation => [operation.operationid, operation.customer?.name]}
+                                        placeholder="Search operation..."
+                                        searchPlaceholder="Search operations..."
+                                        searchValue={operationsLookup.query}
+                                        onSearchChange={operationsLookup.setQuery}
+                                        isLoading={operationsLookup.isLoading}
+                                        loadingMessage="Searching operations..."
+                                        onSelect={value => {
+                                            handleFieldChange('operation_id', value);
+                                            operationsLookup.setQuery('');
+                                        }}
+                                        error={clientErrors.operation_id as string | undefined}
+                                    />
                                 </div>
                             </div>
                         </form>

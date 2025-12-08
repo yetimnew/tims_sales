@@ -18,6 +18,7 @@ use App\Models\Zone;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
@@ -191,6 +192,81 @@ class OperationController extends Controller
             'customerOptions' => $customerOptions,
             'perPageOptions' => $perPageOptions,
             'totalCount' => $operations->total(),
+        ]);
+    }
+
+    public function search(Request $request): JsonResponse
+    {
+        $search = trim((string) $request->input('search'));
+        $limit = (int) $request->input('limit', 20);
+
+        if ($limit <= 0) {
+            $limit = 20;
+        }
+
+        $limit = min($limit, 50);
+
+        $rawSelected = $request->input('selected', []);
+        $selectedIds = collect(is_array($rawSelected) ? $rawSelected : [$rawSelected])
+            ->map(static fn ($value) => (int) $value)
+            ->filter(static fn (int $id) => $id > 0)
+            ->unique()
+            ->values();
+
+        $baseQuery = Operation::query()
+            ->select(['id', 'operationid', 'customer_id'])
+            ->with(['customer:id,name']);
+
+        if ($search !== '') {
+            $baseQuery->where(function ($query) use ($search) {
+                $query->where('operationid', 'like', "%{$search}%")
+                    ->orWhere('remark', 'like', "%{$search}%")
+                    ->orWhereHas('customer', function ($customerQuery) use ($search) {
+                        $customerQuery->where('name', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        $operations = (clone $baseQuery)
+            ->orderBy('operationid')
+            ->limit($limit + 1)
+            ->get();
+
+        $hasMore = $operations->count() > $limit;
+
+        if ($hasMore) {
+            $operations = $operations->take($limit);
+        }
+
+        $missingSelectedIds = $selectedIds->diff($operations->pluck('id'));
+
+        if ($missingSelectedIds->isNotEmpty()) {
+            $selectedOperations = Operation::query()
+                ->select(['id', 'operationid', 'customer_id'])
+                ->with(['customer:id,name'])
+                ->whereIn('id', $missingSelectedIds)
+                ->get();
+
+            $operations = $operations->concat($selectedOperations);
+        }
+
+        $operations = $operations
+            ->unique('id')
+            ->sortBy(static fn (Operation $operation) => Str::lower((string) $operation->operationid))
+            ->values();
+
+        return response()->json([
+            'data' => $operations->map(static fn (Operation $operation) => [
+                'id' => $operation->id,
+                'operationid' => $operation->operationid,
+                'customer' => $operation->customer
+                    ? [
+                        'id' => $operation->customer->id,
+                        'name' => $operation->customer->name,
+                    ]
+                    : null,
+            ]),
+            'has_more' => $hasMore,
         ]);
     }
 

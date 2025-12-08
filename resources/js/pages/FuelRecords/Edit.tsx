@@ -369,13 +369,12 @@ export default function FuelRecordsEdit({ fuelRecord, driverTrucks }: FuelRecord
                 >
                     <FormField id="fuel_date" label="Fuel Date" required error={getFieldError('fuel_date')}>
                         <DatePicker
-                            fullWidth
                             value={data.fuel_date}
                             onChange={(next) => handleFieldChange('fuel_date', next ?? '')}
-                            fieldClassName={cn(
-                                'h-11 border-slate-300 focus-within:border-orange-500 focus-within:ring-orange-500/20 dark:border-slate-700 dark:focus-within:border-orange-400',
+                            className={cn(
+                                'w-full justify-start text-left h-11 border-slate-300 focus-visible:border-orange-500 focus-visible:ring-orange-500/20 dark:border-slate-700 dark:focus-visible:border-orange-400',
                                 getFieldError('fuel_date')
-                                    ? 'border-red-500 focus-within:border-red-500 focus-within:ring-red-500/20'
+                                    ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500/20'
                                     : undefined,
                             )}
                         />

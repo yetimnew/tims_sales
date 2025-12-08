@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Events\OutsourcePerformanceCreated;
 use App\Events\OutsourcePerformanceDeleted;
 use App\Events\OutsourcePerformanceUpdated;
-use App\Models\Operation;
 use App\Models\Outsource;
 use App\Models\OutsourcePerformance;
 use App\Models\Place;
@@ -33,7 +32,8 @@ class OutsourcePerformanceController extends Controller
                 'toPlace:id,name',
             ]);
 
-        if ($search = $request->string('search')->trim()) {
+        $search = $request->string('search')->trim()->value();
+        if ($search !== '') {
             $query->where(function ($builder) use ($search) {
                 $builder->where('trip_number', 'like', "%{$search}%")
                     ->orWhere('remarks', 'like', "%{$search}%")
@@ -41,11 +41,13 @@ class OutsourcePerformanceController extends Controller
             });
         }
 
-        if (($status = $request->string('status')->trim()) && $status !== 'all') {
+        $status = $request->string('status')->trim()->value();
+        if ($status !== '' && $status !== 'all') {
             $query->where('status', $status);
         }
 
-        if ($outsourceId = $request->integer('outsource_id')) {
+        $outsourceId = $request->integer('outsource_id');
+        if ($outsourceId > 0) {
             $query->where('outsource_id', $outsourceId);
         }
 
@@ -130,9 +132,9 @@ class OutsourcePerformanceController extends Controller
             ->all();
 
         $filters = [
-            'search' => $request->get('search'),
-            'status' => $request->get('status'),
-            'outsource_id' => $request->get('outsource_id'),
+            'search' => $search !== '' ? $search : null,
+            'status' => $status !== '' ? $status : null,
+            'outsource_id' => $outsourceId > 0 ? $outsourceId : null,
             'dispatched_from' => $request->get('dispatched_from'),
             'dispatched_to' => $request->get('dispatched_to'),
             'sort' => $sortColumn,
@@ -165,20 +167,6 @@ class OutsourcePerformanceController extends Controller
             ])
             ->values();
 
-        $operations = Operation::query()
-            ->select(['id', 'operationid', 'customer_id'])
-            ->with(['customer:id,name'])
-            ->orderBy('operationid')
-            ->get()
-            ->map(fn (Operation $operation) => [
-                'id' => $operation->id,
-                'label' => $operation->operationid,
-                'customer' => $operation->customer
-                    ? $operation->customer->only(['id', 'name'])
-                    : null,
-            ])
-            ->values();
-
         $places = Place::query()
             ->select('id', 'name')
             ->orderBy('name')
@@ -193,9 +181,8 @@ class OutsourcePerformanceController extends Controller
 
         return Inertia::render('OutsourcePerformances/Create', [
             'outsources' => $outsources,
-            'operations' => $operations,
-            'places' => $places,
             'statusOptions' => $statusOptions,
+            'places' => $places,
         ]);
     }
 
@@ -268,14 +255,29 @@ class OutsourcePerformanceController extends Controller
             ->where('outsource_id', $outsourcePerformance->outsource_id);
 
         $vendorTripCount = (clone $vendorMetricsQuery)->count();
+        $vendorCompletedTrips = (clone $vendorMetricsQuery)->where('status', 'completed')->count();
+        $vendorActiveTrips = (clone $vendorMetricsQuery)->where('status', 'active')->count();
+        $vendorCancelledTrips = (clone $vendorMetricsQuery)->where('status', 'cancelled')->count();
         $vendorTotalDistance = (float) ((clone $vendorMetricsQuery)->sum('distance_km') ?? 0.0);
         $vendorTotalCargo = (float) ((clone $vendorMetricsQuery)->sum('cargo_volume_mt') ?? 0.0);
         $vendorTotalTonKm = (float) ((clone $vendorMetricsQuery)->sum('tonkm') ?? 0.0);
         $vendorTotalCost = (float) ((clone $vendorMetricsQuery)->sum('cost') ?? 0.0);
 
+        $statusBreakdown = (clone $vendorMetricsQuery)
+            ->select('status')
+            ->selectRaw('COUNT(*) as total')
+            ->groupBy('status')
+            ->get()
+            ->filter(fn ($row) => $row->status !== null)
+            ->map(fn ($row) => [
+                'label' => (string) $row->status,
+                'value' => (int) $row->total,
+            ])
+            ->values();
+
         $recentTrips = (clone $vendorMetricsQuery)
-            ->latest('dispatch_date')
-            ->limit(6)
+            ->orderByDesc('dispatch_date')
+            ->limit(10)
             ->get()
             ->map(fn (OutsourcePerformance $record) => [
                 'id' => $record->id,
@@ -283,11 +285,33 @@ class OutsourcePerformanceController extends Controller
                 'dispatch_date' => optional($record->dispatch_date)->toDateString(),
                 'distance_km' => $record->distance_km ? (float) $record->distance_km : null,
                 'cargo_volume_mt' => $record->cargo_volume_mt ? (float) $record->cargo_volume_mt : null,
+                'tonkm' => $record->tonkm ? (float) $record->tonkm : null,
                 'cost' => $record->cost ? (float) $record->cost : null,
                 'status' => $record->status,
                 'highlight' => $record->id === $outsourcePerformance->id,
             ])
             ->values();
+
+        $tripDistance = (float) ($outsourcePerformance->distance_km ?? 0.0);
+        $tripCargo = (float) ($outsourcePerformance->cargo_volume_mt ?? 0.0);
+        $tripTonKm = (float) ($outsourcePerformance->tonkm ?? ($tripDistance * $tripCargo));
+        $tripCost = (float) ($outsourcePerformance->cost ?? 0.0);
+
+        $costPerKm = $tripDistance > 0 ? round($tripCost / $tripDistance, 2) : null;
+        $costPerTonKm = $tripTonKm > 0 ? round($tripCost / $tripTonKm, 2) : null;
+
+        $distanceShare = $vendorTotalDistance > 0
+            ? round(($tripDistance / $vendorTotalDistance) * 100, 2)
+            : null;
+        $cargoShare = $vendorTotalCargo > 0
+            ? round(($tripCargo / $vendorTotalCargo) * 100, 2)
+            : null;
+        $tonKmShare = $vendorTotalTonKm > 0
+            ? round(($tripTonKm / $vendorTotalTonKm) * 100, 2)
+            : null;
+        $costShare = $vendorTotalCost > 0
+            ? round(($tripCost / $vendorTotalCost) * 100, 2)
+            : null;
 
         $performanceData = [
             'id' => $outsourcePerformance->id,
@@ -297,6 +321,8 @@ class OutsourcePerformanceController extends Controller
             'cargo_volume_mt' => $outsourcePerformance->cargo_volume_mt ? (float) $outsourcePerformance->cargo_volume_mt : null,
             'tonkm' => $outsourcePerformance->tonkm ? (float) $outsourcePerformance->tonkm : null,
             'cost' => $outsourcePerformance->cost ? (float) $outsourcePerformance->cost : null,
+            'cost_per_km' => $costPerKm,
+            'cost_per_tonkm' => $costPerTonKm,
             'remarks' => $outsourcePerformance->remarks,
             'status' => $outsourcePerformance->status,
             'created_at' => optional($outsourcePerformance->created_at)->toDateTimeString(),
@@ -329,18 +355,50 @@ class OutsourcePerformanceController extends Controller
 
         $metrics = [
             'vendorTripCount' => $vendorTripCount,
+            'vendorCompletedTrips' => $vendorCompletedTrips,
+            'vendorActiveTrips' => $vendorActiveTrips,
+            'vendorCancelledTrips' => $vendorCancelledTrips,
             'vendorTotalDistance' => round($vendorTotalDistance, 2),
             'vendorTotalCargo' => round($vendorTotalCargo, 2),
             'vendorTotalTonKm' => round($vendorTotalTonKm, 2),
             'vendorTotalCost' => round($vendorTotalCost, 2),
-            'vendorAverageTonKm' => $vendorTripCount > 0 ? round($vendorTotalTonKm / $vendorTripCount, 2) : 0.0,
-            'vendorAverageCost' => $vendorTripCount > 0 ? round($vendorTotalCost / $vendorTripCount, 2) : 0.0,
+            'vendorAverageTonKm' => $vendorTripCount > 0 ? round($vendorTotalTonKm / $vendorTripCount, 2) : null,
+            'vendorAverageCost' => $vendorTripCount > 0 ? round($vendorTotalCost / $vendorTripCount, 2) : null,
+        ];
+
+        $insights = [
+            'share' => [
+                'distance' => $distanceShare,
+                'cargo' => $cargoShare,
+                'tonkm' => $tonKmShare,
+                'cost' => $costShare,
+            ],
+            'statusBreakdown' => $statusBreakdown,
+            'averages' => [
+                'costPerKm' => $costPerKm,
+                'costPerTonKm' => $costPerTonKm,
+                'avgTonKmPerTrip' => $metrics['vendorAverageTonKm'],
+                'avgCostPerTrip' => $metrics['vendorAverageCost'],
+            ],
+            'totals' => [
+                'trips' => $vendorTripCount,
+                'distance' => round($vendorTotalDistance, 2),
+                'cargo' => round($vendorTotalCargo, 2),
+                'tonkm' => round($vendorTotalTonKm, 2),
+                'cost' => round($vendorTotalCost, 2),
+            ],
+            'tripCounts' => [
+                'completed' => $vendorCompletedTrips,
+                'active' => $vendorActiveTrips,
+                'cancelled' => $vendorCancelledTrips,
+            ],
         ];
 
         return Inertia::render('OutsourcePerformances/Show', [
             'performance' => $performanceData,
             'metrics' => $metrics,
             'recentTrips' => $recentTrips,
+            'insights' => $insights,
         ]);
     }
 
@@ -364,20 +422,6 @@ class OutsourcePerformanceController extends Controller
             ->map(fn (Outsource $outsource) => [
                 'id' => $outsource->id,
                 'name' => $outsource->name,
-            ])
-            ->values();
-
-        $operations = Operation::query()
-            ->select(['id', 'operationid', 'customer_id'])
-            ->with(['customer:id,name'])
-            ->orderBy('operationid')
-            ->get()
-            ->map(fn (Operation $operation) => [
-                'id' => $operation->id,
-                'label' => $operation->operationid,
-                'customer' => $operation->customer
-                    ? $operation->customer->only(['id', 'name'])
-                    : null,
             ])
             ->values();
 
@@ -413,7 +457,7 @@ class OutsourcePerformanceController extends Controller
             ] : null,
             'operation' => $outsourcePerformance->operation ? [
                 'id' => $outsourcePerformance->operation->id,
-                'label' => $outsourcePerformance->operation->operationid,
+                'operationid' => $outsourcePerformance->operation->operationid,
                 'customer' => $outsourcePerformance->operation->customer ? [
                     'id' => $outsourcePerformance->operation->customer->id,
                     'name' => $outsourcePerformance->operation->customer->name,
@@ -424,9 +468,8 @@ class OutsourcePerformanceController extends Controller
         return Inertia::render('OutsourcePerformances/Edit', [
             'outsourcePerformance' => $outsourcePerformanceData,
             'outsources' => $outsources,
-            'operations' => $operations,
-            'places' => $places,
             'statusOptions' => $statusOptions,
+            'places' => $places,
         ]);
     }
 

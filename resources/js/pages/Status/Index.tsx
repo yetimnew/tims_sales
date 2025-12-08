@@ -325,8 +325,7 @@ export default function TruckStatusBoard({ trucksByStatus, statuses, selectedDat
                         <div className="flex items-center gap-2">
                             <Calendar className="h-5 w-5 text-gray-600" />
                             <DatePicker
-                                className="w-40"
-                                fieldClassName="h-10"
+                                className="w-40 h-10 justify-start text-left"
                                 value={selectedDate}
                                 onChange={(next) => {
                                     router.get('/truck-status-board', { date: next ?? '' });

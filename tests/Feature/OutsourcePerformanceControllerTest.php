@@ -12,6 +12,7 @@ use App\Models\Place;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
+use Inertia\Testing\AssertableInertia;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -27,10 +28,27 @@ class OutsourcePerformanceControllerTest extends TestCase
 
         $this->user = User::factory()->create();
         $this->givePermissions($this->user, [
+            'outsource-performances.view',
             'outsource-performances.store',
             'outsource-performances.update',
             'outsource-performances.destroy',
         ]);
+    }
+
+    #[Test]
+    public function it_lists_outsource_performances_without_filters(): void
+    {
+        $performance = OutsourcePerformance::factory()->create([
+            'status' => 'active',
+        ]);
+
+        $this->actingAs($this->user)
+            ->get(route('outsource-performances.index'))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('OutsourcePerformances/Index')
+                ->where('outsourcePerformances.total', 1)
+                ->where('outsourcePerformances.data.0.id', $performance->id)
+            );
     }
 
     #[Test]

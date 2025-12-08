@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AlertCircle, Ban, BarChart3, History, ShieldCheck, CheckCircle, XCircle, Calendar, User, ArrowLeft, Edit, Trash2, Hash, Activity, Truck, ArrowUpRight } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
@@ -11,6 +12,7 @@ import { DetailHeader } from '@/components/detail/detail-header';
 import { DetailSummaryGrid } from '@/components/detail/detail-summary-grid';
 import { DetailSectionCard } from '@/components/detail/detail-section-card';
 import { usePermissions } from '@/hooks/use-permissions';
+import { useListingLoading } from '@/hooks/use-listing-loading';
 import { useState } from 'react';
 
 interface ActivityLog {
@@ -309,6 +311,8 @@ const gradeCategoryConfig: Record<GradeCategoryKey, GradeCategoryConfigEntry> = 
                 label: 'Trips',
                 formatter: value => formatNumber(value, { maximumFractionDigits: 0 }),
             },
+
+
             {
                 key: 'total_distance_km',
                 label: 'Distance',
@@ -427,6 +431,96 @@ const gradeCategoryConfig: Record<GradeCategoryKey, GradeCategoryConfigEntry> = 
     },
 };
 
+const DRIVER_DETAIL_SKELETON_STORAGE_KEY = 'drivers.show.shouldShowSkeleton';
+
+function DriverDetailSkeleton() {
+    return (
+        <div className="flex min-h-0 flex-1 flex-col gap-6 rounded-xl p-4">
+            <div className="rounded-lg border border-slate-200 bg-gradient-to-r from-slate-50 to-indigo-50 p-6 dark:border-slate-700 dark:from-slate-900 dark:to-indigo-950/30">
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <div className="flex items-center gap-4">
+                        <Skeleton className="h-11 w-11 rounded-full" />
+                        <div className="space-y-3">
+                            <Skeleton className="h-7 w-48" />
+                            <Skeleton className="h-4 w-64" />
+                        </div>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                        {Array.from({ length: 4 }).map((_, index) => (
+                            <Skeleton key={index} className="h-9 w-28 rounded-lg" />
+                        ))}
+                    </div>
+                </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+                {Array.from({ length: 5 }).map((_, index) => (
+                    <div
+                        key={index}
+                        className="rounded-xl border-0 bg-gradient-to-br from-white to-indigo-50 p-5 shadow-lg dark:from-slate-900 dark:to-indigo-950/20"
+                    >
+                        <Skeleton className="h-3 w-20" />
+                        <Skeleton className="mt-3 h-8 w-36" />
+                        <Skeleton className="mt-2 h-3 w-28" />
+                    </div>
+                ))}
+
+            </div>
+
+            <div className="rounded-xl border border-slate-200 bg-slate-100/80 p-4 dark:border-slate-800 dark:bg-slate-900/60">
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    {Array.from({ length: 4 }).map((_, index) => (
+                        <Skeleton key={index} className="h-9 w-full rounded-lg" />
+                    ))}
+                </div>
+            </div>
+
+            <div className="flex flex-col gap-6 lg:flex-row">
+                <div className="flex-1 space-y-6">
+                    {Array.from({ length: 3 }).map((_, index) => (
+                        <div
+                            key={index}
+                            className="space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-md dark:border-slate-800 dark:bg-slate-900/60"
+                        >
+                            <Skeleton className="h-5 w-44" />
+                            <Skeleton className="h-4 w-64" />
+                            <div className="space-y-3">
+                                {Array.from({ length: 4 }).map((__, innerIndex) => (
+                                    <Skeleton key={innerIndex} className="h-4 w-full" />
+                                ))}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+                <div className="w-full lg:w-80 space-y-4">
+                    {Array.from({ length: 2 }).map((_, index) => (
+                        <div
+                            key={index}
+                            className="rounded-xl border border-slate-200 bg-white p-5 shadow-md dark:border-slate-800 dark:bg-slate-900/60"
+                        >
+                            <Skeleton className="h-5 w-40" />
+                            <div className="mt-4 space-y-3">
+                                {Array.from({ length: 5 }).map((__, innerIndex) => (
+                                    <Skeleton key={innerIndex} className="h-4 w-full" />
+                                ))}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-md dark:border-slate-800 dark:bg-slate-900/60">
+                <Skeleton className="h-5 w-48" />
+                <div className="space-y-3">
+                    {Array.from({ length: 6 }).map((_, index) => (
+                        <Skeleton key={index} className="h-4 w-full" />
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+}
+
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Drivers', href: '/drivers' },
 ];
@@ -448,6 +542,11 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
     const [isActivating, setIsActivating] = useState(false);
     const [deactivateError, setDeactivateError] = useState<string | null>(null);
     const [activateError, setActivateError] = useState<string | null>(null);
+
+    const { isLoading } = useListingLoading({
+        storageKey: DRIVER_DETAIL_SKELETON_STORAGE_KEY,
+        isDataReady: Boolean(driver?.id),
+    });
 
     const showDeactivateButton = canDeactivateDriver && driver.status !== 'inactive';
     const showActivateButton = canActivateDriver && driver.status === 'inactive';
@@ -628,7 +727,10 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`View Driver - ${driver.name}`} />
-            <div className="flex flex-1 min-h-0 flex-col gap-6 rounded-xl p-4">
+            {isLoading ? (
+                <DriverDetailSkeleton />
+            ) : (
+                <div className="flex flex-1 min-h-0 flex-col gap-6 rounded-xl p-4">
                 {/* Header */}
                 <DetailHeader
                     leading={
@@ -1185,6 +1287,7 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
                     </TabsContent>
                 </Tabs>
             </div>
+            )}
             {canDeleteDriver && (
                 <DeleteConfirmationDialog
                     open={deleteDialogOpen}

@@ -339,13 +339,12 @@ export default function DriverSafetyCreate({ drivers }: DriverSafetyCreateProps)
 
                     <FormField id="incident_date" label="Incident Date" required error={getFieldError('incident_date')}>
                         <DatePicker
-                            fullWidth
                             value={data.incident_date}
                             onChange={(next) => handleFieldChange('incident_date', next ?? '')}
-                            fieldClassName={cn(
-                                'h-11 border-slate-300 focus-within:border-rose-500 focus-within:ring-rose-500/20 dark:border-slate-700 dark:focus-within:border-rose-400',
+                            className={cn(
+                                'w-full justify-start text-left h-11 border-slate-300 focus-visible:border-rose-500 focus-visible:ring-rose-500/20 dark:border-slate-700 dark:focus-visible:border-rose-400',
                                 getFieldError('incident_date')
-                                    ? 'border-red-500 focus-within:border-red-500 focus-within:ring-red-500/20'
+                                    ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500/20'
                                     : undefined,
                             )}
                         />

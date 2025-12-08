@@ -15,8 +15,8 @@ interface ReportMultiSelectFilterProps {
     summaryLabelWhenAll: string;
     icon: LucideIcon;
     options: ReportSelectionOption[];
-    selectedIds: number[];
-    onChange: (ids: number[]) => void;
+    selectedIds: Array<number | string>;
+    onChange: (ids: Array<number | string>) => void;
     heading: string;
     searchPlaceholder: string;
     emptyMessage: string;
@@ -66,7 +66,7 @@ export function ReportMultiSelectFilter({
         return options.filter((option) => selectedIds.includes(option.id)).map((option) => option.label);
     }, [noFilter, options, selectedIds]);
 
-    const handleToggle = (id: number) => {
+    const handleToggle = (id: number | string) => {
         if (selectedIds.includes(id)) {
             onChange(selectedIds.filter((value) => value !== id));
             return;

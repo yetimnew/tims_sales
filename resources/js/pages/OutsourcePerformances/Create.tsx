@@ -8,9 +8,14 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { SearchableEntityCombobox } from '@/components/searchable-entity-combobox';
 import { PlaceCombobox } from '@/components/place-combobox';
 import { useToast } from '@/hooks/use-toast';
+import { useRemoteLookup } from '@/hooks/use-remote-lookup';
+import { search as operationsSearch } from '@/routes/operations';
+import { DatePicker } from '@/components/ui/date-picker';
 import { validateOutsourcePerformance, type ValidationErrors } from '@/lib/validation';
+import { cn } from '@/lib/utils';
 import type { BreadcrumbItem } from '@/types';
 import {
     AlertCircle,
@@ -31,7 +36,7 @@ interface OutsourceOption {
 
 interface OperationOption {
     id: number;
-    label: string;
+    operationid: string;
     customer?: {
         id: number;
         name: string;
@@ -50,9 +55,8 @@ interface StatusOption {
 
 interface OutsourcePerformancesCreateProps {
     outsources: OutsourceOption[];
-    operations: OperationOption[];
-    places: PlaceOption[];
     statusOptions: StatusOption[];
+    places: PlaceOption[];
 }
 
 type OutsourcePerformanceFormData = {
@@ -103,7 +107,7 @@ const computeTonKilometers = (distance: string, cargo: string): string => {
     return tonKm.toFixed(2);
 };
 
-export default function OutsourcePerformancesCreate({ outsources, operations, places, statusOptions }: OutsourcePerformancesCreateProps) {
+export default function OutsourcePerformancesCreate({ outsources, statusOptions, places }: OutsourcePerformancesCreateProps) {
     const { toast } = useToast();
     const defaultStatus = statusOptions[0]?.value ?? 'active';
 
@@ -139,6 +143,26 @@ export default function OutsourcePerformancesCreate({ outsources, operations, pl
     const [isDirty, setIsDirty] = useState(false);
     const [distanceLoading, setDistanceLoading] = useState(false);
     const [recent, setRecent] = useState<RecentSelections>({ outsources: [], operations: [] });
+
+    const operationSelectedIds = useMemo(() => {
+        const ids = new Set<string>();
+        if (data.operation_id) {
+            ids.add(data.operation_id);
+        }
+        recent.operations.forEach(id => {
+            if (id) {
+                ids.add(id);
+            }
+        });
+        return Array.from(ids);
+    }, [data.operation_id, recent.operations]);
+
+    const operationsLookup = useRemoteLookup<OperationOption>({
+        endpoint: operationsSearch.url(),
+        getId: operation => operation.id,
+        selectedIds: operationSelectedIds,
+        limit: 20,
+    });
 
     const statusOptionValues = useMemo(() => (statusOptions.length ? statusOptions : [{ label: 'Active', value: 'active' }]), [statusOptions]);
 
@@ -508,39 +532,39 @@ export default function OutsourcePerformancesCreate({ outsources, operations, pl
                                     </div>
 
                                     <div className="space-y-2">
-                                        <Label htmlFor="operation_id">
-                                            Operation <span className="text-red-500">*</span>
-                                        </Label>
-                                        <Select value={data.operation_id} onValueChange={value => handleFieldChange('operation_id', value)}>
-                                            <SelectTrigger id="operation_id" className={clientErrors.operation_id ? 'border-red-500 focus-visible:ring-red-500/20' : ''}>
-                                                <SelectValue placeholder="Select operation" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {operations.map(operation => (
-                                                    <SelectItem key={operation.id} value={operation.id.toString()}>
-                                                        {operation.label}
-                                                        {operation.customer?.name ? ` — ${operation.customer.name}` : ''}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        {clientErrors.operation_id && (
-                                            <p className="flex items-center gap-1 text-xs text-red-500">
-                                                <AlertCircle className="h-3 w-3" />
-                                                {clientErrors.operation_id}
-                                            </p>
-                                        )}
+                                        <SearchableEntityCombobox
+                                            id="operation_id"
+                                            label="Operation"
+                                            required
+                                            value={data.operation_id}
+                                            items={operationsLookup.items}
+                                            getValue={operation => operation.id}
+                                            getLabel={operation => operation.operationid}
+                                            getDescription={operation => operation.customer?.name}
+                                            getKeywords={operation => [operation.operationid, operation.customer?.name]}
+                                            placeholder="Search operation..."
+                                            searchPlaceholder="Search operations..."
+                                            searchValue={operationsLookup.query}
+                                            onSearchChange={operationsLookup.setQuery}
+                                            isLoading={operationsLookup.isLoading}
+                                            loadingMessage="Searching operations..."
+                                            onSelect={value => {
+                                                handleFieldChange('operation_id', value);
+                                                operationsLookup.setQuery('');
+                                            }}
+                                            error={typeof clientErrors.operation_id === 'string' ? clientErrors.operation_id : undefined}
+                                        />
                                         {recent.operations.length > 0 && (
                                             <div className="flex flex-wrap gap-1 pt-1">
                                                 {recent.operations.map(id => {
-                                                    const option = operations.find(operation => operation.id.toString() === id);
+                                                    const option = operationsLookup.getCachedItem(id);
                                                     if (!option) {
                                                         return null;
                                                     }
 
                                                     const label = option.customer?.name
-                                                        ? `${option.label} — ${option.customer.name}`
-                                                        : option.label;
+                                                        ? `${option.operationid} — ${option.customer.name}`
+                                                        : option.operationid;
 
                                                     const isActive = data.operation_id === id;
                                                     return (
@@ -584,15 +608,19 @@ export default function OutsourcePerformancesCreate({ outsources, operations, pl
 
                                 <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
                                     <div className="space-y-2">
-                                        <Label htmlFor="dispatch_date">
+                                        <span className="flex items-center gap-1 text-sm font-medium text-slate-700 dark:text-slate-200">
                                             Dispatch Date <span className="text-red-500">*</span>
-                                        </Label>
-                                        <Input
-                                            id="dispatch_date"
-                                            type="date"
-                                            value={data.dispatch_date}
-                                            onChange={event => handleFieldChange('dispatch_date', event.target.value)}
-                                            className={clientErrors.dispatch_date ? 'border-red-500 focus-visible:ring-red-500/20' : ''}
+                                        </span>
+                                        <DatePicker
+                                            value={data.dispatch_date || ''}
+                                            onChange={next => handleFieldChange('dispatch_date', next ?? '')}
+                                            placeholder="Select dispatch date"
+                                            className={cn(
+                                                'w-full justify-start text-left h-11 border-slate-300 hover:border-slate-400 focus-visible:border-emerald-500 focus-visible:ring-emerald-500/20 dark:border-slate-600 dark:hover:border-slate-500',
+                                                clientErrors.dispatch_date
+                                                    ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500/20'
+                                                    : undefined,
+                                            )}
                                         />
                                         {clientErrors.dispatch_date && (
                                             <p className="flex items-center gap-1 text-xs text-red-500">
@@ -646,7 +674,7 @@ export default function OutsourcePerformancesCreate({ outsources, operations, pl
                                         required
                                         value={data.from_place_id}
                                         places={places}
-                                        placeholder="Search origin..."
+                                        placeholder="Select origin"
                                         onSelect={value => handleFieldChange('from_place_id', value)}
                                         error={clientErrors.from_place_id}
                                     />
@@ -656,7 +684,7 @@ export default function OutsourcePerformancesCreate({ outsources, operations, pl
                                         required
                                         value={data.to_place_id}
                                         places={places}
-                                        placeholder="Search destination..."
+                                        placeholder="Select destination"
                                         onSelect={value => handleFieldChange('to_place_id', value)}
                                         error={clientErrors.to_place_id}
                                     />

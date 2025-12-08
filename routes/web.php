@@ -416,6 +416,10 @@ Route::middleware(['auth'])->group(function () {
             ->middleware('can:operations.view')
             ->name('operations.index');
 
+        Route::get('operations/search', [\App\Http\Controllers\OperationController::class, 'search'])
+            ->middleware('can:operations.search')
+            ->name('operations.search');
+
         Route::get('operations/create', [\App\Http\Controllers\OperationController::class, 'create'])
             ->middleware('can:operations.create')
             ->name('operations.create');
@@ -513,6 +517,10 @@ Route::middleware(['auth'])->group(function () {
         ->middleware('can:woredas.active')
         ->name('woredas.active');
 
+    Route::get('places/search', [\App\Http\Controllers\PlaceController::class, 'search'])
+        ->middleware('can:places.search')
+        ->name('places.search');
+
     Route::resource('places', \App\Http\Controllers\PlaceController::class);
     Route::post('places/{place}/deactivate', [\App\Http\Controllers\PlaceController::class, 'deactivate'])
         ->middleware('can:places.deactivate')
@@ -592,6 +600,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('reports/outsource-performance', [\App\Http\Controllers\ReportController::class, 'outsourcePerformanceReport'])
         ->middleware('can:reports.outsource-performance.view')
         ->name('reports.outsource-performance');
+    Route::get('reports/outsource-performance/export/{format}', [\App\Http\Controllers\ReportController::class, 'outsourcePerformanceExport'])
+        ->whereIn('format', ['csv', 'xlsx', 'pdf'])
+        ->middleware('can:reports.outsource-performance.export')
+        ->name('reports.outsource-performance.export');
     Route::get('reports/operation-profitability', [\App\Http\Controllers\ReportController::class, 'operationProfitability'])
         ->middleware('can:reports.operation-profitability.view')
         ->name('reports.operation-profitability');

@@ -298,24 +298,22 @@ export default function TrucksCreate({ vehicleTypes }: TrucksCreateProps) {
                     </FormField>
                     <FormField id="productionDate" label="Production Date">
                         <DatePicker
-                            fullWidth
                             value={data.productionDate ?? ''}
                             onChange={(next) => handleFieldChange('productionDate', next ?? '')}
-                            fieldClassName={cn(
-                                'h-11 border-slate-300 hover:border-slate-400 focus-within:border-blue-500 focus-within:ring-blue-500/20 dark:border-slate-600 dark:hover:border-slate-500',
-                                getFieldError('productionDate') ? 'border-red-500 focus-within:border-red-500' : undefined,
+                            className={cn(
+                                'w-full justify-start text-left h-11 border-slate-300 hover:border-slate-400 focus-visible:border-blue-500 focus-visible:ring-blue-500/20 dark:border-slate-600 dark:hover:border-slate-500',
+                                getFieldError('productionDate') ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500/20' : undefined,
                             )}
                         />
                     </FormField>
                     <FormField id="serviceStartDate" label="Service Start Date">
                         <DatePicker
-                            fullWidth
                             value={data.serviceStartDate ?? ''}
                             onChange={(next) => handleFieldChange('serviceStartDate', next ?? '')}
-                            isDisabled={!data.productionDate}
-                            fieldClassName={cn(
-                                'h-11 border-slate-300 hover:border-slate-400 focus-within:border-blue-500 focus-within:ring-blue-500/20 dark:border-slate-600 dark:hover:border-slate-500',
-                                getFieldError('serviceStartDate') ? 'border-red-500 focus-within:border-red-500' : undefined,
+                            disabled={!data.productionDate}
+                            className={cn(
+                                'w-full justify-start text-left h-11 border-slate-300 hover:border-slate-400 focus-visible:border-blue-500 focus-visible:ring-blue-500/20 dark:border-slate-600 dark:hover:border-slate-500',
+                                getFieldError('serviceStartDate') ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500/20' : undefined,
                             )}
                         />
                     </FormField>

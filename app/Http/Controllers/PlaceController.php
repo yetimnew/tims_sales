@@ -8,9 +8,11 @@ use App\Events\PlaceUpdated;
 use App\Models\Place;
 use App\Models\Woreda;
 use Exception;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -79,6 +81,106 @@ class PlaceController extends Controller
         return Inertia::render('Places/Index', [
             'places' => $places,
             'metrics' => $metrics,
+        ]);
+    }
+
+    /**
+     * Provide lightweight search results for place lookups.
+     */
+    public function search(Request $request): JsonResponse
+    {
+        $search = trim((string) $request->input('search'));
+        $limit = (int) $request->input('limit', 20);
+
+        if ($limit <= 0) {
+            $limit = 20;
+        }
+
+        $limit = min($limit, 50);
+
+        $rawSelected = $request->input('selected', []);
+        $selectedIds = collect(is_array($rawSelected) ? $rawSelected : [$rawSelected])
+            ->map(static fn ($value) => (int) $value)
+            ->filter(static fn (int $id) => $id > 0)
+            ->unique()
+            ->values();
+
+        $baseQuery = Place::query()
+            ->select(['id', 'name', 'code', 'woreda_id', 'status'])
+            ->with([
+                'woreda:id,name,zone_id',
+                'woreda.zone:id,name,region_id',
+                'woreda.zone.region:id,name',
+            ])
+            ->where('status', 'active');
+
+        if ($search !== '') {
+            $baseQuery->where(function ($query) use ($search) {
+                $query->where('name', 'like', "%{$search}%")
+                    ->orWhere('code', 'like', "%{$search}%")
+                    ->orWhereHas('woreda', static function ($woredaQuery) use ($search) {
+                        $woredaQuery->where('name', 'like', "%{$search}%")
+                            ->orWhereHas('zone', static function ($zoneQuery) use ($search) {
+                                $zoneQuery->where('name', 'like', "%{$search}%")
+                                    ->orWhereHas('region', static function ($regionQuery) use ($search) {
+                                        $regionQuery->where('name', 'like', "%{$search}%");
+                                    });
+                            });
+                    });
+            });
+        }
+
+        $places = (clone $baseQuery)
+            ->orderBy('name')
+            ->limit($limit + 1)
+            ->get();
+
+        $hasMore = $places->count() > $limit;
+
+        if ($hasMore) {
+            $places = $places->take($limit);
+        }
+
+        $missingSelectedIds = $selectedIds->diff($places->pluck('id'));
+
+        if ($missingSelectedIds->isNotEmpty()) {
+            $selectedPlaces = Place::query()
+                ->select(['id', 'name', 'code', 'woreda_id', 'status'])
+                ->with([
+                    'woreda:id,name,zone_id',
+                    'woreda.zone:id,name,region_id',
+                    'woreda.zone.region:id,name',
+                ])
+                ->whereIn('id', $missingSelectedIds)
+                ->get();
+
+            $places = $places->concat($selectedPlaces);
+        }
+
+        $places = $places
+            ->unique('id')
+            ->sortBy(static fn (Place $place) => Str::lower((string) $place->name))
+            ->values();
+
+        return response()->json([
+            'data' => $places->map(static fn (Place $place) => [
+                'id' => $place->id,
+                'name' => $place->name,
+                'code' => $place->code,
+                'woreda' => $place->woreda ? [
+                    'id' => $place->woreda->id,
+                    'name' => $place->woreda->name,
+                    'zone' => $place->woreda->zone ? [
+                        'id' => $place->woreda->zone->id,
+                        'name' => $place->woreda->zone->name,
+                        'region' => $place->woreda->zone->region ? [
+                            'id' => $place->woreda->zone->region->id,
+                            'name' => $place->woreda->zone->region->name,
+                        ] : null,
+                    ] : null,
+                ] : null,
+            ]),
+            'has_more' => $hasMore,
         ]);
     }
 

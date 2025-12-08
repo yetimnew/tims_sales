@@ -3,6 +3,7 @@ import { Head, Link, useForm } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { validateFuel, type ValidationErrors } from '@/lib/validation';
+import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Fuel, Truck, User, Calendar, GaugeCircle, AlertCircle, Save, ArrowUp, Receipt, NotepadText, Calculator, ArrowLeft } from 'lucide-react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -374,24 +376,14 @@ export default function FuelCreate({ assignments }: FuelCreateProps) {
                                         <Label htmlFor="fuel_date" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
                                             Fuel Date <span className="text-red-500">*</span>
                                         </Label>
-                                        <div className="group relative">
-                                            <Input
-                                                id="fuel_date"
-                                                type="date"
-                                                value={data.fuel_date}
-                                                onChange={(event) => handleFieldChange('fuel_date', event.target.value)}
-                                                className={`pl-4 pr-10 py-2.5 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 focus:ring-amber-500/20 focus:border-amber-500 transition-all duration-200 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-3 [&::-webkit-calendar-picker-indicator]:h-4 [&::-webkit-calendar-picker-indicator]:w-4 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 ${getFieldError('fuel_date') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}
-                                            />
-                                            <div
-                                                className="absolute right-3 top-1/2 z-20 -translate-y-1/2 cursor-pointer"
-                                                onClick={() => {
-                                                    const input = document.getElementById('fuel_date') as HTMLInputElement | null;
-                                                    input?.showPicker?.();
-                                                }}
-                                            >
-                                                <Calendar className="h-4 w-4 text-slate-500 transition-colors duration-200 group-hover:text-slate-600 dark:text-slate-400 dark:group-hover:text-slate-300" />
-                                            </div>
-                                        </div>
+                                        <DatePicker
+                                            value={data.fuel_date || ''}
+                                            onChange={(next) => handleFieldChange('fuel_date', next ?? '')}
+                                            className={cn(
+                                                'w-full justify-start text-left h-11 border-slate-300 hover:border-slate-400 focus-visible:border-amber-500 focus-visible:ring-amber-500/20 dark:border-slate-600 dark:hover:border-slate-500',
+                                                getFieldError('fuel_date') ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500/20' : undefined,
+                                            )}
+                                        />
                                         {getFieldError('fuel_date') && (
                                             <p className="flex items-center gap-1 text-sm text-red-500">
                                                 <AlertCircle className="h-3 w-3" />

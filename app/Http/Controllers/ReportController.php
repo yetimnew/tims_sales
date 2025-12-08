@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exports\Reports\DriverPerformanceExport;
+use App\Exports\Reports\OutsourcePerformanceExport;
 use App\Exports\Reports\PerformanceAllExport;
 use App\Exports\Reports\TruckPerformanceExport;
 use App\Http\Requests\Reports\CustomerProfitabilityRequest;
@@ -11,6 +12,7 @@ use App\Http\Requests\Reports\MaintenancePerformanceRequest;
 use App\Http\Requests\Reports\OutsourcePerformanceRequest;
 use App\Http\Requests\Reports\PerformanceAllRequest;
 use App\Http\Requests\Reports\PerformanceByDriverRequest;
+use App\Http\Requests\Reports\PerformanceByStatusRequest;
 use App\Http\Requests\Reports\PerformanceByTruckRequest;
 use App\Http\Requests\Reports\TruckGradingReportRequest;
 use App\Models\Customer;
@@ -30,6 +32,7 @@ use App\Services\Reports\FuelEfficiencyReport;
 use App\Services\Reports\MaintenancePerformanceReport;
 use App\Services\Reports\OutsourcePerformanceReport;
 use App\Services\Reports\PerformanceAllReport;
+use App\Services\Reports\PerformanceByStatusReport;
 use App\Services\Reports\TruckGradingReport;
 use App\Services\Reports\TruckPerformanceReport;
 use Dompdf\Dompdf;
@@ -48,6 +51,7 @@ class ReportController extends Controller
 {
     public function __construct(
         private readonly PerformanceAllReport $performanceAllReport,
+        private readonly PerformanceByStatusReport $performanceByStatusReport,
         private readonly TruckPerformanceReport $truckPerformanceReport,
         private readonly CustomerProfitabilityReport $customerProfitabilityReport,
         private readonly FuelEfficiencyReport $fuelEfficiencyReport,
@@ -288,31 +292,108 @@ class ReportController extends Controller
                 ->orderBy('status')
                 ->pluck('status')
                 ->filter()
+                ->map(static fn (string $status) => [
+                    'value' => $status,
+                    'label' => ucwords(str_replace(['_', '-'], ' ', $status)),
+                ])
                 ->values()
                 ->all();
+
+            $operations = Operation::query()
+                ->select('id', 'operationid', 'status', 'customer_id')
+                ->with('customer:id,name')
+                ->orderBy('operationid')
+                ->limit(300)
+                ->get()
+                ->map(static fn (Operation $operation) => [
+                    'id' => $operation->id,
+                    'code' => $operation->operationid ?? 'OP-'.$operation->id,
+                    'status' => $operation->status,
+                    'customer' => $operation->customer?->name,
+                ])
+                ->values();
+
+            $destinations = Place::query()
+                ->select('id', 'name', 'status')
+                ->orderBy('name')
+                ->limit(300)
+                ->get()
+                ->map(static fn (Place $place) => [
+                    'id' => $place->id,
+                    'name' => $place->name,
+                    'status' => $place->status,
+                ])
+                ->values();
+
+            $rows = $payload['rows'] instanceof Collection
+                ? $payload['rows']->values()->all()
+                : collect($payload['rows'])->values()->all();
 
             return Inertia::render('Reports/OutsourcePerformance', [
                 'filters' => [
                     'from' => $payload['resolved_from'],
                     'to' => $payload['resolved_to'],
-                    'outsource_ids' => $payload['outsource_ids'],
-                    'statuses' => $payload['statuses'],
+                    'outsource_ids' => $payload['filters']['outsource_ids'],
+                    'operation_ids' => $payload['filters']['operation_ids'],
+                    'destination_ids' => $payload['filters']['destination_ids'],
+                    'statuses' => $payload['filters']['statuses'],
+                    'limit' => $payload['filters']['limit'],
                 ],
+                'rows' => $rows,
+                'summary' => $payload['summary'],
+                'highlights' => $payload['highlights'],
                 'options' => [
                     'vendors' => $vendorOptions,
+                    'operations' => $operations,
+                    'destinations' => $destinations,
                     'statuses' => $statusOptions,
                 ],
-                'baseline' => $payload['baseline'],
-                'totals' => $payload['totals'],
-                'summary' => $payload['summary'],
-                'breakdown' => $payload['breakdown'],
-                'trend' => $payload['trend'],
-                'highlights' => $payload['highlights'],
             ]);
 
         } catch (Exception $e) {
+            report($e);
+
             return back()->withErrors(['error' => 'Failed to generate outsource performance report.']);
         }
+    }
+
+    public function outsourcePerformanceExport(OutsourcePerformanceRequest $request, string $format)
+    {
+        $format = strtolower($format);
+
+        if (! in_array($format, ['csv', 'xlsx', 'pdf'], true)) {
+            abort(404);
+        }
+
+        $validated = array_merge($request->validated(), ['format' => $format]);
+        $result = $this->outsourcePerformanceReport->build($validated);
+
+        $rows = $result['rows'] instanceof Collection
+            ? $result['rows']
+            : collect($result['rows']);
+
+        $filename = 'outsource_performance_'.now()->format('Y-m-d_H-i-s');
+
+        return match ($format) {
+            'csv' => $this->exportOutsourceCsv(
+                $this->performanceAllRowsWithTotals($rows, $result['summary']),
+                $result['resolved_from'],
+                $result['resolved_to'],
+                $filename.'.csv'
+            ),
+            'xlsx' => $this->exportOutsourceExcel(
+                $this->performanceAllRowsWithTotals($rows, $result['summary']),
+                $filename.'.xlsx'
+            ),
+            'pdf' => $this->exportOutsourcePdf(
+                $rows,
+                $result['summary'],
+                $result['resolved_from'],
+                $result['resolved_to'],
+                $filename.'.pdf'
+            ),
+            default => abort(404),
+        };
     }
 
     /**
@@ -1071,6 +1152,92 @@ class ReportController extends Controller
         ]);
     }
 
+    private function exportOutsourceCsv(Collection $rows, string $from, string $to, string $filename)
+    {
+        $headings = [
+            'Trip Number',
+            'Dispatch Date',
+            'Vendor',
+            'Vendor Status',
+            'Operation',
+            'Customer',
+            'Origin',
+            'Destination',
+            'Tonnage (MT)',
+            'Ton-KM',
+            'Distance (KM)',
+            'Vendor Cost',
+            'Revenue',
+            'Profit',
+            'Margin %',
+        ];
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+
+        return HttpResponse::streamDownload(static function () use ($rows, $headings, $from, $to) {
+            $handle = fopen('php://output', 'w');
+
+            fputcsv($handle, ['Outsource Performance Report']);
+            fputcsv($handle, ["Reporting window: {$from} to {$to}"]);
+            fputcsv($handle, []);
+            fputcsv($handle, $headings);
+
+            foreach ($rows as $row) {
+                fputcsv($handle, [
+                    $row['fo_number'],
+                    $row['dispatch_date'],
+                    $row['driver_name'],
+                    $row['truck_plate'],
+                    $row['operation_code'],
+                    $row['customer_name'],
+                    $row['origin_name'],
+                    $row['destination_name'],
+                    $row['tonnage'],
+                    $row['ton_km'],
+                    $row['distance_total'],
+                    $row['expense'],
+                    $row['revenue'],
+                    $row['profit'],
+                    $row['margin_percent'],
+                ]);
+            }
+
+            fclose($handle);
+        }, $filename, $headers);
+    }
+
+    private function exportOutsourceExcel(Collection $rows, string $filename)
+    {
+        return Excel::download(new OutsourcePerformanceExport($rows), $filename);
+    }
+
+    private function exportOutsourcePdf(Collection $rows, array $summary, string $from, string $to, string $filename)
+    {
+        $options = new Options;
+        $options->set('isRemoteEnabled', true);
+        $options->set('defaultFont', 'DejaVu Sans');
+
+        $dompdf = new Dompdf($options);
+        $html = view('reports.outsource_performance_pdf', [
+            'rows' => $rows->all(),
+            'summary' => $summary,
+            'from' => $from,
+            'to' => $to,
+        ])->render();
+
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'landscape');
+        $dompdf->render();
+
+        return HttpResponse::make($dompdf->output(), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ]);
+    }
+
     /**
      * Legacy-style: performance aggregated by truck with date filters.
      */
@@ -1316,29 +1483,17 @@ class ReportController extends Controller
     /**
      * Legacy-style: status summary by date.
      */
-    public function performanceByStatus(Request $request): Response|RedirectResponse
+    public function performanceByStatus(PerformanceByStatusRequest $request): Response|RedirectResponse
     {
         try {
-            $date = $request->input('date', now()->toDateString());
-            $rows = DB::table('statuses')
-                ->select('statustypes.name as status_name', DB::raw('COUNT(statuses.id) as count'))
-                ->join('statustypes', 'statustypes.id', '=', 'statuses.statustype_id')
-                ->whereDate('statuses.registerddate', $date)
-                ->groupBy('statustypes.name')
-                ->orderBy('count', 'desc')
-                ->get();
-
-            $latest = DB::table('statuses')
-                ->select('statuses.plate as plate', 'statustypes.name as status_name', 'statuses.registerddate')
-                ->join('statustypes', 'statustypes.id', '=', 'statuses.statustype_id')
-                ->whereDate('statuses.registerddate', $date)
-                ->orderBy('statuses.statustype_id')
-                ->get();
+            $result = $this->performanceByStatusReport->build($request->validated());
 
             return Inertia::render('Reports/PerformanceByStatus', [
-                'date' => $date,
-                'summary' => $rows,
-                'latest' => $latest,
+                'date' => $result['date'],
+                'summary' => $result['summary'],
+                'latest' => $result['latest'],
+                'metrics' => $result['metrics'],
+                'statuses' => $result['statuses'],
             ]);
         } catch (Exception $e) {
             return back()->withErrors(['error' => 'Failed to generate status report.']);

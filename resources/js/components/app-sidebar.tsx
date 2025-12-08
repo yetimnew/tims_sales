@@ -293,7 +293,7 @@ const getMainNavItems = (currentUrl: string): NavItem[] => {
                         title: 'Outsource Performances',
                         href: '/outsource-performances',
                         icon: Activity,
-                        requiredPermissions: ['performances.view', 'performances.show'],
+                        requiredPermissions: ['outsource-performances.view', 'outsource-performances.show'],
                     },
                 ],
             },

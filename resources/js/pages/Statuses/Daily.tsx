@@ -37,9 +37,7 @@ export default function StatusDaily({ status, date, trucks }: { status: any; dat
           <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4 text-muted-foreground" />
             <DatePicker
-              className="w-40"
-              fieldClassName="h-8 text-sm"
-              buttonClassName="h-7 w-7"
+              className="w-40 h-8 justify-start text-left text-sm"
               value={date}
               onChange={(next) => router.get(`/statuses/${status.id}/daily`, { date: next ?? '' })}
             />

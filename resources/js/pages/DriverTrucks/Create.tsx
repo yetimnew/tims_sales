@@ -6,13 +6,16 @@ import { UnsavedChangesBadge } from '@/components/forms/unsaved-changes-badge';
 import { ScrollToTopFab } from '@/components/forms/scroll-to-top-fab';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
 import { validateDriverTruck } from '@/lib/validation';
 import { type BreadcrumbItem } from '@/types';
 import { Link, useForm } from '@inertiajs/react';
+import { cn } from '@/lib/utils';
 import { ArrowLeft, Calendar, CheckCircle, Info, Save, Share2 } from 'lucide-react';
 import { type FormEventHandler } from 'react';
+import { parseISO } from 'date-fns';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 interface Truck {
@@ -69,6 +72,9 @@ export default function DriverTrucksCreate({ trucks, drivers, error }: Props) {
 
         return new URLSearchParams(window.location.search);
     }, []);
+
+    const minDate = useMemo(() => parseISO(minDateString), [minDateString]);
+    const maxDate = useMemo(() => parseISO(todayString), [todayString]);
 
     const defaultDriverId = searchParams?.get('driver_id')?.trim() ?? '';
     const defaultTruckId = searchParams?.get('truck_id')?.trim() ?? '';
@@ -417,28 +423,17 @@ export default function DriverTrucksCreate({ trucks, drivers, error }: Props) {
                         helperText="Must be today or within the last 30 days."
                         error={getFieldError('date_recived')}
                     >
-                        <div className="group relative">
-                            <Input
-                                id="date_recived"
-                                type="date"
-                                value={data.date_recived}
-                                onChange={(event) => handleFieldChange('date_recived', event.target.value)}
-                                min={minDateString}
-                                max={todayString}
-                                className={`pl-4 pr-10 py-2.5 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-3 [&::-webkit-calendar-picker-indicator]:h-4 [&::-webkit-calendar-picker-indicator]:w-4 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 ${getFieldError('date_recived') ? 'border-red-500 focus:border-red-500' : ''}`}
-                            />
-                            <button
-                                type="button"
-                                className="absolute right-3 top-1/2 z-20 -translate-y-1/2 text-slate-500 transition-colors duration-200 group-hover:text-slate-600 dark:text-slate-400 dark:group-hover:text-slate-300"
-                                onClick={() => {
-                                    const input = document.getElementById('date_recived') as HTMLInputElement | null;
-                                    input?.showPicker?.();
-                                }}
-                                aria-label="Open date picker"
-                            >
-                                <Calendar className="h-4 w-4" />
-                            </button>
-                        </div>
+                        <DatePicker
+                            value={data.date_recived || ''}
+                            onChange={(next) => handleFieldChange('date_recived', next ?? '')}
+                            fromDate={minDate}
+                            toDate={maxDate}
+                            disabledDays={[{ before: minDate }, { after: maxDate }]}
+                            className={cn(
+                                'w-full justify-start text-left h-11 border-slate-300 hover:border-slate-400 focus-visible:border-blue-500 focus-visible:ring-blue-500/20 dark:border-slate-600 dark:hover:border-slate-500',
+                                getFieldError('date_recived') ? 'border-red-500 focus-visible:border-red-500' : undefined,
+                            )}
+                        />
                     </FormField>
 
                     {(selectedTruck || selectedDriver) && (

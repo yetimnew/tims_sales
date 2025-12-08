@@ -2,9 +2,10 @@ import { useMemo, useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { Separator } from '@/components/ui/separator';
 import {
     Table,
@@ -14,7 +15,6 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -27,14 +27,27 @@ import {
     Coins,
     Edit,
     FileText,
+    Gauge,
     MapPin,
     Navigation,
     Package,
+    Percent,
+    Target,
     Trash2,
     TrendingUp,
     User,
 } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
+import {
+    Area,
+    AreaChart,
+    CartesianGrid,
+    Cell,
+    Pie,
+    PieChart,
+    ResponsiveContainer,
+    Tooltip as RechartsTooltip,
+    XAxis,
+} from 'recharts';
 
 interface SimpleReference {
     id: number;
@@ -49,6 +62,8 @@ interface PerformanceResource {
     cargo_volume_mt: number | null;
     tonkm: number | null;
     cost: number | null;
+    cost_per_km: number | null;
+    cost_per_tonkm: number | null;
     remarks: string | null;
     status: string | null;
     created_at: string | null;
@@ -66,12 +81,15 @@ interface PerformanceResource {
 
 interface VendorMetrics {
     vendorTripCount: number;
+    vendorCompletedTrips: number;
+    vendorActiveTrips: number;
+    vendorCancelledTrips: number;
     vendorTotalDistance: number;
     vendorTotalCargo: number;
     vendorTotalTonKm: number;
     vendorTotalCost: number;
-    vendorAverageTonKm: number;
-    vendorAverageCost: number;
+    vendorAverageTonKm: number | null;
+    vendorAverageCost: number | null;
 }
 
 interface RecentTrip {
@@ -80,15 +98,50 @@ interface RecentTrip {
     dispatch_date: string | null;
     distance_km: number | null;
     cargo_volume_mt: number | null;
+    tonkm: number | null;
     cost: number | null;
     status: string | null;
     highlight: boolean;
+}
+
+interface StatusSlice {
+    label: string;
+    value: number;
+}
+
+interface VendorInsights {
+    share: {
+        distance: number | null;
+        cargo: number | null;
+        tonkm: number | null;
+        cost: number | null;
+    };
+    statusBreakdown: StatusSlice[];
+    averages: {
+        costPerKm: number | null;
+        costPerTonKm: number | null;
+        avgTonKmPerTrip: number | null;
+        avgCostPerTrip: number | null;
+    };
+    totals: {
+        trips: number;
+        distance: number;
+        cargo: number;
+        tonkm: number;
+        cost: number;
+    };
+    tripCounts: {
+        completed: number;
+        active: number;
+        cancelled: number;
+    };
 }
 
 interface OutsourcePerformancesShowProps {
     performance: PerformanceResource;
     metrics: VendorMetrics;
     recentTrips: RecentTrip[];
+    insights?: VendorInsights | null;
 }
 
 const buildBreadcrumbs = (tripNumber: string, performanceId: number): BreadcrumbItem[] => [
@@ -97,7 +150,7 @@ const buildBreadcrumbs = (tripNumber: string, performanceId: number): Breadcrumb
 ];
 
 const formatNumber = (value: number | null | undefined, suffix = '', fractionDigits = 2): string => {
-    if (value === null || value === undefined || Number.isNaN(value)) {
+    if (value === null || value === undefined || Number.isNaN(Number(value))) {
         return '—';
     }
 
@@ -108,7 +161,7 @@ const formatNumber = (value: number | null | undefined, suffix = '', fractionDig
 };
 
 const formatCurrency = (value: number | null | undefined): string => {
-    if (value === null || value === undefined || Number.isNaN(value)) {
+    if (value === null || value === undefined || Number.isNaN(Number(value))) {
         return '—';
     }
 
@@ -117,6 +170,14 @@ const formatCurrency = (value: number | null | undefined): string => {
         currency: 'ETB',
         maximumFractionDigits: 2,
     }).format(Number(value));
+};
+
+const formatPercent = (value: number | null | undefined): string => {
+    if (value === null || value === undefined || Number.isNaN(Number(value))) {
+        return '—';
+    }
+
+    return `${Number(value).toFixed(1)}%`;
 };
 
 const formatDate = (value: string | null | undefined): string => {
@@ -132,6 +193,22 @@ const formatDate = (value: string | null | undefined): string => {
     return date.toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
+        day: 'numeric',
+    });
+};
+
+const formatShortDate = (value: string | null | undefined): string => {
+    if (!value) {
+        return '';
+    }
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+        return '';
+    }
+
+    return date.toLocaleDateString('en-US', {
+        month: 'short',
         day: 'numeric',
     });
 };
@@ -182,7 +259,9 @@ const statusToneClasses = (status: string | null | undefined): string => {
     }
 };
 
-export default function OutsourcePerformancesShow({ performance, metrics, recentTrips }: OutsourcePerformancesShowProps) {
+const chartPalette = ['#6366f1', '#22c55e', '#f97316'];
+
+export default function OutsourcePerformancesShow({ performance, metrics, recentTrips, insights }: OutsourcePerformancesShowProps) {
     const { hasPermission } = usePermissions();
     const { toast } = useToast();
 
@@ -214,102 +293,154 @@ export default function OutsourcePerformancesShow({ performance, metrics, recent
     const createdLabel = formatDateTime(performance.created_at);
     const updatedLabel = formatDateTime(performance.updated_at);
 
-    type MetricCard = {
-        title: string;
-        value: string;
-        description: string;
-        icon: LucideIcon;
-    };
+    const vendorChips = useMemo(() => ([
+        {
+            label: 'Vendor trips',
+            value: metrics.vendorTripCount,
+            icon: Activity,
+        },
+        {
+            label: 'Completed',
+            value: metrics.vendorCompletedTrips,
+            icon: TrendingUp,
+        },
+        {
+            label: 'Active',
+            value: metrics.vendorActiveTrips,
+            icon: Target,
+        },
+        {
+            label: 'Cancelled',
+            value: metrics.vendorCancelledTrips,
+            icon: BarChart3,
+        },
+    ]), [
+        metrics.vendorTripCount,
+        metrics.vendorCompletedTrips,
+        metrics.vendorActiveTrips,
+        metrics.vendorCancelledTrips,
+    ]);
 
-    const vendorMetricCards = useMemo(() => {
-        const resolved = metrics ?? {
-            vendorTripCount: 0,
-            vendorTotalDistance: 0,
-            vendorTotalCargo: 0,
-            vendorTotalTonKm: 0,
-            vendorTotalCost: 0,
-            vendorAverageTonKm: 0,
-            vendorAverageCost: 0,
-        } as VendorMetrics;
+    const tripSnapshotCards = useMemo(() => ([
+        {
+            title: 'Distance',
+            value: distanceLabel,
+            hint: 'Kilometres travelled for this dispatch',
+            icon: Navigation,
+            tone: 'text-blue-600',
+            badge: 'bg-blue-100 dark:bg-blue-900/30',
+        },
+        {
+            title: 'Cargo Volume',
+            value: cargoLabel,
+            hint: 'Total freight moved in metric tons',
+            icon: Package,
+            tone: 'text-emerald-600',
+            badge: 'bg-emerald-100 dark:bg-emerald-900/30',
+        },
+        {
+            title: 'Ton-Kilometres',
+            value: tonKmLabel,
+            hint: 'Productive output based on tonnage × distance',
+            icon: Activity,
+            tone: 'text-indigo-600',
+            badge: 'bg-indigo-100 dark:bg-indigo-900/30',
+        },
+        {
+            title: 'Trip Cost',
+            value: costLabel,
+            hint: 'Total spend captured for this trip',
+            icon: Coins,
+            tone: 'text-amber-600',
+            badge: 'bg-amber-100 dark:bg-amber-900/30',
+        },
+    ]), [cargoLabel, costLabel, distanceLabel, tonKmLabel]);
+
+    const share = insights?.share;
+    const shareCards = useMemo(() => ([
+        {
+            title: 'Distance share',
+            value: formatPercent(share?.distance),
+            description: 'Contribution to vendor distance portfolio',
+            icon: Navigation,
+        },
+        {
+            title: 'Cargo share',
+            value: formatPercent(share?.cargo),
+            description: 'Portion of cargo moved by this trip',
+            icon: Package,
+        },
+        {
+            title: 'Ton-km share',
+            value: formatPercent(share?.tonkm),
+            description: 'Share of productivity within vendor history',
+            icon: TrendingUp,
+        },
+        {
+            title: 'Cost share',
+            value: formatPercent(share?.cost),
+            description: 'Percentage of vendor spend tied to this run',
+            icon: Coins,
+        },
+    ]), [share?.cargo, share?.cost, share?.distance, share?.tonkm]);
+
+    const efficiencyCards = useMemo(() => {
+        const avgTonKm = insights?.averages.avgTonKmPerTrip ?? metrics.vendorAverageTonKm;
+        const avgCost = insights?.averages.avgCostPerTrip ?? metrics.vendorAverageCost;
 
         return [
             {
-                title: 'Vendor Trips',
-                value: formatNumber(resolved.vendorTripCount, ''),
-                description: 'Total outsource runs recorded for this vendor.',
+                title: 'Cost per km',
+                value: formatNumber(performance.cost_per_km, ' Birr/km'),
+                detail: 'Spend required for every kilometre travelled.',
+                icon: Gauge,
+            },
+            {
+                title: 'Cost per ton-km',
+                value: formatNumber(performance.cost_per_tonkm, ' Birr/ton-km'),
+                detail: 'Efficiency of spend across tonnage delivered.',
+                icon: Percent,
+            },
+            {
+                title: 'Vendor avg ton-km',
+                value: avgTonKm !== null && avgTonKm !== undefined ? formatNumber(avgTonKm, ' ton-km') : '—',
+                detail: 'Mean productivity per vendor dispatch.',
                 icon: Activity,
             },
             {
-                title: 'Distance Logged',
-                value: formatNumber(resolved.vendorTotalDistance, ' km'),
-                description: 'Kilometres travelled across all vendor assignments.',
-                icon: Navigation,
-            },
-            {
-                title: 'Cargo Moved',
-                value: formatNumber(resolved.vendorTotalCargo, ' MT'),
-                description: 'Aggregate tonnage delivered via this vendor.',
-                icon: Package,
-            },
-            {
-                title: 'Average Ton-Km',
-                value: formatNumber(resolved.vendorAverageTonKm, ' ton-km'),
-                description: 'Mean productivity per logged trip.',
-                icon: TrendingUp,
-            },
-            {
-                title: 'Total Spend',
-                value: formatCurrency(resolved.vendorTotalCost),
-                description: 'Cumulative payout made to the vendor.',
+                title: 'Vendor avg cost',
+                value: avgCost !== null && avgCost !== undefined ? formatCurrency(avgCost) : '—',
+                detail: 'Average payout per vendor assignment.',
                 icon: Coins,
             },
-            {
-                title: 'Average Cost',
-                value: formatCurrency(resolved.vendorAverageCost),
-                description: 'Typical Birr outlay per trip across history.',
-                icon: BarChart3,
-            },
-        ] satisfies MetricCard[];
-    }, [metrics]);
+        ];
+    }, [
+        insights?.averages.avgCostPerTrip,
+        insights?.averages.avgTonKmPerTrip,
+        metrics.vendorAverageCost,
+        metrics.vendorAverageTonKm,
+        performance.cost_per_km,
+        performance.cost_per_tonkm,
+    ]);
 
-    const tripSnapshotCards = useMemo(() => (
-        [
-            {
-                title: 'Distance',
-                value: distanceLabel,
-                hint: 'Registered kilometres for this dispatch',
-                icon: Navigation,
-                tone: 'text-blue-600',
-                badge: 'bg-blue-100 dark:bg-blue-900/30',
-            },
-            {
-                title: 'Cargo Volume',
-                value: cargoLabel,
-                hint: 'Tonnage committed for this trip',
-                icon: Package,
-                tone: 'text-emerald-600',
-                badge: 'bg-emerald-100 dark:bg-emerald-900/30',
-            },
-            {
-                title: 'Ton-Kilometres',
-                value: tonKmLabel,
-                hint: 'Productivity output based on cargo × distance',
-                icon: Activity,
-                tone: 'text-indigo-600',
-                badge: 'bg-indigo-100 dark:bg-indigo-900/30',
-            },
-            {
-                title: 'Trip Cost',
-                value: costLabel,
-                hint: 'Spend captured for this vendor dispatch',
-                icon: Coins,
-                tone: 'text-amber-600',
-                badge: 'bg-amber-100 dark:bg-amber-900/30',
-            },
-        ]
-    ), [cargoLabel, costLabel, distanceLabel, tonKmLabel]);
+    const statusData = insights?.statusBreakdown ?? [];
+    const hasStatusData = statusData.some(slice => slice.value > 0);
 
-    const hasRecentTrips = Array.isArray(recentTrips) && recentTrips.length > 0;
+    const timelineData = useMemo(() => {
+        if (!recentTrips || recentTrips.length === 0) {
+            return [] as Array<{ name: string; cost: number }>;
+        }
+
+        return recentTrips
+            .slice()
+            .reverse()
+            .map(trip => ({
+                name: formatShortDate(trip.dispatch_date) || trip.trip_number,
+                cost: trip.cost ?? 0,
+            }));
+    }, [recentTrips]);
+
+    const vendorTotals = insights?.totals;
 
     const handleDeleteConfirm = () => {
         setIsDeleting(true);
@@ -400,282 +531,304 @@ export default function OutsourcePerformancesShow({ performance, metrics, recent
                                     )}
                                 </div>
                             </div>
-
-                            <div className="flex flex-wrap items-center gap-4 rounded-2xl border border-slate-200/70 bg-slate-50/70 p-4 dark:border-slate-800/60 dark:bg-slate-900/40">
-                                <div className="flex flex-1 min-w-[160px] items-center gap-3">
-                                    <div className="rounded-xl bg-indigo-100 p-3 text-indigo-600 shadow-sm dark:bg-indigo-900/30 dark:text-indigo-300">
-                                        <MapPin className="h-5 w-5" />
-                                    </div>
-                                    <div>
-                                        <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Origin</p>
-                                        <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                                            {performance.from_place?.name ?? 'Not specified'}
-                                        </p>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-2 text-indigo-500 dark:text-indigo-300">
-                                    <div className="h-px w-12 bg-gradient-to-r from-indigo-400/60 to-emerald-400/60" />
-                                    <Navigation className="h-5 w-5" />
-                                    <div className="h-px w-12 bg-gradient-to-r from-indigo-400/60 to-emerald-400/60" />
-                                </div>
-                                <div className="flex flex-1 min-w-[160px] items-center justify-end gap-3">
-                                    <div className="text-right">
-                                        <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Destination</p>
-                                        <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                                            {performance.to_place?.name ?? 'Not specified'}
-                                        </p>
-                                    </div>
-                                    <div className="rounded-xl bg-emerald-100 p-3 text-emerald-600 shadow-sm dark:bg-emerald-900/30 dark:text-emerald-300">
-                                        <MapPin className="h-5 w-5" />
-                                    </div>
-                                </div>
+                            <Separator />
+                            <div className="flex flex-wrap gap-2">
+                                {vendorChips.map(chip => (
+                                    <Badge
+                                        key={chip.label}
+                                        variant="outline"
+                                        className="flex items-center gap-2 border-slate-200 bg-slate-100/70 px-3 py-1 text-xs font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-300"
+                                    >
+                                        <chip.icon className="h-3.5 w-3.5" />
+                                        {chip.label}: {formatNumber(chip.value, '', 0)}
+                                    </Badge>
+                                ))}
                             </div>
                         </CardContent>
                     </Card>
 
-                    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.32fr)]">
-                        <div className="space-y-6">
-                            <Card className="border border-slate-200/70 bg-white/95 shadow-lg backdrop-blur dark:border-slate-800/60 dark:bg-slate-900/80">
-                                <CardHeader className="border-b border-slate-200/60 bg-slate-50/70 dark:border-slate-800/60 dark:bg-slate-900/50">
-                                    <CardTitle className="text-base font-semibold text-slate-900 dark:text-slate-100">
-                                        Trip Snapshot
-                                    </CardTitle>
-                                    <CardDescription className="text-sm text-muted-foreground">
-                                        Quick metrics that summarise this vendor dispatch.
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent className="grid gap-3 p-6 sm:grid-cols-2 xl:grid-cols-4">
-                                    {tripSnapshotCards.map(card => (
-                                        <div
-                                            key={card.title}
-                                            className="rounded-xl border border-slate-200/70 bg-white/80 p-4 shadow-sm transition hover:shadow-md dark:border-slate-800/60 dark:bg-slate-900/50"
-                                        >
-                                            <div className="flex items-center justify-between">
-                                                <div>
-                                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                                                        {card.title}
-                                                    </p>
-                                                    <p className={`mt-1 text-lg font-semibold ${card.tone}`}>{card.value}</p>
-                                                </div>
-                                                <div className={`rounded-lg ${card.badge} p-2`}>
-                                                    <card.icon className="h-5 w-5" />
-                                                </div>
+                    <div className="grid gap-4 lg:grid-cols-2">
+                        <Card className="border border-slate-200/60 dark:border-slate-800/60">
+                            <CardHeader>
+                                <CardTitle>Trip Snapshot</CardTitle>
+                                <CardDescription>Key operational figures for this outsource dispatch.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="grid gap-4 sm:grid-cols-2">
+                                {tripSnapshotCards.map(metric => (
+                                    <div key={metric.title} className="flex items-center gap-3">
+                                        <div className={`rounded-full p-2 ${metric.badge}`}>
+                                            <metric.icon className={`h-4 w-4 ${metric.tone}`} />
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                                                {metric.title}
+                                            </p>
+                                            <p className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                                                {metric.value}
+                                            </p>
+                                            <p className="text-xs text-slate-500 dark:text-slate-400">{metric.hint}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </CardContent>
+                        </Card>
+
+                        <Card className="border border-slate-200/60 dark:border-slate-800/60">
+                            <CardHeader>
+                                <CardTitle>Vendor Impact &amp; Efficiency</CardTitle>
+                                <CardDescription>How this trip stacks against vendor history.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    {efficiencyCards.map(card => (
+                                        <div key={card.title} className="space-y-1 rounded-lg border border-slate-200/70 bg-slate-50/60 p-4 dark:border-slate-800/60 dark:bg-slate-900/40">
+                                            <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                                                <card.icon className="h-4 w-4" />
+                                                {card.title}
                                             </div>
-                                            <p className="mt-3 text-xs text-muted-foreground">{card.hint}</p>
+                                            <p className="text-lg font-semibold text-slate-900 dark:text-slate-100">{card.value}</p>
+                                            <p className="text-xs text-slate-500 dark:text-slate-400">{card.detail}</p>
                                         </div>
                                     ))}
-                                </CardContent>
-                            </Card>
-
-                            <Card className="border border-slate-200/70 bg-white/95 shadow-lg backdrop-blur dark:border-slate-800/60 dark:bg-slate-900/80">
-                                <CardHeader className="border-b border-slate-200/60 bg-slate-50/70 dark:border-slate-800/60 dark:bg-slate-900/50">
-                                    <CardTitle className="text-base font-semibold text-slate-900 dark:text-slate-100">
-                                        Operational Context
-                                    </CardTitle>
-                                    <CardDescription className="text-sm text-muted-foreground">
-                                        Reference details that position this trip within its operation.
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent className="space-y-5 p-6 text-sm text-slate-700 dark:text-slate-300">
-                                    <div className="flex items-start gap-3">
-                                        <div className="rounded-lg bg-indigo-100 p-2 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-300">
-                                            <Building2 className="h-4 w-4" />
+                                </div>
+                                <Separator />
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    {shareCards.map(card => (
+                                        <div key={card.title} className="rounded-lg border border-slate-200/70 bg-white/70 p-4 dark:border-slate-800/60 dark:bg-slate-950/40">
+                                            <div className="flex items-center justify-between">
+                                                <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                                                    {card.title}
+                                                </p>
+                                                <card.icon className="h-4 w-4 text-slate-500" />
+                                            </div>
+                                            <p className="mt-2 text-lg font-semibold text-slate-900 dark:text-slate-100">{card.value}</p>
+                                            <p className="text-xs text-slate-500 dark:text-slate-400">{card.description}</p>
                                         </div>
-                                        <div className="min-w-0">
-                                            <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Operation</p>
-                                            <p className="font-medium text-slate-900 dark:text-slate-100">{operationLabel}</p>
-                                            {customerLabel && (
-                                                <p className="text-xs text-muted-foreground">Customer • {customerLabel}</p>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <div className="flex items-start gap-3">
-                                        <div className="rounded-lg bg-emerald-100 p-2 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-300">
-                                            <User className="h-4 w-4" />
-                                        </div>
-                                        <div className="min-w-0">
-                                            <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Vendor</p>
-                                            <p className="font-medium text-slate-900 dark:text-slate-100">{vendorLabel}</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-start gap-3">
-                                        <div className="rounded-lg bg-slate-200 p-2 text-slate-600 dark:bg-slate-800/60 dark:text-slate-300">
-                                            <ClipboardList className="h-4 w-4" />
-                                        </div>
-                                        <div className="min-w-0 space-y-1">
-                                            <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Route</p>
-                                            <p className="font-medium text-slate-900 dark:text-slate-100">{routeLabel}</p>
-                                            <p className="text-xs text-muted-foreground">Status {statusLabel}</p>
-                                        </div>
-                                    </div>
-                                    <Separator className="bg-slate-200 dark:bg-slate-800" />
-                                    <div className="grid gap-3 text-xs text-muted-foreground sm:grid-cols-2">
-                                        <div className="rounded-lg border border-slate-200/70 bg-white/70 p-3 dark:border-slate-800/60 dark:bg-slate-900/40">
-                                            <p className="font-semibold text-slate-900 dark:text-slate-100">{dispatchDateLabel}</p>
-                                            <p className="mt-1 uppercase tracking-wide">Dispatch date</p>
-                                        </div>
-                                        <div className="rounded-lg border border-slate-200/70 bg-white/70 p-3 dark:border-slate-800/60 dark:bg-slate-900/40">
-                                            <p className="font-semibold text-slate-900 dark:text-slate-100">{authorLabel}</p>
-                                            <p className="mt-1 uppercase tracking-wide">Recorded by</p>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-
-                            <Card className="border border-slate-200/70 bg-white/95 shadow-lg backdrop-blur dark:border-slate-800/60 dark:bg-slate-900/80">
-                                <CardHeader className="border-b border-slate-200/60 bg-slate-50/70 dark:border-slate-800/60 dark:bg-slate-900/50">
-                                    <CardTitle className="text-base font-semibold text-slate-900 dark:text-slate-100">
-                                        Vendor Performance Benchmarks
-                                    </CardTitle>
-                                    <CardDescription className="text-sm text-muted-foreground">
-                                        Aggregated insights across all historical trips for this vendor.
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent className="grid gap-4 p-6 sm:grid-cols-2 xl:grid-cols-3">
-                                    {vendorMetricCards.map(card => (
-                                        <Card
-                                            key={card.title}
-                                            className="border border-slate-200/70 bg-white/80 shadow-sm backdrop-blur transition hover:shadow-md dark:border-slate-800/60 dark:bg-slate-900/60"
-                                        >
-                                            <CardHeader className="flex flex-row items-center justify-between gap-4 pb-2">
-                                                <div className="space-y-1.5">
-                                                    <CardTitle className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                                                        {card.title}
-                                                    </CardTitle>
-                                                    <p className="text-xl font-semibold text-slate-900 dark:text-slate-100">{card.value}</p>
-                                                </div>
-                                                <div className="rounded-lg bg-slate-100 p-2 text-slate-600 dark:bg-slate-800/70 dark:text-slate-300">
-                                                    <card.icon className="h-5 w-5" />
-                                                </div>
-                                            </CardHeader>
-                                            <CardContent className="pt-0">
-                                                <p className="text-xs text-muted-foreground">{card.description}</p>
-                                            </CardContent>
-                                        </Card>
                                     ))}
-                                </CardContent>
-                            </Card>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
 
-                            <Card className="border border-slate-200/70 bg-white/95 shadow-lg backdrop-blur dark:border-slate-800/60 dark:bg-slate-900/80">
-                                <CardHeader className="flex items-center gap-2 pb-3">
-                                    <FileText className="h-5 w-5 text-slate-500 dark:text-slate-300" />
-                                    <div>
-                                        <CardTitle className="text-base font-semibold text-slate-900 dark:text-slate-100">Trip Notes</CardTitle>
-                                        <CardDescription className="text-sm text-muted-foreground">
-                                            Additional remarks captured while logging this outsourcing run.
-                                        </CardDescription>
+                    <div className="grid gap-4 xl:grid-cols-3">
+                        <Card className="border border-slate-200/60 dark:border-slate-800/60 xl:col-span-2">
+                            <CardHeader>
+                                <CardTitle>Route &amp; Operational Context</CardTitle>
+                                <CardDescription>Logistical details that frame this vendor dispatch.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    <div className="space-y-1">
+                                        <div className="flex items-center gap-2 text-xs font-medium uppercase text-slate-500 dark:text-slate-400">
+                                            <MapPin className="h-4 w-4 text-slate-500" />
+                                            Route
+                                        </div>
+                                        <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{routeLabel}</p>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">{distanceLabel} recorded for this vendor run.</p>
                                     </div>
-                                </CardHeader>
-                                <CardContent className="p-6">
-                                    {performance.remarks ? (
-                                        <p className="whitespace-pre-line text-sm leading-relaxed text-slate-700 dark:text-slate-300">
-                                            {performance.remarks}
-                                        </p>
+                                    <div className="space-y-1">
+                                        <div className="flex items-center gap-2 text-xs font-medium uppercase text-slate-500 dark:text-slate-400">
+                                            <Calendar className="h-4 w-4 text-slate-500" />
+                                            Dispatch date
+                                        </div>
+                                        <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{dispatchDateLabel}</p>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">Execution window for the outsourcing engagement.</p>
+                                    </div>
+                                </div>
+                                <Separator />
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    <div className="space-y-1">
+                                        <div className="flex items-center gap-2 text-xs font-medium uppercase text-slate-500 dark:text-slate-400">
+                                            <FileText className="h-4 w-4 text-slate-500" />
+                                            Operation reference
+                                        </div>
+                                        {performance.operation ? (
+                                            <Link
+                                                href={`/operations/${performance.operation.id}`}
+                                                className="text-sm font-semibold text-indigo-600 hover:underline dark:text-indigo-300"
+                                            >
+                                                {operationLabel}
+                                            </Link>
+                                        ) : (
+                                            <p className="text-sm font-semibold text-slate-500">Operation not linked</p>
+                                        )}
+                                        {customerLabel ? (
+                                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                                                <span className="inline-flex items-center gap-1">
+                                                    <Building2 className="h-3.5 w-3.5" />
+                                                    {customerLabel}
+                                                </span>
+                                            </p>
+                                        ) : null}
+                                    </div>
+                                    <div className="space-y-1">
+                                        <div className="flex items-center gap-2 text-xs font-medium uppercase text-slate-500 dark:text-slate-400">
+                                            <ClipboardList className="h-4 w-4 text-slate-500" />
+                                            Vendor
+                                        </div>
+                                        {performance.outsource ? (
+                                            <Link
+                                                href={`/outsources/${performance.outsource.id}`}
+                                                className="text-sm font-semibold text-indigo-600 hover:underline dark:text-indigo-300"
+                                            >
+                                                {vendorLabel}
+                                            </Link>
+                                        ) : (
+                                            <p className="text-sm font-semibold text-slate-500">Vendor not linked</p>
+                                        )}
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">Captured by {authorLabel}</p>
+                                    </div>
+                                </div>
+                                <Separator />
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    <div className="space-y-1">
+                                        <div className="flex items-center gap-2 text-xs font-medium uppercase text-slate-500 dark:text-slate-400">
+                                            <User className="h-4 w-4 text-slate-500" />
+                                            Created
+                                        </div>
+                                        <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{createdLabel}</p>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">Initial capture for this vendor activity.</p>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <div className="flex items-center gap-2 text-xs font-medium uppercase text-slate-500 dark:text-slate-400">
+                                            <BarChart3 className="h-4 w-4 text-slate-500" />
+                                            Last updated
+                                        </div>
+                                        <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{updatedLabel}</p>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">Reflects the latest adjustments made to this record.</p>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        <Card className="border border-slate-200/60 dark:border-slate-800/60">
+                            <CardHeader>
+                                <CardTitle>Recent Vendor Trends</CardTitle>
+                                <CardDescription>Cost trajectory across the latest outsource runs.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="h-44 w-full">
+                                    {timelineData.length > 0 ? (
+                                        <ResponsiveContainer>
+                                            <AreaChart data={timelineData}>
+                                                <CartesianGrid strokeDasharray="3 3" className="stroke-slate-200 dark:stroke-slate-800" />
+                                                <XAxis dataKey="name" stroke="currentColor" className="text-xs text-slate-500 dark:text-slate-400" />
+                                                <RechartsTooltip formatter={(value) => formatCurrency(Number(value))} />
+                                                <Area type="monotone" dataKey="cost" stroke="#6366f1" fill="#6366f1" fillOpacity={0.2} />
+                                            </AreaChart>
+                                        </ResponsiveContainer>
                                     ) : (
-                                        <div className="flex items-center justify-between rounded-xl border border-dashed border-slate-300/70 bg-slate-50/70 px-4 py-6 text-sm text-muted-foreground dark:border-slate-700/70 dark:bg-slate-900/40">
-                                            <span>No supplementary notes were provided for this trip.</span>
-                                            {canEdit && (
-                                                <Button asChild variant="outline" size="sm" className="border-slate-300 dark:border-slate-700">
-                                                    <Link href={`/outsource-performances/${performance.id}/edit`}>
-                                                        Add note
-                                                    </Link>
-                                                </Button>
-                                            )}
+                                        <div className="flex h-full items-center justify-center rounded-md border border-dashed border-slate-200 text-sm text-slate-500 dark:border-slate-800 dark:text-slate-400">
+                                            No trend data available yet.
                                         </div>
                                     )}
-                                </CardContent>
-                            </Card>
-                        </div>
-
-                        <div className="space-y-6">
-                            <Card className="border border-slate-200/70 bg-white/95 shadow-lg backdrop-blur dark:border-slate-800/60 dark:bg-slate-900/80">
-                                <CardHeader className="border-b border-slate-200/60 bg-slate-50/70 dark:border-slate-800/60 dark:bg-slate-900/50">
-                                    <div className="flex items-center gap-2 text-sm font-medium text-slate-600 dark:text-slate-300">
-                                        <User className="h-4 w-4" />
-                                        Recent Trips with This Vendor
-                                    </div>
-                                    <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                                        Vendor activity timeline
-                                    </CardTitle>
-                                    <CardDescription className="text-sm text-muted-foreground">
-                                        Compare this dispatch to the most recent entries logged for the same outsource partner.
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent className="p-0">
-                                    {!hasRecentTrips ? (
-                                        <div className="m-6 flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-slate-300/70 bg-slate-50/70 p-10 text-center dark:border-slate-700/60 dark:bg-slate-900/40">
-                                            <ClipboardList className="h-10 w-10 text-slate-300 dark:text-slate-600" />
-                                            <p className="text-base font-medium text-slate-700 dark:text-slate-300">No historical trips yet</p>
-                                            <p className="text-sm text-muted-foreground">New outsource trips will appear here as you log them.</p>
-                                        </div>
-                                    ) : (
-                                        <div className="overflow-hidden rounded-b-xl">
-                                            <Table>
-                                                <TableHeader className="bg-slate-100/70 text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-900/60 dark:text-slate-400">
-                                                    <TableRow>
-                                                        <TableHead className="whitespace-nowrap">Trip #</TableHead>
-                                                        <TableHead className="whitespace-nowrap">Dispatch Date</TableHead>
-                                                        <TableHead className="text-right">Distance</TableHead>
-                                                        <TableHead className="text-right">Cargo</TableHead>
-                                                        <TableHead className="text-right">Cost</TableHead>
-                                                        <TableHead className="text-right">Status</TableHead>
+                                </div>
+                                <div className="rounded-lg border border-slate-200/70 dark:border-slate-800/60">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Trip</TableHead>
+                                                <TableHead className="hidden sm:table-cell">Date</TableHead>
+                                                <TableHead className="hidden sm:table-cell">Distance</TableHead>
+                                                <TableHead className="hidden lg:table-cell">Cargo</TableHead>
+                                                <TableHead className="hidden lg:table-cell">Ton-km</TableHead>
+                                                <TableHead className="text-right">Cost</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {recentTrips && recentTrips.length > 0 ? (
+                                                recentTrips.map(trip => (
+                                                    <TableRow key={trip.id} className={trip.highlight ? 'bg-indigo-50/60 dark:bg-indigo-900/20' : undefined}>
+                                                        <TableCell className="font-medium">{trip.trip_number}</TableCell>
+                                                        <TableCell className="hidden text-xs sm:table-cell">{formatDate(trip.dispatch_date)}</TableCell>
+                                                        <TableCell className="hidden text-xs sm:table-cell">{formatNumber(trip.distance_km, ' km')}</TableCell>
+                                                        <TableCell className="hidden text-xs lg:table-cell">{formatNumber(trip.cargo_volume_mt, ' MT')}</TableCell>
+                                                        <TableCell className="hidden text-xs lg:table-cell">{formatNumber(trip.tonkm, ' ton-km')}</TableCell>
+                                                        <TableCell className="text-right text-xs font-semibold">{formatCurrency(trip.cost)}</TableCell>
                                                     </TableRow>
-                                                </TableHeader>
-                                                <TableBody>
-                                                    {recentTrips.map(trip => {
-                                                        const tripDistance = formatNumber(trip.distance_km, ' km');
-                                                        const tripCargo = formatNumber(trip.cargo_volume_mt, ' MT');
-                                                        const tripCost = formatCurrency(trip.cost);
-                                                        const rowClasses = trip.highlight
-                                                            ? 'bg-indigo-50/70 dark:bg-indigo-900/20'
-                                                            : '';
+                                                ))
+                                            ) : (
+                                                <TableRow>
+                                                    <TableCell colSpan={6} className="py-6 text-center text-sm text-slate-500 dark:text-slate-400">
+                                                        No recent trips recorded for this vendor.
+                                                    </TableCell>
+                                                </TableRow>
+                                            )}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
 
-                                                        return (
-                                                            <TableRow key={trip.id} className={`text-sm ${rowClasses}`}>
-                                                                <TableCell className="font-medium text-slate-800 dark:text-slate-200">
-                                                                    <Link
-                                                                        href={`/outsource-performances/${trip.id}`}
-                                                                        className="text-indigo-600 hover:underline dark:text-indigo-300"
-                                                                    >
-                                                                        {trip.trip_number}
-                                                                    </Link>
-                                                                    {trip.highlight && (
-                                                                        <Badge className="ml-2 bg-indigo-600 text-white hover:bg-indigo-600/90 dark:bg-indigo-500">
-                                                                            Current
-                                                                        </Badge>
-                                                                    )}
-                                                                </TableCell>
-                                                                <TableCell>{formatDate(trip.dispatch_date)}</TableCell>
-                                                                <TableCell className="text-right">{tripDistance}</TableCell>
-                                                                <TableCell className="text-right">{tripCargo}</TableCell>
-                                                                <TableCell className="text-right">{tripCost}</TableCell>
-                                                                <TableCell className="text-right">
-                                                                    <Badge className={`${statusToneClasses(trip.status)} capitalize`}>
-                                                                        {formatStatus(trip.status)}
-                                                                    </Badge>
-                                                                </TableCell>
-                                                            </TableRow>
-                                                        );
-                                                    })}
-                                                </TableBody>
-                                            </Table>
-                                        </div>
-                                    )}
-                                </CardContent>
-                            </Card>
-                        </div>
+                    <div className="grid gap-4 xl:grid-cols-3">
+                        <Card className="border border-slate-200/60 dark:border-slate-800/60 xl:col-span-2">
+                            <CardHeader>
+                                <CardTitle>Trip Notes</CardTitle>
+                                <CardDescription>Context or special handling instructions captured for this dispatch.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                {performance.remarks ? (
+                                    <p className="whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-300">{performance.remarks}</p>
+                                ) : (
+                                    <p className="text-sm text-slate-500 dark:text-slate-400">No additional remarks recorded.</p>
+                                )}
+                            </CardContent>
+                        </Card>
+
+                        <Card className="border border-slate-200/60 dark:border-slate-800/60">
+                            <CardHeader>
+                                <CardTitle>Status Distribution</CardTitle>
+                                <CardDescription>Snapshot of this vendor&apos;s assignment lifecycle.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                {hasStatusData ? (
+                                    <div className="h-48">
+                                        <ResponsiveContainer>
+                                            <PieChart>
+                                                <Pie data={statusData} dataKey="value" nameKey="label" innerRadius={45} outerRadius={75} paddingAngle={4}>
+                                                    {statusData.map((_, index) => (
+                                                        <Cell key={index} fill={chartPalette[index % chartPalette.length]} />
+                                                    ))}
+                                                </Pie>
+                                                <RechartsTooltip
+                                                    formatter={(value, name) => [
+                                                        `${Number(value)}`,
+                                                        formatStatus(typeof name === 'string' ? name : String(name)),
+                                                    ]}
+                                                />
+                                            </PieChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                ) : (
+                                    <div className="flex h-36 items-center justify-center rounded-md border border-dashed border-slate-200 text-sm text-slate-500 dark:border-slate-800 dark:text-slate-400">
+                                        No status data available.
+                                    </div>
+                                )}
+                                <div className="space-y-2">
+                                    <p className="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">Totals</p>
+                                    <div className="space-y-1 text-sm text-slate-600 dark:text-slate-300">
+                                        <p>Trips: {formatNumber(vendorTotals?.trips ?? metrics.vendorTripCount, '', 0)}</p>
+                                        <p>Distance: {formatNumber(vendorTotals?.distance ?? metrics.vendorTotalDistance, ' km')}</p>
+                                        <p>Cargo: {formatNumber(vendorTotals?.cargo ?? metrics.vendorTotalCargo, ' MT')}</p>
+                                        <p>Ton-km: {formatNumber(vendorTotals?.tonkm ?? metrics.vendorTotalTonKm, ' ton-km')}</p>
+                                        <p>Cost: {formatCurrency(vendorTotals?.cost ?? metrics.vendorTotalCost)}</p>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
                     </div>
                 </div>
             </div>
-
             <DeleteConfirmationDialog
+                title="Delete outsource performance"
+                description="This action will permanently remove the outsource performance record."
+                confirmLabel="Delete"
+                confirmVariant="destructive"
+                loading={isDeleting}
                 open={deleteDialogOpen}
                 onOpenChange={setDeleteDialogOpen}
-                title="Delete outsource trip?"
-                description="This will permanently remove the outsource performance record. Historical analytics will exclude this trip."
-                itemName={performance.trip_number}
                 onConfirm={handleDeleteConfirm}
-                isLoading={isDeleting}
             />
         </AppLayout>
     );

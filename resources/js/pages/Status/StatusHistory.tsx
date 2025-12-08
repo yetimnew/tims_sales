@@ -67,16 +67,12 @@ export default function StatusHistory({ truck, history, filters }: { truck: Truc
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground">Filter</span>
                 <DatePicker
-                  className="w-40"
-                  fieldClassName="h-8 text-sm"
-                  buttonClassName="h-7 w-7"
+                  className="w-40 h-10 justify-start text-left"
                   value={filters?.from ?? ''}
                   onChange={handleDateChange('from')}
                 />
                 <DatePicker
-                  className="w-40"
-                  fieldClassName="h-8 text-sm"
-                  buttonClassName="h-7 w-7"
+                  className="w-40 h-10 justify-start text-left"
                   value={filters?.to ?? ''}
                   onChange={handleDateChange('to')}
                 />

@@ -2,49 +2,49 @@
 
 namespace App\Services\Reports;
 
-use App\Models\Outsource;
 use App\Models\OutsourcePerformance;
-use App\Models\Performance;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 
 class OutsourcePerformanceReport
 {
+    private const DEFAULT_LIMIT = 200;
+
+    private const DEFAULT_EXPORT_LIMIT = 2000;
+
+    private const MAX_LIMIT = 1000;
+
+    private const MAX_EXPORT_LIMIT = 5000;
+
     public function build(array $filters): array
     {
         [$from, $to] = $this->resolveDateRange($filters);
-        $outsourceIds = $this->resolveOutsourceIds($filters);
-        $statuses = $this->resolveStatuses($filters);
+        $outsourceIds = $this->normaliseIds($filters['outsource_ids'] ?? []);
+        $operationIds = $this->normaliseIds($filters['operation_ids'] ?? []);
+        $destinationIds = $this->normaliseIds($filters['destination_ids'] ?? []);
+        $statuses = $this->normaliseStrings($filters['statuses'] ?? []);
+        $isExport = $this->isExportRequest($filters);
+        $limit = $this->resolveLimit($filters['limit'] ?? null, $isExport);
 
-        $baseline = $this->baseline($from, $to);
-        $aggregated = $this->aggregateByOutsource($from, $to, $outsourceIds, $statuses);
-
-        $outsourceDetails = Outsource::query()
-            ->select(['id', 'name', 'status'])
-            ->whereIn('id', $aggregated->pluck('outsource_id')->all())
-            ->get()
-            ->keyBy('id');
-
-        $breakdown = $this->buildBreakdown($aggregated, $outsourceDetails, $baseline['cost_per_km']);
-        $totals = $this->summariseTotals($breakdown);
-        $summary = $this->buildSummary($totals, $baseline);
-        $trend = $this->trend($from, $to, $outsourceIds, $statuses);
-        $highlights = $this->buildHighlights($breakdown);
+        $rows = $this->fetchRows($from, $to, $outsourceIds, $operationIds, $destinationIds, $statuses, $limit);
+        $summary = $this->summarise($rows);
+        $highlights = $this->buildHighlights($rows);
 
         return [
+            'rows' => $rows,
+            'summary' => $summary,
+            'highlights' => $highlights,
             'resolved_from' => $from->toDateString(),
             'resolved_to' => $to->toDateString(),
-            'outsource_ids' => $outsourceIds,
-            'statuses' => $statuses,
-            'baseline' => $baseline,
-            'totals' => $totals,
-            'summary' => $summary,
-            'breakdown' => $breakdown->values()->all(),
-            'trend' => $trend,
-            'highlights' => $highlights,
+            'filters' => [
+                'outsource_ids' => $outsourceIds,
+                'operation_ids' => $operationIds,
+                'destination_ids' => $destinationIds,
+                'statuses' => $statuses,
+                'limit' => $limit,
+            ],
         ];
     }
 
@@ -53,7 +53,7 @@ class OutsourcePerformanceReport
         $fromInput = $filters['from'] ?? null;
         $toInput = $filters['to'] ?? null;
 
-        $from = $fromInput ? Carbon::parse($fromInput)->startOfDay() : now()->copy()->subMonths(6)->startOfDay();
+        $from = $fromInput ? Carbon::parse($fromInput)->startOfDay() : now()->copy()->subMonths(1)->startOfDay();
         $to = $toInput ? Carbon::parse($toInput)->endOfDay() : now()->copy()->endOfDay();
 
         if ($from->greaterThan($to)) {
@@ -63,268 +63,178 @@ class OutsourcePerformanceReport
         return [$from, $to];
     }
 
-    private function resolveOutsourceIds(array $filters): array
+    private function resolveLimit(?int $limit, bool $isExport): int
     {
-        $ids = Arr::wrap($filters['outsource_ids'] ?? $filters['outsource_id'] ?? []);
+        $default = $isExport ? self::DEFAULT_EXPORT_LIMIT : self::DEFAULT_LIMIT;
+        $max = $isExport ? self::MAX_EXPORT_LIMIT : self::MAX_LIMIT;
 
-        if (is_string($ids)) {
-            $ids = array_filter(array_map('trim', explode(',', $ids)));
+        if ($limit === null) {
+            return $default;
         }
 
-        return collect($ids)
-            ->filter(static fn ($value) => $value !== null && $value !== '')
-            ->map(static fn ($value) => (int) $value)
-            ->filter(static fn ($value) => $value > 0)
+        $bounded = max(50, min($limit, $max));
+
+        return $bounded;
+    }
+
+    private function normaliseIds(mixed $value): array
+    {
+        return collect(Arr::wrap($value))
+            ->filter(static fn ($id) => $id !== null && $id !== '')
+            ->map(static fn ($id) => (int) $id)
+            ->filter(static fn ($id) => $id > 0)
             ->unique()
             ->values()
             ->all();
     }
 
-    private function resolveStatuses(array $filters): array
+    private function normaliseStrings(mixed $value): array
     {
-        $statuses = Arr::wrap($filters['statuses'] ?? $filters['status'] ?? []);
-
-        if (is_string($statuses)) {
-            $statuses = array_filter(array_map('trim', explode(',', $statuses)));
-        }
-
-        return collect($statuses)
-            ->filter(static fn ($value) => $value !== null && $value !== '')
-            ->map(static fn ($value) => (string) $value)
+        return collect(Arr::wrap($value))
+            ->filter(static fn ($item) => $item !== null && $item !== '')
+            ->map(static fn ($item) => (string) $item)
             ->unique()
             ->values()
             ->all();
     }
 
-    private function aggregateByOutsource(
+    private function fetchRows(
         CarbonInterface $from,
         CarbonInterface $to,
         array $outsourceIds,
-        array $statuses
+        array $operationIds,
+        array $destinationIds,
+        array $statuses,
+        int $limit,
     ): Collection {
         return OutsourcePerformance::query()
-            ->select('outsource_id')
-            ->selectRaw('COUNT(*) as trips')
-            ->selectRaw('SUM(COALESCE(distance_km, 0)) as total_distance_km')
-            ->selectRaw('SUM(COALESCE(cost, 0)) as total_cost')
-            ->selectRaw('SUM(COALESCE(tonkm, 0)) as total_tonkm')
-            ->selectRaw("SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_trips")
+            ->with([
+                'outsource',
+                'operation.customer',
+                'fromPlace',
+                'toPlace',
+            ])
             ->whereBetween('dispatch_date', [$from->toDateString(), $to->toDateString()])
             ->when(! empty($outsourceIds), static fn ($query) => $query->whereIn('outsource_id', $outsourceIds))
+            ->when(! empty($operationIds), static fn ($query) => $query->whereIn('operation_id', $operationIds))
+            ->when(! empty($destinationIds), static fn ($query) => $query->whereIn('to_place_id', $destinationIds))
             ->when(! empty($statuses), static fn ($query) => $query->whereIn('status', $statuses))
-            ->groupBy('outsource_id')
-            ->get();
-    }
+            ->orderByDesc('dispatch_date')
+            ->limit($limit)
+            ->get()
+            ->map(function (OutsourcePerformance $performance) {
+                $vendor = $performance->outsource;
+                $operation = $performance->operation;
+                $customer = $operation?->customer;
+                $origin = $performance->fromPlace;
+                $destination = $performance->toPlace;
 
-    private function buildBreakdown(Collection $aggregated, Collection $outsourceDetails, ?float $baselineCostPerKm): Collection
-    {
-        return $aggregated
-            ->map(function ($row) use ($outsourceDetails, $baselineCostPerKm) {
-                $outsourceId = (int) $row->outsource_id;
-                $details = $outsourceDetails->get($outsourceId);
+                $tonnage = (float) ($performance->cargo_volume_mt ?? 0);
+                $tonKm = (float) ($performance->tonkm ?? 0);
+                $distance = (float) ($performance->distance_km ?? 0);
+                $expense = (float) ($performance->cost ?? 0);
 
-                $trips = (int) $row->trips;
-                $distance = (float) $row->total_distance_km;
-                $cost = (float) $row->total_cost;
-                $tonkm = (float) $row->total_tonkm;
-                $completed = (int) $row->completed_trips;
-
-                $costPerKm = $distance > 0 ? round($cost / $distance, 2) : null;
-                $costDeltaPerKm = ($baselineCostPerKm !== null && $costPerKm !== null)
-                    ? round($costPerKm - $baselineCostPerKm, 2)
-                    : null;
-                $costDeltaTotal = ($costDeltaPerKm !== null && $distance > 0)
-                    ? round($costDeltaPerKm * $distance, 2)
-                    : null;
-
-                $completionRate = $trips > 0 ? round(($completed / $trips) * 100, 2) : null;
-                $avgCostPerTrip = $trips > 0 ? round($cost / $trips, 2) : null;
-                $avgDistancePerTrip = $trips > 0 ? round($distance / $trips, 2) : null;
-                $costPerTonKm = $tonkm > 0 ? round($cost / $tonkm, 2) : null;
+                $tariff = (float) ($operation?->tariff ?? 0);
+                $revenue = $tonKm > 0 ? $tonKm * $tariff : $tonnage * $tariff;
+                $profit = $revenue - $expense;
+                $margin = $revenue > 0 ? round(($profit / $revenue) * 100, 2) : null;
 
                 return [
-                    'outsource_id' => $outsourceId,
-                    'name' => $details?->name ?? 'Vendor #'.$outsourceId,
-                    'status' => $details?->status,
-                    'trips' => $trips,
-                    'completed_trips' => $completed,
-                    'completion_rate_pct' => $completionRate,
-                    'total_distance_km' => round($distance, 2),
-                    'total_cost' => round($cost, 2),
-                    'total_tonkm' => round($tonkm, 2),
-                    'cost_per_km' => $costPerKm,
-                    'cost_per_tonkm' => $costPerTonKm,
-                    'cost_delta_per_km' => $costDeltaPerKm,
-                    'total_cost_delta' => $costDeltaTotal,
-                    'average_cost_per_trip' => $avgCostPerTrip,
-                    'average_distance_per_trip' => $avgDistancePerTrip,
+                    'id' => $performance->id,
+                    'outsource_id' => $performance->outsource_id,
+                    'fo_number' => $performance->trip_number ?? '—',
+                    'dispatch_date' => $performance->dispatch_date?->toDateString(),
+                    'driver_id' => $vendor?->id,
+                    'driver_name' => $vendor?->name ?? 'Unnamed vendor',
+                    'driver_status' => $vendor?->status,
+                    'truck_id' => null,
+                    'truck_plate' => $vendor?->status ?? '—',
+                    'truck_status' => $vendor?->status,
+                    'vehicle_type' => null,
+                    'operation_id' => $operation?->id,
+                    'operation_code' => $operation?->operationid ?? '—',
+                    'operation_status' => $operation?->status,
+                    'customer_name' => $customer?->name,
+                    'origin_name' => $origin?->name ?? '—',
+                    'destination_name' => $destination?->name ?? '—',
+                    'tonnage' => round($tonnage, 2),
+                    'ton_km' => round($tonKm, 2),
+                    'distance_wc' => round($distance, 2),
+                    'distance_wo' => 0.0,
+                    'distance_total' => round($distance, 2),
+                    'fuel_litres' => 0.0,
+                    'fuel_cost' => 0.0,
+                    'perdiem' => 0.0,
+                    'work_on_going' => 0.0,
+                    'other_cost' => round($expense, 2),
+                    'expense' => round($expense, 2),
+                    'revenue' => round($revenue, 2),
+                    'profit' => round($profit, 2),
+                    'margin_percent' => $margin,
                 ];
-            })
-            ->sort(function (array $a, array $b) {
-                $aCost = $a['cost_per_km'];
-                $bCost = $b['cost_per_km'];
-
-                if ($aCost === null && $bCost === null) {
-                    return 0;
-                }
-
-                if ($aCost === null) {
-                    return 1;
-                }
-
-                if ($bCost === null) {
-                    return -1;
-                }
-
-                return $bCost <=> $aCost;
             })
             ->values();
     }
 
-    private function summariseTotals(Collection $breakdown): array
+    private function summarise(Collection $rows): array
     {
-        $totalTrips = (int) $breakdown->sum('trips');
-        $completedTrips = (int) $breakdown->sum('completed_trips');
-        $totalDistance = (float) $breakdown->sum('total_distance_km');
-        $totalCost = (float) $breakdown->sum('total_cost');
-        $totalTonKm = (float) $breakdown->sum('total_tonkm');
-        $vendorCount = $breakdown->count();
+        $revenue = $rows->sum('revenue');
+        $profit = $rows->sum('profit');
 
         return [
-            'trips' => $totalTrips,
-            'completed_trips' => $completedTrips,
-            'vendor_count' => $vendorCount,
-            'distance_km' => round($totalDistance, 2),
-            'cost' => round($totalCost, 2),
-            'tonkm' => round($totalTonKm, 2),
-            'cost_per_km' => $totalDistance > 0 ? round($totalCost / $totalDistance, 2) : null,
-            'average_completion_rate_pct' => $totalTrips > 0 ? round(($completedTrips / $totalTrips) * 100, 2) : null,
+            'records' => $rows->count(),
+            'tonnage' => round($rows->sum('tonnage'), 2),
+            'ton_km' => round($rows->sum('ton_km'), 2),
+            'distance_wc' => round($rows->sum('distance_wc'), 2),
+            'distance_wo' => round($rows->sum('distance_wo'), 2),
+            'distance_total' => round($rows->sum('distance_total'), 2),
+            'fuel_litres' => round($rows->sum('fuel_litres'), 2),
+            'fuel_cost' => round($rows->sum('fuel_cost'), 2),
+            'perdiem' => round($rows->sum('perdiem'), 2),
+            'work_on_going' => round($rows->sum('work_on_going'), 2),
+            'other_cost' => round($rows->sum('other_cost'), 2),
+            'expense' => round($rows->sum('expense'), 2),
+            'revenue' => round($revenue, 2),
+            'profit' => round($profit, 2),
+            'margin_percent' => $revenue > 0 ? round(($profit / $revenue) * 100, 2) : null,
         ];
     }
 
-    private function buildSummary(array $totals, array $baseline): array
+    private function buildHighlights(Collection $rows): array
     {
-        $outsourcedCostPerKm = $totals['cost_per_km'];
-        $internalCostPerKm = $baseline['cost_per_km'];
-        $distance = $totals['distance_km'];
-
-        $costDeltaPerKm = ($outsourcedCostPerKm !== null && $internalCostPerKm !== null)
-            ? round($outsourcedCostPerKm - $internalCostPerKm, 2)
-            : null;
-
-        $projectedDelta = ($costDeltaPerKm !== null && $distance > 0)
-            ? round($costDeltaPerKm * $distance, 2)
-            : null;
-
-        $trips = $totals['trips'];
-
         return [
-            'outsourced_cost_per_km' => $outsourcedCostPerKm,
-            'internal_cost_per_km' => $internalCostPerKm,
-            'cost_delta_per_km' => $costDeltaPerKm,
-            'projected_cost_delta' => $projectedDelta,
-            'average_cost_per_trip' => $trips > 0 ? round($totals['cost'] / $trips, 2) : null,
-            'average_distance_per_trip' => $trips > 0 ? round($distance / $trips, 2) : null,
-            'average_completion_rate_pct' => $totals['average_completion_rate_pct'],
-            'total_outsourced_cost' => $totals['cost'],
+            'top_vendors' => $this->rankBy($rows, 'outsource_id', 'driver_name'),
+            'top_destinations' => $this->rankBy($rows, 'destination_name', 'destination_name'),
         ];
     }
 
-    private function buildHighlights(Collection $breakdown): array
+    private function rankBy(Collection $rows, string $groupKey, string $labelKey, int $limit = 3): array
     {
-        $highestCost = $breakdown
-            ->filter(static fn (array $row) => $row['cost_per_km'] !== null)
-            ->sortByDesc('cost_per_km')
-            ->take(3)
-            ->values()
-            ->all();
-
-        $bestCompletion = $breakdown
-            ->filter(static fn (array $row) => $row['completion_rate_pct'] !== null)
-            ->sortByDesc('completion_rate_pct')
-            ->take(3)
-            ->values()
-            ->all();
-
-        $largestSpend = $breakdown
-            ->sortByDesc('total_cost')
-            ->take(3)
-            ->values()
-            ->all();
-
-        return [
-            'highest_cost_per_km' => $highestCost,
-            'best_completion_rate' => $bestCompletion,
-            'largest_spend' => $largestSpend,
-        ];
-    }
-
-    private function trend(
-        CarbonInterface $from,
-        CarbonInterface $to,
-        array $outsourceIds,
-        array $statuses
-    ): array {
-        $connection = DB::connection();
-        $driverName = $connection->getDriverName();
-
-        $periodExpression = $driverName === 'sqlite'
-            ? "strftime('%Y-%m', dispatch_date)"
-            : "DATE_FORMAT(dispatch_date, '%Y-%m')";
-
-        return OutsourcePerformance::query()
-            ->selectRaw("{$periodExpression} as period")
-            ->selectRaw('COUNT(*) as trips')
-            ->selectRaw('SUM(COALESCE(distance_km, 0)) as total_distance_km')
-            ->selectRaw('SUM(COALESCE(cost, 0)) as total_cost')
-            ->selectRaw('SUM(COALESCE(tonkm, 0)) as total_tonkm')
-            ->selectRaw("SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_trips")
-            ->whereBetween('dispatch_date', [$from->toDateString(), $to->toDateString()])
-            ->when(! empty($outsourceIds), static fn ($query) => $query->whereIn('outsource_id', $outsourceIds))
-            ->when(! empty($statuses), static fn ($query) => $query->whereIn('status', $statuses))
-            ->groupBy('period')
-            ->orderBy('period')
-            ->get()
-            ->map(static function ($row) {
-                $distance = (float) $row->total_distance_km;
-                $cost = (float) $row->total_cost;
-                $trips = (int) $row->trips;
-                $completed = (int) $row->completed_trips;
-                $tonkm = (float) $row->total_tonkm;
+        return $rows
+            ->groupBy($groupKey)
+            ->map(function (Collection $group) use ($labelKey) {
+                $label = $group->first()[$labelKey] ?? '—';
 
                 return [
-                    'period' => $row->period,
-                    'trips' => $trips,
-                    'total_distance_km' => round($distance, 2),
-                    'total_cost' => round($cost, 2),
-                    'total_tonkm' => round($tonkm, 2),
-                    'cost_per_km' => $distance > 0 ? round($cost / $distance, 2) : null,
-                    'cost_per_tonkm' => $tonkm > 0 ? round($cost / $tonkm, 2) : null,
-                    'completion_rate_pct' => $trips > 0 ? round(($completed / $trips) * 100, 2) : null,
+                    'label' => $label,
+                    'records' => $group->count(),
+                    'revenue' => round($group->sum('revenue'), 2),
+                    'profit' => round($group->sum('profit'), 2),
                 ];
             })
+            ->filter(static fn (array $item) => $item['label'] !== '—' && $item['records'] > 0)
             ->values()
+            ->sortByDesc('revenue')
+            ->take($limit)
             ->all();
     }
 
-    private function baseline(CarbonInterface $from, CarbonInterface $to): array
+    private function isExportRequest(array $filters): bool
     {
-        $internal = Performance::query()
-            ->selectRaw('COUNT(*) as trips')
-            ->selectRaw('SUM(COALESCE(DistanceWCargo, 0) + COALESCE(DistanceWOCargo, 0)) as total_distance_km')
-            ->selectRaw('SUM(COALESCE(fuelInBirr, 0) + COALESCE(perdiem, 0) + COALESCE(other, 0)) as total_cost')
-            ->whereBetween('DateDispach', [$from->toDateString(), $to->toDateString()])
-            ->first();
+        if (! isset($filters['format'])) {
+            return false;
+        }
 
-        $distance = (float) ($internal->total_distance_km ?? 0.0);
-        $cost = (float) ($internal->total_cost ?? 0.0);
-        $trips = (int) ($internal->trips ?? 0);
-
-        return [
-            'trip_count' => $trips,
-            'distance_km' => round($distance, 2),
-            'cost' => round($cost, 2),
-            'cost_per_km' => $distance > 0 ? round($cost / $distance, 2) : null,
-        ];
+        return in_array($filters['format'], ['csv', 'xlsx', 'pdf'], true);
     }
 }

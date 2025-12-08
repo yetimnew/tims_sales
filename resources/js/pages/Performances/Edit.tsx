@@ -11,8 +11,11 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { SearchableEntityCombobox } from '@/components/searchable-entity-combobox';
 import { PlaceCombobox } from '@/components/place-combobox';
 import { toast } from '@/hooks/use-toast';
+import { useRemoteLookup } from '@/hooks/use-remote-lookup';
+import { search as operationsSearch } from '@/routes/operations';
 import { type BreadcrumbItem } from '@/types';
 import { Link, useForm } from '@inertiajs/react';
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEventHandler } from 'react';
@@ -43,6 +46,8 @@ interface Driver {
 interface Truck {
     id: number;
     plate?: string | null;
+    model?: string | null;
+    code?: string | null;
 }
 
 interface DriverTruck {
@@ -83,10 +88,9 @@ interface Performance {
 }
 
 interface PerformancesEditProps {
-    operations: Operation[];
     driverTrucks: DriverTruck[];
-    places: Place[];
     performance: Performance;
+    places: Place[];
 }
 
 interface PerformanceFormData {
@@ -191,7 +195,7 @@ const buildInitialForm = (performance: Performance): PerformanceFormData => {
 const areFormValuesEqual = (left: PerformanceFormData, right: PerformanceFormData): boolean =>
     JSON.stringify(left) === JSON.stringify(right);
 
-export default function PerformancesEdit({ operations, driverTrucks, places, performance }: PerformancesEditProps) {
+export default function PerformancesEdit({ driverTrucks, performance, places }: PerformancesEditProps) {
     const initialFormData = useMemo<PerformanceFormData>(() => buildInitialForm(performance), [performance]);
     const initialDataRef = useRef<PerformanceFormData>(initialFormData);
     const formRef = useRef<HTMLFormElement | null>(null);
@@ -206,6 +210,26 @@ export default function PerformancesEdit({ operations, driverTrucks, places, per
     const [distanceLoading, setDistanceLoading] = useState(false);
     const [isDirty, setIsDirty] = useState(false);
     const [showScrollTop, setShowScrollTop] = useState(false);
+
+    const operationSelectedIds = useMemo(() => {
+        const ids = new Set<string>();
+        if (data.operation_id) {
+            ids.add(data.operation_id);
+        }
+        recent.operations.forEach(id => {
+            if (id) {
+                ids.add(id);
+            }
+        });
+        return Array.from(ids);
+    }, [data.operation_id, recent.operations]);
+
+    const operationsLookup = useRemoteLookup<Operation>({
+        endpoint: operationsSearch.url(),
+        getId: operation => operation.id,
+        selectedIds: operationSelectedIds,
+        limit: 20,
+    });
 
     useEffect(() => {
         const container = formRef.current;
@@ -606,37 +630,33 @@ export default function PerformancesEdit({ operations, driverTrucks, places, per
                     </FormField>
 
                     <FormField id="operation_id" label="Operation" required error={getFieldError('operation_id')}>
-                        <Select
+                        <SearchableEntityCombobox
+                            id="operation_id"
+                            required
                             value={data.operation_id}
-                            onValueChange={value => {
-                                handleFieldChange('operation_id', value);
-                                pushRecent('operations', value);
+                            items={operationsLookup.items}
+                            getValue={operation => operation.id}
+                            getLabel={operation => operation.operationid}
+                            getDescription={operation => operation.customer?.name}
+                            getKeywords={operation => [operation.operationid, operation.customer?.name]}
+                            placeholder="Search operations..."
+                            searchPlaceholder="Search operations..."
+                            searchValue={operationsLookup.query}
+                            onSearchChange={operationsLookup.setQuery}
+                            isLoading={operationsLookup.isLoading}
+                            loadingMessage="Searching operations..."
+                            onSelect={selectedValue => {
+                                handleFieldChange('operation_id', selectedValue);
+                                pushRecent('operations', selectedValue);
+                                operationsLookup.setQuery('');
                             }}
-                        >
-                            <SelectTrigger
-                                id="operation_id"
-                                aria-required
-                                className={
-                                    getFieldError('operation_id')
-                                        ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-200'
-                                        : ''
-                                }
-                            >
-                                <SelectValue placeholder="Select operation" />
-                            </SelectTrigger>
-                            <SelectContent className="max-h-60">
-                                {operations.map(operation => (
-                                    <SelectItem key={operation.id} value={operation.id.toString()}>
-                                        {operation.operationid}
-                                        {operation.customer?.name ? ` — ${operation.customer.name}` : ''}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                            error={getFieldError('operation_id')}
+                            showErrorMessage={false}
+                        />
                         {recent.operations.length > 0 && (
                             <div className="flex flex-wrap gap-2">
                                 {recent.operations.map(id => {
-                                    const operation = operations.find(item => item.id.toString() === id);
+                                    const operation = operationsLookup.getCachedItem(id);
                                     if (!operation) {
                                         return null;
                                     }
@@ -663,32 +683,50 @@ export default function PerformancesEdit({ operations, driverTrucks, places, per
                     </FormField>
 
                     <FormField id="driver_truck_id" label="Driver & Truck" required error={getFieldError('driver_truck_id')}>
-                        <Select
+                        <SearchableEntityCombobox
+                            id="driver_truck_id"
+                            required
                             value={data.driver_truck_id}
-                            onValueChange={value => {
-                                handleFieldChange('driver_truck_id', value);
-                                pushRecent('driverTrucks', value);
+                            items={driverTrucks}
+                            getValue={driverTruck => driverTruck.id}
+                            getLabel={driverTruck => driverTruck.driver?.name?.trim() || 'Driver unknown'}
+                            getDescription={driverTruck => {
+                                const segments = [
+                                    driverTruck.truck?.plate,
+                                    driverTruck.truck?.model,
+                                    driverTruck.truck?.code,
+                                ].filter(Boolean);
+                                return segments.length ? segments.join(' • ') : null;
                             }}
-                        >
-                            <SelectTrigger
-                                id="driver_truck_id"
-                                aria-required
-                                className={
-                                    getFieldError('driver_truck_id')
-                                        ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-200'
-                                        : ''
+                            getKeywords={driverTruck => [
+                                driverTruck.driver?.name,
+                                driverTruck.truck?.plate,
+                                driverTruck.truck?.model,
+                                driverTruck.truck?.code,
+                            ]}
+                            placeholder="Search driver or truck..."
+                            searchPlaceholder="Search driver or truck..."
+                            onSelect={selectedValue => {
+                                handleFieldChange('driver_truck_id', selectedValue);
+                                pushRecent('driverTrucks', selectedValue);
+                            }}
+                            error={getFieldError('driver_truck_id')}
+                            showErrorMessage={false}
+                            renderDisplay={selected => {
+                                if (!selected) {
+                                    return <span className="text-sm text-muted-foreground">Search driver or truck...</span>;
                                 }
-                            >
-                                <SelectValue placeholder="Select driver & truck" />
-                            </SelectTrigger>
-                            <SelectContent className="max-h-60">
-                                {driverTrucks.map(driverTruck => (
-                                    <SelectItem key={driverTruck.id} value={driverTruck.id.toString()}>
-                                        {driverTruck.driver?.name ?? 'Driver'} / {driverTruck.truck?.plate ?? 'Truck'}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+
+                                return (
+                                    <div className="flex min-w-0 flex-col items-start">
+                                        <span className="line-clamp-1 text-sm font-medium text-foreground">{selected.label}</span>
+                                        {selected.description && (
+                                            <span className="line-clamp-1 text-xs text-muted-foreground">{selected.description}</span>
+                                        )}
+                                    </div>
+                                );
+                            }}
+                        />
                         {recent.driverTrucks.length > 0 && (
                             <div className="flex flex-wrap gap-2">
                                 {recent.driverTrucks.map(id => {
@@ -734,7 +772,7 @@ export default function PerformancesEdit({ operations, driverTrucks, places, per
                             required
                             value={data.orgion_id}
                             places={places}
-                            placeholder="Search origin..."
+                            placeholder="Select origin"
                             onSelect={value => handleFieldChange('orgion_id', value)}
                             error={getFieldError('orgion_id')}
                         />
@@ -746,7 +784,7 @@ export default function PerformancesEdit({ operations, driverTrucks, places, per
                             required
                             value={data.destination_id}
                             places={places}
-                            placeholder="Search destination..."
+                            placeholder="Select destination"
                             onSelect={value => handleFieldChange('destination_id', value)}
                             error={getFieldError('destination_id')}
                         />

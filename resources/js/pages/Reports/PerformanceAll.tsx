@@ -61,7 +61,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Performance (All)', href: '/reports/performance-all' },
 ];
 
-const toParamsArray = (key: string, values: number[], params: URLSearchParams) => {
+const toParamsArray = (key: string, values: Array<number | string>, params: URLSearchParams) => {
     values.forEach((value) => params.append(`${key}[]`, String(value)));
 };
 

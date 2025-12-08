@@ -792,17 +792,15 @@ export default function OutsourcePerformancesIndex({
                 </Select>
                 <div className="flex items-center gap-2">
                     <DatePicker
-                        className="w-[150px]"
+                        className="w-[150px] h-9 justify-start text-left"
                         value={dateFrom}
                         onChange={(next) => handleDateChange('from', next ?? '')}
-                        fieldClassName="h-9"
                     />
                     <span className="text-muted-foreground">–</span>
                     <DatePicker
-                        className="w-[150px]"
+                        className="w-[150px] h-9 justify-start text-left"
                         value={dateTo}
                         onChange={(next) => handleDateChange('to', next ?? '')}
-                        fieldClassName="h-9"
                     />
                 </div>
             </div>

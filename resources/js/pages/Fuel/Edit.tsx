@@ -12,6 +12,8 @@ import { FormEventHandler, useEffect, useMemo, useState } from 'react';
 import { validateFuel, type ValidationErrors } from '@/lib/validation';
 import { useToast } from '@/hooks/use-toast';
 import { CircleAlert } from 'lucide-react';
+import { DatePicker } from '@/components/ui/date-picker';
+import { cn } from '@/lib/utils';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -216,12 +218,13 @@ export default function FuelEdit({ fuel, assignments }: FuelEditProps) {
 
                                 <div className="space-y-2">
                                     <Label htmlFor="fuel_date">Fuel Date *</Label>
-                                    <Input
-                                        id="fuel_date"
-                                        type="date"
-                                        value={data.fuel_date}
-                                        onChange={(e) => handleFieldChange('fuel_date', e.target.value)}
-                                        className={allErrors.fuel_date ? 'border-red-500' : ''}
+                                    <DatePicker
+                                        value={data.fuel_date || ''}
+                                        onChange={(next) => handleFieldChange('fuel_date', next ?? '')}
+                                        className={cn(
+                                            'w-full justify-start text-left h-11 border-slate-300 hover:border-slate-400 focus-visible:border-amber-500 focus-visible:ring-amber-500/20 dark:border-slate-600 dark:hover:border-slate-500',
+                                            allErrors.fuel_date ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500/20' : undefined,
+                                        )}
                                     />
                                     {allErrors.fuel_date && (
                                         <p className="text-sm text-red-500">{allErrors.fuel_date}</p>

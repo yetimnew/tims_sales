@@ -8,7 +8,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { DatePicker } from '@/components/ui/date-picker';
 import { validateOperation, type ValidationErrors } from '@/lib/validation';
+import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
 import {
     AlertCircle,
@@ -640,25 +642,20 @@ export default function OperationsEdit({
 
                                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                     <div className="space-y-2">
-                                        <Label htmlFor="startdate">Start Date <span className="text-red-500">*</span></Label>
-                                        <div className="group relative">
-                                            <Input
-                                                id="startdate"
-                                                type="date"
-                                                value={data.startdate}
-                                                onChange={event => handleFieldChange('startdate', event.target.value)}
-                                                className={`pl-4 pr-10 py-2.5 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-3 [&::-webkit-calendar-picker-indicator]:h-4 [&::-webkit-calendar-picker-indicator]:w-4 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 ${getFieldError('startdate') ? 'border-red-500 focus:border-red-500' : ''}`}
-                                            />
-                                            <div
-                                                className="absolute right-3 top-1/2 z-20 -translate-y-1/2 cursor-pointer"
-                                                onClick={() => {
-                                                    const input = document.getElementById('startdate') as HTMLInputElement | null;
-                                                    input?.showPicker?.();
-                                                }}
-                                            >
-                                                <Calendar className="h-4 w-4 text-slate-500 transition-colors duration-200 group-hover:text-slate-600 dark:text-slate-400 dark:group-hover:text-slate-300" />
-                                            </div>
-                                        </div>
+                                        <span className="flex items-center gap-1 text-sm font-medium text-slate-700 dark:text-slate-200">
+                                            Start Date <span className="text-red-500">*</span>
+                                        </span>
+                                        <DatePicker
+                                            value={data.startdate || ''}
+                                            onChange={next => handleFieldChange('startdate', next ?? '')}
+                                            placeholder="Select start date"
+                                            className={cn(
+                                                'w-full justify-start text-left h-11 border-slate-300 hover:border-slate-400 focus-visible:border-blue-500 focus-visible:ring-blue-500/20 dark:border-slate-600 dark:hover:border-slate-500',
+                                                getFieldError('startdate')
+                                                    ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500/20'
+                                                    : undefined,
+                                            )}
+                                        />
                                         {getFieldError('startdate') && (
                                             <p className="flex items-center gap-1 text-sm text-red-500">
                                                 <AlertCircle className="h-3 w-3" />

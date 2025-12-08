@@ -86,7 +86,9 @@ use App\Listeners\SendUserLifecycleNotification;
 use App\Listeners\SendVehicleTypeLifecycleNotification;
 use App\Listeners\SendWoredaLifecycleNotification;
 use App\Listeners\SendZoneLifecycleNotification;
+use App\Models\User;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -104,6 +106,30 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Gate::define('operations.search', static function (User $user): bool {
+            return $user->can('operations.view')
+                || $user->can('performances.create')
+                || $user->can('performances.edit')
+                || $user->can('performances.update')
+                || $user->can('performances.store')
+                || $user->can('outsource-performances.create')
+                || $user->can('outsource-performances.edit')
+                || $user->can('outsource-performances.update')
+                || $user->can('outsource-performances.store');
+        });
+
+        Gate::define('places.search', static function (User $user): bool {
+            return $user->can('places.view')
+                || $user->can('performances.create')
+                || $user->can('performances.edit')
+                || $user->can('performances.update')
+                || $user->can('performances.store')
+                || $user->can('outsource-performances.create')
+                || $user->can('outsource-performances.edit')
+                || $user->can('outsource-performances.update')
+                || $user->can('outsource-performances.store');
+        });
+
         // Register event listeners for truck lifecycle notifications
         Event::listen(TruckCreated::class, [SendTruckLifecycleNotification::class, 'handle']);
         Event::listen(TruckUpdated::class, [SendTruckLifecycleNotification::class, 'handle']);

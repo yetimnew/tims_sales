@@ -53,7 +53,7 @@ class OutsourcePerformancesSeeder extends Seeder
             throw new \RuntimeException('Users must be seeded before running OutsourcePerformancesSeeder.');
         }
 
-        $placesByLegacyId = Place::query()->get()->mapWithKeys(function (Place $place): array {
+        $placesByLegacyId = Place::withTrashed()->get()->mapWithKeys(function (Place $place): array {
             if (preg_match('/^LEGACY_PLACE_(\\d+)$/', $place->code, $matches) !== 1) {
                 return [];
             }
