@@ -32,7 +32,12 @@ export function NavMain({ items = [] }: { items: NavItem[] }) {
             <SidebarMenu>
                 {items.map((item) => {
                     // Check if this item has subitems (nested menu)
-                    const hasSubitems = item.items && item.items.length > 0;
+                    const subitems = Array.isArray(item.items) ? item.items : [];
+                    const hasSubitems = subitems.length > 0;
+                    const itemHref = item.href ?? '#';
+                    const resolvedItemHref = item.href
+                        ? resolveUrl(item.href)
+                        : null;
 
                     if (hasSubitems) {
                         return (
@@ -55,22 +60,30 @@ export function NavMain({ items = [] }: { items: NavItem[] }) {
                                     </CollapsibleTrigger>
                                     <CollapsibleContent>
                                         <SidebarMenuSub>
-                                            {item.items.map((subitem) => (
-                                                <SidebarMenuSubItem key={subitem.title}>
-                                                    <SidebarMenuButton
-                                                        asChild
-                                                        isActive={page.url.startsWith(
-                                                            resolveUrl(subitem.href),
-                                                        )}
-                                                        size="sm"
-                                                    >
-                                                        <Link href={subitem.href} prefetch>
-                                                            {subitem.icon && <subitem.icon />}
-                                                            <span>{subitem.title}</span>
-                                                        </Link>
-                                                    </SidebarMenuButton>
-                                                </SidebarMenuSubItem>
-                                            ))}
+                                            {subitems.map((subitem) => {
+                                                const subitemHref = subitem.href ?? '#';
+                                                const resolvedSubitemHref = subitem.href
+                                                    ? resolveUrl(subitem.href)
+                                                    : null;
+                                                return (
+                                                    <SidebarMenuSubItem key={subitem.title}>
+                                                        <SidebarMenuButton
+                                                            asChild
+                                                            isActive={resolvedSubitemHref
+                                                                ? page.url.startsWith(
+                                                                      resolvedSubitemHref,
+                                                                  )
+                                                                : false}
+                                                            size="sm"
+                                                        >
+                                                            <Link href={subitemHref} prefetch>
+                                                                {subitem.icon && <subitem.icon />}
+                                                                <span>{subitem.title}</span>
+                                                            </Link>
+                                                        </SidebarMenuButton>
+                                                    </SidebarMenuSubItem>
+                                                );
+                                            })}
                                         </SidebarMenuSub>
                                     </CollapsibleContent>
                                 </SidebarMenuItem>
@@ -83,12 +96,12 @@ export function NavMain({ items = [] }: { items: NavItem[] }) {
                         <SidebarMenuItem key={item.title}>
                             <SidebarMenuButton
                                 asChild
-                                isActive={page.url.startsWith(
-                                    resolveUrl(item.href),
-                                )}
+                                isActive={resolvedItemHref
+                                    ? page.url.startsWith(resolvedItemHref)
+                                    : false}
                                 tooltip={{ children: item.title }}
                             >
-                                <Link href={item.href} prefetch>
+                                <Link href={itemHref} prefetch>
                                     {item.icon && <item.icon />}
                                     <span>{item.title}</span>
                                 </Link>

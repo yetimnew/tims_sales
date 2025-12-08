@@ -28,7 +28,7 @@ export interface SearchableComboboxProps {
     buttonClassName?: string;
     contentClassName?: string;
     showErrorMessage?: boolean;
-    renderDisplay?: (option: SearchableComboboxOption) => ReactNode;
+    renderDisplay?: (option: SearchableComboboxOption | null) => ReactNode;
     renderOption?: (option: SearchableComboboxOption, selected: boolean) => ReactNode;
 }
 

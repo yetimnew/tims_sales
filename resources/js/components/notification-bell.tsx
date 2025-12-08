@@ -46,8 +46,6 @@ export default function NotificationBell() {
 
       router.reload({
         only: ['notifications'],
-        preserveState: true,
-        preserveScroll: true,
         onFinish: () => {
           refreshingRef.current = false
         },

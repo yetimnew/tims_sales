@@ -65,7 +65,6 @@ export function ReportDateRangePicker({ from, to, onChange, error, description }
                     onChange('to', next?.to ?? '');
                 }}
                 placeholder="Select date range"
-                numberOfMonths={2}
                 className="min-w-[260px] justify-start text-left"
                 presets={presets}
             />

@@ -1,0 +1,247 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - generic [ref=e7]:
+      - list [ref=e9]:
+        - listitem [ref=e10]:
+          - link "Laravel Starter Kit" [ref=e11] [cursor=pointer]:
+            - /url: /dashboard
+            - img [ref=e13]
+            - generic [ref=e16]: Laravel Starter Kit
+      - generic [ref=e18]:
+        - generic [ref=e19]: Platform
+        - list [ref=e20]:
+          - listitem [ref=e21]:
+            - link "Dashboard" [ref=e22] [cursor=pointer]:
+              - /url: /dashboard
+              - img [ref=e23]
+              - generic [ref=e28]: Dashboard
+          - listitem [ref=e29]:
+            - button "Fleet Management" [expanded] [ref=e30]:
+              - img [ref=e31]
+              - generic [ref=e36]: Fleet Management
+              - img [ref=e37]
+            - list [ref=e40]:
+              - listitem [ref=e41]:
+                - link "Trucks" [ref=e42] [cursor=pointer]:
+                  - /url: /trucks
+                  - img [ref=e43]
+                  - generic [ref=e48]: Trucks
+              - listitem [ref=e49]:
+                - link "Drivers" [ref=e50] [cursor=pointer]:
+                  - /url: /drivers
+                  - img [ref=e51]
+                  - generic [ref=e56]: Drivers
+              - listitem [ref=e57]:
+                - link "Driver-Truck Assignments" [ref=e58] [cursor=pointer]:
+                  - /url: /driver-trucks
+                  - img [ref=e59]
+                  - generic [ref=e63]: Driver-Truck Assignments
+              - listitem [ref=e64]:
+                - link "Vehicle Types" [ref=e65] [cursor=pointer]:
+                  - /url: /vehicletypes
+                  - img [ref=e66]
+                  - generic [ref=e69]: Vehicle Types
+              - listitem [ref=e70]:
+                - link "Fuel Records" [ref=e71] [cursor=pointer]:
+                  - /url: /fuel
+                  - img [ref=e72]
+                  - generic [ref=e75]: Fuel Records
+              - listitem [ref=e76]:
+                - link "Driver Safety" [ref=e77] [cursor=pointer]:
+                  - /url: /driver-safety
+                  - img [ref=e78]
+                  - generic [ref=e80]: Driver Safety
+              - listitem [ref=e81]:
+                - link "Cargo Types" [ref=e82] [cursor=pointer]:
+                  - /url: /cargo-types
+                  - img [ref=e83]
+                  - generic [ref=e87]: Cargo Types
+          - listitem [ref=e88]:
+            - button "Maintenance" [ref=e89]:
+              - img [ref=e90]
+              - generic [ref=e92]: Maintenance
+              - img [ref=e93]
+          - listitem [ref=e95]:
+            - button "Financial Management" [ref=e96]:
+              - img [ref=e97]
+              - generic [ref=e99]: Financial Management
+              - img [ref=e100]
+          - listitem [ref=e102]:
+            - button "Operations" [ref=e103]:
+              - img [ref=e104]
+              - generic [ref=e106]: Operations
+              - img [ref=e107]
+          - listitem [ref=e109]:
+            - button "Geographic Management" [ref=e110]:
+              - img [ref=e111]
+              - generic [ref=e114]: Geographic Management
+              - img [ref=e115]
+          - listitem [ref=e117]:
+            - button "Status Management" [ref=e118]:
+              - img [ref=e119]
+              - generic [ref=e122]: Status Management
+              - img [ref=e123]
+          - listitem [ref=e125]:
+            - button "Outsourcing" [ref=e126]:
+              - img [ref=e127]
+              - generic [ref=e131]: Outsourcing
+              - img [ref=e132]
+          - listitem [ref=e134]:
+            - button "Reports" [ref=e135]:
+              - img [ref=e136]
+              - generic [ref=e139]: Reports
+              - img [ref=e140]
+          - listitem [ref=e142]:
+            - button "Grading" [ref=e143]:
+              - img [ref=e144]
+              - generic [ref=e147]: Grading
+              - img [ref=e148]
+          - listitem [ref=e150]:
+            - button "User Management" [ref=e151]:
+              - img [ref=e152]
+              - generic [ref=e154]: User Management
+              - img [ref=e155]
+      - list [ref=e158]:
+        - listitem [ref=e159]:
+          - button "AU Admin User" [ref=e160]:
+            - generic [ref=e162]: AU
+            - generic [ref=e164]: Admin User
+            - img [ref=e165]
+    - main [ref=e168]:
+      - generic [ref=e169]:
+        - generic [ref=e170]:
+          - button "Toggle Sidebar" [ref=e171]:
+            - img
+            - generic [ref=e172]: Toggle Sidebar
+          - navigation "breadcrumb" [ref=e173]:
+            - list [ref=e174]:
+              - listitem [ref=e175]:
+                - link "Drivers" [ref=e176] [cursor=pointer]:
+                  - /url: /drivers
+              - listitem [ref=e177]:
+                - img [ref=e178]
+              - listitem [ref=e180]:
+                - link "Create" [disabled] [ref=e181]
+        - button [ref=e183]:
+          - img
+      - generic [ref=e185]:
+        - generic [ref=e187]:
+          - generic [ref=e188]:
+            - img [ref=e190]
+            - generic [ref=e193]:
+              - generic [ref=e194]: Create New Driver
+              - generic [ref=e195]: Add a new driver with complete identification, employment, and contact details.
+          - generic [ref=e196]:
+            - link "Back to Drivers" [ref=e197] [cursor=pointer]:
+              - /url: /drivers
+              - img
+              - text: Back to Drivers
+            - generic [ref=e198]:
+              - img [ref=e199]
+              - text: Unsaved Changes
+            - generic [ref=e203]: Fleet Operations
+        - generic [ref=e206]:
+          - generic [ref=e207]:
+            - generic [ref=e208]:
+              - img [ref=e210]
+              - generic [ref=e212]:
+                - heading "General Details" [level=2] [ref=e213]
+                - paragraph [ref=e214]: Core identification and status information for the driver.
+            - generic [ref=e215]:
+              - generic [ref=e216]:
+                - generic [ref=e217]:
+                  - generic [ref=e218]: Driver ID*
+                  - generic [ref=e219]:
+                    - img [ref=e220]
+                    - generic [ref=e223]: Unique identifier for the driver
+                - generic [ref=e226]:
+                  - img [ref=e227]
+                  - textbox "Driver ID*" [ref=e230]:
+                    - /placeholder: e.g., DRV001
+                    - text: TEST241287
+              - generic [ref=e231]:
+                - generic [ref=e233]: Full Name*
+                - generic [ref=e235]:
+                  - img [ref=e236]
+                  - textbox "Full Name*" [active] [ref=e239]:
+                    - /placeholder: Enter full name
+                    - text: Test Driver 1765181241287
+              - generic [ref=e240]:
+                - generic [ref=e242]: Gender*
+                - generic [ref=e243]:
+                  - combobox [ref=e244]:
+                    - generic: Select gender
+                    - img
+                  - combobox [ref=e245]
+              - generic [ref=e246]:
+                - generic [ref=e248]: Status*
+                - generic [ref=e249]:
+                  - combobox [ref=e250]:
+                    - generic: Active
+                    - img
+                  - combobox [ref=e251]
+          - generic [ref=e252]:
+            - generic [ref=e253]:
+              - img [ref=e255]
+              - generic [ref=e258]:
+                - heading "Personal Details" [level=2] [ref=e259]
+                - paragraph [ref=e260]: Capture birth and employment lifecycle information.
+            - generic [ref=e261]:
+              - generic [ref=e262]:
+                - generic [ref=e264]: Date of Birth
+                - textbox "Date" [ref=e267]:
+                  - /placeholder: Pick a date
+              - generic [ref=e268]:
+                - generic [ref=e270]: Hire Date
+                - textbox "Date" [ref=e273]:
+                  - /placeholder: Pick a date
+          - generic [ref=e274]:
+            - generic [ref=e275]:
+              - img [ref=e277]
+              - generic [ref=e280]:
+                - heading "Contact & Address" [level=2] [ref=e281]
+                - paragraph [ref=e282]: Ensure we can reach the driver and locate their residence.
+            - generic [ref=e283]:
+              - generic [ref=e284]:
+                - generic [ref=e286]: Mobile Number
+                - textbox "Mobile Number" [ref=e288]:
+                  - /placeholder: e.g., +251911123456
+              - generic [ref=e289]:
+                - generic [ref=e291]: Zone
+                - textbox "Zone" [ref=e293]:
+                  - /placeholder: Zone/District
+                - paragraph [ref=e294]: Optional - Administrative zone
+              - generic [ref=e295]:
+                - generic [ref=e297]: Woreda
+                - textbox "Woreda" [ref=e299]:
+                  - /placeholder: Woreda/Sub-district
+                - paragraph [ref=e300]: Optional - Sub-district
+              - generic [ref=e301]:
+                - generic [ref=e303]: Kebele
+                - textbox "Kebele" [ref=e305]:
+                  - /placeholder: Kebele/Neighborhood
+                - paragraph [ref=e306]: Optional - Neighborhood
+              - generic [ref=e307]:
+                - generic [ref=e309]: House Number
+                - textbox "House Number" [ref=e311]:
+                  - /placeholder: House number
+                - paragraph [ref=e312]: Optional - House/building number
+          - generic [ref=e313]:
+            - generic [ref=e314]:
+              - generic [ref=e315]: "*"
+              - generic [ref=e316]: All required fields must be completed
+              - generic [ref=e317]:
+                - img [ref=e318]
+                - text: You have unsaved changes
+            - generic [ref=e322]:
+              - link "Cancel" [ref=e323] [cursor=pointer]:
+                - /url: /drivers
+              - button "Create Driver" [ref=e324]:
+                - img
+                - text: Create Driver
+  - region "Notifications (F8)":
+    - list
+```

@@ -52,7 +52,14 @@ export function ListingRowActionsMenu({
     size = 'sm',
 }: ListingRowActionsMenuProps) {
     const resolvedActions = React.useMemo(
-        () => actions.filter((action): action is ListingRowAction => Boolean(action) && !action?.hidden),
+        () =>
+            actions.filter((action): action is ListingRowAction => {
+                if (!action) {
+                    return false;
+                }
+
+                return action.hidden !== true;
+            }),
         [actions],
     );
 
@@ -65,12 +72,18 @@ export function ListingRowActionsMenu({
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className={cn(buttonClasses, triggerClassName)}>
+                <Button
+                    variant="ghost"
+                    className={cn(buttonClasses, triggerClassName)}
+                >
                     <span className="sr-only">{triggerAriaLabel}</span>
                     <MoreVertical className="h-4 w-4" />
                 </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align={align} className={cn('w-44', contentClassName)}>
+            <DropdownMenuContent
+                align={align}
+                className={cn('w-44', contentClassName)}
+            >
                 <DropdownMenuGroup className={className}>
                     {resolvedActions.map((action) => {
                         const commonClasses = cn(
@@ -81,11 +94,24 @@ export function ListingRowActionsMenu({
 
                         if ('href' in action) {
                             return (
-                                <DropdownMenuItem key={action.label} asChild className={commonClasses}>
-                                    <Link href={action.href} className="flex w-full items-center gap-2">
+                                <DropdownMenuItem
+                                    key={action.label}
+                                    asChild
+                                    className={commonClasses}
+                                >
+                                    <Link
+                                        href={action.href}
+                                        className="flex w-full items-center gap-2"
+                                    >
                                         {action.icon}
-                                        <span className="flex-1 truncate">{action.label}</span>
-                                        {action.shortcut && <span className="text-xs text-muted-foreground">{action.shortcut}</span>}
+                                        <span className="flex-1 truncate">
+                                            {action.label}
+                                        </span>
+                                        {action.shortcut ? (
+                                            <span className="text-xs text-muted-foreground">
+                                                {action.shortcut}
+                                            </span>
+                                        ) : null}
                                     </Link>
                                 </DropdownMenuItem>
                             );
@@ -106,7 +132,11 @@ export function ListingRowActionsMenu({
                             >
                                 {action.icon}
                                 <span className="flex-1 truncate">{action.label}</span>
-                                {action.shortcut && <span className="text-xs text-muted-foreground">{action.shortcut}</span>}
+                                {action.shortcut ? (
+                                    <span className="text-xs text-muted-foreground">
+                                        {action.shortcut}
+                                    </span>
+                                ) : null}
                             </DropdownMenuItem>
                         );
                     })}
