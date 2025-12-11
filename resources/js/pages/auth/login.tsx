@@ -6,12 +6,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import AuthLayout from '@/layouts/auth-layout';
-// import { register } from '@/routes'; // Disabled - registration is not available
 import { store } from '@/routes/login';
 import { request } from '@/routes/password';
 import { Form, Head } from '@inertiajs/react';
-import { Eye, EyeOff } from 'lucide-react';
-import { useState } from 'react';
+import { Eye, EyeOff, ShieldCheck, Truck } from 'lucide-react';
+import { useMemo, useState } from 'react';
 
 interface LoginProps {
     status?: string;
@@ -19,17 +18,32 @@ interface LoginProps {
     canRegister: boolean;
 }
 
-export default function Login({
-    status,
-    canResetPassword,
-    canRegister,
-}: LoginProps) {
+const SUPPORT_CHANNELS = [
+    {
+        label: 'Control tower hotline',
+        value: '0929 102 926',
+        href: 'tel:0929102926',
+    },
+    {
+        label: 'Operations desk',
+        value: '0916 666 254',
+        href: 'tel:0916666254',
+    },
+    {
+        label: 'Email support',
+        value: 'yetimnew@gmail.com',
+        href: 'mailto:yetimnew@gmail.com',
+    },
+];
+
+export default function Login({ status, canResetPassword, canRegister }: LoginProps) {
     const [showPassword, setShowPassword] = useState(false);
+    const formattedStatus = useMemo(() => status?.trim(), [status]);
 
     return (
         <AuthLayout
-            title="Log in to your account"
-            description="Enter your email and password below to log in"
+            title="Access the TIMS control tower"
+            description="Authenticate with your fleet credentials to continue orchestrating dispatch, compliance, and performance workflows."
         >
             <Head title="Log in" />
 
@@ -40,6 +54,11 @@ export default function Login({
             >
                 {({ processing, errors }) => (
                     <>
+                        {formattedStatus && (
+                            <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-3 text-sm text-emerald-200">
+                                {formattedStatus}
+                            </div>
+                        )}
                         <div className="grid gap-6">
                             <div className="grid gap-2">
                                 <Label htmlFor="email">Email address</Label>
@@ -122,15 +141,36 @@ export default function Login({
                                 </TextLink>
                             </div>
                         )}
+                        <div className="space-y-4 rounded-2xl border border-white/10 bg-white/5 p-6 text-sm text-slate-200">
+                            <div className="flex items-start gap-3">
+                                <ShieldCheck className="mt-1 size-5 text-emerald-300" />
+                                <div className="space-y-1">
+                                    <p className="font-medium text-white">Security first</p>
+                                    <p className="text-xs text-slate-300">
+                                        All TIMS sessions are monitored and protected. If you suspect any suspicious activity, alert the control tower immediately.
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="flex items-start gap-3">
+                                <Truck className="mt-1 size-5 text-sky-300" />
+                                <div className="space-y-1">
+                                    <p className="font-medium text-white">Need assistance?</p>
+                                    <ul className="space-y-1 text-xs text-slate-300">
+                                        {SUPPORT_CHANNELS.map(channel => (
+                                            <li key={channel.label} className="flex items-center justify-between gap-3">
+                                                <span className="uppercase tracking-[0.3em] text-slate-400">{channel.label}</span>
+                                                <a className="text-sky-300 hover:text-sky-200" href={channel.href}>
+                                                    {channel.value}
+                                                </a>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
                     </>
                 )}
             </Form>
-
-            {status && (
-                <div className="mb-4 text-center text-sm font-medium text-green-600">
-                    {status}
-                </div>
-            )}
         </AuthLayout>
     );
 }

@@ -9,6 +9,7 @@ interface FormSectionProps {
     className?: string;
     headingClassName?: string;
     contentClassName?: string;
+    headingAside?: ReactNode;
 }
 
 export function FormSection({
@@ -19,6 +20,7 @@ export function FormSection({
     className,
     headingClassName,
     contentClassName,
+    headingAside,
 }: FormSectionProps) {
     return (
         <section
@@ -27,12 +29,20 @@ export function FormSection({
                 className,
             )}
         >
-            <div className={cn('flex items-center gap-3', headingClassName)}>
-                {icon}
-                <div>
-                    <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{title}</h2>
-                    {description && <p className="text-sm text-muted-foreground">{description}</p>}
+            <div
+                className={cn(
+                    'flex flex-col gap-4 md:flex-row md:items-start md:justify-between',
+                    headingClassName,
+                )}
+            >
+                <div className="flex items-start gap-3">
+                    {icon}
+                    <div>
+                        <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{title}</h2>
+                        {description && <p className="text-sm text-muted-foreground">{description}</p>}
+                    </div>
                 </div>
+                {headingAside && <div className="w-full md:max-w-sm xl:max-w-md">{headingAside}</div>}
             </div>
             <div className={cn('grid grid-cols-1 gap-4 md:grid-cols-2', contentClassName)}>{children}</div>
         </section>

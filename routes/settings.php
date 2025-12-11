@@ -4,6 +4,7 @@ use App\Http\Controllers\Settings\DriverGradingSettingsController;
 use App\Http\Controllers\Settings\NotificationPreferenceController;
 use App\Http\Controllers\Settings\PasswordController;
 use App\Http\Controllers\Settings\ProfileController;
+use App\Http\Controllers\Settings\SystemBackupController;
 use App\Http\Controllers\Settings\TruckGradingSettingsController;
 use App\Http\Controllers\Settings\TwoFactorAuthenticationController;
 use Illuminate\Support\Facades\Route;
@@ -56,4 +57,20 @@ Route::middleware('auth')->group(function () {
 
     Route::post('settings/driver-grading/recalculate', [DriverGradingSettingsController::class, 'recalculate'])
         ->name('settings.driver-grading.recalculate');
+
+    Route::get('settings/backups', [SystemBackupController::class, 'index'])
+        ->middleware('can:system.backup')
+        ->name('settings.backups.index');
+
+    Route::post('settings/backups/run', [SystemBackupController::class, 'run'])
+        ->middleware('can:system.backup')
+        ->name('settings.backups.run');
+
+    Route::post('settings/backups/restore/upload', [SystemBackupController::class, 'restoreUpload'])
+        ->middleware('can:system.backup')
+        ->name('settings.backups.restore.upload');
+
+    Route::post('settings/backups/restore', [SystemBackupController::class, 'restoreExisting'])
+        ->middleware('can:system.backup')
+        ->name('settings.backups.restore');
 });

@@ -225,6 +225,11 @@ class CheckPermissionSeeder extends Seeder
             'view telescope',
         ];
 
+        // ==================== SYSTEM PERMISSIONS ====================
+        $systemPermissions = [
+            'system.backup',
+        ];
+
         // ==================== COMBINE ALL PERMISSIONS ====================
         $allPermissions = array_merge(
             $truckPermissions,
@@ -256,7 +261,8 @@ class CheckPermissionSeeder extends Seeder
             $rolePermissions,
             $permissionPermissions,
             $activityLogPermissions,
-            $telescopePermissions
+            $telescopePermissions,
+            $systemPermissions
         );
 
         // Create all permissions
@@ -278,7 +284,7 @@ class CheckPermissionSeeder extends Seeder
         // MANAGER: All except destroy
         $managerPermissions = array_filter(
             $allPermissions,
-            fn ($permission) => ! str_contains($permission, '.destroy')
+            fn ($permission) => ! str_contains($permission, '.destroy') && $permission !== 'system.backup'
         );
         $managerRole = Role::firstOrCreate(['name' => 'manager', 'guard_name' => 'web']);
         $managerRole->syncPermissions($managerPermissions);

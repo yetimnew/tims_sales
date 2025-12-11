@@ -65,6 +65,7 @@ use App\Events\WoredaUpdated;
 use App\Events\ZoneCreated;
 use App\Events\ZoneDeleted;
 use App\Events\ZoneUpdated;
+use App\Listeners\RenameBackupToTims;
 use App\Listeners\SendCargoTypeLifecycleNotification;
 use App\Listeners\SendCustomerLifecycleNotification;
 use App\Listeners\SendDailyTruckStatusLifecycleNotification;
@@ -93,6 +94,7 @@ use App\Policies\PerformancePolicy;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
+use Spatie\Backup\Events\BackupWasSuccessful;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -216,5 +218,7 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(RoleCreated::class, [SendRoleLifecycleNotification::class, 'handle']);
         Event::listen(RoleUpdated::class, [SendRoleLifecycleNotification::class, 'handle']);
         Event::listen(RoleDeleted::class, [SendRoleLifecycleNotification::class, 'handle']);
+
+        Event::listen(BackupWasSuccessful::class, [RenameBackupToTims::class, 'handle']);
     }
 }

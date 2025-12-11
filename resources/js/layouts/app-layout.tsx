@@ -4,7 +4,9 @@ import { AppHeader } from '@/components/app-header';
 import { AppSidebar } from '@/components/app-sidebar';
 import { AppSidebarHeader } from '@/components/app-sidebar-header';
 import { Toaster } from '@/components/toaster';
+import { PageTransitionOverlay } from '@/components/page-transition-overlay';
 import { toast } from '@/hooks/use-toast';
+import { usePageTransitionLoading } from '@/hooks/use-page-transition-loading';
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { usePage } from '@inertiajs/react';
 import { useEffect } from 'react';
@@ -21,6 +23,7 @@ export default function AppLayout({
 }: AppLayoutProps) {
     const page = usePage<SharedData>();
     const { flash } = page.props as any;
+    const { isTransitioning } = usePageTransitionLoading();
 
     // Show success toast
     useEffect(() => {
@@ -68,9 +71,23 @@ export default function AppLayout({
                 }
             }
 
-            if (pathname === '/trucks') {
-                window.sessionStorage.setItem('trucks.index.shouldShowSkeleton', 'true');
+            if (!pathname) {
+                return;
             }
+
+            const skeletonFlagByPath: Record<string, string[]> = {
+                '/trucks': ['trucks.index.shouldShowSkeleton'],
+                '/operations': ['operations.index.shouldShowSkeleton'],
+            };
+
+            const keys = skeletonFlagByPath[pathname];
+            if (!keys) {
+                return;
+            }
+
+            keys.forEach((key) => {
+                window.sessionStorage.setItem(key, 'true');
+            });
         };
 
         const unsubscribeStart = router.on('start', handleStart);
@@ -89,6 +106,7 @@ export default function AppLayout({
                     {children}
                 </AppContent>
             </AppShell>
+            <PageTransitionOverlay visible={isTransitioning} />
             <Toaster />
         </>
     );
