@@ -60,6 +60,15 @@ return [
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
+            'dump' => [
+                'dump_binary_path' => env('DB_DUMP_BINARY_PATH', ''),
+                'host' => env('DB_DUMP_HOST', env('DB_HOST', '127.0.0.1')),
+                'port' => (int) env('DB_DUMP_PORT', env('DB_PORT', 3306)),
+                'use_single_transaction' => true,
+                'timeout' => (int) env('DB_DUMP_TIMEOUT', 300),
+                'do_not_use_column_statistics' => true,
+                'add_extra_option' => '--protocol=TCP',
+            ],
         ],
 
         // Legacy TIMS source database (imported from the SQL dump)

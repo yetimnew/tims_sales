@@ -57,6 +57,8 @@ return [
         'tries' => 1,
 
         'retry_delay' => 0,
+
+        'windows_system_root' => env('WINDOWS_SYSTEM_ROOT', 'C:\\Windows'),
     ],
 
     'notifications' => [
@@ -72,7 +74,7 @@ return [
         'notifiable' => \Spatie\Backup\Notifications\Notifiable::class,
 
         'mail' => [
-            'to' => 'your@example.com',
+            'to' => env('BACKUP_NOTIFICATION_ADDRESS', env('MAIL_FROM_ADDRESS', 'hello@example.com')),
 
             'from' => [
                 'address' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),

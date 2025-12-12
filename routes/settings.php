@@ -73,4 +73,12 @@ Route::middleware('auth')->group(function () {
     Route::post('settings/backups/restore', [SystemBackupController::class, 'restoreExisting'])
         ->middleware('can:system.backup')
         ->name('settings.backups.restore');
+
+    Route::get('settings/backups/download', [SystemBackupController::class, 'download'])
+        ->middleware('can:system.backup')
+        ->name('settings.backups.download');
+
+    Route::delete('settings/backups', [SystemBackupController::class, 'destroy'])
+        ->middleware('can:system.backup')
+        ->name('settings.backups.destroy');
 });

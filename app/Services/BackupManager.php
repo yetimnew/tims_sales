@@ -66,10 +66,38 @@ class BackupManager
 
     public function runBackup(): void
     {
+        if ($this->runningOnWindows()) {
+            $systemRoot = $this->resolveSystemRoot();
+
+            if ($systemRoot !== null) {
+                putenv("SYSTEMROOT={$systemRoot}");
+                $_ENV['SYSTEMROOT'] = $systemRoot;
+                $_SERVER['SYSTEMROOT'] = $systemRoot;
+            }
+        }
+
         Artisan::call('backup:run', [
             '--only-db' => true,
             '--no-interaction' => true,
         ]);
+    }
+
+    protected function runningOnWindows(): bool
+    {
+        return PHP_OS_FAMILY === 'Windows';
+    }
+
+    protected function resolveSystemRoot(): ?string
+    {
+        $systemRoot = getenv('SystemRoot') ?: getenv('SYSTEMROOT');
+
+        if ($systemRoot === false || $systemRoot === '') {
+            $systemRoot = (string) config('backup.backup.windows_system_root', 'C:\\Windows');
+        }
+
+        $systemRoot = trim($systemRoot);
+
+        return $systemRoot !== '' ? $systemRoot : null;
     }
 
     public function restoreFromPath(string $diskName, string $path, bool $cleanupOriginal = false): void
@@ -96,6 +124,19 @@ class BackupManager
             if ($cleanupOriginal) {
                 $disk->delete($path);
             }
+        }
+    }
+
+    public function deleteBackup(string $diskName, string $path): void
+    {
+        $disk = Storage::disk($diskName);
+
+        if (! $disk->exists($path)) {
+            throw new RuntimeException("Backup file [{$path}] was not found on disk [{$diskName}].");
+        }
+
+        if (! $disk->delete($path)) {
+            throw new RuntimeException('Failed to remove the backup file.');
         }
     }
 

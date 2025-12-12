@@ -65,6 +65,7 @@ use App\Events\WoredaUpdated;
 use App\Events\ZoneCreated;
 use App\Events\ZoneDeleted;
 use App\Events\ZoneUpdated;
+use App\Listeners\EnsureBackupArchiveEncryption;
 use App\Listeners\RenameBackupToTims;
 use App\Listeners\SendCargoTypeLifecycleNotification;
 use App\Listeners\SendCustomerLifecycleNotification;
@@ -95,6 +96,7 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Spatie\Backup\Events\BackupWasSuccessful;
+use Spatie\Backup\Events\BackupZipWasCreated;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -219,6 +221,7 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(RoleUpdated::class, [SendRoleLifecycleNotification::class, 'handle']);
         Event::listen(RoleDeleted::class, [SendRoleLifecycleNotification::class, 'handle']);
 
+        Event::listen(BackupZipWasCreated::class, [EnsureBackupArchiveEncryption::class, 'handle']);
         Event::listen(BackupWasSuccessful::class, [RenameBackupToTims::class, 'handle']);
     }
 }

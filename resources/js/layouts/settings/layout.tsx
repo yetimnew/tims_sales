@@ -2,6 +2,7 @@ import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { cn, isSameUrl, resolveUrl } from '@/lib/utils';
+import { index as backupsIndex } from '@/routes/settings/backups';
 import { edit as editAppearance } from '@/routes/appearance';
 import { edit as editNotificationPreferences } from '@/routes/notification-preferences';
 import { edit } from '@/routes/profile';
@@ -9,7 +10,8 @@ import { show } from '@/routes/two-factor';
 import { edit as editPassword } from '@/routes/user-password';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { type PropsWithChildren } from 'react';
+import { type PropsWithChildren, useMemo } from 'react';
+import { usePermissions } from '@/hooks/use-permissions';
 
 const sidebarNavItems: NavItem[] = [
     {
@@ -40,6 +42,19 @@ const sidebarNavItems: NavItem[] = [
 ];
 
 export default function SettingsLayout({ children }: PropsWithChildren) {
+    const { permissions } = usePermissions();
+    const permittedNavItems = useMemo(() => {
+        const permissionSet = new Set(permissions);
+
+        return sidebarNavItems.filter(item => {
+            if (!item.requiredPermissions || item.requiredPermissions.length === 0) {
+                return true;
+            }
+
+            return item.requiredPermissions.some(permission => permissionSet.has(permission));
+        });
+    }, [permissions]);
+
     // When server-side rendering, we only render the layout on the client...
     if (typeof window === 'undefined') {
         return null;
@@ -57,7 +72,7 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
             <div className="flex flex-col lg:flex-row lg:space-x-12">
                 <aside className="w-full max-w-xl lg:w-48">
                     <nav className="flex flex-col space-y-1 space-x-0">
-                        {sidebarNavItems.map((item, index) => (
+                        {permittedNavItems.map((item, index) => (
                             <Button
                                 key={`${resolveUrl(item.href)}-${index}`}
                                 size="sm"

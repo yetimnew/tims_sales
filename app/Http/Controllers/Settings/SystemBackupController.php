@@ -15,6 +15,7 @@ use Illuminate\Validation\Rules\File;
 use Inertia\Inertia;
 use Inertia\Response;
 use RuntimeException;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Throwable;
 
 class SystemBackupController extends Controller
@@ -53,7 +54,7 @@ class SystemBackupController extends Controller
             report($exception);
 
             return back()->withErrors([
-                'backup' => 'Failed to create a backup. Check the logs for more details.',
+                'backup' => 'We could not create a backup right now. Please try again.',
             ]);
         }
 
@@ -134,11 +135,77 @@ class SystemBackupController extends Controller
             report($exception);
 
             return back()->withErrors([
-                'path' => 'Restoring the selected backup failed. Please review the logs for details.',
+                'path' => 'Restoring the selected backup failed. Please try again.',
             ]);
         }
 
         return back()->with('success', 'Backup restored successfully.');
+    }
+
+    public function download(Request $request): StreamedResponse
+    {
+        Gate::authorize('system.backup');
+
+        $disk = $request->query('disk');
+        $path = $request->query('path');
+
+        if (! is_string($disk) || ! in_array($disk, $this->backupManager->disks(), true)) {
+            abort(404);
+        }
+
+        if (! is_string($path) || ! Str::endsWith($path, '.tims')) {
+            abort(404);
+        }
+
+        $storage = Storage::disk($disk);
+
+        if (! $storage->exists($path)) {
+            abort(404);
+        }
+
+        $filename = basename($path);
+
+        return $storage->download($path, $filename, [
+            'Content-Type' => 'application/octet-stream',
+        ]);
+    }
+
+    public function destroy(Request $request): RedirectResponse
+    {
+        Gate::authorize('system.backup');
+
+        $validated = $request->validate([
+            'disk' => [
+                'required',
+                'string',
+                Rule::in($this->backupManager->disks()),
+            ],
+            'path' => ['required', 'string'],
+        ]);
+
+        if (! Str::endsWith($validated['path'], '.tims')) {
+            return back()->withErrors([
+                'path' => 'Only backups created by the system can be removed.',
+            ]);
+        }
+
+        try {
+            $this->backupManager->deleteBackup($validated['disk'], $validated['path']);
+        } catch (RuntimeException $exception) {
+            report($exception);
+
+            return back()->withErrors([
+                'path' => $exception->getMessage(),
+            ]);
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return back()->withErrors([
+                'path' => 'We could not remove that backup right now. Please try again.',
+            ]);
+        }
+
+        return back()->with('success', 'Backup deleted successfully.');
     }
 
     private function formatSize(int|float $bytes): string

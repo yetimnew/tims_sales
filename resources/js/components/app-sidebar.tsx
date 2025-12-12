@@ -37,7 +37,8 @@ import {
     LineChart,
     AlertTriangle,
     Bell,
-    History
+    History,
+    Database
 } from 'lucide-react';
 import AppLogo from './app-logo';
 
@@ -432,6 +433,13 @@ const getMainNavItems = (currentUrl: string): NavItem[] => {
                         requiredPermissions: ['users.update'],
                     },
                 ],
+            },
+            {
+                title: 'System Backups',
+                href: '/settings/backups',
+                icon: Database,
+                requiredPermissions: ['system.backup'],
+                isActive: currentUrl.startsWith('/settings/backups'),
             },
         ];
 };
