@@ -6,7 +6,6 @@ import { ListingStatsHeader } from '@/components/listing/stats-header';
 import { ListingFilterBar } from '@/components/listing/filter-bar';
 import { ListingTableShell } from '@/components/listing/data-table-shell';
 import { ListingMobileItemList } from '@/components/listing/mobile-item-list';
-import { ListingLoadingPlaceholder } from '@/components/listing/loading-placeholder';
 import { ListingPaginationFooter } from '@/components/listing/pagination-footer';
 import { ListingRowActionsMenu } from '@/components/listing/row-actions-menu';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
@@ -248,9 +247,12 @@ export default function OperationsIndex({
     const [isDeleting, setIsDeleting] = React.useState(false);
 
     const isDataReady = Array.isArray(operations?.data);
-    const { isLoading } = useListingLoading({
+    const { isLoading: isTableLoading } = useListingLoading({
         storageKey: SKELETON_FLAG_KEY,
         isDataReady,
+        minimumDuration: 200,
+        onlySamePath: true,
+        initialIsLoading: false,
     });
 
     React.useEffect(() => {
@@ -416,68 +418,68 @@ export default function OperationsIndex({
             label: 'Total Operations',
             icon: <Square className="h-3.5 w-3.5 text-slate-500" />,
             className: 'min-w-0',
-            value: isLoading ? (
+            value: isTableLoading ? (
                 <Skeleton className="h-3.5 w-20" aria-hidden="true" />
             ) : (
                 formatCount(totalRecords)
             ),
-            description: isLoading ? (
+            description: isTableLoading ? (
                 <Skeleton className="h-3 w-32" aria-hidden="true" />
             ) : (
                 `${formatCount(metrics?.open)} currently open`
             ),
-            valueClassName: isLoading ? undefined : 'text-slate-600',
+            valueClassName: isTableLoading ? undefined : 'text-slate-600',
         },
         {
             id: 'active-operations',
             label: 'Active',
             icon: <CheckCircle className="h-3.5 w-3.5 text-emerald-600" />,
             className: 'min-w-0',
-            value: isLoading ? (
+            value: isTableLoading ? (
                 <Skeleton className="h-3.5 w-16" aria-hidden="true" />
             ) : (
                 formatCount(metrics?.active)
             ),
-            description: isLoading ? (
+            description: isTableLoading ? (
                 <Skeleton className="h-3 w-28" aria-hidden="true" />
             ) : (
                 'Operations in motion'
             ),
-            valueClassName: isLoading ? undefined : 'text-emerald-600',
+            valueClassName: isTableLoading ? undefined : 'text-emerald-600',
         },
         {
             id: 'inactive-operations',
             label: 'Inactive',
             icon: <XCircle className="h-3.5 w-3.5 text-rose-500" />,
             className: 'min-w-0',
-            value: isLoading ? (
+            value: isTableLoading ? (
                 <Skeleton className="h-3.5 w-16" aria-hidden="true" />
             ) : (
                 formatCount(metrics?.inactive)
             ),
-            description: isLoading ? (
+            description: isTableLoading ? (
                 <Skeleton className="h-3 w-28" aria-hidden="true" />
             ) : (
                 'Temporarily paused'
             ),
-            valueClassName: isLoading ? undefined : 'text-rose-500',
+            valueClassName: isTableLoading ? undefined : 'text-rose-500',
         },
         {
             id: 'closed-operations',
             label: 'Closed',
             icon: <Gauge className="h-3.5 w-3.5 text-purple-600" />,
             className: 'min-w-0',
-            value: isLoading ? (
+            value: isTableLoading ? (
                 <Skeleton className="h-3.5 w-16" aria-hidden="true" />
             ) : (
                 formatCount(metrics?.closed)
             ),
-            description: isLoading ? (
+            description: isTableLoading ? (
                 <Skeleton className="h-3 w-32" aria-hidden="true" />
             ) : (
                 'Completed and archived'
             ),
-            valueClassName: isLoading ? undefined : 'text-purple-600',
+            valueClassName: isTableLoading ? undefined : 'text-purple-600',
         },
     ];
 
@@ -507,64 +509,44 @@ export default function OperationsIndex({
         [],
     );
 
-    const tableRows = isLoading
-        ? Array.from({ length: 6 }).map((_, rowIndex) => (
-              <TableRow key={`operation-skeleton-${rowIndex}`} aria-hidden="true">
-                  {tableColumns.map((column) => (
-                      <TableCell
-                          key={`${column.id}-${rowIndex}`}
-                          className={
-                              column.align === 'center'
-                                  ? 'text-center'
-                                  : column.align === 'right'
-                                      ? 'text-right'
-                                      : undefined
-                          }
-                      >
-                          <Skeleton className="mx-auto h-4 w-24 max-w-full" />
-                      </TableCell>
-                  ))}
+    const tableRows = operationData.length > 0
+        ? operationData.map((operation, index) => (
+              <TableRow key={operation.id} className="hover:bg-muted/50">
+                  <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
+                  <TableCell className="font-medium">{operation.operationid}</TableCell>
+                  <TableCell className="text-muted-foreground">{operation.customer?.name || '—'}</TableCell>
+                  <TableCell className="text-center">{getStatusBadge(operation.status)}</TableCell>
+                  <TableCell className="text-muted-foreground">{formatDateValue(operation.startdate)}</TableCell>
+                  <TableCell className="text-right font-medium">{formatNumberValue(operation.volume)}</TableCell>
+                  <TableCell className="text-right text-muted-foreground">{formatNumberValue(operation.km)}</TableCell>
+                  <TableCell>{renderTonnageProgress(operation)}</TableCell>
+                  <TableCell className="text-center">
+                      <ListingRowActionsMenu
+                          actions={[
+                              canViewOperation && {
+                                  label: 'View',
+                                  icon: <Eye className="h-4 w-4" />,
+                                  href: `/operations/${operation.id}`,
+                              },
+                              canEditOperation && {
+                                  label: 'Edit',
+                                  icon: <SquarePen className="h-4 w-4" />,
+                                  href: `/operations/${operation.id}/edit`,
+                              },
+                              canDeleteOperation && {
+                                  label: 'Delete',
+                                  icon: <Trash2 className="h-4 w-4" />,
+                                  danger: true,
+                                  disabled: isDeleting && selectedOperation?.id === operation.id,
+                                  onSelect: () => handleDeleteClick(operation),
+                              },
+                          ].filter(Boolean)}
+                      />
+                  </TableCell>
               </TableRow>
           ))
-        : operationData.length > 0
-            ? operationData.map((operation, index) => (
-                  <TableRow key={operation.id} className="hover:bg-muted/50">
-                      <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
-                      <TableCell className="font-medium">{operation.operationid}</TableCell>
-                      <TableCell className="text-muted-foreground">
-                          {operation.customer?.name || '—'}
-                      </TableCell>
-                      <TableCell className="text-center">{getStatusBadge(operation.status)}</TableCell>
-                      <TableCell className="text-muted-foreground">{formatDateValue(operation.startdate)}</TableCell>
-                      <TableCell className="text-right font-medium">{formatNumberValue(operation.volume)}</TableCell>
-                      <TableCell className="text-right text-muted-foreground">{formatNumberValue(operation.km)}</TableCell>
-                      <TableCell>{renderTonnageProgress(operation)}</TableCell>
-                      <TableCell className="text-center">
-                          <ListingRowActionsMenu
-                              actions={[
-                                  canViewOperation && {
-                                      label: 'View',
-                                      icon: <Eye className="h-4 w-4" />,
-                                      href: `/operations/${operation.id}`,
-                                  },
-                                  canEditOperation && {
-                                      label: 'Edit',
-                                      icon: <SquarePen className="h-4 w-4" />,
-                                      href: `/operations/${operation.id}/edit`,
-                                  },
-                                  canDeleteOperation && {
-                                      label: 'Delete',
-                                      icon: <Trash2 className="h-4 w-4" />,
-                                      danger: true,
-                                      disabled: isDeleting && selectedOperation?.id === operation.id,
-                                      onSelect: () => handleDeleteClick(operation),
-                                  },
-                              ]}
-                          />
-                      </TableCell>
-                  </TableRow>
-              ))
-            : (
+        : !isTableLoading
+            ? (
                 <TableRow>
                     <TableCell colSpan={tableColumns.length} className="py-8 text-center text-muted-foreground">
                         No operations found.
@@ -575,7 +557,8 @@ export default function OperationsIndex({
                         )}
                     </TableCell>
                 </TableRow>
-            );
+            )
+            : null;
 
     const mobileItems = React.useMemo(
         () =>
@@ -586,9 +569,7 @@ export default function OperationsIndex({
         [operationData, rowOffset],
     );
 
-    const mobileContent = isLoading ? (
-        <ListingLoadingPlaceholder showStats={false} filterItemCount={4} rowCount={4} />
-    ) : (
+    const mobileContent = (
         <ListingMobileItemList
             items={mobileItems}
             getKey={(item) => item.record.id}
@@ -604,9 +585,7 @@ export default function OperationsIndex({
                 <div className="space-y-3 text-sm text-muted-foreground">
                     <div className="flex items-center justify-between">
                         <span className="font-medium text-slate-600 dark:text-slate-300">Status</span>
-                        <span className="text-right text-slate-900 dark:text-slate-100">
-                            {item.record.status}
-                        </span>
+                        <span className="text-right text-slate-900 dark:text-slate-100">{item.record.status}</span>
                     </div>
                     <div className="flex items-center justify-between">
                         <span className="font-medium text-slate-600 dark:text-slate-300">Start Date</span>
@@ -672,6 +651,24 @@ export default function OperationsIndex({
                 </div>
             )}
         />
+    );
+
+    const tableContent = (
+        <div className="relative">
+            <ListingTableShell
+                columns={tableColumns}
+                sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSort }}
+            >
+                {tableRows}
+            </ListingTableShell>
+
+            {isTableLoading && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
+                    <img src="/images/loading-spinner.svg" alt="Loading operations" className="h-12 w-12" />
+                    <span className="text-sm text-muted-foreground">Loading operations...</span>
+                </div>
+            )}
+        </div>
     );
 
     const tableHeaderExtras = (
@@ -744,7 +741,7 @@ export default function OperationsIndex({
                 tableDescription="Complete list of all operations"
                 tableHeaderExtras={tableHeaderExtras}
                 pagination={
-                    !isLoading && operations?.links ? (
+                    !isTableLoading && operations?.links ? (
                         <ListingPaginationFooter
                             className="mt-4"
                             links={operations.links}
@@ -755,16 +752,18 @@ export default function OperationsIndex({
                     ) : null
                 }
             >
-                <div className="hidden md:block">
-                    <ListingTableShell
-                        columns={tableColumns}
-                        sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSort }}
-                    >
-                        {tableRows}
-                    </ListingTableShell>
-                </div>
+                <div className="hidden md:block">{tableContent}</div>
 
-                <div className="space-y-3 md:hidden">{mobileContent}</div>
+                <div className="relative space-y-3 md:hidden">
+                    {mobileContent}
+
+                    {isTableLoading && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
+                            <img src="/images/loading-spinner.svg" alt="Loading operations" className="h-10 w-10" />
+                            <span className="text-sm text-muted-foreground">Loading operations...</span>
+                        </div>
+                    )}
+                </div>
             </ListPageLayout>
 
             <DeleteConfirmationDialog

@@ -11,6 +11,7 @@ use App\Models\Place;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -115,29 +116,35 @@ class OutsourcePerformanceController extends Controller
             'activeRecords' => $activeRecords,
         ];
 
-        $statusOptions = OutsourcePerformance::query()
-            ->select('status')
-            ->distinct()
-            ->orderBy('status')
-            ->pluck('status')
-            ->filter()
-            ->map(fn ($status) => [
-                'label' => Str::headline((string) $status),
-                'value' => $status,
-            ])
-            ->values()
-            ->all();
+        // Cache status options (1 hour) - rarely changes
+        $statusOptions = Cache::remember('outsource_performances.status_options', 3600, function () {
+            return OutsourcePerformance::query()
+                ->select('status')
+                ->distinct()
+                ->orderBy('status')
+                ->pluck('status')
+                ->filter()
+                ->map(fn ($status) => [
+                    'label' => Str::headline((string) $status),
+                    'value' => $status,
+                ])
+                ->values()
+                ->all();
+        });
 
-        $outsourceOptions = Outsource::query()
-            ->select(['id', 'name'])
-            ->orderBy('name')
-            ->get()
-            ->map(fn (Outsource $outsource) => [
-                'label' => $outsource->name,
-                'value' => $outsource->id,
-            ])
-            ->values()
-            ->all();
+        // Cache outsource options (1 hour) - changes when outsources are added/removed
+        $outsourceOptions = Cache::remember('outsource_performances.outsource_options', 3600, function () {
+            return Outsource::query()
+                ->select(['id', 'name'])
+                ->orderBy('name')
+                ->get()
+                ->map(fn (Outsource $outsource) => [
+                    'label' => $outsource->name,
+                    'value' => $outsource->id,
+                ])
+                ->values()
+                ->all();
+        });
 
         $filters = [
             'search' => $search !== '' ? $search : null,
@@ -237,6 +244,11 @@ class OutsourcePerformanceController extends Controller
             ]);
 
             event(new OutsourcePerformanceCreated($outsourcePerformance->fresh(), $actor));
+
+            // Clear cached options if status changed
+            Cache::forget('outsource_performances.status_options');
+            // Clear report caches
+            Cache::forget('reports.outsource_performance.status_options');
 
             return redirect()->route('outsource-performances.index')
                 ->with('success', 'Outsource performance created successfully.');
@@ -434,25 +446,31 @@ class OutsourcePerformanceController extends Controller
             'toPlace:id,name',
         ]);
 
-        $outsources = Outsource::query()
-            ->select('id', 'name')
-            ->orderBy('name')
-            ->get()
-            ->map(fn (Outsource $outsource) => [
-                'id' => $outsource->id,
-                'name' => $outsource->name,
-            ])
-            ->values();
+        // Cache outsources list (1 hour)
+        $outsources = Cache::remember('outsource_performances.create_outsources', 3600, function () {
+            return Outsource::query()
+                ->select('id', 'name')
+                ->orderBy('name')
+                ->get()
+                ->map(fn (Outsource $outsource) => [
+                    'id' => $outsource->id,
+                    'name' => $outsource->name,
+                ])
+                ->values();
+        });
 
-        $places = Place::query()
-            ->select('id', 'name')
-            ->orderBy('name')
-            ->get()
-            ->map(fn (Place $place) => [
-                'id' => $place->id,
-                'name' => $place->name,
-            ])
-            ->values();
+        // Cache places list (1 hour)
+        $places = Cache::remember('outsource_performances.create_places', 3600, function () {
+            return Place::query()
+                ->select('id', 'name')
+                ->orderBy('name')
+                ->get()
+                ->map(fn (Place $place) => [
+                    'id' => $place->id,
+                    'name' => $place->name,
+                ])
+                ->values();
+        });
 
         $statusOptions = $this->resolveStatusOptions();
 
@@ -547,6 +565,12 @@ class OutsourcePerformanceController extends Controller
                 event(new OutsourcePerformanceUpdated($outsourcePerformance->fresh(), $changes, $actor));
             }
 
+            // Clear cached options if status changed
+            if (isset($changes['status'])) {
+                Cache::forget('outsource_performances.status_options');
+                Cache::forget('reports.outsource_performance.status_options'); // Clear report cache
+            }
+
             return redirect()->route('outsource-performances.index')
                 ->with('success', 'Outsource performance updated successfully.');
 
@@ -585,6 +609,11 @@ class OutsourcePerformanceController extends Controller
             ]);
 
             event(new OutsourcePerformanceDeleted($performanceId, $tripNumber, $outsourcePerformanceData, $actor));
+
+            // Clear cached options
+            Cache::forget('outsource_performances.status_options');
+            // Clear report caches
+            Cache::forget('reports.outsource_performance.status_options');
 
             return redirect()->route('outsource-performances.index')
                 ->with('success', 'Outsource performance deleted successfully.');

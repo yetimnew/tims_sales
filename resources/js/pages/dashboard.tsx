@@ -1,4 +1,5 @@
 import type { ComponentType } from 'react';
+import * as React from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -23,7 +24,10 @@ import {
     TrendingUp,
     Truck,
     Users,
-    Wrench
+    Wrench,
+    Zap,
+    Target,
+    Sparkles
 } from 'lucide-react';
 import {
     Area,
@@ -44,14 +48,14 @@ import {
     YAxis
 } from 'recharts';
 
-const PIE_COLORS = ['#0ea5e9', '#22c55e', '#f97316', '#eab308', '#6366f1', '#a855f7'];
+const PIE_COLORS = ['#0ea5e9', '#22c55e', '#f97316', '#eab308', '#6366f1', '#a855f7', '#06b6d4', '#10b981'];
 const STATUS_COLOR_MAP: Record<string, string> = {
-    completed: 'bg-emerald-500/15 text-emerald-600',
-    in_progress: 'bg-amber-500/15 text-amber-600',
-    pending: 'bg-slate-500/15 text-slate-600',
-    cancelled: 'bg-rose-500/15 text-rose-600',
-    returned: 'bg-sky-500/15 text-sky-600',
-    active: 'bg-emerald-500/15 text-emerald-600',
+    completed: 'bg-emerald-500/20 text-emerald-700 border border-emerald-200',
+    in_progress: 'bg-amber-500/20 text-amber-700 border border-amber-200',
+    pending: 'bg-slate-500/20 text-slate-700 border border-slate-200',
+    cancelled: 'bg-rose-500/20 text-rose-700 border border-rose-200',
+    returned: 'bg-sky-500/20 text-sky-700 border border-sky-200',
+    active: 'bg-emerald-500/20 text-emerald-700 border border-emerald-200',
 };
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -293,56 +297,104 @@ export default function Dashboard({
     topCustomers,
     recentPerformances,
 }: DashboardProps) {
+    const [isVisible, setIsVisible] = React.useState(false);
+
+    React.useEffect(() => {
+        setIsVisible(true);
+    }, []);
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Dashboard" />
-            <div className="flex flex-1 flex-col gap-8 p-4 lg:p-6">
+            <div className={cn(
+                'flex flex-1 flex-col gap-8 p-4 lg:p-6',
+                'bg-gradient-to-br from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950',
+                'transition-opacity duration-500',
+                isVisible ? 'opacity-100' : 'opacity-0'
+            )}>
                 <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                    <div>
-                        <h1 className="text-3xl font-bold tracking-tight">Network Intelligence Center</h1>
-                        <p className="text-muted-foreground">Consolidated view across fleet utilisation, financial recovery, and safety performance.</p>
+                    <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                            <Sparkles className="h-6 w-6 text-blue-600" />
+                            <h1 className="text-4xl font-bold tracking-tight text-slate-900 dark:text-white">
+                                Network Intelligence Center
+                            </h1>
+                        </div>
+                        <p className="text-base text-slate-600 dark:text-slate-400">
+                            Consolidated view across fleet utilisation, financial recovery, and safety performance.
+                        </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
-                        <Button asChild variant="outline" size="sm">
+                        <Button asChild variant="outline" size="sm" className="transition-all duration-200 hover:shadow-md">
                             <Link href="/performances">View Performances</Link>
                         </Button>
-                        <Button asChild size="sm">
-                            <Link href="/performances/create">New Performance</Link>
+                        <Button asChild size="sm" className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg hover:shadow-xl">
+                            <Link href="/performances/create">
+                                <Zap className="mr-2 h-4 w-4" />
+                                New Performance
+                            </Link>
                         </Button>
                     </div>
                 </header>
 
-                <section className="space-y-4">
+                <section className="space-y-6">
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                         <div>
-                            <h2 className="text-lg font-semibold">Executive Snapshot</h2>
-                            <p className="text-sm text-muted-foreground">Rolling 30-day perspective on throughput and service delivery.</p>
+                            <h2 className="text-xl font-semibold text-slate-900 dark:text-white">Executive Snapshot</h2>
+                            <p className="mt-0.5 text-sm text-slate-600 dark:text-slate-400">Rolling 30-day perspective on throughput and service delivery.</p>
                         </div>
-                        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Updated {new Date().toLocaleDateString()}</span>
+                        <span className="text-xs font-medium uppercase tracking-wider text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950 px-2.5 py-1 rounded-full">
+                            Updated {new Date().toLocaleDateString()}
+                        </span>
                     </div>
 
-                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                        {executiveSummary.metrics.map(metric => {
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                        {executiveSummary.metrics.map((metric, index) => {
                             const Icon = METRIC_ICONS[metric.key] ?? TrendingUp;
                             const displayValue = metric.unit === '%' ? formatPercent(metric.value) : formatNumber(metric.value);
+                            const gradients = [
+                                'from-blue-50 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/20',
+                                'from-emerald-50 to-emerald-100/50 dark:from-emerald-950/30 dark:to-emerald-900/20',
+                                'from-violet-50 to-violet-100/50 dark:from-violet-950/30 dark:to-violet-900/20',
+                                'from-amber-50 to-amber-100/50 dark:from-amber-950/30 dark:to-amber-900/20',
+                            ];
+                            const iconColors = [
+                                'text-blue-600 dark:text-blue-400',
+                                'text-emerald-600 dark:text-emerald-400',
+                                'text-violet-600 dark:text-violet-400',
+                                'text-amber-600 dark:text-amber-400',
+                            ];
 
                             return (
-                                <Card key={metric.key} className="relative overflow-hidden">
-                                    <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-                                        <div>
-                                            <CardTitle className="text-sm font-medium">{metric.label}</CardTitle>
-                                            {metric.unit && metric.unit !== '%' && (
-                                                <CardDescription>{metric.unit}</CardDescription>
-                                            )}
-                                        </div>
-                                        <Icon className="h-5 w-5 text-muted-foreground" />
+                                <Card 
+                                    key={metric.key}
+                                    className={cn(
+                                        'relative overflow-hidden border border-slate-200/60 dark:border-slate-700/60',
+                                        'bg-gradient-to-br',
+                                        gradients[index % gradients.length],
+                                        'hover:shadow-md hover:border-slate-300 dark:hover:border-slate-600',
+                                        'transition-all duration-200',
+                                        'dark:bg-gradient-to-br'
+                                    )}
+                                >
+                                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 pt-3 px-4">
+                                        <CardTitle className="text-xs font-medium text-slate-600 dark:text-slate-400 leading-tight">
+                                            {metric.label}
+                                        </CardTitle>
+                                        <Icon className={cn('h-4 w-4', iconColors[index % iconColors.length])} />
                                     </CardHeader>
-                                    <CardContent className="space-y-4">
-                                        <div className="flex items-baseline gap-2">
-                                            <span className="text-3xl font-semibold">{displayValue}</span>
-                                            {metric.unit === '%' && <span className="text-sm text-muted-foreground">achieved</span>}
+                                    <CardContent className="px-4 pb-3 pt-0">
+                                        <div className="space-y-1.5">
+                                            <div className="flex items-baseline gap-1.5">
+                                                <span className="text-2xl font-bold text-slate-900 dark:text-white leading-none">{displayValue}</span>
+                                                {metric.unit === '%' && (
+                                                    <span className="text-xs text-slate-500 dark:text-slate-400">achieved</span>
+                                                )}
+                                            </div>
+                                            <div className="text-xs">
+                                                {renderTrendIndicator(metric.change)}
+                                            </div>
                                         </div>
-                                        {renderTrendIndicator(metric.change)}
                                     </CardContent>
                                 </Card>
                             );
@@ -350,13 +402,13 @@ export default function Dashboard({
                     </div>
 
                     <div className="grid gap-4 lg:grid-cols-3">
-                        <Card className="lg:col-span-2">
-                            <CardHeader className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+                        <Card className="lg:col-span-2 border-slate-200/60 dark:border-slate-700/60 shadow-sm hover:shadow-md transition-all duration-200">
+                            <CardHeader className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between bg-gradient-to-r from-slate-50/80 to-slate-100/50 dark:from-slate-800/80 dark:to-slate-700/50 border-b border-slate-200/60 dark:border-slate-700/60">
                                 <div>
-                                    <CardTitle>Fleet & Workforce Readiness</CardTitle>
-                                    <CardDescription>Availability across trucks, drivers, and open assignments.</CardDescription>
+                                    <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">Fleet & Workforce Readiness</CardTitle>
+                                    <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Availability across trucks, drivers, and open assignments.</CardDescription>
                                 </div>
-                                <div className="flex flex-wrap gap-6 text-sm text-muted-foreground">
+                                <div className="flex flex-wrap gap-6 text-sm text-slate-600 dark:text-slate-400">
                                     {renderDelta('Fleet utilisation vs total', executiveSummary.metrics.find(m => m.key === 'tonnage')?.change ?? null)}
                                     {renderDelta('Return rate trend', executiveSummary.metrics.find(m => m.key === 'returnRate')?.change ?? null)}
                                 </div>
@@ -409,10 +461,10 @@ export default function Dashboard({
                                 </div>
                             </CardContent>
                         </Card>
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Service Highlights</CardTitle>
-                                <CardDescription>Change over previous 30 days.</CardDescription>
+                        <Card className="border-slate-200/60 dark:border-slate-700/60 shadow-sm hover:shadow-md transition-all duration-200">
+                            <CardHeader className="bg-gradient-to-r from-slate-50/80 to-slate-100/50 dark:from-slate-800/80 dark:to-slate-700/50 border-b border-slate-200/60 dark:border-slate-700/60">
+                                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">Service Highlights</CardTitle>
+                                <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Change over previous 30 days.</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 {['tonnage', 'avgDailyTonnage', 'returnRate', 'avgCycle'].map(key => {
@@ -436,19 +488,19 @@ export default function Dashboard({
                     </div>
                 </section>
 
-                <section className="space-y-4">
+                <section className="space-y-6">
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                         <div>
-                            <h2 className="text-lg font-semibold">Network Performance</h2>
-                            <p className="text-sm text-muted-foreground">Demand coverage, corridor performance, and status mix.</p>
+                            <h2 className="text-xl font-semibold text-slate-900 dark:text-white">Network Performance</h2>
+                            <p className="mt-0.5 text-sm text-slate-600 dark:text-slate-400">Demand coverage, corridor performance, and status mix.</p>
                         </div>
                     </div>
 
                     <div className="grid gap-4 xl:grid-cols-3">
-                        <Card className="xl:col-span-2">
-                            <CardHeader>
-                                <CardTitle>Tonnage & Trips (30d)</CardTitle>
-                                <CardDescription>Tonnage moved per day with trip counts overlay.</CardDescription>
+                        <Card className="xl:col-span-2 border-slate-200/60 dark:border-slate-700/60 shadow-sm hover:shadow-md transition-all duration-200">
+                            <CardHeader className="bg-gradient-to-r from-slate-50/80 to-slate-100/50 dark:from-slate-800/80 dark:to-slate-700/50 border-b border-slate-200/60 dark:border-slate-700/60">
+                                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">Tonnage & Trips (30d)</CardTitle>
+                                <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Tonnage moved per day with trip counts overlay.</CardDescription>
                             </CardHeader>
                             <CardContent>
                                 {networkOverview.dailyTrend.length === 0 ? (
@@ -470,10 +522,10 @@ export default function Dashboard({
                             </CardContent>
                         </Card>
 
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Status Mix</CardTitle>
-                                <CardDescription>Share of performance status for the last 30 days.</CardDescription>
+                        <Card className="border-slate-200/60 dark:border-slate-700/60 shadow-sm hover:shadow-md transition-all duration-200">
+                            <CardHeader className="bg-gradient-to-r from-slate-50/80 to-slate-100/50 dark:from-slate-800/80 dark:to-slate-700/50 border-b border-slate-200/60 dark:border-slate-700/60">
+                                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">Status Mix</CardTitle>
+                                <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Share of performance status for the last 30 days.</CardDescription>
                             </CardHeader>
                             <CardContent>
                                 {networkOverview.statusBreakdown.length === 0 ? (
@@ -493,10 +545,10 @@ export default function Dashboard({
                         </Card>
                     </div>
 
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Top Corridors</CardTitle>
-                            <CardDescription>Tonnage handled on major origin-destination pairs (30d).</CardDescription>
+                    <Card className="border-slate-200/60 dark:border-slate-700/60 shadow-sm hover:shadow-md transition-all duration-200">
+                        <CardHeader className="bg-gradient-to-r from-slate-50/80 to-slate-100/50 dark:from-slate-800/80 dark:to-slate-700/50 border-b border-slate-200/60 dark:border-slate-700/60">
+                            <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">Top Corridors</CardTitle>
+                            <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Tonnage handled on major origin-destination pairs (30d).</CardDescription>
                         </CardHeader>
                         <CardContent>
                             {networkOverview.corridors.length === 0 ? (
@@ -518,62 +570,62 @@ export default function Dashboard({
                     </Card>
                 </section>
 
-                <section className="space-y-4">
+                <section className="space-y-6">
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                         <div>
-                            <h2 className="text-lg font-semibold">Financial Health</h2>
-                            <p className="text-sm text-muted-foreground">Revenue recovery, operating cost, and fuel exposure.</p>
+                            <h2 className="text-xl font-semibold text-slate-900 dark:text-white">Financial Health</h2>
+                            <p className="mt-0.5 text-sm text-slate-600 dark:text-slate-400">Revenue recovery, operating cost, and fuel exposure.</p>
                         </div>
                     </div>
 
-                    <div className="grid gap-4 xl:grid-cols-4">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Revenue (30d)</CardTitle>
-                                <CardDescription>Tariff-based income.</CardDescription>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+                        <Card className="border-slate-200/60 dark:border-slate-700/60 bg-gradient-to-br from-emerald-50/80 to-emerald-100/50 dark:from-emerald-950/30 dark:to-emerald-900/20 shadow-sm hover:shadow-md transition-all duration-200">
+                            <CardHeader className="pb-2 pt-3 px-4">
+                                <CardTitle className="text-sm font-medium text-slate-700 dark:text-slate-300">Revenue (30d)</CardTitle>
+                                <CardDescription className="text-xs text-slate-600 dark:text-slate-400">Tariff-based income.</CardDescription>
                             </CardHeader>
-                            <CardContent className="space-y-3">
-                                <p className="text-3xl font-semibold">{formatCurrency(financialOverview.revenue30d)}</p>
-                                {renderTrendIndicator(financialOverview.change.revenue)}
+                            <CardContent className="px-4 pb-3 pt-0 space-y-1.5">
+                                <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-400 leading-none">{formatCurrency(financialOverview.revenue30d)}</p>
+                                <div className="text-xs">{renderTrendIndicator(financialOverview.change.revenue)}</div>
                             </CardContent>
                         </Card>
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Operating Cost (30d)</CardTitle>
-                                <CardDescription>Fuel, perdiem, and other trip costs.</CardDescription>
+                        <Card className="border-slate-200/60 dark:border-slate-700/60 bg-gradient-to-br from-orange-50/80 to-orange-100/50 dark:from-orange-950/30 dark:to-orange-900/20 shadow-sm hover:shadow-md transition-all duration-200">
+                            <CardHeader className="pb-2 pt-3 px-4">
+                                <CardTitle className="text-sm font-medium text-slate-700 dark:text-slate-300">Operating Cost (30d)</CardTitle>
+                                <CardDescription className="text-xs text-slate-600 dark:text-slate-400">Fuel, perdiem, and other trip costs.</CardDescription>
                             </CardHeader>
-                            <CardContent className="space-y-3">
-                                <p className="text-3xl font-semibold">{formatCurrency(financialOverview.operatingCost30d)}</p>
-                                {renderTrendIndicator(financialOverview.change.operatingCost)}
+                            <CardContent className="px-4 pb-3 pt-0 space-y-1.5">
+                                <p className="text-2xl font-bold text-orange-700 dark:text-orange-400 leading-none">{formatCurrency(financialOverview.operatingCost30d)}</p>
+                                <div className="text-xs">{renderTrendIndicator(financialOverview.change.operatingCost)}</div>
                             </CardContent>
                         </Card>
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Margin (30d)</CardTitle>
-                                <CardDescription>Revenue minus operating cost.</CardDescription>
+                        <Card className="border-slate-200/60 dark:border-slate-700/60 bg-gradient-to-br from-violet-50/80 to-violet-100/50 dark:from-violet-950/30 dark:to-violet-900/20 shadow-sm hover:shadow-md transition-all duration-200">
+                            <CardHeader className="pb-2 pt-3 px-4">
+                                <CardTitle className="text-sm font-medium text-slate-700 dark:text-slate-300">Margin (30d)</CardTitle>
+                                <CardDescription className="text-xs text-slate-600 dark:text-slate-400">Revenue minus operating cost.</CardDescription>
                             </CardHeader>
-                            <CardContent className="space-y-3">
-                                <p className="text-3xl font-semibold">{formatCurrency(financialOverview.margin30d)}</p>
-                                {renderTrendIndicator(financialOverview.change.margin)}
+                            <CardContent className="px-4 pb-3 pt-0 space-y-1.5">
+                                <p className="text-2xl font-bold text-violet-700 dark:text-violet-400 leading-none">{formatCurrency(financialOverview.margin30d)}</p>
+                                <div className="text-xs">{renderTrendIndicator(financialOverview.change.margin)}</div>
                             </CardContent>
                         </Card>
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Cost Recovery</CardTitle>
-                                <CardDescription>Farebox coverage of operating cost.</CardDescription>
+                        <Card className="border-slate-200/60 dark:border-slate-700/60 bg-gradient-to-br from-blue-50/80 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/20 shadow-sm hover:shadow-md transition-all duration-200">
+                            <CardHeader className="pb-2 pt-3 px-4">
+                                <CardTitle className="text-sm font-medium text-slate-700 dark:text-slate-300">Cost Recovery</CardTitle>
+                                <CardDescription className="text-xs text-slate-600 dark:text-slate-400">Farebox coverage of operating cost.</CardDescription>
                             </CardHeader>
-                            <CardContent className="space-y-3">
-                                <p className="text-3xl font-semibold">{formatPercent(financialOverview.fareboxRecovery)}</p>
-                                {renderTrendIndicator(financialOverview.change.fareboxRecovery)}
+                            <CardContent className="px-4 pb-3 pt-0 space-y-1.5">
+                                <p className="text-2xl font-bold text-blue-700 dark:text-blue-400 leading-none">{formatPercent(financialOverview.fareboxRecovery)}</p>
+                                <div className="text-xs">{renderTrendIndicator(financialOverview.change.fareboxRecovery)}</div>
                             </CardContent>
                         </Card>
                     </div>
 
                     <div className="grid gap-4 xl:grid-cols-3">
-                        <Card className="xl:col-span-2">
-                            <CardHeader>
-                                <CardTitle>Revenue vs Cost Trend</CardTitle>
-                                <CardDescription>Six-month view across revenue, cost, and net contribution.</CardDescription>
+                        <Card className="xl:col-span-2 border-slate-200/60 dark:border-slate-700/60 shadow-sm hover:shadow-md transition-all duration-200">
+                            <CardHeader className="bg-gradient-to-r from-slate-50/80 to-slate-100/50 dark:from-slate-800/80 dark:to-slate-700/50 border-b border-slate-200/60 dark:border-slate-700/60">
+                                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">Revenue vs Cost Trend</CardTitle>
+                                <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Six-month view across revenue, cost, and net contribution.</CardDescription>
                             </CardHeader>
                             <CardContent>
                                 {financialOverview.trend.length === 0 ? (
@@ -595,10 +647,10 @@ export default function Dashboard({
                             </CardContent>
                         </Card>
 
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Cost Breakdown</CardTitle>
-                                <CardDescription>Share of spend across cost categories (30d).</CardDescription>
+                        <Card className="border-slate-200/60 dark:border-slate-700/60 shadow-sm hover:shadow-md transition-all duration-200">
+                            <CardHeader className="bg-gradient-to-r from-slate-50/80 to-slate-100/50 dark:from-slate-800/80 dark:to-slate-700/50 border-b border-slate-200/60 dark:border-slate-700/60">
+                                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">Cost Breakdown</CardTitle>
+                                <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Share of spend across cost categories (30d).</CardDescription>
                             </CardHeader>
                             <CardContent>
                                 {financialOverview.costBreakdown.length === 0 ? (
@@ -629,11 +681,11 @@ export default function Dashboard({
                         </Card>
                     </div>
 
-                    <Card>
-                            <CardHeader className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+                    <Card className="border-slate-200/60 dark:border-slate-700/60 shadow-sm hover:shadow-md transition-all duration-200">
+                            <CardHeader className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between bg-gradient-to-r from-slate-50/80 to-slate-100/50 dark:from-slate-800/80 dark:to-slate-700/50 border-b border-slate-200/60 dark:border-slate-700/60">
                                 <div>
-                                    <CardTitle>Fuel Exposure</CardTitle>
-                                    <CardDescription>Spend and uplift trend.</CardDescription>
+                                    <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">Fuel Exposure</CardTitle>
+                                    <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Spend and uplift trend.</CardDescription>
                                 </div>
                                 <div className="flex items-center gap-3 text-sm text-muted-foreground">
                                     <Flame className="h-5 w-5 text-rose-500" />
@@ -669,19 +721,19 @@ export default function Dashboard({
                     </Card>
                 </section>
 
-                <section className="space-y-4">
+                <section className="space-y-6">
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                         <div>
-                            <h2 className="text-lg font-semibold">Asset & Maintenance</h2>
-                            <p className="text-sm text-muted-foreground">Maintenance workload and upcoming jobs.</p>
+                            <h2 className="text-xl font-semibold text-slate-900 dark:text-white">Asset & Maintenance</h2>
+                            <p className="mt-0.5 text-sm text-slate-600 dark:text-slate-400">Maintenance workload and upcoming jobs.</p>
                         </div>
                     </div>
 
                     <div className="grid gap-4 xl:grid-cols-3">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Maintenance Pulse</CardTitle>
-                                <CardDescription>Current status of maintenance queue.</CardDescription>
+                        <Card className="border-slate-200/60 dark:border-slate-700/60 shadow-sm hover:shadow-md transition-all duration-200">
+                            <CardHeader className="bg-gradient-to-r from-slate-50/80 to-slate-100/50 dark:from-slate-800/80 dark:to-slate-700/50 border-b border-slate-200/60 dark:border-slate-700/60">
+                                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">Maintenance Pulse</CardTitle>
+                                <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Current status of maintenance queue.</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="flex items-center justify-between">
@@ -722,10 +774,10 @@ export default function Dashboard({
                             </CardContent>
                         </Card>
 
-                        <Card className="xl:col-span-2">
-                            <CardHeader>
-                                <CardTitle>Maintenance Trend & Upcoming Jobs</CardTitle>
-                                <CardDescription>Monthly completions vs scheduled jobs, with next five assignments.</CardDescription>
+                        <Card className="xl:col-span-2 border-slate-200/60 dark:border-slate-700/60 shadow-sm hover:shadow-md transition-all duration-200">
+                            <CardHeader className="bg-gradient-to-r from-slate-50/80 to-slate-100/50 dark:from-slate-800/80 dark:to-slate-700/50 border-b border-slate-200/60 dark:border-slate-700/60">
+                                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">Maintenance Trend & Upcoming Jobs</CardTitle>
+                                <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Monthly completions vs scheduled jobs, with next five assignments.</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-6">
                                 {assetOverview.maintenance.trend.length === 0 ? (
@@ -775,19 +827,19 @@ export default function Dashboard({
                     </div>
                 </section>
 
-                <section className="space-y-4">
+                <section className="space-y-6">
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                         <div>
-                            <h2 className="text-lg font-semibold">Safety & Compliance</h2>
-                            <p className="text-sm text-muted-foreground">Incident rate, severity mix, and leading themes.</p>
+                            <h2 className="text-xl font-semibold text-slate-900 dark:text-white">Safety & Compliance</h2>
+                            <p className="mt-0.5 text-sm text-slate-600 dark:text-slate-400">Incident rate, severity mix, and leading themes.</p>
                         </div>
                     </div>
 
                     <div className="grid gap-4 xl:grid-cols-3">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Incident Summary (90d)</CardTitle>
-                                <CardDescription>Rate normalised per 100 trips.</CardDescription>
+                        <Card className="border-slate-200/60 dark:border-slate-700/60 shadow-sm hover:shadow-md transition-all duration-200">
+                            <CardHeader className="bg-gradient-to-r from-slate-50/80 to-slate-100/50 dark:from-slate-800/80 dark:to-slate-700/50 border-b border-slate-200/60 dark:border-slate-700/60">
+                                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">Incident Summary (90d)</CardTitle>
+                                <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Rate normalised per 100 trips.</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="flex items-center justify-between">
@@ -810,10 +862,10 @@ export default function Dashboard({
                             </CardContent>
                         </Card>
 
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Severity Mix</CardTitle>
-                                <CardDescription>Distribution by severity level.</CardDescription>
+                        <Card className="border-slate-200/60 dark:border-slate-700/60 shadow-sm hover:shadow-md transition-all duration-200">
+                            <CardHeader className="bg-gradient-to-r from-slate-50/80 to-slate-100/50 dark:from-slate-800/80 dark:to-slate-700/50 border-b border-slate-200/60 dark:border-slate-700/60">
+                                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">Severity Mix</CardTitle>
+                                <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Distribution by severity level.</CardDescription>
                             </CardHeader>
                             <CardContent>
                                 {safetyOverview.severityMix.length === 0 ? (
@@ -833,10 +885,10 @@ export default function Dashboard({
                             </CardContent>
                         </Card>
 
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Incident Trend</CardTitle>
-                                <CardDescription>Rolling six-month incident volume.</CardDescription>
+                        <Card className="border-slate-200/60 dark:border-slate-700/60 shadow-sm hover:shadow-md transition-all duration-200">
+                            <CardHeader className="bg-gradient-to-r from-slate-50/80 to-slate-100/50 dark:from-slate-800/80 dark:to-slate-700/50 border-b border-slate-200/60 dark:border-slate-700/60">
+                                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">Incident Trend</CardTitle>
+                                <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Rolling six-month incident volume.</CardDescription>
                             </CardHeader>
                             <CardContent>
                                 {safetyOverview.incidentTrend.length === 0 ? (
@@ -856,10 +908,10 @@ export default function Dashboard({
                         </Card>
                     </div>
 
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Top Incident Themes</CardTitle>
-                            <CardDescription>Most frequent incident types in the last ninety days.</CardDescription>
+                    <Card className="border-slate-200/60 dark:border-slate-700/60 shadow-sm hover:shadow-md transition-all duration-200">
+                        <CardHeader className="bg-gradient-to-r from-slate-50/80 to-slate-100/50 dark:from-slate-800/80 dark:to-slate-700/50 border-b border-slate-200/60 dark:border-slate-700/60">
+                            <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">Top Incident Themes</CardTitle>
+                            <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Most frequent incident types in the last ninety days.</CardDescription>
                         </CardHeader>
                         <CardContent>
                             {safetyOverview.topIncidentTypes.length === 0 ? (
@@ -879,18 +931,18 @@ export default function Dashboard({
                     </Card>
                 </section>
 
-                <section className="space-y-4">
+                <section className="space-y-6">
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                         <div>
-                            <h2 className="text-lg font-semibold">Customers & Operations</h2>
-                            <p className="text-sm text-muted-foreground">Top partners by tonnage and recent trip activity.</p>
+                            <h2 className="text-xl font-semibold text-slate-900 dark:text-white">Customers & Operations</h2>
+                            <p className="mt-0.5 text-sm text-slate-600 dark:text-slate-400">Top partners by tonnage and recent trip activity.</p>
                         </div>
                     </div>
 
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Top Customers (90d)</CardTitle>
-                            <CardDescription>Trips and tonnage delivered per customer.</CardDescription>
+                    <Card className="border-slate-200/60 dark:border-slate-700/60 shadow-sm hover:shadow-md transition-all duration-200">
+                        <CardHeader className="bg-gradient-to-r from-slate-50/80 to-slate-100/50 dark:from-slate-800/80 dark:to-slate-700/50 border-b border-slate-200/60 dark:border-slate-700/60">
+                            <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">Top Customers (90d)</CardTitle>
+                            <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Trips and tonnage delivered per customer.</CardDescription>
                         </CardHeader>
                         <CardContent>
                             {topCustomers.length === 0 ? (
@@ -918,13 +970,13 @@ export default function Dashboard({
                         </CardContent>
                     </Card>
 
-                    <Card>
-                        <CardHeader className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+                    <Card className="border-slate-200/60 dark:border-slate-700/60 shadow-sm hover:shadow-md transition-all duration-200">
+                        <CardHeader className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between bg-gradient-to-r from-slate-50/80 to-slate-100/50 dark:from-slate-800/80 dark:to-slate-700/50 border-b border-slate-200/60 dark:border-slate-700/60">
                             <div>
-                                <CardTitle>Recent Performances</CardTitle>
-                                <CardDescription>Latest recorded trips with fleet and route details.</CardDescription>
+                                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">Recent Performances</CardTitle>
+                                <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Latest recorded trips with fleet and route details.</CardDescription>
                             </div>
-                            <Button asChild variant="outline" size="sm">
+                            <Button asChild variant="outline" size="sm" className="transition-all duration-200 hover:shadow-md">
                                 <Link href="/performances">View All Trips</Link>
                             </Button>
                         </CardHeader>

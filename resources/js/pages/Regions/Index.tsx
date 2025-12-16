@@ -220,6 +220,9 @@ export default function RegionsIndex({ regions, metrics, filters, statusOptions,
     const { isLoading } = useListingLoading({
         storageKey: SKELETON_FLAG_KEY,
         isDataReady,
+        onlySamePath: true,
+        targetPath: '/regions',
+        initialIsLoading: true,
     });
 
     React.useEffect(() => {
@@ -374,7 +377,7 @@ export default function RegionsIndex({ regions, metrics, filters, statusOptions,
             id: 'total-regions',
             label: 'Total Regions',
             icon: <Globe className="h-3.5 w-3.5 text-blue-600" />,
-            className: 'min-w-0',
+            className: 'min-w-[220px] flex-shrink-0',
             value: isLoading ? (
                 <Skeleton className="h-3.5 w-20" aria-hidden="true" />
             ) : (
@@ -391,7 +394,7 @@ export default function RegionsIndex({ regions, metrics, filters, statusOptions,
             id: 'active-regions',
             label: 'Active Regions',
             icon: <CheckCircle className="h-3.5 w-3.5 text-emerald-600" />,
-            className: 'min-w-0',
+            className: 'min-w-[220px] flex-shrink-0',
             value: isLoading ? (
                 <Skeleton className="h-3.5 w-16" aria-hidden="true" />
             ) : (
@@ -408,7 +411,7 @@ export default function RegionsIndex({ regions, metrics, filters, statusOptions,
             id: 'inactive-regions',
             label: 'Inactive Regions',
             icon: <XCircle className="h-3.5 w-3.5 text-rose-500" />,
-            className: 'min-w-0',
+            className: 'min-w-[220px] flex-shrink-0',
             value: isLoading ? (
                 <Skeleton className="h-3.5 w-16" aria-hidden="true" />
             ) : (
@@ -425,7 +428,7 @@ export default function RegionsIndex({ regions, metrics, filters, statusOptions,
             id: 'surveyed-regions',
             label: 'Surveyed Regions',
             icon: <Target className="h-3.5 w-3.5 text-indigo-500" />,
-            className: 'min-w-0',
+            className: 'min-w-[220px] flex-shrink-0',
             value: isLoading ? (
                 <Skeleton className="h-3.5 w-16" aria-hidden="true" />
             ) : (

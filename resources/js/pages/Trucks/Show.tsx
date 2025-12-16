@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
@@ -503,59 +503,183 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
     const financial = truck.financial ?? null;
     const staffing = truck.staffing ?? null;
 
-    const financialWindowDays = financial?.window_days ?? 30;
-    const totalRevenue = financial?.total_revenue ?? null;
-    const totalCost = financial?.total_cost ?? null;
-    const totalProfit = financial?.total_profit ?? null;
-    const averageRevenuePerTruck = financial?.avg_revenue_per_truck ?? null;
-    const totalTonKmFinancial = financial?.ton_km ?? null;
-    const tonKmPerBirr = financial?.ton_km_per_birr ?? null;
-    const revenueDisplay = formatCurrency(totalRevenue);
-    const costDisplay = formatCurrency(totalCost);
-    const profitDisplay = formatCurrency(totalProfit);
-    const avgRevenueDisplay = formatCurrency(averageRevenuePerTruck);
-    const tonKmPerBirrDisplay = tonKmPerBirr !== null && tonKmPerBirr !== undefined
-        ? `${tonKmPerBirr.toFixed(2)} ton-km / ETB`
-        : 'N/A';
-    const staffingWindowDays = staffing?.window_days ?? 180;
-    const averageTenureDays = staffing?.average_tenure_days ?? null;
-    const highChurnThresholdDays = staffing?.short_tenure_threshold_days ?? 0;
-    const highChurnAssignments = staffing?.assignment_count ?? 0;
-    const averageTenureDisplay = averageTenureDays !== null ? formatDays(averageTenureDays, 1) : 'N/A';
-    const isHighChurn = (staffing?.high_churn_trucks ?? []).some((entry) => entry.truck_id === truck.id);
-    const churnStatusLabel = isHighChurn ? 'High churn risk' : 'Stable assignments';
-    const churnStatusHelper = isHighChurn
-        ? `Average tenure ${averageTenureDisplay} across ${highChurnAssignments} assignment${highChurnAssignments === 1 ? '' : 's'} (< ${highChurnThresholdDays} days)`
-        : `${highChurnAssignments} assignment${highChurnAssignments === 1 ? '' : 's'} reviewed · Threshold ${highChurnThresholdDays} days`;
+    // Memoize financial calculations to avoid recalculation on every render
+    const financialCalculations = useMemo(() => {
+        const financialWindowDays = financial?.window_days ?? 30;
+        const totalRevenue = financial?.total_revenue ?? null;
+        const totalCost = financial?.total_cost ?? null;
+        const totalProfit = financial?.total_profit ?? null;
+        const averageRevenuePerTruck = financial?.avg_revenue_per_truck ?? null;
+        const totalTonKmFinancial = financial?.ton_km ?? null;
+        const tonKmPerBirr = financial?.ton_km_per_birr ?? null;
+        
+        return {
+            financialWindowDays,
+            totalRevenue,
+            totalCost,
+            totalProfit,
+            averageRevenuePerTruck,
+            totalTonKmFinancial,
+            tonKmPerBirr,
+            revenueDisplay: formatCurrency(totalRevenue),
+            costDisplay: formatCurrency(totalCost),
+            profitDisplay: formatCurrency(totalProfit),
+            avgRevenueDisplay: formatCurrency(averageRevenuePerTruck),
+            tonKmPerBirrDisplay: tonKmPerBirr !== null && tonKmPerBirr !== undefined
+                ? `${tonKmPerBirr.toFixed(2)} ton-km / ETB`
+                : 'N/A',
+        };
+    }, [financial]);
 
-    const totalDistanceKm = performanceSummary?.total_distance_km ?? null;
-    const totalLoadedDistanceKm = performanceSummary?.total_loaded_distance_km ?? null;
-    const totalEmptyDistanceKm = performanceSummary?.total_empty_distance_km ?? null;
-    const totalFuelCost = performanceSummary?.fuel_cost_birr ?? null;
+    const {
+        financialWindowDays,
+        totalRevenue,
+        totalCost,
+        totalProfit,
+        averageRevenuePerTruck,
+        totalTonKmFinancial,
+        tonKmPerBirr,
+        revenueDisplay,
+        costDisplay,
+        profitDisplay,
+        avgRevenueDisplay,
+        tonKmPerBirrDisplay,
+    } = financialCalculations;
+    // Memoize staffing calculations
+    const staffingCalculations = useMemo(() => {
+        const staffingWindowDays = staffing?.window_days ?? 180;
+        const averageTenureDays = staffing?.average_tenure_days ?? null;
+        const highChurnThresholdDays = staffing?.short_tenure_threshold_days ?? 0;
+        const highChurnAssignments = staffing?.assignment_count ?? 0;
+        const averageTenureDisplay = averageTenureDays !== null ? formatDays(averageTenureDays, 1) : 'N/A';
+        const isHighChurn = (staffing?.high_churn_trucks ?? []).some((entry) => entry.truck_id === truck.id);
+        const churnStatusLabel = isHighChurn ? 'High churn risk' : 'Stable assignments';
+        const churnStatusHelper = isHighChurn
+            ? `Average tenure ${averageTenureDisplay} across ${highChurnAssignments} assignment${highChurnAssignments === 1 ? '' : 's'} (< ${highChurnThresholdDays} days)`
+            : `${highChurnAssignments} assignment${highChurnAssignments === 1 ? '' : 's'} reviewed · Threshold ${highChurnThresholdDays} days`;
+        
+        return {
+            staffingWindowDays,
+            averageTenureDays,
+            highChurnThresholdDays,
+            highChurnAssignments,
+            averageTenureDisplay,
+            isHighChurn,
+            churnStatusLabel,
+            churnStatusHelper,
+        };
+    }, [staffing, truck.id]);
+
+    const {
+        staffingWindowDays,
+        averageTenureDays,
+        highChurnThresholdDays,
+        highChurnAssignments,
+        averageTenureDisplay,
+        isHighChurn,
+        churnStatusLabel,
+        churnStatusHelper,
+    } = staffingCalculations;
+
+    // Memoize performance summary calculations
+    const performanceCalculations = useMemo(() => {
+        const totalDistanceKm = performanceSummary?.total_distance_km ?? null;
+        const totalLoadedDistanceKm = performanceSummary?.total_loaded_distance_km ?? null;
+        const totalEmptyDistanceKm = performanceSummary?.total_empty_distance_km ?? null;
+        const totalFuelCost = performanceSummary?.fuel_cost_birr ?? null;
+        const avgFuelEfficiency = performanceSummary?.avg_fuel_efficiency_km_per_liter ?? null;
+        const totalTrips = performanceSummary?.total_records ?? 0;
+        const completedTrips = performanceSummary?.completed_trips ?? 0;
+        const openTrips = performanceSummary?.open_trips ?? 0;
+        const mainTripRecords = performanceSummary?.main_trip_records ?? 0;
+        const avgTripDistanceKm = performanceSummary?.avg_trip_distance_km ?? null;
+        const avgLoadedDistanceKm = performanceSummary?.avg_loaded_distance_km ?? null;
+        const avgEmptyDistanceKm = performanceSummary?.avg_empty_distance_km ?? null;
+        const avgTripDurationDays = performanceSummary?.avg_trip_duration_days ?? null;
+        const totalTonKm = performanceSummary?.total_ton_km ?? null;
+        const avgTonKmPerTrip = performanceSummary?.avg_ton_km_per_trip ?? null;
+        const totalPayloadTons = performanceSummary?.total_payload_tons ?? null;
+        const avgPayloadTonsPerTrip = performanceSummary?.avg_payload_tons_per_trip ?? null;
+        const tripCompletionRate = performanceSummary?.trip_completion_rate ?? null;
+        
+        return {
+            totalDistanceKm,
+            totalLoadedDistanceKm,
+            totalEmptyDistanceKm,
+            totalFuelCost,
+            avgFuelEfficiency,
+            totalTrips,
+            completedTrips,
+            openTrips,
+            mainTripRecords,
+            avgTripDistanceKm,
+            avgLoadedDistanceKm,
+            avgEmptyDistanceKm,
+            avgTripDurationDays,
+            totalTonKm,
+            avgTonKmPerTrip,
+            totalPayloadTons,
+            avgPayloadTonsPerTrip,
+            tripCompletionRate,
+        };
+    }, [performanceSummary]);
+
+    const {
+        totalDistanceKm,
+        totalLoadedDistanceKm,
+        totalEmptyDistanceKm,
+        totalFuelCost,
+        avgFuelEfficiency,
+        totalTrips,
+        completedTrips,
+        openTrips,
+        mainTripRecords,
+        avgTripDistanceKm,
+        avgLoadedDistanceKm,
+        avgEmptyDistanceKm,
+        avgTripDurationDays,
+        totalTonKm,
+        avgTonKmPerTrip,
+        totalPayloadTons,
+        avgPayloadTonsPerTrip,
+        tripCompletionRate,
+    } = performanceCalculations;
+
+    // Memoize utilization calculations
+    const utilizationCalculations = useMemo(() => {
+        const utilization = truck.utilization ?? null;
+        const utilizationWindowDays = utilization?.window_days ?? 30;
+        const utilizationRate = utilization?.utilization_rate ?? null;
+        const utilizationRateDisplay = utilizationRate !== null ? formatPercent(utilizationRate, 0) : 'N/A';
+        const utilizationServiceDays = utilization?.service_days ?? null;
+        const utilizationIdleDays = utilization?.idle_days ?? null;
+        const utilizationUnknownDays = utilization?.unknown_days ?? null;
+        
+        return {
+            utilization,
+            utilizationWindowDays,
+            utilizationRate,
+            utilizationRateDisplay,
+            utilizationServiceDays,
+            utilizationIdleDays,
+            utilizationUnknownDays,
+        };
+    }, [truck.utilization]);
+
+    const {
+        utilization,
+        utilizationWindowDays,
+        utilizationRate,
+        utilizationRateDisplay,
+        utilizationServiceDays,
+        utilizationIdleDays,
+        utilizationUnknownDays,
+    } = utilizationCalculations;
+
     const maintenanceCost = maintenanceSummary?.total_cost ?? null;
-    const avgFuelEfficiency = performanceSummary?.avg_fuel_efficiency_km_per_liter ?? null;
-    const totalTrips = performanceSummary?.total_records ?? 0;
-    const completedTrips = performanceSummary?.completed_trips ?? 0;
-    const openTrips = performanceSummary?.open_trips ?? 0;
-    const mainTripRecords = performanceSummary?.main_trip_records ?? 0;
-    const avgTripDistanceKm = performanceSummary?.avg_trip_distance_km ?? null;
-    const avgLoadedDistanceKm = performanceSummary?.avg_loaded_distance_km ?? null;
-    const avgEmptyDistanceKm = performanceSummary?.avg_empty_distance_km ?? null;
-    const avgTripDurationDays = performanceSummary?.avg_trip_duration_days ?? null;
-    const totalTonKm = performanceSummary?.total_ton_km ?? null;
-    const avgTonKmPerTrip = performanceSummary?.avg_ton_km_per_trip ?? null;
-    const totalPayloadTons = performanceSummary?.total_payload_tons ?? null;
-    const avgPayloadTonsPerTrip = performanceSummary?.avg_payload_tons_per_trip ?? null;
-    const tripCompletionRate = performanceSummary?.trip_completion_rate ?? null;
-    const utilization = truck.utilization ?? null;
-    const utilizationWindowDays = utilization?.window_days ?? 30;
-    const utilizationRate = utilization?.utilization_rate ?? null;
-    const utilizationRateDisplay = utilizationRate !== null ? formatPercent(utilizationRate, 0) : 'N/A';
-    const utilizationServiceDays = utilization?.service_days ?? null;
-    const utilizationIdleDays = utilization?.idle_days ?? null;
-    const utilizationUnknownDays = utilization?.unknown_days ?? null;
 
-    const vehicleHighlights = [
+    // Memoize vehicle highlights array to avoid recreation on every render
+    const vehicleHighlights = useMemo(() => [
         {
             label: 'Purchase Price',
             value: formatCurrency(truck.purchasePrice ?? null),
@@ -653,9 +777,36 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
                 maximumFractionDigits: 0,
             }),
         },
-    ];
+    ], [
+        truck.purchasePrice,
+        truck.serviceIntervalKM,
+        financialWindowDays,
+        revenueDisplay,
+        profitDisplay,
+        costDisplay,
+        tonKmPerBirrDisplay,
+        staffingWindowDays,
+        averageTenureDisplay,
+        churnStatusLabel,
+        utilizationWindowDays,
+        utilizationRateDisplay,
+        utilizationServiceDays,
+        utilizationIdleDays,
+        utilizationUnknownDays,
+        totalTrips,
+        completedTrips,
+        tripCompletionRate,
+        totalDistanceKm,
+        totalLoadedDistanceKm,
+        totalFuelCost,
+        avgFuelEfficiency,
+        maintenanceCost,
+        avgRevenueDisplay,
+        totalTonKmFinancial,
+    ]);
 
-    const overviewSummaryCards = [
+    // Memoize overview summary cards to avoid recreation on every render
+    const overviewSummaryCards = useMemo(() => [
         {
             label: `Revenue (${financialWindowDays}d)`,
             value: revenueDisplay,
@@ -698,9 +849,25 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
                     : 'N/A',
             helper: 'Across recorded trips',
         },
-    ];
+    ], [
+        financialWindowDays,
+        revenueDisplay,
+        tonKmPerBirr,
+        utilizationWindowDays,
+        utilizationRateDisplay,
+        utilizationServiceDays,
+        utilizationIdleDays,
+        staffingWindowDays,
+        averageTenureDisplay,
+        churnStatusHelper,
+        completedTrips,
+        tripCompletionRate,
+        totalDistanceKm,
+        avgFuelEfficiency,
+    ]);
 
-    const performanceOverviewCards = [
+    // Memoize performance overview cards
+    const performanceOverviewCards = useMemo(() => [
         {
             label: 'Trips Logged',
             value: formatNumber(totalTrips),
@@ -721,9 +888,10 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
             value: formatNumber(mainTripRecords),
             className: 'bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700',
         },
-    ];
+    ], [totalTrips, completedTrips, openTrips, mainTripRecords]);
 
-    const distanceOverviewCards = [
+    // Memoize distance overview cards
+    const distanceOverviewCards = useMemo(() => [
         {
             label: 'Total Distance (KM)',
             value: formatKilometers(totalDistanceKm),
@@ -744,9 +912,10 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
             value: formatNumber(performanceSummary?.total_fuel_liters ?? null),
             className: 'bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700',
         },
-    ];
+    ], [totalDistanceKm, totalLoadedDistanceKm, totalEmptyDistanceKm, performanceSummary?.total_fuel_liters]);
 
-    const efficiencyOverviewCards = [
+    // Memoize efficiency overview cards
+    const efficiencyOverviewCards = useMemo(() => [
         {
             label: 'Fuel Cost',
             value: formatCurrency(performanceSummary?.fuel_cost_birr ?? null),
@@ -779,9 +948,10 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
             value: formatTons(avgPayloadTonsPerTrip),
             className: 'bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700',
         },
-    ];
+    ], [totalFuelCost, avgTripDistanceKm, avgFuelEfficiency, tripCompletionRate, avgTripDurationDays, avgPayloadTonsPerTrip, performanceSummary?.fuel_cost_birr]);
 
-    const tripInsightCards = [
+    // Memoize trip insight cards
+    const tripInsightCards = useMemo(() => [
         {
             label: 'Avg Loaded Distance',
             value: formatKilometersWithPrecision(avgLoadedDistanceKm, 2),
@@ -816,7 +986,7 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
                 : 'N/A',
             className: 'bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700',
         },
-    ];
+    ], [avgLoadedDistanceKm, avgEmptyDistanceKm, avgTonKmPerTrip, totalTonKm, totalPayloadTons, performanceSummary?.avg_cargo_volume_mt_per_trip]);
 
     const overallGrade = gradeReport?.overall ?? null;
     const gradeWeights = gradeReport?.weights ?? null;
@@ -857,7 +1027,8 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
               }>
         : [];
 
-    const handleDeactivateConfirm = () => {
+    // Memoize event handlers to prevent unnecessary re-renders
+    const handleDeactivateConfirm = useCallback(() => {
         if (!showDeactivateButton) {
             return;
         }
@@ -868,10 +1039,6 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
             onSuccess: () => {
                 setDeactivateDialogOpen(false);
                 setDeactivateError(null);
-                toast({
-                    title: 'Truck deactivated',
-                    description: `${truck.plate} is now marked as inactive.`,
-                });
             },
             onError: (errors) => {
                 const messages = errors && typeof errors === 'object'
@@ -894,9 +1061,9 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
                 setIsDeactivating(false);
             },
         });
-    };
+    }, [showDeactivateButton, truck.id]);
 
-    const handleDeleteConfirm = () => {
+    const handleDeleteConfirm = useCallback(() => {
         if (!canDeleteTruck) {
             return;
         }
@@ -939,9 +1106,9 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
                 }
             },
         });
-    };
+    }, [canDeleteTruck, truck.id, truck.plate]);
 
-    const handleActivateConfirm = () => {
+    const handleActivateConfirm = useCallback(() => {
         if (!showActivateButton) {
             return;
         }
@@ -952,10 +1119,6 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
             onSuccess: () => {
                 setActivateDialogOpen(false);
                 setActivateError(null);
-                toast({
-                    title: 'Truck activated',
-                    description: `${truck.plate} is now marked as active.`,
-                });
             },
             onError: (errors) => {
                 const messages = errors && typeof errors === 'object'
@@ -978,9 +1141,9 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
                 setIsActivating(false);
             },
         });
-    };
+    }, [showActivateButton, truck.id]);
 
-    const getStatusBadgeColor = (status: string | undefined | null) => {
+    const getStatusBadgeColor = useCallback((status: string | undefined | null) => {
         if (!status) return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
 
         switch (status) {
@@ -993,7 +1156,7 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
             default:
                 return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
         }
-    };
+    }, []);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -1076,7 +1239,7 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
                 />
 
                 <Tabs defaultValue="overview" className="flex-1 overflow-hidden flex flex-col">
-                    <TabsList className="grid w-full grid-cols-4 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
+                    <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
                         <TabsTrigger value="overview" className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:border data-[state=active]:border-slate-200 dark:data-[state=active]:bg-slate-700 dark:data-[state=active]:border-slate-600 rounded-lg transition-all duration-200 font-medium">
                             <CheckCircle className="h-4 w-4" />
                             Overview

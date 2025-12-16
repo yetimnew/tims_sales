@@ -29,6 +29,11 @@ return new class extends Migration
 
             $table->index(['status'], 'idx_drivers_status');
             $table->index(['zone'], 'idx_drivers_zone');
+            
+            // Composite indexes for performance optimization
+            $table->index(['status', 'sex'], 'idx_drivers_status_sex');
+            $table->index(['status', 'created_at'], 'idx_drivers_status_created');
+            $table->index(['zone', 'status'], 'idx_drivers_zone_status');
         });
     }
 

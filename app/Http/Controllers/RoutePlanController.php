@@ -9,6 +9,7 @@ use App\Models\RoutePlan;
 use App\Models\Place;
 use App\Models\Distance;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Support\Facades\Log;
@@ -25,7 +26,8 @@ class RoutePlanController extends Controller
             ->orderBy('planned_date', 'desc')
             ->paginate(15);
 
-        $statistics = $this->getRoutePlanStatistics();
+        // Cache statistics for 5 minutes - they change frequently but don't need real-time accuracy
+        $statistics = Cache::remember('route_plans.statistics', 300, fn () => $this->getRoutePlanStatistics());
 
         return Inertia::render('RoutePlans/Index', [
             'routePlans' => $routePlans,
@@ -38,10 +40,25 @@ class RoutePlanController extends Controller
      */
     public function create(): Response
     {
-        $operations = Operation::where('status', 'active')->get();
-        $trucks = Truck::where('status', 'active')->get();
-        $drivers = Driver::where('status', 'active')->get();
-        $places = Place::orderBy('name')->get();
+        // Cache active operations (1 hour) - changes when operations are added/removed
+        $operations = Cache::remember('route_plans.create_operations', 3600, function () {
+            return Operation::where('status', 'active')->get();
+        });
+
+        // Cache active trucks (1 hour) - changes when trucks are added/removed
+        $trucks = Cache::remember('route_plans.create_trucks', 3600, function () {
+            return Truck::where('status', 'active')->get();
+        });
+
+        // Cache active drivers (1 hour) - changes when drivers are added/removed
+        $drivers = Cache::remember('route_plans.create_drivers', 3600, function () {
+            return Driver::where('status', 'active')->get();
+        });
+
+        // Cache places (1 hour) - changes when places are added/removed
+        $places = Cache::remember('route_plans.create_places', 3600, function () {
+            return Place::orderBy('name')->get();
+        });
 
         return Inertia::render('RoutePlans/Create', [
             'operations' => $operations,
@@ -108,10 +125,25 @@ class RoutePlanController extends Controller
      */
     public function edit(RoutePlan $routePlan): Response
     {
-        $operations = Operation::where('status', 'active')->get();
-        $trucks = Truck::where('status', 'active')->get();
-        $drivers = Driver::where('status', 'active')->get();
-        $places = Place::orderBy('name')->get();
+        // Cache active operations (1 hour) - changes when operations are added/removed
+        $operations = Cache::remember('route_plans.create_operations', 3600, function () {
+            return Operation::where('status', 'active')->get();
+        });
+
+        // Cache active trucks (1 hour) - changes when trucks are added/removed
+        $trucks = Cache::remember('route_plans.create_trucks', 3600, function () {
+            return Truck::where('status', 'active')->get();
+        });
+
+        // Cache active drivers (1 hour) - changes when drivers are added/removed
+        $drivers = Cache::remember('route_plans.create_drivers', 3600, function () {
+            return Driver::where('status', 'active')->get();
+        });
+
+        // Cache places (1 hour) - changes when places are added/removed
+        $places = Cache::remember('route_plans.create_places', 3600, function () {
+            return Place::orderBy('name')->get();
+        });
 
         return Inertia::render('RoutePlans/Edit', [
             'routePlan' => $routePlan,

@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\UserNotificationSetting;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -33,28 +34,31 @@ class NotificationPreferenceAdminController extends Controller
             ->orderBy('name')
             ->get();
 
-        $types = NotificationType::query()
-            ->orderBy('name')
-            ->get(['id', 'key', 'name', 'description', 'default_in_app', 'default_email'])
-            ->map(static function (NotificationType $type): array {
-                $categorySlug = Str::before($type->key, '.');
-                $categoryName = Str::of($categorySlug)
-                    ->replace(['_', '-'], ' ')
-                    ->squish()
-                    ->headline()
-                    ->value();
+        // Cache notification types (1 hour) - rarely changes
+        $types = Cache::remember('notification_preferences.notification_types', 3600, function () {
+            return NotificationType::query()
+                ->orderBy('name')
+                ->get(['id', 'key', 'name', 'description', 'default_in_app', 'default_email'])
+                ->map(static function (NotificationType $type): array {
+                    $categorySlug = Str::before($type->key, '.');
+                    $categoryName = Str::of($categorySlug)
+                        ->replace(['_', '-'], ' ')
+                        ->squish()
+                        ->headline()
+                        ->value();
 
-                return [
-                    'id' => $type->id,
-                    'key' => $type->key,
-                    'name' => $type->name,
-                    'description' => $type->description,
-                    'default_in_app' => $type->default_in_app,
-                    'default_email' => $type->default_email,
-                    'category' => $categoryName,
-                    'category_slug' => $categorySlug,
-                ];
-            });
+                    return [
+                        'id' => $type->id,
+                        'key' => $type->key,
+                        'name' => $type->name,
+                        'description' => $type->description,
+                        'default_in_app' => $type->default_in_app,
+                        'default_email' => $type->default_email,
+                        'category' => $categoryName,
+                        'category_slug' => $categorySlug,
+                    ];
+                });
+        });
 
         $userPayload = $users->map(static function (User $user): array {
             $preferences = $user->notificationSettings

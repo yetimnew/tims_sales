@@ -10,6 +10,7 @@ use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -21,6 +22,7 @@ class StatusTypeController extends Controller
      */
     public function index(): Response
     {
+        // Note: Pagination cannot be cached directly, but the query is optimized with eager loading
         $statusTypes = StatusType::withCount('statuses')
             ->orderBy('name')
             ->paginate(15);
@@ -52,6 +54,10 @@ class StatusTypeController extends Controller
             $statusType = StatusType::create($validated);
 
             event(new StatusTypeCreated($statusType->fresh(), Auth::user()));
+
+            // Clear cached data
+            Cache::forget('daily_truck_status.operational_status_type'); // Clear operational status type cache
+            Cache::forget('daily_truck_status.statuses'); // Clear statuses cache
 
             Log::info('Status type created', [
                 'status_type_id' => $statusType->id,
@@ -130,6 +136,10 @@ class StatusTypeController extends Controller
                 event(new StatusTypeUpdated($statusType->fresh(), $changes, Auth::user()));
             }
 
+            // Clear cached data
+            Cache::forget('daily_truck_status.operational_status_type'); // Clear operational status type cache
+            Cache::forget('daily_truck_status.statuses'); // Clear statuses cache
+
             Log::info('Status type updated', [
                 'status_type_id' => $statusType->id,
                 'name' => $statusType->name,
@@ -184,6 +194,10 @@ class StatusTypeController extends Controller
                 array_filter($metrics, static fn ($value) => $value !== null),
                 Auth::user(),
             ));
+
+            // Clear cached data
+            Cache::forget('daily_truck_status.operational_status_type'); // Clear operational status type cache
+            Cache::forget('daily_truck_status.statuses'); // Clear statuses cache
 
             Log::info('Status type deleted', [
                 'status_type_id' => $statusTypeId,

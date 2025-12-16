@@ -9,6 +9,7 @@ use App\Services\Trucks\Data\TruckIndexFilters;
 use App\Services\Trucks\Data\TruckIndexResult;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 class TruckIndexService
@@ -81,9 +82,8 @@ class TruckIndexService
                     'plate' => $truck->plate,
                     'status' => $truck->status,
                     'vehicletype_id' => $truck->vehicletype_id,
-                    'vehicleType' => $truck->relationLoaded('vehicleType')
-                        ? $truck->vehicleType?->only(['id', 'name'])
-                        : $truck->vehicleType()->first(['id', 'name']),
+                    // Fix N+1: vehicleType is already eager loaded, no need for fallback query
+                    'vehicleType' => $truck->vehicleType?->only(['id', 'name']),
                     'chasisNumber' => $truck->chasisNumber,
                     'engineNumber' => $truck->engineNumber,
                     'serviceIntervalKM' => $truck->serviceIntervalKM,
@@ -98,27 +98,33 @@ class TruckIndexService
 
         $trucksData = $this->presentPaginator($paginator);
 
-        $statusOptions = Truck::query()
-            ->select('status')
-            ->distinct()
-            ->whereNotNull('status')
-            ->orderBy('status')
-            ->get()
-            ->map(fn (Truck $truck): array => [
-                'label' => Str::of($truck->status)->replace('_', ' ')->headline(),
-                'value' => $truck->status,
-            ])
-            ->values()
-            ->all();
+        // Cache status options (1 hour) - rarely changes
+        $statusOptions = Cache::remember('trucks.status_options', 3600, function () {
+            return Truck::query()
+                ->select('status')
+                ->distinct()
+                ->whereNotNull('status')
+                ->orderBy('status')
+                ->get()
+                ->map(fn (Truck $truck): array => [
+                    'label' => Str::of($truck->status)->replace('_', ' ')->headline(),
+                    'value' => $truck->status,
+                ])
+                ->values()
+                ->all();
+        });
 
-        $vehicleTypes = VehicleType::query()
-            ->orderBy('name')
-            ->get(['id', 'name'])
-            ->map(fn (VehicleType $type): array => [
-                'id' => $type->id,
-                'name' => $type->name,
-            ])
-            ->all();
+        // Cache vehicle types (1 hour) - rarely changes
+        $vehicleTypes = Cache::remember('trucks.vehicle_types', 3600, function () {
+            return VehicleType::query()
+                ->orderBy('name')
+                ->get(['id', 'name'])
+                ->map(fn (VehicleType $type): array => [
+                    'id' => $type->id,
+                    'name' => $type->name,
+                ])
+                ->all();
+        });
 
         $metrics = $this->truckMetrics->metrics($filters->search, $filters->vehicleTypeId, $filters->status);
 

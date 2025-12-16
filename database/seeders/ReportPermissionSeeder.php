@@ -25,7 +25,6 @@ class ReportPermissionSeeder extends Seeder
             'performance-all' => ['view', 'export'],
             'performance-by-driver' => ['view', 'export'],
             'performance-by-truck' => ['view', 'export'],
-            'performance-by-model' => ['view', 'export'],
             'performance-by-status' => ['view', 'export'],
             'attach-detach' => ['view', 'export'],
         ];

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Status;
 use App\Models\StatusType;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Http\RedirectResponse;
@@ -43,6 +44,9 @@ class StatusController extends Controller
             ]);
 
             $status = Status::create($validated);
+
+            // Clear cached data
+            Cache::forget('daily_truck_status.statuses');
 
             return redirect()->route('truck-status-board.index')
                 ->with('success', 'Status created successfully.');
@@ -88,6 +92,9 @@ class StatusController extends Controller
 
             $status->update($validated);
 
+            // Clear cached data
+            Cache::forget('daily_truck_status.statuses');
+
             return redirect()->route('truck-status-board.index')
                 ->with('success', 'Status updated successfully.');
 
@@ -110,6 +117,9 @@ class StatusController extends Controller
     {
         try {
             $status->delete();
+
+            // Clear cached data
+            Cache::forget('daily_truck_status.statuses');
 
             return redirect()->route('truck-status-board.index')
                 ->with('success', 'Status deleted successfully.');

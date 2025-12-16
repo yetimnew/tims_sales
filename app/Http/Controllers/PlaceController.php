@@ -11,6 +11,7 @@ use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -72,11 +73,24 @@ class PlaceController extends Controller
 
         $places = $query->paginate(15)->withQueryString();
 
-        $metrics = [
-            'hubCount' => (clone $metricsQuery)->where('is_logistics_hub', true)->count(),
-            'totalPopulation' => (int) ((clone $metricsQuery)->sum('population') ?? 0),
-            'averageAccessibility' => round((float) (((clone $metricsQuery)->avg('accessibility_score')) ?? 0), 2),
-        ];
+        // Cache metrics only when no filters applied (1 hour)
+        $search = $request->input('search');
+        $cacheKey = 'places.metrics';
+        if (empty($search)) {
+            $metrics = Cache::remember($cacheKey, 3600, function () use ($metricsQuery) {
+                return [
+                    'hubCount' => (clone $metricsQuery)->where('is_logistics_hub', true)->count(),
+                    'totalPopulation' => (int) ((clone $metricsQuery)->sum('population') ?? 0),
+                    'averageAccessibility' => round((float) (((clone $metricsQuery)->avg('accessibility_score')) ?? 0), 2),
+                ];
+            });
+        } else {
+            $metrics = [
+                'hubCount' => (clone $metricsQuery)->where('is_logistics_hub', true)->count(),
+                'totalPopulation' => (int) ((clone $metricsQuery)->sum('population') ?? 0),
+                'averageAccessibility' => round((float) (((clone $metricsQuery)->avg('accessibility_score')) ?? 0), 2),
+            ];
+        }
 
         return Inertia::render('Places/Index', [
             'places' => $places,
@@ -189,7 +203,10 @@ class PlaceController extends Controller
      */
     public function create(): Response
     {
-        $woredas = Woreda::orderBy('name')->get();
+        // Cache woredas list (1 hour) - changes when woredas are added/removed
+        $woredas = Cache::remember('places.create_woredas', 3600, function () {
+            return Woreda::orderBy('name')->get();
+        });
 
         return Inertia::render('Places/Create', [
             'woredas' => $woredas,
@@ -268,7 +285,10 @@ class PlaceController extends Controller
      */
     public function edit(Place $place): Response
     {
-        $woredas = Woreda::orderBy('name')->get();
+        // Cache woredas list (1 hour)
+        $woredas = Cache::remember('places.create_woredas', 3600, function () {
+            return Woreda::orderBy('name')->get();
+        });
 
         return Inertia::render('Places/Edit', [
             'place' => $place,
@@ -326,6 +346,14 @@ class PlaceController extends Controller
             if ($changes !== []) {
                 event(new PlaceUpdated($place->fresh('woreda.zone'), $changes, Auth::user()));
             }
+
+            // Clear cached data
+            Cache::forget('places.metrics');
+            Cache::forget('distances.create_places'); // Clear distances create form cache
+            Cache::forget('outsource_performances.create_places'); // Clear outsource performances places cache
+            // Clear report caches
+            Cache::forget('reports.performance_all.destinations');
+            Cache::forget('reports.outsource_performance.destinations');
 
             return redirect()->route('places.index')
                 ->with('success', 'Place updated successfully.');
@@ -390,6 +418,14 @@ class PlaceController extends Controller
                 ->log('deleted');
 
             event(new PlaceDeleted($placeId, $placeName, $woredaId, $placeData, Auth::user()));
+
+            // Clear cached data
+            Cache::forget('places.metrics');
+            Cache::forget('distances.create_places'); // Clear distances create form cache
+            Cache::forget('outsource_performances.create_places'); // Clear outsource performances places cache
+            // Clear report caches
+            Cache::forget('reports.performance_all.destinations');
+            Cache::forget('reports.outsource_performance.destinations');
 
             return redirect()->route('places.index')
                 ->with('success', 'Place deleted successfully.');

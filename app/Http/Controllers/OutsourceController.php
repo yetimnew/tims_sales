@@ -10,6 +10,7 @@ use App\Models\OutsourcePerformance;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -105,31 +106,37 @@ class OutsourceController extends Controller
             'serviceCategoryCount' => $serviceCategoryCount,
         ];
 
-        $statusOptions = Outsource::query()
-            ->select('status')
-            ->distinct()
-            ->orderBy('status')
-            ->pluck('status')
-            ->filter()
-            ->map(fn ($status) => [
-                'label' => Str::headline((string) $status),
-                'value' => $status,
-            ])
-            ->values()
-            ->all();
+        // Cache status options (1 hour) - rarely changes
+        $statusOptions = Cache::remember('outsources.status_options', 3600, function () {
+            return Outsource::query()
+                ->select('status')
+                ->distinct()
+                ->orderBy('status')
+                ->pluck('status')
+                ->filter()
+                ->map(fn ($status) => [
+                    'label' => Str::headline((string) $status),
+                    'value' => $status,
+                ])
+                ->values()
+                ->all();
+        });
 
-        $serviceTypeOptions = Outsource::query()
-            ->select('service_type')
-            ->whereNotNull('service_type')
-            ->distinct()
-            ->orderBy('service_type')
-            ->pluck('service_type')
-            ->map(fn ($type) => [
-                'label' => Str::headline((string) $type),
-                'value' => $type,
-            ])
-            ->values()
-            ->all();
+        // Cache service type options (1 hour) - rarely changes
+        $serviceTypeOptions = Cache::remember('outsources.service_type_options', 3600, function () {
+            return Outsource::query()
+                ->select('service_type')
+                ->whereNotNull('service_type')
+                ->distinct()
+                ->orderBy('service_type')
+                ->pluck('service_type')
+                ->map(fn ($type) => [
+                    'label' => Str::headline((string) $type),
+                    'value' => $type,
+                ])
+                ->values()
+                ->all();
+        });
 
         $filters = [
             'search' => $search !== '' ? $search : null,
@@ -160,19 +167,22 @@ class OutsourceController extends Controller
             ['label' => 'Inactive', 'value' => 'inactive'],
         ];
 
-        $serviceTypeOptions = Outsource::query()
-            ->select('service_type')
-            ->whereNotNull('service_type')
-            ->distinct()
-            ->orderBy('service_type')
-            ->pluck('service_type')
-            ->filter()
-            ->map(fn ($type) => [
-                'label' => Str::headline((string) $type),
-                'value' => (string) $type,
-            ])
-            ->values()
-            ->all();
+        // Cache service type options (1 hour)
+        $serviceTypeOptions = Cache::remember('outsources.service_type_options', 3600, function () {
+            return Outsource::query()
+                ->select('service_type')
+                ->whereNotNull('service_type')
+                ->distinct()
+                ->orderBy('service_type')
+                ->pluck('service_type')
+                ->filter()
+                ->map(fn ($type) => [
+                    'label' => Str::headline((string) $type),
+                    'value' => (string) $type,
+                ])
+                ->values()
+                ->all();
+        });
 
         return Inertia::render('Outsources/Create', [
             'statusOptions' => $statusOptions,
@@ -215,6 +225,13 @@ class OutsourceController extends Controller
             ]);
 
             event(new OutsourceCreated($outsource->fresh(), $actor));
+
+            // Clear cached options
+            Cache::forget('outsources.status_options');
+            Cache::forget('outsources.service_type_options');
+            Cache::forget('outsource_performances.outsource_options'); // Clear outsource performances options
+            // Clear report caches
+            Cache::forget('reports.outsource_performance.vendor_options');
 
             return redirect()->route('outsources.index')
                 ->with('success', 'Outsource created successfully.');
@@ -301,19 +318,22 @@ class OutsourceController extends Controller
             ['label' => 'Inactive', 'value' => 'inactive'],
         ];
 
-        $serviceTypeOptions = Outsource::query()
-            ->select('service_type')
-            ->whereNotNull('service_type')
-            ->distinct()
-            ->orderBy('service_type')
-            ->pluck('service_type')
-            ->filter()
-            ->map(fn ($type) => [
-                'label' => Str::headline((string) $type),
-                'value' => (string) $type,
-            ])
-            ->values()
-            ->all();
+        // Cache service type options (1 hour)
+        $serviceTypeOptions = Cache::remember('outsources.service_type_options', 3600, function () {
+            return Outsource::query()
+                ->select('service_type')
+                ->whereNotNull('service_type')
+                ->distinct()
+                ->orderBy('service_type')
+                ->pluck('service_type')
+                ->filter()
+                ->map(fn ($type) => [
+                    'label' => Str::headline((string) $type),
+                    'value' => (string) $type,
+                ])
+                ->values()
+                ->all();
+        });
 
         $outsourceData = [
             'id' => $outsource->id,
@@ -385,6 +405,14 @@ class OutsourceController extends Controller
                 event(new OutsourceUpdated($outsource->fresh(), $changes, $actor));
             }
 
+            // Clear cached options if status or service_type changed
+            if (isset($changes['status']) || isset($changes['service_type'])) {
+                Cache::forget('outsources.status_options');
+                Cache::forget('outsources.service_type_options');
+                Cache::forget('outsource_performances.outsource_options'); // Clear outsource performances options
+                Cache::forget('reports.outsource_performance.vendor_options'); // Clear report cache
+            }
+
             return redirect()->route('outsources.index')
                 ->with('success', 'Outsource updated successfully.');
 
@@ -426,6 +454,13 @@ class OutsourceController extends Controller
             ]);
 
             event(new OutsourceDeleted($outsourceId, $outsourceName, $outsourceData, $actor));
+
+            // Clear cached options
+            Cache::forget('outsources.status_options');
+            Cache::forget('outsources.service_type_options');
+            Cache::forget('outsource_performances.outsource_options'); // Clear outsource performances options
+            // Clear report caches
+            Cache::forget('reports.outsource_performance.vendor_options');
 
             return redirect()->route('outsources.index')
                 ->with('success', 'Outsource deleted successfully.');

@@ -6,7 +6,6 @@ import { ListingStatsHeader } from '@/components/listing/stats-header';
 import { ListingFilterBar } from '@/components/listing/filter-bar';
 import { ListingTableShell } from '@/components/listing/data-table-shell';
 import { ListingMobileItemList } from '@/components/listing/mobile-item-list';
-import { ListingLoadingPlaceholder } from '@/components/listing/loading-placeholder';
 import { ListingPaginationFooter } from '@/components/listing/pagination-footer';
 import { ListingRowActionsMenu } from '@/components/listing/row-actions-menu';
 import { usePermissions } from '@/hooks/use-permissions';
@@ -17,7 +16,6 @@ import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialo
 import { toast } from '@/hooks/use-toast';
 import { Plus, Eye, Edit, Search, Trash2, Users, UserCheck, UserX, User, MapPin as MapPinIcon, Phone } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Skeleton } from '@/components/ui/skeleton';
 import * as React from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -79,7 +77,7 @@ interface DriversIndexProps {
     perPageOptions: number[];
 }
 
-const SKELETON_FLAG_KEY = 'drivers.index.shouldShowSkeleton';
+const TABLE_LOADING_STORAGE_KEY = 'drivers.index.table-loading';
 
 const COLUMN_DEFINITIONS: Array<{ key: keyof DriverData | 'status'; label: string }> = [
     { key: 'name', label: 'Name' },
@@ -124,9 +122,13 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
     const [isDeleting, setIsDeleting] = React.useState(false);
 
     const isDataReady = Array.isArray(drivers?.data);
-    const { isLoading } = useListingLoading({
-        storageKey: SKELETON_FLAG_KEY,
+    const { isLoading: isTableLoading } = useListingLoading({
+        storageKey: TABLE_LOADING_STORAGE_KEY,
         isDataReady,
+        minimumDuration: 200,
+        onlySamePath: true,
+        targetPath: '/drivers',
+        initialIsLoading: true,
     });
 
     React.useEffect(() => {
@@ -177,10 +179,6 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
                 delete params[key];
             }
         });
-
-        if (typeof window !== 'undefined') {
-            window.sessionStorage.setItem(SKELETON_FLAG_KEY, 'true');
-        }
 
         router.get('/drivers', params, { preserveState: true, replace: false });
     }, [searchTerm, selectedStatus, selectedGender, sortColumn, sortDirection, perPage]);
@@ -294,86 +292,46 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
             id: 'total-drivers',
             label: 'Total Drivers',
             icon: <Users className="h-3.5 w-3.5 text-blue-600" />,
-            className: 'min-w-0',
-            value: isLoading ? (
-                <Skeleton className="h-3.5 w-20" aria-hidden="true" />
-            ) : (
-                totalDrivers.toLocaleString()
-            ),
-            description: isLoading ? (
-                <Skeleton className="h-3 w-24" aria-hidden="true" />
-            ) : (
-                'Workforce size'
-            ),
-            valueClassName: isLoading ? undefined : 'text-blue-600',
+            className: 'min-w-[220px] flex-shrink-0',
+            value: totalDrivers.toLocaleString(),
+            description: 'Workforce size',
+            valueClassName: 'text-blue-600',
         },
         {
             id: 'active-drivers',
             label: 'Active',
             icon: <UserCheck className="h-3.5 w-3.5 text-green-600" />,
-            className: 'min-w-0',
-            value: isLoading ? (
-                <Skeleton className="h-3.5 w-16" aria-hidden="true" />
-            ) : (
-                activeDrivers.toLocaleString()
-            ),
-            description: isLoading ? (
-                <Skeleton className="h-3 w-20" aria-hidden="true" />
-            ) : (
-                'Currently active'
-            ),
-            valueClassName: isLoading ? undefined : 'text-green-600',
+            className: 'min-w-[220px] flex-shrink-0',
+            value: activeDrivers.toLocaleString(),
+            description: 'Currently active',
+            valueClassName: 'text-green-600',
         },
         {
             id: 'inactive-drivers',
             label: 'Inactive',
             icon: <UserX className="h-3.5 w-3.5 text-red-600" />,
-            className: 'min-w-0',
-            value: isLoading ? (
-                <Skeleton className="h-3.5 w-16" aria-hidden="true" />
-            ) : (
-                inactiveDrivers.toLocaleString()
-            ),
-            description: isLoading ? (
-                <Skeleton className="h-3 w-24" aria-hidden="true" />
-            ) : (
-                'Off duty'
-            ),
-            valueClassName: isLoading ? undefined : 'text-red-600',
+            className: 'min-w-[220px] flex-shrink-0',
+            value: inactiveDrivers.toLocaleString(),
+            description: 'Off duty',
+            valueClassName: 'text-red-600',
         },
         {
             id: 'male-drivers',
             label: 'Male',
             icon: <User className="h-3.5 w-3.5 text-blue-500" />,
-            className: 'min-w-0',
-            value: isLoading ? (
-                <Skeleton className="h-3.5 w-16" aria-hidden="true" />
-            ) : (
-                maleDrivers.toLocaleString()
-            ),
-            description: isLoading ? (
-                <Skeleton className="h-3 w-28" aria-hidden="true" />
-            ) : (
-                '👨 Male drivers'
-            ),
-            valueClassName: isLoading ? undefined : 'text-blue-500',
+            className: 'min-w-[220px] flex-shrink-0',
+            value: maleDrivers.toLocaleString(),
+            description: '👨 Male drivers',
+            valueClassName: 'text-blue-500',
         },
         {
             id: 'female-drivers',
             label: 'Female',
             icon: <User className="h-3.5 w-3.5 text-pink-500" />,
-            className: 'min-w-0',
-            value: isLoading ? (
-                <Skeleton className="h-3.5 w-16" aria-hidden="true" />
-            ) : (
-                femaleDrivers.toLocaleString()
-            ),
-            description: isLoading ? (
-                <Skeleton className="h-3 w-28" aria-hidden="true" />
-            ) : (
-                '👩 Female drivers'
-            ),
-            valueClassName: isLoading ? undefined : 'text-pink-500',
+            className: 'min-w-[220px] flex-shrink-0',
+            value: femaleDrivers.toLocaleString(),
+            description: '👩 Female drivers',
+            valueClassName: 'text-pink-500',
         },
     ];
 
@@ -402,21 +360,8 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
         [],
     );
 
-    const tableRows = isLoading
-        ? Array.from({ length: 6 }).map((_, rowIndex) => (
-              <TableRow key={`driver-skeleton-${rowIndex}`} aria-hidden="true">
-                  {tableColumns.map((column) => (
-                      <TableCell
-                          key={`${column.id}-${rowIndex}`}
-                          className={column.align === 'center' ? 'text-center' : undefined}
-                      >
-                          <Skeleton className="mx-auto h-4 w-24 max-w-full" />
-                      </TableCell>
-                  ))}
-              </TableRow>
-          ))
-        : driverData.length > 0
-            ? driverData.map((driver, index) => (
+    const tableRows = driverData.length > 0
+        ? driverData.map((driver, index) => (
                   <TableRow key={driver.id} className="hover:bg-muted/50">
                       <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
                       <TableCell className="font-medium">{driver.name}</TableCell>
@@ -466,27 +411,25 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
                       </TableCell>
                   </TableRow>
               ))
-            : (
-                <TableRow>
-                    <TableCell colSpan={tableColumns.length} className="py-8 text-center text-muted-foreground">
-                        No drivers found.
-                        {hasPermission('drivers.create') && (
-                            <Link href="/drivers/create" className="ml-1 text-primary underline">
-                                Create one
-                            </Link>
-                        )}
-                    </TableCell>
-                </TableRow>
-            );
+        : (
+            <TableRow>
+                <TableCell colSpan={tableColumns.length} className="py-8 text-center text-muted-foreground">
+                    No drivers found.
+                    {hasPermission('drivers.create') && (
+                        <Link href="/drivers/create" className="ml-1 text-primary underline">
+                            Create one
+                        </Link>
+                    )}
+                </TableCell>
+            </TableRow>
+        );
 
     const mobileItems = React.useMemo(
         () => driverData.map((driver, index) => ({ driver, position: rowOffset + index + 1 })),
         [driverData, rowOffset],
     );
 
-    const mobileContent = isLoading ? (
-        <ListingLoadingPlaceholder showStats={false} filterItemCount={3} rowCount={4} />
-    ) : (
+    const mobileContent = (
         <ListingMobileItemList
             items={mobileItems}
             getKey={(item) => item.driver.id}
@@ -632,8 +575,8 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
                 tableTitle="Driver Directory"
                 tableDescription="Complete list of all drivers in your workforce"
                 tableHeaderExtras={tableHeaderExtras}
-                pagination={
-                    !isLoading && drivers?.links ? (
+                  pagination={
+                      drivers?.links ? (
                         <ListingPaginationFooter
                             className="mt-4"
                             links={drivers.links}
@@ -645,15 +588,33 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
                 }
             >
                 <div className="hidden md:block">
-                    <ListingTableShell
-                        columns={tableColumns}
-                        sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSort }}
-                    >
-                        {tableRows}
-                    </ListingTableShell>
+                    <div className="relative">
+                        <ListingTableShell
+                            columns={tableColumns}
+                            sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSort }}
+                        >
+                            {tableRows}
+                        </ListingTableShell>
+
+                        {isTableLoading && (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
+                                <img src="/images/loading-spinner.svg" alt="Loading drivers" className="h-12 w-12" />
+                                <span className="text-sm text-muted-foreground">Loading drivers...</span>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
-                <div className="space-y-3 md:hidden">{mobileContent}</div>
+                <div className="relative space-y-3 md:hidden">
+                    {mobileContent}
+
+                    {isTableLoading && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
+                            <img src="/images/loading-spinner.svg" alt="Loading drivers" className="h-10 w-10" />
+                            <span className="text-sm text-muted-foreground">Loading drivers...</span>
+                        </div>
+                    )}
+                </div>
             </ListPageLayout>
 
             <DeleteConfirmationDialog

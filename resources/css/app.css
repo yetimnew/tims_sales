@@ -150,3 +150,109 @@
     }
 }
 
+@layer components {
+    /* Dashboard enhancements */
+    .dashboard-section {
+        @apply rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-all duration-300;
+    }
+
+    .metric-card {
+        @apply relative overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm hover:shadow-lg hover:scale-105 transition-all duration-300 ease-out;
+    }
+
+    .metric-card::before {
+        @apply absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300;
+        content: '';
+    }
+
+    .section-title {
+        @apply text-2xl font-bold text-slate-900 dark:text-white tracking-tight;
+    }
+
+    .section-description {
+        @apply mt-1 text-slate-600 dark:text-slate-400;
+    }
+
+    .card-header-gradient {
+        @apply bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-700 transition-colors duration-200;
+    }
+
+    /* Chart enhancements */
+    .recharts-wrapper {
+        @apply rounded-lg overflow-hidden;
+    }
+
+    .recharts-default-tooltip {
+        @apply shadow-lg rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900;
+    }
+
+    /* Button enhancements */
+    .btn-gradient {
+        @apply bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-200;
+    }
+
+    .btn-outline-enhanced {
+        @apply border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all duration-200 hover:shadow-md;
+    }
+
+    /* Badge enhancements */
+    .badge-enhanced {
+        @apply inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold border transition-colors duration-200;
+    }
+
+    /* Smooth animations */
+    @keyframes slideInUp {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+
+    .animate-slide-in-up {
+        animation: slideInUp 0.4s ease-out;
+    }
+
+    .animate-fade-in {
+        animation: fadeIn 0.5s ease-out;
+    }
+}
+
+@layer utilities {
+    .text-slate-light {
+        @apply text-slate-700 dark:text-slate-300;
+    }
+
+    .bg-card-light {
+        @apply bg-white dark:bg-slate-800;
+    }
+
+    .border-card-light {
+        @apply border-slate-200 dark:border-slate-700;
+    }
+
+    .shadow-card {
+        @apply shadow-sm hover:shadow-lg transition-shadow duration-300;
+    }
+
+    .glass-effect {
+        @apply backdrop-blur-md bg-white/80 dark:bg-slate-900/80 border border-white/20 dark:border-slate-700/20;
+    }
+
+    .gradient-text {
+        @apply bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent;
+    }
+}
+

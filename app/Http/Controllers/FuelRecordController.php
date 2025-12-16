@@ -7,6 +7,7 @@ use App\Models\Truck;
 use App\Models\Driver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -48,15 +49,17 @@ class FuelRecordController extends Controller
 
         $fuelRecords = $query->paginate(15);
 
-        // Get statistics
-        $statistics = [
-            'total_records' => FuelRecord::count(),
-            'total_cost' => FuelRecord::sum('total_cost'),
-            'total_quantity' => FuelRecord::sum('fuel_quantity_liters'),
-            'avg_price_per_liter' => FuelRecord::avg('fuel_price_per_liter'),
-            'diesel_count' => FuelRecord::where('fuel_type', 'diesel')->count(),
-            'petrol_count' => FuelRecord::where('fuel_type', 'petrol')->count(),
-        ];
+        // Cache statistics for 5 minutes - they change frequently but don't need real-time accuracy
+        $statistics = Cache::remember('fuel_records.statistics', 300, function () {
+            return [
+                'total_records' => FuelRecord::count(),
+                'total_cost' => FuelRecord::sum('total_cost'),
+                'total_quantity' => FuelRecord::sum('fuel_quantity_liters'),
+                'avg_price_per_liter' => FuelRecord::avg('fuel_price_per_liter'),
+                'diesel_count' => FuelRecord::where('fuel_type', 'diesel')->count(),
+                'petrol_count' => FuelRecord::where('fuel_type', 'petrol')->count(),
+            ];
+        });
 
         return Inertia::render('FuelRecords/Index', [
             'fuelRecords' => $fuelRecords,
@@ -74,20 +77,23 @@ class FuelRecordController extends Controller
      */
     public function create(): Response
     {
-        $driverTrucks = \App\Models\DriverTruck::with(['truck', 'driver'])
-            ->where('is_attached', true)
-            ->whereNull('date_detach')
-            ->get()
-            ->map(function ($assignment) {
-                return [
-                    'id' => $assignment->id,
-                    'truck_plate' => $assignment->truck->plate ?? 'N/A',
-                    'truck_model' => $assignment->truck->model ?? '',
-                    'driver_name' => $assignment->driver->name ?? 'N/A',
-                    'driver_license' => $assignment->driver->license_number ?? '',
-                    'assigned_date' => $assignment->date_recived,
-                ];
-            });
+        // Cache driver-truck assignments (1 hour) - changes when assignments are added/removed
+        $driverTrucks = Cache::remember('fuel_records.create_driver_trucks', 3600, function () {
+            return \App\Models\DriverTruck::with(['truck', 'driver'])
+                ->where('is_attached', true)
+                ->whereNull('date_detach')
+                ->get()
+                ->map(function ($assignment) {
+                    return [
+                        'id' => $assignment->id,
+                        'truck_plate' => $assignment->truck->plate ?? 'N/A',
+                        'truck_model' => $assignment->truck->model ?? '',
+                        'driver_name' => $assignment->driver->name ?? 'N/A',
+                        'driver_license' => $assignment->driver->license_number ?? '',
+                        'assigned_date' => $assignment->date_recived,
+                    ];
+                });
+        });
 
         return Inertia::render('FuelRecords/Create', [
             'driverTrucks' => $driverTrucks,
@@ -160,20 +166,23 @@ class FuelRecordController extends Controller
     {
         $fuelRecord->load(['driverTruck.truck', 'driverTruck.driver', 'user']);
 
-        $driverTrucks = \App\Models\DriverTruck::with(['truck', 'driver'])
-            ->where('is_attached', true)
-            ->whereNull('date_detach')
-            ->get()
-            ->map(function ($assignment) {
-                return [
-                    'id' => $assignment->id,
-                    'truck_plate' => $assignment->truck->plate ?? 'N/A',
-                    'truck_model' => $assignment->truck->model ?? '',
-                    'driver_name' => $assignment->driver->name ?? 'N/A',
-                    'driver_license' => $assignment->driver->license_number ?? '',
-                    'assigned_date' => $assignment->date_recived,
-                ];
-            });
+        // Cache driver-truck assignments (1 hour) - changes when assignments are added/removed
+        $driverTrucks = Cache::remember('fuel_records.create_driver_trucks', 3600, function () {
+            return \App\Models\DriverTruck::with(['truck', 'driver'])
+                ->where('is_attached', true)
+                ->whereNull('date_detach')
+                ->get()
+                ->map(function ($assignment) {
+                    return [
+                        'id' => $assignment->id,
+                        'truck_plate' => $assignment->truck->plate ?? 'N/A',
+                        'truck_model' => $assignment->truck->model ?? '',
+                        'driver_name' => $assignment->driver->name ?? 'N/A',
+                        'driver_license' => $assignment->driver->license_number ?? '',
+                        'assigned_date' => $assignment->date_recived,
+                    ];
+                });
+        });
 
         return Inertia::render('FuelRecords/Edit', [
             'fuelRecord' => $fuelRecord,

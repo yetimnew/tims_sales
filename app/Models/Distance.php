@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\ClearsCacheOnModelEvents;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -10,7 +11,7 @@ use Spatie\Activitylog\LogOptions;
 
 class Distance extends Model
 {
-    use HasFactory, LogsActivity;
+    use HasFactory, LogsActivity, ClearsCacheOnModelEvents;
 
     protected $fillable = [
         'from_place_id',

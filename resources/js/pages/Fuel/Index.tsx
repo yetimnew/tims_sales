@@ -6,7 +6,6 @@ import { ListingStatsHeader } from '@/components/listing/stats-header';
 import { ListingFilterBar } from '@/components/listing/filter-bar';
 import { ListingTableShell } from '@/components/listing/data-table-shell';
 import { ListingMobileItemList } from '@/components/listing/mobile-item-list';
-import { ListingLoadingPlaceholder } from '@/components/listing/loading-placeholder';
 import { ListingPaginationFooter } from '@/components/listing/pagination-footer';
 import { ListingRowActionsMenu } from '@/components/listing/row-actions-menu';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
@@ -30,73 +29,6 @@ import {
     Gauge,
     ChevronRight,
 } from 'lucide-react';
-
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Fuel Records',
-        href: '/fuel',
-    },
-];
-
-interface FuelRecord {
-    id: number;
-    truck_id: number;
-    driver_id: number;
-    driver_truck_id?: number | null;
-    fuel_date: string;
-    fuel_quantity_liters: number;
-    fuel_price_per_liter: number;
-    total_cost: number;
-    fuel_type: string;
-    fuel_station?: string | null;
-    truck?: { id: number; plate: string } | null;
-    driver?: { id: number; name: string } | null;
-    driver_truck?: {
-        id: number;
-        truck?: { id: number; plate: string } | null;
-        driver?: { id: number; name: string } | null;
-    } | null;
-    receipt_number?: string | null;
-}
-
-interface FuelIndexProps {
-    fuelRecords: {
-        data: FuelRecord[];
-        current_page: number;
-        last_page: number;
-        total: number;
-        from: number | null;
-        to: number | null;
-        per_page?: number | null;
-        links: Array<{
-            url: string | null;
-            label: string;
-            active: boolean;
-        }>;
-    };
-    metrics: {
-        total: number;
-        total_liters: number;
-        total_cost: number;
-        average_price_per_liter: number;
-        diesel_count: number;
-        petrol_count: number;
-        gas_count: number;
-    };
-    filters: {
-        search?: string | null;
-        fuel_type?: string | null;
-        truck?: number | string | null;
-        driver?: number | string | null;
-        sort?: string | null;
-        direction?: 'asc' | 'desc' | null;
-        per_page?: number | null;
-    };
-    fuelTypeOptions: Array<{ label: string; value: string }>;
-    truckOptions: Array<{ id: number; plate: string }>;
-    driverOptions: Array<{ id: number; name: string }>;
-    perPageOptions: number[];
-}
 
 const SKELETON_FLAG_KEY = 'fuel.index.shouldShowSkeleton';
 
@@ -245,9 +177,13 @@ export default function FuelIndex({
     const [isDeleting, setIsDeleting] = React.useState(false);
 
     const isDataReady = Array.isArray(fuelRecords?.data);
-    const { isLoading } = useListingLoading({
+    const { isLoading: isTableLoading } = useListingLoading({
         storageKey: SKELETON_FLAG_KEY,
         isDataReady,
+        minimumDuration: 200,
+        onlySamePath: true,
+        targetPath: '/fuel',
+        initialIsLoading: true,
     });
 
     React.useEffect(() => {
@@ -434,69 +370,69 @@ export default function FuelIndex({
             id: 'fuel-records',
             label: 'Fuel Records',
             icon: <FuelIcon className="h-3.5 w-3.5 text-blue-600" />,
-            className: 'min-w-0',
-            value: isLoading ? (
+            className: 'min-w-[220px] flex-shrink-0',
+            value: isTableLoading ? (
                 <Skeleton className="h-3.5 w-20" aria-hidden="true" />
             ) : (
                 (totalRecords ?? 0).toLocaleString()
             ),
-            description: isLoading ? (
+            description: isTableLoading ? (
                 <Skeleton className="h-3 w-36" aria-hidden="true" />
             ) : (
                 `${(dieselCount ?? 0).toLocaleString()} diesel entries`
             ),
-            valueClassName: isLoading ? undefined : 'text-blue-600',
+            valueClassName: isTableLoading ? undefined : 'text-blue-600',
         },
         {
             id: 'total-liters',
             label: 'Total Liters',
             icon: <Droplet className="h-3.5 w-3.5 text-emerald-600" />,
-            className: 'min-w-0',
-            value: isLoading ? (
+            className: 'min-w-[220px] flex-shrink-0',
+            value: isTableLoading ? (
                 <Skeleton className="h-3.5 w-20" aria-hidden="true" />
             ) : (
                 formatNumber(totalLiters)
             ),
-            description: isLoading ? (
+            description: isTableLoading ? (
                 <Skeleton className="h-3 w-36" aria-hidden="true" />
             ) : (
                 `${(petrolCount ?? 0).toLocaleString()} petrol records`
             ),
-            valueClassName: isLoading ? undefined : 'text-emerald-600',
+            valueClassName: isTableLoading ? undefined : 'text-emerald-600',
         },
         {
             id: 'total-cost',
             label: 'Total Cost',
             icon: <DollarSign className="h-3.5 w-3.5 text-purple-600" />,
-            className: 'min-w-0',
-            value: isLoading ? (
+            className: 'min-w-[220px] flex-shrink-0',
+            value: isTableLoading ? (
                 <Skeleton className="h-3.5 w-28" aria-hidden="true" />
             ) : (
                 formatCurrency(totalCost)
             ),
-            description: isLoading ? (
+            description: isTableLoading ? (
                 <Skeleton className="h-3 w-32" aria-hidden="true" />
             ) : (
                 `${(gasCount ?? 0).toLocaleString()} gas entries`
             ),
-            valueClassName: isLoading ? undefined : 'text-purple-600',
+            valueClassName: isTableLoading ? undefined : 'text-purple-600',
         },
         {
             id: 'average-price',
             label: 'Avg Price / L',
             icon: <Gauge className="h-3.5 w-3.5 text-amber-600" />,
-            className: 'min-w-0',
-            value: isLoading ? (
+            className: 'min-w-[220px] flex-shrink-0',
+            value: isTableLoading ? (
                 <Skeleton className="h-3.5 w-24" aria-hidden="true" />
             ) : (
                 formatCurrency(averagePricePerLiter)
             ),
-            description: isLoading ? (
+            description: isTableLoading ? (
                 <Skeleton className="h-3 w-32" aria-hidden="true" />
             ) : (
                 'Across filtered records'
             ),
-            valueClassName: isLoading ? undefined : 'text-amber-600',
+            valueClassName: isTableLoading ? undefined : 'text-amber-600',
         },
     ];
 
@@ -526,75 +462,80 @@ export default function FuelIndex({
         [],
     );
 
-    const tableRows = isLoading
-        ? Array.from({ length: 6 }).map((_, rowIndex) => (
-              <TableRow key={`fuel-record-skeleton-${rowIndex}`} aria-hidden="true">
-                  {tableColumns.map((column) => (
-                      <TableCell
-                          key={`${column.id}-${rowIndex}`}
-                          className={column.align === 'center' ? 'text-center' : column.align === 'right' ? 'text-right' : undefined}
-                      >
-                          <Skeleton className="mx-auto h-4 w-24 max-w-full" />
-                      </TableCell>
-                  ))}
-              </TableRow>
-          ))
-        : fuelData.length > 0
-            ? fuelData.map((record, index) => {
-                  const truckLabel = record.truck?.plate ?? record.driver_truck?.truck?.plate ?? '—';
-                  const driverLabel = record.driver?.name ?? record.driver_truck?.driver?.name ?? '—';
+    const tableRows = fuelData.length > 0
+        ? fuelData.map((record, index) => {
+              const truckLabel = record.truck?.plate ?? record.driver_truck?.truck?.plate ?? '—';
+              const driverLabel = record.driver?.name ?? record.driver_truck?.driver?.name ?? '—';
 
-                  return (
-                      <TableRow key={record.id} className="hover:bg-muted/50">
-                          <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
-                          <TableCell className="font-medium">{formatDate(record.fuel_date)}</TableCell>
-                          <TableCell className="text-muted-foreground">{truckLabel}</TableCell>
-                          <TableCell className="text-muted-foreground">{driverLabel}</TableCell>
-                          <TableCell className="text-center">
-                              <Badge className={getFuelTypeBadgeClass(record.fuel_type)}>{record.fuel_type}</Badge>
-                          </TableCell>
-                          <TableCell className="text-right text-muted-foreground">{formatNumber(record.fuel_quantity_liters)}</TableCell>
-                          <TableCell className="text-right text-muted-foreground">{formatCurrency(record.fuel_price_per_liter)}</TableCell>
-                          <TableCell className="text-right font-semibold">{formatCurrency(record.total_cost)}</TableCell>
-                          <TableCell className="text-muted-foreground">{record.receipt_number || '—'}</TableCell>
-                          <TableCell className="text-center">
-                              <ListingRowActionsMenu
-                                  actions={[
-                                      canViewRecord && {
-                                          label: 'View',
-                                          icon: <Eye className="h-4 w-4" />,
-                                          href: `/fuel/${record.id}`,
-                                      },
-                                      canEditRecord && {
-                                          label: 'Edit',
-                                          icon: <Edit className="h-4 w-4" />,
-                                          href: `/fuel/${record.id}/edit`,
-                                      },
-                                      canDeleteRecord && {
-                                          label: 'Delete',
-                                          icon: <Trash2 className="h-4 w-4" />,
-                                          danger: true,
-                                          disabled: isDeleting && selectedRecord?.id === record.id,
-                                          onSelect: () => handleDeleteClick(record),
-                                      },
-                                  ]}
-                              />
-                          </TableCell>
-                      </TableRow>
-                  );
-              })
-            : (
-                <TableRow>
-                    <TableCell colSpan={tableColumns.length} className="py-8 text-center text-muted-foreground">
-                        No fuel records found.
-                        {canCreateRecord && (
-                            <Link href="/fuel/create" className="ml-1 text-primary underline">
-                                Create one
-                            </Link>
-                        )}
-                    </TableCell>
-                </TableRow>
-            );
+              return (
+                  <TableRow key={record.id} className="hover:bg-muted/50">
+                      <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
+                      <TableCell className="font-medium">{formatDate(record.fuel_date)}</TableCell>
+                      <TableCell className="text-muted-foreground">{truckLabel}</TableCell>
+                      <TableCell className="text-muted-foreground">{driverLabel}</TableCell>
+                      <TableCell className="text-center">
+                          <Badge className={getFuelTypeBadgeClass(record.fuel_type)}>{record.fuel_type}</Badge>
+                      </TableCell>
+                      <TableCell className="text-right text-muted-foreground">{formatNumber(record.fuel_quantity_liters)}</TableCell>
+                      <TableCell className="text-right text-muted-foreground">{formatCurrency(record.fuel_price_per_liter)}</TableCell>
+                      <TableCell className="text-right font-semibold">{formatCurrency(record.total_cost)}</TableCell>
+                      <TableCell className="text-muted-foreground">{record.receipt_number || '—'}</TableCell>
+                      <TableCell className="text-center">
+                          <ListingRowActionsMenu
+                              actions={[
+                                  canViewRecord && {
+                                      label: 'View',
+                                      icon: <Eye className="h-4 w-4" />,
+                                      href: `/fuel/${record.id}`,
+                                  },
+                                  canEditRecord && {
+                                      label: 'Edit',
+                                      icon: <Edit className="h-4 w-4" />,
+                                      href: `/fuel/${record.id}/edit`,
+                                  },
+                                  canDeleteRecord && {
+                                      label: 'Delete',
+                                      icon: <Trash2 className="h-4 w-4" />,
+                                      danger: true,
+                                      disabled: isDeleting && selectedRecord?.id === record.id,
+                                      onSelect: () => handleDeleteClick(record),
+                                  },
+                              ]}
+                          />
+                      </TableCell>
+                  </TableRow>
+              );
+          })
+        : (
+            <TableRow>
+                <TableCell colSpan={tableColumns.length} className="py-8 text-center text-muted-foreground">
+                    No fuel records found.
+                    {canCreateRecord && (
+                        <Link href="/fuel/create" className="ml-1 text-primary underline">
+                            Create one
+                        </Link>
+                    )}
+                </TableCell>
+            </TableRow>
+        );
+
+    const tableContent = (
+        <div className="relative">
+            <ListingTableShell
+                columns={tableColumns}
+                sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSort }}
+            >
+                {tableRows}
+            </ListingTableShell>
+
+            {isTableLoading && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
+                    <img src="/images/loading-spinner.svg" alt="Loading fuel records" className="h-12 w-12" />
+                    <span className="text-sm text-muted-foreground">Loading fuel records...</span>
+                </div>
+            )}
+        </div>
+    );
 
     const mobileItems = React.useMemo(
         () =>
@@ -607,9 +548,7 @@ export default function FuelIndex({
         [fuelData, rowOffset],
     );
 
-    const mobileContent = isLoading ? (
-        <ListingLoadingPlaceholder showStats={false} filterItemCount={4} rowCount={4} />
-    ) : (
+    const mobileContent = (
         <ListingMobileItemList
             items={mobileItems}
             getKey={(item) => item.record.id}
@@ -756,7 +695,7 @@ export default function FuelIndex({
                 tableDescription="Track refuelling activities across your fleet"
                 tableHeaderExtras={tableHeaderExtras}
                 pagination={
-                    !isLoading && fuelRecords?.links ? (
+                    !isTableLoading && fuelRecords?.links ? (
                         <ListingPaginationFooter
                             className="mt-4"
                             links={fuelRecords.links}
@@ -767,16 +706,18 @@ export default function FuelIndex({
                     ) : null
                 }
             >
-                <div className="hidden md:block">
-                    <ListingTableShell
-                        columns={tableColumns}
-                        sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSort }}
-                    >
-                        {tableRows}
-                    </ListingTableShell>
-                </div>
+                <div className="hidden md:block">{tableContent}</div>
 
-                <div className="space-y-3 md:hidden">{mobileContent}</div>
+                <div className="relative space-y-3 md:hidden">
+                    {mobileContent}
+
+                    {isTableLoading && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
+                            <img src="/images/loading-spinner.svg" alt="Loading fuel records" className="h-10 w-10" />
+                            <span className="text-sm text-muted-foreground">Loading fuel records...</span>
+                        </div>
+                    )}
+                </div>
             </ListPageLayout>
 
             <DeleteConfirmationDialog

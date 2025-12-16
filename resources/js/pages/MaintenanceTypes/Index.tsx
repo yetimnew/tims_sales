@@ -10,7 +10,6 @@ import { ListingTableShell, type ListingTableColumn } from '@/components/listing
 import { ListingMobileItemList } from '@/components/listing/mobile-item-list';
 import { ListingPaginationFooter } from '@/components/listing/pagination-footer';
 import { ListingRowActionsMenu } from '@/components/listing/row-actions-menu';
-import { ListingLoadingPlaceholder } from '@/components/listing/loading-placeholder';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useListingLoading } from '@/hooks/use-listing-loading';
 import { toast } from '@/hooks/use-toast';
@@ -34,6 +33,10 @@ const SKELETON_FLAG_KEY = 'maintenance-types.index.shouldShowSkeleton';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
+        title: 'Maintenance',
+        href: '/maintenance',
+    },
+    {
         title: 'Maintenance Types',
         href: '/maintenance-types',
     },
@@ -43,45 +46,48 @@ interface MaintenanceType {
     id: number;
     name: string;
     category: string;
-    interval_km: number | null;
-    interval_months: number | null;
-    estimated_cost: number | null;
-    description: string | null;
+    interval_km?: number | null;
+    interval_months?: number | null;
+    estimated_cost?: number | null;
     is_active: boolean;
-    created_at: string;
-    updated_at: string;
+    description?: string | null;
+    trucks_count?: number;
+    active_trucks_count?: number;
+    created_at?: string | null;
 }
 
-interface MaintenanceTypesIndexProps {
-    maintenanceTypes?: {
-        data: MaintenanceType[];
-        current_page: number;
-        last_page: number;
-        per_page: number;
-        total: number;
-        from: number;
-        to: number;
-        links: Array<{
-            url: string | null;
-            label: string;
-            active: boolean;
-        }>;
-    };
-    statistics?: {
-        total: number;
-        active: number;
-        inactive: number;
-        preventive: number;
-        corrective: number;
-        emergency: number;
-    };
-    filters?: {
-        search?: string;
-        sort?: string;
-        direction?: string;
-        per_page?: number;
-    } | null;
+interface MaintenanceTypesCollection {
+    data: MaintenanceType[];
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+    from: number;
+    to: number;
+    links: Array<{
+        url: string | null;
+        label: string;
+        active: boolean;
+    }>;
 }
+
+interface MaintenanceTypeStatistics {
+    total: number;
+    active: number;
+    inactive: number;
+    preventive: number;
+    corrective: number;
+    emergency: number;
+}
+
+interface MaintenanceTypeFilters {
+    search?: string | null;
+    sort?: string | null;
+    direction?: 'asc' | 'desc' | null;
+    per_page?: number | null;
+}
+
+type BulkActionType = 'delete' | 'activate' | 'deactivate';
 
 type NavigateOverrides = {
     search?: string;
@@ -91,27 +97,46 @@ type NavigateOverrides = {
     per_page?: number;
 };
 
-type BulkActionType = 'delete' | 'activate' | 'deactivate';
+interface MaintenanceTypesIndexProps {
+    maintenanceTypes?: MaintenanceTypesCollection;
+    statistics?: MaintenanceTypeStatistics;
+    filters?: MaintenanceTypeFilters;
+}
 
-const formatNumber = (value?: number | null): string => {
+const toNumeric = (value: number | string | null | undefined): number | null => {
     if (value === null || value === undefined) {
+        return null;
+    }
+
+    const numeric = typeof value === 'string' ? Number(value) : value;
+    if (!Number.isFinite(numeric)) {
+        return null;
+    }
+
+    return numeric;
+};
+
+const formatNumber = (value: number | string | null | undefined): string => {
+    const numeric = toNumeric(value);
+    if (numeric === null) {
         return '0';
     }
 
-    return new Intl.NumberFormat('en-US').format(value);
+    return new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(numeric);
 };
 
-const formatCurrency = (value?: number | null): string => {
-    if (value === null || value === undefined) {
-        return '—';
+const formatCurrency = (value: number | string | null | undefined): string => {
+    const numeric = toNumeric(value);
+    if (numeric === null) {
+        return '$0.00';
     }
 
     return new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency: 'USD',
-        minimumFractionDigits: 0,
+        minimumFractionDigits: 2,
         maximumFractionDigits: 2,
-    }).format(value);
+    }).format(numeric);
 };
 
 const formatIntervalKm = (value?: number | null): string => {
@@ -232,9 +257,12 @@ export default function MaintenanceTypesIndex({ maintenanceTypes, statistics, fi
     }, [resolvedPerPage]);
 
     const isDataReady = Array.isArray(maintenanceTypeData);
-    const { isLoading } = useListingLoading({
+    const { isLoading: isTableLoading } = useListingLoading({
         storageKey: SKELETON_FLAG_KEY,
         isDataReady,
+        minimumDuration: 200,
+        onlySamePath: true,
+        initialIsLoading: false,
     });
 
     const rowOffset = Math.max((safeMaintenanceTypes.from ?? 1) - 1, 0);
@@ -294,81 +322,6 @@ export default function MaintenanceTypesIndex({ maintenanceTypes, statistics, fi
         const numericValue = Number(value);
         handleNavigate({ per_page: Number.isNaN(numericValue) ? undefined : numericValue, page: 1 });
     };
-
-    const handleSort = (column: string) => {
-        const newDirection: 'asc' | 'desc' = sortColumn === column && sortDirection === 'asc' ? 'desc' : 'asc';
-        setSortColumn(column);
-        setSortDirection(newDirection);
-        handleNavigate({ sort: column, direction: newDirection });
-    };
-
-    const handleDeleteClick = (maintenanceType: MaintenanceType) => {
-        setSelectedMaintenanceType(maintenanceType);
-        setDeleteDialogOpen(true);
-    };
-
-    const handleDeleteDialogChange = (open: boolean) => {
-        setDeleteDialogOpen(open);
-        if (!open) {
-            setSelectedMaintenanceType(null);
-            setIsDeleting(false);
-        }
-    };
-
-    const handleDeleteConfirm = () => {
-        if (!selectedMaintenanceType) {
-            return;
-        }
-
-        setIsDeleting(true);
-        router.delete(`/maintenance-types/${selectedMaintenanceType.id}`, {
-            preserveScroll: true,
-            onSuccess: () => {
-                setDeleteDialogOpen(false);
-                setSelectedMaintenanceType(null);
-            },
-            onError: (errors) => {
-                if (errors && typeof errors === 'object') {
-                    const messages = Object.values(errors)
-                        .flatMap((value) => (Array.isArray(value) ? value : [value]))
-                        .filter(Boolean)
-                        .join('\n');
-
-                    if (messages) {
-                        toast({
-                            title: '❌ Delete Failed',
-                            description: messages,
-                            variant: 'destructive',
-                        });
-                    }
-                }
-            },
-            onFinish: () => {
-                setIsDeleting(false);
-            },
-        });
-    };
-
-    const handleSelectAll = React.useCallback(
-        (checked: boolean) => {
-            if (checked) {
-                setSelectedIds(maintenanceTypeData.map((item) => item.id));
-            } else {
-                setSelectedIds([]);
-            }
-        },
-        [maintenanceTypeData],
-    );
-
-    const handleSelectItem = React.useCallback((id: number, checked: boolean) => {
-        setSelectedIds((current) => {
-            if (checked) {
-                return current.includes(id) ? current : [...current, id];
-            }
-
-            return current.filter((itemId) => itemId !== id);
-        });
-    }, []);
 
     const handleBulkAction = (action: BulkActionType) => {
         if (selectedIds.length === 0) {
@@ -459,53 +412,53 @@ export default function MaintenanceTypesIndex({ maintenanceTypes, statistics, fi
             {
                 id: 'total-types',
                 label: 'Total Types',
-                value: isLoading ? <Skeleton className="h-4 w-16" aria-hidden="true" /> : formatNumber(safeStatistics.total),
-                description: isLoading ? <Skeleton className="h-3 w-24" aria-hidden="true" /> : 'All maintenance types',
+                value: isTableLoading ? <Skeleton className="h-4 w-16" aria-hidden="true" /> : formatNumber(safeStatistics.total),
+                description: isTableLoading ? <Skeleton className="h-3 w-24" aria-hidden="true" /> : 'All maintenance types',
                 icon: <Settings className="h-3.5 w-3.5 text-slate-600" />,
-                valueClassName: isLoading ? undefined : 'text-slate-700',
+                valueClassName: isTableLoading ? undefined : 'text-slate-700',
             },
             {
                 id: 'active-types',
                 label: 'Active',
-                value: isLoading ? <Skeleton className="h-4 w-14" aria-hidden="true" /> : formatNumber(safeStatistics.active),
-                description: isLoading ? <Skeleton className="h-3 w-28" aria-hidden="true" /> : 'Currently active',
-                icon: <CheckCircle className="h-3.5 w-3.5 text-emerald-600" />,
-                valueClassName: isLoading ? undefined : 'text-emerald-600',
+                value: isTableLoading ? <Skeleton className="h-4 w-14" aria-hidden="true" /> : formatNumber(safeStatistics.active),
+                description: isTableLoading ? <Skeleton className="h-3 w-28" aria-hidden="true" /> : 'Currently active',
+                icon: <Wrench className="h-3.5 w-3.5 text-emerald-600" />,
+                valueClassName: isTableLoading ? undefined : 'text-emerald-600',
             },
             {
                 id: 'inactive-types',
                 label: 'Inactive',
-                value: isLoading ? <Skeleton className="h-4 w-16" aria-hidden="true" /> : formatNumber(safeStatistics.inactive),
-                description: isLoading ? <Skeleton className="h-3 w-28" aria-hidden="true" /> : 'Currently inactive',
-                icon: <XCircle className="h-3.5 w-3.5 text-rose-600" />,
-                valueClassName: isLoading ? undefined : 'text-rose-600',
+                value: isTableLoading ? <Skeleton className="h-4 w-16" aria-hidden="true" /> : formatNumber(safeStatistics.inactive),
+                description: isTableLoading ? <Skeleton className="h-3 w-28" aria-hidden="true" /> : 'Currently inactive',
+                icon: <Trash2 className="h-3.5 w-3.5 text-rose-600" />,
+                valueClassName: isTableLoading ? undefined : 'text-rose-600',
             },
             {
                 id: 'preventive-types',
                 label: 'Preventive',
-                value: isLoading ? <Skeleton className="h-4 w-16" aria-hidden="true" /> : formatNumber(safeStatistics.preventive),
-                description: isLoading ? <Skeleton className="h-3 w-32" aria-hidden="true" /> : 'Preventive tasks',
-                icon: <Wrench className="h-3.5 w-3.5 text-blue-600" />,
-                valueClassName: isLoading ? undefined : 'text-blue-600',
+                value: isTableLoading ? <Skeleton className="h-4 w-16" aria-hidden="true" /> : formatNumber(safeStatistics.preventive),
+                description: isTableLoading ? <Skeleton className="h-3 w-32" aria-hidden="true" /> : 'Preventive tasks',
+                icon: <CheckCircle className="h-3.5 w-3.5 text-blue-600" />,
+                valueClassName: isTableLoading ? undefined : 'text-blue-600',
             },
             {
                 id: 'corrective-types',
                 label: 'Corrective',
-                value: isLoading ? <Skeleton className="h-4 w-16" aria-hidden="true" /> : formatNumber(safeStatistics.corrective),
-                description: isLoading ? <Skeleton className="h-3 w-32" aria-hidden="true" /> : 'Corrective tasks',
-                icon: <Settings className="h-3.5 w-3.5 text-orange-600" />,
-                valueClassName: isLoading ? undefined : 'text-orange-600',
+                value: isTableLoading ? <Skeleton className="h-4 w-16" aria-hidden="true" /> : formatNumber(safeStatistics.corrective),
+                description: isTableLoading ? <Skeleton className="h-3 w-32" aria-hidden="true" /> : 'Corrective tasks',
+                icon: <Edit className="h-3.5 w-3.5 text-orange-600" />,
+                valueClassName: isTableLoading ? undefined : 'text-orange-600',
             },
             {
                 id: 'emergency-types',
                 label: 'Emergency',
-                value: isLoading ? <Skeleton className="h-4 w-16" aria-hidden="true" /> : formatNumber(safeStatistics.emergency),
-                description: isLoading ? <Skeleton className="h-3 w-32" aria-hidden="true" /> : 'Emergency tasks',
-                icon: <Wrench className="h-3.5 w-3.5 text-red-600" />,
-                valueClassName: isLoading ? undefined : 'text-red-600',
+                value: isTableLoading ? <Skeleton className="h-4 w-16" aria-hidden="true" /> : formatNumber(safeStatistics.emergency),
+                description: isTableLoading ? <Skeleton className="h-3 w-32" aria-hidden="true" /> : 'Emergency tasks',
+                icon: <AlertTriangle className="h-3.5 w-3.5 text-red-600" />,
+                valueClassName: isTableLoading ? undefined : 'text-red-600',
             },
         ],
-        [isLoading, safeStatistics.active, safeStatistics.corrective, safeStatistics.emergency, safeStatistics.inactive, safeStatistics.preventive, safeStatistics.total],
+        [isTableLoading, safeStatistics.active, safeStatistics.corrective, safeStatistics.emergency, safeStatistics.inactive, safeStatistics.preventive, safeStatistics.total],
     );
 
     const statsSection = <ListingStatsHeader stats={statsDefinitions} orientation="row" />;
@@ -524,7 +477,7 @@ export default function MaintenanceTypesIndex({ maintenanceTypes, statistics, fi
                         aria-label="Select all maintenance types"
                         checked={isAllSelected ? true : isSomeSelected ? 'indeterminate' : false}
                         onCheckedChange={(value) => handleSelectAll(value === true)}
-                        disabled={isLoading || maintenanceTypeData.length === 0}
+                        disabled={isTableLoading || maintenanceTypeData.length === 0}
                     />
                 ),
                 align: 'center',
@@ -538,35 +491,10 @@ export default function MaintenanceTypesIndex({ maintenanceTypes, statistics, fi
             { id: 'is_active', label: 'Status', sortable: true, align: 'center' },
             { id: 'actions', label: 'Actions', align: 'center' },
         ],
-        [handleSelectAll, isAllSelected, isLoading, isSomeSelected, maintenanceTypeData.length],
+        [handleSelectAll, isAllSelected, isSomeSelected, isTableLoading, maintenanceTypeData.length],
     );
 
     const tableRows = React.useMemo(() => {
-        if (isLoading) {
-            return Array.from({ length: 6 }).map((_, rowIndex) => (
-                <TableRow key={`maintenance-type-skeleton-${rowIndex}`} aria-hidden="true">
-                    {tableColumns.map((column) => (
-                        <TableCell
-                            key={`${column.id}-${rowIndex}`}
-                            className={
-                                column.align === 'center'
-                                    ? 'text-center'
-                                    : column.align === 'right'
-                                        ? 'text-right'
-                                        : undefined
-                            }
-                        >
-                            {column.id === 'select' ? (
-                                <Skeleton className="mx-auto h-4 w-4 rounded" aria-hidden="true" />
-                            ) : (
-                                <Skeleton className="mx-auto h-4 w-24 max-w-full" aria-hidden="true" />
-                            )}
-                        </TableCell>
-                    ))}
-                </TableRow>
-            ));
-        }
-
         if (maintenanceTypeData.length === 0) {
             return [
                 <TableRow key="maintenance-types-empty">
@@ -640,7 +568,6 @@ export default function MaintenanceTypesIndex({ maintenanceTypes, statistics, fi
         handleSelectItem,
         handleDeleteClick,
         isDeleting,
-        isLoading,
         maintenanceTypeData,
         selectedIds,
         selectedMaintenanceType,
@@ -652,9 +579,7 @@ export default function MaintenanceTypesIndex({ maintenanceTypes, statistics, fi
         [maintenanceTypeData, rowOffset],
     );
 
-    const mobileContent = isLoading ? (
-        <ListingLoadingPlaceholder showStats={false} filterItemCount={1} rowCount={4} />
-    ) : (
+    const mobileContent = (
         <ListingMobileItemList
             items={mobileItems}
             getKey={(item) => item.maintenanceType.id}
@@ -721,7 +646,35 @@ export default function MaintenanceTypesIndex({ maintenanceTypes, statistics, fi
                     )}
                 </div>
             )}
+            emptyState={(
+                <div className="py-8 text-center text-muted-foreground">
+                    No maintenance types found.
+                    {canCreateMaintenanceType && (
+                        <Link href="/maintenance-types/create" className="ml-1 text-primary underline">
+                            Create one
+                        </Link>
+                    )}
+                </div>
+            )}
         />
+    );
+
+    const tableContent = (
+        <div className="relative">
+            <ListingTableShell
+                columns={tableColumns}
+                sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSort }}
+            >
+                {tableRows}
+            </ListingTableShell>
+
+            {isTableLoading && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
+                    <img src="/images/loading-spinner.svg" alt="Loading maintenance types" className="h-12 w-12" />
+                    <span className="text-sm text-muted-foreground">Loading maintenance types...</span>
+                </div>
+            )}
+        </div>
     );
 
     const selectionActions = selectedCount > 0 ? (
@@ -813,7 +766,7 @@ export default function MaintenanceTypesIndex({ maintenanceTypes, statistics, fi
                 tableDescription="Complete list of all maintenance type templates"
                 tableHeaderExtras={tableHeaderExtras}
                 pagination={
-                    !isLoading && safeMaintenanceTypes.links.length > 0 ? (
+                    !isTableLoading && safeMaintenanceTypes.links.length > 0 ? (
                         <ListingPaginationFooter
                             className="mt-4"
                             links={safeMaintenanceTypes.links}
@@ -824,16 +777,18 @@ export default function MaintenanceTypesIndex({ maintenanceTypes, statistics, fi
                     ) : null
                 }
             >
-                <div className="hidden md:block">
-                    <ListingTableShell
-                        columns={tableColumns}
-                        sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSort }}
-                    >
-                        {tableRows}
-                    </ListingTableShell>
-                </div>
+                <div className="hidden md:block">{tableContent}</div>
 
-                <div className="space-y-3 md:hidden">{mobileContent}</div>
+                <div className="relative space-y-3 md:hidden">
+                    {mobileContent}
+
+                    {isTableLoading && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
+                            <img src="/images/loading-spinner.svg" alt="Loading maintenance types" className="h-10 w-10" />
+                            <span className="text-sm text-muted-foreground">Loading maintenance types...</span>
+                        </div>
+                    )}
+                </div>
             </ListPageLayout>
 
             <DeleteConfirmationDialog

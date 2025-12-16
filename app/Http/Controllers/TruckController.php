@@ -16,6 +16,7 @@ use App\Models\VehicleType;
 use App\Services\TruckDeletionGuard;
 use App\Services\TruckGradeService;
 use App\Services\TruckMetricsService;
+use App\Services\Trucks\TruckIndexService;
 use App\Support\PerformanceRecordPresenter;
 use Carbon\CarbonInterface;
 use Exception;
@@ -23,7 +24,7 @@ use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Inertia\Response;
 use Spatie\Activitylog\Models\Activity;
@@ -34,6 +35,7 @@ class TruckController extends Controller
         private TruckDeletionGuard $truckDeletionGuard,
         private TruckMetricsService $truckMetrics,
         private TruckGradeService $truckGrade,
+        private TruckIndexService $truckIndexService,
     ) {}
 
     /**
@@ -72,112 +74,9 @@ class TruckController extends Controller
      */
     public function index(Request $request): Response
     {
-        $search = trim((string) $request->input('search'));
-        $status = $request->input('status');
-        $vehicleTypeIdInput = $request->input('vehicle_type');
-        $vehicleTypeId = ($vehicleTypeIdInput !== null && $vehicleTypeIdInput !== '') ? (int) $vehicleTypeIdInput : null;
-        $perPageOptions = [15, 25, 50, 100];
-        $perPageDefault = 15;
-        $perPage = (int) $request->input('per_page', $perPageDefault);
+        $result = $this->truckIndexService->getIndexResult($request);
 
-        if (! in_array($perPage, $perPageOptions, true)) {
-            $perPage = $perPageDefault;
-        }
-
-        $filtersSearch = $search !== '' ? $search : null;
-
-        $trucksQuery = $this->truckMetrics->applyFilters(
-            Truck::query()
-                ->select([
-                    'id',
-                    'plate',
-                    'status',
-                    'vehicletype_id',
-                    'chasisNumber',
-                    'engineNumber',
-                    'serviceIntervalKM',
-                    'purchasePrice',
-                    'productionDate',
-                    'serviceStartDate',
-                    'created_at',
-                    'updated_at',
-                ])
-                ->with(['vehicleType:id,name']),
-            $filtersSearch,
-            $vehicleTypeId,
-            $status,
-        );
-
-        $sort = $request->input('sort', 'created_at');
-        $direction = $request->input('direction', 'desc');
-        $allowedSorts = ['plate', 'chasisNumber', 'engineNumber', 'serviceIntervalKM', 'purchasePrice', 'status', 'created_at'];
-
-        if (! in_array($sort, $allowedSorts, true)) {
-            $sort = 'created_at';
-        }
-
-        if (! in_array(strtolower((string) $direction), ['asc', 'desc'], true)) {
-            $direction = 'desc';
-        }
-
-        $trucksQuery->orderBy($sort, $direction);
-
-        $trucks = $trucksQuery->paginate($perPage)->withQueryString();
-
-        $trucks->setCollection(
-            $trucks->getCollection()->map(function (Truck $truck) {
-                return [
-                    'id' => $truck->id,
-                    'plate' => $truck->plate,
-                    'status' => $truck->status,
-                    'vehicletype_id' => $truck->vehicletype_id,
-                    'vehicleType' => $truck->relationLoaded('vehicleType')
-                        ? $truck->vehicleType?->only(['id', 'name'])
-                        : $truck->vehicleType()->first(['id', 'name']),
-                    'chasisNumber' => $truck->chasisNumber,
-                    'engineNumber' => $truck->engineNumber,
-                    'serviceIntervalKM' => $truck->serviceIntervalKM,
-                    'purchasePrice' => $truck->purchasePrice,
-                    'productionDate' => $truck->productionDate,
-                    'serviceStartDate' => $truck->serviceStartDate,
-                    'created_at' => $truck->created_at,
-                    'updated_at' => $truck->updated_at,
-                ];
-            }),
-        );
-
-        $trucksData = $this->trimPagination($trucks);
-
-        $statusOptions = Truck::query()
-            ->select('status')
-            ->distinct()
-            ->whereNotNull('status')
-            ->orderBy('status')
-            ->get()
-            ->map(fn ($truck) => [
-                'label' => Str::of($truck->status)->replace('_', ' ')->headline(),
-                'value' => $truck->status,
-            ])->values();
-
-        $vehicleTypes = VehicleType::query()
-            ->orderBy('name')
-            ->get(['id', 'name']);
-
-        return Inertia::render('Trucks/Index', [
-            'trucks' => $trucksData,
-            'metrics' => $this->truckMetrics->metrics($filtersSearch, $vehicleTypeId, $status),
-            'filters' => [
-                'search' => $search !== '' ? $search : null,
-                'status' => $status ?: null,
-                'vehicle_type' => $vehicleTypeId ?: null,
-                'sort' => $sort,
-                'direction' => $direction,
-                'per_page' => $perPage,
-            ],
-            'statusOptions' => $statusOptions,
-            'vehicleTypes' => $vehicleTypes,
-            'perPageOptions' => $perPageOptions,
-        ]);
+        return Inertia::render('Trucks/Index', $result->toInertia());
     }
 
     private function trimPagination(LengthAwarePaginator $paginator): array
@@ -231,11 +130,21 @@ class TruckController extends Controller
             $truck = Truck::create($request->validated());
 
             $this->truckMetrics->clearCache();
+            Cache::forget('trucks.status_options'); // Clear cached status options
+            Cache::forget('fuel_records.truck_options'); // Clear fuel records truck options
+            Cache::forget('maintenance.create_trucks'); // Clear maintenance create trucks list
+            Cache::forget('daily_truck_status.trucks'); // Clear daily truck status trucks list
+            // Clear report caches
+            Cache::forget('reports.maintenance.truck_options');
+            Cache::forget('reports.fuel_efficiency.truck_options');
+            Cache::forget('reports.performance_all.truck_options');
+            Cache::forget('reports.performance_by_truck.truck_options');
+            Cache::forget('reports.performance_by_truck.statuses');
 
             event(new TruckCreated($truck, Auth::user()));
 
             return redirect()->route('trucks.index')
-                ->with('success', 'Truck created successfully.');
+                ->with('success', sprintf('Truck %s created successfully.', $truck->plate));
 
         } catch (Exception $e) {
             return back()->withErrors(['error' => 'Failed to create truck. Please try again.']);
@@ -683,13 +592,25 @@ class TruckController extends Controller
             $changes = $this->formatChanges($original, $this->normalizeAttributes($truck->getChanges()));
 
             $this->truckMetrics->clearCache();
+            Cache::forget('trucks.status_options'); // Clear cached status options if status changed
+            Cache::forget('fuel_records.truck_options'); // Clear fuel records truck options
+            Cache::forget('maintenance.create_trucks'); // Clear maintenance create trucks list if status changed
+            Cache::forget('daily_truck_status.trucks'); // Clear daily truck status trucks list
+            // Clear report caches
+            Cache::forget('reports.maintenance.truck_options');
+            Cache::forget('reports.fuel_efficiency.truck_options');
+            Cache::forget('reports.performance_all.truck_options');
+            Cache::forget('reports.performance_by_truck.truck_options');
+            if (isset($changes['status'])) {
+                Cache::forget('reports.performance_by_truck.statuses');
+            }
 
             if (! empty($changes)) {
                 event(new TruckUpdated($truck, $changes, Auth::user()));
             }
 
             return redirect()->route('trucks.index')
-                ->with('success', 'Truck updated successfully.');
+                ->with('success', sprintf('Truck %s updated successfully.', $truck->plate));
 
         } catch (Exception $e) {
             return back()->withErrors(['error' => 'Failed to update truck. Please try again.']);
@@ -717,11 +638,21 @@ class TruckController extends Controller
             $truck->delete();
             $this->truckDeletionGuard->clearCache($truck);
             $this->truckMetrics->clearCache();
+            Cache::forget('trucks.status_options'); // Clear cached status options
+            Cache::forget('fuel_records.truck_options'); // Clear fuel records truck options
+            Cache::forget('maintenance.create_trucks'); // Clear maintenance create trucks list
+            Cache::forget('daily_truck_status.trucks'); // Clear daily truck status trucks list
+            // Clear report caches
+            Cache::forget('reports.maintenance.truck_options');
+            Cache::forget('reports.fuel_efficiency.truck_options');
+            Cache::forget('reports.performance_all.truck_options');
+            Cache::forget('reports.performance_by_truck.truck_options');
+            Cache::forget('reports.performance_by_truck.statuses');
 
             event(new TruckDeleted($truckId, $plate, $attributes, Auth::user()));
 
             return redirect()->route('trucks.index')
-                ->with('success', 'Truck deleted successfully.');
+                ->with('success', sprintf('Truck %s deleted successfully.', $plate));
 
         } catch (Exception $e) {
             report($e);
@@ -739,7 +670,7 @@ class TruckController extends Controller
         $this->truckMetrics->clearCache();
 
         return redirect()->route('trucks.index')
-            ->with('success', 'Truck deactivated successfully.');
+            ->with('success', sprintf('Truck %s deactivated successfully.', $truck->plate));
     }
 
     /**

@@ -200,6 +200,9 @@ export default function PermissionsIndex({ permissions, filters, moduleOptions, 
     const { isLoading } = useListingLoading({
         storageKey: SKELETON_FLAG_KEY,
         isDataReady,
+        onlySamePath: true,
+        targetPath: '/permissions',
+        initialIsLoading: true,
     });
 
     React.useEffect(() => {

@@ -7,15 +7,14 @@ use App\Events\FuelRecordDeleted;
 use App\Events\FuelRecordUpdated;
 use App\Http\Requests\StoreFuelRequest;
 use App\Http\Requests\UpdateFuelRequest;
-use App\Models\Driver;
 use App\Models\DriverTruck;
 use App\Models\FuelConsumptionAnalysis;
 use App\Models\FuelRecord;
-use App\Models\Truck;
+use App\Services\FuelRecords\FuelRecordIndexService;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -23,114 +22,16 @@ use Spatie\Activitylog\Models\Activity;
 
 class FuelController extends Controller
 {
+    public function __construct(private FuelRecordIndexService $fuelRecordIndexService) {}
+
     /**
      * Display a listing of fuel records.
      */
     public function index(Request $request): Response
     {
-        $search = trim((string) $request->input('search'));
-        $fuelType = $request->input('fuel_type');
-        $truckId = $request->input('truck');
-        $driverId = $request->input('driver');
-        $sort = $request->input('sort', 'fuel_date');
-        $direction = strtolower((string) $request->input('direction', 'desc'));
-        $perPageOptions = [15, 25, 50, 100];
-        $perPageDefault = 15;
-        $perPage = (int) $request->input('per_page', $perPageDefault);
+        $result = $this->fuelRecordIndexService->getIndexResult($request);
 
-        if (! in_array($perPage, $perPageOptions, true)) {
-            $perPage = $perPageDefault;
-        }
-
-        if (! in_array($direction, ['asc', 'desc'], true)) {
-            $direction = 'desc';
-        }
-
-        $allowedSorts = ['fuel_date', 'fuel_quantity_liters', 'total_cost', 'fuel_type', 'fuel_price_per_liter', 'created_at'];
-        if (! in_array($sort, $allowedSorts, true)) {
-            $sort = 'fuel_date';
-        }
-
-        $baseQuery = FuelRecord::query()->with(['truck', 'driver', 'user', 'driverTruck.driver', 'driverTruck.truck']);
-
-        if ($search !== '') {
-            $baseQuery->where(function ($query) use ($search) {
-                $query->where('receipt_number', 'like', "%{$search}%")
-                    ->orWhere('notes', 'like', "%{$search}%")
-                    ->orWhereHas('truck', function ($truckQuery) use ($search) {
-                        $truckQuery->where('plate', 'like', "%{$search}%");
-                    })
-                    ->orWhereHas('driver', function ($driverQuery) use ($search) {
-                        $driverQuery->where('name', 'like', "%{$search}%");
-                    });
-            });
-        }
-
-        if (! empty($fuelType) && $fuelType !== 'all') {
-            $baseQuery->where('fuel_type', $fuelType);
-        }
-
-        if (! empty($truckId)) {
-            $baseQuery->where('truck_id', $truckId);
-        }
-
-        if (! empty($driverId)) {
-            $baseQuery->where('driver_id', $driverId);
-        }
-
-        $fuelRecords = (clone $baseQuery)
-            ->orderBy($sort, $direction)
-            ->paginate($perPage)
-            ->withQueryString();
-
-        $metricsBase = clone $baseQuery;
-
-        $metrics = [
-            'total' => (clone $metricsBase)->count(),
-            'total_liters' => (float) (clone $metricsBase)->sum('fuel_quantity_liters'),
-            'total_cost' => (float) (clone $metricsBase)->sum('total_cost'),
-            'average_price_per_liter' => (float) (clone $metricsBase)->avg('fuel_price_per_liter'),
-            'diesel_count' => (clone $metricsBase)->where('fuel_type', 'diesel')->count(),
-            'petrol_count' => (clone $metricsBase)->where('fuel_type', 'petrol')->count(),
-            'gas_count' => (clone $metricsBase)->where('fuel_type', 'gas')->count(),
-        ];
-
-        $fuelTypeOptions = FuelRecord::query()
-            ->select('fuel_type')
-            ->distinct()
-            ->whereNotNull('fuel_type')
-            ->orderBy('fuel_type')
-            ->get()
-            ->map(fn ($record) => [
-                'label' => Str::headline($record->fuel_type),
-                'value' => $record->fuel_type,
-            ])->values();
-
-        $truckOptions = Truck::query()
-            ->orderBy('plate')
-            ->get(['id', 'plate']);
-
-        $driverOptions = Driver::query()
-            ->orderBy('name')
-            ->get(['id', 'name']);
-
-        return Inertia::render('Fuel/Index', [
-            'fuelRecords' => $fuelRecords,
-            'metrics' => $metrics,
-            'filters' => [
-                'search' => $search !== '' ? $search : null,
-                'fuel_type' => $fuelType ?: null,
-                'truck' => $truckId ?: null,
-                'driver' => $driverId ?: null,
-                'sort' => $sort,
-                'direction' => $direction,
-                'per_page' => $perPage,
-            ],
-            'fuelTypeOptions' => $fuelTypeOptions,
-            'truckOptions' => $truckOptions,
-            'driverOptions' => $driverOptions,
-            'perPageOptions' => $perPageOptions,
-        ]);
+        return Inertia::render('Fuel/Index', $result->toInertia());
     }
 
     /**
@@ -195,6 +96,11 @@ class FuelController extends Controller
             $fuelRecord = FuelRecord::create($validated);
 
             event(new FuelRecordCreated($fuelRecord->loadMissing(['truck', 'driver']), Auth::user()));
+
+            // Clear cached options
+            Cache::forget('fuel_records.fuel_type_options');
+            Cache::forget('fuel_records.truck_options');
+            Cache::forget('fuel_records.driver_options');
 
             return redirect()->route('fuel.index')
                 ->with('success', 'Fuel record created successfully.');
@@ -315,6 +221,13 @@ class FuelController extends Controller
                 event(new FuelRecordUpdated($fuel->fresh(['truck', 'driver']), $changes, Auth::user()));
             }
 
+            // Clear cached options if fuel_type, truck_id, or driver_id changed
+            if (isset($changes['fuel_type']) || isset($changes['truck_id']) || isset($changes['driver_id'])) {
+                Cache::forget('fuel_records.fuel_type_options');
+                Cache::forget('fuel_records.truck_options');
+                Cache::forget('fuel_records.driver_options');
+            }
+
             return redirect()->route('fuel.index')
                 ->with('success', 'Fuel record updated successfully.');
 
@@ -338,6 +251,11 @@ class FuelController extends Controller
             $fuel->delete();
 
             event(new FuelRecordDeleted($fuelRecordId, $receiptNumber, $attributes, Auth::user()));
+
+            // Clear cached options
+            Cache::forget('fuel_records.fuel_type_options');
+            Cache::forget('fuel_records.truck_options');
+            Cache::forget('fuel_records.driver_options');
 
             return redirect()->route('fuel.index')
                 ->with('success', 'Fuel record deleted successfully.');

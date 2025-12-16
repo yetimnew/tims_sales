@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -66,25 +67,28 @@ class PermissionController extends Controller
             ->paginate($perPage)
             ->withQueryString();
 
-        $moduleOptions = Permission::query()
-            ->select('name')
-            ->get()
-            ->map(static function (Permission $permission): string {
-                if (Str::contains($permission->name, '.')) {
-                    return (string) Str::before($permission->name, '.');
-                }
+        // Cache module options (1 hour) - changes when permissions are added/removed
+        $moduleOptions = Cache::remember('permissions.module_options', 3600, function () {
+            return Permission::query()
+                ->select('name')
+                ->get()
+                ->map(static function (Permission $permission): string {
+                    if (Str::contains($permission->name, '.')) {
+                        return (string) Str::before($permission->name, '.');
+                    }
 
-                return $permission->name;
-            })
-            ->filter(static fn ($group) => $group !== null && $group !== '')
-            ->unique()
-            ->sort()
-            ->values()
-            ->map(static fn ($group) => [
-                'label' => Str::headline((string) $group),
-                'value' => (string) $group,
-            ])
-            ->all();
+                    return $permission->name;
+                })
+                ->filter(static fn ($group) => $group !== null && $group !== '')
+                ->unique()
+                ->sort()
+                ->values()
+                ->map(static fn ($group) => [
+                    'label' => Str::headline((string) $group),
+                    'value' => (string) $group,
+                ])
+                ->all();
+        });
 
         $filters = [
             'search' => $search !== '' ? $search : null,

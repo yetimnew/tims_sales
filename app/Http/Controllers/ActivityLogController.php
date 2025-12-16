@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Support\ActivityLogQueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -211,67 +212,73 @@ class ActivityLogController extends Controller
 
     private function metrics(): array
     {
-        return [
-            'total' => Activity::query()->count(),
-            'last_24_hours' => Activity::query()->where('created_at', '>=', now()->subDay())->count(),
-            'last_7_days' => Activity::query()->where('created_at', '>=', now()->subDays(7))->count(),
-            'unique_users' => Activity::query()->whereNotNull('causer_id')->distinct('causer_id')->count('causer_id'),
-        ];
+        // Cache metrics for 5 minutes - they change frequently but don't need real-time accuracy
+        return Cache::remember('activity_logs.metrics', 300, function () {
+            return [
+                'total' => Activity::query()->count(),
+                'last_24_hours' => Activity::query()->where('created_at', '>=', now()->subDay())->count(),
+                'last_7_days' => Activity::query()->where('created_at', '>=', now()->subDays(7))->count(),
+                'unique_users' => Activity::query()->whereNotNull('causer_id')->distinct('causer_id')->count('causer_id'),
+            ];
+        });
     }
 
     private function filterOptions(): array
     {
-        $userIds = Activity::query()
-            ->whereNotNull('causer_id')
-            ->distinct()
-            ->pluck('causer_id');
+        // Cache filter options for 1 hour - they change infrequently
+        return Cache::remember('activity_logs.filter_options', 3600, function () {
+            $userIds = Activity::query()
+                ->whereNotNull('causer_id')
+                ->distinct()
+                ->pluck('causer_id');
 
-        $users = $userIds->isNotEmpty()
-            ? User::query()
-                ->whereIn('id', $userIds)
-                ->orderBy('name')
-                ->get(['id', 'name'])
-            : collect();
+            $users = $userIds->isNotEmpty()
+                ? User::query()
+                    ->whereIn('id', $userIds)
+                    ->orderBy('name')
+                    ->get(['id', 'name'])
+                : collect();
 
-        $actions = Activity::query()
-            ->select('event')
-            ->whereNotNull('event')
-            ->distinct()
-            ->orderBy('event')
-            ->pluck('event');
+            $actions = Activity::query()
+                ->select('event')
+                ->whereNotNull('event')
+                ->distinct()
+                ->orderBy('event')
+                ->pluck('event');
 
-        $logNames = Activity::query()
-            ->select('log_name')
-            ->whereNotNull('log_name')
-            ->distinct()
-            ->orderBy('log_name')
-            ->pluck('log_name');
+            $logNames = Activity::query()
+                ->select('log_name')
+                ->whereNotNull('log_name')
+                ->distinct()
+                ->orderBy('log_name')
+                ->pluck('log_name');
 
-        $subjectTypes = Activity::query()
-            ->select('subject_type')
-            ->whereNotNull('subject_type')
-            ->distinct()
-            ->orderBy('subject_type')
-            ->pluck('subject_type');
+            $subjectTypes = Activity::query()
+                ->select('subject_type')
+                ->whereNotNull('subject_type')
+                ->distinct()
+                ->orderBy('subject_type')
+                ->pluck('subject_type');
 
-        return [
-            'users' => $users->map(fn ($user) => [
-                'id' => $user->id,
-                'name' => $user->name,
-            ])->values()->all(),
-            'actions' => $actions->map(fn ($action) => [
-                'label' => Str::of($action)->replace('_', ' ')->headline(),
-                'value' => $action,
-            ])->values()->all(),
-            'log_names' => $logNames->map(fn ($log) => [
-                'label' => Str::headline((string) $log),
-                'value' => $log,
-            ])->values()->all(),
-            'subject_types' => $subjectTypes->map(fn ($subject) => [
-                'label' => $this->toSubjectLabel((string) $subject),
-                'value' => $subject,
-            ])->values()->all(),
-        ];
+            return [
+                'users' => $users->map(fn ($user) => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                ])->values()->all(),
+                'actions' => $actions->map(fn ($action) => [
+                    'label' => Str::of($action)->replace('_', ' ')->headline(),
+                    'value' => $action,
+                ])->values()->all(),
+                'log_names' => $logNames->map(fn ($log) => [
+                    'label' => Str::headline((string) $log),
+                    'value' => $log,
+                ])->values()->all(),
+                'subject_types' => $subjectTypes->map(fn ($subject) => [
+                    'label' => $this->toSubjectLabel((string) $subject),
+                    'value' => $subject,
+                ])->values()->all(),
+            ];
+        });
     }
 
     private function sortOptions(): array

@@ -30,7 +30,7 @@ export function DetailSummaryGrid({
     helperClassName,
 }: DetailSummaryGridProps) {
     return (
-        <div className={cn('grid gap-4 md:grid-cols-2 xl:grid-cols-4', className)}>
+        <div className={cn('hidden md:grid gap-4 md:grid-cols-2 xl:grid-cols-4', className)}>
             {items.map((item, index) => {
                 const key = item.key ?? (typeof item.label === 'string' ? item.label : index);
 

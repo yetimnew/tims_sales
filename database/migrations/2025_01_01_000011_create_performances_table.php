@@ -52,6 +52,10 @@ return new class extends Migration
             $table->index(['destination_id'], 'idx_performance_destination');
             $table->index(['satus'], 'idx_performance_status');
             $table->index(['is_returned'], 'idx_performance_returned');
+            
+            // Composite indexes for performance optimization
+            $table->index(['DateDispach', 'is_returned'], 'idx_performances_date_returned');
+            $table->index(['load_phase', 'DateDispach'], 'idx_performances_load_phase_date');
         });
     }
 

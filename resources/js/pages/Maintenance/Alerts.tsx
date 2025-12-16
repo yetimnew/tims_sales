@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useListingLoading } from '@/hooks/use-listing-loading';
 import { AlertTriangle, ArrowUpRight, CalendarClock, Clock3, Filter, RefreshCcw, Wrench } from 'lucide-react';
 
 interface MaintenanceParty {
@@ -53,6 +54,8 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
+const TABLE_LOADING_STORAGE_KEY = 'maintenance.alerts.table-loading';
+
 const windowOptions = [7, 14, 21, 30, 45, 60];
 
 const formatStatus = (status: string | null) => {
@@ -73,6 +76,16 @@ const formatDate = (value: string | null) => {
 export default function MaintenanceAlerts({ overdueMaintenance, upcomingMaintenance, filters, summary }: MaintenanceAlertsProps) {
     const currentWindow = filters?.days ?? 7;
 
+    const isDataReady = Array.isArray(overdueMaintenance) && Array.isArray(upcomingMaintenance);
+    const { isLoading: isAlertsLoading } = useListingLoading({
+        storageKey: TABLE_LOADING_STORAGE_KEY,
+        isDataReady,
+        minimumDuration: 200,
+        onlySamePath: true,
+        targetPath: '/maintenance/alerts',
+        initialIsLoading: true,
+    });
+
     const upcomingByType = useMemo(() => {
         const accumulator = new Map<string, number>();
         upcomingMaintenance.forEach((item) => {
@@ -86,10 +99,16 @@ export default function MaintenanceAlerts({ overdueMaintenance, upcomingMaintena
 
     const handleWindowChange = (value: string) => {
         const days = Number(value);
+        if (typeof window !== 'undefined') {
+            window.sessionStorage.setItem(TABLE_LOADING_STORAGE_KEY, 'true');
+        }
         router.get('/maintenance/alerts', { days }, { preserveState: true, preserveScroll: true, replace: true });
     };
 
     const handleRefresh = () => {
+        if (typeof window !== 'undefined') {
+            window.sessionStorage.setItem(TABLE_LOADING_STORAGE_KEY, 'true');
+        }
         router.get('/maintenance/alerts', { days: currentWindow }, { preserveState: true, preserveScroll: true, replace: true });
     };
 
@@ -144,7 +163,7 @@ export default function MaintenanceAlerts({ overdueMaintenance, upcomingMaintena
                                 {summary?.total_overdue ?? overdueMaintenance.length} overdue
                             </Badge>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="relative">
                             {overdueMaintenance.length === 0 ? (
                                 <EmptyState message="No overdue maintenance tasks. Keep it up!" />
                             ) : (
@@ -179,6 +198,13 @@ export default function MaintenanceAlerts({ overdueMaintenance, upcomingMaintena
                                     </TableBody>
                                 </Table>
                             )}
+
+                            {isAlertsLoading && (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
+                                    <img src="/images/loading-spinner.svg" alt="Loading maintenance alerts" className="h-10 w-10" />
+                                    <span className="text-sm text-muted-foreground">Loading maintenance alerts...</span>
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
 
@@ -194,7 +220,7 @@ export default function MaintenanceAlerts({ overdueMaintenance, upcomingMaintena
                                 {summary?.total_upcoming ?? upcomingMaintenance.length} upcoming
                             </Badge>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="relative">
                             {upcomingMaintenance.length === 0 ? (
                                 <EmptyState message="No upcoming maintenance within this window." />
                             ) : (
@@ -229,6 +255,13 @@ export default function MaintenanceAlerts({ overdueMaintenance, upcomingMaintena
                                     </TableBody>
                                 </Table>
                             )}
+
+                            {isAlertsLoading && (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
+                                    <img src="/images/loading-spinner.svg" alt="Loading maintenance alerts" className="h-10 w-10" />
+                                    <span className="text-sm text-muted-foreground">Loading maintenance alerts...</span>
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
                 </div>
@@ -243,7 +276,7 @@ export default function MaintenanceAlerts({ overdueMaintenance, upcomingMaintena
                                 <p className="text-sm text-muted-foreground">Where your next workload is concentrated.</p>
                             </div>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="relative">
                             {upcomingByType.length === 0 ? (
                                 <EmptyState message="No scheduled maintenance within the selected window." />
                             ) : (
@@ -259,6 +292,13 @@ export default function MaintenanceAlerts({ overdueMaintenance, upcomingMaintena
                                             </Badge>
                                         </div>
                                     ))}
+                                </div>
+                            )}
+
+                            {isAlertsLoading && (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
+                                    <img src="/images/loading-spinner.svg" alt="Loading maintenance alerts" className="h-10 w-10" />
+                                    <span className="text-sm text-muted-foreground">Loading maintenance alerts...</span>
                                 </div>
                             )}
                         </CardContent>

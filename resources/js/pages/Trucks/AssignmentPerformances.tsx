@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/table';
 import { InertiaPagination } from '@/components/ui/pagination';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useListingLoading } from '@/hooks/use-listing-loading';
 import {
     Activity,
     ArrowLeft,
@@ -111,6 +112,8 @@ type TrucksAssignmentPerformancesProps = {
     perPage: number;
     perPageOptions: number[];
 };
+
+const TABLE_LOADING_STORAGE_KEY = 'trucks.assignment-performances.table-loading';
 
 const numberFormatter = new Intl.NumberFormat('en-ET');
 const currencyFormatter = new Intl.NumberFormat('en-ET', {
@@ -246,6 +249,16 @@ export default function TrucksAssignmentPerformances({
             ? 'Active'
             : 'Detached';
 
+    const isDataReady = Array.isArray(performances?.data);
+    const { isLoading: isTableLoading } = useListingLoading({
+        storageKey: TABLE_LOADING_STORAGE_KEY,
+        isDataReady,
+        minimumDuration: 200,
+        onlySamePath: true,
+        targetPath: (pathname) => pathname.includes('/trucks/') && pathname.includes('/assignments/') && pathname.includes('/performances'),
+        initialIsLoading: true,
+    });
+
     const handlePerPageChange = (value: string) => {
         router.get(
             `/trucks/${truck.id}/assignments/${assignment.id}/performances`,
@@ -299,7 +312,7 @@ export default function TrucksAssignmentPerformances({
                     </div>
                 </div>
 
-                <div className="grid gap-6 lg:grid-cols-3">
+                <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-3">
                     <Card className="border-0 bg-gradient-to-br from-background to-muted/20 shadow-lg lg:col-span-2">
                         <CardHeader className="border-b bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20">
                             <CardTitle className="flex items-center gap-2 text-lg">
@@ -333,7 +346,7 @@ export default function TrucksAssignmentPerformances({
                         </CardContent>
                     </Card>
 
-                    <Card className="border-0 bg-gradient-to-br from-background to-muted/20 shadow-lg">
+                    <Card className="hidden md:block border-0 bg-gradient-to-br from-background to-muted/20 shadow-lg">
                         <CardHeader className="border-b bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-950/20 dark:to-green-950/20">
                             <CardTitle className="flex items-center gap-2 text-lg">
                                 <BarChart3 className="h-5 w-5 text-emerald-600" /> Summary snapshot
@@ -397,7 +410,7 @@ export default function TrucksAssignmentPerformances({
                         </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                        <div className="hidden md:grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                             <div className="rounded-lg border border-amber-200 bg-amber-50/70 p-4 text-sm dark:border-amber-800 dark:bg-amber-900/20">
                                 <div className="flex items-center gap-2 text-xs uppercase text-muted-foreground">
                                     <Navigation className="h-4 w-4" /> Loaded distance
@@ -432,85 +445,96 @@ export default function TrucksAssignmentPerformances({
                             </div>
                         </div>
 
-                        {performances.data.length > 0 ? (
-                            <div className="rounded-xl border border-slate-200 dark:border-slate-700">
-                                <div className="overflow-x-auto">
-                                    <div className="max-h-[28rem] overflow-y-auto">
-                                        <Table className="min-w-[1100px]">
-                                            <TableHeader className="bg-slate-50/80 dark:bg-slate-900/40">
-                                                <TableRow>
-                                                    <TableHead className="w-[140px]">Dispatch</TableHead>
-                                                    <TableHead>Route</TableHead>
-                                                    <TableHead className="text-right">Distance</TableHead>
-                                                    <TableHead className="text-right">Fuel</TableHead>
-                                                    <TableHead className="text-right">Cargo</TableHead>
-                                                    <TableHead>Status</TableHead>
-                                                    <TableHead className="text-right">Ton-KM</TableHead>
-                                                    <TableHead className="text-right">Actions</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {performances.data.map((row) => {
-                                                    const route = [row.origin?.name, row.destination?.name].filter(Boolean).join(' → ') || 'N/A';
-                                                    const statusTone = row.is_returned ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200' : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200';
+                        <div className="relative min-h-[200px]">
+                            {performances.data.length > 0 ? (
+                                <div className="rounded-xl border border-slate-200 dark:border-slate-700">
+                                    <div className="overflow-x-auto">
+                                        <div className="max-h-[28rem] overflow-y-auto">
+                                            <Table className="min-w-[1100px]">
+                                                <TableHeader className="bg-slate-50/80 dark:bg-slate-900/40">
+                                                    <TableRow>
+                                                        <TableHead className="w-[140px]">Dispatch</TableHead>
+                                                        <TableHead>Route</TableHead>
+                                                        <TableHead className="text-right">Distance</TableHead>
+                                                        <TableHead className="text-right">Fuel</TableHead>
+                                                        <TableHead className="text-right">Cargo</TableHead>
+                                                        <TableHead>Status</TableHead>
+                                                        <TableHead className="text-right">Ton-KM</TableHead>
+                                                        <TableHead className="text-right">Actions</TableHead>
+                                                    </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {performances.data.map((row) => {
+                                                        const route = [row.origin?.name, row.destination?.name].filter(Boolean).join(' → ') || 'N/A';
+                                                        const statusTone = row.is_returned ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200' : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200';
 
-                                                    return (
-                                                        <TableRow key={row.id} className="bg-white/70 transition hover:bg-blue-50/60 dark:bg-slate-900/60 dark:hover:bg-blue-950/30">
-                                                            <TableCell className="font-medium text-slate-900 dark:text-slate-100">
-                                                                <div>{formatDate(row.DateDispach, shortDateFormatter)}</div>
-                                                                <div className="text-xs text-muted-foreground">Duration {formatDays(row.trip_duration_days, 0)}</div>
-                                                            </TableCell>
-                                                            <TableCell>
-                                                                <div className="text-sm font-medium text-slate-900 dark:text-slate-100">{route}</div>
-                                                                {row.operation?.number && (
-                                                                    <div className="text-xs text-muted-foreground">Op #{row.operation.number}</div>
-                                                                )}
-                                                            </TableCell>
-                                                            <TableCell className="text-right text-sm font-semibold">
-                                                                {formatKilometers(row.total_distance_km, 1)}
-                                                                <div className="text-xs text-muted-foreground">
-                                                                    Loaded {formatKilometers(row.DistanceWCargo, 1)}
-                                                                </div>
-                                                            </TableCell>
-                                                            <TableCell className="text-right text-sm font-semibold">
-                                                                {formatNumber(row.fuelInLitter, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} L
-                                                                <div className="text-xs text-muted-foreground">{formatCurrency(row.fuelInBirr)}</div>
-                                                            </TableCell>
-                                                            <TableCell className="text-right text-sm font-semibold">
-                                                                {formatTons(row.cargo_weight_tons ?? row.cargo_volume_mt, 1)}
-                                                            </TableCell>
-                                                            <TableCell className="text-sm">
-                                                                <div className="flex flex-col gap-2">
-                                                                    <Badge className={statusTone}>{row.is_returned ? 'Returned' : 'In transit'}</Badge>
-                                                                    {row.satus && <Badge className={statusBadgeTone(row.satus)}>{row.satus}</Badge>}
-                                                                </div>
-                                                            </TableCell>
-                                                            <TableCell className="text-right text-sm font-semibold">
-                                                                {formatNumber(row.tonkm, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                            </TableCell>
-                                                            <TableCell className="text-right">
-                                                                <Button variant="ghost" size="sm" asChild>
-                                                                    <Link href={`/performances/${row.id}`} className="inline-flex items-center gap-1">
-                                                                        View
-                                                                        <ArrowUpRight className="h-4 w-4" />
-                                                                    </Link>
-                                                                </Button>
-                                                            </TableCell>
-                                                        </TableRow>
-                                                    );
-                                                })}
-                                            </TableBody>
-                                        </Table>
+                                                        return (
+                                                            <TableRow key={row.id} className="bg-white/70 transition hover:bg-blue-50/60 dark:bg-slate-900/60 dark:hover:bg-blue-950/30">
+                                                                <TableCell className="font-medium text-slate-900 dark:text-slate-100">
+                                                                    <div>{formatDate(row.DateDispach, shortDateFormatter)}</div>
+                                                                    <div className="text-xs text-muted-foreground">Duration {formatDays(row.trip_duration_days, 0)}</div>
+                                                                </TableCell>
+                                                                <TableCell>
+                                                                    <div className="text-sm font-medium text-slate-900 dark:text-slate-100">{route}</div>
+                                                                    {row.operation?.number && (
+                                                                        <div className="text-xs text-muted-foreground">Op #{row.operation.number}</div>
+                                                                    )}
+                                                                </TableCell>
+                                                                <TableCell className="text-right text-sm font-semibold">
+                                                                    {formatKilometers(row.total_distance_km, 1)}
+                                                                    <div className="text-xs text-muted-foreground">
+                                                                        Loaded {formatKilometers(row.DistanceWCargo, 1)}
+                                                                    </div>
+                                                                </TableCell>
+                                                                <TableCell className="text-right text-sm font-semibold">
+                                                                    {formatNumber(row.fuelInLitter, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} L
+                                                                    <div className="text-xs text-muted-foreground">{formatCurrency(row.fuelInBirr)}</div>
+                                                                </TableCell>
+                                                                <TableCell className="text-right text-sm font-semibold">
+                                                                    {formatTons(row.cargo_weight_tons ?? row.cargo_volume_mt, 1)}
+                                                                </TableCell>
+                                                                <TableCell className="text-sm">
+                                                                    <div className="flex flex-col gap-2">
+                                                                        <Badge className={statusTone}>{row.is_returned ? 'Returned' : 'In transit'}</Badge>
+                                                                        {row.satus && <Badge className={statusBadgeTone(row.satus)}>{row.satus}</Badge>}
+                                                                    </div>
+                                                                </TableCell>
+                                                                <TableCell className="text-right text-sm font-semibold">
+                                                                    {formatNumber(row.tonkm, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                </TableCell>
+                                                                <TableCell className="text-right">
+                                                                    <Button variant="ghost" size="sm" asChild>
+                                                                        <Link href={`/performances/${row.id}`} className="inline-flex items-center gap-1">
+                                                                            View
+                                                                            <ArrowUpRight className="h-4 w-4" />
+                                                                        </Link>
+                                                                    </Button>
+                                                                </TableCell>
+                                                            </TableRow>
+                                                        );
+                                                    })}
+                                                </TableBody>
+                                            </Table>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ) : (
-                            <div className="py-12 text-center text-muted-foreground">
-                                <Activity className="mx-auto mb-4 h-12 w-12 opacity-60" />
-                                <p className="text-lg font-semibold text-slate-900 dark:text-slate-100">No performance records found</p>
-                                <p className="mt-2 text-sm">Records will appear here once performances are captured for this assignment.</p>
-                            </div>
-                        )}
+                            ) : (
+                                <div className="flex flex-col items-center justify-center gap-4 py-12 text-center text-muted-foreground">
+                                    <Activity className="h-12 w-12 opacity-60" />
+                                    <div>
+                                        <p className="text-lg font-semibold text-slate-900 dark:text-slate-100">No performance records found</p>
+                                        <p className="mt-2 text-sm">Records will appear here once performances are captured for this assignment.</p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {isTableLoading && (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
+                                    <img src="/images/loading-spinner.svg" alt="Loading performances" className="h-12 w-12" />
+                                    <span className="text-sm text-muted-foreground">Loading performances...</span>
+                                </div>
+                            )}
+                        </div>
 
                         <InertiaPagination
                             links={performances.links}

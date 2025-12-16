@@ -168,7 +168,13 @@ export default function ActivityLogsIndex({ logs, metrics, filters, filterOption
     const { hasPermission } = usePermissions();
     const canExport = hasPermission('activity-logs.export');
     const isDataReady = Array.isArray(logs?.data);
-    const { isLoading } = useListingLoading({ storageKey: SKELETON_FLAG_KEY, isDataReady, onlySamePath: true });
+    const { isLoading } = useListingLoading({
+        storageKey: SKELETON_FLAG_KEY,
+        isDataReady,
+        onlySamePath: true,
+        targetPath: '/activity-logs',
+        initialIsLoading: true,
+    });
 
     const [searchTerm, setSearchTerm] = useState(filters.search ?? '');
     const [selectedUser, setSelectedUser] = useState(() => (filters.causer_id ? String(filters.causer_id) : 'all'));

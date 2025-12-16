@@ -209,6 +209,9 @@ export default function OutsourcesIndex({
     const { isLoading } = useListingLoading({
         storageKey: SKELETON_FLAG_KEY,
         isDataReady,
+        onlySamePath: true,
+        targetPath: '/outsources',
+        initialIsLoading: true,
     });
 
     const rowOffset = Math.max((outsources?.from ?? 1) - 1, 0);

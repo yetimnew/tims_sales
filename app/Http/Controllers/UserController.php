@@ -13,6 +13,7 @@ use Carbon\CarbonInterface;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -80,16 +81,19 @@ class UserController extends Controller
             ->paginate($perPage)
             ->withQueryString();
 
-        $roleOptions = Role::query()
-            ->orderBy('name')
-            ->get(['name', 'guard_name'])
-            ->map(static fn (Role $roleModel) => [
-                'label' => Str::headline($roleModel->name),
-                'value' => $roleModel->name,
-                'guard' => $roleModel->guard_name,
-            ])
-            ->values()
-            ->all();
+        // Cache role options (1 hour) - changes when roles are added/removed
+        $roleOptions = Cache::remember('users.role_options', 3600, function () {
+            return Role::query()
+                ->orderBy('name')
+                ->get(['name', 'guard_name'])
+                ->map(static fn (Role $roleModel) => [
+                    'label' => Str::headline($roleModel->name),
+                    'value' => $roleModel->name,
+                    'guard' => $roleModel->guard_name,
+                ])
+                ->values()
+                ->all();
+        });
 
         $statusOptions = [
             ['label' => 'All statuses', 'value' => 'all'],
@@ -131,10 +135,17 @@ class UserController extends Controller
      */
     public function create(): Response
     {
-        $roles = Role::all();
-        $notificationTypes = NotificationType::query()
-            ->orderBy('name')
-            ->get(['id', 'key', 'name', 'description', 'default_in_app', 'default_email']);
+        // Cache roles (1 hour) - changes when roles are added/removed
+        $roles = Cache::remember('users.create_roles', 3600, function () {
+            return Role::all();
+        });
+
+        // Cache notification types (1 hour) - rarely changes
+        $notificationTypes = Cache::remember('users.create_notification_types', 3600, function () {
+            return NotificationType::query()
+                ->orderBy('name')
+                ->get(['id', 'key', 'name', 'description', 'default_in_app', 'default_email']);
+        });
 
         return Inertia::render('Users/Create', [
             'roles' => $roles,
@@ -221,6 +232,11 @@ class UserController extends Controller
 
             event(new UserCreated($user, Auth::user()));
 
+            // Clear cached role options when user is created
+            Cache::forget('users.role_options');
+            // Clear activity log filter options (users list may change)
+            Cache::forget('activity_logs.filter_options');
+
             return redirect()->route('users.index')
                 ->with('success', 'User created successfully.');
 
@@ -260,7 +276,10 @@ class UserController extends Controller
     public function edit(User $user): Response
     {
         $user->load('roles');
-        $roles = Role::all();
+        // Cache roles (1 hour) - changes when roles are added/removed
+        $roles = Cache::remember('users.create_roles', 3600, function () {
+            return Role::all();
+        });
 
         return Inertia::render('Users/Edit', [
             'user' => $user,
@@ -322,6 +341,11 @@ class UserController extends Controller
                 event(new UserUpdated($user, $changes, Auth::user()));
             }
 
+            // Clear cached role options if role changed
+            if (isset($changes['role'])) {
+                Cache::forget('users.role_options');
+            }
+
             return redirect()->route('users.index')
                 ->with('success', 'User updated successfully.');
 
@@ -381,6 +405,9 @@ class UserController extends Controller
                 ],
                 Auth::user(),
             ));
+
+            // Clear cached role options when user is deleted
+            Cache::forget('users.role_options');
 
             return redirect()->route('users.index')
                 ->with('success', 'User deleted successfully.');

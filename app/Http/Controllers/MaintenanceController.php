@@ -12,6 +12,7 @@ use App\Models\VehicleMaintenanceRecord;
 use App\Services\MaintenanceService;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -167,20 +168,26 @@ class MaintenanceController extends Controller
             'average_cost' => (float) (clone $metricsQuery)->avg('cost'),
         ];
 
-        $statusOptions = VehicleMaintenanceRecord::query()
-            ->select('status')
-            ->distinct()
-            ->whereNotNull('status')
-            ->orderBy('status')
-            ->get()
-            ->map(fn ($record) => [
-                'label' => Str::of($record->status)->replace('_', ' ')->headline(),
-                'value' => $record->status,
-            ])->values();
+        // Cache status options (1 hour) - rarely changes
+        $statusOptions = Cache::remember('maintenance.status_options', 3600, function () {
+            return VehicleMaintenanceRecord::query()
+                ->select('status')
+                ->distinct()
+                ->whereNotNull('status')
+                ->orderBy('status')
+                ->get()
+                ->map(fn ($record) => [
+                    'label' => Str::of($record->status)->replace('_', ' ')->headline(),
+                    'value' => $record->status,
+                ])->values();
+        });
 
-        $maintenanceTypes = MaintenanceType::query()
-            ->orderBy('name')
-            ->get(['id', 'name']);
+        // Cache maintenance types (1 hour) - rarely changes
+        $maintenanceTypes = Cache::remember('maintenance.maintenance_type_options', 3600, function () {
+            return MaintenanceType::query()
+                ->orderBy('name')
+                ->get(['id', 'name']);
+        });
 
         return Inertia::render('Maintenance/Index', [
             'maintenanceRecords' => $maintenanceRecords,
@@ -303,46 +310,55 @@ class MaintenanceController extends Controller
      */
     public function create(): Response
     {
-        $trucks = Truck::query()
-            ->where('status', 'active')
-            ->orderBy('plate')
-            ->get()
-            ->map(fn (Truck $truck) => [
-                'id' => $truck->id,
-                'plate' => $truck->plate,
-                'model' => $truck->model,
-            ])
-            ->values();
+        // Cache trucks list (1 hour) - changes when trucks are added/removed
+        $trucks = Cache::remember('maintenance.create_trucks', 3600, function () {
+            return Truck::query()
+                ->where('status', 'active')
+                ->orderBy('plate')
+                ->get()
+                ->map(fn (Truck $truck) => [
+                    'id' => $truck->id,
+                    'plate' => $truck->plate,
+                    'model' => $truck->model,
+                ])
+                ->values();
+        });
 
-        $maintenanceTypes = MaintenanceType::query()
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->get()
-            ->map(fn (MaintenanceType $type) => [
-                'id' => $type->id,
-                'name' => $type->name,
-                'category' => $type->category,
-            ])
-            ->values();
+        // Cache maintenance types (1 hour) - changes when types are added/removed
+        $maintenanceTypes = Cache::remember('maintenance.create_maintenance_types', 3600, function () {
+            return MaintenanceType::query()
+                ->where('is_active', true)
+                ->orderBy('name')
+                ->get()
+                ->map(fn (MaintenanceType $type) => [
+                    'id' => $type->id,
+                    'name' => $type->name,
+                    'category' => $type->category,
+                ])
+                ->values();
+        });
 
-        $mechanics = User::query()
-            ->whereHas('roles', fn ($query) => $query->where('name', 'mechanic'))
-            ->orderBy('name')
-            ->get(['id', 'name', 'email']);
-
-        if ($mechanics->isEmpty()) {
+        // Cache mechanics (1 hour) - changes when users/roles change
+        $mechanics = Cache::remember('maintenance.create_mechanics', 3600, function () {
             $mechanics = User::query()
+                ->whereHas('roles', fn ($query) => $query->where('name', 'mechanic'))
                 ->orderBy('name')
                 ->get(['id', 'name', 'email']);
-        }
 
-        $mechanics = $mechanics
-            ->map(fn (User $user) => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-            ])
-            ->values();
+            if ($mechanics->isEmpty()) {
+                $mechanics = User::query()
+                    ->orderBy('name')
+                    ->get(['id', 'name', 'email']);
+            }
+
+            return $mechanics
+                ->map(fn (User $user) => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                ])
+                ->values();
+        });
 
         $statusOptions = collect(['scheduled', 'in_progress', 'completed', 'overdue'])
             ->map(fn (string $status) => [
@@ -383,46 +399,55 @@ class MaintenanceController extends Controller
      */
     public function edit(VehicleMaintenanceRecord $maintenance): Response
     {
-        $trucks = Truck::query()
-            ->where('status', 'active')
-            ->orderBy('plate')
-            ->get()
-            ->map(fn (Truck $truck) => [
-                'id' => $truck->id,
-                'plate' => $truck->plate,
-                'model' => $truck->model,
-            ])
-            ->values();
+        // Cache trucks list (1 hour) - changes when trucks are added/removed
+        $trucks = Cache::remember('maintenance.create_trucks', 3600, function () {
+            return Truck::query()
+                ->where('status', 'active')
+                ->orderBy('plate')
+                ->get()
+                ->map(fn (Truck $truck) => [
+                    'id' => $truck->id,
+                    'plate' => $truck->plate,
+                    'model' => $truck->model,
+                ])
+                ->values();
+        });
 
-        $maintenanceTypes = MaintenanceType::query()
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->get()
-            ->map(fn (MaintenanceType $type) => [
-                'id' => $type->id,
-                'name' => $type->name,
-                'category' => $type->category,
-            ])
-            ->values();
+        // Cache maintenance types (1 hour) - changes when types are added/removed
+        $maintenanceTypes = Cache::remember('maintenance.create_maintenance_types', 3600, function () {
+            return MaintenanceType::query()
+                ->where('is_active', true)
+                ->orderBy('name')
+                ->get()
+                ->map(fn (MaintenanceType $type) => [
+                    'id' => $type->id,
+                    'name' => $type->name,
+                    'category' => $type->category,
+                ])
+                ->values();
+        });
 
-        $mechanics = User::query()
-            ->whereHas('roles', fn ($query) => $query->where('name', 'mechanic'))
-            ->orderBy('name')
-            ->get(['id', 'name', 'email']);
-
-        if ($mechanics->isEmpty()) {
+        // Cache mechanics (1 hour) - changes when users/roles change
+        $mechanics = Cache::remember('maintenance.create_mechanics', 3600, function () {
             $mechanics = User::query()
+                ->whereHas('roles', fn ($query) => $query->where('name', 'mechanic'))
                 ->orderBy('name')
                 ->get(['id', 'name', 'email']);
-        }
 
-        $mechanics = $mechanics
-            ->map(fn (User $user) => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-            ])
-            ->values();
+            if ($mechanics->isEmpty()) {
+                $mechanics = User::query()
+                    ->orderBy('name')
+                    ->get(['id', 'name', 'email']);
+            }
+
+            return $mechanics
+                ->map(fn (User $user) => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                ])
+                ->values();
+        });
 
         $statusOptions = collect(['scheduled', 'in_progress', 'completed', 'overdue'])
             ->map(fn (string $status) => [
@@ -453,6 +478,13 @@ class MaintenanceController extends Controller
                 $validated['maintenance_type_id'],
                 $validated
             );
+
+            // Clear cached options
+            Cache::forget('maintenance.status_options');
+            Cache::forget('maintenance.maintenance_type_options');
+            // Clear report caches
+            Cache::forget('reports.maintenance.status_options');
+            Cache::forget('reports.maintenance.service_provider_options');
 
             $isInertiaRequest = (bool) $request->header('X-Inertia');
 
@@ -502,6 +534,15 @@ class MaintenanceController extends Controller
 
             $this->maintenanceService->updateMaintenance($maintenance, $validated);
 
+            // Clear cached options if status or maintenance_type changed
+            Cache::forget('maintenance.status_options');
+            Cache::forget('maintenance.maintenance_type_options');
+            // Clear report caches
+            Cache::forget('reports.maintenance.status_options');
+            if (isset($changes['service_provider'])) {
+                Cache::forget('reports.maintenance.service_provider_options');
+            }
+
             return redirect()->route('maintenance.index')
                 ->with('success', 'Maintenance record updated successfully.');
 
@@ -520,6 +561,9 @@ class MaintenanceController extends Controller
 
             $this->maintenanceService->completeMaintenance($maintenance->id, $validated);
 
+            // Clear cached options (status changed to completed)
+            Cache::forget('maintenance.status_options');
+
             return redirect()->route('maintenance.index')
                 ->with('success', 'Maintenance completed successfully.');
 
@@ -535,6 +579,13 @@ class MaintenanceController extends Controller
     {
         try {
             $maintenance->delete();
+
+            // Clear cached options
+            Cache::forget('maintenance.status_options');
+            Cache::forget('maintenance.maintenance_type_options');
+            // Clear report caches
+            Cache::forget('reports.maintenance.status_options');
+            Cache::forget('reports.maintenance.service_provider_options');
 
             return redirect()->route('maintenance.index')
                 ->with('success', 'Maintenance record deleted successfully.');

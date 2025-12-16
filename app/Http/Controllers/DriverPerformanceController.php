@@ -7,6 +7,7 @@ use App\Models\Truck;
 use App\Models\DriverPerformanceRecord;
 use App\Models\DriverSafetyRecord;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Support\Facades\Log;
@@ -24,7 +25,8 @@ class DriverPerformanceController extends Controller
             ->orderBy('record_date', 'desc')
             ->paginate(15);
 
-        $statistics = $this->getPerformanceStatistics();
+        // Cache statistics for 5 minutes - they change frequently but don't need real-time accuracy
+        $statistics = Cache::remember('driver_performance.statistics', 300, fn () => $this->getPerformanceStatistics());
 
         return Inertia::render('DriverPerformance/Index', [
             'performanceRecords' => $performanceRecords,
@@ -37,8 +39,15 @@ class DriverPerformanceController extends Controller
      */
     public function create(): Response
     {
-        $drivers = Driver::where('status', 'active')->get();
-        $trucks = Truck::where('status', 'active')->get();
+        // Cache active drivers (1 hour) - changes when drivers are added/removed
+        $drivers = Cache::remember('driver_performance.create_drivers', 3600, function () {
+            return Driver::where('status', 'active')->get();
+        });
+
+        // Cache active trucks (1 hour) - changes when trucks are added/removed
+        $trucks = Cache::remember('driver_performance.create_trucks', 3600, function () {
+            return Truck::where('status', 'active')->get();
+        });
 
         return Inertia::render('DriverPerformance/Create', [
             'drivers' => $drivers,
@@ -108,8 +117,15 @@ class DriverPerformanceController extends Controller
      */
     public function edit(DriverPerformanceRecord $driverPerformance): Response
     {
-        $drivers = Driver::where('status', 'active')->get();
-        $trucks = Truck::where('status', 'active')->get();
+        // Cache active drivers (1 hour) - changes when drivers are added/removed
+        $drivers = Cache::remember('driver_performance.create_drivers', 3600, function () {
+            return Driver::where('status', 'active')->get();
+        });
+
+        // Cache active trucks (1 hour) - changes when trucks are added/removed
+        $trucks = Cache::remember('driver_performance.create_trucks', 3600, function () {
+            return Truck::where('status', 'active')->get();
+        });
 
         return Inertia::render('DriverPerformance/Edit', [
             'driverPerformance' => $driverPerformance,

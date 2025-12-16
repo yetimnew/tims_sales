@@ -34,6 +34,10 @@ return new class extends Migration
             $table->index(['truck_id', 'status'], 'idx_driver_truck_truck_status');
             $table->index(['date_recived'], 'idx_driver_truck_date_recived');
             $table->index(['date_detach'], 'idx_driver_truck_date_detach');
+            
+            // Composite indexes for performance optimization
+            $table->index(['truck_id', 'is_attached'], 'idx_driver_truck_truck_attached');
+            $table->index(['driver_id', 'is_attached'], 'idx_driver_truck_driver_attached');
         });
     }
 

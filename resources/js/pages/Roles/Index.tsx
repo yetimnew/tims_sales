@@ -181,6 +181,9 @@ export default function RolesIndex({ roles, filters, permissionGroupOptions, per
     const { isLoading } = useListingLoading({
         storageKey: SKELETON_FLAG_KEY,
         isDataReady,
+        onlySamePath: true,
+        targetPath: '/roles',
+        initialIsLoading: true,
     });
 
     React.useEffect(() => {

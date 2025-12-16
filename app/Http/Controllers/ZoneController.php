@@ -10,6 +10,7 @@ use App\Models\Zone;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -55,11 +56,24 @@ class ZoneController extends Controller
 
         $zones = $query->paginate(15)->withQueryString();
 
-        $metrics = [
-            'totalPopulation' => (int) ((clone $metricsQuery)->sum('population') ?? 0),
-            'averageAccessibility' => round((float) (((clone $metricsQuery)->avg('accessibility_score')) ?? 0), 2),
-            'surveyedCount' => (clone $metricsQuery)->whereNotNull('infrastructure_notes')->count(),
-        ];
+        // Cache metrics only when no filters applied (1 hour)
+        $search = $request->input('search');
+        $cacheKey = 'zones.metrics';
+        if (empty($search)) {
+            $metrics = Cache::remember($cacheKey, 3600, function () use ($metricsQuery) {
+                return [
+                    'totalPopulation' => (int) ((clone $metricsQuery)->sum('population') ?? 0),
+                    'averageAccessibility' => round((float) (((clone $metricsQuery)->avg('accessibility_score')) ?? 0), 2),
+                    'surveyedCount' => (clone $metricsQuery)->whereNotNull('infrastructure_notes')->count(),
+                ];
+            });
+        } else {
+            $metrics = [
+                'totalPopulation' => (int) ((clone $metricsQuery)->sum('population') ?? 0),
+                'averageAccessibility' => round((float) (((clone $metricsQuery)->avg('accessibility_score')) ?? 0), 2),
+                'surveyedCount' => (clone $metricsQuery)->whereNotNull('infrastructure_notes')->count(),
+            ];
+        }
 
         return Inertia::render('Zones/Index', [
             'zones' => $zones,
@@ -72,7 +86,10 @@ class ZoneController extends Controller
      */
     public function create(): Response
     {
-        $regions = Region::orderBy('name')->get();
+        // Cache regions list (1 hour) - changes when regions are added/removed
+        $regions = Cache::remember('zones.create_regions', 3600, function () {
+            return Region::orderBy('name')->get();
+        });
 
         return Inertia::render('Zones/Create', [
             'regions' => $regions,
@@ -115,6 +132,10 @@ class ZoneController extends Controller
 
             event(new ZoneCreated($zone, Auth::user()));
 
+            // Clear cached data
+            Cache::forget('zones.metrics');
+            Cache::forget('woredas.create_zones'); // Clear woredas create form cache
+
             return redirect()->route('zones.index')
                 ->with('success', 'Zone created successfully.');
 
@@ -152,7 +173,10 @@ class ZoneController extends Controller
      */
     public function edit(Zone $zone): Response
     {
-        $regions = Region::orderBy('name')->get();
+        // Cache regions list (1 hour)
+        $regions = Cache::remember('zones.create_regions', 3600, function () {
+            return Region::orderBy('name')->get();
+        });
 
         return Inertia::render('Zones/Edit', [
             'zone' => $zone,
@@ -212,6 +236,10 @@ class ZoneController extends Controller
                 event(new ZoneUpdated($zone->fresh('region'), $changes, Auth::user()));
             }
 
+            // Clear cached data
+            Cache::forget('zones.metrics');
+            Cache::forget('woredas.create_zones'); // Clear woredas create form cache
+
             return redirect()->route('zones.index')
                 ->with('success', 'Zone updated successfully.');
 
@@ -251,6 +279,10 @@ class ZoneController extends Controller
 
             event(new ZoneDeleted($zoneId, $zoneName, $regionId, $zoneData, Auth::user()));
 
+            // Clear cached data
+            Cache::forget('zones.metrics');
+            Cache::forget('woredas.create_zones'); // Clear woredas create form cache
+
             return redirect()->route('zones.index')
                 ->with('success', 'Zone deleted successfully.');
 
@@ -272,6 +304,9 @@ class ZoneController extends Controller
     {
         try {
             $zone->update(['status' => 'inactive']);
+
+            // Clear cached data
+            Cache::forget('zones.metrics');
 
             return redirect()->route('zones.index')
                 ->with('success', 'Zone deactivated successfully.');

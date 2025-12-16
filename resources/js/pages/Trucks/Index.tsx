@@ -7,7 +7,6 @@ import { ListingStatsHeader } from '@/components/listing/stats-header';
 import { ListingFilterBar } from '@/components/listing/filter-bar';
 import { ListingTableShell } from '@/components/listing/data-table-shell';
 import { ListingMobileItemList } from '@/components/listing/mobile-item-list';
-import { ListingLoadingPlaceholder } from '@/components/listing/loading-placeholder';
 import { ListingPaginationFooter } from '@/components/listing/pagination-footer';
 import { ListingRowActionsMenu } from '@/components/listing/row-actions-menu';
 import { usePermissions } from '@/hooks/use-permissions';
@@ -32,7 +31,6 @@ import {
     Users,
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Skeleton } from '@/components/ui/skeleton';
 import * as React from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -41,6 +39,8 @@ const breadcrumbs: BreadcrumbItem[] = [
         href: '/trucks',
     },
 ];
+
+const TABLE_LOADING_STORAGE_KEY = 'trucks.index.table-loading';
 
 interface TruckData {
     id: number;
@@ -146,8 +146,6 @@ type NavigateOverrides = {
     per_page?: number;
 };
 
-const SKELETON_FLAG_KEY = 'trucks.index.shouldShowSkeleton';
-
 const columns: Array<{ key: string; label: string }> = [
     { key: 'plate', label: 'Plate' },
     { key: 'vehicleType', label: 'Vehicle Type' },
@@ -190,6 +188,15 @@ export default function TrucksIndex({
     perPageOptions,
 }: TrucksIndexProps) {
     const { hasPermission } = usePermissions();
+    const isDataReady = Array.isArray(trucks?.data);
+    const { isLoading: isTableLoading } = useListingLoading({
+        storageKey: TABLE_LOADING_STORAGE_KEY,
+        isDataReady,
+        minimumDuration: 200,
+        onlySamePath: true, // Still show loading for same-path navigation (pagination, filtering)
+        targetPath: '/trucks', // Show loading when navigating TO /trucks from any other page
+        initialIsLoading: true, // Show skeleton immediately on initial mount
+    });
 
     const [searchTerm, setSearchTerm] = React.useState(filters?.search ?? '');
     const [selectedStatus, setSelectedStatus] = React.useState(filters?.status ?? 'all');
@@ -203,12 +210,6 @@ export default function TrucksIndex({
     const [selectedTruck, setSelectedTruck] = React.useState<TruckData | null>(null);
     const [isDeleting, setIsDeleting] = React.useState(false);
     const [deleteError, setDeleteError] = React.useState<string | null>(null);
-
-    const isDataReady = Array.isArray(trucks?.data);
-    const { isLoading } = useListingLoading({
-        storageKey: SKELETON_FLAG_KEY,
-        isDataReady,
-    });
 
     const availablePerPageOptions = React.useMemo(
         () => (perPageOptions?.length ? perPageOptions : [10, 15, 25, 50]),
@@ -341,10 +342,6 @@ export default function TrucksIndex({
                 }
             });
 
-            if (typeof window !== 'undefined') {
-                window.sessionStorage.setItem(SKELETON_FLAG_KEY, 'true');
-            }
-
             router.get('/trucks', params, { preserveState: true, replace: false });
         },
         [searchTerm, selectedStatus, selectedVehicleType, sortBy, sortDirection, perPage],
@@ -454,78 +451,54 @@ export default function TrucksIndex({
             label: 'Total Trucks',
             icon: <Truck className="h-3.5 w-3.5 text-blue-600" />,
             className: 'min-w-[220px] flex-shrink-0',
-            value: isLoading ? <Skeleton className="h-3.5 w-20" aria-hidden="true" /> : truckCount.toLocaleString(),
-            description: isLoading ? (
-                <Skeleton className="h-3 w-24" aria-hidden="true" />
-            ) : (
-                'All vehicles'
-            ),
-            valueClassName: isLoading ? undefined : 'text-blue-600',
+            value: truckCount.toLocaleString(),
+            description: 'All vehicles',
+            valueClassName: 'text-blue-600',
         },
         {
             id: 'active-trucks',
             label: 'Active',
             icon: <CheckCircle className="h-3.5 w-3.5 text-green-600" />,
             className: 'min-w-[220px] flex-shrink-0',
-            value: isLoading ? <Skeleton className="h-3.5 w-16" aria-hidden="true" /> : activeCount.toLocaleString(),
-            description: isLoading ? (
-                <Skeleton className="h-3 w-28" aria-hidden="true" />
-            ) : (
-                `${maintenanceCount.toLocaleString()} in maintenance`
-            ),
-            valueClassName: isLoading ? undefined : 'text-green-600',
+            value: activeCount.toLocaleString(),
+            description: `${maintenanceCount.toLocaleString()} in maintenance`,
+            valueClassName: 'text-green-600',
         },
         {
             id: 'fleet-value',
             label: 'Fleet Value',
             icon: <DollarSign className="h-3.5 w-3.5 text-purple-600" />,
             className: 'min-w-[220px] flex-shrink-0',
-            value: isLoading ? <Skeleton className="h-3.5 w-24" aria-hidden="true" /> : fleetValueDisplay,
-            description: isLoading ? (
-                <Skeleton className="h-3 w-20" aria-hidden="true" />
-            ) : (
-                'Total fleet value'
-            ),
-            valueClassName: isLoading ? undefined : 'text-purple-600',
+            value: fleetValueDisplay,
+            description: 'Total fleet value',
+            valueClassName: 'text-purple-600',
         },
         {
             id: 'revenue',
             label: `Revenue (${financialWindowDays}d)`,
             icon: <TrendingUp className="h-3.5 w-3.5 text-emerald-600" />,
             className: 'min-w-[220px] flex-shrink-0',
-            value: isLoading ? <Skeleton className="h-3.5 w-24" aria-hidden="true" /> : revenueDisplay,
-            description: isLoading ? (
-                <Skeleton className="h-3 w-28" aria-hidden="true" />
-            ) : (
-                tonKmPerBirrDisplay
-            ),
-            valueClassName: isLoading ? undefined : 'text-emerald-600',
+            value: revenueDisplay,
+            description: tonKmPerBirrDisplay,
+            valueClassName: 'text-emerald-600',
         },
         {
             id: 'driver-churn',
             label: `Driver Churn (${churnWindowDays}d)`,
             icon: <Users className="h-3.5 w-3.5 text-rose-600" />,
             className: 'min-w-[220px] flex-shrink-0',
-            value: isLoading ? <Skeleton className="h-3.5 w-24" aria-hidden="true" /> : averageTenureDisplay,
-            description: isLoading ? (
-                <Skeleton className="h-3 w-28" aria-hidden="true" />
-            ) : (
-                highChurnDescription
-            ),
-            valueClassName: isLoading ? undefined : churnValueClass,
+            value: averageTenureDisplay,
+            description: highChurnDescription,
+            valueClassName: churnValueClass,
         },
         {
             id: 'utilization',
             label: `Utilization (${utilization?.window_days ?? 30}d)`,
             icon: <Gauge className="h-3.5 w-3.5 text-slate-600" />,
             className: 'min-w-[220px] flex-shrink-0',
-            value: isLoading ? <Skeleton className="h-3.5 w-20" aria-hidden="true" /> : utilizationRateDisplay,
-            description: isLoading ? (
-                <Skeleton className="h-3 w-28" aria-hidden="true" />
-            ) : (
-                utilizationDescription
-            ),
-            valueClassName: isLoading ? undefined : utilizationValueClass,
+            value: utilizationRateDisplay,
+            description: utilizationDescription,
+            valueClassName: utilizationValueClass,
         },
     ];
 
@@ -575,80 +548,67 @@ export default function TrucksIndex({
         );
     };
 
-    const tableRows = isLoading
-        ? Array.from({ length: 6 }).map((_, rowIndex) => (
-              <TableRow key={`truck-skeleton-${rowIndex}`} aria-hidden="true">
-                  {tableColumns.map((column) => (
-                      <TableCell
-                          key={`${column.id}-${rowIndex}`}
-                          className={column.align === 'center' ? 'text-center' : undefined}
-                      >
-                          <Skeleton className="mx-auto h-4 w-24 max-w-full" />
-                      </TableCell>
-                  ))}
+    const tableRows = trucks?.data && trucks.data.length > 0
+        ? trucks.data.map((truck, index) => (
+              <TableRow key={truck.id} className="hover:bg-muted/50">
+                  <TableCell className="text-center font-medium">
+                      {rowOffset + index + 1}
+                  </TableCell>
+                  <TableCell className="font-medium">{truck.plate}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                      {truck.vehicleType?.name || 'N/A'}
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                      {truck.chasisNumber || '—'}
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                      {truck.engineNumber || '—'}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                      {truck.serviceIntervalKM
+                          ? `${truck.serviceIntervalKM.toLocaleString()} km`
+                          : '—'}
+                  </TableCell>
+                  <TableCell className="font-medium">
+                      {formatETBCurrency(truck.purchasePrice)}
+                  </TableCell>
+                  <TableCell className="text-center">{renderStatusBadge(truck.status)}</TableCell>
+                  <TableCell className="text-center">
+                      <ListingRowActionsMenu
+                          actions={[
+                              canViewTruckDetails && {
+                                  label: 'View',
+                                  icon: <Eye className="h-4 w-4" />,
+                                  href: `/trucks/${truck.id}`,
+                              },
+                              hasPermission('trucks.edit') && {
+                                  label: 'Edit',
+                                  icon: <Edit className="h-4 w-4" />,
+                                  href: `/trucks/${truck.id}/edit`,
+                              },
+                              hasPermission('trucks.destroy') && {
+                                  label: 'Delete',
+                                  icon: <Trash2 className="h-4 w-4" />,
+                                  danger: true,
+                                  onSelect: () => handleDeleteClick(truck),
+                              },
+                          ]}
+                      />
+                  </TableCell>
               </TableRow>
           ))
-        : trucks?.data && trucks.data.length > 0
-            ? trucks.data.map((truck, index) => (
-                  <TableRow key={truck.id} className="hover:bg-muted/50">
-                      <TableCell className="text-center font-medium">
-                          {rowOffset + index + 1}
-                      </TableCell>
-                      <TableCell className="font-medium">{truck.plate}</TableCell>
-                      <TableCell className="text-muted-foreground">
-                          {truck.vehicleType?.name || 'N/A'}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                          {truck.chasisNumber || '—'}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                          {truck.engineNumber || '—'}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                          {truck.serviceIntervalKM
-                              ? `${truck.serviceIntervalKM.toLocaleString()} km`
-                              : '—'}
-                      </TableCell>
-                      <TableCell className="font-medium">
-                          {formatETBCurrency(truck.purchasePrice)}
-                      </TableCell>
-                      <TableCell className="text-center">{renderStatusBadge(truck.status)}</TableCell>
-                      <TableCell className="text-center">
-                          <ListingRowActionsMenu
-                              actions={[
-                                  canViewTruckDetails && {
-                                      label: 'View',
-                                      icon: <Eye className="h-4 w-4" />,
-                                      href: `/trucks/${truck.id}`,
-                                  },
-                                  hasPermission('trucks.edit') && {
-                                      label: 'Edit',
-                                      icon: <Edit className="h-4 w-4" />,
-                                      href: `/trucks/${truck.id}/edit`,
-                                  },
-                                  hasPermission('trucks.destroy') && {
-                                      label: 'Delete',
-                                      icon: <Trash2 className="h-4 w-4" />,
-                                      danger: true,
-                                      onSelect: () => handleDeleteClick(truck),
-                                  },
-                              ]}
-                          />
-                      </TableCell>
-                  </TableRow>
-              ))
-            : (
-                <TableRow>
-                    <TableCell colSpan={tableColumns.length} className="py-8 text-center text-muted-foreground">
-                        No trucks found.
-                        {hasPermission('trucks.create') && (
-                            <Link href="/trucks/create" className="ml-1 text-primary underline">
-                                Create one
-                            </Link>
-                        )}
-                    </TableCell>
-                </TableRow>
-            );
+        : (
+              <TableRow>
+                  <TableCell colSpan={tableColumns.length} className="py-8 text-center text-muted-foreground">
+                      No trucks found.
+                      {hasPermission('trucks.create') && (
+                          <Link href="/trucks/create" className="ml-1 text-primary underline">
+                              Create one
+                          </Link>
+                      )}
+                  </TableCell>
+              </TableRow>
+          );
 
     const mobileItems = React.useMemo(
         () =>
@@ -659,9 +619,7 @@ export default function TrucksIndex({
         [rowOffset, trucks?.data],
     );
 
-    const mobileContent = isLoading ? (
-        <ListingLoadingPlaceholder showStats={false} filterItemCount={0} rowCount={4} />
-    ) : (
+    const mobileContent = (
         <ListingMobileItemList
             items={mobileItems}
             getKey={(item) => item.truck.id}
@@ -821,7 +779,7 @@ export default function TrucksIndex({
                 tableDescription="Manage and track all vehicles in your fleet"
                 tableHeaderExtras={tableHeaderExtras}
                 pagination={
-                    !isLoading && trucks?.links ? (
+                    trucks?.links ? (
                         <ListingPaginationFooter
                             className="mt-4"
                             links={trucks.links}
@@ -833,12 +791,30 @@ export default function TrucksIndex({
                 }
             >
                 <div className="hidden md:block">
-                    <ListingTableShell columns={tableColumns} sort={{ column: sortBy, direction: sortDirection, onToggle: handleSort }}>
-                        {tableRows}
-                    </ListingTableShell>
+                    <div className="relative">
+                        <ListingTableShell columns={tableColumns} sort={{ column: sortBy, direction: sortDirection, onToggle: handleSort }}>
+                            {tableRows}
+                        </ListingTableShell>
+
+                        {isTableLoading && (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
+                                <img src="/images/loading-spinner.svg" alt="Loading trucks" className="h-12 w-12" />
+                                <span className="text-sm text-muted-foreground">Loading trucks...</span>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
-                <div className="space-y-3 md:hidden">{mobileContent}</div>
+                <div className="relative space-y-3 md:hidden">
+                    {mobileContent}
+
+                    {isTableLoading && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
+                            <img src="/images/loading-spinner.svg" alt="Loading trucks" className="h-10 w-10" />
+                            <span className="text-sm text-muted-foreground">Loading trucks...</span>
+                        </div>
+                    )}
+                </div>
             </ListPageLayout>
 
             <DeleteConfirmationDialog

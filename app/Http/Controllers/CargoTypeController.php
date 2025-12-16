@@ -9,120 +9,28 @@ use App\Events\CargoTypeUpdated;
 use App\Http\Requests\StoreCargoTypeRequest;
 use App\Http\Requests\UpdateCargoTypeRequest;
 use App\Models\CargoType;
+use App\Services\CargoTypes\CargoTypeIndexService;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 use Spatie\Activitylog\Models\Activity;
 
 class CargoTypeController extends Controller
 {
+    public function __construct(private CargoTypeIndexService $cargoTypeIndexService) {}
+
     /**
      * Display a listing of cargo types.
      */
     public function index(Request $request): Response
     {
-        $search = trim((string) $request->input('search'));
-        $rawCategory = $request->input('category');
-        $requiresSpecialEquipment = $request->input('requires_special_equipment');
-        $sort = $request->input('sort', 'name');
-        $direction = strtolower((string) $request->input('direction', 'asc'));
-        $perPageOptions = [15, 25, 50, 100];
-        $perPageDefault = 15;
-        $perPage = (int) $request->input('per_page', $perPageDefault);
+        $result = $this->cargoTypeIndexService->getIndexResult($request);
 
-        if (! in_array($perPage, $perPageOptions, true)) {
-            $perPage = $perPageDefault;
-        }
-
-        if (! in_array($direction, ['asc', 'desc'], true)) {
-            $direction = 'asc';
-        }
-
-        $allowedSorts = ['name', 'category', 'weight_per_cubic_meter', 'requires_special_equipment', 'created_at'];
-        if (! in_array($sort, $allowedSorts, true)) {
-            $sort = 'name';
-        }
-
-        $baseQuery = CargoType::query();
-
-        $selectedCategory = is_string($rawCategory) ? CargoCategory::tryFrom($rawCategory) : null;
-
-        if ($search !== '') {
-            $baseQuery->where(function ($query) use ($search) {
-                $query->where('name', 'like', "%{$search}%")
-                    ->orWhere('category', 'like', "%{$search}%")
-                    ->orWhere('handling_requirements', 'like', "%{$search}%")
-                    ->orWhere('safety_requirements', 'like', "%{$search}%");
-            });
-        }
-
-        if ($selectedCategory) {
-            $baseQuery->where('category', $selectedCategory->value);
-        } elseif (is_string($rawCategory) && $rawCategory !== '' && $rawCategory !== 'all') {
-            $baseQuery->where('category', $rawCategory);
-        }
-
-        if ($requiresSpecialEquipment !== null && $requiresSpecialEquipment !== '' && $requiresSpecialEquipment !== 'all') {
-            if (in_array($requiresSpecialEquipment, ['1', 'true'], true)) {
-                $baseQuery->where('requires_special_equipment', true);
-            } elseif (in_array($requiresSpecialEquipment, ['0', 'false'], true)) {
-                $baseQuery->where('requires_special_equipment', false);
-            }
-        }
-
-        $cargoTypes = (clone $baseQuery)
-            ->orderBy($sort, $direction)
-            ->paginate($perPage)
-            ->withQueryString();
-
-        $metricsQuery = clone $baseQuery;
-
-        $metrics = [
-            'total' => (clone $metricsQuery)->count(),
-            'requires_special_equipment' => (clone $metricsQuery)->where('requires_special_equipment', true)->count(),
-            'without_special_equipment' => (clone $metricsQuery)->where('requires_special_equipment', false)->count(),
-            'average_weight' => (float) (clone $metricsQuery)->avg('weight_per_cubic_meter'),
-            'distinct_categories' => (clone $metricsQuery)->distinct('category')->count('category'),
-        ];
-
-        $categoryOptions = CargoType::query()
-            ->select('category')
-            ->distinct()
-            ->whereNotNull('category')
-            ->orderBy('category')
-            ->get()
-            ->map(static function ($record) {
-                $enumCategory = $record->category instanceof CargoCategory
-                    ? $record->category
-                    : CargoCategory::tryFrom((string) $record->category);
-
-                $rawValue = $enumCategory?->value ?? (string) $record->category;
-
-                return [
-                    'value' => $rawValue,
-                    'label' => $enumCategory?->label() ?? (string) Str::of($rawValue)->replace('_', ' ')->headline(),
-                ];
-            })
-            ->values();
-
-        return Inertia::render('CargoTypes/Index', [
-            'cargoTypes' => $cargoTypes,
-            'metrics' => $metrics,
-            'filters' => [
-                'search' => $search !== '' ? $search : null,
-                'category' => $selectedCategory?->value ?? ($rawCategory ?: null),
-                'requires_special_equipment' => $requiresSpecialEquipment ?: null,
-                'sort' => $sort,
-                'direction' => $direction,
-                'per_page' => $perPage,
-            ],
-            'categoryOptions' => $categoryOptions,
-            'perPageOptions' => $perPageOptions,
-        ]);
+        return Inertia::render('CargoTypes/Index', $result->toInertia());
     }
 
     /**
@@ -146,6 +54,9 @@ class CargoTypeController extends Controller
             $cargoType = CargoType::create($validated);
 
             event(new CargoTypeCreated($cargoType, Auth::user()));
+
+            // Clear cached category options
+            Cache::forget('cargo_types.category_options');
 
             return redirect()->route('cargo-types.index')
                 ->with('success', 'Cargo type created successfully.');
@@ -212,6 +123,11 @@ class CargoTypeController extends Controller
                 event(new CargoTypeUpdated($cargoType->fresh(), $changes, Auth::user()));
             }
 
+            // Clear cached category options if category changed
+            if (isset($changes['category'])) {
+                Cache::forget('cargo_types.category_options');
+            }
+
             return redirect()->route('cargo-types.index')
                 ->with('success', 'Cargo type updated successfully.');
 
@@ -238,6 +154,9 @@ class CargoTypeController extends Controller
             $cargoType->delete();
 
             event(new CargoTypeDeleted($cargoTypeId, $name, $attributes, Auth::user()));
+
+            // Clear cached category options
+            Cache::forget('cargo_types.category_options');
 
             return redirect()->route('cargo-types.index')
                 ->with('success', 'Cargo type deleted successfully.');
@@ -324,48 +243,29 @@ class CargoTypeController extends Controller
      */
     public function export(Request $request)
     {
+        $filters = $this->cargoTypeIndexService->resolveFilters($request);
+
         $query = CargoType::query();
 
-        $search = trim((string) $request->input('search'));
-        $rawCategory = $request->input('category');
-        $requiresSpecialEquipment = $request->input('requires_special_equipment');
-
-        if ($search !== '') {
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('category', 'like', "%{$search}%")
-                    ->orWhere('handling_requirements', 'like', "%{$search}%")
-                    ->orWhere('safety_requirements', 'like', "%{$search}%");
+        if ($filters->search !== null) {
+            $query->where(function ($q) use ($filters) {
+                $q->where('name', 'like', "%{$filters->search}%")
+                    ->orWhere('category', 'like', "%{$filters->search}%")
+                    ->orWhere('handling_requirements', 'like', "%{$filters->search}%")
+                    ->orWhere('safety_requirements', 'like', "%{$filters->search}%");
             });
         }
 
-        $exportCategory = is_string($rawCategory) ? CargoCategory::tryFrom($rawCategory) : null;
-
-        if ($exportCategory) {
-            $query->where('category', $exportCategory->value);
+        if ($filters->category !== null) {
+            $enumCategory = CargoCategory::tryFrom($filters->category);
+            $query->where('category', $enumCategory?->value ?? $filters->category);
         }
 
-        if ($requiresSpecialEquipment !== null && $requiresSpecialEquipment !== '' && $requiresSpecialEquipment !== 'all') {
-            if (in_array($requiresSpecialEquipment, ['1', 'true'], true)) {
-                $query->where('requires_special_equipment', true);
-            } elseif (in_array($requiresSpecialEquipment, ['0', 'false'], true)) {
-                $query->where('requires_special_equipment', false);
-            }
+        if ($filters->requiresSpecialEquipment !== null) {
+            $query->where('requires_special_equipment', $filters->requiresSpecialEquipment === '1');
         }
 
-        $sort = $request->input('sort', 'name');
-        $direction = strtolower((string) $request->input('direction', 'asc'));
-
-        $allowedSorts = ['name', 'category', 'weight_per_cubic_meter', 'requires_special_equipment', 'created_at'];
-        if (! in_array($sort, $allowedSorts, true)) {
-            $sort = 'name';
-        }
-
-        if (! in_array($direction, ['asc', 'desc'], true)) {
-            $direction = 'asc';
-        }
-
-        $query->orderBy($sort, $direction);
+        $query->orderBy($filters->sort, $filters->direction);
 
         $cargoTypes = $query->get();
 

@@ -215,6 +215,9 @@ export default function ZonesIndex({ zones, metrics, filters, statusOptions, per
     const { isLoading } = useListingLoading({
         storageKey: SKELETON_FLAG_KEY,
         isDataReady,
+        onlySamePath: true,
+        targetPath: '/zones',
+        initialIsLoading: true,
     });
 
     React.useEffect(() => {
@@ -369,7 +372,7 @@ export default function ZonesIndex({ zones, metrics, filters, statusOptions, per
             id: 'total-zones',
             label: 'Total Zones',
             icon: <Map className="h-3.5 w-3.5 text-blue-600" />,
-            className: 'min-w-0',
+            className: 'min-w-[220px] flex-shrink-0',
             value: isLoading ? (
                 <Skeleton className="h-3.5 w-20" aria-hidden="true" />
             ) : (
@@ -386,7 +389,7 @@ export default function ZonesIndex({ zones, metrics, filters, statusOptions, per
             id: 'active-zones',
             label: 'Active Zones',
             icon: <CheckCircle className="h-3.5 w-3.5 text-emerald-600" />,
-            className: 'min-w-0',
+            className: 'min-w-[220px] flex-shrink-0',
             value: isLoading ? (
                 <Skeleton className="h-3.5 w-16" aria-hidden="true" />
             ) : (
@@ -403,7 +406,7 @@ export default function ZonesIndex({ zones, metrics, filters, statusOptions, per
             id: 'inactive-zones',
             label: 'Inactive Zones',
             icon: <XCircle className="h-3.5 w-3.5 text-rose-600" />,
-            className: 'min-w-0',
+            className: 'min-w-[220px] flex-shrink-0',
             value: isLoading ? (
                 <Skeleton className="h-3.5 w-16" aria-hidden="true" />
             ) : (
@@ -420,7 +423,7 @@ export default function ZonesIndex({ zones, metrics, filters, statusOptions, per
             id: 'population-reach',
             label: 'Population Reach',
             icon: <BarChart3 className="h-3.5 w-3.5 text-indigo-500" />,
-            className: 'min-w-0',
+            className: 'min-w-[220px] flex-shrink-0',
             value: isLoading ? (
                 <Skeleton className="h-3.5 w-24" aria-hidden="true" />
             ) : (
@@ -437,7 +440,7 @@ export default function ZonesIndex({ zones, metrics, filters, statusOptions, per
             id: 'accessibility-index',
             label: 'Accessibility Index',
             icon: <Target className="h-3.5 w-3.5 text-amber-600" />,
-            className: 'min-w-0',
+            className: 'min-w-[220px] flex-shrink-0',
             value: isLoading ? (
                 <Skeleton className="h-3.5 w-16" aria-hidden="true" />
             ) : (

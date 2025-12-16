@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\ClearsCacheOnModelEvents;
 use DateTime;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -13,7 +14,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
 
 class DriverTruck extends Model
 {
-    use HasFactory, LogsActivity, SoftDeletes;
+    use HasFactory, LogsActivity, SoftDeletes, ClearsCacheOnModelEvents;
 
     protected $table = 'driver_truck';
 

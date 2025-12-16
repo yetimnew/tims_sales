@@ -6,7 +6,6 @@ import { ListingStatsHeader } from '@/components/listing/stats-header';
 import { ListingFilterBar } from '@/components/listing/filter-bar';
 import { ListingTableShell } from '@/components/listing/data-table-shell';
 import { ListingMobileItemList } from '@/components/listing/mobile-item-list';
-import { ListingLoadingPlaceholder } from '@/components/listing/loading-placeholder';
 import { ListingPaginationFooter } from '@/components/listing/pagination-footer';
 import { ListingRowActionsMenu } from '@/components/listing/row-actions-menu';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
@@ -159,9 +158,13 @@ export default function CargoTypesIndex({
     const [isDeleting, setIsDeleting] = React.useState(false);
 
     const isDataReady = Array.isArray(cargoTypes?.data);
-    const { isLoading } = useListingLoading({
+    const { isLoading: isTableLoading } = useListingLoading({
         storageKey: SKELETON_FLAG_KEY,
         isDataReady,
+        minimumDuration: 200,
+        onlySamePath: true,
+        targetPath: '/cargo-types',
+        initialIsLoading: true,
     });
 
     React.useEffect(() => {
@@ -368,71 +371,71 @@ export default function CargoTypesIndex({
             id: 'cargo-types',
             label: 'Cargo Types',
             icon: <Boxes className="h-3.5 w-3.5 text-blue-600" />,
-            className: 'min-w-0',
-            value: isLoading ? (
+            className: 'min-w-[220px] flex-shrink-0',
+            value: isTableLoading ? (
                 <Skeleton className="h-3.5 w-20" aria-hidden="true" />
             ) : (
                 formatNumber(metrics?.total)
             ),
-            description: isLoading ? (
+            description: isTableLoading ? (
                 <Skeleton className="h-3 w-36" aria-hidden="true" />
             ) : (
                 `${formatNumber(metrics?.distinct_categories)} categories`
             ),
-            valueClassName: isLoading ? undefined : 'text-blue-600',
+            valueClassName: isTableLoading ? undefined : 'text-blue-600',
         },
         {
             id: 'special-equipment',
             label: 'Special Equipment',
             icon: <Package className="h-3.5 w-3.5 text-purple-600" />,
-            className: 'min-w-0',
-            value: isLoading ? (
+            className: 'min-w-[220px] flex-shrink-0',
+            value: isTableLoading ? (
                 <Skeleton className="h-3.5 w-20" aria-hidden="true" />
             ) : (
                 formatNumber(metrics?.requires_special_equipment)
             ),
-            description: isLoading ? (
+            description: isTableLoading ? (
                 <Skeleton className="h-3 w-36" aria-hidden="true" />
             ) : (
                 `${formatNumber(metrics?.without_special_equipment)} standard`
             ),
-            valueClassName: isLoading ? undefined : 'text-purple-600',
+            valueClassName: isTableLoading ? undefined : 'text-purple-600',
         },
         {
             id: 'average-weight',
             label: 'Average Weight',
             icon: <Scale className="h-3.5 w-3.5 text-emerald-600" />,
-            className: 'min-w-0',
-            value: isLoading ? (
+            className: 'min-w-[220px] flex-shrink-0',
+            value: isTableLoading ? (
                 <Skeleton className="h-3.5 w-24" aria-hidden="true" />
             ) : (
                 metrics?.average_weight
                     ? `${metrics.average_weight.toFixed(2)} kg`
                     : '0.00 kg'
             ),
-            description: isLoading ? (
+            description: isTableLoading ? (
                 <Skeleton className="h-3 w-28" aria-hidden="true" />
             ) : (
                 'Per cubic meter'
             ),
-            valueClassName: isLoading ? undefined : 'text-emerald-600',
+            valueClassName: isTableLoading ? undefined : 'text-emerald-600',
         },
         {
             id: 'handling-notes',
             label: 'Handling Notes',
             icon: <ClipboardList className="h-3.5 w-3.5 text-amber-600" />,
-            className: 'min-w-0',
-            value: isLoading ? (
+            className: 'min-w-[220px] flex-shrink-0',
+            value: isTableLoading ? (
                 <Skeleton className="h-3.5 w-20" aria-hidden="true" />
             ) : (
                 formatNumber(metrics?.total)
             ),
-            description: isLoading ? (
+            description: isTableLoading ? (
                 <Skeleton className="h-3 w-32" aria-hidden="true" />
             ) : (
                 'Review safety requirements'
             ),
-            valueClassName: isLoading ? undefined : 'text-amber-600',
+            valueClassName: isTableLoading ? undefined : 'text-amber-600',
         },
     ];
 
@@ -462,80 +465,61 @@ export default function CargoTypesIndex({
         [],
     );
 
-    const tableRows = isLoading
-        ? Array.from({ length: 6 }).map((_, rowIndex) => (
-              <TableRow key={`cargo-type-skeleton-${rowIndex}`} aria-hidden="true">
-                  {tableColumns.map((column) => (
-                      <TableCell
-                          key={`${column.id}-${rowIndex}`}
-                          className={
-                              column.align === 'center'
-                                  ? 'text-center'
-                                  : column.align === 'right'
-                                      ? 'text-right'
-                                      : undefined
-                          }
-                      >
-                          <Skeleton className="mx-auto h-4 w-24 max-w-full" />
-                      </TableCell>
-                  ))}
+    const tableRows = cargoTypeData.length > 0
+        ? cargoTypeData.map((type, index) => (
+              <TableRow key={type.id} className="hover:bg-muted/50">
+                  <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
+                  <TableCell className="font-semibold">{type.name}</TableCell>
+                  <TableCell>
+                      <Badge className={getCategoryBadgeClass(type.category)}>{type.category}</Badge>
+                  </TableCell>
+                  <TableCell className="text-right text-muted-foreground">
+                      {formatWeight(type.weight_per_cubic_meter)}
+                  </TableCell>
+                  <TableCell className="text-center">
+                      {type.requires_special_equipment ? (
+                          <Badge className="bg-rose-500 text-white hover:bg-rose-600">Required</Badge>
+                      ) : (
+                          <span className="text-muted-foreground">Not required</span>
+                      )}
+                  </TableCell>
+                  <TableCell className="text-center">
+                      <ListingRowActionsMenu
+                          actions={[
+                              canViewCargoType && {
+                                  label: 'View',
+                                  icon: <Eye className="h-4 w-4" />,
+                                  href: `/cargo-types/${type.id}`,
+                              },
+                              canEditCargoType && {
+                                  label: 'Edit',
+                                  icon: <Edit className="h-4 w-4" />,
+                                  href: `/cargo-types/${type.id}/edit`,
+                              },
+                              canDeleteCargoType && {
+                                  label: 'Delete',
+                                  icon: <Trash2 className="h-4 w-4" />,
+                                  danger: true,
+                                  disabled: isDeleting && selectedType?.id === type.id,
+                                  onSelect: () => handleDeleteClick(type),
+                              },
+                          ]}
+                      />
+                  </TableCell>
               </TableRow>
           ))
-        : cargoTypeData.length > 0
-            ? cargoTypeData.map((type, index) => (
-                  <TableRow key={type.id} className="hover:bg-muted/50">
-                      <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
-                      <TableCell className="font-semibold">{type.name}</TableCell>
-                      <TableCell>
-                          <Badge className={getCategoryBadgeClass(type.category)}>{type.category}</Badge>
-                      </TableCell>
-                      <TableCell className="text-right text-muted-foreground">
-                          {formatWeight(type.weight_per_cubic_meter)}
-                      </TableCell>
-                      <TableCell className="text-center">
-                          {type.requires_special_equipment ? (
-                              <Badge className="bg-rose-500 text-white hover:bg-rose-600">Required</Badge>
-                          ) : (
-                              <span className="text-muted-foreground">Not required</span>
-                          )}
-                      </TableCell>
-                      <TableCell className="text-center">
-                          <ListingRowActionsMenu
-                              actions={[
-                                  canViewCargoType && {
-                                      label: 'View',
-                                      icon: <Eye className="h-4 w-4" />,
-                                      href: `/cargo-types/${type.id}`,
-                                  },
-                                  canEditCargoType && {
-                                      label: 'Edit',
-                                      icon: <Edit className="h-4 w-4" />,
-                                      href: `/cargo-types/${type.id}/edit`,
-                                  },
-                                  canDeleteCargoType && {
-                                      label: 'Delete',
-                                      icon: <Trash2 className="h-4 w-4" />,
-                                      danger: true,
-                                      disabled: isDeleting && selectedType?.id === type.id,
-                                      onSelect: () => handleDeleteClick(type),
-                                  },
-                              ]}
-                          />
-                      </TableCell>
-                  </TableRow>
-              ))
-            : (
-                <TableRow>
-                    <TableCell colSpan={tableColumns.length} className="py-8 text-center text-muted-foreground">
-                        No cargo types found.
-                        {canCreateCargoType && (
-                            <Link href="/cargo-types/create" className="ml-1 text-primary underline">
-                                Create one
-                            </Link>
-                        )}
-                    </TableCell>
-                </TableRow>
-            );
+        : (
+            <TableRow>
+                <TableCell colSpan={tableColumns.length} className="py-8 text-center text-muted-foreground">
+                    No cargo types found.
+                    {canCreateCargoType && (
+                        <Link href="/cargo-types/create" className="ml-1 text-primary underline">
+                            Create one
+                        </Link>
+                    )}
+                </TableCell>
+            </TableRow>
+        );
 
     const mobileItems = React.useMemo(
         () =>
@@ -546,9 +530,25 @@ export default function CargoTypesIndex({
         [cargoTypeData, rowOffset],
     );
 
-    const mobileContent = isLoading ? (
-        <ListingLoadingPlaceholder showStats={false} filterItemCount={4} rowCount={4} />
-    ) : (
+    const tableContent = (
+        <div className="relative">
+            <ListingTableShell
+                columns={tableColumns}
+                sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSort }}
+            >
+                {tableRows}
+            </ListingTableShell>
+
+            {isTableLoading && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
+                    <img src="/images/loading-spinner.svg" alt="Loading cargo types" className="h-12 w-12" />
+                    <span className="text-sm text-muted-foreground">Loading cargo types...</span>
+                </div>
+            )}
+        </div>
+    );
+
+    const mobileContent = (
         <ListingMobileItemList
             items={mobileItems}
             getKey={(item) => item.record.id}
@@ -716,7 +716,7 @@ export default function CargoTypesIndex({
                 tableDescription="All registered cargo categories"
                 tableHeaderExtras={tableHeaderExtras}
                 pagination={
-                    !isLoading && cargoTypes?.links ? (
+                    !isTableLoading && cargoTypes?.links ? (
                         <ListingPaginationFooter
                             className="mt-4"
                             links={cargoTypes.links}
@@ -727,16 +727,18 @@ export default function CargoTypesIndex({
                     ) : null
                 }
             >
-                <div className="hidden md:block">
-                    <ListingTableShell
-                        columns={tableColumns}
-                        sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSort }}
-                    >
-                        {tableRows}
-                    </ListingTableShell>
-                </div>
+                <div className="hidden md:block">{tableContent}</div>
 
-                <div className="space-y-3 md:hidden">{mobileContent}</div>
+                <div className="relative space-y-3 md:hidden">
+                    {mobileContent}
+
+                    {isTableLoading && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
+                            <img src="/images/loading-spinner.svg" alt="Loading cargo types" className="h-10 w-10" />
+                            <span className="text-sm text-muted-foreground">Loading cargo types...</span>
+                        </div>
+                    )}
+                </div>
             </ListPageLayout>
 
             <DeleteConfirmationDialog

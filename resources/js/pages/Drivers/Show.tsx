@@ -546,6 +546,9 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
     const { isLoading } = useListingLoading({
         storageKey: DRIVER_DETAIL_SKELETON_STORAGE_KEY,
         isDataReady: Boolean(driver?.id),
+        onlySamePath: true,
+        targetPath: (pathname) => pathname.startsWith('/drivers/') && pathname !== '/drivers' && !pathname.includes('/edit') && !pathname.includes('/create'),
+        initialIsLoading: true,
     });
 
     const showDeactivateButton = canDeactivateDriver && driver.status !== 'inactive';

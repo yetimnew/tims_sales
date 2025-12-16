@@ -329,6 +329,9 @@ export default function DistancesIndex({ distances, metrics, filters, perPageOpt
     const { isLoading } = useListingLoading({
         storageKey: SKELETON_FLAG_KEY,
         isDataReady,
+        onlySamePath: true,
+        targetPath: '/distances',
+        initialIsLoading: true,
     });
 
     React.useEffect(() => {
@@ -549,7 +552,7 @@ export default function DistancesIndex({ distances, metrics, filters, perPageOpt
             id: 'total-distances',
             label: 'Tracked Routes',
             icon: <Route className="h-3.5 w-3.5 text-rose-500" />,
-            className: 'min-w-0',
+            className: 'min-w-[220px] flex-shrink-0',
             value: isLoading ? (
                 <Skeleton className="h-3.5 w-20" aria-hidden="true" />
             ) : (
@@ -566,7 +569,7 @@ export default function DistancesIndex({ distances, metrics, filters, perPageOpt
             id: 'average-speed',
             label: 'Avg Speed (km/h)',
             icon: <Gauge className="h-3.5 w-3.5 text-indigo-500" />,
-            className: 'min-w-0',
+            className: 'min-w-[220px] flex-shrink-0',
             value: isLoading ? (
                 <Skeleton className="h-3.5 w-16" aria-hidden="true" />
             ) : (
@@ -583,7 +586,7 @@ export default function DistancesIndex({ distances, metrics, filters, perPageOpt
             id: 'road-quality',
             label: 'Road Quality Index',
             icon: <TrendingDown className="h-3.5 w-3.5 text-emerald-500" />,
-            className: 'min-w-0',
+            className: 'min-w-[220px] flex-shrink-0',
             value: isLoading ? (
                 <Skeleton className="h-3.5 w-16" aria-hidden="true" />
             ) : (
@@ -600,7 +603,7 @@ export default function DistancesIndex({ distances, metrics, filters, perPageOpt
             id: 'seasonal-alerts',
             label: 'Seasonal Alerts',
             icon: <ShieldAlert className="h-3.5 w-3.5 text-amber-500" />,
-            className: 'min-w-0',
+            className: 'min-w-[220px] flex-shrink-0',
             value: isLoading ? (
                 <Skeleton className="h-3.5 w-16" aria-hidden="true" />
             ) : (

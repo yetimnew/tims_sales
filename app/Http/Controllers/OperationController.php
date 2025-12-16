@@ -22,6 +22,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -160,21 +161,27 @@ class OperationController extends Controller
             })->count(),
         ];
 
-        $statusOptions = Operation::query()
-            ->select('status')
-            ->distinct()
-            ->whereNotNull('status')
-            ->orderBy('status')
-            ->get()
-            ->map(static fn ($operation) => [
-                'label' => Str::of($operation->status)->headline(),
-                'value' => $operation->status,
-            ])->values();
+        // Cache status options (1 hour) - rarely changes
+        $statusOptions = Cache::remember('operations.status_options', 3600, function () {
+            return Operation::query()
+                ->select('status')
+                ->distinct()
+                ->whereNotNull('status')
+                ->orderBy('status')
+                ->get()
+                ->map(static fn ($operation) => [
+                    'label' => Str::of($operation->status)->headline(),
+                    'value' => $operation->status,
+                ])->values();
+        });
 
-        $customerOptions = Customer::query()
-            ->select('id', 'name')
-            ->orderBy('name')
-            ->get();
+        // Cache customer options (1 hour) - changes when customers are added/removed
+        $customerOptions = Cache::remember('operations.customer_options', 3600, function () {
+            return Customer::query()
+                ->select('id', 'name')
+                ->orderBy('name')
+                ->get();
+        });
 
         return Inertia::render('Operations/Index', [
             'operations' => $operations,
@@ -330,6 +337,13 @@ class OperationController extends Controller
             $attributes['user_id'] = Auth::id();
 
             $operation = Operation::create(array_merge($attributes, $destinationAttributes));
+
+            // Clear cached options
+            Cache::forget('operations.status_options');
+            Cache::forget('operations.customer_options');
+            // Clear report caches
+            Cache::forget('reports.performance_all.operations');
+            Cache::forget('reports.outsource_performance.operations');
 
             return redirect()->route('operations.index')
                 ->with('success', 'Operation created successfully.');
@@ -621,6 +635,13 @@ class OperationController extends Controller
 
             $operation->update(array_merge($attributes, $destinationAttributes));
 
+            // Clear cached options if status or customer changed
+            Cache::forget('operations.status_options');
+            Cache::forget('operations.customer_options');
+            // Clear report caches
+            Cache::forget('reports.performance_all.operations');
+            Cache::forget('reports.outsource_performance.operations');
+
             return redirect()->route('operations.index')
                 ->with('success', 'Operation updated successfully.');
 
@@ -698,6 +719,13 @@ class OperationController extends Controller
             }
 
             $operation->delete();
+
+            // Clear cached options
+            Cache::forget('operations.status_options');
+            Cache::forget('operations.customer_options');
+            // Clear report caches
+            Cache::forget('reports.performance_all.operations');
+            Cache::forget('reports.outsource_performance.operations');
 
             return redirect()->route('operations.index')
                 ->with('success', 'Operation deleted successfully.');

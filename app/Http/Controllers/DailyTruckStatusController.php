@@ -12,6 +12,7 @@ use App\Models\Truck;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -26,16 +27,25 @@ class DailyTruckStatusController extends Controller
         // Get date from request or use today
         $date = $request->input('date', now()->format('Y-m-d'));
 
-        // Get all trucks
-        $trucks = Truck::with(['vehicleType', 'drivers'])->get();
+        // Cache trucks list (1 hour) - changes when trucks are added/removed/updated
+        $trucks = Cache::remember('daily_truck_status.trucks', 3600, function () {
+            return Truck::with(['vehicleType', 'drivers'])->get();
+        });
 
-        // Get operational status type
-        $operationalStatusType = StatusType::where('name', 'Operational Status')->first();
+        // Cache operational status type (1 hour) - changes when status types are modified
+        $operationalStatusType = Cache::remember('daily_truck_status.operational_status_type', 3600, function () {
+            return StatusType::where('name', 'Operational Status')->first();
+        });
 
-        // Get all operational statuses
-        $statuses = Status::where('statustype_id', $operationalStatusType->id)
-            ->orderBy('name')
-            ->get();
+        // Cache statuses list (1 hour) - changes when statuses are added/removed/updated
+        $statuses = Cache::remember('daily_truck_status.statuses', 3600, function () use ($operationalStatusType) {
+            if (!$operationalStatusType) {
+                return collect();
+            }
+            return Status::where('statustype_id', $operationalStatusType->id)
+                ->orderBy('name')
+                ->get();
+        });
 
         // Get status assignments for the date
         $dailyStatuses = DailyTruckStatus::with(['truck', 'status', 'changedBy'])
@@ -126,7 +136,12 @@ class DailyTruckStatusController extends Controller
 
             if ($existing === null || $dailyStatus->wasRecentlyCreated) {
                 event(new DailyTruckStatusCreated($dailyStatus, Auth::user()));
+            }
 
+            // Clear cached trucks list when status changes (truck status affects the board)
+            Cache::forget('daily_truck_status.trucks');
+
+            if ($existing === null || $dailyStatus->wasRecentlyCreated) {
                 return redirect()->back()->with('success', 'Truck status updated successfully.');
             }
 
@@ -135,6 +150,9 @@ class DailyTruckStatusController extends Controller
             if ($changes !== []) {
                 event(new DailyTruckStatusUpdated($dailyStatus, $changes, Auth::user()));
             }
+
+            // Clear cached trucks list when status changes (truck status affects the board)
+            Cache::forget('daily_truck_status.trucks');
 
             return redirect()->back()->with('success', 'Truck status updated successfully.');
 

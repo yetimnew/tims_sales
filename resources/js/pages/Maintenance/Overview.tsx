@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
+import { useListingLoading } from '@/hooks/use-listing-loading';
 import { ArrowUpRight, CalendarClock, ClipboardList, Clock4, DollarSign, ListChecks, ShieldAlert, Wrench } from 'lucide-react';
 
 interface MaintenanceParty {
@@ -70,6 +71,8 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
+const TABLE_LOADING_STORAGE_KEY = 'maintenance.overview.table-loading';
+
 const formatCurrency = (value: number | null | undefined) => {
     if (value === null || value === undefined || Number.isNaN(value)) return '—';
     return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(value);
@@ -102,6 +105,15 @@ export default function MaintenanceOverview({
     const totalRecords = useMemo(() => {
         return (statusBreakdown ?? []).reduce((sum, entry) => sum + (entry.total ?? 0), 0);
     }, [statusBreakdown]);
+
+    const isDataReady = Array.isArray(recentMaintenance) && Array.isArray(upcomingMaintenance) && Array.isArray(overdueMaintenance);
+    const { isLoading: isOverviewLoading } = useListingLoading({
+        storageKey: TABLE_LOADING_STORAGE_KEY,
+        isDataReady,
+        minimumDuration: 200,
+        onlySamePath: true,
+        initialIsLoading: false,
+    });
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -153,7 +165,7 @@ export default function MaintenanceOverview({
                                 {upcomingMaintenance.length} Scheduled
                             </Badge>
                         </CardHeader>
-                        <CardContent className="space-y-4">
+                        <CardContent className="relative space-y-4">
                             {upcomingMaintenance.length === 0 ? (
                                 <EmptyState message="No maintenance scheduled in this window." />
                             ) : (
@@ -182,6 +194,13 @@ export default function MaintenanceOverview({
                                     </TableBody>
                                 </Table>
                             )}
+
+                            {isOverviewLoading && (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
+                                    <img src="/images/loading-spinner.svg" alt="Loading maintenance overview" className="h-10 w-10" />
+                                    <span className="text-sm text-muted-foreground">Loading maintenance overview...</span>
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
 
@@ -197,7 +216,7 @@ export default function MaintenanceOverview({
                                 {overdueMaintenance.length} Overdue
                             </Badge>
                         </CardHeader>
-                        <CardContent className="space-y-4">
+                        <CardContent className="relative space-y-4">
                             {overdueMaintenance.length === 0 ? (
                                 <EmptyState message="Excellent! Nothing is overdue." />
                             ) : (
@@ -226,6 +245,13 @@ export default function MaintenanceOverview({
                                     </TableBody>
                                 </Table>
                             )}
+
+                            {isOverviewLoading && (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
+                                    <img src="/images/loading-spinner.svg" alt="Loading maintenance overview" className="h-10 w-10" />
+                                    <span className="text-sm text-muted-foreground">Loading maintenance overview...</span>
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
                 </div>
@@ -238,7 +264,7 @@ export default function MaintenanceOverview({
                             </CardTitle>
                             <p className="text-sm text-muted-foreground">Latest updates across the fleet.</p>
                         </CardHeader>
-                        <CardContent className="space-y-4">
+                        <CardContent className="relative space-y-4">
                             {recentMaintenance.length === 0 ? (
                                 <EmptyState message="No recent activity recorded." />
                             ) : (
@@ -271,6 +297,13 @@ export default function MaintenanceOverview({
                                     </TableBody>
                                 </Table>
                             )}
+
+                            {isOverviewLoading && (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
+                                    <img src="/images/loading-spinner.svg" alt="Loading maintenance overview" className="h-10 w-10" />
+                                    <span className="text-sm text-muted-foreground">Loading maintenance overview...</span>
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
 
@@ -281,7 +314,7 @@ export default function MaintenanceOverview({
                             </CardTitle>
                             <p className="text-sm text-muted-foreground">Top spend categories.</p>
                         </CardHeader>
-                        <CardContent className="space-y-4">
+                        <CardContent className="relative space-y-4">
                             {costByType.length === 0 ? (
                                 <EmptyState message="Cost data will appear once maintenance is recorded." />
                             ) : (
@@ -301,6 +334,13 @@ export default function MaintenanceOverview({
                                     ))}
                                 </div>
                             )}
+
+                            {isOverviewLoading && (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
+                                    <img src="/images/loading-spinner.svg" alt="Loading maintenance overview" className="h-10 w-10" />
+                                    <span className="text-sm text-muted-foreground">Loading maintenance overview...</span>
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
                 </div>
@@ -317,7 +357,7 @@ export default function MaintenanceOverview({
                             <a href="/maintenance">View Maintenance List <ArrowUpRight className="h-3 w-3" /></a>
                         </Button>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="relative">
                         {statusBreakdown.length === 0 ? (
                             <EmptyState message="No maintenance records yet." />
                         ) : (
@@ -333,6 +373,13 @@ export default function MaintenanceOverview({
                                         </div>
                                     );
                                 })}
+                            </div>
+                        )}
+
+                        {isOverviewLoading && (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
+                                <img src="/images/loading-spinner.svg" alt="Loading maintenance overview" className="h-10 w-10" />
+                                <span className="text-sm text-muted-foreground">Loading maintenance overview...</span>
                             </div>
                         )}
                     </CardContent>

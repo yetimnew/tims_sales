@@ -7,6 +7,7 @@ use App\Models\TruckFinancialRecord;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -45,7 +46,8 @@ class FinancialController extends Controller
         $query->orderBy($sort, $direction);
 
         $financialRecords = $query->paginate(15);
-        $statistics = $this->getFinancialStatistics();
+        // Cache statistics for 5 minutes - they change frequently but don't need real-time accuracy
+        $statistics = Cache::remember('financial.statistics', 300, fn () => $this->getFinancialStatistics());
 
         return Inertia::render('Financial/Index', [
             'financialRecords' => $financialRecords,
@@ -58,7 +60,10 @@ class FinancialController extends Controller
      */
     public function create(): Response
     {
-        $trucks = Truck::where('status', 'active')->get();
+        // Cache active trucks list (1 hour) - changes when trucks are added/removed
+        $trucks = Cache::remember('financial.create_trucks', 3600, function () {
+            return Truck::where('status', 'active')->get();
+        });
 
         return Inertia::render('Financial/Create', [
             'trucks' => $trucks,
@@ -127,7 +132,10 @@ class FinancialController extends Controller
      */
     public function edit(TruckFinancialRecord $financial): Response
     {
-        $trucks = Truck::where('status', 'active')->get();
+        // Cache active trucks list (1 hour) - changes when trucks are added/removed
+        $trucks = Cache::remember('financial.create_trucks', 3600, function () {
+            return Truck::where('status', 'active')->get();
+        });
 
         return Inertia::render('Financial/Edit', [
             'financial' => $financial,

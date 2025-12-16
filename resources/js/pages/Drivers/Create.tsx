@@ -142,10 +142,6 @@ export default function DriversCreate() {
                 clearErrors();
                 setFrontendErrors({});
                 setIsDirty(false);
-                toast({
-                    title: '✅ Driver Created',
-                    description: `${data.name || data.driverid} has been created successfully.`,
-                });
             },
         });
     };

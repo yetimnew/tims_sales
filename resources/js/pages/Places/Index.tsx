@@ -271,6 +271,9 @@ export default function PlacesIndex({ places, metrics, filters, statusOptions, p
     const { isLoading } = useListingLoading({
         storageKey: SKELETON_FLAG_KEY,
         isDataReady,
+        onlySamePath: true,
+        targetPath: '/places',
+        initialIsLoading: true,
     });
 
     React.useEffect(() => {
@@ -444,7 +447,7 @@ export default function PlacesIndex({ places, metrics, filters, statusOptions, p
             id: 'total-places',
             label: 'Total Places',
             icon: <MapPin className="h-3.5 w-3.5 text-rose-500" />,
-            className: 'min-w-0',
+            className: 'min-w-[220px] flex-shrink-0',
             value: isLoading ? (
                 <Skeleton className="h-3.5 w-24" aria-hidden="true" />
             ) : (
@@ -461,7 +464,7 @@ export default function PlacesIndex({ places, metrics, filters, statusOptions, p
             id: 'logistics-hubs',
             label: 'Logistics Hubs',
             icon: <Building2 className="h-3.5 w-3.5 text-emerald-500" />,
-            className: 'min-w-0',
+            className: 'min-w-[220px] flex-shrink-0',
             value: isLoading ? (
                 <Skeleton className="h-3.5 w-16" aria-hidden="true" />
             ) : (
@@ -478,7 +481,7 @@ export default function PlacesIndex({ places, metrics, filters, statusOptions, p
             id: 'population-reach',
             label: 'Population Reach',
             icon: <Users className="h-3.5 w-3.5 text-indigo-500" />,
-            className: 'min-w-0',
+            className: 'min-w-[220px] flex-shrink-0',
             value: isLoading ? (
                 <Skeleton className="h-3.5 w-24" aria-hidden="true" />
             ) : (
@@ -495,7 +498,7 @@ export default function PlacesIndex({ places, metrics, filters, statusOptions, p
             id: 'accessibility-average',
             label: 'Accessibility Score',
             icon: <Target className="h-3.5 w-3.5 text-amber-500" />,
-            className: 'min-w-0',
+            className: 'min-w-[220px] flex-shrink-0',
             value: isLoading ? (
                 <Skeleton className="h-3.5 w-16" aria-hidden="true" />
             ) : (

@@ -6,11 +6,26 @@ interface UseListingLoadingOptions {
     isDataReady: boolean;
     minimumDuration?: number;
     onlySamePath?: boolean;
+    initialIsLoading?: boolean;
+    /**
+     * The target path pattern to detect navigation TO this page.
+     * When provided, loading will show when navigating to this path from any other page.
+     * Can be a string path (e.g., '/trucks') or a function that returns true if the path matches.
+     */
+    targetPath?: string | ((pathname: string) => boolean);
 }
 
 const DEFAULT_MINIMUM_DURATION = 350;
+const DEFAULT_INITIAL_IS_LOADING = true;
 
-export function useListingLoading({ storageKey, isDataReady, minimumDuration = DEFAULT_MINIMUM_DURATION, onlySamePath = false }: UseListingLoadingOptions) {
+export function useListingLoading({
+    storageKey,
+    isDataReady,
+    minimumDuration = DEFAULT_MINIMUM_DURATION,
+    onlySamePath = false,
+    initialIsLoading = DEFAULT_INITIAL_IS_LOADING,
+    targetPath,
+}: UseListingLoadingOptions) {
     const getTimestamp = React.useCallback(() => {
         if (typeof window === 'undefined') {
             return Date.now();
@@ -25,12 +40,20 @@ export function useListingLoading({ storageKey, isDataReady, minimumDuration = D
 
     const initialShouldShowSkeleton = React.useMemo(() => {
         if (typeof window === 'undefined') {
-            return true;
+            return initialIsLoading;
         }
 
         const stored = window.sessionStorage.getItem(storageKey);
-        return stored === 'true' || stored === null;
-    }, [storageKey]);
+        if (stored === 'true') {
+            return true;
+        }
+
+        if (stored === 'false') {
+            return false;
+        }
+
+        return initialIsLoading;
+    }, [initialIsLoading, storageKey]);
 
     const [isLoading, setIsLoading] = React.useState<boolean>(initialShouldShowSkeleton);
     const loadingStartedAtRef = React.useRef<number | null>(initialShouldShowSkeleton ? getTimestamp() : null);
@@ -128,11 +151,35 @@ export function useListingLoading({ storageKey, isDataReady, minimumDuration = D
                 return;
             }
 
+            const visitPath = resolveVisitPathname(event);
+            if (!visitPath && typeof window !== 'undefined') {
+                return;
+            }
+
+            // Check if we should show loading based on path matching
+            let shouldShowLoading = false;
+
             if (onlySamePath && typeof window !== 'undefined') {
-                const visitPath = resolveVisitPathname(event);
-                if (visitPath && visitPath !== window.location.pathname) {
-                    return;
+                // Show loading only for same-path navigation (pagination, filtering, etc.)
+                if (visitPath === window.location.pathname) {
+                    shouldShowLoading = true;
                 }
+            } else if (targetPath && visitPath) {
+                // Show loading when navigating TO the target path
+                if (typeof targetPath === 'function') {
+                    shouldShowLoading = targetPath(visitPath);
+                } else {
+                    // Check if the visit path matches the target path
+                    // Support both exact match and startsWith for nested routes
+                    shouldShowLoading = visitPath === targetPath || visitPath.startsWith(targetPath + '/');
+                }
+            } else if (!onlySamePath) {
+                // If neither onlySamePath nor targetPath is set, show loading for all navigations
+                shouldShowLoading = true;
+            }
+
+            if (!shouldShowLoading) {
+                return;
             }
 
             if (typeof window !== 'undefined') {
@@ -161,7 +208,7 @@ export function useListingLoading({ storageKey, isDataReady, minimumDuration = D
             unsubscribeSuccess();
             unsubscribeError();
         };
-    }, [beginLoading, finishLoading, onlySamePath, resolveVisitPathname, storageKey]);
+    }, [beginLoading, finishLoading, onlySamePath, resolveVisitPathname, storageKey, targetPath]);
 
     React.useEffect(() => {
         if (!isDataReady) {

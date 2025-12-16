@@ -28,6 +28,10 @@ return new class extends Migration
 
             $table->index(['status'], 'idx_trucks_status');
             $table->index(['vehicletype_id'], 'idx_trucks_vehicle_type');
+
+            // Composite indexes for performance optimization
+            $table->index(['status', 'vehicletype_id'], 'idx_trucks_status_vehicletype');
+            $table->index(['status', 'created_at'], 'idx_trucks_status_created');
         });
     }
 

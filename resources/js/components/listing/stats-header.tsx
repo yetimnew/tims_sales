@@ -26,7 +26,7 @@ export function ListingStatsHeader({ stats, className, renderFallback, orientati
 
     const containerClassName =
         orientation === 'row'
-            ? 'grid grid-cols-1 gap-2 sm:grid-cols-[repeat(auto-fit,minmax(220px,1fr))]'
+            ? 'hidden gap-2 md:grid md:grid-cols-[repeat(auto-fit,minmax(220px,1fr))]'
             : 'hidden gap-2 md:grid md:grid-cols-2 xl:grid-cols-4';
 
     return (

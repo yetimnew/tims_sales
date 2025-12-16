@@ -15,6 +15,24 @@ class CargoTypeSeeder extends Seeder
     public function run(): void
     {
         $cargoTypes = [
+            // General Cargo Types (required for operations)
+            [
+                'name' => 'Commercial Cargo',
+                'category' => CargoCategory::General->value,
+                'weight_per_cubic_meter' => 1000.00,
+                'handling_requirements' => 'Standard commercial cargo handling procedures',
+                'safety_requirements' => 'Follow standard safety protocols',
+                'requires_special_equipment' => false,
+            ],
+            [
+                'name' => 'Relief Cargo',
+                'category' => CargoCategory::General->value,
+                'weight_per_cubic_meter' => 1000.00,
+                'handling_requirements' => 'Handle with care, prioritize timely delivery',
+                'safety_requirements' => 'Follow standard safety protocols',
+                'requires_special_equipment' => false,
+            ],
+
             // Construction Materials
             [
                 'name' => 'Cement',

@@ -4,11 +4,10 @@ namespace App\Services;
 
 use App\Models\Driver;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Cache;
 
 class DriverMetricsService
 {
-    private array $localMetrics = [];
-
     public function metrics(?string $search, ?string $sex, ?string $status): array
     {
         $filters = [
@@ -17,34 +16,29 @@ class DriverMetricsService
             'status' => $this->normalizeStatus($status),
         ];
 
-        $cacheKey = md5(json_encode($filters));
+        $version = Cache::get('driver_metrics_version', 0);
+        $cacheKey = 'driver_metrics:' . $version . ':' . md5(json_encode($filters));
 
-        if (array_key_exists($cacheKey, $this->localMetrics)) {
-            return $this->localMetrics[$cacheKey];
-        }
+        return Cache::remember($cacheKey, 300, function () use ($filters) {
+            $query = Driver::query();
+            $this->applyFilters($query, $filters['search'], $filters['sex'], $filters['status']);
 
-        $query = Driver::query();
-        $this->applyFilters($query, $filters['search'], $filters['sex'], $filters['status']);
+            $metricsRow = $query
+                ->selectRaw('COUNT(*) as total_count')
+                ->selectRaw("SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active_count")
+                ->selectRaw("SUM(CASE WHEN status = 'inactive' THEN 1 ELSE 0 END) as inactive_count")
+                ->selectRaw("SUM(CASE WHEN sex = 'male' THEN 1 ELSE 0 END) as male_count")
+                ->selectRaw("SUM(CASE WHEN sex = 'female' THEN 1 ELSE 0 END) as female_count")
+                ->first();
 
-        $metricsRow = $query
-            ->selectRaw('COUNT(*) as total_count')
-            ->selectRaw("SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active_count")
-            ->selectRaw("SUM(CASE WHEN status = 'inactive' THEN 1 ELSE 0 END) as inactive_count")
-            ->selectRaw("SUM(CASE WHEN sex = 'male' THEN 1 ELSE 0 END) as male_count")
-            ->selectRaw("SUM(CASE WHEN sex = 'female' THEN 1 ELSE 0 END) as female_count")
-            ->first();
-
-        $metrics = [
-            'total' => (int) ($metricsRow->total_count ?? 0),
-            'active' => (int) ($metricsRow->active_count ?? 0),
-            'inactive' => (int) ($metricsRow->inactive_count ?? 0),
-            'male' => (int) ($metricsRow->male_count ?? 0),
-            'female' => (int) ($metricsRow->female_count ?? 0),
-        ];
-
-        $this->localMetrics[$cacheKey] = $metrics;
-
-        return $metrics;
+            return [
+                'total' => (int) ($metricsRow->total_count ?? 0),
+                'active' => (int) ($metricsRow->active_count ?? 0),
+                'inactive' => (int) ($metricsRow->inactive_count ?? 0),
+                'male' => (int) ($metricsRow->male_count ?? 0),
+                'female' => (int) ($metricsRow->female_count ?? 0),
+            ];
+        });
     }
 
     public function applyFilters(Builder $query, ?string $search, ?string $sex, ?string $status): Builder
@@ -55,10 +49,19 @@ class DriverMetricsService
 
         if ($search !== null) {
             $query->where(function (Builder $inner) use ($search) {
-                $inner->where('name', 'like', "%{$search}%")
-                    ->orWhere('driverid', 'like', "%{$search}%")
-                    ->orWhere('mobile', 'like', "%{$search}%")
-                    ->orWhere('zone', 'like', "%{$search}%");
+                // Use prefix matching for better index usage when search is 3+ characters
+                if (strlen($search) >= 3) {
+                    $inner->where('name', 'like', "{$search}%")
+                        ->orWhere('driverid', 'like', "{$search}%")
+                        ->orWhere('mobile', 'like', "{$search}%")
+                        ->orWhere('zone', 'like', "{$search}%");
+                } else {
+                    // Fallback to full wildcard for short searches
+                    $inner->where('name', 'like', "%{$search}%")
+                        ->orWhere('driverid', 'like', "%{$search}%")
+                        ->orWhere('mobile', 'like', "%{$search}%")
+                        ->orWhere('zone', 'like', "%{$search}%");
+                }
             });
         }
 
@@ -75,7 +78,12 @@ class DriverMetricsService
 
     public function clearCache(): void
     {
-        $this->localMetrics = [];
+        // Clear driver metrics cache by incrementing version key
+        // This invalidates all cached metrics without flushing entire cache
+        Cache::forever('driver_metrics_version', time());
+        
+        // Note: For Redis/Memcached with tags support, use: Cache::tags(['driver_metrics'])->flush();
+        // For better performance with Redis, implement pattern-based clearing
     }
 
     private function normalizeSearch(?string $search): ?string

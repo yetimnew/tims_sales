@@ -133,6 +133,10 @@ Route::middleware(['auth'])->group(function () {
             ->middleware(['can:drivers.store', 'throttle:10,1'])
             ->name('drivers.store');
 
+        Route::get('drivers/export', [DriverController::class, 'export'])
+            ->middleware('can:drivers.export')
+            ->name('drivers.export');
+
         Route::get('drivers/{driver}', [DriverController::class, 'show'])
             ->middleware('can:drivers.show')
             ->name('drivers.show');
@@ -638,15 +642,15 @@ Route::middleware(['auth'])->group(function () {
         ->whereIn('format', ['csv', 'xlsx', 'pdf'])
         ->middleware('can:reports.performance-by-truck.export')
         ->name('reports.performance-by-truck.export');
-    Route::get('reports/performance-by-model', [\App\Http\Controllers\ReportController::class, 'performanceByModel'])
-        ->middleware('can:reports.performance-by-model.view')
-        ->name('reports.performance-by-model');
     Route::get('reports/performance-by-status', [\App\Http\Controllers\ReportController::class, 'performanceByStatus'])
         ->middleware('can:reports.performance-by-status.view')
         ->name('reports.performance-by-status');
     Route::get('reports/driver-truck-attach-detach', [\App\Http\Controllers\ReportController::class, 'driverTruckAttachDetach'])
         ->middleware('can:reports.attach-detach.view')
         ->name('reports.attach-detach');
+    Route::get('reports/route-profitability', [\App\Http\Controllers\ReportController::class, 'routeProfitability'])
+        ->middleware('can:reports.route-profitability.view')
+        ->name('reports.route-profitability');
 
     // Activity Logs
     Route::middleware(['throttle:60,1'])->group(function () {

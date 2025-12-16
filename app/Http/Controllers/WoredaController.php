@@ -10,6 +10,7 @@ use App\Models\Zone;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -55,11 +56,24 @@ class WoredaController extends Controller
 
         $woredas = $query->paginate(15)->withQueryString();
 
-        $metrics = [
-            'totalPopulation' => (int) ((clone $metricsQuery)->sum('population') ?? 0),
-            'averageAccessibility' => round((float) (((clone $metricsQuery)->avg('accessibility_score')) ?? 0), 2),
-            'roadNoteCount' => (clone $metricsQuery)->whereNotNull('road_quality_notes')->count(),
-        ];
+        // Cache metrics only when no filters applied (1 hour)
+        $search = $request->input('search');
+        $cacheKey = 'woredas.metrics';
+        if (empty($search)) {
+            $metrics = Cache::remember($cacheKey, 3600, function () use ($metricsQuery) {
+                return [
+                    'totalPopulation' => (int) ((clone $metricsQuery)->sum('population') ?? 0),
+                    'averageAccessibility' => round((float) (((clone $metricsQuery)->avg('accessibility_score')) ?? 0), 2),
+                    'roadNoteCount' => (clone $metricsQuery)->whereNotNull('road_quality_notes')->count(),
+                ];
+            });
+        } else {
+            $metrics = [
+                'totalPopulation' => (int) ((clone $metricsQuery)->sum('population') ?? 0),
+                'averageAccessibility' => round((float) (((clone $metricsQuery)->avg('accessibility_score')) ?? 0), 2),
+                'roadNoteCount' => (clone $metricsQuery)->whereNotNull('road_quality_notes')->count(),
+            ];
+        }
 
         return Inertia::render('Woredas/Index', [
             'woredas' => $woredas,
@@ -72,7 +86,10 @@ class WoredaController extends Controller
      */
     public function create(): Response
     {
-        $zones = Zone::orderBy('name')->get();
+        // Cache zones list (1 hour) - changes when zones are added/removed
+        $zones = Cache::remember('woredas.create_zones', 3600, function () {
+            return Zone::orderBy('name')->get();
+        });
 
         return Inertia::render('Woredas/Create', [
             'zones' => $zones,
@@ -115,6 +132,10 @@ class WoredaController extends Controller
 
             event(new WoredaCreated($woreda, Auth::user()));
 
+            // Clear cached data
+            Cache::forget('woredas.metrics');
+            Cache::forget('places.create_woredas'); // Clear places create form cache
+
             return redirect()->route('woredas.index')
                 ->with('success', 'Woreda created successfully.');
 
@@ -152,7 +173,10 @@ class WoredaController extends Controller
      */
     public function edit(Woreda $woreda): Response
     {
-        $zones = Zone::orderBy('name')->get();
+        // Cache zones list (1 hour)
+        $zones = Cache::remember('woredas.create_zones', 3600, function () {
+            return Zone::orderBy('name')->get();
+        });
 
         return Inertia::render('Woredas/Edit', [
             'woreda' => $woreda,
@@ -212,6 +236,10 @@ class WoredaController extends Controller
                 event(new WoredaUpdated($woreda->fresh('zone'), $changes, Auth::user()));
             }
 
+            // Clear cached data
+            Cache::forget('woredas.metrics');
+            Cache::forget('places.create_woredas'); // Clear places create form cache
+
             return redirect()->route('woredas.index')
                 ->with('success', 'Woreda updated successfully.');
 
@@ -250,6 +278,10 @@ class WoredaController extends Controller
                 ->log('deleted');
 
             event(new WoredaDeleted($woredaId, $woredaName, $zoneId, $woredaData, Auth::user()));
+
+            // Clear cached data
+            Cache::forget('woredas.metrics');
+            Cache::forget('places.create_woredas'); // Clear places create form cache
 
             return redirect()->route('woredas.index')
                 ->with('success', 'Woreda deleted successfully.');

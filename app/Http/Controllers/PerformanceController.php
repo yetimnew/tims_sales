@@ -10,6 +10,7 @@ use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -129,29 +130,35 @@ class PerformanceController extends Controller
             'failed' => (clone $metricsQuery)->where('satus', 'failed')->count(),
         ];
 
-        $statusOptions = Performance::query()
-            ->select('satus')
-            ->distinct()
-            ->whereNotNull('satus')
-            ->orderBy('satus')
-            ->get()
-            ->map(static fn ($performance) => [
-                'label' => Str::of((string) $performance->satus)->replace('_', ' ')->headline(),
-                'value' => $performance->satus,
-            ])
-            ->values();
+        // Cache status options (1 hour) - rarely changes
+        $statusOptions = Cache::remember('performances.status_options', 3600, function () {
+            return Performance::query()
+                ->select('satus')
+                ->distinct()
+                ->whereNotNull('satus')
+                ->orderBy('satus')
+                ->get()
+                ->map(static fn ($performance) => [
+                    'label' => Str::of((string) $performance->satus)->replace('_', ' ')->headline(),
+                    'value' => $performance->satus,
+                ])
+                ->values();
+        });
 
-        $loadPhaseOptions = Performance::query()
-            ->select('load_phase')
-            ->distinct()
-            ->whereNotNull('load_phase')
-            ->orderBy('load_phase')
-            ->get()
-            ->map(static fn ($performance) => [
-                'label' => Str::of((string) $performance->load_phase)->headline(),
-                'value' => $performance->load_phase,
-            ])
-            ->values();
+        // Cache load phase options (1 hour) - rarely changes
+        $loadPhaseOptions = Cache::remember('performances.load_phase_options', 3600, function () {
+            return Performance::query()
+                ->select('load_phase')
+                ->distinct()
+                ->whereNotNull('load_phase')
+                ->orderBy('load_phase')
+                ->get()
+                ->map(static fn ($performance) => [
+                    'label' => Str::of((string) $performance->load_phase)->headline(),
+                    'value' => $performance->load_phase,
+                ])
+                ->values();
+        });
 
         return Inertia::render('Performances/Index', [
             'performances' => $performances,
@@ -237,6 +244,10 @@ class PerformanceController extends Controller
         $validated['user_id'] = Auth::id();
 
         Performance::create($validated);
+
+        // Clear cached options
+        Cache::forget('performances.status_options');
+        Cache::forget('performances.load_phase_options');
 
         $successMessage = 'Performance created successfully.';
         if (! $distanceRecord) {
@@ -545,6 +556,10 @@ class PerformanceController extends Controller
 
         $performance->update($validated);
 
+        // Clear cached options if status or load_phase changed
+        Cache::forget('performances.status_options');
+        Cache::forget('performances.load_phase_options');
+
         $successMessage = 'Performance updated successfully.';
         if (! $distanceRecord) {
             $successMessage .= ' Distance between the selected origin and destination is not registered. Distance with cargo was set to 0 km. Please register this route under Distances before the next trip.';
@@ -571,6 +586,10 @@ class PerformanceController extends Controller
         $this->authorize('delete', $performance);
 
         $performance->delete();
+
+        // Clear cached options
+        Cache::forget('performances.status_options');
+        Cache::forget('performances.load_phase_options');
 
         return redirect()->route('performances.index')
             ->with('success', 'Performance deleted successfully.');

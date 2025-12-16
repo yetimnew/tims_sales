@@ -6,9 +6,11 @@ use App\Events\VehicleTypeCreated;
 use App\Events\VehicleTypeDeleted;
 use App\Events\VehicleTypeUpdated;
 use App\Models\VehicleType;
+use App\Services\VehicleTypes\VehicleTypeIndexService;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -16,83 +18,16 @@ use Spatie\Activitylog\Models\Activity;
 
 class VehicleTypeController extends Controller
 {
+    public function __construct(private VehicleTypeIndexService $vehicleTypeIndexService) {}
+
     /**
      * Display a listing of the resource.
      */
     public function index(Request $request): Response
     {
-        $search = trim((string) $request->input('search'));
-        $sort = $request->input('sort', 'created_at');
-        $direction = strtolower((string) $request->input('direction', 'desc'));
-        $perPageOptions = [15, 25, 50, 100];
-        $perPageDefault = 15;
-        $perPage = (int) $request->input('per_page', $perPageDefault);
+        $result = $this->vehicleTypeIndexService->getIndexResult($request);
 
-        if (! in_array($perPage, $perPageOptions, true)) {
-            $perPage = $perPageDefault;
-        }
-
-        if (! in_array($direction, ['asc', 'desc'], true)) {
-            $direction = 'desc';
-        }
-
-        $allowedSorts = ['name', 'trucks_count', 'active_trucks_count', 'created_at'];
-        if (! in_array($sort, $allowedSorts, true)) {
-            $sort = 'created_at';
-        }
-
-        $baseQuery = VehicleType::query();
-
-        if ($search !== '') {
-            $baseQuery->where(function ($query) use ($search) {
-                $query->where('name', 'like', "%{$search}%")
-                    ->orWhere('description', 'like', "%{$search}%");
-            });
-        }
-
-        $listingQuery = (clone $baseQuery)->withCount([
-            'trucks',
-            'trucks as active_trucks_count' => fn ($query) => $query->where('status', 'active'),
-        ]);
-
-        $vehicleTypes = $listingQuery
-            ->orderBy($sort, $direction)
-            ->paginate($perPage)
-            ->withQueryString();
-
-        $metricsBase = clone $baseQuery;
-        $totalTypes = (clone $metricsBase)->count();
-        $typesWithTrucks = (clone $metricsBase)->whereHas('trucks')->count();
-        $totalTrucks = (clone $metricsBase)
-            ->withCount('trucks')
-            ->get()
-            ->sum('trucks_count');
-        $activeTrucks = (clone $metricsBase)
-            ->withCount([
-                'trucks as active_trucks_count' => fn ($query) => $query->where('status', 'active'),
-            ])
-            ->get()
-            ->sum('active_trucks_count');
-
-        $metrics = [
-            'total' => $totalTypes,
-            'with_trucks' => $typesWithTrucks,
-            'without_trucks' => max($totalTypes - $typesWithTrucks, 0),
-            'total_trucks' => $totalTrucks,
-            'active_trucks' => $activeTrucks,
-        ];
-
-        return Inertia::render('VehicleTypes/Index', [
-            'vehicleTypes' => $vehicleTypes,
-            'metrics' => $metrics,
-            'filters' => [
-                'search' => $search !== '' ? $search : null,
-                'sort' => $sort,
-                'direction' => $direction,
-                'per_page' => $perPage,
-            ],
-            'perPageOptions' => $perPageOptions,
-        ]);
+        return Inertia::render('VehicleTypes/Index', $result->toInertia());
     }
 
     /**
@@ -100,32 +35,21 @@ class VehicleTypeController extends Controller
      */
     public function export(Request $request)
     {
+        $filters = $this->vehicleTypeIndexService->resolveFilters($request);
+
         $query = VehicleType::query()->withCount([
             'trucks',
             'trucks as active_trucks_count' => fn ($truckQuery) => $truckQuery->where('status', 'active'),
         ]);
 
-        // Apply search filter if provided
-        if ($request->has('search') && ! empty($request->input('search'))) {
-            $search = $request->input('search');
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('description', 'like', "%{$search}%");
+        if ($filters->search !== null) {
+            $query->where(function ($q) use ($filters) {
+                $q->where('name', 'like', "%{$filters->search}%")
+                    ->orWhere('description', 'like', "%{$filters->search}%");
             });
         }
 
-        // Apply sorting if provided
-        $sort = $request->input('sort', 'created_at');
-        $direction = strtolower((string) $request->input('direction', 'desc'));
-        if (! in_array($direction, ['asc', 'desc'], true)) {
-            $direction = 'desc';
-        }
-        $allowedSorts = ['name', 'trucks_count', 'active_trucks_count', 'created_at'];
-        if (! in_array($sort, $allowedSorts, true)) {
-            $sort = 'created_at';
-        }
-
-        $query->orderBy($sort, $direction);
+        $query->orderBy($filters->sort, $filters->direction);
 
         $vehicleTypes = $query->get();
 
@@ -175,6 +99,10 @@ class VehicleTypeController extends Controller
             ]);
 
             $vehicleType = VehicleType::create($validated);
+
+            Cache::forget('trucks.vehicle_types'); // Clear cached vehicle types
+            // Clear report caches
+            Cache::forget('reports.performance_by_truck.vehicle_types');
 
             event(new VehicleTypeCreated($vehicleType, Auth::user()));
 
@@ -266,6 +194,10 @@ class VehicleTypeController extends Controller
 
             $vehicletype->save();
 
+            Cache::forget('trucks.vehicle_types'); // Clear cached vehicle types
+            // Clear report caches
+            Cache::forget('reports.performance_by_truck.vehicle_types');
+
             if ($changes !== []) {
                 event(new VehicleTypeUpdated($vehicletype->fresh(), $changes, Auth::user()));
             }
@@ -302,6 +234,10 @@ class VehicleTypeController extends Controller
             $attributes = $vehicletype->getAttributes();
 
             $vehicletype->delete();
+
+            Cache::forget('trucks.vehicle_types'); // Clear cached vehicle types
+            // Clear report caches
+            Cache::forget('reports.performance_by_truck.vehicle_types');
 
             event(new VehicleTypeDeleted($vehicleTypeId, $name, $attributes, Auth::user()));
 

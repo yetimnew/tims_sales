@@ -232,6 +232,9 @@ export default function UsersIndex({ users, filters, roleOptions, statusOptions,
     const { isLoading } = useListingLoading({
         storageKey: SKELETON_FLAG_KEY,
         isDataReady,
+        onlySamePath: true,
+        targetPath: '/users',
+        initialIsLoading: true,
     });
 
     React.useEffect(() => {
@@ -431,7 +434,7 @@ export default function UsersIndex({ users, filters, roleOptions, statusOptions,
             id: 'total-users',
             label: 'Total Users',
             icon: <UsersIcon className="h-3.5 w-3.5 text-sky-500" />,
-            className: 'min-w-0',
+            className: 'min-w-[220px] flex-shrink-0',
             value: isLoading ? (
                 <Skeleton className="h-3.5 w-20" aria-hidden="true" />
             ) : (
@@ -448,7 +451,7 @@ export default function UsersIndex({ users, filters, roleOptions, statusOptions,
             id: 'verified-users',
             label: 'Verified Users',
             icon: <CheckCircle className="h-3.5 w-3.5 text-emerald-500" />,
-            className: 'min-w-0',
+            className: 'min-w-[220px] flex-shrink-0',
             value: isLoading ? (
                 <Skeleton className="h-3.5 w-16" aria-hidden="true" />
             ) : (
@@ -465,7 +468,7 @@ export default function UsersIndex({ users, filters, roleOptions, statusOptions,
             id: 'pending-users',
             label: 'Pending Verification',
             icon: <XCircle className="h-3.5 w-3.5 text-amber-500" />,
-            className: 'min-w-0',
+            className: 'min-w-[220px] flex-shrink-0',
             value: isLoading ? (
                 <Skeleton className="h-3.5 w-16" aria-hidden="true" />
             ) : (
@@ -482,7 +485,7 @@ export default function UsersIndex({ users, filters, roleOptions, statusOptions,
             id: 'admin-users',
             label: 'Admins',
             icon: <Shield className="h-3.5 w-3.5 text-rose-500" />,
-            className: 'min-w-0',
+            className: 'min-w-[220px] flex-shrink-0',
             value: isLoading ? (
                 <Skeleton className="h-3.5 w-16" aria-hidden="true" />
             ) : (
@@ -499,7 +502,7 @@ export default function UsersIndex({ users, filters, roleOptions, statusOptions,
             id: 'manager-users',
             label: 'Managers',
             icon: <Shield className="h-3.5 w-3.5 text-indigo-500" />,
-            className: 'min-w-0',
+            className: 'min-w-[220px] flex-shrink-0',
             value: isLoading ? (
                 <Skeleton className="h-3.5 w-16" aria-hidden="true" />
             ) : (

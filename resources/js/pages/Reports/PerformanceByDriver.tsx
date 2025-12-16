@@ -233,7 +233,7 @@ export default function PerformanceByDriver({ filters, rows = [], summary, drive
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Performance by Driver" />
-            <div className="flex flex-1 min-h-0 flex-col overflow-hidden bg-slate-100/60 dark:bg-slate-900/40">
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-slate-100/60 dark:bg-slate-900/40">
                 <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-4 pb-10 sm:p-6 lg:p-10">
                     <header className="rounded-2xl border border-slate-200 bg-white/95 px-6 py-6 shadow-sm backdrop-blur dark:border-slate-800/70 dark:bg-slate-900/70">
                         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">

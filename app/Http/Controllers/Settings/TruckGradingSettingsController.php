@@ -19,6 +19,7 @@ use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Validator;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -143,24 +144,30 @@ class TruckGradingSettingsController extends Controller
             ->values()
             ->all();
 
-        $vehicleTypes = VehicleType::query()
-            ->orderBy('name')
-            ->get(['id', 'name'])
-            ->map(static fn (VehicleType $type) => [
-                'id' => $type->id,
-                'name' => $type->name,
-            ])
-            ->all();
+        // Cache vehicle types (1 hour) - changes when vehicle types are added/removed
+        $vehicleTypes = Cache::remember('truck_grading_settings.vehicle_types', 3600, function () {
+            return VehicleType::query()
+                ->orderBy('name')
+                ->get(['id', 'name'])
+                ->map(static fn (VehicleType $type) => [
+                    'id' => $type->id,
+                    'name' => $type->name,
+                ])
+                ->all();
+        });
 
-        $statuses = Truck::query()
-            ->select('status')
-            ->whereNotNull('status')
-            ->distinct()
-            ->orderBy('status')
-            ->pluck('status')
-            ->filter(static fn (?string $value) => $value !== null && $value !== '')
-            ->values()
-            ->all();
+        // Cache statuses (1 hour) - rarely changes
+        $statuses = Cache::remember('truck_grading_settings.statuses', 3600, function () {
+            return Truck::query()
+                ->select('status')
+                ->whereNotNull('status')
+                ->distinct()
+                ->orderBy('status')
+                ->pluck('status')
+                ->filter(static fn (?string $value) => $value !== null && $value !== '')
+                ->values()
+                ->all();
+        });
 
         return Inertia::render('settings/truck-grading', [
             'settings' => [

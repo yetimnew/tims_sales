@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -68,25 +69,28 @@ class RoleController extends Controller
             ->paginate($perPage)
             ->withQueryString();
 
-        $permissionGroupOptions = Permission::query()
-            ->select('name')
-            ->get()
-            ->map(static function (Permission $permission): string {
-                if (Str::contains($permission->name, '.')) {
-                    return (string) Str::before($permission->name, '.');
-                }
+        // Cache permission group options (1 hour) - changes when permissions are added/removed
+        $permissionGroupOptions = Cache::remember('roles.permission_group_options', 3600, function () {
+            return Permission::query()
+                ->select('name')
+                ->get()
+                ->map(static function (Permission $permission): string {
+                    if (Str::contains($permission->name, '.')) {
+                        return (string) Str::before($permission->name, '.');
+                    }
 
-                return $permission->name;
-            })
-            ->filter(static fn ($group) => $group !== null && $group !== '')
-            ->unique()
-            ->sort()
-            ->values()
-            ->map(static fn ($group) => [
-                'label' => Str::headline((string) $group),
-                'value' => (string) $group,
-            ])
-            ->all();
+                    return $permission->name;
+                })
+                ->filter(static fn ($group) => $group !== null && $group !== '')
+                ->unique()
+                ->sort()
+                ->values()
+                ->map(static fn ($group) => [
+                    'label' => Str::headline((string) $group),
+                    'value' => (string) $group,
+                ])
+                ->all();
+        });
 
         $filters = [
             'search' => $search !== '' ? $search : null,
@@ -109,8 +113,11 @@ class RoleController extends Controller
      */
     public function create(): Response
     {
-        $permissions = Permission::all()->groupBy(function ($permission) {
-            return explode('.', $permission->name)[0];
+        // Cache permissions (1 hour) - changes when permissions are added/removed
+        $permissions = Cache::remember('roles.create_permissions', 3600, function () {
+            return Permission::all()->groupBy(function ($permission) {
+                return explode('.', $permission->name)[0];
+            });
         });
 
         return Inertia::render('Roles/Create', [
@@ -134,6 +141,10 @@ class RoleController extends Controller
 
             if (isset($validated['permissions'])) {
                 $role->syncPermissions($validated['permissions']);
+                // Clear cached permission data when permissions are synced
+                Cache::forget('roles.permission_group_options');
+                Cache::forget('roles.create_permissions');
+                Cache::forget('permissions.module_options');
             }
 
             // Log activity
@@ -151,6 +162,11 @@ class RoleController extends Controller
                 'name' => $role->name,
                 'created_by' => Auth::id(),
             ]);
+
+            // Clear cached data
+            Cache::forget('roles.permission_group_options');
+            Cache::forget('users.role_options');
+            Cache::forget('users.create_roles');
 
             return redirect()->route('roles.index')
                 ->with('success', 'Role created successfully.');
@@ -191,8 +207,11 @@ class RoleController extends Controller
     public function edit(Role $role): Response
     {
         $role->load('permissions');
-        $permissions = Permission::all()->groupBy(function ($permission) {
-            return explode('.', $permission->name)[0];
+        // Cache permissions (1 hour) - changes when permissions are added/removed
+        $permissions = Cache::remember('roles.create_permissions', 3600, function () {
+            return Permission::all()->groupBy(function ($permission) {
+                return explode('.', $permission->name)[0];
+            });
         });
 
         return Inertia::render('Roles/Edit', [
@@ -220,6 +239,10 @@ class RoleController extends Controller
 
             if (isset($validated['permissions'])) {
                 $role->syncPermissions($validated['permissions']);
+                // Clear cached permission data when permissions are synced
+                Cache::forget('roles.permission_group_options');
+                Cache::forget('roles.create_permissions');
+                Cache::forget('permissions.module_options');
             }
 
             // Log activity
@@ -238,6 +261,11 @@ class RoleController extends Controller
                 'name' => $role->name,
                 'updated_by' => Auth::id(),
             ]);
+
+            // Clear cached data
+            Cache::forget('roles.permission_group_options');
+            Cache::forget('users.role_options');
+            Cache::forget('users.create_roles');
 
             return redirect()->route('roles.index')
                 ->with('success', 'Role updated successfully.');
@@ -286,6 +314,11 @@ class RoleController extends Controller
                 'permissions' => $rolePermissions,
                 'deleted_by' => Auth::id(),
             ]);
+
+            // Clear cached data
+            Cache::forget('roles.permission_group_options');
+            Cache::forget('users.role_options');
+            Cache::forget('users.create_roles');
 
             return redirect()->route('roles.index')
                 ->with('success', 'Role deleted successfully.');

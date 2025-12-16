@@ -12,11 +12,12 @@ use App\Models\Performance;
 use App\Models\Truck;
 use App\Services\DriverTruckDeletionGuard;
 use App\Services\DriverTruckGradeService;
+use App\Services\DriverTrucks\DriverTruckIndexService;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 use Spatie\Activitylog\Models\Activity;
@@ -26,6 +27,7 @@ class DriverTruckController extends Controller
     public function __construct(
         private DriverTruckDeletionGuard $driverTruckDeletionGuard,
         private DriverTruckGradeService $driverTruckGrade,
+        private DriverTruckIndexService $driverTruckIndexService,
     ) {}
 
     /**
@@ -33,121 +35,9 @@ class DriverTruckController extends Controller
      */
     public function index(Request $request): Response
     {
-        $search = trim((string) $request->input('search'));
-        $status = $request->input('status');
-        $sort = $request->input('sort', 'created_at');
-        $direction = strtolower((string) $request->input('direction', 'desc'));
-        $perPageOptions = [15, 25, 50, 100];
-        $perPageDefault = 15;
-        $perPage = (int) $request->input('per_page', $perPageDefault);
+        $result = $this->driverTruckIndexService->getIndexResult($request);
 
-        if (! in_array($perPage, $perPageOptions, true)) {
-            $perPage = $perPageDefault;
-        }
-
-        if (! in_array($direction, ['asc', 'desc'], true)) {
-            $direction = 'desc';
-        }
-
-        $allowedSorts = ['date_recived', 'date_detach', 'status', 'is_attached', 'created_at', 'updated_at', 'driver_name', 'truck_plate'];
-
-        if (! in_array($sort, $allowedSorts, true)) {
-            $sort = 'created_at';
-        }
-
-        $assignmentsQuery = DriverTruck::query()->with(['driver', 'truck.vehicletype']);
-        $metricsQuery = DriverTruck::query();
-
-        if ($search !== '') {
-            $applySearch = static function ($query) use ($search) {
-                $query->where(function ($q) use ($search) {
-                    $q->whereHas('driver', function ($driverQuery) use ($search) {
-                        $driverQuery->where('name', 'like', "%{$search}%")
-                            ->orWhere('driverid', 'like', "%{$search}%");
-                    })
-                        ->orWhereHas('truck', function ($truckQuery) use ($search) {
-                            $truckQuery->where('plate', 'like', "%{$search}%");
-                        });
-                });
-            };
-
-            $applySearch($assignmentsQuery);
-            $applySearch($metricsQuery);
-        }
-
-        if (! empty($status) && $status !== 'all') {
-            if ($status === 'attached') {
-                $assignmentsQuery->where('is_attached', 1);
-                $metricsQuery->where('is_attached', 1);
-            } elseif ($status === 'detached') {
-                $assignmentsQuery->where('is_attached', 0);
-                $metricsQuery->where('is_attached', 0);
-            } else {
-                $assignmentsQuery->where('status', $status);
-                $metricsQuery->where('status', $status);
-            }
-        }
-
-        switch ($sort) {
-            case 'driver_name':
-                $assignmentsQuery
-                    ->select('driver_truck.*')
-                    ->leftJoin('drivers as sort_drivers', 'driver_truck.driver_id', '=', 'sort_drivers.id')
-                    ->orderBy('sort_drivers.name', $direction);
-
-                break;
-            case 'truck_plate':
-                $assignmentsQuery
-                    ->select('driver_truck.*')
-                    ->leftJoin('trucks as sort_trucks', 'driver_truck.truck_id', '=', 'sort_trucks.id')
-                    ->orderBy('sort_trucks.plate', $direction);
-
-                break;
-            default:
-                $assignmentsQuery->orderBy($sort, $direction);
-        }
-
-        $driverTrucks = $assignmentsQuery->paginate($perPage)->withQueryString();
-
-        $availableDriversCount = $this->getAvailableDrivers()->count();
-        $availableTrucksCount = $this->getAvailableTrucks()->count();
-
-        $metrics = [
-            'total' => (clone $metricsQuery)->count(),
-            'attached' => (clone $metricsQuery)->where('is_attached', 1)->count(),
-            'detached' => (clone $metricsQuery)->where('is_attached', 0)->count(),
-            'availableDrivers' => $availableDriversCount,
-            'availableTrucks' => $availableTrucksCount,
-        ];
-
-        $statusOptions = collect(['attached', 'detached'])
-            ->merge(
-                DriverTruck::query()
-                    ->select('status')
-                    ->whereNotNull('status')
-                    ->distinct()
-                    ->pluck('status')
-            )
-            ->unique()
-            ->filter()
-            ->map(fn ($value) => [
-                'label' => Str::headline((string) $value),
-                'value' => (string) $value,
-            ])->values();
-
-        return Inertia::render('DriverTrucks/Index', [
-            'driverTrucks' => $driverTrucks,
-            'metrics' => $metrics,
-            'filters' => [
-                'search' => $search !== '' ? $search : null,
-                'status' => $status ?: null,
-                'sort' => $sort,
-                'direction' => $direction,
-                'per_page' => $perPage,
-            ],
-            'statusOptions' => $statusOptions,
-            'perPageOptions' => $perPageOptions,
-        ]);
+        return Inertia::render('DriverTrucks/Index', $result->toInertia());
     }
 
     /**
@@ -196,6 +86,8 @@ class DriverTruckController extends Controller
             ]);
 
             event(new DriverTruckCreated($assignment->loadMissing(['driver', 'truck']), Auth::user()));
+
+            Cache::forget('driver_trucks.status_options'); // Clear cached status options
 
             return redirect()->route('driver-trucks.index')
                 ->with('success', 'Driver and truck assigned successfully.');
@@ -309,6 +201,8 @@ class DriverTruckController extends Controller
                 event(new DriverTruckUpdated($driverTruck->fresh(['driver', 'truck']), $changes, Auth::user()));
             }
 
+            Cache::forget('driver_trucks.status_options'); // Clear cached status options if status changed
+
             return redirect()->route('driver-trucks.index')
                 ->with('success', 'Driver-truck assignment updated successfully.');
 
@@ -350,6 +244,8 @@ class DriverTruckController extends Controller
                 $attributes,
                 Auth::user(),
             ));
+
+            Cache::forget('driver_trucks.status_options'); // Clear cached status options
 
             return redirect()->route('driver-trucks.index')
                 ->with('success', 'Driver-truck assignment deleted successfully.');
@@ -410,6 +306,8 @@ class DriverTruckController extends Controller
             if ($changes !== []) {
                 event(new DriverTruckUpdated($driverTruck->fresh(['driver', 'truck']), $changes, Auth::user()));
             }
+
+            Cache::forget('driver_trucks.status_options'); // Clear cached status options when detached
 
             return redirect()->route('driver-trucks.index')
                 ->with('success', 'Driver detached from truck successfully.');

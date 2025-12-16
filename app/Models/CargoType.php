@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\CargoCategory;
+use App\Traits\ClearsCacheOnModelEvents;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -12,7 +13,7 @@ use Spatie\Activitylog\LogOptions;
 
 class CargoType extends Model
 {
-    use HasFactory, SoftDeletes, LogsActivity;
+    use HasFactory, SoftDeletes, LogsActivity, ClearsCacheOnModelEvents;
 
     protected $fillable = [
         'name',

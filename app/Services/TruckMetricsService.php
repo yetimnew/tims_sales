@@ -152,24 +152,21 @@ class TruckMetricsService
         $endDate = Carbon::today();
         $startDate = $endDate->copy()->subDays($windowDays - 1);
 
-        $latestStatusIds = DailyTruckStatus::query()
-            ->whereIn('truck_id', $truckIds)
-            ->whereDate('status_date', '>=', $startDate)
-            ->whereDate('status_date', '<=', $endDate)
-            ->whereNull('deleted_at')
-            ->groupBy('truck_id', 'status_date')
+        $latestStatusesSubquery = DailyTruckStatus::query()
             ->selectRaw('MAX(id) as id')
-            ->pluck('id');
-
-        if ($latestStatusIds->isEmpty()) {
-            return $this->fallbackUtilizationFromTrucks($truckIds, $windowDays);
-        }
+            ->whereIn('truck_id', $truckIds)
+            ->whereBetween('status_date', [$startDate, $endDate])
+            ->whereNull('deleted_at')
+            ->groupBy('truck_id', 'status_date');
 
         $idlePlaceholders = implode(', ', array_fill(0, count(self::IDLE_STATUS_NAMES), '?'));
 
         $aggregates = DailyTruckStatus::query()
+            ->joinSub($latestStatusesSubquery, 'latest_statuses', function ($join) {
+                $join->on('daily_truck_statuses.id', '=', 'latest_statuses.id');
+            })
             ->join('statuses', 'statuses.id', '=', 'daily_truck_statuses.status_id')
-            ->whereIn('daily_truck_statuses.id', $latestStatusIds)
+            ->whereNull('daily_truck_statuses.deleted_at')
             ->selectRaw(
                 sprintf(
                     'SUM(CASE WHEN LOWER(statuses.name) IN (%s) THEN 1 ELSE 0 END) as idle_days',

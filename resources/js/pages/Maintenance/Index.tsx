@@ -9,7 +9,6 @@ import { ListingTableShell, type ListingTableColumn } from '@/components/listing
 import { ListingMobileItemList } from '@/components/listing/mobile-item-list';
 import { ListingPaginationFooter } from '@/components/listing/pagination-footer';
 import { ListingRowActionsMenu } from '@/components/listing/row-actions-menu';
-import { ListingLoadingPlaceholder } from '@/components/listing/loading-placeholder';
 import { useListingLoading } from '@/hooks/use-listing-loading';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Link, router } from '@inertiajs/react';
@@ -229,9 +228,12 @@ export default function MaintenanceIndex({ maintenanceRecords, metrics, filters,
     const [isDeleting, setIsDeleting] = React.useState(false);
 
     const isDataReady = Array.isArray(maintenanceRecords?.data);
-    const { isLoading } = useListingLoading({
+    const { isLoading: isTableLoading } = useListingLoading({
         storageKey: SKELETON_FLAG_KEY,
         isDataReady,
+        minimumDuration: 200,
+        onlySamePath: true,
+        initialIsLoading: false,
     });
 
     React.useEffect(() => {
@@ -395,69 +397,69 @@ export default function MaintenanceIndex({ maintenanceRecords, metrics, filters,
             {
                 id: 'total-records',
                 label: 'Total Records',
-                value: isLoading ? (
+                value: isTableLoading ? (
                     <Skeleton className="h-4 w-16" aria-hidden="true" />
                 ) : (
                     formatNumber(metrics?.total ?? 0)
                 ),
-                description: isLoading ? (
+                description: isTableLoading ? (
                     <Skeleton className="h-3 w-28" aria-hidden="true" />
                 ) : (
                     'All maintenance entries'
                 ),
                 icon: <Wrench className="h-3.5 w-3.5 text-blue-600" />,
-                valueClassName: isLoading ? undefined : 'text-blue-600',
+                valueClassName: isTableLoading ? undefined : 'text-blue-600',
             },
             {
                 id: 'scheduled-records',
                 label: 'Scheduled',
-                value: isLoading ? (
+                value: isTableLoading ? (
                     <Skeleton className="h-4 w-14" aria-hidden="true" />
                 ) : (
                     formatNumber(metrics?.scheduled ?? 0)
                 ),
-                description: isLoading ? (
+                description: isTableLoading ? (
                     <Skeleton className="h-3 w-24" aria-hidden="true" />
                 ) : (
                     `${formatNumber(metrics?.overdue ?? 0)} overdue`
                 ),
                 icon: <Clock className="h-3.5 w-3.5 text-amber-600" />,
-                valueClassName: isLoading ? undefined : 'text-amber-600',
+                valueClassName: isTableLoading ? undefined : 'text-amber-600',
             },
             {
                 id: 'completed-records',
                 label: 'Completed',
-                value: isLoading ? (
+                value: isTableLoading ? (
                     <Skeleton className="h-4 w-16" aria-hidden="true" />
                 ) : (
                     formatNumber(metrics?.completed ?? 0)
                 ),
-                description: isLoading ? (
+                description: isTableLoading ? (
                     <Skeleton className="h-3 w-32" aria-hidden="true" />
                 ) : (
                     `Avg cost ${formatCurrency(metrics?.average_cost ?? 0)}`
                 ),
                 icon: <CheckCircle className="h-3.5 w-3.5 text-emerald-600" />,
-                valueClassName: isLoading ? undefined : 'text-emerald-600',
+                valueClassName: isTableLoading ? undefined : 'text-emerald-600',
             },
             {
                 id: 'total-cost',
                 label: 'Total Cost',
-                value: isLoading ? (
+                value: isTableLoading ? (
                     <Skeleton className="h-4 w-20" aria-hidden="true" />
                 ) : (
                     formatCurrency(metrics?.total_cost ?? 0)
                 ),
-                description: isLoading ? (
+                description: isTableLoading ? (
                     <Skeleton className="h-3 w-28" aria-hidden="true" />
                 ) : (
                     `${formatNumber(metrics?.in_progress ?? 0)} in progress`
                 ),
                 icon: <DollarSign className="h-3.5 w-3.5 text-purple-600" />,
-                valueClassName: isLoading ? undefined : 'text-purple-600',
+                valueClassName: isTableLoading ? undefined : 'text-purple-600',
             },
         ],
-        [isLoading, metrics?.average_cost, metrics?.completed, metrics?.in_progress, metrics?.overdue, metrics?.scheduled, metrics?.total, metrics?.total_cost],
+        [isTableLoading, metrics?.average_cost, metrics?.completed, metrics?.in_progress, metrics?.overdue, metrics?.scheduled, metrics?.total, metrics?.total_cost],
     );
 
     const statsSection = <ListingStatsHeader stats={statsDefinitions} orientation="row" />;
@@ -484,27 +486,6 @@ export default function MaintenanceIndex({ maintenanceRecords, metrics, filters,
     );
 
     const tableRows = React.useMemo(() => {
-        if (isLoading) {
-            return Array.from({ length: 6 }).map((_, rowIndex) => (
-                <TableRow key={`maintenance-skeleton-${rowIndex}`} aria-hidden="true">
-                    {tableColumns.map((column) => (
-                        <TableCell
-                            key={`${column.id}-${rowIndex}`}
-                            className={
-                                column.align === 'center'
-                                    ? 'text-center'
-                                    : column.align === 'right'
-                                        ? 'text-right'
-                                        : undefined
-                            }
-                        >
-                            <Skeleton className="mx-auto h-4 w-24 max-w-full" aria-hidden="true" />
-                        </TableCell>
-                    ))}
-                </TableRow>
-            ));
-        }
-
         if (maintenanceData.length === 0) {
             return [
                 <TableRow key="maintenance-empty">
@@ -522,8 +503,15 @@ export default function MaintenanceIndex({ maintenanceRecords, metrics, filters,
 
         return maintenanceData.map((record, index) => (
             <TableRow key={record.id} className="hover:bg-muted/50">
-                <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
-                <TableCell className="font-mono font-medium">{record.truck?.plate ?? '—'}</TableCell>
+                <TableCell className="text-center text-muted-foreground">{rowOffset + index + 1}</TableCell>
+                <TableCell>
+                    <div className="flex flex-col gap-1">
+                        <span className="font-medium text-foreground">{record.truck?.plate ?? '—'}</span>
+                        <span className="text-xs text-muted-foreground">
+                            {record.description ? record.description : 'No description provided.'}
+                        </span>
+                    </div>
+                </TableCell>
                 <TableCell className="text-muted-foreground">{record.maintenanceType?.name ?? '—'}</TableCell>
                 <TableCell className={`${getCategoryClass(record.maintenanceType?.category)} text-sm font-medium`}>
                     {record.maintenanceType?.category ?? '—'}
@@ -534,16 +522,7 @@ export default function MaintenanceIndex({ maintenanceRecords, metrics, filters,
                     {record.cost === null || record.cost === undefined ? '—' : formatCurrency(record.cost)}
                 </TableCell>
                 <TableCell>{getStatusBadge(record.status)}</TableCell>
-                <TableCell className="text-muted-foreground">
-                    {record.assignedMechanic?.name ? (
-                        <span className="flex items-center gap-1">
-                            <User className="h-3.5 w-3.5 text-muted-foreground" />
-                            {record.assignedMechanic.name}
-                        </span>
-                    ) : (
-                        '—'
-                    )}
-                </TableCell>
+                <TableCell className="text-muted-foreground">{record.assignedMechanic?.name ?? '—'}</TableCell>
                 <TableCell className="text-center">
                     <ListingRowActionsMenu
                         actions={[
@@ -575,7 +554,6 @@ export default function MaintenanceIndex({ maintenanceRecords, metrics, filters,
         canEditMaintenance,
         handleDeleteClick,
         isDeleting,
-        isLoading,
         maintenanceData,
         recordToDelete,
         rowOffset,
@@ -587,9 +565,7 @@ export default function MaintenanceIndex({ maintenanceRecords, metrics, filters,
         [maintenanceData, rowOffset],
     );
 
-    const mobileContent = isLoading ? (
-        <ListingLoadingPlaceholder showStats={false} filterItemCount={0} rowCount={4} />
-    ) : (
+    const mobileContent = (
         <ListingMobileItemList
             items={mobileItems}
             getKey={(item) => item.record.id}
@@ -679,6 +655,24 @@ export default function MaintenanceIndex({ maintenanceRecords, metrics, filters,
         />
     );
 
+    const tableContent = (
+        <div className="relative">
+            <ListingTableShell
+                columns={tableColumns}
+                sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSort }}
+            >
+                {tableRows}
+            </ListingTableShell>
+
+            {isTableLoading && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
+                    <img src="/images/loading-spinner.svg" alt="Loading maintenance records" className="h-12 w-12" />
+                    <span className="text-sm text-muted-foreground">Loading maintenance records...</span>
+                </div>
+            )}
+        </div>
+    );
+
     const tableHeaderExtras = (
         <ListingFilterBar
             search={{
@@ -749,7 +743,7 @@ export default function MaintenanceIndex({ maintenanceRecords, metrics, filters,
                 tableDescription="Track scheduled and completed maintenance"
                 tableHeaderExtras={tableHeaderExtras}
                 pagination={
-                    !isLoading && maintenanceRecords?.links?.length ? (
+                    !isTableLoading && maintenanceRecords?.links?.length ? (
                         <ListingPaginationFooter
                             className="mt-4"
                             links={maintenanceRecords.links}
@@ -760,16 +754,18 @@ export default function MaintenanceIndex({ maintenanceRecords, metrics, filters,
                     ) : null
                 }
             >
-                <div className="hidden md:block">
-                    <ListingTableShell
-                        columns={tableColumns}
-                        sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSort }}
-                    >
-                        {tableRows}
-                    </ListingTableShell>
-                </div>
+                <div className="hidden md:block">{tableContent}</div>
 
-                <div className="space-y-3 md:hidden">{mobileContent}</div>
+                <div className="relative space-y-3 md:hidden">
+                    {mobileContent}
+
+                    {isTableLoading && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
+                            <img src="/images/loading-spinner.svg" alt="Loading maintenance records" className="h-10 w-10" />
+                            <span className="text-sm text-muted-foreground">Loading maintenance records...</span>
+                        </div>
+                    )}
+                </div>
             </ListPageLayout>
 
             <DeleteConfirmationDialog

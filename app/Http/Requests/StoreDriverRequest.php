@@ -11,7 +11,7 @@ class StoreDriverRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        return $this->user()->can('drivers.create');
     }
 
     /**
@@ -21,14 +21,14 @@ class StoreDriverRequest extends FormRequest
     {
         return [
             'driverid' => 'required|string|max:255|unique:drivers',
-            'name' => 'required|string|max:255|min:2',
+            'name' => 'required|string|max:255',
             'sex' => 'required|string|in:male,female',
-            'birthdate' => 'nullable|date|before:today|after:1900-01-01',
+            'birthdate' => 'nullable|date|before:today',
             'zone' => 'nullable|string|max:255',
             'woreda' => 'nullable|string|max:255',
             'kebele' => 'nullable|string|max:255',
             'housenumber' => 'nullable|string|max:255',
-            'mobile' => 'nullable|string|max:20|regex:/^[0-9+\-\s()]+$/',
+            'mobile' => 'nullable|string|max:20|regex:/^(\+251|0)[0-9]{9}$/',
             'hireddate' => 'nullable|date|before_or_equal:today',
             'status' => 'required|string|in:active,inactive',
         ];
@@ -40,12 +40,14 @@ class StoreDriverRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'driverid.unique' => 'Driver ID already exists',
-            'name.min' => 'Driver name must be at least 2 characters',
-            'birthdate.before' => 'Birth date must be before today',
-            'birthdate.after' => 'Birth date must be after 1900',
-            'mobile.regex' => 'Mobile number format is invalid',
-            'hireddate.before_or_equal' => 'Hired date cannot be in the future',
+            'driverid.unique' => 'A driver with this ID already exists.',
+            'driverid.required' => 'Driver ID is required.',
+            'name.required' => 'Driver name is required.',
+            'sex.in' => 'Gender must be either male or female.',
+            'birthdate.before' => 'Birth date must be before today.',
+            'mobile.regex' => 'Mobile number must be a valid Ethiopian phone number.',
+            'hireddate.before_or_equal' => 'Hired date cannot be in the future.',
+            'status.in' => 'Status must be either active or inactive.',
         ];
     }
 
@@ -55,16 +57,13 @@ class StoreDriverRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $this->merge([
-            'driverid' => strtoupper(trim($this->driverid ?? '')),
-            'name' => ucwords(trim($this->name ?? '')),
+            'driverid' => trim($this->driverid ?? ''),
+            'name' => trim($this->name ?? ''),
+            'mobile' => trim($this->mobile ?? ''),
             'zone' => trim($this->zone ?? ''),
             'woreda' => trim($this->woreda ?? ''),
             'kebele' => trim($this->kebele ?? ''),
             'housenumber' => trim($this->housenumber ?? ''),
-            'mobile' => preg_replace('/[^0-9+\-\s()]/', '', $this->mobile ?? ''),
         ]);
     }
 }
-
-
-

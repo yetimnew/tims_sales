@@ -10,6 +10,7 @@ use App\Models\Place;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -89,11 +90,27 @@ class DistanceController extends Controller
 
         $distances = $query->paginate(15)->withQueryString();
 
-        $metrics = [
-            'averageSpeed' => round((float) (((clone $metricsQuery)->avg('average_speed_kmph')) ?? 0), 2),
-            'averageRoadQuality' => round((float) (((clone $metricsQuery)->avg('road_quality_index')) ?? 0), 2),
-            'seasonalConstraintCount' => (clone $metricsQuery)->whereNotNull('seasonality_notes')->count(),
-        ];
+        // Cache metrics only when no filters applied (1 hour)
+        $search = $request->get('search');
+        $cacheKey = 'distances.metrics';
+        if (empty($search) && !$request->filled('distanceMin') && !$request->filled('distanceMax') && 
+            !$request->filled('timeMin') && !$request->filled('timeMax') && 
+            !$request->filled('routeType') && !$request->filled('tollRoad') && 
+            !$request->filled('heavyVehicleRestricted') && !$request->filled('region')) {
+            $metrics = Cache::remember($cacheKey, 3600, function () use ($metricsQuery) {
+                return [
+                    'averageSpeed' => round((float) (((clone $metricsQuery)->avg('average_speed_kmph')) ?? 0), 2),
+                    'averageRoadQuality' => round((float) (((clone $metricsQuery)->avg('road_quality_index')) ?? 0), 2),
+                    'seasonalConstraintCount' => (clone $metricsQuery)->whereNotNull('seasonality_notes')->count(),
+                ];
+            });
+        } else {
+            $metrics = [
+                'averageSpeed' => round((float) (((clone $metricsQuery)->avg('average_speed_kmph')) ?? 0), 2),
+                'averageRoadQuality' => round((float) (((clone $metricsQuery)->avg('road_quality_index')) ?? 0), 2),
+                'seasonalConstraintCount' => (clone $metricsQuery)->whereNotNull('seasonality_notes')->count(),
+            ];
+        }
 
         $filters = [
             'search' => $request->get('search'),
@@ -121,7 +138,10 @@ class DistanceController extends Controller
      */
     public function create(): Response
     {
-        $places = Place::orderBy('name')->get();
+        // Cache places list (1 hour) - changes when places are added/removed
+        $places = Cache::remember('distances.create_places', 3600, function () {
+            return Place::orderBy('name')->get();
+        });
 
         return Inertia::render('Distances/Create', [
             'places' => $places,
@@ -171,6 +191,9 @@ class DistanceController extends Controller
 
             event(new DistanceCreated($distance->loadMissing(['fromPlace', 'toPlace']), Auth::user()));
 
+            // Clear cached data
+            Cache::forget('distances.metrics');
+
             return redirect()->route('distances.index')
                 ->with('success', 'Distance created successfully.');
 
@@ -208,7 +231,10 @@ class DistanceController extends Controller
      */
     public function edit(Distance $distance): Response
     {
-        $places = Place::orderBy('name')->get();
+        // Cache places list (1 hour)
+        $places = Cache::remember('distances.create_places', 3600, function () {
+            return Place::orderBy('name')->get();
+        });
 
         return Inertia::render('Distances/Edit', [
             'distance' => $distance,
@@ -268,6 +294,9 @@ class DistanceController extends Controller
                 event(new DistanceUpdated($distance->fresh(['fromPlace', 'toPlace']), $changes, Auth::user()));
             }
 
+            // Clear cached data
+            Cache::forget('distances.metrics');
+
             return redirect()->route('distances.index')
                 ->with('success', 'Distance updated successfully.');
 
@@ -301,6 +330,9 @@ class DistanceController extends Controller
                 ->log('deleted');
 
             event(new DistanceDeleted($distanceId, $fromPlaceId, $toPlaceId, $distanceData, Auth::user()));
+
+            // Clear cached data
+            Cache::forget('distances.metrics');
 
             return redirect()->route('distances.index')
                 ->with('success', 'Distance deleted successfully.');

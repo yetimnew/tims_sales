@@ -6,14 +6,17 @@ use App\Exports\Reports\DriverPerformanceExport;
 use App\Exports\Reports\OutsourcePerformanceExport;
 use App\Exports\Reports\PerformanceAllExport;
 use App\Exports\Reports\TruckPerformanceExport;
+use App\Http\Requests\Reports\CostPerKilometerRequest;
 use App\Http\Requests\Reports\CustomerProfitabilityRequest;
 use App\Http\Requests\Reports\FuelEfficiencyRequest;
+use App\Http\Requests\Reports\LoadFactorUtilizationRequest;
 use App\Http\Requests\Reports\MaintenancePerformanceRequest;
 use App\Http\Requests\Reports\OutsourcePerformanceRequest;
 use App\Http\Requests\Reports\PerformanceAllRequest;
 use App\Http\Requests\Reports\PerformanceByDriverRequest;
 use App\Http\Requests\Reports\PerformanceByStatusRequest;
 use App\Http\Requests\Reports\PerformanceByTruckRequest;
+use App\Http\Requests\Reports\RouteProfitabilityRequest;
 use App\Http\Requests\Reports\TruckGradingReportRequest;
 use App\Models\Customer;
 use App\Models\Driver;
@@ -27,12 +30,15 @@ use App\Models\Status;
 use App\Models\Truck;
 use App\Models\VehicleMaintenanceRecord;
 use App\Models\VehicleType;
+use App\Services\Reports\CostPerKilometerReport;
 use App\Services\Reports\CustomerProfitabilityReport;
 use App\Services\Reports\FuelEfficiencyReport;
+use App\Services\Reports\LoadFactorUtilizationReport;
 use App\Services\Reports\MaintenancePerformanceReport;
 use App\Services\Reports\OutsourcePerformanceReport;
 use App\Services\Reports\PerformanceAllReport;
 use App\Services\Reports\PerformanceByStatusReport;
+use App\Services\Reports\RouteProfitabilityReport;
 use App\Services\Reports\TruckGradingReport;
 use App\Services\Reports\TruckPerformanceReport;
 use Dompdf\Dompdf;
@@ -41,8 +47,10 @@ use Exception;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Response as HttpResponse;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 use Maatwebsite\Excel\Facades\Excel;
@@ -59,6 +67,9 @@ class ReportController extends Controller
         private readonly MaintenancePerformanceReport $maintenancePerformanceReport,
         private readonly TruckGradingReport $truckGradingReport,
         private readonly \App\Services\Reports\DriverGradingReport $driverGradingReport,
+        private readonly RouteProfitabilityReport $routeProfitabilityReport,
+        private readonly LoadFactorUtilizationReport $loadFactorUtilizationReport,
+        private readonly CostPerKilometerReport $costPerKilometerReport,
     ) {}
 
     /**
@@ -70,45 +81,57 @@ class ReportController extends Controller
             $validated = $request->validated();
             $result = $this->maintenancePerformanceReport->build($validated);
 
-            $truckOptions = Truck::query()
-                ->select('id', 'plate', 'status')
-                ->orderBy('plate')
-                ->get()
-                ->map(static fn (Truck $truck) => [
-                    'id' => $truck->id,
-                    'plate' => $truck->plate ?? 'Truck #'.$truck->id,
-                    'status' => $truck->status,
-                ])
-                ->values();
+            // Cache truck options (1 hour) - changes when trucks are added/removed
+            $truckOptions = Cache::remember('reports.maintenance.truck_options', 3600, function () {
+                return Truck::query()
+                    ->select('id', 'plate', 'status')
+                    ->orderBy('plate')
+                    ->get()
+                    ->map(static fn (Truck $truck) => [
+                        'id' => $truck->id,
+                        'plate' => $truck->plate ?? 'Truck #'.$truck->id,
+                        'status' => $truck->status,
+                    ])
+                    ->values();
+            });
 
-            $maintenanceTypeOptions = MaintenanceType::query()
-                ->select('id', 'name', 'category')
-                ->orderBy('name')
-                ->get()
-                ->map(static fn (MaintenanceType $type) => [
-                    'id' => $type->id,
-                    'name' => $type->name,
-                    'category' => $type->category,
-                ])
-                ->values();
+            // Cache maintenance type options (1 hour) - changes when types are added/removed
+            $maintenanceTypeOptions = Cache::remember('reports.maintenance.maintenance_type_options', 3600, function () {
+                return MaintenanceType::query()
+                    ->select('id', 'name', 'category')
+                    ->orderBy('name')
+                    ->get()
+                    ->map(static fn (MaintenanceType $type) => [
+                        'id' => $type->id,
+                        'name' => $type->name,
+                        'category' => $type->category,
+                    ])
+                    ->values();
+            });
 
-            $statusOptions = VehicleMaintenanceRecord::query()
-                ->select('status')
-                ->whereNotNull('status')
-                ->distinct()
-                ->orderBy('status')
-                ->pluck('status')
-                ->filter()
-                ->values();
+            // Cache status options (1 hour) - rarely changes
+            $statusOptions = Cache::remember('reports.maintenance.status_options', 3600, function () {
+                return VehicleMaintenanceRecord::query()
+                    ->select('status')
+                    ->whereNotNull('status')
+                    ->distinct()
+                    ->orderBy('status')
+                    ->pluck('status')
+                    ->filter()
+                    ->values();
+            });
 
-            $serviceProviderOptions = VehicleMaintenanceRecord::query()
-                ->select('service_provider')
-                ->whereNotNull('service_provider')
-                ->distinct()
-                ->orderBy('service_provider')
-                ->pluck('service_provider')
-                ->filter()
-                ->values();
+            // Cache service provider options (1 hour) - rarely changes
+            $serviceProviderOptions = Cache::remember('reports.maintenance.service_provider_options', 3600, function () {
+                return VehicleMaintenanceRecord::query()
+                    ->select('service_provider')
+                    ->whereNotNull('service_provider')
+                    ->distinct()
+                    ->orderBy('service_provider')
+                    ->pluck('service_provider')
+                    ->filter()
+                    ->values();
+            });
 
             return Inertia::render('Reports/Maintenance', [
                 'filters' => [
@@ -148,16 +171,19 @@ class ReportController extends Controller
         try {
             $result = $this->fuelEfficiencyReport->build($request->validated());
 
-            $trucks = Truck::query()
-                ->select('id', 'plate', 'status')
-                ->orderBy('plate')
-                ->get()
-                ->map(static fn (Truck $truck) => [
-                    'id' => $truck->id,
-                    'plate' => $truck->plate ?? 'Truck #'.$truck->id,
-                    'status' => $truck->status,
-                ])
-                ->values();
+            // Cache truck options (1 hour) - changes when trucks are added/removed
+            $trucks = Cache::remember('reports.fuel_efficiency.truck_options', 3600, function () {
+                return Truck::query()
+                    ->select('id', 'plate', 'status')
+                    ->orderBy('plate')
+                    ->get()
+                    ->map(static fn (Truck $truck) => [
+                        'id' => $truck->id,
+                        'plate' => $truck->plate ?? 'Truck #'.$truck->id,
+                        'status' => $truck->status,
+                    ])
+                    ->values();
+            });
 
             return Inertia::render('Reports/FuelEfficiency', [
                 'filters' => [
@@ -188,14 +214,17 @@ class ReportController extends Controller
             $validated = $request->validated();
             $result = $this->customerProfitabilityReport->build($validated);
 
-            $customerOptions = Customer::query()
-                ->select('id', 'name')
-                ->orderBy('name')
-                ->get()
-                ->map(static fn (Customer $customer) => [
-                    'id' => $customer->id,
-                    'name' => $customer->name,
-                ]);
+            // Cache customer options (1 hour) - changes when customers are added/removed
+            $customerOptions = Cache::remember('reports.customer_profitability.customer_options', 3600, function () {
+                return Customer::query()
+                    ->select('id', 'name')
+                    ->orderBy('name')
+                    ->get()
+                    ->map(static fn (Customer $customer) => [
+                        'id' => $customer->id,
+                        'name' => $customer->name,
+                    ]);
+            });
 
             return Inertia::render('Reports/CustomerProfitability', [
                 'filters' => [
@@ -273,57 +302,69 @@ class ReportController extends Controller
         try {
             $payload = $this->outsourcePerformanceReport->build($request->validated());
 
-            $vendorOptions = Outsource::query()
-                ->select(['id', 'name', 'status'])
-                ->orderBy('name')
-                ->get()
-                ->map(static fn (Outsource $outsource) => [
-                    'id' => $outsource->id,
-                    'name' => $outsource->name,
-                    'status' => $outsource->status,
-                ])
-                ->values()
-                ->all();
+            // Cache vendor options (1 hour) - changes when outsources are added/removed
+            $vendorOptions = Cache::remember('reports.outsource_performance.vendor_options', 3600, function () {
+                return Outsource::query()
+                    ->select(['id', 'name', 'status'])
+                    ->orderBy('name')
+                    ->get()
+                    ->map(static fn (Outsource $outsource) => [
+                        'id' => $outsource->id,
+                        'name' => $outsource->name,
+                        'status' => $outsource->status,
+                    ])
+                    ->values()
+                    ->all();
+            });
 
-            $statusOptions = OutsourcePerformance::query()
-                ->select('status')
-                ->whereNotNull('status')
-                ->distinct()
-                ->orderBy('status')
-                ->pluck('status')
-                ->filter()
-                ->map(static fn (string $status) => [
-                    'value' => $status,
-                    'label' => ucwords(str_replace(['_', '-'], ' ', $status)),
-                ])
-                ->values()
-                ->all();
+            // Cache status options (1 hour) - rarely changes
+            $statusOptions = Cache::remember('reports.outsource_performance.status_options', 3600, function () {
+                return OutsourcePerformance::query()
+                    ->select('status')
+                    ->whereNotNull('status')
+                    ->distinct()
+                    ->orderBy('status')
+                    ->pluck('status')
+                    ->filter()
+                    ->map(static fn (string $status) => [
+                        'value' => $status,
+                        'label' => ucwords(str_replace(['_', '-'], ' ', $status)),
+                    ])
+                    ->values()
+                    ->all();
+            });
 
-            $operations = Operation::query()
-                ->select('id', 'operationid', 'status', 'customer_id')
-                ->with('customer:id,name')
-                ->orderBy('operationid')
-                ->limit(300)
-                ->get()
-                ->map(static fn (Operation $operation) => [
-                    'id' => $operation->id,
-                    'code' => $operation->operationid ?? 'OP-'.$operation->id,
-                    'status' => $operation->status,
-                    'customer' => $operation->customer?->name,
-                ])
-                ->values();
+            // Cache operations (1 hour) - changes when operations are added/removed
+            $operations = Cache::remember('reports.outsource_performance.operations', 3600, function () {
+                return Operation::query()
+                    ->select('id', 'operationid', 'status', 'customer_id')
+                    ->with('customer:id,name')
+                    ->orderBy('operationid')
+                    ->limit(300)
+                    ->get()
+                    ->map(static fn (Operation $operation) => [
+                        'id' => $operation->id,
+                        'code' => $operation->operationid ?? 'OP-'.$operation->id,
+                        'status' => $operation->status,
+                        'customer' => $operation->customer?->name,
+                    ])
+                    ->values();
+            });
 
-            $destinations = Place::query()
-                ->select('id', 'name', 'status')
-                ->orderBy('name')
-                ->limit(300)
-                ->get()
-                ->map(static fn (Place $place) => [
-                    'id' => $place->id,
-                    'name' => $place->name,
-                    'status' => $place->status,
-                ])
-                ->values();
+            // Cache destinations (1 hour) - changes when places are added/removed
+            $destinations = Cache::remember('reports.outsource_performance.destinations', 3600, function () {
+                return Place::query()
+                    ->select('id', 'name', 'status')
+                    ->orderBy('name')
+                    ->limit(300)
+                    ->get()
+                    ->map(static fn (Place $place) => [
+                        'id' => $place->id,
+                        'name' => $place->name,
+                        'status' => $place->status,
+                    ])
+                    ->values();
+            });
 
             $rows = $payload['rows'] instanceof Collection
                 ? $payload['rows']->values()->all()
@@ -629,54 +670,66 @@ class ReportController extends Controller
             $summary = $result['summary'];
             $highlights = $result['highlights'];
 
-            $drivers = Driver::query()
-                ->select('id', 'name', 'status')
-                ->orderBy('name')
-                ->get()
-                ->map(static fn (Driver $driver) => [
-                    'id' => $driver->id,
-                    'name' => $driver->name ?? 'Unassigned',
-                    'status' => $driver->status,
-                ])
-                ->values();
+            // Cache driver options (1 hour) - changes when drivers are added/removed
+            $drivers = Cache::remember('reports.performance_all.driver_options', 3600, function () {
+                return Driver::query()
+                    ->select('id', 'name', 'status')
+                    ->orderBy('name')
+                    ->get()
+                    ->map(static fn (Driver $driver) => [
+                        'id' => $driver->id,
+                        'name' => $driver->name ?? 'Unassigned',
+                        'status' => $driver->status,
+                    ])
+                    ->values();
+            });
 
-            $trucks = Truck::query()
-                ->select('id', 'plate', 'status')
-                ->orderBy('plate')
-                ->get()
-                ->map(static fn (Truck $truck) => [
-                    'id' => $truck->id,
-                    'name' => $truck->plate ?? '—',
-                    'plate' => $truck->plate ?? '—',
-                    'status' => $truck->status,
-                ])
-                ->values();
+            // Cache truck options (1 hour) - changes when trucks are added/removed
+            $trucks = Cache::remember('reports.performance_all.truck_options', 3600, function () {
+                return Truck::query()
+                    ->select('id', 'plate', 'status')
+                    ->orderBy('plate')
+                    ->get()
+                    ->map(static fn (Truck $truck) => [
+                        'id' => $truck->id,
+                        'name' => $truck->plate ?? '—',
+                        'plate' => $truck->plate ?? '—',
+                        'status' => $truck->status,
+                    ])
+                    ->values();
+            });
 
-            $operations = Operation::query()
-                ->select('id', 'operationid', 'status', 'customer_id')
-                ->with('customer:id,name')
-                ->orderBy('operationid')
-                ->limit(300)
-                ->get()
-                ->map(static fn (Operation $operation) => [
-                    'id' => $operation->id,
-                    'code' => $operation->operationid ?? 'OP-'.$operation->id,
-                    'status' => $operation->status,
-                    'customer' => $operation->customer?->name,
-                ])
-                ->values();
+            // Cache operations (1 hour) - changes when operations are added/removed
+            $operations = Cache::remember('reports.performance_all.operations', 3600, function () {
+                return Operation::query()
+                    ->select('id', 'operationid', 'status', 'customer_id')
+                    ->with('customer:id,name')
+                    ->orderBy('operationid')
+                    ->limit(300)
+                    ->get()
+                    ->map(static fn (Operation $operation) => [
+                        'id' => $operation->id,
+                        'code' => $operation->operationid ?? 'OP-'.$operation->id,
+                        'status' => $operation->status,
+                        'customer' => $operation->customer?->name,
+                    ])
+                    ->values();
+            });
 
-            $destinations = Place::query()
-                ->select('id', 'name', 'status')
-                ->orderBy('name')
-                ->limit(300)
-                ->get()
-                ->map(static fn (Place $place) => [
-                    'id' => $place->id,
-                    'name' => $place->name,
-                    'status' => $place->status,
-                ])
-                ->values();
+            // Cache destinations (1 hour) - changes when places are added/removed
+            $destinations = Cache::remember('reports.performance_all.destinations', 3600, function () {
+                return Place::query()
+                    ->select('id', 'name', 'status')
+                    ->orderBy('name')
+                    ->limit(300)
+                    ->get()
+                    ->map(static fn (Place $place) => [
+                        'id' => $place->id,
+                        'name' => $place->name,
+                        'status' => $place->status,
+                    ])
+                    ->values();
+            });
 
             return Inertia::render('Reports/PerformanceAll', [
                 'filters' => [
@@ -751,14 +804,17 @@ class ReportController extends Controller
             $validated = $request->validated();
             $result = $this->buildDriverPerformance($validated);
 
-            $drivers = Driver::query()
-                ->select('id', 'name')
-                ->orderBy('name')
-                ->get()
-                ->map(static fn (Driver $driver) => [
-                    'id' => $driver->id,
-                    'name' => $driver->name ?? 'Unassigned',
-                ]);
+            // Cache driver options (1 hour) - changes when drivers are added/removed
+            $drivers = Cache::remember('reports.performance_by_driver.driver_options', 3600, function () {
+                return Driver::query()
+                    ->select('id', 'name')
+                    ->orderBy('name')
+                    ->get()
+                    ->map(static fn (Driver $driver) => [
+                        'id' => $driver->id,
+                        'name' => $driver->name ?? 'Unassigned',
+                    ]);
+            });
 
             return Inertia::render('Reports/PerformanceByDriver', [
                 'filters' => [
@@ -1251,35 +1307,44 @@ class ReportController extends Controller
                 ? $result['rows']->values()
                 : collect($result['rows'])->values();
 
-            $trucks = Truck::query()
-                ->select('id', 'plate')
-                ->orderBy('plate')
-                ->get()
-                ->map(static fn (Truck $truck) => [
-                    'id' => $truck->id,
-                    'plate' => $truck->plate,
-                ])
-                ->values();
+            // Cache truck options (1 hour) - changes when trucks are added/removed
+            $trucks = Cache::remember('reports.performance_by_truck.truck_options', 3600, function () {
+                return Truck::query()
+                    ->select('id', 'plate')
+                    ->orderBy('plate')
+                    ->get()
+                    ->map(static fn (Truck $truck) => [
+                        'id' => $truck->id,
+                        'plate' => $truck->plate,
+                    ])
+                    ->values();
+            });
 
-            $vehicleTypes = VehicleType::query()
-                ->select('id', 'name')
-                ->orderBy('name')
-                ->get()
-                ->map(static fn (VehicleType $type) => [
-                    'id' => $type->id,
-                    'name' => $type->name,
-                ])
-                ->values();
+            // Cache vehicle types (1 hour) - changes when vehicle types are added/removed
+            $vehicleTypes = Cache::remember('reports.performance_by_truck.vehicle_types', 3600, function () {
+                return VehicleType::query()
+                    ->select('id', 'name')
+                    ->orderBy('name')
+                    ->get()
+                    ->map(static fn (VehicleType $type) => [
+                        'id' => $type->id,
+                        'name' => $type->name,
+                    ])
+                    ->values();
+            });
 
-            $statuses = Truck::query()
-                ->select('status')
-                ->whereNotNull('status')
-                ->distinct()
-                ->orderBy('status')
-                ->pluck('status')
-                ->filter(static fn ($status) => $status !== null && $status !== '')
-                ->values()
-                ->all();
+            // Cache statuses (1 hour) - rarely changes
+            $statuses = Cache::remember('reports.performance_by_truck.statuses', 3600, function () {
+                return Truck::query()
+                    ->select('status')
+                    ->whereNotNull('status')
+                    ->distinct()
+                    ->orderBy('status')
+                    ->pluck('status')
+                    ->filter(static fn ($status) => $status !== null && $status !== '')
+                    ->values()
+                    ->all();
+            });
 
             return Inertia::render('Reports/PerformanceByTruck', [
                 'filters' => [
@@ -1445,42 +1510,6 @@ class ReportController extends Controller
     }
 
     /**
-     * Legacy-style: performance aggregated by vehicle model (type).
-     */
-    public function performanceByModel(Request $request): Response|RedirectResponse
-    {
-        try {
-            $from = $request->input('from', now()->subMonths(1)->toDateString());
-            $to = $request->input('to', now()->toDateString());
-
-            $rows = DB::table('performances')
-                ->select(
-                    'trucks.vehicletype_id as vehicletype_id',
-                    DB::raw('MAX(vehicletypes.name) as model'),
-                    DB::raw('COUNT(performances.FOnumber) as trips'),
-                    DB::raw('SUM(performances.CargoVolumMT) as tonnage'),
-                    DB::raw('SUM(performances.DistanceWCargo) as distance_wcargo'),
-                    DB::raw('SUM(performances.DistanceWOCargo) as distance_wocargo'),
-                    DB::raw('SUM(performances.tonkm) as tonkm')
-                )
-                ->leftJoin('driver_truck', 'driver_truck.id', '=', 'performances.driver_truck_id')
-                ->leftJoin('trucks', 'trucks.id', '=', 'driver_truck.truck_id')
-                ->leftJoin('vehicletypes', 'vehicletypes.id', '=', 'trucks.vehicletype_id')
-                ->whereBetween('performances.DateDispach', [$from, $to])
-                ->groupBy('trucks.vehicletype_id')
-                ->orderByDesc('tonkm')
-                ->get();
-
-            return Inertia::render('Reports/PerformanceByModel', [
-                'filters' => ['from' => $from, 'to' => $to],
-                'rows' => $rows,
-            ]);
-        } catch (Exception $e) {
-            return back()->withErrors(['error' => 'Failed to generate model performance report.']);
-        }
-    }
-
-    /**
      * Legacy-style: status summary by date.
      */
     public function performanceByStatus(PerformanceByStatusRequest $request): Response|RedirectResponse
@@ -1525,6 +1554,176 @@ class ReportController extends Controller
             ]);
         } catch (Exception $e) {
             return back()->withErrors(['error' => 'Failed to load attach/detach report.']);
+        }
+    }
+
+    /**
+     * Display route profitability matrix report.
+     */
+    public function routeProfitability(RouteProfitabilityRequest $request): Response|RedirectResponse
+    {
+        try {
+            $result = $this->routeProfitabilityReport->build($request->validated());
+
+            $rows = $result['rows'] instanceof Collection
+                ? $result['rows']->values()->all()
+                : collect($result['rows'])->values()->all();
+
+            $summary = $result['summary'];
+
+            // Cache place options (1 hour) - changes when places are added/removed
+            $places = Cache::remember('reports.route_profitability.place_options', 3600, function () {
+                return Place::query()
+                    ->select('id', 'name', 'code')
+                    ->orderBy('name')
+                    ->get()
+                    ->map(static fn (Place $place) => [
+                        'id' => $place->id,
+                        'name' => $place->name ?? '—',
+                        'code' => $place->code ?? '—',
+                    ])
+                    ->values();
+            });
+
+            return Inertia::render('Reports/RouteProfitability', [
+                'filters' => [
+                    'from' => $result['resolved_from'],
+                    'to' => $result['resolved_to'],
+                    'origin_ids' => $result['filters']['origin_ids'],
+                    'destination_ids' => $result['filters']['destination_ids'],
+                ],
+                'rows' => $rows,
+                'summary' => $summary,
+                'options' => [
+                    'places' => $places,
+                ],
+            ]);
+        } catch (Exception $e) {
+            return back()->withErrors(['error' => 'Failed to load route profitability report.']);
+        }
+    }
+
+    /**
+     * Display load factor and utilization analysis report.
+     */
+    public function loadFactorUtilization(LoadFactorUtilizationRequest $request): Response|RedirectResponse
+    {
+        try {
+            $result = $this->loadFactorUtilizationReport->build($request->validated());
+
+            $rows = $result['rows'] instanceof Collection
+                ? $result['rows']->values()->all()
+                : collect($result['rows'])->values()->all();
+
+            $summary = $result['summary'];
+
+            // Cache truck options (1 hour)
+            $trucks = Cache::remember('reports.load_factor_utilization.truck_options', 3600, function () {
+                return Truck::query()
+                    ->select('id', 'plate', 'status')
+                    ->orderBy('plate')
+                    ->get()
+                    ->map(static fn (Truck $truck) => [
+                        'id' => $truck->id,
+                        'name' => $truck->plate ?? '—',
+                        'status' => $truck->status,
+                    ])
+                    ->values();
+            });
+
+            // Cache driver options (1 hour)
+            $drivers = Cache::remember('reports.load_factor_utilization.driver_options', 3600, function () {
+                return Driver::query()
+                    ->select('id', 'name', 'status')
+                    ->orderBy('name')
+                    ->get()
+                    ->map(static fn (Driver $driver) => [
+                        'id' => $driver->id,
+                        'name' => $driver->name ?? 'Unassigned',
+                        'status' => $driver->status,
+                    ])
+                    ->values();
+            });
+
+            return Inertia::render('Reports/LoadFactorUtilization', [
+                'filters' => [
+                    'from' => $result['resolved_from'],
+                    'to' => $result['resolved_to'],
+                    'truck_ids' => $result['filters']['truck_ids'],
+                    'driver_ids' => $result['filters']['driver_ids'],
+                    'group_by' => $result['group_by'],
+                ],
+                'rows' => $rows,
+                'summary' => $summary,
+                'options' => [
+                    'trucks' => $trucks,
+                    'drivers' => $drivers,
+                ],
+            ]);
+        } catch (Exception $e) {
+            return back()->withErrors(['error' => 'Failed to load load factor utilization report.']);
+        }
+    }
+
+    /**
+     * Display cost per kilometer analysis report.
+     */
+    public function costPerKilometer(CostPerKilometerRequest $request): Response|RedirectResponse
+    {
+        try {
+            $result = $this->costPerKilometerReport->build($request->validated());
+
+            $rows = $result['rows'] instanceof Collection
+                ? $result['rows']->values()->all()
+                : collect($result['rows'])->values()->all();
+
+            $summary = $result['summary'];
+
+            // Cache truck options (1 hour)
+            $trucks = Cache::remember('reports.cost_per_kilometer.truck_options', 3600, function () {
+                return Truck::query()
+                    ->select('id', 'plate', 'status')
+                    ->orderBy('plate')
+                    ->get()
+                    ->map(static fn (Truck $truck) => [
+                        'id' => $truck->id,
+                        'name' => $truck->plate ?? '—',
+                        'status' => $truck->status,
+                    ])
+                    ->values();
+            });
+
+            // Cache driver options (1 hour)
+            $drivers = Cache::remember('reports.cost_per_kilometer.driver_options', 3600, function () {
+                return Driver::query()
+                    ->select('id', 'name', 'status')
+                    ->orderBy('name')
+                    ->get()
+                    ->map(static fn (Driver $driver) => [
+                        'id' => $driver->id,
+                        'name' => $driver->name ?? 'Unassigned',
+                        'status' => $driver->status,
+                    ])
+                    ->values();
+            });
+
+            return Inertia::render('Reports/CostPerKilometer', [
+                'filters' => [
+                    'from' => $result['resolved_from'],
+                    'to' => $result['resolved_to'],
+                    'truck_ids' => $result['filters']['truck_ids'],
+                    'driver_ids' => $result['filters']['driver_ids'],
+                    'group_by' => $result['group_by'],
+                ],
+                'rows' => $rows,
+                'summary' => $summary,
+                'options' => [
+                    'trucks' => $trucks,
+                    'drivers' => $drivers,
+                ],
+            ]);
+        } catch (Exception $e) {
+            return back()->withErrors(['error' => 'Failed to load cost per kilometer report.']);
         }
     }
 }

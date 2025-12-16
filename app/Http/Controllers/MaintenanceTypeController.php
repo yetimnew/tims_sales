@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\MaintenanceType;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Spatie\Activitylog\Models\Activity;
 
@@ -41,15 +42,17 @@ class MaintenanceTypeController extends Controller
 
         $maintenanceTypes = $query->paginate(5);
 
-        // Get statistics
-        $statistics = [
-            'total' => MaintenanceType::count(),
-            'active' => MaintenanceType::where('is_active', true)->count(),
-            'inactive' => MaintenanceType::where('is_active', false)->count(),
-            'preventive' => MaintenanceType::where('category', 'Preventive')->count(),
-            'corrective' => MaintenanceType::where('category', 'Corrective')->count(),
-            'emergency' => MaintenanceType::where('category', 'Emergency')->count(),
-        ];
+        // Cache statistics (1 hour) - changes when types are added/removed/updated
+        $statistics = Cache::remember('maintenance_types.statistics', 3600, function () {
+            return [
+                'total' => MaintenanceType::count(),
+                'active' => MaintenanceType::where('is_active', true)->count(),
+                'inactive' => MaintenanceType::where('is_active', false)->count(),
+                'preventive' => MaintenanceType::where('category', 'Preventive')->count(),
+                'corrective' => MaintenanceType::where('category', 'Corrective')->count(),
+                'emergency' => MaintenanceType::where('category', 'Emergency')->count(),
+            ];
+        });
 
         return Inertia::render('MaintenanceTypes/Index', [
             'maintenanceTypes' => $maintenanceTypes,
@@ -86,6 +89,13 @@ class MaintenanceTypeController extends Controller
         ]);
 
         $maintenanceType = MaintenanceType::create($validated);
+
+        // Clear cached data
+        Cache::forget('maintenance_types.statistics');
+        Cache::forget('maintenance.maintenance_type_options');
+        Cache::forget('maintenance.create_maintenance_types');
+        // Clear report caches
+        Cache::forget('reports.maintenance.maintenance_type_options');
 
         // Log the creation
         if (Auth::check()) {
@@ -144,6 +154,13 @@ class MaintenanceTypeController extends Controller
         $oldAttributes = $maintenanceType->getAttributes();
         $maintenanceType->update($validated);
 
+        // Clear cached data
+        Cache::forget('maintenance_types.statistics');
+        Cache::forget('maintenance.maintenance_type_options');
+        Cache::forget('maintenance.create_maintenance_types');
+        // Clear report caches
+        Cache::forget('reports.maintenance.maintenance_type_options');
+
         // Log the update
         if (Auth::check()) {
             activity()
@@ -181,6 +198,13 @@ class MaintenanceTypeController extends Controller
             }
 
             $maintenanceType->delete();
+
+            // Clear cached data
+            Cache::forget('maintenance_types.statistics');
+            Cache::forget('maintenance.maintenance_type_options');
+            Cache::forget('maintenance.create_maintenance_types');
+            // Clear report caches
+            Cache::forget('reports.maintenance.maintenance_type_options');
 
             return redirect()->route('maintenance-types.index')
                 ->with('success', 'Maintenance type deleted successfully.');
@@ -280,6 +304,11 @@ class MaintenanceTypeController extends Controller
 
             MaintenanceType::whereIn('id', $ids)->delete();
 
+            // Clear cached data
+            Cache::forget('maintenance_types.statistics');
+            Cache::forget('maintenance.maintenance_type_options');
+            Cache::forget('maintenance.create_maintenance_types');
+
             return response()->json([
                 'message' => "Successfully deleted {$count} maintenance type(s).",
                 'count' => $count,
@@ -312,6 +341,11 @@ class MaintenanceTypeController extends Controller
 
             MaintenanceType::whereIn('id', $ids)->update(['is_active' => true]);
 
+            // Clear cached data
+            Cache::forget('maintenance_types.statistics');
+            Cache::forget('maintenance.maintenance_type_options');
+            Cache::forget('maintenance.create_maintenance_types');
+
             return response()->json([
                 'message' => "Successfully activated {$count} maintenance type(s).",
                 'count' => $count,
@@ -343,6 +377,11 @@ class MaintenanceTypeController extends Controller
             }
 
             MaintenanceType::whereIn('id', $ids)->update(['is_active' => false]);
+
+            // Clear cached data
+            Cache::forget('maintenance_types.statistics');
+            Cache::forget('maintenance.maintenance_type_options');
+            Cache::forget('maintenance.create_maintenance_types');
 
             return response()->json([
                 'message' => "Successfully deactivated {$count} maintenance type(s).",

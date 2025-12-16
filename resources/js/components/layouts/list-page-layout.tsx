@@ -18,6 +18,7 @@ interface ListPageLayoutProps {
     children: ReactNode;
     pagination?: ReactNode;
     tableContainerClassName?: string;
+    disableTransitionOverlay?: boolean;
 }
 
 export default function ListPageLayout({
@@ -33,16 +34,17 @@ export default function ListPageLayout({
     children,
     pagination,
     tableContainerClassName,
+    disableTransitionOverlay = true,
 }: ListPageLayoutProps) {
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <AppLayout breadcrumbs={breadcrumbs} disableTransitionOverlay={disableTransitionOverlay}>
             <Head title={headTitle ?? title} />
-            <div className="flex h-full flex-1 flex-col gap-6 overflow-hidden rounded-xl p-4">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-3xl font-bold">{title}</h1>
+            <div className="flex h-full flex-1 flex-col gap-6 overflow-hidden rounded-xl p-4 bg-gradient-to-br from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+                <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <div className="space-y-1">
+                        <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">{title}</h1>
                         {description && (
-                            <p className="text-muted-foreground mt-2">
+                            <p className="text-base text-slate-600 dark:text-slate-400">
                                 {description}
                             </p>
                         )}
@@ -52,17 +54,17 @@ export default function ListPageLayout({
                             {actions}
                         </div>
                     )}
-                </div>
+                </header>
 
                 {stats}
 
-                <Card className="flex flex-1 flex-col overflow-hidden">
-                    <CardHeader>
-                        <div className="flex items-center justify-between">
+                <Card className="flex flex-1 flex-col overflow-hidden border-slate-200/60 dark:border-slate-700/60 shadow-sm hover:shadow-md transition-all duration-200">
+                    <CardHeader className="bg-gradient-to-r from-slate-50/80 to-slate-100/50 dark:from-slate-800/80 dark:to-slate-700/50 border-b border-slate-200/60 dark:border-slate-700/60">
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                             <div>
-                                <CardTitle>{tableTitle}</CardTitle>
+                                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">{tableTitle}</CardTitle>
                                 {tableDescription && (
-                                    <CardDescription>
+                                    <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">
                                         {tableDescription}
                                     </CardDescription>
                                 )}

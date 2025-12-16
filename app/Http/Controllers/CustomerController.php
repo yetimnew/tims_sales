@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateCustomerRequest;
 use App\Models\Customer;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Inertia\Response;
 use Spatie\Activitylog\Models\Activity;
@@ -55,13 +56,16 @@ class CustomerController extends Controller
         $query->orderBy($sort, $direction);
         $customers = $query->paginate($perPage)->withQueryString();
 
-        $statusCounts = Customer::selectRaw('status, COUNT(*) as aggregate')->groupBy('status')->pluck('aggregate', 'status');
-        $metrics = [
-            'total' => (int) $statusCounts->sum(),
-            'active' => (int) ($statusCounts->get('active') ?? 0),
-            'inactive' => (int) ($statusCounts->get('inactive') ?? 0),
-            'with_operations' => (int) Customer::has('operations')->count(),
-        ];
+        // Cache metrics (1 hour) - changes when customers are added/removed/updated
+        $metrics = Cache::remember('customers.metrics', 3600, function () {
+            $statusCounts = Customer::selectRaw('status, COUNT(*) as aggregate')->groupBy('status')->pluck('aggregate', 'status');
+            return [
+                'total' => (int) $statusCounts->sum(),
+                'active' => (int) ($statusCounts->get('active') ?? 0),
+                'inactive' => (int) ($statusCounts->get('inactive') ?? 0),
+                'with_operations' => (int) Customer::has('operations')->count(),
+            ];
+        });
 
         $filters = [
             'search' => $request->input('search'),
@@ -101,6 +105,12 @@ class CustomerController extends Controller
         try {
             $validated = $request->validated();
             $customer = Customer::create($validated);
+
+            // Clear cached data
+            Cache::forget('customers.metrics');
+            Cache::forget('operations.customer_options');
+            // Clear report caches
+            Cache::forget('reports.customer_profitability.customer_options');
 
             return redirect()->route('customers.index')
                 ->with('success', 'Customer created successfully.');
@@ -210,6 +220,12 @@ class CustomerController extends Controller
             $validated = $request->validated();
             $customer->update($validated);
 
+            // Clear cached data if status changed
+            Cache::forget('customers.metrics');
+            Cache::forget('operations.customer_options');
+            // Clear report caches
+            Cache::forget('reports.customer_profitability.customer_options');
+
             return redirect()->route('customers.index')
                 ->with('success', 'Customer updated successfully.');
 
@@ -235,6 +251,12 @@ class CustomerController extends Controller
 
             $customer->delete();
 
+            // Clear cached data
+            Cache::forget('customers.metrics');
+            Cache::forget('operations.customer_options');
+            // Clear report caches
+            Cache::forget('reports.customer_profitability.customer_options');
+
             return redirect()->route('customers.index')
                 ->with('success', 'Customer deleted successfully.');
 
@@ -250,6 +272,10 @@ class CustomerController extends Controller
     {
         try {
             $customer->update(['status' => 'inactive']);
+
+            // Clear cached data
+            Cache::forget('customers.metrics');
+            Cache::forget('operations.customer_options');
 
             return redirect()->route('customers.index')
                 ->with('success', 'Customer deactivated successfully.');

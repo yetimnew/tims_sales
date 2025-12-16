@@ -10,6 +10,7 @@ use App\Models\Performance;
 use App\Models\Truck;
 use App\Models\TruckFinancialRecord;
 use App\Models\VehicleMaintenanceRecord;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -37,12 +38,13 @@ class DashboardController extends Controller
             return round((($current - $previous) / abs($previous)) * 100, 1);
         };
 
-        $totalTrucks = Truck::count();
-        $activeTrucks = Truck::where('status', 'active')->count();
-        $totalDrivers = Driver::count();
-        $activeDrivers = Driver::where('status', 'active')->count();
-        $totalOperations = Operation::count();
-        $openOperations = Operation::where('closed', false)->count();
+        // Cache basic counts for 5 minutes - they change frequently but don't need real-time accuracy
+        $totalTrucks = Cache::remember('dashboard.total_trucks', 300, fn () => Truck::count());
+        $activeTrucks = Cache::remember('dashboard.active_trucks', 300, fn () => Truck::where('status', 'active')->count());
+        $totalDrivers = Cache::remember('dashboard.total_drivers', 300, fn () => Driver::count());
+        $activeDrivers = Cache::remember('dashboard.active_drivers', 300, fn () => Driver::where('status', 'active')->count());
+        $totalOperations = Cache::remember('dashboard.total_operations', 300, fn () => Operation::count());
+        $openOperations = Cache::remember('dashboard.open_operations', 300, fn () => Operation::where('closed', false)->count());
 
         $dailyPerformance = Performance::selectRaw('DATE(DateDispach) as date')
             ->selectRaw('SUM(COALESCE(CargoVolumMT, 0)) as tonnage')

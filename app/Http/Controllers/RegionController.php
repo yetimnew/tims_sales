@@ -9,6 +9,7 @@ use App\Models\Region;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -69,17 +70,34 @@ class RegionController extends Controller
 
         $regions = $regionsQuery->paginate($perPage)->withQueryString();
 
-        $metricsBaseQuery = clone $metricsQuery;
-
-        $metrics = [
-            'total' => (clone $metricsBaseQuery)->count(),
-            'active' => (clone $metricsBaseQuery)->where('status', 'active')->count(),
-            'inactive' => (clone $metricsBaseQuery)->where('status', 'inactive')->count(),
-            'totalPopulation' => (int) ((clone $metricsBaseQuery)->sum('population') ?? 0),
-            'averageAccessibility' => round((float) (((clone $metricsBaseQuery)->avg('accessibility_score')) ?? 0), 2),
-            'surveyedCount' => (clone $metricsBaseQuery)->whereNotNull('last_surveyed_at')->count(),
-            'totalZones' => (int) (clone $metricsBaseQuery)->withCount('zones')->get()->sum('zones_count'),
-        ];
+        // Cache metrics only when no filters applied (1 hour) - changes when regions are added/removed/updated
+        $cacheKey = 'regions.metrics';
+        if ($search === '' && empty($status)) {
+            $metrics = Cache::remember($cacheKey, 3600, function () use ($metricsQuery) {
+                $metricsBaseQuery = clone $metricsQuery;
+                return [
+                    'total' => (clone $metricsBaseQuery)->count(),
+                    'active' => (clone $metricsBaseQuery)->where('status', 'active')->count(),
+                    'inactive' => (clone $metricsBaseQuery)->where('status', 'inactive')->count(),
+                    'totalPopulation' => (int) ((clone $metricsBaseQuery)->sum('population') ?? 0),
+                    'averageAccessibility' => round((float) (((clone $metricsBaseQuery)->avg('accessibility_score')) ?? 0), 2),
+                    'surveyedCount' => (clone $metricsBaseQuery)->whereNotNull('last_surveyed_at')->count(),
+                    'totalZones' => (int) (clone $metricsBaseQuery)->withCount('zones')->get()->sum('zones_count'),
+                ];
+            });
+        } else {
+            // Calculate metrics without cache when filters are applied
+            $metricsBaseQuery = clone $metricsQuery;
+            $metrics = [
+                'total' => (clone $metricsBaseQuery)->count(),
+                'active' => (clone $metricsBaseQuery)->where('status', 'active')->count(),
+                'inactive' => (clone $metricsBaseQuery)->where('status', 'inactive')->count(),
+                'totalPopulation' => (int) ((clone $metricsBaseQuery)->sum('population') ?? 0),
+                'averageAccessibility' => round((float) (((clone $metricsBaseQuery)->avg('accessibility_score')) ?? 0), 2),
+                'surveyedCount' => (clone $metricsBaseQuery)->whereNotNull('last_surveyed_at')->count(),
+                'totalZones' => (int) (clone $metricsBaseQuery)->withCount('zones')->get()->sum('zones_count'),
+            ];
+        }
 
         $filters = [
             'search' => $search !== '' ? $search : null,
@@ -148,6 +166,10 @@ class RegionController extends Controller
                 ->log('created');
 
             event(new RegionCreated($region, Auth::user()));
+
+            // Clear cached data
+            Cache::forget('regions.metrics');
+            Cache::forget('zones.create_regions'); // Clear zones create form cache
 
             return redirect()->route('regions.index')
                 ->with('success', 'Region created successfully.');
@@ -245,6 +267,10 @@ class RegionController extends Controller
                 event(new RegionUpdated($region->fresh(), $changes, Auth::user()));
             }
 
+            // Clear cached data
+            Cache::forget('regions.metrics');
+            Cache::forget('zones.create_regions'); // Clear zones create form cache
+
             return redirect()->route('regions.index')
                 ->with('success', 'Region updated successfully.');
         } catch (Exception $e) {
@@ -281,6 +307,10 @@ class RegionController extends Controller
                 ->log('deleted');
 
             event(new RegionDeleted($regionId, $regionName, $regionData, Auth::user()));
+
+            // Clear cached data
+            Cache::forget('regions.metrics');
+            Cache::forget('zones.create_regions'); // Clear zones create form cache
 
             return redirect()->route('regions.index')
                 ->with('success', 'Region deleted successfully.');

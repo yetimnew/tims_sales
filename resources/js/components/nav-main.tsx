@@ -1,3 +1,4 @@
+import * as React from 'react';
 import {
     SidebarGroup,
     SidebarGroupLabel,
@@ -17,7 +18,7 @@ import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
 import { ChevronRight } from 'lucide-react';
 
-export function NavMain({ items = [] }: { items: NavItem[] }) {
+export const NavMain = React.memo(function NavMain({ items = [] }: { items: NavItem[] }) {
     const page = usePage();
 
     // Safety check
@@ -112,4 +113,4 @@ export function NavMain({ items = [] }: { items: NavItem[] }) {
             </SidebarMenu>
         </SidebarGroup>
     );
-}
+});

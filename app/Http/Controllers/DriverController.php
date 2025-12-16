@@ -5,28 +5,30 @@ namespace App\Http\Controllers;
 use App\Events\DriverCreated;
 use App\Events\DriverDeleted;
 use App\Events\DriverUpdated;
+use App\Http\Requests\StoreDriverRequest;
+use App\Http\Requests\UpdateDriverRequest;
 use App\Models\Driver;
 use App\Models\DriverSafetyRecord;
 use App\Models\DriverTruck;
 use App\Models\Performance;
 use App\Services\DriverGradeService;
 use App\Services\DriverMetricsService;
+use App\Services\Drivers\DriverIndexService;
 use App\Support\PerformanceRecordPresenter;
 use Exception;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Inertia\Response;
 use Spatie\Activitylog\Models\Activity;
 
-class DriverController extends Controller
+class DriverController extends BaseResourceController
 {
     public function __construct(
         private DriverMetricsService $driverMetrics,
         private DriverGradeService $driverGrade,
+        private DriverIndexService $driverIndexService,
     ) {}
 
     /**
@@ -34,110 +36,110 @@ class DriverController extends Controller
      */
     public function index(Request $request): Response
     {
-        $search = trim((string) $request->input('search'));
-        $status = $request->input('status');
-        $sex = $request->input('sex');
-        $perPageOptions = [15, 25, 50, 100];
-        $perPageDefault = 15;
-        $perPage = (int) $request->input('per_page', $perPageDefault);
+        $result = $this->driverIndexService->getIndexResult($request);
 
-        if (! in_array($perPage, $perPageOptions, true)) {
-            $perPage = $perPageDefault;
-        }
+        return Inertia::render('Drivers/Index', $result->toInertia());
+    }
 
-        $filtersSearch = $search !== '' ? $search : null;
+    /**
+     * Export drivers to CSV.
+     */
+    public function export(Request $request)
+    {
+        try {
+            $filters = $this->driverIndexService->resolveFilters($request);
 
-        $driversQuery = $this->driverMetrics->applyFilters(
-            Driver::query()
-                ->select([
+            $driversQuery = $this->driverMetrics->applyFilters(
+                Driver::query()->select([
                     'id',
                     'driverid',
                     'name',
                     'sex',
+                    'birthdate',
                     'zone',
+                    'woreda',
+                    'kebele',
+                    'housenumber',
                     'mobile',
                     'hireddate',
                     'status',
                     'created_at',
                     'updated_at',
                 ]),
-            $filtersSearch,
-            $sex,
-            $status,
-        )->with('trucks');
+                $filters->search,
+                $filters->sex,
+                $filters->status,
+            );
 
-        $sort = $request->input('sort', 'created_at');
-        $direction = $request->input('direction', 'desc');
-        $allowedSorts = ['name', 'driverid', 'sex', 'mobile', 'hireddate', 'status', 'zone', 'created_at'];
+            $driversQuery->orderBy($filters->sort, $filters->direction);
 
-        if (! in_array($sort, $allowedSorts, true)) {
-            $sort = 'created_at';
+            $drivers = $driversQuery->get();
+
+            $filename = 'drivers_'.now()->format('Y-m-d_H-i-s').'.csv';
+            $handle = fopen('php://temp', 'r+');
+
+            fputcsv($handle, [
+                'ID',
+                'Driver ID',
+                'Name',
+                'Sex',
+                'Birthdate',
+                'Zone',
+                'Woreda',
+                'Kebele',
+                'House Number',
+                'Mobile',
+                'Hire Date',
+                'Status',
+                'Created At',
+                'Updated At',
+            ]);
+
+            foreach ($drivers as $driver) {
+                fputcsv($handle, [
+                    $driver->id,
+                    $driver->driverid,
+                    $driver->name,
+                    $driver->sex,
+                    $driver->birthdate?->toDateString(),
+                    $driver->zone,
+                    $driver->woreda,
+                    $driver->kebele,
+                    $driver->housenumber,
+                    $driver->mobile,
+                    $driver->hireddate?->toDateString(),
+                    strtolower((string) ($driver->getRawOriginal('status') ?? $driver->status ?? '')),
+                    $driver->created_at?->toDateTimeString(),
+                    $driver->updated_at?->toDateTimeString(),
+                ]);
+            }
+
+            rewind($handle);
+            $csv = stream_get_contents($handle);
+            fclose($handle);
+
+            if (Auth::check()) {
+                activity()
+                    ->causedBy(Auth::user())
+                    ->withProperties([
+                        'count' => $drivers->count(),
+                        'filters' => $filters->toQueryParameters(),
+                    ])
+                    ->log('exported drivers to CSV');
+            }
+
+            return response($csv, 200)
+                ->header('Content-Type', 'text/csv; charset=UTF-8')
+                ->header('Content-Disposition', "attachment; filename=\"{$filename}\"");
+        } catch (Exception $e) {
+            Log::error('Driver export failed', [
+                'error' => $e->getMessage(),
+                'filters' => $request->all(),
+                'exported_by' => Auth::id(),
+            ]);
+
+            return back()->withErrors(['error' => 'Failed to export drivers. Please try again.']);
         }
-
-        if (! in_array(strtolower((string) $direction), ['asc', 'desc'], true)) {
-            $direction = 'asc';
-        }
-
-        $driversQuery->orderBy($sort, $direction);
-
-        $drivers = $driversQuery->paginate($perPage)->withQueryString();
-
-        $drivers->setCollection(
-            $drivers->getCollection()->map(fn (Driver $driver) => [
-                'id' => $driver->id,
-                'driverid' => $driver->driverid,
-                'name' => $driver->name,
-                'sex' => $driver->sex,
-                'zone' => $driver->zone,
-                'mobile' => $driver->mobile,
-                'hireddate' => $driver->hireddate,
-                'status' => strtolower((string) ($driver->getRawOriginal('status') ?? '')),
-                'created_at' => $driver->created_at,
-                'updated_at' => $driver->updated_at,
-            ])
-        );
-
-        $driversData = $this->trimPagination($drivers);
-
-        $metrics = $this->driverMetrics->metrics($filtersSearch, $sex, $status);
-
-        $statusOptions = Driver::query()
-            ->select('status')
-            ->distinct()
-            ->whereNotNull('status')
-            ->orderBy('status')
-            ->get()
-            ->map(fn ($driver) => [
-                'label' => Str::of($driver->status)->replace('_', ' ')->headline(),
-                'value' => $driver->status,
-            ])->values();
-
-        $genderOptions = Driver::query()
-            ->select('sex')
-            ->distinct()
-            ->whereNotNull('sex')
-            ->orderBy('sex')
-            ->get()
-            ->map(fn ($driver) => [
-                'label' => Str::of($driver->sex)->replace('_', ' ')->headline(),
-                'value' => $driver->sex,
-            ])->values();
-
-        return Inertia::render('Drivers/Index', [
-            'drivers' => $driversData,
-            'metrics' => $metrics,
-            'filters' => [
-                'search' => $search !== '' ? $search : null,
-                'status' => $status ?: null,
-                'sex' => $sex ?: null,
-                'sort' => $sort,
-                'direction' => $direction,
-                'per_page' => $perPage,
-            ],
-            'statusOptions' => $statusOptions,
-            'genderOptions' => $genderOptions,
-            'perPageOptions' => $perPageOptions,
-        ]);
     }
 
     private function trimPagination(LengthAwarePaginator $paginator): array
@@ -198,33 +200,32 @@ class DriverController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(StoreDriverRequest $request)
     {
         try {
-            $validated = $request->validate([
-                'driverid' => 'required|string|max:255|unique:drivers',
-                'name' => 'required|string|max:255',
-                'sex' => 'required|string|in:male,female',
-                'birthdate' => 'nullable|date',
-                'zone' => 'nullable|string|max:255',
-                'woreda' => 'nullable|string|max:255',
-                'kebele' => 'nullable|string|max:255',
-                'housenumber' => 'nullable|string|max:255',
-                'mobile' => 'nullable|string|max:255',
-                'hireddate' => 'nullable|date',
-                'status' => 'required|string|in:active,inactive',
-            ]);
+            $driver = Driver::create($request->validated());
 
-            $driver = Driver::create($validated);
+            // Clear all related caches systematically
+            $this->driverMetrics->clearCache();
+            Cache::forget('drivers.status_options');
+            Cache::forget('drivers.gender_options');
+            Cache::forget('fuel_records.driver_options');
+            Cache::forget('driver_safety.driver_options');
+            Cache::forget('reports.performance_all.driver_options');
+            Cache::forget('reports.performance_by_driver.driver_options');
 
+            // Dispatch event for audit trail
             event(new DriverCreated($driver, Auth::user()));
 
-            $this->driverMetrics->clearCache();
-
             return redirect()->route('drivers.index')
-                ->with('success', 'Driver created successfully.');
+                ->with('success', sprintf('Driver %s created successfully.', $driver->name));
 
         } catch (Exception $e) {
+            $this->logError('store', 'Driver', $e, [
+                'created_by' => Auth::id(),
+                'driverid' => $request->input('driverid'),
+            ]);
+            
             return back()->withErrors(['error' => 'Failed to create driver. Please try again.']);
         }
     }
@@ -244,14 +245,8 @@ class DriverController extends Controller
             },
         ]);
 
-        // Activity logs (limit for payload size) mapped to UI-friendly structure
-        $rawActivityLogs = Activity::forSubject($driver)
-            ->with('causer')
-            ->orderByDesc('created_at')
-            ->limit(50)
-            ->get();
-
-        $activityLogs = $this->transformActivityLogs($rawActivityLogs);
+        // Activity logs using base controller method
+        $activityLogs = $this->getActivityLogs($driver, limit: 50);
 
         // Aggregated performance metrics from periodic performanceRecords
         $performanceRecords = $driver->performanceRecords;
@@ -589,48 +584,36 @@ class DriverController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Driver $driver)
+    public function update(UpdateDriverRequest $request, Driver $driver)
     {
         try {
-            $validated = $request->validate([
-                'driverid' => 'required|string|max:255|unique:drivers,driverid,'.$driver->id,
-                'name' => 'required|string|max:255',
-                'sex' => 'required|string|in:male,female',
-                'birthdate' => 'nullable|date',
-                'zone' => 'nullable|string|max:255',
-                'woreda' => 'nullable|string|max:255',
-                'kebele' => 'nullable|string|max:255',
-                'housenumber' => 'nullable|string|max:255',
-                'mobile' => 'nullable|string|max:255',
-                'hireddate' => 'nullable|date',
-                'status' => 'required|string|in:active,inactive',
-            ]);
+            // Capture original values before update
+            $original = $this->normalizeAttributes($driver->getOriginal());
+            
+            $driver->update($request->validated());
+            
+            // Format changes for audit trail
+            $changes = $this->formatChanges($original, $this->normalizeAttributes($driver->getChanges()));
 
-            $driver->fill($validated);
-
-            $dirty = $driver->getDirty();
-
-            $changes = [];
-
-            foreach ($dirty as $attribute => $newValue) {
-                $changes[$attribute] = [
-                    'old' => $driver->getOriginal($attribute),
-                    'new' => $newValue,
-                ];
-            }
-
-            $driver->save();
-
-            if ($changes !== []) {
-                event(new DriverUpdated($driver->fresh(), $changes, Auth::user()));
-            }
-
+            // Clear related caches
             $this->driverMetrics->clearCache();
+            Cache::forget('drivers.status_options');
+            Cache::forget('drivers.gender_options');
+            Cache::forget('fuel_records.driver_options');
+            Cache::forget('driver_safety.driver_options');
+            Cache::forget('reports.performance_all.driver_options');
+            Cache::forget('reports.performance_by_driver.driver_options');
+
+            // Only dispatch event if there were actual changes
+            if (! empty($changes)) {
+                event(new DriverUpdated($driver, $changes, Auth::user()));
+            }
 
             return redirect()->route('drivers.index')
-                ->with('success', 'Driver updated successfully.');
+                ->with('success', sprintf('Driver %s updated successfully.', $driver->name));
 
         } catch (Exception $e) {
+            $this->logError('update', 'Driver', $e);
             return back()->withErrors(['error' => 'Failed to update driver. Please try again.']);
         }
     }
@@ -678,21 +661,31 @@ class DriverController extends Controller
                 ]);
             }
 
-            $attributes = $driver->getAttributes();
-            $driverId = $driver->getKey();
+            // Capture data before deletion for audit trail
+            $attributes = $this->normalizeAttributes($driver->toArray());
+            $driverId = $driver->id;
             $driverCode = $driver->driverid;
             $driverName = $driver->name;
 
             $driver->delete();
 
+            // Clear related caches
+            $this->driverMetrics->clearCache();
+            Cache::forget('drivers.status_options');
+            Cache::forget('drivers.gender_options');
+            Cache::forget('fuel_records.driver_options');
+            Cache::forget('driver_safety.driver_options');
+            Cache::forget('reports.performance_all.driver_options');
+            Cache::forget('reports.performance_by_driver.driver_options');
+
+            // Dispatch event with deleted data for audit trail
             event(new DriverDeleted($driverId, $driverCode, $driverName, $attributes, Auth::user()));
 
-            $this->driverMetrics->clearCache();
-
             return redirect()->route('drivers.index')
-                ->with('success', 'Driver deleted successfully.');
+                ->with('success', sprintf('Driver %s deleted successfully.', $driverName));
 
         } catch (Exception $e) {
+            $this->logError('destroy', 'Driver', $e);
             return back()->withErrors(['error' => 'Failed to delete driver. Please try again.']);
         }
     }
@@ -705,6 +698,7 @@ class DriverController extends Controller
         $driver->update(['status' => 'inactive']);
 
         $this->driverMetrics->clearCache();
+        Cache::forget('drivers.status_options'); // Clear cached status options
 
         return redirect()->route('drivers.index')
             ->with('success', 'Driver deactivated successfully.');
@@ -718,6 +712,7 @@ class DriverController extends Controller
         $driver->update(['status' => 'active']);
 
         $this->driverMetrics->clearCache();
+        Cache::forget('drivers.status_options'); // Clear cached status options
 
         return redirect()->route('drivers.index')
             ->with('success', 'Driver activated successfully.');

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\ClearsCacheOnModelEvents;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -14,7 +15,7 @@ use Spatie\Activitylog\LogOptions;
 
 class Truck extends Model
 {
-    use HasFactory, SoftDeletes, LogsActivity;
+    use HasFactory, SoftDeletes, LogsActivity, ClearsCacheOnModelEvents;
 
     protected $fillable = [
         'plate',

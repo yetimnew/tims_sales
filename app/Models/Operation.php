@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\CargoServiceType;
 use App\Enums\OperationDestinationScope;
+use App\Traits\ClearsCacheOnModelEvents;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -15,7 +16,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
 
 class Operation extends Model
 {
-    use HasFactory, LogsActivity, SoftDeletes;
+    use HasFactory, LogsActivity, SoftDeletes, ClearsCacheOnModelEvents;
 
     protected $guarded = [];
 

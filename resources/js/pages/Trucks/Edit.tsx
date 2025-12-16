@@ -157,10 +157,6 @@ export default function TrucksEdit({ truck, vehicleTypes }: TrucksEditProps) {
                 clearErrors();
                 setFrontendErrors({});
                 setIsDirty(false);
-                toast({
-                    title: '✅ Truck Updated',
-                    description: `${data.plate || truck.plate} has been updated successfully.`,
-                });
             },
         });
     };

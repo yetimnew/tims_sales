@@ -17,6 +17,7 @@ use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -97,16 +98,19 @@ class DriverGradingSettingsController extends Controller
 
         $perPageOptions = [10, 25, 50];
 
-        $statuses = Driver::query()
-            ->whereNull('deleted_at')
-            ->select('status')
-            ->whereNotNull('status')
-            ->distinct()
-            ->orderBy('status')
-            ->pluck('status')
-            ->filter(static fn (?string $value) => $value !== null && $value !== '')
-            ->values()
-            ->all();
+        // Cache statuses (1 hour) - rarely changes
+        $statuses = Cache::remember('driver_grading_settings.statuses', 3600, function () {
+            return Driver::query()
+                ->whereNull('deleted_at')
+                ->select('status')
+                ->whereNotNull('status')
+                ->distinct()
+                ->orderBy('status')
+                ->pluck('status')
+                ->filter(static fn (?string $value) => $value !== null && $value !== '')
+                ->values()
+                ->all();
+        });
 
         return Inertia::render('settings/driver-grading', [
             'settings' => [

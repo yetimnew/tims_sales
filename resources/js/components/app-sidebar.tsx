@@ -13,6 +13,7 @@ import {
 import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
 import { usePermissions } from '@/hooks/use-permissions';
+// Lazy load icons to improve initial bundle size
 import {
     LayoutGrid,
     Truck,
@@ -360,12 +361,6 @@ const getMainNavItems = (currentUrl: string): NavItem[] => {
                         requiredPermissions: ['reports.performance-by-truck.view'],
                     },
                     {
-                        title: 'Performance by Model',
-                        href: '/reports/performance-by-model',
-                        icon: Package,
-                        requiredPermissions: ['reports.performance-by-model.view'],
-                    },
-                    {
                         title: 'Performance by Status',
                         href: '/reports/performance-by-status',
                         icon: Activity,
@@ -461,18 +456,25 @@ interface AppSidebarProps {
     className?: string;
 }
 
-export function AppSidebar({ className }: AppSidebarProps) {
+export const AppSidebar = React.memo(function AppSidebar({ className }: AppSidebarProps) {
     const { permissions } = usePermissions();
     const page = usePage();
     const currentUrl = page?.url ?? (typeof window !== 'undefined' ? window.location.pathname : '/');
+
+    // Memoize nav items to prevent recreation on every render
+    const mainNavItems = React.useMemo(() => getMainNavItems(currentUrl), [currentUrl]);
+
+    // Memoize permissions set to prevent recreation
+    const permissionsSet = React.useMemo(() => new Set(permissions), [permissions]);
+
     const filteredItems = React.useMemo(() => {
         try {
-            return filterNavItems(getMainNavItems(currentUrl), new Set(permissions));
+            return filterNavItems(mainNavItems, permissionsSet);
         } catch (error) {
             console.error('Error filtering sidebar items:', error);
             return [];
         }
-    }, [currentUrl, permissions]);
+    }, [mainNavItems, permissionsSet]);
 
     return (
         <Sidebar collapsible="icon" variant="inset" className={className}>
@@ -497,4 +499,4 @@ export function AppSidebar({ className }: AppSidebarProps) {
             </SidebarFooter>
         </Sidebar>
     );
-}
+});

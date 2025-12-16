@@ -22,6 +22,10 @@ return new class extends Migration
             $table->foreignId('changed_by')->nullable()->constrained('users');
             $table->timestamps();
             $table->softDeletes();
+            
+            // Composite indexes for performance optimization
+            $table->index(['truck_id', 'status_date'], 'idx_daily_status_truck_date');
+            $table->index(['status_date', 'status_id'], 'idx_daily_status_date_status');
         });
     }
 

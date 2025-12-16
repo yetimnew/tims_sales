@@ -1,3 +1,4 @@
+import * as React from 'react';
 import { AppShell } from '@/components/app-shell';
 import { AppContent } from '@/components/app-content';
 import { AppHeader } from '@/components/app-header';
@@ -8,25 +9,48 @@ import { PageTransitionOverlay } from '@/components/page-transition-overlay';
 import { toast } from '@/hooks/use-toast';
 import { usePageTransitionLoading } from '@/hooks/use-page-transition-loading';
 import { type BreadcrumbItem, type SharedData } from '@/types';
-import { usePage } from '@inertiajs/react';
-import { useEffect } from 'react';
-import { router } from '@inertiajs/react';
+import { usePage, router } from '@inertiajs/react';
+
+const OVERLAY_DISABLED_ROOTS: string[] = [];
 
 interface AppLayoutProps {
     children: React.ReactNode;
     breadcrumbs?: BreadcrumbItem[];
+    disableTransitionOverlay?: boolean;
 }
 
-export default function AppLayout({
+const AppLayout = React.memo(function AppLayout({
     children,
     breadcrumbs = [],
+    disableTransitionOverlay = false,
 }: AppLayoutProps) {
     const page = usePage<SharedData>();
     const { flash } = page.props as any;
     const { isTransitioning } = usePageTransitionLoading();
+    const normalizedPath = React.useMemo(() => {
+        const rawUrl = page.url ?? '/';
+        const path = rawUrl.split('?')[0];
+        if (!path) {
+            return '/';
+        }
+
+        return path;
+    }, [page.url]);
+
+    const isRouteDisabled = React.useMemo(() => (
+        OVERLAY_DISABLED_ROOTS.some((prefix) => normalizedPath === prefix || normalizedPath.startsWith(`${prefix}/`))
+    ), [normalizedPath]);
+
+    const showOverlay = React.useMemo(() => {
+        if (!isTransitioning || disableTransitionOverlay || isRouteDisabled) {
+            return false;
+        }
+
+        return true;
+    }, [isTransitioning, disableTransitionOverlay, isRouteDisabled]);
 
     // Show success toast
-    useEffect(() => {
+    React.useEffect(() => {
         if (flash?.success) {
             toast({
                 title: '✅ Success',
@@ -37,7 +61,7 @@ export default function AppLayout({
     }, [flash?.success]);
 
     // Show error toast
-    useEffect(() => {
+    React.useEffect(() => {
         if (flash?.error) {
             toast({
                 title: '❌ Error',
@@ -47,7 +71,7 @@ export default function AppLayout({
         }
     }, [flash?.error]);
 
-    useEffect(() => {
+    React.useEffect(() => {
         const handleStart = (event: unknown) => {
             if (typeof window === 'undefined') {
                 return;
@@ -101,13 +125,17 @@ export default function AppLayout({
         <>
             <AppShell variant="sidebar">
                 <AppSidebar />
-                <AppContent variant="sidebar" className="overflow-x-hidden">
+                <AppContent variant="sidebar" className="relative overflow-x-hidden">
                     <AppSidebarHeader breadcrumbs={breadcrumbs} />
-                    {children}
+                    <div className="relative flex flex-1 flex-col">
+                        {children}
+                        <PageTransitionOverlay visible={showOverlay} variant="content" />
+                    </div>
                 </AppContent>
             </AppShell>
-            <PageTransitionOverlay visible={isTransitioning} />
             <Toaster />
         </>
     );
-}
+});
+
+export default AppLayout;

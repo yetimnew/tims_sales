@@ -281,6 +281,9 @@ export default function OutsourcePerformancesIndex({
     const { isLoading } = useListingLoading({
         storageKey: SKELETON_FLAG_KEY,
         isDataReady,
+        onlySamePath: true,
+        targetPath: '/outsource-performances',
+        initialIsLoading: true,
     });
 
     const perPageSelectOptions = useMemo(
