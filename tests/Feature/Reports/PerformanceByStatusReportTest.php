@@ -89,7 +89,9 @@ class PerformanceByStatusReportTest extends TestCase
         $response->assertOk()
             ->assertInertia(function (AssertableInertia $page) use ($date, &$props) {
                 $page->component('Reports/PerformanceByStatus')
-                    ->where('date', $date)
+                    ->where('filters.date', $date)
+                    ->where('filters.status_ids', [])
+                    ->has('options.statuses', 2)
                     ->has('summary', 2)
                     ->has('latest', 2)
                     ->has('metrics.vehicles_tracked')

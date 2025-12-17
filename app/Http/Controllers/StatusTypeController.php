@@ -5,7 +5,11 @@ namespace App\Http\Controllers;
 use App\Events\StatusTypeCreated;
 use App\Events\StatusTypeDeleted;
 use App\Events\StatusTypeUpdated;
+use App\Http\Requests\StoreStatusTypeRequest;
+use App\Http\Requests\UpdateStatusTypeRequest;
 use App\Models\StatusType;
+use App\Services\StatusTypeMetricsService;
+use App\Services\StatusTypes\StatusTypeIndexService;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -17,19 +21,19 @@ use Inertia\Response;
 
 class StatusTypeController extends Controller
 {
+    public function __construct(
+        private readonly StatusTypeIndexService $indexService,
+        private readonly StatusTypeMetricsService $metricsService,
+    ) {}
+
     /**
      * Display a listing of the resource.
      */
-    public function index(): Response
+    public function index(Request $request): Response
     {
-        // Note: Pagination cannot be cached directly, but the query is optimized with eager loading
-        $statusTypes = StatusType::withCount('statuses')
-            ->orderBy('name')
-            ->paginate(15);
+        $result = $this->indexService->getIndexResult($request);
 
-        return Inertia::render('StatusTypes/Index', [
-            'statusTypes' => $statusTypes,
-        ]);
+        return Inertia::render('StatusTypes/Index', $result->toInertia());
     }
 
     /**
@@ -43,17 +47,16 @@ class StatusTypeController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(StoreStatusTypeRequest $request)
     {
         try {
-            $validated = $request->validate([
-                'name' => 'required|string|max:255|unique:statustypes',
-                'description' => 'nullable|string|max:1000',
-            ]);
+            $validated = $request->validated();
 
             $statusType = StatusType::create($validated);
 
             event(new StatusTypeCreated($statusType->fresh(), Auth::user()));
+
+            $this->metricsService->clearCache();
 
             // Clear cached data
             Cache::forget('daily_truck_status.operational_status_type'); // Clear operational status type cache
@@ -104,13 +107,10 @@ class StatusTypeController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, StatusType $statusType)
+    public function update(UpdateStatusTypeRequest $request, StatusType $statusType)
     {
         try {
-            $validated = $request->validate([
-                'name' => 'required|string|max:255|unique:statustypes,name,'.$statusType->id,
-                'description' => 'nullable|string|max:1000',
-            ]);
+            $validated = $request->validated();
 
             $original = Arr::only($statusType->getOriginal(), ['name', 'description']);
 
@@ -135,6 +135,8 @@ class StatusTypeController extends Controller
             if ($changes !== []) {
                 event(new StatusTypeUpdated($statusType->fresh(), $changes, Auth::user()));
             }
+
+            $this->metricsService->clearCache();
 
             // Clear cached data
             Cache::forget('daily_truck_status.operational_status_type'); // Clear operational status type cache
@@ -194,6 +196,8 @@ class StatusTypeController extends Controller
                 array_filter($metrics, static fn ($value) => $value !== null),
                 Auth::user(),
             ));
+
+            $this->metricsService->clearCache();
 
             // Clear cached data
             Cache::forget('daily_truck_status.operational_status_type'); // Clear operational status type cache

@@ -3,20 +3,28 @@
 namespace App\Http\Controllers\Settings;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\RecalculateDriverTruckGradesRequest;
+use App\Jobs\RecalculateDriverTruckGradeSnapshots;
 use App\Models\DriverTruck;
 use App\Models\DriverTruckGradingSetting;
 use App\Services\DriverTruckGradeService;
+use App\Services\DriverTruckGradeSnapshotService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Validator;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class DriverTruckGradingSettingsController extends Controller
 {
-    public function __construct(private readonly DriverTruckGradeService $grader) {}
+    public function __construct(
+        private readonly DriverTruckGradeService $grader,
+        private readonly DriverTruckGradeSnapshotService $snapshots,
+    ) {}
 
     public function edit(Request $request): Response
     {
@@ -95,6 +103,7 @@ class DriverTruckGradingSettingsController extends Controller
             ],
             'can' => [
                 'update' => $request->user()?->can('driver-trucks.update') ?? false,
+                'recalculate' => $request->user()?->can('driver-trucks.update') ?? false,
             ],
             'assignments' => $this->formatPaginator($paginator),
             'perPageOptions' => $perPageOptions,
@@ -143,6 +152,7 @@ class DriverTruckGradingSettingsController extends Controller
         ];
 
         $this->saveSettingAttributes($payload);
+        $this->queueSnapshotRefresh($request->user()?->id);
 
         return to_route('settings.driver-truck-grading.edit')
             ->with('success', 'Driver-truck grading weights updated.');
@@ -210,9 +220,51 @@ class DriverTruckGradingSettingsController extends Controller
         ];
 
         $this->saveSettingAttributes($payload);
+        $this->queueSnapshotRefresh($request->user()?->id);
 
         return to_route('settings.driver-truck-grading.edit')
             ->with('success', 'Driver-truck grading grade thresholds updated.');
+    }
+
+    public function recalculate(RecalculateDriverTruckGradesRequest $request): RedirectResponse|JsonResponse
+    {
+        $filters = $request->filters();
+
+        $snapshotDate = Carbon::parse($filters['snapshot_date'])->toDateString();
+        $status = $filters['status'];
+        $attachmentState = $filters['attachment_state'];
+
+        $inserted = $this->snapshots->recalculateSnapshot(
+            $snapshotDate,
+            $status,
+            $attachmentState,
+            $request->user()?->id,
+        );
+
+        $redirectParams = array_filter([
+            'snapshot_date' => $snapshotDate,
+            'status' => $status,
+            'attachment_state' => $attachmentState,
+        ], static fn ($value) => $value !== null && $value !== '');
+
+        $message = $inserted > 0
+            ? sprintf('Stored %d driver-truck grade snapshots for %s.', $inserted, Carbon::parse($snapshotDate)->toFormattedDateString())
+            : 'No assignments matched the selected filters, so no snapshot was stored.';
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => $message,
+                'inserted' => $inserted,
+                'filters' => [
+                    'snapshot_date' => $snapshotDate,
+                    'status' => $status,
+                    'attachment_state' => $attachmentState,
+                ],
+            ]);
+        }
+
+        return to_route('settings.driver-truck-grading.edit', $redirectParams)
+            ->with('success', $message);
     }
 
     private function saveSettingAttributes(array $attributes): void
@@ -230,6 +282,13 @@ class DriverTruckGradingSettingsController extends Controller
             ['grade_thresholds' => DriverTruckGradingSetting::defaultGradeThresholds()],
             $attributes,
         ));
+    }
+
+    private function queueSnapshotRefresh(?int $userId): void
+    {
+        $filterSets = $this->snapshots->distinctFilterSets()->all();
+
+        RecalculateDriverTruckGradeSnapshots::dispatch($filterSets, $userId);
     }
 
     private function formatPaginator(LengthAwarePaginator $paginator): array

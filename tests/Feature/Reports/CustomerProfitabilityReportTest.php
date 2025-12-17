@@ -29,14 +29,14 @@ class CustomerProfitabilityReportTest extends TestCase
         $operationA = Operation::factory()
             ->for($customerA)
             ->create([
-                'tariff' => 400,
+                'tariff' => 4,
                 'status' => 'active',
             ]);
 
         $operationB = Operation::factory()
             ->for($customerB)
             ->create([
-                'tariff' => 250,
+                'tariff' => 3,
                 'status' => 'active',
             ]);
 

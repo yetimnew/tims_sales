@@ -32,6 +32,7 @@ use App\Models\VehicleMaintenanceRecord;
 use App\Models\VehicleType;
 use App\Services\Reports\CostPerKilometerReport;
 use App\Services\Reports\CustomerProfitabilityReport;
+use App\Services\Reports\DriverTruckGradingReport;
 use App\Services\Reports\FuelEfficiencyReport;
 use App\Services\Reports\LoadFactorUtilizationReport;
 use App\Services\Reports\MaintenancePerformanceReport;
@@ -66,6 +67,7 @@ class ReportController extends Controller
         private readonly MaintenancePerformanceReport $maintenancePerformanceReport,
         private readonly TruckGradingReport $truckGradingReport,
         private readonly \App\Services\Reports\DriverGradingReport $driverGradingReport,
+        private readonly DriverTruckGradingReport $driverTruckGradingReport,
         private readonly RouteProfitabilityReport $routeProfitabilityReport,
         private readonly LoadFactorUtilizationReport $loadFactorUtilizationReport,
         private readonly CostPerKilometerReport $costPerKilometerReport,
@@ -290,6 +292,31 @@ class ReportController extends Controller
             report($e);
 
             return back()->withErrors(['error' => 'Failed to generate driver grading report.']);
+        }
+    }
+
+    /**
+     * Display driver-truck grading leaderboard report.
+     */
+    public function driverTruckGrading(\App\Http\Requests\Reports\DriverTruckGradingReportRequest $request): Response|RedirectResponse
+    {
+        try {
+            $result = $this->driverTruckGradingReport->build($request->validated());
+
+            return Inertia::render('Reports/DriverTruckGrading', [
+                'filters' => $result['filters'],
+                'filterOptions' => $result['filter_options'],
+                'paginator' => $result['paginator'],
+                'latestCalculation' => $result['latest_calculation'],
+                'perPageOptions' => $result['per_page_options'],
+                'can' => [
+                    'recalculate' => $request->user()?->can('driver-trucks.update') ?? false,
+                ],
+            ]);
+        } catch (Exception $e) {
+            report($e);
+
+            return back()->withErrors(['error' => 'Failed to generate driver-truck grading report.']);
         }
     }
 
@@ -1517,11 +1544,13 @@ class ReportController extends Controller
             $result = $this->performanceByStatusReport->build($request->validated());
 
             return Inertia::render('Reports/PerformanceByStatus', [
-                'date' => $result['date'],
+                'filters' => $result['filters'],
                 'summary' => $result['summary'],
                 'latest' => $result['latest'],
                 'metrics' => $result['metrics'],
-                'statuses' => $result['statuses'],
+                'options' => [
+                    'statuses' => $result['statuses'],
+                ],
             ]);
         } catch (Exception $e) {
             return back()->withErrors(['error' => 'Failed to generate status report.']);

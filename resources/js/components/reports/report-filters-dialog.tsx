@@ -2,10 +2,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { DatePicker } from '@/components/ui/date-picker';
 import { ReportMultiSelectFilter } from './report-multi-select-filter';
 import { ReportDateRangePicker } from './report-date-range-picker';
 import type { ReportSelectionOption } from './types';
-import { ChevronDown, ChevronUp, Filter, MapPin, PackageCheck, Truck, User } from 'lucide-react';
+import { Building2, ChevronDown, ChevronUp, Filter, MapPin, PackageCheck, Truck, User } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 interface FilterTextOverrides {
@@ -39,29 +40,39 @@ interface ReportFiltersDialogProps {
     operationOptions?: ReportSelectionOption[];
     destinationOptions?: ReportSelectionOption[];
     statusOptions?: ReportSelectionOption[];
+    providerOptions?: ReportSelectionOption[];
     selectedDrivers?: number[];
     selectedTrucks?: number[];
     selectedOperations?: number[];
     selectedDestinations?: number[];
     selectedStatuses?: Array<number | string>;
+    selectedProviders?: Array<number | string>;
     onDriversChange?: (ids: number[]) => void;
     onTrucksChange?: (ids: number[]) => void;
     onOperationsChange?: (ids: number[]) => void;
     onDestinationsChange?: (ids: number[]) => void;
     onStatusesChange?: (ids: Array<number | string>) => void;
+    onProvidersChange?: (ids: Array<number | string>) => void;
     showDriverFilter?: boolean;
     showTruckFilter?: boolean;
     showOperationFilter?: boolean;
     showDestinationFilter?: boolean;
     showStatusFilter?: boolean;
+    showProviderFilter?: boolean;
     dateError?: string | null;
     driverFilterText?: FilterTextOverrides;
     truckFilterText?: FilterTextOverrides;
     operationFilterText?: FilterTextOverrides;
     destinationFilterText?: FilterTextOverrides;
     statusFilterText?: FilterTextOverrides;
+    providerFilterText?: FilterTextOverrides;
     showDateRange?: boolean;
     dateRangeDescription?: string;
+    showSingleDate?: boolean;
+    singleDate?: string;
+    onSingleDateChange?: (value: string) => void;
+    singleDateLabel?: string;
+    singleDateDescription?: string;
 }
 
 export function ReportFiltersDialog({
@@ -85,41 +96,53 @@ export function ReportFiltersDialog({
     operationOptions,
     destinationOptions,
     statusOptions,
+    providerOptions,
     selectedDrivers,
     selectedTrucks,
     selectedOperations,
     selectedDestinations,
     selectedStatuses,
+    selectedProviders,
     onDriversChange,
     onTrucksChange,
     onOperationsChange,
     onDestinationsChange,
     onStatusesChange,
+    onProvidersChange,
     showDriverFilter,
     showTruckFilter,
     showOperationFilter,
     showDestinationFilter,
     showStatusFilter,
+    showProviderFilter,
     dateError,
     driverFilterText,
     truckFilterText,
     operationFilterText,
     destinationFilterText,
     statusFilterText,
+    providerFilterText,
     showDateRange = true,
     dateRangeDescription = 'Select the inclusive reporting window.',
+    showSingleDate,
+    singleDate = '',
+    onSingleDateChange,
+    singleDateLabel = 'Reporting date',
+    singleDateDescription,
 }: ReportFiltersDialogProps) {
     const driverOptionsList = driverOptions ?? [];
     const truckOptionsList = truckOptions ?? [];
     const operationOptionsList = operationOptions ?? [];
     const destinationOptionsList = destinationOptions ?? [];
     const statusOptionsList = statusOptions ?? [];
+    const providerOptionsList = providerOptions ?? [];
 
     const selectedDriverIds = selectedDrivers ?? [];
     const selectedTruckIds = selectedTrucks ?? [];
     const selectedOperationIds = selectedOperations ?? [];
     const selectedDestinationIds = selectedDestinations ?? [];
     const selectedStatusIds = selectedStatuses ?? [];
+    const selectedProviderIds = selectedProviders ?? [];
 
     const handleDriversChange = (ids: Array<number | string>) => {
         onDriversChange?.(ids.map((value) => Number(value)));
@@ -141,13 +164,19 @@ export function ReportFiltersDialog({
         onStatusesChange?.(ids);
     };
 
+    const handleProvidersChange = (ids: Array<number | string>) => {
+        onProvidersChange?.(ids);
+    };
+
     const shouldShowLimit = showLimit ?? (typeof limit !== 'undefined' && typeof onLimitChange === 'function');
     const shouldShowDateRange = (showDateRange ?? true) && typeof onDateChange === 'function';
+    const shouldShowSingleDate = (showSingleDate ?? false) && typeof onSingleDateChange === 'function';
     const shouldShowDriver = showDriverFilter ?? driverOptionsList.length > 0;
     const shouldShowTruck = showTruckFilter ?? truckOptionsList.length > 0;
     const shouldShowOperation = showOperationFilter ?? operationOptionsList.length > 0;
     const shouldShowDestination = showDestinationFilter ?? destinationOptionsList.length > 0;
     const shouldShowStatus = showStatusFilter ?? statusOptionsList.length > 0;
+    const shouldShowProvider = showProviderFilter ?? providerOptionsList.length > 0;
 
     const driverText = {
         label: 'Drivers',
@@ -202,6 +231,17 @@ export function ReportFiltersDialog({
         emptyMessage: 'No statuses found.',
         icon: Filter,
         ...(statusFilterText ?? {}),
+    };
+
+    const providerText = {
+        label: 'Service providers',
+        triggerLabelWhenAll: 'All providers',
+        summaryLabelWhenAll: 'All providers included',
+        heading: 'Service providers',
+        searchPlaceholder: 'Search provider...',
+        emptyMessage: 'No providers found.',
+        icon: Building2,
+        ...(providerFilterText ?? {}),
     };
 
     const filterSections = [
@@ -280,6 +320,21 @@ export function ReportFiltersDialog({
                 onChange={handleStatusesChange}
             />
         ) : null,
+        shouldShowProvider ? (
+            <ReportMultiSelectFilter
+                key="providers"
+                label={providerText.label ?? 'Service providers'}
+                icon={providerText.icon ?? Building2}
+                triggerLabelWhenAll={providerText.triggerLabelWhenAll ?? 'All providers'}
+                summaryLabelWhenAll={providerText.summaryLabelWhenAll ?? 'All providers included'}
+                heading={providerText.heading ?? 'Service providers'}
+                searchPlaceholder={providerText.searchPlaceholder ?? 'Search provider...'}
+                emptyMessage={providerText.emptyMessage ?? 'No providers found.'}
+                options={providerOptionsList}
+                selectedIds={selectedProviderIds}
+                onChange={handleProvidersChange}
+            />
+        ) : null,
     ].filter(Boolean);
 
     return (
@@ -314,6 +369,18 @@ export function ReportFiltersDialog({
                                     error={dateError}
                                     description={dateRangeDescription}
                                 />
+                            ) : null}
+                            {shouldShowSingleDate ? (
+                                <div className="flex min-w-[220px] flex-col gap-3">
+                                    <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{singleDateLabel}</span>
+                                    <DatePicker
+                                        value={singleDate || ''}
+                                        onChange={(value) => onSingleDateChange?.(value ?? '')}
+                                        placeholder="Select date"
+                                        className="min-w-[220px] justify-start text-left"
+                                    />
+                                    {singleDateDescription ? <p className="text-xs text-muted-foreground">{singleDateDescription}</p> : null}
+                                </div>
                             ) : null}
                             {shouldShowLimit ? (
                                 <div className="flex min-w-[220px] flex-col gap-3">

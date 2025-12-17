@@ -23,6 +23,7 @@ import {
     MapPin,
     Settings,
     FileText,
+    User,
     UserCheck,
     Shield,
     BarChart3,
@@ -342,6 +343,18 @@ const getMainNavItems = (currentUrl: string): NavItem[] => {
                         href: '/reports/truck-grading',
                         icon: BarChart3,
                         requiredPermissions: ['reports.truck-grading.view'],
+                    },
+                    {
+                        title: 'Driver Grading',
+                        href: '/reports/driver-grading',
+                        icon: User,
+                        requiredPermissions: ['reports.driver-grading.view'],
+                    },
+                    {
+                        title: 'Driver-Truck Grading',
+                        href: '/reports/driver-truck-grading',
+                        icon: Users,
+                        requiredPermissions: ['reports.driver-truck-grading.view'],
                     },
                     {
                         title: 'Performance (All)',

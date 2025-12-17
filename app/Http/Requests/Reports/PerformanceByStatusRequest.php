@@ -29,13 +29,24 @@ class PerformanceByStatusRequest extends FormRequest
     {
         return [
             'date' => ['nullable', 'date'],
+            'status_ids' => ['nullable', 'array'],
+            'status_ids.*' => ['integer'],
         ];
     }
 
     protected function prepareForValidation(): void
     {
+        $statusIds = collect($this->input('status_ids', []))
+            ->filter(static fn ($value) => $value !== null && $value !== '')
+            ->map(static fn ($value) => (int) $value)
+            ->filter(static fn ($value) => $value > 0)
+            ->unique()
+            ->values()
+            ->all();
+
         $this->merge([
             'date' => $this->filled('date') ? $this->input('date') : null,
+            'status_ids' => $statusIds,
         ]);
     }
 }

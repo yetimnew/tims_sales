@@ -143,7 +143,7 @@ class OperationPerformanceReport
             $totalDistance = $internalDistance + $outsourceDistance;
 
             $tariff = (float) ($row->tariff ?? 0);
-            $revenue = $tariff * $totalTonnage;
+            $revenue = $tariff * $totalTonKm;
             $totalCost = $internalExpense + $outsourceCost;
             $profit = $revenue - $totalCost;
             $margin = $revenue > 0 ? round(($profit / $revenue) * 100, 2) : null;

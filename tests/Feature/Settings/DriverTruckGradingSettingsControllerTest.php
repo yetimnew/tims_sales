@@ -2,14 +2,25 @@
 
 namespace Tests\Feature\Settings;
 
+use App\Models\DriverTruck;
 use App\Models\DriverTruckGradingSetting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 class DriverTruckGradingSettingsControllerTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+    }
 
     public function test_weights_route_updates_weights_and_peer_sample_size_when_valid(): void
     {
@@ -122,5 +133,55 @@ class DriverTruckGradingSettingsControllerTest extends TestCase
             ->assertSessionHasErrors(['grade_thresholds']);
 
         $this->assertDatabaseCount('driver_truck_grading_settings', 0);
+    }
+
+    public function test_recalculate_creates_snapshots_for_assignments(): void
+    {
+        $user = User::factory()->create();
+        Permission::firstOrCreate([
+            'name' => 'driver-trucks.update',
+            'guard_name' => 'web',
+        ]);
+        $user->givePermissionTo('driver-trucks.update');
+
+        DriverTruck::factory()->create([
+            'status' => 'active',
+            'is_attached' => true,
+        ]);
+
+        $snapshotDate = Carbon::now()->toDateString();
+
+        $response = $this->actingAs($user)->post(route('settings.driver-truck-grading.recalculate'), [
+            'snapshot_date' => $snapshotDate,
+            'status' => 'active',
+            'attachment_state' => 'attached',
+        ]);
+
+        $response
+            ->assertRedirect(route('settings.driver-truck-grading.edit', [
+                'snapshot_date' => $snapshotDate,
+                'status' => 'active',
+                'attachment_state' => 'attached',
+            ]))
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseHas('driver_truck_grade_snapshots', [
+            'snapshot_date' => $snapshotDate,
+            'filter_status' => 'active',
+            'filter_is_attached' => true,
+        ]);
+    }
+
+    public function test_recalculate_requires_permission(): void
+    {
+        $user = User::factory()->create();
+        DriverTruck::factory()->create();
+
+        $response = $this->actingAs($user)->post(route('settings.driver-truck-grading.recalculate'), [
+            'snapshot_date' => Carbon::now()->toDateString(),
+        ]);
+
+        $response->assertForbidden();
+        $this->assertDatabaseCount('driver_truck_grade_snapshots', 0);
     }
 }

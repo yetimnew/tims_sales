@@ -55,6 +55,9 @@ Route::middleware('auth')->group(function () {
     Route::get('settings/driver-truck-grading', [DriverTruckGradingSettingsController::class, 'edit'])
         ->name('settings.driver-truck-grading.edit');
 
+    Route::post('settings/driver-truck-grading/recalculate', [DriverTruckGradingSettingsController::class, 'recalculate'])
+        ->name('settings.driver-truck-grading.recalculate');
+
     Route::patch('settings/driver-truck-grading/weights', [DriverTruckGradingSettingsController::class, 'updateWeights'])
         ->name('settings.driver-truck-grading.weights.update');
 

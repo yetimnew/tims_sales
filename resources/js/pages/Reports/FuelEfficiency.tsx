@@ -1,15 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Head, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Separator } from '@/components/ui/separator';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
     Table,
     TableBody,
@@ -22,11 +17,13 @@ import {
 import {
     CircleDollarSign,
     Droplet,
-    Filter,
     Gauge,
     TrendingDown,
     TrendingUp,
 } from 'lucide-react';
+import { ReportFiltersDialog } from '@/components/reports/report-filters-dialog';
+import { ReportSummaryGrid, type ReportSummaryItem } from '@/components/reports/report-summary-grid';
+import type { ReportSelectionOption } from '@/components/reports/types';
 
 interface TruckOption {
     id: number;
@@ -35,8 +32,8 @@ interface TruckOption {
 }
 
 interface FuelEfficiencyFilters {
-    from: string;
-    to: string;
+    from?: string | null;
+    to?: string | null;
     truck_ids?: number[];
 }
 
@@ -131,63 +128,129 @@ export default function FuelEfficiency({
     highlights,
     trucks = [],
 }: FuelEfficiencyProps) {
-    const highlightData = highlights ?? { best_efficiency: [], highest_cost_per_km: [] };
+    const truckOptions = useMemo<TruckOption[]>(() => (Array.isArray(trucks) ? trucks : []), [trucks]);
+    const truckSelectionOptions = useMemo<ReportSelectionOption[]>(
+        () =>
+            truckOptions.map((option) => ({
+                id: option.id,
+                label: option.plate ?? '—',
+                badge: option.status ?? undefined,
+            })),
+        [truckOptions],
+    );
+
+    const safeBreakdown = useMemo<FuelEfficiencyBreakdownRow[]>(() => (Array.isArray(breakdown) ? breakdown : []), [breakdown]);
+    const safeTrend = useMemo<FuelEfficiencyTrendRow[]>(() => (Array.isArray(trend) ? trend : []), [trend]);
+    const highlightData = useMemo<FuelEfficiencyHighlights>(() => ({
+        best_efficiency: Array.isArray(highlights?.best_efficiency) ? highlights.best_efficiency : [],
+        highest_cost_per_km: Array.isArray(highlights?.highest_cost_per_km) ? highlights.highest_cost_per_km : [],
+    }), [highlights]);
 
     const [from, setFrom] = useState(filters?.from ?? '');
     const [to, setTo] = useState(filters?.to ?? '');
     const [selectedTrucks, setSelectedTrucks] = useState<number[]>(filters?.truck_ids ?? []);
-    const [truckSearch, setTruckSearch] = useState('');
-    const [truckSelectorOpen, setTruckSelectorOpen] = useState(false);
+    const [filtersOpen, setFiltersOpen] = useState(false);
+    const [dateError, setDateError] = useState<string | null>(null);
 
-    const noTruckFilter = selectedTrucks.length === 0;
+    const appliedFrom = filters?.from ?? '';
+    const appliedTo = filters?.to ?? '';
+    const appliedTruckCount = filters?.truck_ids?.length ?? 0;
 
-    const selectedTruckPlates = useMemo(
-        () => trucks.filter((truck) => selectedTrucks.includes(truck.id)).map((truck) => truck.plate),
-        [trucks, selectedTrucks],
+    const filterBadges = useMemo(
+        () => [
+            `From ${appliedFrom || '—'}`,
+            `To ${appliedTo || '—'}`,
+            appliedTruckCount > 0 ? `${appliedTruckCount} truck${appliedTruckCount > 1 ? 's' : ''}` : 'All trucks',
+        ],
+        [appliedFrom, appliedTo, appliedTruckCount],
     );
 
-    const filteredTruckOptions = useMemo(() => {
-        if (!truckSearch.trim()) {
-            return trucks;
-        }
+    const summaryItems = useMemo<ReportSummaryItem[]>(
+        () => [
+            {
+                label: 'Total Cost',
+                value: formatCurrency(totals?.total_cost ?? 0),
+                icon: CircleDollarSign,
+                tone: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200',
+            },
+            {
+                label: 'Total Liters',
+                value: `${formatDecimal(totals?.total_liters ?? 0)} L`,
+                icon: Droplet,
+                tone: 'bg-sky-100 text-sky-600 dark:bg-sky-500/20 dark:text-sky-200',
+            },
+            {
+                label: 'Total Distance',
+                value: `${formatDecimal(totals?.total_distance_km ?? 0)} km`,
+                icon: Gauge,
+                tone: 'bg-indigo-100 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-200',
+            },
+            {
+                label: 'Fleet Km / L',
+                value: formatOptionalDecimal(summary?.fleet_efficiency_km_per_liter, ' km/L'),
+                icon: TrendingUp,
+                tone: 'bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-200',
+            },
+            {
+                label: 'Cost / Km',
+                value: formatOptionalCurrency(summary?.fleet_cost_per_km, ' / km'),
+                icon: TrendingDown,
+                tone: 'bg-rose-100 text-rose-600 dark:bg-rose-500/20 dark:text-rose-200',
+            },
+            {
+                label: 'Avg Cost / L',
+                value: formatOptionalCurrency(summary?.average_cost_per_liter, ' / L'),
+                icon: CircleDollarSign,
+                tone: 'bg-slate-100 text-slate-600 dark:bg-slate-500/20 dark:text-slate-200',
+            },
+        ],
+        [summary?.average_cost_per_liter, summary?.fleet_cost_per_km, summary?.fleet_efficiency_km_per_liter, totals?.total_cost, totals?.total_distance_km, totals?.total_liters],
+    );
 
-        const query = truckSearch.trim().toLowerCase();
-        return trucks.filter((truck) => truck.plate.toLowerCase().includes(query));
-    }, [truckSearch, trucks]);
+    const activeFilterCount = useMemo(() => {
+        let count = 0;
 
-    const handleToggleTruck = (id: number) => {
-        setSelectedTrucks((current) =>
-            current.includes(id) ? current.filter((truckId) => truckId !== id) : [...current, id],
-        );
-    };
+        if (from && from !== appliedFrom) count += 1;
+        if (to && to !== appliedTo) count += 1;
+        if (selectedTrucks.length > 0) count += 1;
 
-    const handleSelectAll = () => {
-        if (selectedTrucks.length === trucks.length && trucks.length > 0) {
-            setSelectedTrucks([]);
+        return count;
+    }, [from, to, selectedTrucks, appliedFrom, appliedTo]);
+
+    const validateDateRange = useCallback(
+        (nextFrom: string, nextTo: string) => {
+            if (nextFrom && nextTo) {
+                const fromTimestamp = Date.parse(nextFrom);
+                const toTimestamp = Date.parse(nextTo);
+
+                if (!Number.isNaN(fromTimestamp) && !Number.isNaN(toTimestamp) && fromTimestamp > toTimestamp) {
+                    setDateError('Start date must be before or equal to the end date.');
+
+                    return false;
+                }
+            }
+
+            setDateError(null);
+
+            return true;
+        },
+        [],
+    );
+
+    const handleApplyFilters = () => {
+        if (!validateDateRange(from, to)) {
+            setFiltersOpen(true);
+
             return;
         }
 
-        setSelectedTrucks(trucks.map((truck) => truck.id));
-    };
+        setFiltersOpen(false);
 
-    const handleClearTrucks = () => setSelectedTrucks([]);
+        const params: Record<string, unknown> = {};
 
-    const handleApplyFilters = () => {
-        setTruckSelectorOpen(false);
-
-        const params: Record<string, string | number | Array<string | number>> = {};
-
-        if (from) {
-            params.from = from;
-        }
-
-        if (to) {
-            params.to = to;
-        }
-
-        if (selectedTrucks.length > 0) {
-            params.truck_ids = selectedTrucks;
-        }
+        if (from) params.from = from;
+        if (to) params.to = to;
+        if (selectedTrucks.length > 0) params.truck_ids = selectedTrucks;
 
         router.get('/reports/fuel-efficiency', params, {
             preserveState: true,
@@ -199,55 +262,22 @@ export default function FuelEfficiency({
         setFrom(filters?.from ?? '');
         setTo(filters?.to ?? '');
         setSelectedTrucks(filters?.truck_ids ?? []);
-        setTruckSearch('');
-        setTruckSelectorOpen(false);
+        setFiltersOpen(false);
+        setDateError(null);
 
         router.get('/reports/fuel-efficiency', {}, { preserveState: false, preserveScroll: true });
     };
 
-    const summaryCards = [
-        {
-            title: 'Total Cost',
-            value: formatCurrency(totals?.total_cost ?? 0),
-            helper: 'Fuel spend in the selected window',
-            icon: <CircleDollarSign className="h-4 w-4 text-emerald-500" />,
-        },
-        {
-            title: 'Total Liters',
-            value: `${formatDecimal(totals?.total_liters ?? 0)} L`,
-            helper: 'Liters purchased across all included trucks',
-            icon: <Droplet className="h-4 w-4 text-blue-500" />,
-        },
-        {
-            title: 'Total Distance',
-            value: `${formatDecimal(totals?.total_distance_km ?? 0)} km`,
-            helper: 'Distance estimated from odometer readings',
-            icon: <Gauge className="h-4 w-4 text-indigo-500" />,
-        },
-        {
-            title: 'Fleet Km / L',
-            value: summary?.fleet_efficiency_km_per_liter !== null
-                ? `${formatDecimal(summary.fleet_efficiency_km_per_liter)} km / L`
-                : '—',
-            helper: 'Distance achieved per liter across the selection',
-            icon: <TrendingUp className="h-4 w-4 text-amber-500" />,
-        },
-        {
-            title: 'Cost / Km',
-            value: summary?.fleet_cost_per_km !== null
-                ? `${formatCurrency(summary.fleet_cost_per_km)} / km`
-                : '—',
-            helper: 'Average fuel spend needed to cover one kilometre',
-            icon: <TrendingDown className="h-4 w-4 text-rose-500" />,
-        },
-    ];
+    const handleDateChange = (field: 'from' | 'to', value: string) => {
+        if (field === 'from') {
+            setFrom(value);
+            validateDateRange(value, to);
+            return;
+        }
 
-    const appliedFrom = filters?.from ?? '';
-    const appliedTo = filters?.to ?? '';
-    const appliedTruckCount = filters?.truck_ids?.length ?? 0;
-
-    const visibleTruckBadges = selectedTruckPlates.slice(0, 4);
-    const extraTruckCount = Math.max(selectedTruckPlates.length - visibleTruckBadges.length, 0);
+        setTo(value);
+        validateDateRange(from, value);
+    };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -264,151 +294,28 @@ export default function FuelEfficiency({
                                 </p>
                             </div>
                             <div className="flex flex-wrap items-center gap-2">
+                                <ReportFiltersDialog
+                                    open={filtersOpen}
+                                    onOpenChange={setFiltersOpen}
+                                    activeFilterCount={activeFilterCount}
+                                    from={from}
+                                    to={to}
+                                    onDateChange={handleDateChange}
+                                    onReset={handleReset}
+                                    onApply={handleApplyFilters}
+                                    truckOptions={truckSelectionOptions}
+                                    selectedTrucks={selectedTrucks}
+                                    onTrucksChange={setSelectedTrucks}
+                                    dateError={dateError}
+                                />
                                 <Button type="button" variant="outline" className="gap-2" onClick={handleReset}>
                                     Reset
-                                </Button>
-                                <Button type="button" className="gap-2" onClick={handleApplyFilters}>
-                                    Generate report
                                 </Button>
                             </div>
                         </div>
                     </header>
 
-                    <section className="grid gap-6 lg:grid-cols-[360px_1fr]">
-                        <Card className="flex h-full flex-col border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
-                            <CardHeader className="space-y-2">
-                                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50">Filters</CardTitle>
-                                <CardDescription className="text-sm">Refine by date and fleet subset.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="flex-1 space-y-6">
-                                <div className="space-y-2">
-                                    <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Date range</span>
-                                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                        <Input type="date" value={from} onChange={(event) => setFrom(event.target.value)} />
-                                        <Input type="date" value={to} onChange={(event) => setTo(event.target.value)} />
-                                    </div>
-                                </div>
-                                <div className="space-y-3">
-                                    <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Trucks</span>
-                                    <Popover open={truckSelectorOpen} onOpenChange={setTruckSelectorOpen}>
-                                        <PopoverTrigger asChild>
-                                            <Button type="button" variant="outline" className="w-full justify-between">
-                                                <span className="flex items-center gap-2 text-sm">
-                                                    {noTruckFilter ? 'All trucks' : `${selectedTrucks.length} selected`}
-                                                </span>
-                                                <Filter className="h-3.5 w-3.5 text-slate-400" />
-                                            </Button>
-                                        </PopoverTrigger>
-                                        <PopoverContent className="w-96 p-0" align="start">
-                                            <div className="flex items-center justify-between px-3 py-2">
-                                                <div className="flex items-center gap-2">
-                                                    <Button type="button" variant="ghost" size="sm" onClick={handleSelectAll}>
-                                                        {selectedTrucks.length === trucks.length && trucks.length > 0 ? 'Unselect all' : 'Select all'}
-                                                    </Button>
-                                                    <Button type="button" variant="ghost" size="sm" onClick={handleClearTrucks}>
-                                                        Clear
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                            <Separator />
-                                            <Command>
-                                                <div className="flex items-center px-3 py-2">
-                                                    <CommandInput
-                                                        placeholder="Search truck plate..."
-                                                        value={truckSearch}
-                                                        onValueChange={setTruckSearch}
-                                                    />
-                                                </div>
-                                                <CommandList className="max-h-64">
-                                                    <CommandEmpty>No trucks found.</CommandEmpty>
-                                                    <CommandGroup heading="Trucks">
-                                                        <CommandItem onSelect={() => setSelectedTrucks([])} className="flex items-center gap-2">
-                                                            <Checkbox checked={noTruckFilter} />
-                                                            <span className="font-medium">All trucks</span>
-                                                            {noTruckFilter && <Badge variant="secondary" className="ml-auto">Active</Badge>}
-                                                        </CommandItem>
-                                                        {filteredTruckOptions.map((option) => {
-                                                            const checked = selectedTrucks.includes(option.id);
-
-                                                            return (
-                                                                <CommandItem
-                                                                    key={option.id}
-                                                                    onSelect={() => handleToggleTruck(option.id)}
-                                                                    className="flex items-center gap-2"
-                                                                >
-                                                                    <Checkbox checked={checked} />
-                                                                    <span className="font-medium">{option.plate}</span>
-                                                                    {option.status && (
-                                                                        <Badge variant="outline" className="ml-auto capitalize text-xs">
-                                                                            {option.status}
-                                                                        </Badge>
-                                                                    )}
-                                                                    {checked && <Badge variant="secondary" className="ml-2">Included</Badge>}
-                                                                </CommandItem>
-                                                            );
-                                                        })}
-                                                    </CommandGroup>
-                                                </CommandList>
-                                            </Command>
-                                        </PopoverContent>
-                                    </Popover>
-                                    <div className="flex flex-wrap gap-2">
-                                        {noTruckFilter && (
-                                            <Badge variant="outline" className="border-dashed text-muted-foreground">
-                                                All trucks included
-                                            </Badge>
-                                        )}
-                                        {!noTruckFilter && visibleTruckBadges.map((plate) => (
-                                            <Badge key={plate} variant="secondary" className="bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-100">
-                                                {plate}
-                                            </Badge>
-                                        ))}
-                                        {!noTruckFilter && extraTruckCount > 0 && (
-                                            <Badge variant="outline" className="border-dashed text-muted-foreground">
-                                                +{extraTruckCount} more
-                                            </Badge>
-                                        )}
-                                    </div>
-                                </div>
-                            </CardContent>
-                            <CardFooter className="flex flex-col gap-3 sm:flex-row sm:justify-between">
-                                <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={handleReset}>
-                                    Reset
-                                </Button>
-                                <Button type="button" className="w-full sm:w-auto" onClick={handleApplyFilters}>
-                                    Apply filters
-                                </Button>
-                            </CardFooter>
-                        </Card>
-
-                        <Card className="flex h-full flex-col border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
-                            <CardHeader className="space-y-2">
-                                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50">Fleet Snapshot</CardTitle>
-                                <CardDescription className="text-sm">Key fuel metrics across all included trucks.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-                                {summaryCards.map((card) => (
-                                    <Card
-                                        key={card.title}
-                                        className="border border-slate-200/80 bg-white/90 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800/70 dark:bg-slate-950/60"
-                                    >
-                                        <CardHeader className="flex flex-row items-start justify-between space-y-0 p-4">
-                                            <div className="space-y-1">
-                                                <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                                                    {card.title}
-                                                </CardTitle>
-                                                <div className="text-xl font-semibold text-slate-900 dark:text-slate-50">{card.value}</div>
-                                            </div>
-                                            {card.icon}
-                                        </CardHeader>
-                                        <CardContent className="px-4 pb-4 pt-0">
-                                            <CardDescription className="text-xs text-muted-foreground">{card.helper}</CardDescription>
-                                        </CardContent>
-                                    </Card>
-                                ))}
-                            </CardContent>
-                        </Card>
-                    </section>
+                    <ReportSummaryGrid items={summaryItems} />
 
                     <section className="grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
                         <Card className="border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
@@ -418,13 +325,11 @@ export default function FuelEfficiency({
                                     <CardDescription className="text-sm">Detailed consumption, spend, and efficiency by truck.</CardDescription>
                                 </div>
                                 <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                                    <Badge variant="outline">From {appliedFrom || '—'}</Badge>
-                                    <Badge variant="outline">To {appliedTo || '—'}</Badge>
-                                    <Badge variant="outline">
-                                        {appliedTruckCount > 0
-                                            ? `${appliedTruckCount} truck${appliedTruckCount > 1 ? 's' : ''}`
-                                            : 'All trucks'}
-                                    </Badge>
+                                    {filterBadges.map((badge) => (
+                                        <Badge key={badge} variant="outline">
+                                            {badge}
+                                        </Badge>
+                                    ))}
                                 </div>
                             </CardHeader>
                             <CardContent className="p-0">
@@ -447,14 +352,14 @@ export default function FuelEfficiency({
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {breakdown.length === 0 && (
+                                            {safeBreakdown.length === 0 && (
                                                 <TableRow>
                                                     <TableCell colSpan={12} className="py-6 text-center text-sm text-muted-foreground">
                                                         No data available for the selected filters.
                                                     </TableCell>
                                                 </TableRow>
                                             )}
-                                            {breakdown.map((row) => (
+                                            {safeBreakdown.map((row) => (
                                                 <TableRow key={row.truck_id} className="divide-x divide-slate-100/60 dark:divide-slate-800/60">
                                                     <TableCell className="whitespace-nowrap font-medium text-slate-900 dark:text-slate-50">
                                                         {row.plate}
@@ -475,7 +380,7 @@ export default function FuelEfficiency({
                                                 </TableRow>
                                             ))}
                                         </TableBody>
-                                        {breakdown.length > 0 && (
+                                        {safeBreakdown.length > 0 && (
                                             <TableFooter>
                                                 <TableRow className="divide-x divide-slate-200/40 bg-slate-50/70 font-semibold dark:divide-slate-800/60 dark:bg-slate-900/70">
                                                     <TableCell colSpan={2}>
@@ -564,14 +469,14 @@ export default function FuelEfficiency({
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
-                                                {trend.length === 0 && (
+                                                {safeTrend.length === 0 && (
                                                     <TableRow>
                                                         <TableCell colSpan={6} className="py-6 text-center text-sm text-muted-foreground">
                                                             No trend data available for the selected filters.
                                                         </TableCell>
                                                     </TableRow>
                                                 )}
-                                                {trend.map((row) => (
+                                                {safeTrend.map((row) => (
                                                     <TableRow key={row.period}>
                                                         <TableCell>{row.period}</TableCell>
                                                         <TableCell className="text-right">{formatNumber(row.refuel_events)}</TableCell>

@@ -16,9 +16,9 @@ class PerformanceByStatusReport
     /**
      * Build the performance by status dataset for the given filters.
      *
-     * @param  array{date?: string|null}  $filters
+     * @param  array{date?: string|null, status_ids?: array<int>|null}  $filters
      * @return array{
-     *     date: string,
+     *     filters: array{date: string, status_ids: array<int>},
      *     summary: array<int, array{status_id: int, status_name: string, count: int, share: float}>,
      *     latest: array<int, array{
      *         id: int,
@@ -46,14 +46,20 @@ class PerformanceByStatusReport
         $statusTypeId = $this->resolveOperationalStatusTypeId();
 
         $statuses = $this->fetchStatuses($statusTypeId);
-        $records = $this->fetchRecords($date, $statuses->pluck('id')->all());
+        $availableStatusIds = $statuses->pluck('id')->all();
+        $selectedStatusIds = $this->resolveStatusIds($filters['status_ids'] ?? [], $availableStatusIds);
+
+        $records = $this->fetchRecords($date, $selectedStatusIds === [] ? $availableStatusIds : $selectedStatusIds);
 
         $summary = $this->buildSummary($records, $statuses);
         $latest = $this->buildLatest($records);
         $metrics = $this->buildMetrics($records, $summary);
 
         return [
-            'date' => $date->toDateString(),
+            'filters' => [
+                'date' => $date->toDateString(),
+                'status_ids' => $selectedStatusIds,
+            ],
             'summary' => $summary->values()->all(),
             'latest' => $latest->values()->all(),
             'metrics' => $metrics,
@@ -65,6 +71,27 @@ class PerformanceByStatusReport
                 ->values()
                 ->all(),
         ];
+    }
+
+    /**
+     * @param  array<int|string>  $requested
+     * @param  array<int>  $available
+     * @return array<int>
+     */
+    private function resolveStatusIds(array $requested, array $available): array
+    {
+        if ($requested === []) {
+            return [];
+        }
+
+        $availableLookup = array_flip($available);
+
+        return collect($requested)
+            ->map(static fn ($value) => (int) $value)
+            ->filter(static fn ($value) => $value > 0 && array_key_exists($value, $availableLookup))
+            ->unique()
+            ->values()
+            ->all();
     }
 
     private function resolveDate(?string $value): CarbonInterface

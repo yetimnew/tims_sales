@@ -620,6 +620,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('reports/driver-grading', [\App\Http\Controllers\ReportController::class, 'driverGrading'])
         ->middleware('can:reports.driver-grading.view')
         ->name('reports.driver-grading');
+    Route::get('reports/driver-truck-grading', [\App\Http\Controllers\ReportController::class, 'driverTruckGrading'])
+        ->middleware('can:reports.driver-truck-grading.view')
+        ->name('reports.driver-truck-grading');
     Route::get('reports/performance-all', [\App\Http\Controllers\ReportController::class, 'performanceAll'])
         ->middleware('can:reports.performance-all.view')
         ->name('reports.performance-all');
