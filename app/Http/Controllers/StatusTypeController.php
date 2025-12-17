@@ -8,8 +8,9 @@ use App\Events\StatusTypeUpdated;
 use App\Http\Requests\StoreStatusTypeRequest;
 use App\Http\Requests\UpdateStatusTypeRequest;
 use App\Models\StatusType;
+use App\Services\Statuses\StatusIndexService;
+use App\Services\StatusMetricsService;
 use App\Services\StatusTypeMetricsService;
-use App\Services\StatusTypes\StatusTypeIndexService;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -22,8 +23,9 @@ use Inertia\Response;
 class StatusTypeController extends Controller
 {
     public function __construct(
-        private readonly StatusTypeIndexService $indexService,
-        private readonly StatusTypeMetricsService $metricsService,
+        private readonly StatusIndexService $statusIndexService,
+        private readonly StatusTypeMetricsService $statusTypeMetricsService,
+        private readonly StatusMetricsService $statusMetricsService,
     ) {}
 
     /**
@@ -31,9 +33,9 @@ class StatusTypeController extends Controller
      */
     public function index(Request $request): Response
     {
-        $result = $this->indexService->getIndexResult($request);
+        $result = $this->statusIndexService->getIndexResult($request);
 
-        return Inertia::render('StatusTypes/Index', $result->toInertia());
+        return Inertia::render('Statuses/Index', $result->toInertia());
     }
 
     /**
@@ -56,7 +58,8 @@ class StatusTypeController extends Controller
 
             event(new StatusTypeCreated($statusType->fresh(), Auth::user()));
 
-            $this->metricsService->clearCache();
+            $this->statusTypeMetricsService->clearCache();
+            $this->statusMetricsService->clearCache();
 
             // Clear cached data
             Cache::forget('daily_truck_status.operational_status_type'); // Clear operational status type cache
@@ -136,7 +139,8 @@ class StatusTypeController extends Controller
                 event(new StatusTypeUpdated($statusType->fresh(), $changes, Auth::user()));
             }
 
-            $this->metricsService->clearCache();
+            $this->statusTypeMetricsService->clearCache();
+            $this->statusMetricsService->clearCache();
 
             // Clear cached data
             Cache::forget('daily_truck_status.operational_status_type'); // Clear operational status type cache
@@ -197,7 +201,8 @@ class StatusTypeController extends Controller
                 Auth::user(),
             ));
 
-            $this->metricsService->clearCache();
+            $this->statusTypeMetricsService->clearCache();
+            $this->statusMetricsService->clearCache();
 
             // Clear cached data
             Cache::forget('daily_truck_status.operational_status_type'); // Clear operational status type cache

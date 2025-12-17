@@ -2,149 +2,208 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Statuses\StoreStatusRequest;
+use App\Http\Requests\Statuses\UpdateStatusRequest;
+use App\Models\DailyTruckStatus;
 use App\Models\Status;
 use App\Models\StatusType;
+use App\Services\Statuses\StatusIndexService;
+use App\Services\StatusMetricsService;
+use Exception;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
-use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\Log;
-use Exception;
+use Spatie\Activitylog\Models\Activity;
 
 class StatusController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index(): RedirectResponse
+    public function __construct(
+        private readonly StatusIndexService $statusIndexService,
+        private readonly StatusMetricsService $statusMetricsService,
+    ) {}
+
+    public function index(Request $request): Response
     {
-        // Redirect the Status index to the Daily Truck Status Board
-        return redirect()->route('truck-status-board.index');
+        $result = $this->statusIndexService->getIndexResult($request);
+
+        return Inertia::render('Statuses/Index', $result->toInertia());
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create(): RedirectResponse
+    public function create(): Response
     {
-        return redirect()->route('truck-status-board.index');
+        return Inertia::render('Statuses/Create', [
+            'statusTypes' => $this->statusTypeOptions(),
+        ]);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function store(StoreStatusRequest $request): RedirectResponse
     {
         try {
-            $validated = $request->validate([
-                'name' => 'required|string|max:255',
-                'statustype_id' => 'required|exists:statustypes,id',
-                'description' => 'nullable|string|max:1000',
+            $validated = $request->validated();
+
+            $status = Status::create([
+                'name' => $validated['name'],
+                'statustype_id' => (int) $validated['status_type_id'],
+                'description' => $validated['description'] ?? null,
             ]);
 
-            $status = Status::create($validated);
+            $this->clearCaches();
 
-            // Clear cached data
-            Cache::forget('daily_truck_status.statuses');
+            Log::info('Status created', [
+                'status_id' => $status->id,
+                'name' => $status->name,
+                'user_id' => Auth::id(),
+            ]);
 
-            return redirect()->route('truck-status-board.index')
+            return redirect()->route('statuses.index')
                 ->with('success', 'Status created successfully.');
 
         } catch (Exception $e) {
             Log::error('Status creation failed', [
                 'error' => $e->getMessage(),
-                'data' => $request->all(),
-                'user_id' => auth()->id(),
+                'payload' => $request->all(),
+                'user_id' => Auth::id(),
             ]);
 
             return back()->withErrors(['error' => 'Failed to create status. Please try again.']);
         }
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Status $status): RedirectResponse
+    public function show(Status $status): Response
     {
-        return redirect()->route('truck-status-board.index');
+        $status->load('statusType:id,name');
+
+        $resource = [
+            'id' => $status->id,
+            'name' => $status->name,
+            'status_type_id' => $status->statustype_id,
+            'statusType' => [
+                'id' => $status->statusType?->id,
+                'name' => $status->statusType?->name,
+            ],
+            'description' => $status->description,
+            'created_at' => $status->created_at?->toIso8601String(),
+            'updated_at' => $status->updated_at?->toIso8601String(),
+        ];
+
+        $activityLogs = Activity::forSubject($status)
+            ->with('causer')
+            ->orderByDesc('created_at')
+            ->limit(50)
+            ->get()
+            ->map(fn (Activity $activity) => $this->formatActivityLog($activity))
+            ->values();
+
+        return Inertia::render('Statuses/Show', [
+            'status' => $resource,
+            'activityLogs' => $activityLogs,
+        ]);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Status $status): RedirectResponse
+    public function edit(Status $status): Response
     {
-        return redirect()->route('truck-status-board.index');
+        return Inertia::render('Statuses/Edit', [
+            'status' => [
+                'id' => $status->id,
+                'name' => $status->name,
+                'status_type_id' => $status->statustype_id,
+                'description' => $status->description,
+            ],
+            'statusTypes' => $this->statusTypeOptions(),
+        ]);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Status $status)
+    public function update(UpdateStatusRequest $request, Status $status): RedirectResponse
     {
         try {
-            $validated = $request->validate([
-                'name' => 'required|string|max:255',
-                'statustype_id' => 'required|exists:statustypes,id',
-                'description' => 'nullable|string|max:1000',
+            $validated = $request->validated();
+
+            $status->fill([
+                'name' => $validated['name'],
+                'statustype_id' => (int) $validated['status_type_id'],
+                'description' => $validated['description'] ?? null,
             ]);
 
-            $status->update($validated);
+            $dirty = $status->getDirty();
+            unset($dirty['updated_at']);
 
-            // Clear cached data
-            Cache::forget('daily_truck_status.statuses');
+            if ($status->isDirty()) {
+                $status->save();
+            }
 
-            return redirect()->route('truck-status-board.index')
+            $this->clearCaches();
+
+            if ($dirty !== []) {
+                Log::info('Status updated', [
+                    'status_id' => $status->id,
+                    'changes' => $dirty,
+                    'user_id' => Auth::id(),
+                ]);
+            }
+
+            return redirect()->route('statuses.index')
                 ->with('success', 'Status updated successfully.');
 
         } catch (Exception $e) {
             Log::error('Status update failed', [
                 'status_id' => $status->id,
                 'error' => $e->getMessage(),
-                'data' => $request->all(),
-                'user_id' => auth()->id(),
+                'payload' => $request->all(),
+                'user_id' => Auth::id(),
             ]);
 
             return back()->withErrors(['error' => 'Failed to update status. Please try again.']);
         }
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Status $status)
+    public function destroy(Status $status): RedirectResponse
     {
         try {
+            $usageCount = $status->dailyTruckStatuses()->count();
+
+            if ($usageCount > 0) {
+                return back()->withErrors([
+                    'error' => 'Cannot delete status while it is used in daily truck statuses.',
+                ]);
+            }
+
+            $statusId = $status->id;
+            $statusName = $status->name;
+
             $status->delete();
 
-            // Clear cached data
-            Cache::forget('daily_truck_status.statuses');
+            $this->clearCaches();
 
-            return redirect()->route('truck-status-board.index')
+            Log::info('Status deleted', [
+                'status_id' => $statusId,
+                'name' => $statusName,
+                'user_id' => Auth::id(),
+            ]);
+
+            return redirect()->route('statuses.index')
                 ->with('success', 'Status deleted successfully.');
 
         } catch (Exception $e) {
             Log::error('Status deletion failed', [
                 'status_id' => $status->id,
                 'error' => $e->getMessage(),
-                'user_id' => auth()->id(),
+                'user_id' => Auth::id(),
             ]);
 
             return back()->withErrors(['error' => 'Failed to delete status. Please try again.']);
         }
     }
 
-    /**
-     * Show trucks in this status for a given date.
-     */
     public function daily(Request $request, Status $status): Response
     {
         $date = $request->input('date', now()->format('Y-m-d'));
 
-        $trucks = \App\Models\DailyTruckStatus::with(['truck' => function ($q) {
-                $q->select('id', 'plate');
-            }])
+        $trucks = DailyTruckStatus::with(['truck' => fn ($query) => $query->select('id', 'plate')])
             ->where('status_id', $status->id)
             ->where('status_date', $date)
             ->orderByDesc('created_at')
@@ -152,12 +211,67 @@ class StatusController extends Controller
             ->withQueryString();
 
         return Inertia::render('Statuses/Daily', [
-            'status' => $status,
+            'status' => [
+                'id' => $status->id,
+                'name' => $status->name,
+            ],
             'date' => $date,
             'trucks' => $trucks,
         ]);
     }
+
+    private function statusTypeOptions(): array
+    {
+        return StatusType::query()
+            ->select('id', 'name')
+            ->orderBy('name')
+            ->get()
+            ->map(static fn (StatusType $statusType): array => [
+                'id' => $statusType->id,
+                'name' => $statusType->name,
+            ])->all();
+    }
+
+    private function clearCaches(): void
+    {
+        $this->statusMetricsService->clearCache();
+        Cache::forget('daily_truck_status.statuses');
+    }
+
+    private function formatActivityLog(Activity $activity): array
+    {
+        $event = $activity->event;
+        $description = (string) ($activity->description ?? '');
+
+        $action = match ($event) {
+            'created', 'updated', 'deleted' => $event,
+            default => null,
+        };
+
+        if ($action === null) {
+            $lowerDescription = Str::lower($description);
+
+            if (Str::contains($lowerDescription, ['delete', 'removed'])) {
+                $action = 'deleted';
+            } elseif (Str::contains($lowerDescription, ['create', 'added'])) {
+                $action = 'created';
+            } else {
+                $action = 'updated';
+            }
+        }
+
+        $properties = $activity->properties?->toArray() ?? [];
+
+        return [
+            'id' => $activity->id,
+            'action' => $action,
+            'description' => $description !== '' ? $description : Str::headline($action ?? 'activity'),
+            'user' => $activity->causer ? [
+                'name' => $activity->causer->name,
+            ] : null,
+            'created_at' => $activity->created_at?->toIso8601String(),
+            'old_values' => $properties['old'] ?? null,
+            'new_values' => $properties['attributes'] ?? null,
+        ];
+    }
 }
-
-
-

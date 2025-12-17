@@ -2,10 +2,12 @@
 
 namespace App\Services\StatusTypes;
 
+use App\Models\Status;
 use App\Models\StatusType;
 use App\Services\StatusTypeMetricsService;
 use App\Services\StatusTypes\Data\StatusTypeIndexFilters;
 use App\Services\StatusTypes\Data\StatusTypeIndexResult;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 
@@ -65,7 +67,16 @@ class StatusTypeIndexService
                 'created_at',
                 'updated_at',
             ])
-            ->withCount('statuses');
+            ->withCount('statuses')
+            ->with([
+                'statuses' => static function (HasMany $query): void {
+                    $query->select([
+                        'id',
+                        'statustype_id',
+                        'name',
+                    ])->orderBy('name');
+                },
+            ]);
 
         $this->metricsService->applyFilters($statusTypesQuery, $filters->search, $filters->usage);
 
@@ -88,6 +99,10 @@ class StatusTypeIndexService
                     'statuses_count' => (int) ($statusType->getAttribute('statuses_count') ?? 0),
                     'created_at' => $statusType->created_at,
                     'updated_at' => $statusType->updated_at,
+                    'statuses' => $statusType->statuses->map(static fn (Status $status): array => [
+                        'id' => $status->id,
+                        'name' => $status->name,
+                    ])->all(),
                 ];
             })
         );
