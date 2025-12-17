@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\DriverTruck;
+use App\Models\DriverTruckGradingSetting;
 use App\Models\Performance;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
@@ -10,16 +11,11 @@ use Illuminate\Support\Collection;
 
 class DriverTruckGradeService
 {
-    private const DEFAULT_SETTINGS = [
-        'performance_weight' => 40,
-        'efficiency_weight' => 35,
-        'consistency_weight' => 25,
-        'peer_sample_size' => 25,
-    ];
+    private ?array $resolvedSettings = null;
 
     public function grade(DriverTruck $assignment): array
     {
-        $settings = self::DEFAULT_SETTINGS;
+        $settings = $this->resolveSettings();
 
         $peerIds = $this->determinePeerAssignmentIds($assignment, $settings['peer_sample_size']);
         $comparisonIds = $peerIds->concat([$assignment->id])->unique()->values();
@@ -30,7 +26,8 @@ class DriverTruckGradeService
             $assignment->id,
             $metricDataset,
             $peerIds->unique()->values(),
-            $settings,
+            $settings['weights'],
+            $settings['grade_thresholds'],
         );
     }
 
@@ -46,7 +43,7 @@ class DriverTruckGradeService
             return collect();
         }
 
-        $settings = self::DEFAULT_SETTINGS;
+        $settings = $this->resolveSettings();
 
         $allIds = collect();
         $peerMap = [];
@@ -68,13 +65,46 @@ class DriverTruckGradeService
                     $assignment->id,
                     $metricDataset,
                     $peerIds instanceof Collection ? $peerIds->unique()->values() : collect($peerIds)->unique()->values(),
-                    $settings,
+                    $settings['weights'],
+                    $settings['grade_thresholds'],
                 ),
             ];
         });
     }
 
-    private function buildReport(int $assignmentId, Collection $metricDataset, Collection $peerIds, array $settings): array
+    private function resolveSettings(): array
+    {
+        if ($this->resolvedSettings !== null) {
+            return $this->resolvedSettings;
+        }
+
+        $defaults = DriverTruckGradingSetting::defaultWeights();
+        $defaultThresholds = DriverTruckGradingSetting::defaultGradeThresholds();
+
+        $latest = DriverTruckGradingSetting::query()->latest('updated_at')->first();
+
+        $weights = array_merge(
+            $defaults,
+            $latest?->only(array_keys($defaults)) ?? [],
+        );
+
+        $thresholds = DriverTruckGradingSetting::normalizeGradeThresholds(
+            $latest?->grade_thresholds ?? [],
+            $defaultThresholds,
+        );
+
+        return $this->resolvedSettings = [
+            'weights' => Arr::only($weights, [
+                'performance_weight',
+                'efficiency_weight',
+                'consistency_weight',
+            ]),
+            'peer_sample_size' => $weights['peer_sample_size'],
+            'grade_thresholds' => array_map(static fn ($value) => (float) $value, $thresholds),
+        ];
+    }
+
+    private function buildReport(int $assignmentId, Collection $metricDataset, Collection $peerIds, array $weights, array $gradeThresholds): array
     {
         $peerMetrics = $peerIds->isEmpty()
             ? collect()
@@ -86,23 +116,20 @@ class DriverTruckGradeService
 
         $categories = $this->calculateCategoryScores($targetMetrics, $averages);
 
-        $aggregateScore = $this->calculateAggregate($categories, $settings);
+        $aggregateScore = $this->calculateAggregate($categories, $weights);
 
         return [
             'overall' => [
                 'score' => $aggregateScore,
-                'letter' => $this->scoreToLetter($aggregateScore),
+                'letter' => $this->scoreToLetter($aggregateScore, $gradeThresholds),
             ],
-            'weights' => Arr::only($settings, [
-                'performance_weight',
-                'efficiency_weight',
-                'consistency_weight',
-            ]),
+            'weights' => $weights,
             'categories' => $categories,
             'metrics' => [
                 'assignment' => $targetMetrics,
                 'peer_averages' => $averages,
             ],
+            'grade_thresholds' => $gradeThresholds,
         ];
     }
 
@@ -356,20 +383,20 @@ class DriverTruckGradeService
         ];
     }
 
-    private function calculateAggregate(array $categories, array $settings): float
+    private function calculateAggregate(array $categories, array $weights): float
     {
-        $weights = [
-            'performance' => $settings['performance_weight'],
-            'efficiency' => $settings['efficiency_weight'],
-            'consistency' => $settings['consistency_weight'],
+        $weightMap = [
+            'performance' => $weights['performance_weight'] ?? 0,
+            'efficiency' => $weights['efficiency_weight'] ?? 0,
+            'consistency' => $weights['consistency_weight'] ?? 0,
         ];
 
-        $weightSum = max(array_sum($weights), 1);
+        $weightSum = max(array_sum($weightMap), 1);
 
         $scoreSum = 0.0;
 
         foreach ($categories as $key => $category) {
-            $weight = $weights[$key] ?? 0;
+            $weight = $weightMap[$key] ?? 0;
             $score = $category['score'] ?? 0;
             $scoreSum += ($weight / $weightSum) * $score;
         }
@@ -437,14 +464,16 @@ class DriverTruckGradeService
         return round(max(min($score, 100), 0), 1);
     }
 
-    private function scoreToLetter(float $score): string
+    private function scoreToLetter(float $score, array $thresholds): string
     {
-        return match (true) {
-            $score >= 90 => 'A',
-            $score >= 80 => 'B',
-            $score >= 70 => 'C',
-            $score >= 60 => 'D',
-            default => 'E',
-        };
+        foreach (['A', 'B', 'C', 'D'] as $letter) {
+            $threshold = (float) ($thresholds[$letter] ?? 0);
+
+            if ($score >= $threshold) {
+                return $letter;
+            }
+        }
+
+        return 'E';
     }
 }

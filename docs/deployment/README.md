@@ -1,4 +1,12 @@
-# Deployment Guide - TIMS
+# Deployment Documentation - TIMS
+
+This directory contains comprehensive deployment instructions for the Transport Information Management System (TIMS).
+
+## 📚 Files in This Directory
+
+- **[README.md](./README.md)** - This file: Complete production deployment guide
+
+## 📖 Overview
 
 This document provides comprehensive deployment instructions for the Transport Information Management System (TIMS).
 

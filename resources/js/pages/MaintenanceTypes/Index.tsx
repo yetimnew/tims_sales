@@ -25,6 +25,7 @@ import {
     Wrench,
     CheckCircle,
     XCircle,
+    AlertTriangle,
 } from 'lucide-react';
 import * as React from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -323,6 +324,16 @@ export default function MaintenanceTypesIndex({ maintenanceTypes, statistics, fi
         handleNavigate({ per_page: Number.isNaN(numericValue) ? undefined : numericValue, page: 1 });
     };
 
+    const handleSort = React.useCallback(
+        (column: string) => {
+            const newDirection: 'asc' | 'desc' = sortColumn === column && sortDirection === 'asc' ? 'desc' : 'asc';
+            setSortColumn(column);
+            setSortDirection(newDirection);
+            handleNavigate({ sort: column, direction: newDirection });
+        },
+        [handleNavigate, sortColumn, sortDirection],
+    );
+
     const handleBulkAction = (action: BulkActionType) => {
         if (selectedIds.length === 0) {
             return;
@@ -398,6 +409,78 @@ export default function MaintenanceTypesIndex({ maintenanceTypes, statistics, fi
             },
         );
     };
+
+    const handleSelectAll = React.useCallback(
+        (value: boolean) => {
+            if (value) {
+                setSelectedIds(maintenanceTypeData.map((item) => item.id));
+            } else {
+                setSelectedIds([]);
+            }
+        },
+        [maintenanceTypeData],
+    );
+
+    const handleSelectItem = React.useCallback((id: number, value: boolean) => {
+        if (value) {
+            setSelectedIds((current) => [...current, id]);
+        } else {
+            setSelectedIds((current) => current.filter((item) => item !== id));
+        }
+    }, []);
+
+    const handleDeleteClick = React.useCallback((maintenanceType: MaintenanceType) => {
+        if (!canDeleteMaintenanceType) {
+            return;
+        }
+
+        setSelectedMaintenanceType(maintenanceType);
+        setDeleteDialogOpen(true);
+    }, [canDeleteMaintenanceType]);
+
+    const handleDeleteDialogChange = React.useCallback((open: boolean) => {
+        setDeleteDialogOpen(open);
+        if (!open) {
+            setSelectedMaintenanceType(null);
+        }
+    }, []);
+
+    const handleDeleteConfirm = React.useCallback(() => {
+        if (!selectedMaintenanceType) {
+            return;
+        }
+
+        setIsDeleting(true);
+
+        router.delete(`/maintenance-types/${selectedMaintenanceType.id}`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setDeleteDialogOpen(false);
+                setSelectedMaintenanceType(null);
+                toast({
+                    title: '✅ Deleted',
+                    description: 'Maintenance type has been successfully deleted.',
+                });
+            },
+            onError: (errors) => {
+                const messages = Object.values(errors as Record<string, unknown>)
+                    .flatMap((value) => (Array.isArray(value) ? value : [value]))
+                    .filter(Boolean)
+                    .join('\n');
+
+                if (messages) {
+                    toast({
+                        title: '❌ Delete Failed',
+                        description: messages,
+                        variant: 'destructive',
+                    });
+                }
+            },
+            onFinish: () => {
+                setIsDeleting(false);
+            },
+        });
+    }, [selectedMaintenanceType]);
 
     React.useEffect(() => {
         setSelectedIds((current) => current.filter((id) => maintenanceTypeData.some((item) => item.id === id)));

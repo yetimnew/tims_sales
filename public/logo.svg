@@ -1,11 +1,26 @@
-<svg width="320" height="80" viewBox="0 0 320 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <g transform="matrix(1.6667 0 0 1.6667 0 0)">
-    <rect x="4" y="4" width="40" height="40" rx="12" fill="#0F172A" opacity="0.95"/>
-    <path d="M16 16h16" stroke="#F8FAFC" stroke-width="3" stroke-linecap="round"/>
-    <path d="M24 16v18" stroke="#F8FAFC" stroke-width="3" stroke-linecap="round"/>
-    <path d="M16 30c0-3.314 2.239-5 6-5h7c3.761 0 7-2.686 7-6" stroke="#38BDF8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M17 34c0 2.21 1.79 4 4 4h11" stroke="#38BDF8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-  </g>
-  <text x="110" y="46" fill="#0F172A" font-family="Instrument Sans, 'Segoe UI', Arial, sans-serif" font-weight="600" font-size="36">TIMS</text>
-  <text x="110" y="64" fill="#475569" font-family="Instrument Sans, 'Segoe UI', Arial, sans-serif" font-weight="500" font-size="16">Transport Integrated Management System</text>
+<svg width="320" height="80" viewBox="0 0 320 80" fill="none" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <defs>
+    <style>
+      .logo-text { 
+        font-family: 'Instrument Sans', 'Segoe UI', Arial, sans-serif; 
+      }
+      .logo-main-text {
+        fill: rgb(15, 23, 42);
+      }
+      .logo-sub-text {
+        fill: rgb(71, 85, 105);
+      }
+      @media (prefers-color-scheme: dark) {
+        .logo-main-text {
+          fill: rgb(248, 250, 252);
+        }
+        .logo-sub-text {
+          fill: rgb(203, 213, 225);
+        }
+      }
+    </style>
+  </defs>
+  <image href="/favicon.ico" x="0" y="0" width="80" height="80" preserveAspectRatio="xMidYMid meet"/>
+  <text x="100" y="46" class="logo-text logo-main-text" font-weight="600" font-size="36">TIMS</text>
+  <text x="100" y="64" class="logo-text logo-sub-text" font-weight="500" font-size="16">Transport Integrated Management System</text>
 </svg>

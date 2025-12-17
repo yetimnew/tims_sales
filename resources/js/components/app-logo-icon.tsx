@@ -1,42 +1,59 @@
-import { SVGAttributes } from 'react';
+import { ImgHTMLAttributes } from 'react';
 
-export default function AppLogoIcon(props: SVGAttributes<SVGElement>) {
+export default function AppLogoIcon(props: ImgHTMLAttributes<SVGSVGElement>) {
+    const { className, ...restProps } = props;
+
+    // Inline SVG that responds to dark mode using CSS custom properties
     return (
         <svg
-            {...props}
-            viewBox="0 0 48 48"
-            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 320 80"
             fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            xmlnsXlink="http://www.w3.org/1999/xlink"
+            className={className}
+            preserveAspectRatio="xMidYMid meet"
+            {...restProps}
         >
-            <rect x={4} y={4} width={40} height={40} rx={12} fill="currentColor" opacity={0.12} />
-            <path
-                d="M16 16h16"
-                stroke="currentColor"
-                strokeWidth={3}
-                strokeLinecap="round"
+            <defs>
+                <style>
+                    {`
+                        .logo-text {
+                            font-family: 'Instrument Sans', 'Segoe UI', Arial, sans-serif;
+                        }
+                        .logo-main-text {
+                            fill: var(--foreground, rgb(15, 23, 42));
+                        }
+                        .logo-sub-text {
+                            fill: var(--muted-foreground, rgb(71, 85, 105));
+                        }
+                    `}
+                </style>
+            </defs>
+            <image
+                href="/favicon.ico"
+                x="0"
+                y="0"
+                width="80"
+                height="80"
+                preserveAspectRatio="xMidYMid meet"
             />
-            <path
-                d="M24 16v18"
-                stroke="currentColor"
-                strokeWidth={3}
-                strokeLinecap="round"
-            />
-            <path
-                d="M16 30c0-3.314 2.239-5 6-5h7c3.761 0 7-2.686 7-6"
-                stroke="currentColor"
-                strokeWidth={3}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                opacity={0.7}
-            />
-            <path
-                d="M17 34c0 2.21 1.79 4 4 4h11"
-                stroke="currentColor"
-                strokeWidth={3}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                opacity={0.55}
-            />
+            <text
+                x="100"
+                y="46"
+                className="logo-text logo-main-text"
+                style={{ fontWeight: 600, fontSize: 36 }}
+            >
+                TIMS
+            </text>
+            <text
+                x="100"
+                y="64"
+                className="logo-text logo-sub-text"
+                style={{ fontWeight: 500, fontSize: 16 }}
+            >
+                Transport Integrated Management System
+            </text>
         </svg>
     );
 }
+

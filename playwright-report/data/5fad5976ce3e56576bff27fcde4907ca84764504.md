@@ -1,0 +1,590 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - generic [ref=e7]:
+      - list [ref=e9]:
+        - listitem [ref=e10]:
+          - link "TIMS" [ref=e11] [cursor=pointer]:
+            - /url: /dashboard
+            - img [ref=e13]
+            - generic [ref=e18]: TIMS
+      - generic [ref=e20]:
+        - generic [ref=e21]: Platform
+        - list [ref=e22]:
+          - listitem [ref=e23]:
+            - link "Dashboard" [ref=e24] [cursor=pointer]:
+              - /url: /dashboard
+              - img [ref=e25]
+              - generic [ref=e30]: Dashboard
+          - listitem [ref=e31]:
+            - button "Fleet Management" [expanded] [ref=e32]:
+              - img [ref=e33]
+              - generic [ref=e38]: Fleet Management
+              - img [ref=e39]
+            - list [ref=e42]:
+              - listitem [ref=e43]:
+                - link "Trucks" [ref=e44] [cursor=pointer]:
+                  - /url: /trucks
+                  - img [ref=e45]
+                  - generic [ref=e50]: Trucks
+              - listitem [ref=e51]:
+                - link "Drivers" [ref=e52] [cursor=pointer]:
+                  - /url: /drivers
+                  - img [ref=e53]
+                  - generic [ref=e58]: Drivers
+              - listitem [ref=e59]:
+                - link "Driver-Truck Assignments" [ref=e60] [cursor=pointer]:
+                  - /url: /driver-trucks
+                  - img [ref=e61]
+                  - generic [ref=e65]: Driver-Truck Assignments
+              - listitem [ref=e66]:
+                - link "Vehicle Types" [ref=e67] [cursor=pointer]:
+                  - /url: /vehicletypes
+                  - img [ref=e68]
+                  - generic [ref=e71]: Vehicle Types
+              - listitem [ref=e72]:
+                - link "Fuel Records" [ref=e73] [cursor=pointer]:
+                  - /url: /fuel
+                  - img [ref=e74]
+                  - generic [ref=e77]: Fuel Records
+              - listitem [ref=e78]:
+                - link "Driver Safety" [ref=e79] [cursor=pointer]:
+                  - /url: /driver-safety
+                  - img [ref=e80]
+                  - generic [ref=e82]: Driver Safety
+              - listitem [ref=e83]:
+                - link "Cargo Types" [ref=e84] [cursor=pointer]:
+                  - /url: /cargo-types
+                  - img [ref=e85]
+                  - generic [ref=e89]: Cargo Types
+          - listitem [ref=e90]:
+            - button "Maintenance" [ref=e91]:
+              - img [ref=e92]
+              - generic [ref=e94]: Maintenance
+              - img [ref=e95]
+          - listitem [ref=e97]:
+            - button "Financial Management" [ref=e98]:
+              - img [ref=e99]
+              - generic [ref=e101]: Financial Management
+              - img [ref=e102]
+          - listitem [ref=e104]:
+            - button "Operations" [ref=e105]:
+              - img [ref=e106]
+              - generic [ref=e108]: Operations
+              - img [ref=e109]
+          - listitem [ref=e111]:
+            - button "Geographic Management" [ref=e112]:
+              - img [ref=e113]
+              - generic [ref=e116]: Geographic Management
+              - img [ref=e117]
+          - listitem [ref=e119]:
+            - button "Status Management" [ref=e120]:
+              - img [ref=e121]
+              - generic [ref=e124]: Status Management
+              - img [ref=e125]
+          - listitem [ref=e127]:
+            - button "Outsourcing" [ref=e128]:
+              - img [ref=e129]
+              - generic [ref=e133]: Outsourcing
+              - img [ref=e134]
+          - listitem [ref=e136]:
+            - button "Reports" [ref=e137]:
+              - img [ref=e138]
+              - generic [ref=e141]: Reports
+              - img [ref=e142]
+          - listitem [ref=e144]:
+            - button "Grading" [ref=e145]:
+              - img [ref=e146]
+              - generic [ref=e149]: Grading
+              - img [ref=e150]
+          - listitem [ref=e152]:
+            - link "Activity Logs" [ref=e153] [cursor=pointer]:
+              - /url: /activity-logs
+              - img [ref=e154]
+              - generic [ref=e158]: Activity Logs
+          - listitem [ref=e159]:
+            - button "User Management" [ref=e160]:
+              - img [ref=e161]
+              - generic [ref=e163]: User Management
+              - img [ref=e164]
+          - listitem [ref=e166]:
+            - link "System Backups" [ref=e167] [cursor=pointer]:
+              - /url: /settings/backups
+              - img [ref=e168]
+              - generic [ref=e172]: System Backups
+      - list [ref=e174]:
+        - listitem [ref=e175]:
+          - button "AU Admin User" [ref=e176]:
+            - generic [ref=e178]: AU
+            - generic [ref=e180]: Admin User
+            - img [ref=e181]
+    - main [ref=e184]:
+      - generic [ref=e185]:
+        - generic [ref=e186]:
+          - button "Toggle Sidebar" [ref=e187]:
+            - img
+            - generic [ref=e188]: Toggle Sidebar
+          - navigation "breadcrumb" [ref=e189]:
+            - list [ref=e190]:
+              - listitem [ref=e191]:
+                - link "Drivers" [disabled] [ref=e192]
+        - button [ref=e194]:
+          - img
+      - generic [ref=e196]:
+        - generic [ref=e197]:
+          - generic [ref=e198]:
+            - heading "Drivers" [level=1] [ref=e199]
+            - paragraph [ref=e200]: Manage your workforce of 276 drivers
+          - link "Add Driver" [ref=e202] [cursor=pointer]:
+            - /url: /drivers/create
+            - img
+            - text: Add Driver
+        - generic [ref=e203]:
+          - generic [ref=e204]:
+            - generic [ref=e205]:
+              - generic [ref=e206]: Total Drivers
+              - img [ref=e207]
+            - generic [ref=e212]:
+              - generic [ref=e213]: "276"
+              - paragraph [ref=e214]: Workforce size
+          - generic [ref=e215]:
+            - generic [ref=e216]:
+              - generic [ref=e217]: Active
+              - img [ref=e218]
+            - generic [ref=e222]:
+              - generic [ref=e223]: "257"
+              - paragraph [ref=e224]: Currently active
+          - generic [ref=e225]:
+            - generic [ref=e226]:
+              - generic [ref=e227]: Inactive
+              - img [ref=e228]
+            - generic [ref=e233]:
+              - generic [ref=e234]: "19"
+              - paragraph [ref=e235]: Off duty
+          - generic [ref=e236]:
+            - generic [ref=e237]:
+              - generic [ref=e238]: Male
+              - img [ref=e239]
+            - generic [ref=e242]:
+              - generic [ref=e243]: "275"
+              - paragraph [ref=e244]: 👨 Male drivers
+          - generic [ref=e245]:
+            - generic [ref=e246]:
+              - generic [ref=e247]: Female
+              - img [ref=e248]
+            - generic [ref=e251]:
+              - generic [ref=e252]: "1"
+              - paragraph [ref=e253]: 👩 Female drivers
+        - generic [ref=e254]:
+          - generic [ref=e256]:
+            - generic [ref=e257]:
+              - generic [ref=e258]: Driver Directory
+              - generic [ref=e259]: Complete list of all drivers in your workforce
+            - generic [ref=e261]:
+              - generic [ref=e262]:
+                - generic:
+                  - img
+                - textbox "Search drivers..." [ref=e263]
+              - combobox [ref=e264]:
+                - generic: All statuses
+                - img
+              - combobox [ref=e265]:
+                - generic: All genders
+                - img
+              - generic [ref=e266]:
+                - generic [ref=e267]: Rows
+                - combobox [ref=e268]:
+                  - generic: 15 / page
+                  - img
+          - generic [ref=e269]:
+            - table [ref=e274]:
+              - rowgroup [ref=e275]:
+                - row "# Name Driver ID Gender Location Phone Hired Date Status Actions" [ref=e276]:
+                  - cell "#" [ref=e277]:
+                    - generic [ref=e278]: "#"
+                  - cell "Name" [ref=e279] [cursor=pointer]:
+                    - generic [ref=e280]:
+                      - text: Name
+                      - img [ref=e281]
+                  - cell "Driver ID" [ref=e284] [cursor=pointer]:
+                    - generic [ref=e285]:
+                      - text: Driver ID
+                      - img [ref=e286]
+                  - cell "Gender" [ref=e289] [cursor=pointer]:
+                    - generic [ref=e290]:
+                      - text: Gender
+                      - img [ref=e291]
+                  - cell "Location" [ref=e294] [cursor=pointer]:
+                    - generic [ref=e295]:
+                      - text: Location
+                      - img [ref=e296]
+                  - cell "Phone" [ref=e299] [cursor=pointer]:
+                    - generic [ref=e300]:
+                      - text: Phone
+                      - img [ref=e301]
+                  - cell "Hired Date" [ref=e304] [cursor=pointer]:
+                    - generic [ref=e305]:
+                      - text: Hired Date
+                      - img [ref=e306]
+                  - cell "Status" [ref=e309] [cursor=pointer]:
+                    - generic [ref=e310]:
+                      - text: Status
+                      - img [ref=e311]
+                  - cell "Actions" [ref=e314]:
+                    - generic [ref=e315]: Actions
+              - rowgroup [ref=e316]:
+                - row "1 ABDI ALEMAYEHU 21-00955 👤Male sebeta 0913641046 6/8/2024 Active Open actions" [ref=e317]:
+                  - cell "1" [ref=e318]
+                  - cell "ABDI ALEMAYEHU" [ref=e319]
+                  - cell "21-00955" [ref=e320]
+                  - cell "👤Male" [ref=e321]:
+                    - generic [ref=e322]: 👤Male
+                  - cell "sebeta" [ref=e323]:
+                    - generic [ref=e324]:
+                      - img [ref=e325]
+                      - text: sebeta
+                  - cell "0913641046" [ref=e328]:
+                    - generic [ref=e329]:
+                      - img [ref=e330]
+                      - text: "0913641046"
+                  - cell "6/8/2024" [ref=e332]
+                  - cell "Active" [ref=e333]:
+                    - generic [ref=e334]: Active
+                  - cell "Open actions" [ref=e335]:
+                    - button "Open actions" [ref=e336]:
+                      - generic [ref=e337]: Open actions
+                      - img
+                - row "2 ABDULHAMID ZENAB N-0028647 👤Male — 0942700494 6/8/2024 Active Open actions" [ref=e338]:
+                  - cell "2" [ref=e339]
+                  - cell "ABDULHAMID ZENAB" [ref=e340]
+                  - cell "N-0028647" [ref=e341]
+                  - cell "👤Male" [ref=e342]:
+                    - generic [ref=e343]: 👤Male
+                  - cell "—" [ref=e344]:
+                    - generic [ref=e345]:
+                      - img [ref=e346]
+                      - text: —
+                  - cell "0942700494" [ref=e349]:
+                    - generic [ref=e350]:
+                      - img [ref=e351]
+                      - text: "0942700494"
+                  - cell "6/8/2024" [ref=e353]
+                  - cell "Active" [ref=e354]:
+                    - generic [ref=e355]: Active
+                  - cell "Open actions" [ref=e356]:
+                    - button "Open actions" [ref=e357]:
+                      - generic [ref=e358]: Open actions
+                      - img
+                - row "3 ABEBAW LEGSE 101 👤Male AA 0911451122 6/8/2010 Active Open actions" [ref=e359]:
+                  - cell "3" [ref=e360]
+                  - cell "ABEBAW LEGSE" [ref=e361]
+                  - cell "101" [ref=e362]
+                  - cell "👤Male" [ref=e363]:
+                    - generic [ref=e364]: 👤Male
+                  - cell "AA" [ref=e365]:
+                    - generic [ref=e366]:
+                      - img [ref=e367]
+                      - text: AA
+                  - cell "0911451122" [ref=e370]:
+                    - generic [ref=e371]:
+                      - img [ref=e372]
+                      - text: "0911451122"
+                  - cell "6/8/2010" [ref=e374]
+                  - cell "Active" [ref=e375]:
+                    - generic [ref=e376]: Active
+                  - cell "Open actions" [ref=e377]:
+                    - button "Open actions" [ref=e378]:
+                      - generic [ref=e379]: Open actions
+                      - img
+                - row "4 ABEBE ALBACHW 102 👤Male AA 0913677549 2/7/2019 Active Open actions" [ref=e380]:
+                  - cell "4" [ref=e381]
+                  - cell "ABEBE ALBACHW" [ref=e382]
+                  - cell "102" [ref=e383]
+                  - cell "👤Male" [ref=e384]:
+                    - generic [ref=e385]: 👤Male
+                  - cell "AA" [ref=e386]:
+                    - generic [ref=e387]:
+                      - img [ref=e388]
+                      - text: AA
+                  - cell "0913677549" [ref=e391]:
+                    - generic [ref=e392]:
+                      - img [ref=e393]
+                      - text: "0913677549"
+                  - cell "2/7/2019" [ref=e395]
+                  - cell "Active" [ref=e396]:
+                    - generic [ref=e397]: Active
+                  - cell "Open actions" [ref=e398]:
+                    - button "Open actions" [ref=e399]:
+                      - generic [ref=e400]: Open actions
+                      - img
+                - row "5 ABEBE DEBELIE 214 👤Male OROMIA 0000000000 4/2/2021 Active Open actions" [ref=e401]:
+                  - cell "5" [ref=e402]
+                  - cell "ABEBE DEBELIE" [ref=e403]
+                  - cell "214" [ref=e404]
+                  - cell "👤Male" [ref=e405]:
+                    - generic [ref=e406]: 👤Male
+                  - cell "OROMIA" [ref=e407]:
+                    - generic [ref=e408]:
+                      - img [ref=e409]
+                      - text: OROMIA
+                  - cell "0000000000" [ref=e412]:
+                    - generic [ref=e413]:
+                      - img [ref=e414]
+                      - text: "0000000000"
+                  - cell "4/2/2021" [ref=e416]
+                  - cell "Active" [ref=e417]:
+                    - generic [ref=e418]: Active
+                  - cell "Open actions" [ref=e419]:
+                    - button "Open actions" [ref=e420]:
+                      - generic [ref=e421]: Open actions
+                      - img
+                - row "6 ABERA BEDADA 103 👤Male AA 0911030172 3/24/2011 Active Open actions" [ref=e422]:
+                  - cell "6" [ref=e423]
+                  - cell "ABERA BEDADA" [ref=e424]
+                  - cell "103" [ref=e425]
+                  - cell "👤Male" [ref=e426]:
+                    - generic [ref=e427]: 👤Male
+                  - cell "AA" [ref=e428]:
+                    - generic [ref=e429]:
+                      - img [ref=e430]
+                      - text: AA
+                  - cell "0911030172" [ref=e433]:
+                    - generic [ref=e434]:
+                      - img [ref=e435]
+                      - text: "0911030172"
+                  - cell "3/24/2011" [ref=e437]
+                  - cell "Active" [ref=e438]:
+                    - generic [ref=e439]: Active
+                  - cell "Open actions" [ref=e440]:
+                    - button "Open actions" [ref=e441]:
+                      - generic [ref=e442]: Open actions
+                      - img
+                - row "7 ABREHAM BERIHU 21-12570 👤Male Addis abeba 0961283339 1/31/2024 Active Open actions" [ref=e443]:
+                  - cell "7" [ref=e444]
+                  - cell "ABREHAM BERIHU" [ref=e445]
+                  - cell "21-12570" [ref=e446]
+                  - cell "👤Male" [ref=e447]:
+                    - generic [ref=e448]: 👤Male
+                  - cell "Addis abeba" [ref=e449]:
+                    - generic [ref=e450]:
+                      - img [ref=e451]
+                      - text: Addis abeba
+                  - cell "0961283339" [ref=e454]:
+                    - generic [ref=e455]:
+                      - img [ref=e456]
+                      - text: "0961283339"
+                  - cell "1/31/2024" [ref=e458]
+                  - cell "Active" [ref=e459]:
+                    - generic [ref=e460]: Active
+                  - cell "Open actions" [ref=e461]:
+                    - button "Open actions" [ref=e462]:
+                      - generic [ref=e463]: Open actions
+                      - img
+                - row "8 ABREHAM TADELE n-0000 👤Male — 0911111111 6/8/2024 Active Open actions" [ref=e464]:
+                  - cell "8" [ref=e465]
+                  - cell "ABREHAM TADELE" [ref=e466]
+                  - cell "n-0000" [ref=e467]
+                  - cell "👤Male" [ref=e468]:
+                    - generic [ref=e469]: 👤Male
+                  - cell "—" [ref=e470]:
+                    - generic [ref=e471]:
+                      - img [ref=e472]
+                      - text: —
+                  - cell "0911111111" [ref=e475]:
+                    - generic [ref=e476]:
+                      - img [ref=e477]
+                      - text: "0911111111"
+                  - cell "6/8/2024" [ref=e479]
+                  - cell "Active" [ref=e480]:
+                    - generic [ref=e481]: Active
+                  - cell "Open actions" [ref=e482]:
+                    - button "Open actions" [ref=e483]:
+                      - generic [ref=e484]: Open actions
+                      - img
+                - row "9 ABREHAM WORKU 28-030105 👤Male Addis abeba 0913496420 1/31/2024 Active Open actions" [ref=e485]:
+                  - cell "9" [ref=e486]
+                  - cell "ABREHAM WORKU" [ref=e487]
+                  - cell "28-030105" [ref=e488]
+                  - cell "👤Male" [ref=e489]:
+                    - generic [ref=e490]: 👤Male
+                  - cell "Addis abeba" [ref=e491]:
+                    - generic [ref=e492]:
+                      - img [ref=e493]
+                      - text: Addis abeba
+                  - cell "0913496420" [ref=e496]:
+                    - generic [ref=e497]:
+                      - img [ref=e498]
+                      - text: "0913496420"
+                  - cell "1/31/2024" [ref=e500]
+                  - cell "Active" [ref=e501]:
+                    - generic [ref=e502]: Active
+                  - cell "Open actions" [ref=e503]:
+                    - button "Open actions" [ref=e504]:
+                      - generic [ref=e505]: Open actions
+                      - img
+                - row "10 ABRHA ABEBE 104 👤Male AA 977777777 — Active Open actions" [ref=e506]:
+                  - cell "10" [ref=e507]
+                  - cell "ABRHA ABEBE" [ref=e508]
+                  - cell "104" [ref=e509]
+                  - cell "👤Male" [ref=e510]:
+                    - generic [ref=e511]: 👤Male
+                  - cell "AA" [ref=e512]:
+                    - generic [ref=e513]:
+                      - img [ref=e514]
+                      - text: AA
+                  - cell "977777777" [ref=e517]:
+                    - generic [ref=e518]:
+                      - img [ref=e519]
+                      - text: "977777777"
+                  - cell "—" [ref=e521]
+                  - cell "Active" [ref=e522]:
+                    - generic [ref=e523]: Active
+                  - cell "Open actions" [ref=e524]:
+                    - button "Open actions" [ref=e525]:
+                      - generic [ref=e526]: Open actions
+                      - img
+                - row "11 ADANE ESHSETU A001841 👤Male ADDIS ABABA 0951105601 3/26/2024 Active Open actions" [ref=e527]:
+                  - cell "11" [ref=e528]
+                  - cell "ADANE ESHSETU" [ref=e529]
+                  - cell "A001841" [ref=e530]
+                  - cell "👤Male" [ref=e531]:
+                    - generic [ref=e532]: 👤Male
+                  - cell "ADDIS ABABA" [ref=e533]:
+                    - generic [ref=e534]:
+                      - img [ref=e535]
+                      - text: ADDIS ABABA
+                  - cell "0951105601" [ref=e538]:
+                    - generic [ref=e539]:
+                      - img [ref=e540]
+                      - text: "0951105601"
+                  - cell "3/26/2024" [ref=e542]
+                  - cell "Active" [ref=e543]:
+                    - generic [ref=e544]: Active
+                  - cell "Open actions" [ref=e545]:
+                    - button "Open actions" [ref=e546]:
+                      - generic [ref=e547]: Open actions
+                      - img
+                - row "12 ADEM NEGWO 105 👤Male AA 0924847627 7/22/1999 Active Open actions" [ref=e548]:
+                  - cell "12" [ref=e549]
+                  - cell "ADEM NEGWO" [ref=e550]
+                  - cell "105" [ref=e551]
+                  - cell "👤Male" [ref=e552]:
+                    - generic [ref=e553]: 👤Male
+                  - cell "AA" [ref=e554]:
+                    - generic [ref=e555]:
+                      - img [ref=e556]
+                      - text: AA
+                  - cell "0924847627" [ref=e559]:
+                    - generic [ref=e560]:
+                      - img [ref=e561]
+                      - text: "0924847627"
+                  - cell "7/22/1999" [ref=e563]
+                  - cell "Active" [ref=e564]:
+                    - generic [ref=e565]: Active
+                  - cell "Open actions" [ref=e566]:
+                    - button "Open actions" [ref=e567]:
+                      - generic [ref=e568]: Open actions
+                      - img
+                - row "13 ADIS KASAHUN 0900 👤Male ADAMA 0912232309 8/26/2023 Active Open actions" [ref=e569]:
+                  - cell "13" [ref=e570]
+                  - cell "ADIS KASAHUN" [ref=e571]
+                  - cell "0900" [ref=e572]
+                  - cell "👤Male" [ref=e573]:
+                    - generic [ref=e574]: 👤Male
+                  - cell "ADAMA" [ref=e575]:
+                    - generic [ref=e576]:
+                      - img [ref=e577]
+                      - text: ADAMA
+                  - cell "0912232309" [ref=e580]:
+                    - generic [ref=e581]:
+                      - img [ref=e582]
+                      - text: "0912232309"
+                  - cell "8/26/2023" [ref=e584]
+                  - cell "Active" [ref=e585]:
+                    - generic [ref=e586]: Active
+                  - cell "Open actions" [ref=e587]:
+                    - button "Open actions" [ref=e588]:
+                      - generic [ref=e589]: Open actions
+                      - img
+                - row "14 ADMASU ALENE 213 👤Male ADISSABEBA 0913864745 4/2/2021 Active Open actions" [ref=e590]:
+                  - cell "14" [ref=e591]
+                  - cell "ADMASU ALENE" [ref=e592]
+                  - cell "213" [ref=e593]
+                  - cell "👤Male" [ref=e594]:
+                    - generic [ref=e595]: 👤Male
+                  - cell "ADISSABEBA" [ref=e596]:
+                    - generic [ref=e597]:
+                      - img [ref=e598]
+                      - text: ADISSABEBA
+                  - cell "0913864745" [ref=e601]:
+                    - generic [ref=e602]:
+                      - img [ref=e603]
+                      - text: "0913864745"
+                  - cell "4/2/2021" [ref=e605]
+                  - cell "Active" [ref=e606]:
+                    - generic [ref=e607]: Active
+                  - cell "Open actions" [ref=e608]:
+                    - button "Open actions" [ref=e609]:
+                      - generic [ref=e610]: Open actions
+                      - img
+                - row "15 ADUGNA MEKONNEN n-0001223 👤Male — 0911111111 6/9/2024 Active Open actions" [ref=e611]:
+                  - cell "15" [ref=e612]
+                  - cell "ADUGNA MEKONNEN" [ref=e613]
+                  - cell "n-0001223" [ref=e614]
+                  - cell "👤Male" [ref=e615]:
+                    - generic [ref=e616]: 👤Male
+                  - cell "—" [ref=e617]:
+                    - generic [ref=e618]:
+                      - img [ref=e619]
+                      - text: —
+                  - cell "0911111111" [ref=e622]:
+                    - generic [ref=e623]:
+                      - img [ref=e624]
+                      - text: "0911111111"
+                  - cell "6/9/2024" [ref=e626]
+                  - cell "Active" [ref=e627]:
+                    - generic [ref=e628]: Active
+                  - cell "Open actions" [ref=e629]:
+                    - button "Open actions" [ref=e630]:
+                      - generic [ref=e631]: Open actions
+                      - img
+            - generic [ref=e632]:
+              - generic [ref=e633]: Showing 1 to 15 of 276
+              - navigation "Pagination" [ref=e637]:
+                - generic:
+                  - img
+                  - generic: Previous
+                - link "1" [ref=e638] [cursor=pointer]:
+                  - /url: http://localhost:8000/drivers?sort=name&direction=asc&per_page=15&page=1
+                - link "2" [ref=e639] [cursor=pointer]:
+                  - /url: http://localhost:8000/drivers?sort=name&direction=asc&per_page=15&page=2
+                - link "3" [ref=e640] [cursor=pointer]:
+                  - /url: http://localhost:8000/drivers?sort=name&direction=asc&per_page=15&page=3
+                - link "4" [ref=e641] [cursor=pointer]:
+                  - /url: http://localhost:8000/drivers?sort=name&direction=asc&per_page=15&page=4
+                - link "5" [ref=e642] [cursor=pointer]:
+                  - /url: http://localhost:8000/drivers?sort=name&direction=asc&per_page=15&page=5
+                - link "6" [ref=e643] [cursor=pointer]:
+                  - /url: http://localhost:8000/drivers?sort=name&direction=asc&per_page=15&page=6
+                - link "7" [ref=e644] [cursor=pointer]:
+                  - /url: http://localhost:8000/drivers?sort=name&direction=asc&per_page=15&page=7
+                - link "8" [ref=e645] [cursor=pointer]:
+                  - /url: http://localhost:8000/drivers?sort=name&direction=asc&per_page=15&page=8
+                - link "9" [ref=e646] [cursor=pointer]:
+                  - /url: http://localhost:8000/drivers?sort=name&direction=asc&per_page=15&page=9
+                - link "10" [ref=e647] [cursor=pointer]:
+                  - /url: http://localhost:8000/drivers?sort=name&direction=asc&per_page=15&page=10
+                - img [ref=e649]
+                - link "18" [ref=e653] [cursor=pointer]:
+                  - /url: http://localhost:8000/drivers?sort=name&direction=asc&per_page=15&page=18
+                - link "19" [ref=e654] [cursor=pointer]:
+                  - /url: http://localhost:8000/drivers?sort=name&direction=asc&per_page=15&page=19
+                - link "Next" [ref=e655] [cursor=pointer]:
+                  - /url: http://localhost:8000/drivers?sort=name&direction=asc&per_page=15&page=2
+                  - generic [ref=e656]: Next
+                  - img [ref=e657]
+  - region "Notifications (F8)":
+    - list
+```

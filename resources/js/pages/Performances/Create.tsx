@@ -58,6 +58,7 @@ interface DriverTruck {
 interface Place {
     id: number;
     name: string;
+    fullName?: string;
 }
 
 interface PerformancesCreateProps {
@@ -138,22 +139,38 @@ export default function PerformancesCreate({ driverTrucks, places }: Performance
     const operationSelectedIds = useMemo(() => {
         const ids = new Set<string>();
         if (data.operation_id) {
-            ids.add(data.operation_id);
+            ids.add(String(data.operation_id));
         }
         recent.operations.forEach(id => {
             if (id) {
-                ids.add(id);
+                ids.add(String(id));
             }
         });
         return Array.from(ids);
     }, [data.operation_id, recent.operations]);
 
+    const operationsEndpoint = useMemo(() => {
+        const url = operationsSearch.url();
+        console.log('[PerformancesCreate] Operations endpoint:', url);
+        return url;
+    }, []);
+
     const operationsLookup = useRemoteLookup<Operation>({
-        endpoint: operationsSearch.url(),
-        getId: operation => operation.id,
+        endpoint: operationsEndpoint,
+        getId: operation => String(operation.id),
         selectedIds: operationSelectedIds,
         limit: 20,
     });
+
+    // Debug: Log operations lookup state
+    useEffect(() => {
+        console.log('[PerformancesCreate] Operations lookup state:', {
+            itemsCount: operationsLookup.items.length,
+            isLoading: operationsLookup.isLoading,
+            query: operationsLookup.query,
+            items: operationsLookup.items,
+        });
+    }, [operationsLookup.items.length, operationsLookup.isLoading, operationsLookup.query]);
 
     const [frontendErrors, setFrontendErrors] = useState<FieldErrorMap>({});
     const [distanceStatus, setDistanceStatus] = useState<{ found: boolean; message: string } | null>(null);
@@ -546,7 +563,7 @@ export default function PerformancesCreate({ driverTrucks, places }: Performance
                             required
                             value={data.operation_id}
                             items={operationsLookup.items}
-                            getValue={operation => operation.id}
+                            getValue={operation => String(operation.id)}
                             getLabel={operation => operation.operationid}
                             getDescription={operation => operation.customer?.name}
                             getKeywords={operation => [operation.operationid, operation.customer?.name]}
@@ -567,12 +584,12 @@ export default function PerformancesCreate({ driverTrucks, places }: Performance
                         {recent.operations.length > 0 && (
                             <div className="flex flex-wrap gap-2">
                                 {recent.operations.map(id => {
-                                    const operation = operationsLookup.getCachedItem(id);
+                                    const operation = operationsLookup.getCachedItem(String(id));
                                     if (!operation) {
                                         return null;
                                     }
 
-                                    const isActive = data.operation_id === id;
+                                    const isActive = data.operation_id === String(id);
 
                                     return (
                                         <button

@@ -1,5 +1,13 @@
 # Backend Documentation - TIMS
 
+This directory contains comprehensive documentation for the TIMS backend, built with Laravel 12 and modern PHP technologies.
+
+## 📚 Files in This Directory
+
+- **[README.md](./README.md)** - This file: Complete backend architecture and implementation guide
+
+## 📖 Overview
+
 This document provides comprehensive documentation for the TIMS backend, built with Laravel 12 and modern PHP technologies.
 
 ## 🏗️ Architecture Overview

@@ -24,14 +24,12 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
-use Spatie\Activitylog\Models\Activity;
 
-class OperationController extends Controller
+class OperationController extends BaseResourceController
 {
     /**
      * Display a listing of the resource.
@@ -234,6 +232,7 @@ class OperationController extends Controller
             });
         }
 
+        // Always fetch operations (with or without search) to show initial results
         $operations = (clone $baseQuery)
             ->orderBy('operationid')
             ->limit($limit + 1)
@@ -338,23 +337,21 @@ class OperationController extends Controller
 
             $operation = Operation::create(array_merge($attributes, $destinationAttributes));
 
-            // Clear cached options
+            // Clear all related caches systematically
             Cache::forget('operations.status_options');
             Cache::forget('operations.customer_options');
-            // Clear report caches
             Cache::forget('reports.performance_all.operations');
             Cache::forget('reports.outsource_performance.operations');
 
             return redirect()->route('operations.index')
-                ->with('success', 'Operation created successfully.');
+                ->with('success', sprintf('Operation %s created successfully.', $operation->operationid));
 
         } catch (ValidationException $e) {
             throw $e;
         } catch (Exception $e) {
-            Log::error('Operation creation failed', [
-                'error' => $e->getMessage(),
-                'data' => $request->validated(),
+            $this->logError('store', 'Operation', $e, [
                 'user_id' => Auth::id(),
+                'operation_id' => $request->input('operationid'),
             ]);
 
             return back()->withErrors(['error' => 'Failed to create operation. Please try again.'])->withInput();
@@ -368,11 +365,8 @@ class OperationController extends Controller
     {
         $operation->load(['customer', 'performances', 'user', 'destinationReference', 'cargoType']);
 
-        // Load activity logs for this operation using Spatie Activity Log
-        $activityLogs = Activity::forSubject($operation)
-            ->with('causer')
-            ->orderByDesc('created_at')
-            ->get();
+        // Get activity logs using base controller method
+        $activityLogs = $this->getActivityLogs($operation);
 
         $performanceQuery = Performance::where('operation_id', $operation->id);
 
@@ -398,6 +392,7 @@ class OperationController extends Controller
         $totalDistance = (float) ($aggregate->total_distance ?? 0);
         $totalCost = (float) ($aggregate->total_cost ?? 0);
         $plannedVolume = (float) ($operation->volume ?? 0);
+        $plannedKm = (float) ($operation->km ?? 0);
         $remainingTonnage = max($plannedVolume - $totalTonnage, 0);
         $completionRate = $plannedVolume > 0 ? round(($totalTonnage / $plannedVolume) * 100, 2) : null;
         $averageTonPerTrip = $totalTrips > 0 ? round($totalTonnage / $totalTrips, 2) : null;
@@ -405,20 +400,47 @@ class OperationController extends Controller
         $returnRate = $totalTrips > 0 ? round(($completedTrips / $totalTrips) * 100, 2) : 0;
         $averageCostPerTrip = $totalTrips > 0 ? round($totalCost / $totalTrips, 2) : null;
         $averageCostPerTon = $totalTonnage > 0 ? round($totalCost / $totalTonnage, 2) : null;
-        $plannedTonKm = ($operation->volume ?? 0) * ($operation->km ?? 0);
+
+        // Calculate planned ton-km: volume (tonnes) * km = ton-km
+        // Revenue Potential = volume * km * tariff = plannedTonKm * tariff
+        $plannedTonKm = ($plannedVolume > 0 && $plannedKm > 0)
+            ? round($plannedVolume * $plannedKm, 2)
+            : null;
+
         $costPerTonKm = $totalTonKm > 0 ? round($totalCost / $totalTonKm, 2) : null;
-        $actualRevenue = ($operation->tariff !== null && $operation->tariff !== '') ? round($totalTonKm * (float) $operation->tariff, 2) : null;
-        $potentialRevenue = ($operation->tariff !== null && $operation->tariff !== '') ? round($plannedTonKm * (float) $operation->tariff, 2) : null;
-        $revenueGap = ($potentialRevenue !== null && $actualRevenue !== null) ? round($potentialRevenue - $actualRevenue, 2) : null;
+
+        // Validate tariff value - must be numeric and non-negative
+        $tariffValue = null;
+        if ($operation->tariff !== null && $operation->tariff !== '' && is_numeric($operation->tariff)) {
+            $tariffFloat = (float) $operation->tariff;
+            if ($tariffFloat >= 0) {
+                $tariffValue = $tariffFloat;
+            }
+        }
+
+        // Actual Revenue = actual ton-km × tariff
+        $actualRevenue = ($tariffValue !== null && $totalTonKm > 0) ? round($totalTonKm * $tariffValue, 2) : null;
+
+        // Revenue Potential = volume (tonnes) × km × tariff = plannedTonKm × tariff
+        $potentialRevenue = ($tariffValue !== null && $plannedTonKm !== null && $plannedTonKm > 0)
+            ? round($plannedTonKm * $tariffValue, 2)
+            : null;
+
+        // Revenue gap should only be calculated when both values are valid
+        $revenueGap = ($potentialRevenue !== null && $actualRevenue !== null)
+            ? round($potentialRevenue - $actualRevenue, 2)
+            : null;
         $grossMarginValue = ($actualRevenue !== null) ? round($actualRevenue - $totalCost, 2) : null;
-        $grossMarginPercent = ($actualRevenue !== null && $actualRevenue != 0.0)
+        $grossMarginPercent = ($actualRevenue !== null && abs($actualRevenue) > 0.01)
             ? round(($grossMarginValue / $actualRevenue) * 100, 2)
             : null;
         $yieldPerTrip = ($actualRevenue !== null && $totalTrips > 0) ? round($actualRevenue / $totalTrips, 2) : null;
         $yieldPerTon = ($actualRevenue !== null && $totalTonnage > 0) ? round($actualRevenue / $totalTonnage, 2) : null;
         $loadFactor = ($totalDistance > 0) ? round(($loadedDistance / $totalDistance) * 100, 2) : null;
         $emptyBackhaulShare = ($totalDistance > 0) ? round(($emptyDistance / $totalDistance) * 100, 2) : null;
-        $tonKmCompletionRate = $plannedTonKm > 0 ? round(($totalTonKm / $plannedTonKm) * 100, 2) : null;
+        $tonKmCompletionRate = ($plannedTonKm !== null && $plannedTonKm > 0)
+            ? round(($totalTonKm / $plannedTonKm) * 100, 2)
+            : null;
 
         $timeline = (clone $performanceQuery)
             ->selectRaw('DATE(DateDispach) as date')
@@ -507,7 +529,7 @@ class OperationController extends Controller
                     'averageTonPerTrip' => $averageTonPerTrip,
                     'totalDistance' => round($totalDistance, 2),
                     'totalTonKm' => round($totalTonKm, 2),
-                    'plannedTonKm' => round($plannedTonKm, 2),
+                    'plannedTonKm' => $plannedTonKm !== null ? round($plannedTonKm, 2) : null,
                     'tonKmCompletionRate' => $tonKmCompletionRate,
                     'loadedDistance' => round($loadedDistance, 2),
                     'emptyDistance' => round($emptyDistance, 2),
@@ -522,7 +544,7 @@ class OperationController extends Controller
                 ],
                 'economics' => [
                     'totalTonKm' => round($totalTonKm, 2),
-                    'plannedTonKm' => round($plannedTonKm, 2),
+                    'plannedTonKm' => $plannedTonKm !== null ? round($plannedTonKm, 2) : null,
                     'tonKmCompletionRate' => $tonKmCompletionRate,
                     'averageTonKmPerTrip' => $averageTonKmPerTrip,
                     'actualRevenue' => $actualRevenue,
@@ -622,6 +644,9 @@ class OperationController extends Controller
     public function update(UpdateOperationRequest $request, Operation $operation)
     {
         try {
+            // Capture original values before update
+            $original = $this->normalizeAttributes($operation->getOriginal());
+
             $validated = $request->validated();
 
             $destinationAttributes = $this->resolveDestinationAttributes(
@@ -635,24 +660,23 @@ class OperationController extends Controller
 
             $operation->update(array_merge($attributes, $destinationAttributes));
 
-            // Clear cached options if status or customer changed
+            // Format changes for audit trail
+            $changes = $this->formatChanges($original, $this->normalizeAttributes($operation->getChanges()));
+
+            // Clear related caches
             Cache::forget('operations.status_options');
             Cache::forget('operations.customer_options');
-            // Clear report caches
             Cache::forget('reports.performance_all.operations');
             Cache::forget('reports.outsource_performance.operations');
 
             return redirect()->route('operations.index')
-                ->with('success', 'Operation updated successfully.');
+                ->with('success', sprintf('Operation %s updated successfully.', $operation->operationid));
 
         } catch (ValidationException $e) {
             throw $e;
         } catch (Exception $e) {
-            Log::error('Operation update failed', [
+            $this->logError('update', 'Operation', $e, [
                 'operation_id' => $operation->id,
-                'error' => $e->getMessage(),
-                'data' => $request->validated(),
-                'user_id' => Auth::id(),
             ]);
 
             return back()->withErrors(['error' => 'Failed to update operation. Please try again.'])->withInput();

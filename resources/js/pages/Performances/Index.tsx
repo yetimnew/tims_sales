@@ -17,7 +17,7 @@ import { type BreadcrumbItem } from '@/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import * as React from 'react';
-import { Activity, CheckCircle, Edit, Eye, Plus, Search, Trash2, XCircle, ChevronRight } from 'lucide-react';
+import { Activity, CheckCircle, Edit, Eye, Plus, Search, Trash2, XCircle, ChevronRight, BarChart3 } from 'lucide-react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -300,28 +300,77 @@ export default function PerformancesIndex({
         },
         [perPage, searchTerm, selectedStatus, selectedLoadPhase, sortColumn, sortDirection],
     );
-            valueClassName: isTableLoading ? undefined : 'text-blue-600',
-                page: nextPage,
-                per_page:
-                    typeof nextPerPage === 'number' && Number.isFinite(nextPerPage) && nextPerPage > 0
-                        ? nextPerPage
-                        : undefined,
-            };
-            value: isTableLoading ? (
-            Object.keys(params).forEach((key) => {
-                if (params[key] === undefined) {
-                    delete params[key];
-                }
-            description: isTableLoading ? (
 
-            if (typeof window !== 'undefined') {
-                window.sessionStorage.setItem(SKELETON_FLAG_KEY, 'true');
-            }
-            valueClassName: isTableLoading ? undefined : 'text-rose-600',
-            router.get('/performances', params, { preserveState: true, replace: false });
+    const statsDefinitions = [
+        {
+            id: 'total-performances',
+            label: 'Total Performances',
+            icon: <BarChart3 className="h-3.5 w-3.5 text-blue-600" />,
+            className: 'min-w-[220px] flex-shrink-0',
+            value: isTableLoading ? (
+                <Skeleton className="h-3.5 w-20" aria-hidden="true" />
+            ) : (
+                totalRecords.toLocaleString()
+            ),
+            description: isTableLoading ? (
+                <Skeleton className="h-3 w-28" aria-hidden="true" />
+            ) : (
+                'All dispatches'
+            ),
+            valueClassName: isTableLoading ? undefined : 'text-blue-600',
         },
-        [perPage, searchTerm, selectedStatus, selectedLoadPhase, sortColumn, sortDirection],
-    );
+        {
+            id: 'active-performances',
+            label: 'Active',
+            icon: <Activity className="h-3.5 w-3.5 text-emerald-600" />,
+            className: 'min-w-[220px] flex-shrink-0',
+            value: isTableLoading ? (
+                <Skeleton className="h-3.5 w-16" aria-hidden="true" />
+            ) : (
+                (metrics?.active ?? 0).toLocaleString()
+            ),
+            description: isTableLoading ? (
+                <Skeleton className="h-3 w-24" aria-hidden="true" />
+            ) : (
+                'In progress'
+            ),
+            valueClassName: isTableLoading ? undefined : 'text-emerald-600',
+        },
+        {
+            id: 'completed-performances',
+            label: 'Completed',
+            icon: <CheckCircle className="h-3.5 w-3.5 text-blue-600" />,
+            className: 'min-w-[220px] flex-shrink-0',
+            value: isTableLoading ? (
+                <Skeleton className="h-3.5 w-16" aria-hidden="true" />
+            ) : (
+                (metrics?.completed ?? 0).toLocaleString()
+            ),
+            description: isTableLoading ? (
+                <Skeleton className="h-3 w-24" aria-hidden="true" />
+            ) : (
+                'Finished'
+            ),
+            valueClassName: isTableLoading ? undefined : 'text-blue-600',
+        },
+        {
+            id: 'failed-performances',
+            label: 'Failed',
+            icon: <XCircle className="h-3.5 w-3.5 text-rose-600" />,
+            className: 'min-w-[220px] flex-shrink-0',
+            value: isTableLoading ? (
+                <Skeleton className="h-3.5 w-16" aria-hidden="true" />
+            ) : (
+                (metrics?.failed ?? 0).toLocaleString()
+            ),
+            description: isTableLoading ? (
+                <Skeleton className="h-3 w-24" aria-hidden="true" />
+            ) : (
+                'Unsuccessful'
+            ),
+            valueClassName: isTableLoading ? undefined : 'text-rose-600',
+        },
+    ];
 
     const handleSearchChange = (value: string) => {
         setSearchTerm(value);
@@ -343,6 +392,49 @@ export default function PerformancesIndex({
         const numericValue = Number(value);
         handleNavigate({ per_page: Number.isNaN(numericValue) ? undefined : numericValue, page: 1 });
     };
+
+    const handleDeleteClick = (performance: PerformanceData) => {
+        setSelectedPerformance(performance);
+        setDeleteDialogOpen(true);
+    };
+
+    const handleDeleteConfirm = React.useCallback(async () => {
+        if (!selectedPerformance || !canDeletePerformance) return;
+
+        setIsDeleting(true);
+        try {
+            await router.delete(`/performances/${selectedPerformance.id}`, {
+                onSuccess: () => {
+                    setDeleteDialogOpen(false);
+                    setSelectedPerformance(null);
+                    handleNavigate({ page: 1 });
+                },
+            });
+        } finally {
+            setIsDeleting(false);
+        }
+    }, [selectedPerformance, canDeletePerformance, handleNavigate]);
+
+    const handleSort = React.useCallback(
+        (column: string) => {
+            const newDirection: 'asc' | 'desc' = sortColumn === column && sortDirection === 'asc' ? 'desc' : 'asc';
+            setSortColumn(column);
+            setSortDirection(newDirection);
+            handleNavigate({ sort: column, direction: newDirection });
+        },
+        [handleNavigate, sortColumn, sortDirection],
+    );
+
+    const tableColumns = COLUMN_DEFINITIONS.map(col => ({ key: col.id, label: col.label }));
+
+    const perPageSelectOptions = React.useMemo(
+        () => availablePerPageOptions.map(option => ({ label: String(option), value: String(option) })),
+        [availablePerPageOptions],
+    );
+
+    const statsSection = (
+        <ListingStatsHeader stats={statsDefinitions} />
+    );
 
     const tableRows = performanceData.length > 0
         ? performanceData.map((performance) => (
@@ -392,173 +484,6 @@ export default function PerformancesIndex({
                 </TableRow>
             )
             : null;
-            icon: <Activity className="h-3.5 w-3.5 text-slate-600" />,
-            const mobileContent = (
-                <ListingMobileItemList
-                    items={mobileItems}
-                    getKey={(item) => item.record.id}
-                    renderTitle={(item) => (
-                        <div className="flex items-center gap-2">
-                            <span className="text-xs uppercase tracking-wide text-muted-foreground">{item.record.foNumber}</span>
-                            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
-                        </div>
-                    )}
-                    renderSubtitle={(item) => `Status: ${item.record.status ?? 'Unknown'}`}
-                    renderContent={(item) => (
-                        <div className="space-y-3 text-sm text-muted-foreground">
-                            <div className="flex items-center justify-between">
-                                <span className="font-medium text-slate-600 dark:text-slate-300">Dispatch Date</span>
-                                <span className="text-right text-slate-900 dark:text-slate-100">
-                                    {formatDateValue(item.record.dispatchDate)}
-                                </span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <span className="font-medium text-slate-600 dark:text-slate-300">Load Phase</span>
-                                <span className="text-right text-slate-900 dark:text-slate-100">
-                                    {item.record.loadPhase ?? '—'}
-                                </span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <span className="font-medium text-slate-600 dark:text-slate-300">Load Completion</span>
-                                <span className="text-right text-slate-900 dark:text-slate-100">
-                                    {item.record.loadCompletion ?? '—'}
-                                </span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <span className="font-medium text-slate-600 dark:text-slate-300">Distance (KM)</span>
-                                <span className="text-right text-slate-900 dark:text-slate-100">
-                                    {formatNumberValue(item.record.distanceWithCargo, 0)}
-                                </span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <span className="font-medium text-slate-600 dark:text-slate-300">Fuel Cost</span>
-                                <span className="text-right text-slate-900 dark:text-slate-100">
-                                    {formatCurrency(item.record.fuelCost)}
-                                </span>
-                            </div>
-                        </div>
-                    )}
-                    renderFooter={(item) => (
-                        <div className="flex w-full flex-wrap items-center justify-end gap-2">
-                            {canViewPerformance && (
-                                <Button asChild size="sm" variant="outline" className="flex-1 sm:flex-auto">
-                                    <Link href={`/performances/${item.record.id}`}>
-                                        <Eye className="mr-2 h-4 w-4" />
-                                        View
-                                    </Link>
-                                </Button>
-                            )}
-                            {canEditPerformance && (
-                                <Button asChild size="sm" variant="secondary" className="flex-1 sm:flex-none">
-                                    <Link href={`/performances/${item.record.id}/edit`}>
-                                        <Edit className="mr-2 h-4 w-4" />
-                                        Edit
-                                    </Link>
-                                </Button>
-                            )}
-                            {canDeletePerformance && (
-                                <Button
-                                    size="sm"
-                                    variant="destructive"
-                                    className="flex-1 sm:flex-none"
-                                    onClick={() => handleDeleteClick(item.record)}
-                                >
-                                    <Trash2 className="mr-2 h-4 w-4" />
-                                    Delete
-                                </Button>
-                            )}
-                        </div>
-                    )}
-                    emptyState={(
-                        <div className="py-8 text-center text-muted-foreground">
-                            No performances found.
-                            {canCreatePerformance && (
-                                <Link href="/performances/create" className="ml-1 text-primary underline">
-                                    Create one
-                                </Link>
-                            )}
-                        </div>
-                    )}
-                />
-            );
-
-            const tableContent = (
-                <div className="relative">
-                    <ListingTableShell
-                        columns={tableColumns}
-                        sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSort }}
-                    >
-                        {tableRows}
-                    </ListingTableShell>
-
-                    {isTableLoading && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
-                            <img src="/images/loading-spinner.svg" alt="Loading performances" className="h-12 w-12" />
-                            <span className="text-sm text-muted-foreground">Loading performances...</span>
-                        </div>
-                    )}
-                </div>
-            );
-                      </TableCell>
-                  ))}
-              </TableRow>
-          ))
-        : performanceData.length > 0
-            ? performanceData.map((performance, index) => (
-                  <TableRow key={performance.id} className="hover:bg-muted/50">
-                      <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
-                      <TableCell className="font-medium">{performance.foNumber || '—'}</TableCell>
-                      <TableCell className="text-muted-foreground">{formatDateValue(performance.dispatchDate)}</TableCell>
-                      <TableCell className="text-center">{getPhaseBadge(performance.loadPhase)}</TableCell>
-                      <TableCell className="text-center">{getPhaseBadge(performance.loadCompletion)}</TableCell>
-                      <TableCell className="text-center">{getStatusBadge(performance.status)}</TableCell>
-                      <TableCell className="text-right text-muted-foreground">
-                          {performance.distanceWithCargo !== null && performance.distanceWithCargo !== undefined
-                              ? `${formatNumberValue(performance.distanceWithCargo)} km`
-                              : '—'}
-                      </TableCell>
-                      <TableCell className="text-right font-medium">
-                          {performance.fuelCost !== null && performance.fuelCost !== undefined
-                              ? formatCurrency(performance.fuelCost)
-                              : 'ETB 0.00'}
-                      </TableCell>
-                      <TableCell className="text-center">
-                          <ListingRowActionsMenu
-                              actions={[
-                                  canViewPerformance && {
-                                      label: 'View',
-                                      icon: <Eye className="h-4 w-4" />,
-                                      href: `/performances/${performance.id}`,
-                                  },
-                                  canEditPerformance && {
-                                      label: 'Edit',
-                                      icon: <Edit className="h-4 w-4" />,
-                                      href: `/performances/${performance.id}/edit`,
-                                  },
-                                  canDeletePerformance && {
-                                      label: 'Delete',
-                                      icon: <Trash2 className="h-4 w-4" />,
-                                      danger: true,
-                                      disabled: isDeleting && selectedPerformance?.id === performance.id,
-                                      onSelect: () => handleDeleteClick(performance),
-                                  },
-                              ]}
-                          />
-                      </TableCell>
-                  </TableRow>
-              ))
-            : (
-                <TableRow>
-                    <TableCell colSpan={tableColumns.length} className="py-8 text-center text-muted-foreground">
-                        No performances found.
-                        {canCreatePerformance && (
-                            <Link href="/performances/create" className="ml-1 text-primary underline">
-                                Create one
-                            </Link>
-                        )}
-                    </TableCell>
-                </TableRow>
-            );
 
     const mobileItems = React.useMemo(
         () =>
@@ -569,9 +494,25 @@ export default function PerformancesIndex({
         [performanceData, rowOffset],
     );
 
-    const mobileContent = isLoading ? (
-        <ListingLoadingPlaceholder showStats={false} filterItemCount={4} rowCount={4} />
-    ) : (
+    const tableContent = (
+        <div className="relative">
+            <ListingTableShell
+                columns={tableColumns}
+                sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSort }}
+            >
+                {tableRows}
+            </ListingTableShell>
+
+            {isTableLoading && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
+                    <img src="/images/loading-spinner.svg" alt="Loading performances" className="h-12 w-12" />
+                    <span className="text-sm text-muted-foreground">Loading performances...</span>
+                </div>
+            )}
+        </div>
+    );
+
+    const mobileContent = isTableLoading ? null : (
         <ListingMobileItemList
             items={mobileItems}
             getKey={(item) => item.record.id}
@@ -610,7 +551,7 @@ export default function PerformancesIndex({
                         <span className="text-right text-slate-900 dark:text-slate-100">
                             {item.record.fuelCost !== null && item.record.fuelCost !== undefined
                                 ? formatCurrency(item.record.fuelCost)
-                                : 'ETB 0.00'}
+                                : 'ETB 0.00'}
                         </span>
                     </div>
                 </div>

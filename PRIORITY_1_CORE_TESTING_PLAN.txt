@@ -1,0 +1,362 @@
+╔════════════════════════════════════════════════════════════════════════════════╗
+║                                                                                ║
+║              PRIORITY 1 - CORE FLEET MODULES TESTING PLAN                      ║
+║                                                                                ║
+║                      COMPREHENSIVE STEP-BY-STEP SCHEDULE                       ║
+║                                                                                ║
+╚════════════════════════════════════════════════════════════════════════════════╝
+
+
+PROJECT OVERVIEW
+════════════════════════════════════════════════════════════════════════════════
+
+Objective:      Test ALL remaining modules comprehensively, permission by permission
+Test Method:    Individual permission assignment & real-time browser verification
+User:           Test Driver (testdriver69412e558891f@gmail.com)
+Test Role:      Test Driver Role
+
+Status:         IN PROGRESS ✅
+Modules Completed: 3/32 (Maintenance, Operations, Reports)
+Current Phase:   PRIORITY 1 - CORE MODULES
+
+Estimated Total Time: ~11-17 hours
+
+
+════════════════════════════════════════════════════════════════════════════════
+                     PRIORITY 1 - CORE MODULES IDENTIFIED
+════════════════════════════════════════════════════════════════════════════════
+
+✅ Module 1: TRUCKS
+   Permissions Found: 9
+   Status: READY FOR TESTING
+   Files Created:
+     • trucks_permissions_test.php
+
+✅ Module 2: DRIVERS  
+   Permissions Found: 9
+   Status: READY FOR TESTING
+   Files Created:
+     • drivers_permissions_test.php
+
+✅ Module 3: DRIVER-TRUCK ASSIGNMENTS
+   Permissions Found: 8
+   Status: READY FOR TESTING
+   Files Created:
+     • driver_trucks_permissions_test.php
+
+Total Core Permissions: 26
+
+
+════════════════════════════════════════════════════════════════════════════════
+                      TESTING EXECUTION PLAN
+════════════════════════════════════════════════════════════════════════════════
+
+PHASE 1: TRUCKS (9 permissions)
+════════════════════════════════════════════════════════════════════════════════
+
+Permissions to test (in order):
+  1. trucks.activate      → Activate button
+  2. trucks.create        → Create button
+  3. trucks.deactivate    → Deactivate button
+  4. trucks.destroy       → Delete button
+  5. trucks.edit          → Edit button
+  6. trucks.show          → View details
+  7. trucks.store         → Save form
+  8. trucks.update        → Update form
+  9. trucks.view          → View list
+
+Execution:
+  $ php trucks_permissions_test.php
+  
+Browser Tests (after each permission):
+  ☐ Refresh browser at http://react-starter-kit.test/trucks
+  ☐ Verify menu visibility
+  ☐ Check button presence
+  ☐ Test CRUD operations
+  ☐ Verify data display
+  ☐ Check console for errors
+
+Expected Results:
+  ✓ All 9 permissions grant appropriate UI access
+  ✓ No permission escalation
+  ✓ Correct button visibility
+  ✓ Form submission works
+  ✓ Data saved/updated correctly
+  ✓ Deletion works with confirmation
+  ✓ Status changes (activate/deactivate) work
+
+Estimated Time: ~45 minutes
+
+
+PHASE 2: DRIVERS (9 permissions)
+════════════════════════════════════════════════════════════════════════════════
+
+Permissions to test (in order):
+  1. drivers.activate     → Activate button
+  2. drivers.create       → Create button
+  3. drivers.deactivate   → Deactivate button
+  4. drivers.destroy      → Delete button
+  5. drivers.edit         → Edit button
+  6. drivers.show         → View details
+  7. drivers.store        → Save form
+  8. drivers.update       → Update form
+  9. drivers.view         → View list
+
+Execution:
+  $ php drivers_permissions_test.php
+  
+Browser Tests (after each permission):
+  ☐ Refresh browser at http://react-starter-kit.test/drivers
+  ☐ Verify menu visibility
+  ☐ Check button presence
+  ☐ Test CRUD operations
+  ☐ Verify export button appears
+  ☐ Check data display (~5000+ records)
+  ☐ Check console for errors
+
+Expected Results:
+  ✓ All 9 permissions grant appropriate UI access
+  ✓ No permission escalation
+  ✓ Correct button visibility
+  ✓ Form submission works
+  ✓ Data saved/updated correctly
+  ✓ Deletion works with confirmation
+  ✓ Export button functional
+  ✓ Large dataset loads efficiently
+
+Estimated Time: ~50 minutes
+
+
+PHASE 3: DRIVER-TRUCK ASSIGNMENTS (8 permissions)
+════════════════════════════════════════════════════════════════════════════════
+
+Permissions to test (in order):
+  1. driver-trucks.create    → Create assignment button
+  2. driver-trucks.destroy   → Delete assignment button
+  3. driver-trucks.detach    → Detach assignment button
+  4. driver-trucks.edit      → Edit button
+  5. driver-trucks.show      → View details
+  6. driver-trucks.store     → Save form
+  7. driver-trucks.update    → Update form
+  8. driver-trucks.view      → View list
+
+Execution:
+  $ php driver_trucks_permissions_test.php
+  
+Browser Tests (after each permission):
+  ☐ Refresh browser at http://react-starter-kit.test/driver-trucks
+  ☐ Verify menu visibility
+  ☐ Check button presence
+  ☐ Test assignment creation
+  ☐ Verify only active drivers shown
+  ☐ Verify only active trucks shown
+  ☐ Test detach functionality
+  ☐ Check validation rules
+  ☐ Check console for errors
+
+Expected Results:
+  ✓ All 8 permissions grant appropriate UI access
+  ✓ Only active drivers available for selection
+  ✓ Only active trucks available for selection
+  ✓ Cannot create duplicate assignments
+  ✓ Date validation working
+  ✓ Detach functionality works
+  ✓ Delete works with confirmation
+  ✓ Form validation prevents errors
+
+Estimated Time: ~40 minutes
+
+
+TOTAL TIME FOR PRIORITY 1: ~2 hours 15 minutes
+
+
+════════════════════════════════════════════════════════════════════════════════
+                        BROWSER TESTING CHECKLIST
+════════════════════════════════════════════════════════════════════════════════
+
+For EACH permission tested:
+
+Navigation:
+  ☐ Sidebar menu appears/disappears correctly
+  ☐ Can navigate to module page
+  ☐ URL correct (/trucks, /drivers, /driver-trucks)
+
+UI Elements:
+  ☐ Add/Create button visible when permitted
+  ☐ Edit button visible when permitted
+  ☐ Delete button visible when permitted
+  ☐ Other action buttons visible when permitted
+
+Forms:
+  ☐ Form opens when clicking button
+  ☐ Form pre-populates with data (for edit)
+  ☐ Form validation working
+  ☐ Can submit successfully
+  ☐ Success message appears
+
+Data:
+  ☐ Records load correctly
+  ☐ All columns displayed
+  ☐ Sorting works
+  ☐ Filtering works
+  ☐ Pagination works
+
+Errors:
+  ☐ No console JavaScript errors
+  ☐ No 404 errors
+  ☐ No 403 errors (when permitted)
+  ☐ No server errors
+
+Validation:
+  ☐ Cannot access without permission
+  ☐ Correct error message shown
+  ☐ Redirects appropriately
+  ☐ No data leakage
+
+
+════════════════════════════════════════════════════════════════════════════════
+                       BROWSER SESSION SETUP
+════════════════════════════════════════════════════════════════════════════════
+
+Prerequisites:
+  1. Open browser to http://react-starter-kit.test
+  2. Login with Test Driver account
+     - Email: testdriver69412e558891f@gmail.com
+     - Password: (as configured)
+  3. Keep Dev Tools open (F12)
+  4. Monitor console for errors
+  5. Keep terminal visible with test script output
+
+For each phase:
+  1. Run the PHP test script
+  2. Watch the script output
+  3. Note which permissions are being added
+  4. Refresh browser (Ctrl+Shift+R for hard refresh)
+  5. Verify expected UI changes
+  6. Note any issues/errors
+  7. Move to next permission
+
+
+════════════════════════════════════════════════════════════════════════════════
+                      ISSUE TRACKING TEMPLATE
+════════════════════════════════════════════════════════════════════════════════
+
+If any issues found, document:
+
+[Module]: ___________
+[Permission]: ___________
+[Expected]: ___________
+[Actual]: ___________
+[Error Message]: ___________
+[Console Error]: ___________
+[Steps to Reproduce]: ___________
+[Severity]: [CRITICAL / HIGH / MEDIUM / LOW]
+[Status]: [NEW / IN PROGRESS / RESOLVED]
+
+
+════════════════════════════════════════════════════════════════════════════════
+                         NEXT PHASES PREVIEW
+════════════════════════════════════════════════════════════════════════════════
+
+After Priority 1 Complete:
+
+PRIORITY 2: OPERATIONAL MODULES (~2-3 hours)
+  • Performances (8-10 permissions)
+  • Customers (7-9 permissions)
+  • Fuel (6-8 permissions)
+
+PRIORITY 3: GEOGRAPHIC MANAGEMENT (~4-6 hours)
+  • Regions, Zones, Woredas, Places, Distances
+  • Total: ~35-45 permissions
+
+PRIORITY 4: ADMIN & SPECIALIZED (~6-8 hours)
+  • User Management, Activity Logs, Status Management
+  • Outsourcing, Financial, Route Planning
+  • Total: ~80-100+ permissions
+
+
+════════════════════════════════════════════════════════════════════════════════
+                         FINAL DEPLOYMENT CHECKLIST
+════════════════════════════════════════════════════════════════════════════════
+
+Before Production Deployment:
+
+Code Quality:
+  ☐ No syntax errors
+  ☐ No console JavaScript errors
+  ☐ No PHP errors
+  ☐ No database errors
+
+Security:
+  ☐ No permission escalation
+  ☐ No unauthorized access
+  ☐ No XSS vulnerabilities
+  ☐ No CSRF vulnerabilities
+  ☐ No SQL injection
+
+Functionality:
+  ☐ All CRUD operations working
+  ☐ All validations working
+  ☐ All filters working
+  ☐ All exports working (where applicable)
+  ☐ All forms submitting correctly
+
+Performance:
+  ☐ Page loads fast
+  ☐ Large datasets handled efficiently
+  ☐ No memory leaks
+  ☐ No timeout issues
+
+Data Integrity:
+  ☐ No data corruption
+  ☐ No duplicate records
+  ☐ Correct relationships maintained
+  ☐ All constraints enforced
+
+Documentation:
+  ☐ All test results documented
+  ☐ Issues tracked and resolved
+  ☐ Test coverage complete
+  ☐ Sign-off obtained
+
+
+════════════════════════════════════════════════════════════════════════════════
+                        TEST FILES GENERATED
+════════════════════════════════════════════════════════════════════════════════
+
+PHP Test Scripts:
+  ✅ trucks_permissions_test.php
+  ✅ drivers_permissions_test.php
+  ✅ driver_trucks_permissions_test.php
+
+Documentation:
+  ✅ PRIORITY_1_CORE_TESTING_PLAN.txt (this file)
+  ✅ MODULES_NOT_YET_TESTED.txt
+  ✅ Previous: REPORTS_COMPREHENSIVE_TEST_RESULTS.txt
+  ✅ Previous: FINAL_COMPREHENSIVE_TESTING_SUMMARY.txt
+
+
+════════════════════════════════════════════════════════════════════════════════
+                         READY TO BEGIN TESTING
+════════════════════════════════════════════════════════════════════════════════
+
+All scripts prepared and ready to execute.
+
+NEXT STEPS:
+  1. Ensure browser is ready
+  2. Ensure test user is logged in
+  3. Keep Dev Tools open
+  4. Run Phase 1: trucks_permissions_test.php
+  5. Follow along with browser testing
+  6. Document any issues
+  7. Move to Phase 2 after Phase 1 complete
+  8. Move to Phase 3 after Phase 2 complete
+
+Total Estimated Time: ~2 hours 15 minutes for Priority 1
+
+Begin when ready! ✅
+
+
+════════════════════════════════════════════════════════════════════════════════
+
+

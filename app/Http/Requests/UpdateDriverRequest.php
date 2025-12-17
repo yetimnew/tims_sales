@@ -20,7 +20,7 @@ class UpdateDriverRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'driverid' => 'required|string|max:255|unique:drivers,driverid,' . $this->driver->id,
+            'driverid' => 'required|string|max:255|unique:drivers,driverid,'.$this->driver->id,
             'name' => 'required|string|max:255',
             'sex' => 'required|string|in:male,female',
             'birthdate' => 'nullable|date|before:today',
@@ -28,7 +28,7 @@ class UpdateDriverRequest extends FormRequest
             'woreda' => 'nullable|string|max:255',
             'kebele' => 'nullable|string|max:255',
             'housenumber' => 'nullable|string|max:255',
-            'mobile' => 'nullable|string|max:20|regex:/^(\+251|0)[0-9]{9}$/',
+            'mobile' => 'nullable|string|max:20|regex:/^[0-9+]{10,13}$/',
             'hireddate' => 'nullable|date|before_or_equal:today',
             'status' => 'required|string|in:active,inactive',
         ];
@@ -67,4 +67,3 @@ class UpdateDriverRequest extends FormRequest
         ]);
     }
 }
-

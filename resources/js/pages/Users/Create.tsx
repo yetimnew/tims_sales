@@ -266,64 +266,48 @@ export default function UsersCreate({ roles, notificationTypes }: UsersCreatePro
   return (
     <AppLayout breadcrumbs={breadcrumbs}>
       <Head title="Create User" />
-      <div className="flex h-full flex-1 flex-col gap-6 overflow-auto rounded-xl p-4">
-        {/* Enhanced Professional Header */}
-        <div className="bg-gradient-to-r from-slate-50 to-blue-50 dark:from-slate-900 dark:to-blue-950/20 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-4">
-              <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-              </div>
-              <div>
-                <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Create New User</h1>
-                <p className="text-sm text-slate-600 dark:text-slate-400">Add a new teammate, set their role, and fine-tune their notification visibility.</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full text-sm font-medium">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                User Management
-              </div>
-            </div>
+      <div className="flex h-full flex-1 flex-col gap-6 overflow-auto p-4 lg:p-6">
+        <div className="flex flex-col gap-2 pb-2 border-b border-slate-200/60 dark:border-slate-700/60">
+          <div className="flex items-center gap-2">
+            <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Create New User</h1>
           </div>
+          <p className="text-sm text-slate-600 dark:text-slate-400">Add a new teammate, set their role, and configure notification preferences.</p>
         </div>
 
-        {/* Professional Form */}
-        <Card className="flex-1 shadow-xl border-0 bg-white dark:bg-slate-900/50 backdrop-blur-sm">
-          <CardHeader className="p-6 border-b border-slate-200 dark:border-slate-700 bg-gradient-to-r from-slate-50 to-blue-50 dark:from-slate-800 dark:to-blue-950/20">
-            <CardTitle className="flex items-center gap-3 text-lg font-semibold text-slate-900 dark:text-slate-100">
-              <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-              </div>
+        <Card className="flex-1 border-slate-200/60 dark:border-slate-700/60 shadow-sm">
+          <CardHeader className="bg-gradient-to-r from-slate-50/80 to-slate-100/50 dark:from-slate-800/80 dark:to-slate-700/50 border-b border-slate-200/60 dark:border-slate-700/60">
+            <CardTitle className="flex items-center gap-2 text-base font-semibold text-slate-900 dark:text-slate-100">
+              <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
               User Details
             </CardTitle>
-            <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+            <CardDescription className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
               Enter comprehensive information for the new user
             </CardDescription>
           </CardHeader>
-          <CardContent className="p-6">
+          <CardContent className="p-4 lg:p-6">
             {hasErrors && (
-              <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-center gap-2">
-                <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
-                <p className="text-sm text-red-700 dark:text-red-300">Please fix all errors in the form below</p>
+              <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
+                <p className="text-xs text-red-700 dark:text-red-300">Please fix all errors in the form below</p>
               </div>
             )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-3">
               <Collapsible
                 open={openSections.profile}
                 onOpenChange={value => setOpenSections(prev => ({ ...prev, profile: value }))}
-                className="group/collapsible overflow-hidden rounded-xl border border-slate-200/80 bg-white/90 shadow-sm backdrop-blur-sm dark:border-slate-700/70 dark:bg-slate-900/40"
+                className="group/collapsible overflow-hidden rounded-lg border border-slate-200/60 bg-white/90 shadow-sm dark:border-slate-700/60 dark:bg-slate-900/40"
               >
                 <CollapsibleTrigger asChild>
                   <button
                     type="button"
-                    className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left text-sm font-semibold text-slate-800 transition hover:bg-slate-50 dark:text-slate-100 dark:hover:bg-slate-900/60"
+                    className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm font-semibold text-slate-800 transition hover:bg-slate-50 dark:text-slate-100 dark:hover:bg-slate-900/60"
                   >
-                    <span className="inline-flex items-center gap-3">
-                      <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
-                        <User className="h-4 w-4" />
+                    <span className="inline-flex items-center gap-2">
+                      <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                        <User className="h-3.5 w-3.5" />
                       </span>
                       <span className="flex flex-col">
                         <span>Profile &amp; Contact</span>
@@ -333,7 +317,7 @@ export default function UsersCreate({ roles, notificationTypes }: UsersCreatePro
                     <ChevronDown className="h-4 w-4 text-slate-500 transition-transform group-data-[state=open]/collapsible:rotate-180" />
                   </button>
                 </CollapsibleTrigger>
-                <CollapsibleContent className="space-y-6 border-t border-slate-200/70 px-5 pb-6 pt-5 dark:border-slate-700/60">
+                <CollapsibleContent className="space-y-4 border-t border-slate-200/60 px-4 pb-4 pt-4 dark:border-slate-700/60">
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
                       <Label htmlFor="name" className="text-sm font-semibold text-slate-700 dark:text-slate-200">
@@ -387,16 +371,16 @@ export default function UsersCreate({ roles, notificationTypes }: UsersCreatePro
               <Collapsible
                 open={openSections.access}
                 onOpenChange={value => setOpenSections(prev => ({ ...prev, access: value }))}
-                className="group/collapsible overflow-hidden rounded-xl border border-slate-200/80 bg-white/90 shadow-sm backdrop-blur-sm dark:border-slate-700/70 dark:bg-slate-900/40"
+                className="group/collapsible overflow-hidden rounded-lg border border-slate-200/60 bg-white/90 shadow-sm dark:border-slate-700/60 dark:bg-slate-900/40"
               >
                 <CollapsibleTrigger asChild>
                   <button
                     type="button"
-                    className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left text-sm font-semibold text-slate-800 transition hover:bg-slate-50 dark:text-slate-100 dark:hover:bg-slate-900/60"
+                    className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm font-semibold text-slate-800 transition hover:bg-slate-50 dark:text-slate-100 dark:hover:bg-slate-900/60"
                   >
-                    <span className="inline-flex items-center gap-3">
-                      <span className="flex h-8 w-8 items-center justify-center rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300">
-                        <Shield className="h-4 w-4" />
+                    <span className="inline-flex items-center gap-2">
+                      <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300">
+                        <Shield className="h-3.5 w-3.5" />
                       </span>
                       <span className="flex flex-col">
                         <span>Access &amp; Security</span>
@@ -406,7 +390,7 @@ export default function UsersCreate({ roles, notificationTypes }: UsersCreatePro
                     <ChevronDown className="h-4 w-4 text-slate-500 transition-transform group-data-[state=open]/collapsible:rotate-180" />
                   </button>
                 </CollapsibleTrigger>
-                <CollapsibleContent className="space-y-6 border-t border-slate-200/70 px-5 pb-6 pt-5 dark:border-slate-700/60">
+                <CollapsibleContent className="space-y-4 border-t border-slate-200/60 px-4 pb-4 pt-4 dark:border-slate-700/60">
                   <div className="space-y-2">
                     <Label htmlFor="role" className="text-sm font-semibold text-slate-700 dark:text-slate-200">
                       Role <span className="text-red-500">*</span>
@@ -524,16 +508,16 @@ export default function UsersCreate({ roles, notificationTypes }: UsersCreatePro
               <Collapsible
                 open={openSections.notifications}
                 onOpenChange={value => setOpenSections(prev => ({ ...prev, notifications: value }))}
-                className="group/collapsible overflow-hidden rounded-xl border border-slate-200/80 bg-white/90 shadow-sm backdrop-blur-sm dark:border-slate-700/70 dark:bg-slate-900/40"
+                className="group/collapsible overflow-hidden rounded-lg border border-slate-200/60 bg-white/90 shadow-sm dark:border-slate-700/60 dark:bg-slate-900/40"
               >
                 <CollapsibleTrigger asChild>
                   <button
                     type="button"
-                    className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left text-sm font-semibold text-slate-800 transition hover:bg-slate-50 dark:text-slate-100 dark:hover:bg-slate-900/60"
+                    className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm font-semibold text-slate-800 transition hover:bg-slate-50 dark:text-slate-100 dark:hover:bg-slate-900/60"
                   >
-                    <span className="inline-flex items-center gap-3">
-                      <span className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
-                        <BellRing className="h-4 w-4" />
+                    <span className="inline-flex items-center gap-2">
+                      <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                        <BellRing className="h-3.5 w-3.5" />
                       </span>
                       <span className="flex flex-col">
                         <span>Notification Preferences</span>
@@ -541,14 +525,14 @@ export default function UsersCreate({ roles, notificationTypes }: UsersCreatePro
                       </span>
                     </span>
                     <span className="inline-flex items-center gap-2 text-xs font-medium text-amber-700 dark:text-amber-300">
-                      <Badge variant="outline" className="border-amber-200 bg-amber-100/60 text-amber-700 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-200">
+                      <Badge variant="outline" className="border-amber-200 bg-amber-100/60 text-amber-700 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-200 text-xs">
                         Optional
                       </Badge>
                       <ChevronDown className="h-4 w-4 text-slate-500 transition-transform group-data-[state=open]/collapsible:rotate-180" />
                     </span>
                   </button>
                 </CollapsibleTrigger>
-                <CollapsibleContent className="space-y-6 border-t border-slate-200/70 px-5 pb-6 pt-5 dark:border-slate-700/60">
+                <CollapsibleContent className="space-y-4 border-t border-slate-200/60 px-4 pb-4 pt-4 dark:border-slate-700/60">
                   <div className="space-y-3">
                     <p className="text-sm text-slate-600 dark:text-slate-400">
                       Select which lifecycle notifications this user should receive by default. They can personalize their channels later inside their profile.
@@ -725,28 +709,29 @@ export default function UsersCreate({ roles, notificationTypes }: UsersCreatePro
               </Collapsible>
             </div>
 
-            <div className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-gradient-to-r from-slate-50 to-blue-50 px-6 py-5 dark:border-slate-700 dark:from-slate-800 dark:to-blue-950/20 md:flex-row md:items-center md:justify-between">
-              <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+            <div className="flex flex-col gap-3 rounded-lg border border-slate-200/60 bg-gradient-to-r from-slate-50/80 to-slate-100/50 px-4 py-4 dark:border-slate-700/60 dark:from-slate-800/80 dark:to-slate-700/50 md:flex-row md:items-center md:justify-between">
+              <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
                 <span className="text-red-500">*</span>
                 <span>All required fields must be completed</span>
               </div>
-              <div className="flex gap-3">
-                <Button type="button" variant="outline" asChild className="border-slate-300 hover:bg-slate-100 dark:border-slate-600 dark:hover:bg-slate-700">
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" asChild size="sm" className="border-slate-200/60 hover:bg-slate-100 dark:border-slate-700/60 dark:hover:bg-slate-800">
                   <a href="/users">Cancel</a>
                 </Button>
                 <Button
                   type="submit"
                   disabled={processing}
-                  className="min-w-[140px] bg-gradient-to-r from-blue-600 to-blue-700 px-6 text-white shadow-lg transition hover:from-blue-700 hover:to-blue-800 hover:shadow-xl"
+                  size="sm"
+                  className="min-w-[120px] bg-blue-600 px-4 text-white shadow-sm transition hover:bg-blue-700 hover:shadow-md"
                 >
                   {processing ? (
                     <>
-                      <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white" />
+                      <div className="mr-2 h-3.5 w-3.5 animate-spin rounded-full border-b-2 border-white" />
                       Creating...
                     </>
                   ) : (
                     <>
-                      <CheckCircle className="mr-2 h-4 w-4" />
+                      <CheckCircle className="mr-2 h-3.5 w-3.5" />
                       Create User
                     </>
                   )}

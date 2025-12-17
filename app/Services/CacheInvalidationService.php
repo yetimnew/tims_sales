@@ -125,6 +125,8 @@ class CacheInvalidationService
         \App\Models\Region::class => [
             'regions.metrics',
             'zones.create_regions',
+            'performances.create_places',
+            'performances.edit_places',
         ],
 
         // Zones
@@ -132,6 +134,8 @@ class CacheInvalidationService
             'zones.metrics',
             'zones.create_regions',
             'woredas.create_zones',
+            'performances.create_places',
+            'performances.edit_places',
         ],
 
         // Woredas
@@ -139,6 +143,8 @@ class CacheInvalidationService
             'woredas.metrics',
             'woredas.create_zones',
             'places.create_woredas',
+            'performances.create_places',
+            'performances.edit_places',
         ],
 
         // Places
@@ -149,6 +155,8 @@ class CacheInvalidationService
             'reports.performance_all.destinations',
             'reports.outsource_performance.destinations',
             'route_plans.create_places',
+            'performances.create_places',
+            'performances.edit_places',
         ],
 
         // Distances
@@ -281,7 +289,6 @@ class CacheInvalidationService
     /**
      * Register cache keys for a model.
      *
-     * @param  string  $modelClass
      * @param  array<string>  $cacheKeys
      */
     public static function registerModelCaches(string $modelClass, array $cacheKeys): void
@@ -298,7 +305,6 @@ class CacheInvalidationService
     /**
      * Get all cache keys for a model.
      *
-     * @param  string  $modelClass
      * @return array<string>
      */
     public static function getModelCacheKeys(string $modelClass): array
@@ -306,4 +312,3 @@ class CacheInvalidationService
         return self::$cacheMap[$modelClass] ?? [];
     }
 }
-

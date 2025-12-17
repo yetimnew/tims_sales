@@ -73,20 +73,30 @@ export function useRemoteLookup<T>({
 
             normalizedSelectedIds.forEach(id => params.append('selected[]', id));
 
-            const response = await fetch(`${endpoint}?${params.toString()}`, {
+            const url = `${endpoint}?${params.toString()}`;
+            console.log('[useRemoteLookup] Fetching:', url);
+
+            const response = await fetch(url, {
                 headers: {
                     Accept: 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
                 },
+                credentials: 'same-origin',
                 signal: controller.signal,
             });
 
+            console.log('[useRemoteLookup] Response status:', response.status, response.ok);
+
             if (!response.ok) {
-                throw new Error(`Lookup request failed with status ${response.status}`);
+                const errorText = await response.text().catch(() => 'Unknown error');
+                console.error('[useRemoteLookup] Response error:', response.status, errorText);
+                throw new Error(`Lookup request failed with status ${response.status}: ${errorText}`);
             }
 
             const payload = (await response.json()) as LookupResponse<T>;
             const data = Array.isArray(payload.data) ? payload.data : [];
+
+            console.log('[useRemoteLookup] Received data:', data.length, 'items');
 
             setItems(data);
             setHasMore(Boolean(payload.has_more));
@@ -103,7 +113,9 @@ export function useRemoteLookup<T>({
             }
         } catch (error) {
             if ((error as Error).name !== 'AbortError') {
-                console.error('Failed to load lookup data', error);
+                console.error('[useRemoteLookup] Failed to load lookup data:', error);
+                // Set empty items on error to prevent stale data
+                setItems([]);
             }
         } finally {
             if (!controller.signal.aborted) {
@@ -112,7 +124,9 @@ export function useRemoteLookup<T>({
         }
     }, [debouncedQuery, endpoint, getId, limit, normalizedSelectedIds]);
 
+    // Fetch on mount and when dependencies change
     useEffect(() => {
+        console.log('[useRemoteLookup] Effect triggered, fetching data...', { endpoint, debouncedQuery, selectedKey });
         fetchData();
 
         return () => {

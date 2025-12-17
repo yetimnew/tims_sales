@@ -17,9 +17,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
-use Spatie\Activitylog\Models\Activity;
 
-class MaintenanceController extends Controller
+class MaintenanceController extends BaseResourceController
 {
     protected $maintenanceService;
 
@@ -382,11 +381,8 @@ class MaintenanceController extends Controller
     {
         $maintenance->load(['truck', 'maintenanceType', 'assignedMechanic', 'user']);
 
-        // Load activity logs for this maintenance record using Spatie Activity Log
-        $activityLogs = Activity::forSubject($maintenance)
-            ->with('causer')
-            ->orderByDesc('created_at')
-            ->get();
+        // Get activity logs using base controller method
+        $activityLogs = $this->getActivityLogs($maintenance);
 
         return Inertia::render('Maintenance/Show', [
             'maintenance' => $maintenance,
@@ -479,46 +475,20 @@ class MaintenanceController extends Controller
                 $validated
             );
 
-            // Clear cached options
+            // Clear all related caches systematically
             Cache::forget('maintenance.status_options');
             Cache::forget('maintenance.maintenance_type_options');
-            // Clear report caches
             Cache::forget('reports.maintenance.status_options');
             Cache::forget('reports.maintenance.service_provider_options');
-
-            $isInertiaRequest = (bool) $request->header('X-Inertia');
-
-            // Only return a plain JSON response when this is not an Inertia-driven request.
-            if (! $isInertiaRequest && ($request->wantsJson() || $request->expectsJson() || $request->isJson())) {
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Maintenance scheduled successfully.',
-                    'data' => $maintenance,
-                ], 201);
-            }
 
             return redirect()->route('maintenance.index')
                 ->with('success', 'Maintenance scheduled successfully.');
 
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            $isInertiaRequest = (bool) $request->header('X-Inertia');
-            if (! $isInertiaRequest && ($request->wantsJson() || $request->expectsJson() || $request->isJson())) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Validation failed.',
-                    'errors' => $e->errors(),
-                ], 422);
-            }
-            throw $e;
         } catch (Exception $e) {
-            $isInertiaRequest = (bool) $request->header('X-Inertia');
-            if (! $isInertiaRequest && ($request->wantsJson() || $request->expectsJson() || $request->isJson())) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to schedule maintenance.',
-                    'error' => $e->getMessage(),
-                ], 500);
-            }
+            $this->logError('store', 'Maintenance', $e, [
+                'truck_id' => $request->input('truck_id'),
+                'maintenance_type_id' => $request->input('maintenance_type_id'),
+            ]);
 
             return back()->withErrors(['error' => 'Failed to schedule maintenance. Please try again.']);
         }
@@ -530,14 +500,17 @@ class MaintenanceController extends Controller
     public function update(UpdateMaintenanceRequest $request, VehicleMaintenanceRecord $maintenance)
     {
         try {
-            $validated = $request->validated();
+            // Capture original values before update
+            $original = $this->normalizeAttributes($maintenance->getOriginal());
 
-            $this->maintenanceService->updateMaintenance($maintenance, $validated);
+            $this->maintenanceService->updateMaintenance($maintenance, $request->validated());
 
-            // Clear cached options if status or maintenance_type changed
+            // Format changes for audit trail
+            $changes = $this->formatChanges($original, $this->normalizeAttributes($maintenance->getChanges()));
+
+            // Clear related caches
             Cache::forget('maintenance.status_options');
             Cache::forget('maintenance.maintenance_type_options');
-            // Clear report caches
             Cache::forget('reports.maintenance.status_options');
             if (isset($changes['service_provider'])) {
                 Cache::forget('reports.maintenance.service_provider_options');
@@ -547,6 +520,8 @@ class MaintenanceController extends Controller
                 ->with('success', 'Maintenance record updated successfully.');
 
         } catch (Exception $e) {
+            $this->logError('update', 'Maintenance', $e);
+
             return back()->withErrors(['error' => 'Failed to update maintenance record. Please try again.']);
         }
     }
@@ -557,17 +532,18 @@ class MaintenanceController extends Controller
     public function complete(CompleteMaintenanceRequest $request, VehicleMaintenanceRecord $maintenance)
     {
         try {
-            $validated = $request->validated();
-
-            $this->maintenanceService->completeMaintenance($maintenance->id, $validated);
+            $this->maintenanceService->completeMaintenance($maintenance->id, $request->validated());
 
             // Clear cached options (status changed to completed)
             Cache::forget('maintenance.status_options');
+            Cache::forget('maintenance.maintenance_type_options');
 
             return redirect()->route('maintenance.index')
                 ->with('success', 'Maintenance completed successfully.');
 
         } catch (Exception $e) {
+            $this->logError('complete', 'Maintenance', $e);
+
             return back()->withErrors(['error' => 'Failed to complete maintenance. Please try again.']);
         }
     }
@@ -578,19 +554,25 @@ class MaintenanceController extends Controller
     public function destroy(VehicleMaintenanceRecord $maintenance)
     {
         try {
+            // Capture data before deletion for audit trail
+            $truckPlate = $maintenance->truck?->plate ?? 'Unknown';
+            $maintenanceType = $maintenance->maintenanceType?->name ?? 'Unknown';
+            $attributes = $this->normalizeAttributes($maintenance->toArray());
+
             $maintenance->delete();
 
-            // Clear cached options
+            // Clear related caches
             Cache::forget('maintenance.status_options');
             Cache::forget('maintenance.maintenance_type_options');
-            // Clear report caches
             Cache::forget('reports.maintenance.status_options');
             Cache::forget('reports.maintenance.service_provider_options');
 
             return redirect()->route('maintenance.index')
-                ->with('success', 'Maintenance record deleted successfully.');
+                ->with('success', sprintf('Maintenance record for %s deleted successfully.', $truckPlate));
 
         } catch (Exception $e) {
+            $this->logError('destroy', 'Maintenance', $e);
+
             return back()->withErrors(['error' => 'Failed to delete maintenance record. Please try again.']);
         }
     }

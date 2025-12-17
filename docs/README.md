@@ -17,18 +17,114 @@ Welcome to the comprehensive documentation for the Transport Information Managem
 - [**Testing Guide**](./testing/README.md) - Testing strategies and implementation
 
 ### Feature Documentation
+- [**Features Overview**](./features/README.md) - Complete guide to Operations, Performance, and Outsource Performance modules
 - [**Fleet Management**](./features/fleet-management.md) - Truck and driver management
-- [**Performance Tracking**](./features/performance-tracking.md) - Trip and performance analytics
-- [**Financial Management**](./features/financial-management.md) - Revenue and cost tracking
-- [**Maintenance Management**](./features/maintenance-management.md) - Vehicle maintenance system
-- [**User Management**](./features/user-management.md) - Authentication and authorization
-- [**Reporting System**](./features/reporting-system.md) - Analytics and reporting features
+- [**Truck Management**](./features/trucks-readme.md) - Detailed truck management guide
+- [**Driver Grading**](./features/driver-grading.md) - Driver performance grading system
+- [**Truck Grading**](./features/truck-grading.md) - Truck performance grading system
+- [**Outsource Performance**](./features/outsource-performance-show.md) - Vendor performance tracking and analysis
+- [**Events & Notifications**](./features/events-and-notifications.md) - Event system and notification management
+- [**Encrypted Backups**](./features/encrypted-backups/README.md) - Backup and restore workflow
+
+### Frontend Pages Documentation
+- [**Pages Overview**](./pages/README.md) - Complete guide to all frontend pages
+- [**Dashboard**](./pages/Dashboard.md) - Main dashboard and analytics
+- [**Operations**](./pages/Operations.md) - Operation management pages
+- [**Performances**](./pages/Performances.md) - Performance tracking pages
+- [**Trucks**](./pages/Trucks.md) - Truck management pages
+- [**Drivers**](./pages/Drivers.md) - Driver management pages
+- [**Reports**](./pages/Reports.md) - All reporting pages documentation
+- [**Customers**](./pages/Customers.md) - Customer management
+- [**Maintenance**](./pages/Maintenance.md) - Maintenance management
+- [**Fuel Records**](./pages/FuelRecords.md) - Fuel tracking
+- [**Financial**](./pages/Financial.md) - Financial records
+- [**Outsources**](./pages/Outsources.md) - Vendor management
+- [**Outsource Performances**](./pages/OutsourcePerformances.md) - Vendor performance tracking
+- [**Geographic Management**](./pages/Regions.md) - Regions, Zones, Woredas, Places, Distances
+- [**System Management**](./pages/Users.md) - Users, Roles, Permissions, Activity Logs
+- [**Settings**](./pages/Settings.md) - System and user settings
+- [**Configuration**](./pages/VehicleTypes.md) - Vehicle Types, Cargo Types, Maintenance Types, Status Types
 
 ### Technical Documentation
-- [**Architecture Overview**](./technical/architecture.md) - System architecture and design patterns
-- [**Security Documentation**](./technical/security.md) - Security features and best practices
-- [**Performance Optimization**](./technical/performance.md) - Performance tuning and optimization
-- [**Troubleshooting Guide**](./technical/troubleshooting.md) - Common issues and solutions
+- [**Technical Overview**](./technical/README.md) - System architecture, design patterns, and technical specifications
+- [**Cache Coverage**](./CACHE_COVERAGE.md) - Caching strategy and implementation
+- [**Cache Invalidation**](./CACHE_INVALIDATION.md) - Cache invalidation patterns
+- [**Truck Frontend Optimizations**](./TRUCK_FRONTEND_OPTIMIZATIONS.md) - Frontend optimization strategies
+- [**Truck Performance Improvements**](./TRUCK_PERFORMANCE_IMPROVEMENTS.md) - Performance enhancement documentation
+
+## 📁 Documentation Directory Structure
+
+```
+docs/
+├── README.md                          # Main documentation index (this file)
+├── api/
+│   └── README.md                     # API documentation
+├── backend/
+│   └── README.md                     # Backend architecture and implementation
+├── database/
+│   └── README.md                     # Database schema and relationships
+├── deployment/
+│   └── README.md                     # Production deployment guide
+├── development/
+│   ├── README.md                     # Development workflow and guidelines
+│   └── notifications-reverb.md      # Real-time notifications setup
+├── features/
+│   ├── README.md                     # Operations & Performance guide
+│   ├── driver-grading.md             # Driver grading system
+│   ├── encrypted-backups/
+│   │   └── README.md                 # Encrypted backup workflow
+│   ├── events-and-notifications.md  # Event system documentation
+│   ├── fleet-management.md           # Fleet management features
+│   ├── outsource-performance-show.md # Vendor performance tracking
+│   ├── truck-grading.md              # Truck grading system
+│   └── trucks-readme.md              # Truck management guide
+├── frontend/
+│   └── README.md                     # Frontend architecture and implementation
+├── pages/
+│   ├── README.md                     # Frontend pages overview
+│   ├── Dashboard.md                  # Dashboard page documentation
+│   ├── Operations.md                 # Operations pages
+│   ├── Performances.md               # Performances pages
+│   ├── Trucks.md                     # Trucks pages
+│   ├── Drivers.md                    # Drivers pages
+│   ├── Reports.md                    # Reports pages
+│   ├── Customers.md                  # Customers pages
+│   ├── Maintenance.md                # Maintenance pages
+│   ├── FuelRecords.md                # Fuel Records pages
+│   ├── Financial.md                  # Financial pages
+│   ├── Outsources.md                 # Outsources pages
+│   ├── OutsourcePerformances.md     # Outsource Performances pages
+│   ├── Regions.md                    # Regions pages
+│   ├── Zones.md                      # Zones pages
+│   ├── Woredas.md                    # Woredas pages
+│   ├── Places.md                     # Places pages
+│   ├── Distances.md                  # Distances pages
+│   ├── Users.md                      # Users pages
+│   ├── Roles.md                      # Roles pages
+│   ├── Permissions.md                # Permissions page
+│   ├── ActivityLogs.md               # Activity Logs pages
+│   ├── Notifications.md              # Notifications pages
+│   ├── Settings.md                   # Settings pages
+│   ├── Analytics.md                 # Analytics pages
+│   ├── VehicleTypes.md               # Vehicle Types pages
+│   ├── CargoTypes.md                 # Cargo Types pages
+│   ├── MaintenanceTypes.md           # Maintenance Types pages
+│   ├── StatusTypes.md                # Status Types pages
+│   ├── Status.md                     # Status pages
+│   ├── Fuel.md                       # Fuel pages (legacy)
+│   ├── DriverSafety.md               # Driver Safety pages
+│   └── DriverTrucks.md                # Driver-Truck Assignments pages
+├── installation/
+│   └── README.md                     # Installation and setup guide
+├── technical/
+│   └── README.md                     # Technical architecture and specifications
+├── testing/
+│   └── README.md                     # Testing strategy and implementation
+├── CACHE_COVERAGE.md                 # Cache coverage documentation
+├── CACHE_INVALIDATION.md             # Cache invalidation patterns
+├── TRUCK_FRONTEND_OPTIMIZATIONS.md  # Frontend optimization guide
+└── TRUCK_PERFORMANCE_IMPROVEMENTS.md # Performance improvements guide
+```
 
 ## 🚀 Quick Start
 
@@ -89,25 +185,32 @@ npm run dev         # Frontend with Vite
 ## 📊 Project Status
 
 ### Implementation Progress
-- **Backend**: 100% Complete (12/12 core modules)
-- **Frontend**: 52% Complete (53/100+ pages)
-- **Database**: 100% Complete (34 migrations)
-- **Testing**: 85% Complete (36 feature tests, 5 unit tests)
-- **Documentation**: 90% Complete
+- **Backend**: 100% Complete (18+ core modules)
+- **Frontend**: 90%+ Complete (100+ pages with mobile responsiveness)
+- **Database**: 100% Complete (34+ migrations)
+- **Testing**: 85% Complete (36+ feature tests, 5+ unit tests)
+- **Documentation**: 95% Complete
+- **Reports**: 10+ comprehensive reports implemented
 
 ### Completed Modules
-1. **Trucks** - Complete CRUD with validation and permissions
-2. **Drivers** - Complete CRUD with performance tracking
-3. **Maintenance** - Complete maintenance management system
-4. **Vehicle Types** - Vehicle categorization and specifications
-5. **Fuel Records** - Fuel consumption tracking and analysis
-6. **Financial Records** - Revenue and cost tracking
-7. **Customers** - Customer relationship management
-8. **Users** - User management with roles and permissions
-9. **Regions** - Geographic region management
-10. **Zones** - Zone-based organization
-11. **Woredas** - Administrative divisions
-12. **Cargo Types** - Cargo categorization and handling
+1. **Operations** - Complete operation management with performance insights and financial analytics
+2. **Performances** - Internal fleet trip tracking with comprehensive metrics
+3. **Outsource Performances** - Vendor trip management and benchmarking
+4. **Trucks** - Complete CRUD with validation, permissions, and performance tracking
+5. **Drivers** - Complete CRUD with performance tracking and grading system
+6. **Maintenance** - Complete maintenance management system
+7. **Vehicle Types** - Vehicle categorization and specifications
+8. **Fuel Records** - Fuel consumption tracking and analysis
+9. **Financial Records** - Revenue and cost tracking
+10. **Customers** - Customer relationship management
+11. **Users** - User management with roles and permissions
+12. **Regions** - Geographic region management
+13. **Zones** - Zone-based organization
+14. **Woredas** - Administrative divisions
+15. **Places** - Location management
+16. **Distances** - Distance tracking between places
+17. **Cargo Types** - Cargo categorization and handling
+18. **Reports** - Comprehensive reporting system with multiple report types
 
 ## 🔧 Development
 
@@ -271,6 +374,37 @@ This project is licensed under the MIT License - see the [LICENSE](../LICENSE) f
 
 **Built with ❤️ for efficient transport management**
 
-*Last Updated: October 21, 2025*
-*Version: 1.0.0*
+## 📖 Additional Documentation Files
+
+### Performance & Optimization
+- [**Cache Coverage**](./CACHE_COVERAGE.md) - Comprehensive cache strategy documentation
+- [**Cache Invalidation**](./CACHE_INVALIDATION.md) - Cache invalidation patterns and best practices
+- [**Truck Frontend Optimizations**](./TRUCK_FRONTEND_OPTIMIZATIONS.md) - Frontend performance improvements
+- [**Truck Performance Improvements**](./TRUCK_PERFORMANCE_IMPROVEMENTS.md) - Backend performance enhancements
+
+### Development Resources
+- [**Notifications with Reverb**](./development/notifications-reverb.md) - Real-time notifications setup guide
+
+## 🔍 Quick Navigation
+
+### For Developers
+- Start with [Installation Guide](./installation/README.md)
+- Read [Development Guide](./development/README.md) for workflow
+- Check [Frontend Documentation](./frontend/README.md) for React/TypeScript
+- Review [Backend Documentation](./backend/README.md) for Laravel/PHP
+
+### For System Administrators
+- Follow [Deployment Guide](./deployment/README.md)
+- Review [Database Documentation](./database/README.md)
+- Check [Technical Documentation](./technical/README.md)
+
+### For Analysts & Users
+- Read [Features Overview](./features/README.md) for operations and performance
+- Check [Outsource Performance Guide](./features/outsource-performance-show.md)
+- Review [Driver Grading](./features/driver-grading.md) and [Truck Grading](./features/truck-grading.md)
+
+---
+
+*Last Updated: December 2024*
+*Version: 1.1.0*
 *Status: Production Ready*

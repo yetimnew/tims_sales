@@ -309,61 +309,98 @@ export default function CustomersIndex({ customers, metrics, filters, statusOpti
                 });
             },
             onError: (errors) => {
-
+                setIsDeleting(false);
                 const fallback = 'Failed to delete customer. Please try again.';
-                if (errors && typeof errors === 'object') {
-                    const errorMessages = Object.values(errors)
-                        .flatMap((value) => (Array.isArray(value) ? value : [value]))
-                        .filter(Boolean)
-                value: isTableLoading ? (
+                const errorMessages = errors && typeof errors === 'object'
+                    ? Object.values(errors)
+                          .flatMap((value) => (Array.isArray(value) ? value : [value]))
+                          .filter(Boolean)
+                          .join(', ')
+                    : fallback;
 
-                    toast({
-                        title: 'Delete failed',
-                        description: errorMessages || fallback,
-                description: isTableLoading ? (
-                    });
-                } else {
-                    toast({
-                        title: 'Delete failed',
-                valueClassName: isTableLoading ? undefined : 'text-emerald-600',
-                        variant: 'destructive',
-                    });
-                }
+                toast({
+                    title: 'Delete failed',
+                    description: errorMessages || fallback,
+                    variant: 'destructive',
+                });
             },
         });
     };
-                value: isTableLoading ? (
+
     const statsDefinitions = [
         {
             id: 'total-customers',
             label: 'Total Customers',
-                description: isTableLoading ? (
-            className: 'min-w-0',
-            value: isLoading ? (
+            icon: <Users className="h-3.5 w-3.5 text-blue-600" />,
+            className: 'min-w-[220px] flex-shrink-0',
+            value: isTableLoading ? (
                 <Skeleton className="h-3.5 w-20" aria-hidden="true" />
             ) : (
-                valueClassName: isTableLoading ? undefined : 'text-rose-500',
+                totalRecords.toLocaleString()
             ),
-            description: isLoading ? (
+            description: isTableLoading ? (
                 <Skeleton className="h-3 w-28" aria-hidden="true" />
             ) : (
                 'Full portfolio'
             ),
-                value: isTableLoading ? (
+            valueClassName: isTableLoading ? undefined : 'text-blue-600',
         },
         {
             id: 'active-customers',
             label: 'Active Accounts',
-                description: isTableLoading ? (
-            className: 'min-w-0',
-            value: isLoading ? (
+            icon: <CheckCircle className="h-3.5 w-3.5 text-emerald-600" />,
+            className: 'min-w-[220px] flex-shrink-0',
+            value: isTableLoading ? (
                 <Skeleton className="h-3.5 w-16" aria-hidden="true" />
             ) : (
-                valueClassName: isTableLoading ? undefined : 'text-indigo-600',
+                activeCount.toLocaleString()
             ),
-            description: isLoading ? (
+            description: isTableLoading ? (
                 <Skeleton className="h-3 w-24" aria-hidden="true" />
-            const tableRows = customerData.length > 0
+            ) : (
+                'Currently active'
+            ),
+            valueClassName: isTableLoading ? undefined : 'text-emerald-600',
+        },
+        {
+            id: 'inactive-customers',
+            label: 'Inactive',
+            icon: <XCircle className="h-3.5 w-3.5 text-rose-600" />,
+            className: 'min-w-[220px] flex-shrink-0',
+            value: isTableLoading ? (
+                <Skeleton className="h-3.5 w-16" aria-hidden="true" />
+            ) : (
+                inactiveCount.toLocaleString()
+            ),
+            description: isTableLoading ? (
+                <Skeleton className="h-3 w-24" aria-hidden="true" />
+            ) : (
+                'Off duty'
+            ),
+            valueClassName: isTableLoading ? undefined : 'text-rose-600',
+        },
+        {
+            id: 'with-operations',
+            label: 'With Operations',
+            icon: <Briefcase className="h-3.5 w-3.5 text-indigo-600" />,
+            className: 'min-w-[220px] flex-shrink-0',
+            value: isTableLoading ? (
+                <Skeleton className="h-3.5 w-20" aria-hidden="true" />
+            ) : (
+                withOperationsCount.toLocaleString()
+            ),
+            description: isTableLoading ? (
+                <Skeleton className="h-3 w-28" aria-hidden="true" />
+            ) : (
+                'Has operations'
+            ),
+            valueClassName: isTableLoading ? undefined : 'text-indigo-600',
+        },
+    ];
+
+    const tableColumns = COLUMN_DEFINITIONS.map(col => ({ key: col.id, label: col.label }));
+
+    const tableRows = customerData.length > 0
                 ? customerData.map((customer, index) => (
                       <TableRow key={customer.id} className="hover:bg-muted/50">
                           <TableCell className="font-medium">
@@ -419,16 +456,22 @@ export default function CustomersIndex({ customers, metrics, filters, statusOpti
                         </TableRow>
                     )
                     : null;
-                                  ? 'text-center'
-                                  : column.align === 'right'
-                                      ? 'text-right'
-                                      : undefined
-                          }
-                      >
-                          <Skeleton className="mx-auto h-4 w-24 max-w-full" />
-                      </TableCell>
-                  ))}
-            const mobileContent = (
+
+    const mobileItems = React.useMemo(() => customerData.map((customer, index) => ({
+        position: rowOffset + index + 1,
+        record: customer,
+    })), [customerData, rowOffset]);
+
+    const perPageSelectOptions = React.useMemo(
+        () => availablePerPageOptions.map(option => ({ label: String(option), value: String(option) })),
+        [availablePerPageOptions],
+    );
+
+    const statsSection = (
+        <ListingStatsHeader stats={statsDefinitions} />
+    );
+
+    const mobileContent = (
                 <ListingMobileItemList
                     items={mobileItems}
                     getKey={(item) => item.record.id}
@@ -534,62 +577,6 @@ export default function CustomersIndex({ customers, metrics, filters, statusOpti
                     )}
                 </div>
             );
-                        <span className="text-right text-slate-900 dark:text-slate-100">
-                            {formatCount(item.record.operations_count ?? 0)}
-                        </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Created</span>
-                        <span className="text-right text-slate-900 dark:text-slate-100">
-                            {formatDateValue(item.record.created_at)}
-                        </span>
-                    </div>
-                </div>
-            )}
-            renderFooter={(item) => (
-                <div className="flex w-full flex-wrap items-center justify-end gap-2">
-                    {canViewCustomer && (
-                        <Button asChild size="sm" variant="outline" className="flex-1 sm:flex-auto">
-                            <Link href={`/customers/${item.record.id}`}>
-                                <Eye className="mr-2 h-4 w-4" />
-                                View
-                            </Link>
-                        </Button>
-                    )}
-                    {canEditCustomer && (
-                        <Button asChild size="sm" variant="secondary" className="flex-1 sm:flex-none">
-                            <Link href={`/customers/${item.record.id}/edit`}>
-                                <Edit className="mr-2 h-4 w-4" />
-                                Edit
-                            </Link>
-                        </Button>
-                    )}
-                    {canDeleteCustomer && (
-                        <Button
-                            size="sm"
-                            variant="destructive"
-                            className="flex-1 sm:flex-none"
-                            onClick={() => handleDeleteClick(item.record)}
-                            disabled={isDeleting && selectedCustomer?.id === item.record.id}
-                        >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
-                        </Button>
-                    )}
-                </div>
-            )}
-            emptyState={(
-                <div className="py-8 text-center text-muted-foreground">
-                    No customers found.
-                    {canCreateCustomer && (
-                        <Link href="/customers/create" className="ml-1 text-primary underline">
-                            Create one
-                        </Link>
-                    )}
-                </div>
-            )}
-        />
-    );
 
     const statusFilterOptions = React.useMemo(
         () =>

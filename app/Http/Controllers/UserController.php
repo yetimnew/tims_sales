@@ -15,13 +15,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 use Spatie\Permission\Models\Role;
 
-class UserController extends Controller
+class UserController extends BaseResourceController
 {
     /**
      * Display a listing of the resource.
@@ -211,40 +210,22 @@ class UserController extends Controller
                 ]);
             }
 
-            // Log activity
-            activity()
-                ->performedOn($user)
-                ->causedBy(Auth::user())
-                ->withProperties([
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'role' => $validated['role'],
-                ])
-                ->log('User created');
-
-            Log::info('User created', [
-                'user_id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'role' => $validated['role'],
-                'created_by' => Auth::id(),
-            ]);
-
-            event(new UserCreated($user, Auth::user()));
-
             // Clear cached role options when user is created
             Cache::forget('users.role_options');
-            // Clear activity log filter options (users list may change)
+            Cache::forget('users.create_roles');
+            Cache::forget('users.create_notification_types');
             Cache::forget('activity_logs.filter_options');
 
+            // Dispatch event for audit trail
+            event(new UserCreated($user, Auth::user()));
+
             return redirect()->route('users.index')
-                ->with('success', 'User created successfully.');
+                ->with('success', sprintf('User %s created successfully.', $user->name));
 
         } catch (Exception $e) {
-            Log::error('User creation failed', [
-                'error' => $e->getMessage(),
-                'data' => $request->all(),
+            $this->logError('store', 'User', $e, [
                 'created_by' => Auth::id(),
+                'email' => $request->input('email'),
             ]);
 
             return back()->withErrors(['error' => 'Failed to create user. Please try again.']);
@@ -258,11 +239,8 @@ class UserController extends Controller
     {
         $user->load('roles');
 
-        // Load activity logs for this user using Spatie Activity Log
-        $activityLogs = \Spatie\Activitylog\Models\Activity::forSubject($user)
-            ->with('causer')
-            ->orderByDesc('created_at')
-            ->get();
+        // Get activity logs using base controller method
+        $activityLogs = $this->getActivityLogs($user);
 
         return Inertia::render('Users/Show', [
             'user' => $user,
@@ -316,41 +294,22 @@ class UserController extends Controller
 
             $changes = $this->formatChanges($original, $this->normalizeAttributes($user->getChanges()));
 
-            // Log activity
-            activity()
-                ->performedOn($user)
-                ->causedBy(Auth::user())
-                ->withProperties([
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'old_role' => $oldRole,
-                    'new_role' => $newRole,
-                ])
-                ->log('User updated');
+            // Clear related caches
+            if (isset($changes['role'])) {
+                Cache::forget('users.role_options');
+                Cache::forget('users.create_roles');
+            }
 
-            Log::info('User updated', [
-                'user_id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'old_role' => $oldRole,
-                'new_role' => $newRole,
-                'updated_by' => Auth::id(),
-            ]);
-
+            // Only dispatch event if there were actual changes
             if (! empty($changes)) {
                 event(new UserUpdated($user, $changes, Auth::user()));
             }
 
-            // Clear cached role options if role changed
-            if (isset($changes['role'])) {
-                Cache::forget('users.role_options');
-            }
-
             return redirect()->route('users.index')
-                ->with('success', 'User updated successfully.');
+                ->with('success', sprintf('User %s updated successfully.', $user->name));
 
         } catch (Exception $e) {
-            Log::error('User update failed', [
+            $this->logError('update', 'User', $e, [
                 'user_id' => $user->id,
                 'error' => $e->getMessage(),
                 'data' => $request->all(),
@@ -372,50 +331,34 @@ class UserController extends Controller
                 return back()->withErrors(['error' => 'You cannot delete your own account.']);
             }
 
-            $userData = $user->toArray();
+            // Capture data before deletion for audit trail
+            $attributes = $this->normalizeAttributes($user->toArray());
             $userRoles = $user->roles->pluck('name')->toArray();
-
-            // Log activity before deletion
-            activity()
-                ->performedOn($user)
-                ->causedBy(Auth::user())
-                ->withProperties([
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'roles' => $userRoles,
-                ])
-                ->log('User deleted');
 
             $user->delete();
 
-            Log::info('User deleted', [
-                'user_id' => $user->id,
-                'name' => $userData['name'],
-                'email' => $userData['email'],
-                'roles' => $userRoles,
-                'deleted_by' => Auth::id(),
-            ]);
+            // Clear related caches
+            Cache::forget('users.role_options');
+            Cache::forget('users.create_roles');
+            Cache::forget('activity_logs.filter_options');
 
+            // Dispatch event with deleted data for audit trail
             event(new UserDeleted(
-                $userData['id'],
-                $userData['name'],
+                $attributes['id'],
+                $attributes['name'],
                 [
-                    'email' => $userData['email'] ?? null,
+                    'email' => $attributes['email'] ?? null,
                     'roles' => $userRoles,
                 ],
                 Auth::user(),
             ));
 
-            // Clear cached role options when user is deleted
-            Cache::forget('users.role_options');
-
             return redirect()->route('users.index')
-                ->with('success', 'User deleted successfully.');
+                ->with('success', sprintf('User %s deleted successfully.', $attributes['name']));
 
         } catch (Exception $e) {
-            Log::error('User deletion failed', [
+            $this->logError('destroy', 'User', $e, [
                 'user_id' => $user->id,
-                'error' => $e->getMessage(),
                 'deleted_by' => Auth::id(),
             ]);
 
@@ -530,7 +473,7 @@ class UserController extends Controller
      * @param  array<string, mixed>  $changes
      * @return array<string, array{old: mixed, new: mixed}>
      */
-    private function formatChanges(array $original, array $changes): array
+    protected function formatChanges(array $original, array $changes): array
     {
         $formatted = [];
 
@@ -548,7 +491,7 @@ class UserController extends Controller
      * @param  array<string, mixed>  $attributes
      * @return array<string, mixed>
      */
-    private function normalizeAttributes(array $attributes): array
+    protected function normalizeAttributes(array $attributes): array
     {
         foreach ($attributes as $key => $value) {
             $attributes[$key] = $this->normalizeValue($value);
@@ -557,7 +500,7 @@ class UserController extends Controller
         return $attributes;
     }
 
-    private function normalizeValue(mixed $value): mixed
+    protected function normalizeValue(mixed $value): mixed
     {
         if (is_array($value)) {
             foreach ($value as $key => $item) {

@@ -48,9 +48,18 @@ class DriverGradingSettingsController extends Controller
             );
         }
 
+        $perPageOptions = [10, 25, 50];
+        $perPageInput = (int) $request->input('per_page', $perPageOptions[0]);
+        $perPage = in_array($perPageInput, $perPageOptions, true) ? $perPageInput : $perPageOptions[0];
+
         $snapshotDate = $this->resolveSnapshotDate($request->string('snapshot_date')->toString());
-        $status = $request->string('status')->toString() ?: null;
-        $perPage = max(1, min(200, (int) $request->integer('per_page') ?: 25));
+        $statusInput = $request->input('status');
+        $status = $statusInput !== null && trim((string) $statusInput) !== '' ? trim((string) $statusInput) : null;
+
+        $gradeLetterInput = $request->input('grade_letter');
+        $gradeLetter = $gradeLetterInput !== null && trim((string) $gradeLetterInput) !== ''
+            ? strtoupper(trim((string) $gradeLetterInput))
+            : null;
 
         $filteredSnapshotQuery = $this->applySnapshotFilters(
             DriverGradeSnapshot::query(),
@@ -63,42 +72,59 @@ class DriverGradingSettingsController extends Controller
             ->orderByDesc('calculated_at')
             ->first();
 
+        $snapshotQuery = (clone $filteredSnapshotQuery)
+            ->with([
+                'driver:id,name,driverid,status,hireddate',
+                'calculatedBy:id,name',
+            ]);
+
+        if ($gradeLetter) {
+            $snapshotQuery->where('overall_letter', $gradeLetter);
+        }
+
+        $paginator = $snapshotQuery
+            ->orderByDesc('overall_score')
+            ->paginate($perPage)
+            ->appends($request->query());
+
+        $paginator->setCollection(
+            $paginator->getCollection()->map(function (DriverGradeSnapshot $snapshot): array {
+                $driver = $snapshot->driver;
+
+                return [
+                    'id' => $driver?->id ?? $snapshot->driver_id,
+                    'name' => $driver?->name ?? '—',
+                    'driverid' => $driver?->driverid,
+                    'status' => $snapshot->status ?? $driver?->status,
+                    'hire_date' => $driver?->hireddate?->toDateString(),
+                    'grade' => [
+                        'overall' => [
+                            'score' => $snapshot->overall_score,
+                            'letter' => $snapshot->overall_letter,
+                        ],
+                        'weights' => $snapshot->weights,
+                        'grade_thresholds' => $snapshot->grade_thresholds,
+                        'categories' => $snapshot->categories,
+                        'metrics' => $snapshot->metrics,
+                    ],
+                    'snapshot' => [
+                        'calculated_at' => $snapshot->calculated_at?->toIso8601String(),
+                        'calculated_by' => $snapshot->calculatedBy?->only(['id', 'name']),
+                    ],
+                ];
+            }),
+        );
+
         $availableDates = DriverGradeSnapshot::query()
             ->select('snapshot_date')
             ->distinct()
             ->orderByDesc('snapshot_date')
+            ->limit(30)
             ->pluck('snapshot_date')
-            ->map(static fn ($value) => (string) $value)
+            ->map(static fn ($value) => Carbon::parse($value)->toDateString())
             ->values()
             ->all();
 
-        $paginator = (clone $filteredSnapshotQuery)
-            ->select([
-                'id',
-                'driver_id',
-                'driver_name',
-                'status',
-                'grade_details',
-                'snapshot_meta',
-            ])
-            ->orderByDesc('grade_details->overall->score')
-            ->paginate($perPage)
-            ->through(static function (DriverGradeSnapshot $snapshot): array {
-                return [
-                    'id' => $snapshot->driver_id,
-                    'name' => $snapshot->driver_name,
-                    'status' => $snapshot->status,
-                    'grade' => $snapshot->grade_details,
-                    'snapshot' => [
-                        'calculated_at' => $snapshot->snapshot_meta['calculated_at'] ?? null,
-                        'calculated_by' => $snapshot->snapshot_meta['calculated_by'] ?? null,
-                    ],
-                ];
-            });
-
-        $perPageOptions = [10, 25, 50];
-
-        // Cache statuses (1 hour) - rarely changes
         $statuses = Cache::remember('driver_grading_settings.statuses', 3600, function () {
             return Driver::query()
                 ->whereNull('deleted_at')
@@ -134,6 +160,7 @@ class DriverGradingSettingsController extends Controller
             'filters' => [
                 'snapshot_date' => $snapshotDate,
                 'status' => $status,
+                'grade_letter' => $gradeLetter,
                 'per_page' => $perPage,
             ],
             'filterOptions' => [

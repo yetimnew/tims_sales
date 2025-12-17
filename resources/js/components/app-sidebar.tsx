@@ -39,7 +39,8 @@ import {
     AlertTriangle,
     Bell,
     History,
-    Database
+    Database,
+    HelpCircle,
 } from 'lucide-react';
 import AppLogo from './app-logo';
 
@@ -377,13 +378,28 @@ const getMainNavItems = (currentUrl: string): NavItem[] => {
             {
                 title: 'Grading',
                 icon: LineChart,
-                isActive: currentUrl.startsWith('/settings/truck-grading'),
+                isActive:
+                    currentUrl.startsWith('/settings/truck-grading') ||
+                    currentUrl.startsWith('/settings/driver-grading') ||
+                    currentUrl.startsWith('/settings/driver-truck-grading'),
                 items: [
                     {
                         title: 'Truck Grading',
                         href: '/settings/truck-grading',
                         icon: BarChart3,
                         requiredPermissions: ['performances.view', 'performances.show'],
+                    },
+                    {
+                        title: 'Driver Grading',
+                        href: '/settings/driver-grading',
+                        icon: UserCheck,
+                        requiredPermissions: ['drivers.view', 'drivers.show'],
+                    },
+                    {
+                        title: 'Driver-Truck Grading',
+                        href: '/settings/driver-truck-grading',
+                        icon: Users,
+                        requiredPermissions: ['driver-trucks.view', 'driver-trucks.show'],
                     },
                 ],
             },
@@ -435,6 +451,13 @@ const getMainNavItems = (currentUrl: string): NavItem[] => {
                 icon: Database,
                 requiredPermissions: ['system.backup'],
                 isActive: currentUrl.startsWith('/settings/backups'),
+            },
+            {
+                title: 'Help & Documentation',
+                href: '/help',
+                icon: HelpCircle,
+                requiredPermissions: undefined, // Available to all users - no permission check
+                isActive: currentUrl.startsWith('/help'),
             },
         ];
 };

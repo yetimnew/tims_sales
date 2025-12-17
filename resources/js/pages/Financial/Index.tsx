@@ -55,7 +55,7 @@ export default function FinancialIndex({ financialRecords }: FinancialIndexProps
     setSortColumn(column)
     setSortOrder(newOrder)
     router.get(
-      route('financial.index'),
+      '/financial',
       { search, sort: column, direction: newOrder },
       { preserveState: true, preserveScroll: true }
     )
@@ -64,7 +64,7 @@ export default function FinancialIndex({ financialRecords }: FinancialIndexProps
   const handleSearch = (value: string) => {
     setSearch(value)
     router.get(
-      route('financial.index'),
+      '/financial',
       { search: value, sort: sortColumn, direction: sortOrder },
       { preserveState: true, preserveScroll: true }
     )
@@ -76,7 +76,7 @@ export default function FinancialIndex({ financialRecords }: FinancialIndexProps
 
   const confirmDelete = () => {
     if (!deleteConfirmation) return
-    router.delete(route('financial.destroy', deleteConfirmation.id), {
+    router.delete(`/financial/${deleteConfirmation.id}`, {
       onSuccess: () => {
         toast({ title: 'Success', description: 'Financial record deleted successfully', variant: 'success' })
         setDeleteConfirmation(null)
@@ -131,7 +131,7 @@ export default function FinancialIndex({ financialRecords }: FinancialIndexProps
           <div className="flex gap-2">
             {hasPermission('financial.create') && (
               <Button asChild>
-                <Link href={route('financial.create')}>
+                <Link href="/financial/create">
                   <Plus className="mr-2 h-4 w-4" />
                   Add Financial Record
                 </Link>
@@ -213,14 +213,14 @@ export default function FinancialIndex({ financialRecords }: FinancialIndexProps
                           <div className="flex justify-end gap-2">
                             {hasPermission('financial.show') && (
                               <Button variant="ghost" size="icon" asChild>
-                                <Link href={route('financial.show', financial.id)}>
+                                <Link href={`/financial/${financial.id}`}>
                                   <Eye className="h-4 w-4" />
                                 </Link>
                               </Button>
                             )}
                             {hasPermission('financial.edit') && (
                               <Button variant="ghost" size="icon" asChild>
-                                <Link href={route('financial.edit', financial.id)}>
+                                <Link href={`/financial/${financial.id}/edit`}>
                                   <SquarePen className="h-4 w-4" />
                                 </Link>
                               </Button>

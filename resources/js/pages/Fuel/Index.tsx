@@ -137,6 +137,10 @@ const getFuelTypeBadgeClass = (type: string): string => {
     return 'bg-muted text-muted-foreground';
 };
 
+const breadcrumbs: BreadcrumbItem[] = [
+    { title: 'Fuel Records', href: '/fuel' },
+];
+
 export default function FuelIndex({
     fuelRecords,
     metrics,

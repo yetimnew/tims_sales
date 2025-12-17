@@ -1,4 +1,19 @@
-# Operations & Performance Guide - TIMS
+# Features Documentation - TIMS
+
+This directory contains comprehensive documentation for all features and modules in the Transport Information Management System (TIMS).
+
+## 📚 Files in This Directory
+
+- **[README.md](./README.md)** - This file: Operations & Performance Guide
+- **[fleet-management.md](./fleet-management.md)** - Fleet management features and capabilities
+- **[trucks-readme.md](./trucks-readme.md)** - Detailed truck management guide
+- **[driver-grading.md](./driver-grading.md)** - Driver performance grading system
+- **[truck-grading.md](./truck-grading.md)** - Truck performance grading system
+- **[outsource-performance-show.md](./outsource-performance-show.md)** - Vendor performance tracking and analysis
+- **[events-and-notifications.md](./events-and-notifications.md)** - Event system and notification management
+- **[encrypted-backups/](./encrypted-backups/)** - Backup and restore workflow documentation
+
+## 📖 Overview
 
 This document focuses exclusively on the Operations, Performance, and Outsource Performance capabilities inside the Transport Information Management System (TIMS). Use it as the single reference for domain language, user flows, metrics, validation rules, and supporting assets.
 

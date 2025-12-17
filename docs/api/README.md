@@ -1,6 +1,14 @@
 # API Documentation - TIMS
 
-This document provides comprehensive API documentation for the Transport Information Management System (TIMS).
+This directory contains comprehensive API documentation for the Transport Information Management System (TIMS).
+
+## 📚 Files in This Directory
+
+- **[README.md](./README.md)** - This file: Complete API reference documentation
+
+## 📖 Overview
+
+This document provides comprehensive API documentation for the Transport Information Management System (TIMS), including all endpoints, authentication, request/response formats, and examples.
 
 ## 📋 Table of Contents
 

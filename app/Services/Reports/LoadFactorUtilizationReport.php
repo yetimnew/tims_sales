@@ -78,13 +78,13 @@ class LoadFactorUtilizationReport
             ])
             ->whereBetween('DateDispach', [$from->toDateTimeString(), $to->toDateTimeString()]);
 
-        if (!empty($truckIds)) {
+        if (! empty($truckIds)) {
             $query->whereHas('driverTruck', static function ($builder) use ($truckIds) {
                 $builder->whereIn('truck_id', $truckIds);
             });
         }
 
-        if (!empty($driverIds)) {
+        if (! empty($driverIds)) {
             $query->whereHas('driverTruck', static function ($builder) use ($driverIds) {
                 $builder->whereIn('driver_id', $driverIds);
             });
@@ -102,14 +102,14 @@ class LoadFactorUtilizationReport
         $groupKey = match ($groupBy) {
             'truck' => fn ($p) => $p->driverTruck?->truck?->id ?? 0,
             'driver' => fn ($p) => $p->driverTruck?->driver?->id ?? 0,
-            'route' => fn ($p) => ($p->orgion_id ?? 0) . '-' . ($p->destination_id ?? 0),
+            'route' => fn ($p) => ($p->orgion_id ?? 0).'-'.($p->destination_id ?? 0),
             default => fn ($p) => 'overall',
         };
 
         $labelKey = match ($groupBy) {
             'truck' => fn ($p) => $p->driverTruck?->truck?->plate ?? 'Unknown',
             'driver' => fn ($p) => $p->driverTruck?->driver?->name ?? 'Unassigned',
-            'route' => fn ($p) => ($p->origin?->name ?? 'Unknown') . ' → ' . ($p->destination?->name ?? 'Unknown'),
+            'route' => fn ($p) => ($p->origin?->name ?? 'Unknown').' → '.($p->destination?->name ?? 'Unknown'),
             default => fn ($p) => 'Overall',
         };
 
@@ -118,10 +118,16 @@ class LoadFactorUtilizationReport
             ->map(function (Collection $group, $key) use ($groupBy, $labelKey) {
                 $first = $group->first();
                 $label = $labelKey($first);
-                $truckId = $groupBy === 'truck' ? $key : null;
-                $driverId = $groupBy === 'driver' ? $key : null;
-                $originId = $groupBy === 'route' ? explode('-', $key)[0] : null;
-                $destinationId = $groupBy === 'route' ? explode('-', $key)[1] : null;
+                $truckId = $groupBy === 'truck' ? (int) $key : null;
+                $driverId = $groupBy === 'driver' ? (int) $key : null;
+                if ($groupBy === 'route') {
+                    $parts = explode('-', (string) $key);
+                    $originId = isset($parts[0]) ? (int) $parts[0] : null;
+                    $destinationId = isset($parts[1]) ? (int) $parts[1] : null;
+                } else {
+                    $originId = null;
+                    $destinationId = null;
+                }
 
                 return $this->calculateMetrics($group, $label, $truckId, $driverId, $originId, $destinationId);
             })
@@ -202,4 +208,3 @@ class LoadFactorUtilizationReport
         ];
     }
 }
-

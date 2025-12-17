@@ -7,12 +7,12 @@ use App\Http\Requests\UpdateCustomerRequest;
 use App\Models\Customer;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Inertia\Response;
-use Spatie\Activitylog\Models\Activity;
 
-class CustomerController extends Controller
+class CustomerController extends BaseResourceController
 {
     /**
      * Display a listing of the resource.
@@ -59,6 +59,7 @@ class CustomerController extends Controller
         // Cache metrics (1 hour) - changes when customers are added/removed/updated
         $metrics = Cache::remember('customers.metrics', 3600, function () {
             $statusCounts = Customer::selectRaw('status, COUNT(*) as aggregate')->groupBy('status')->pluck('aggregate', 'status');
+
             return [
                 'total' => (int) $statusCounts->sum(),
                 'active' => (int) ($statusCounts->get('active') ?? 0),
@@ -103,19 +104,22 @@ class CustomerController extends Controller
     public function store(StoreCustomerRequest $request)
     {
         try {
-            $validated = $request->validated();
-            $customer = Customer::create($validated);
+            $customer = Customer::create($request->validated());
 
-            // Clear cached data
+            // Clear all related caches systematically
             Cache::forget('customers.metrics');
             Cache::forget('operations.customer_options');
-            // Clear report caches
             Cache::forget('reports.customer_profitability.customer_options');
 
             return redirect()->route('customers.index')
-                ->with('success', 'Customer created successfully.');
+                ->with('success', sprintf('Customer %s created successfully.', $customer->name));
 
         } catch (Exception $e) {
+            $this->logError('store', 'Customer', $e, [
+                'created_by' => Auth::id(),
+                'customer_name' => $request->input('name'),
+            ]);
+
             return back()->withErrors(['error' => 'Failed to create customer. Please try again.']);
         }
     }
@@ -188,10 +192,8 @@ class CustomerController extends Controller
             'created_at' => $customer->created_at,
         ];
 
-        $activityLogs = Activity::forSubject($customer)
-            ->with('causer')
-            ->orderByDesc('created_at')
-            ->get();
+        // Get activity logs using base controller method
+        $activityLogs = $this->getActivityLogs($customer);
 
         return Inertia::render('Customers/Show', [
             'customer' => $customerData,
@@ -217,19 +219,25 @@ class CustomerController extends Controller
     public function update(UpdateCustomerRequest $request, Customer $customer)
     {
         try {
-            $validated = $request->validated();
-            $customer->update($validated);
+            // Capture original values before update
+            $original = $this->normalizeAttributes($customer->getOriginal());
 
-            // Clear cached data if status changed
+            $customer->update($request->validated());
+
+            // Format changes for audit trail
+            $changes = $this->formatChanges($original, $this->normalizeAttributes($customer->getChanges()));
+
+            // Clear related caches
             Cache::forget('customers.metrics');
             Cache::forget('operations.customer_options');
-            // Clear report caches
             Cache::forget('reports.customer_profitability.customer_options');
 
             return redirect()->route('customers.index')
-                ->with('success', 'Customer updated successfully.');
+                ->with('success', sprintf('Customer %s updated successfully.', $customer->name));
 
         } catch (Exception $e) {
+            $this->logError('update', 'Customer', $e);
+
             return back()->withErrors(['error' => 'Failed to update customer. Please try again.']);
         }
     }
@@ -249,18 +257,23 @@ class CustomerController extends Controller
                 ]);
             }
 
+            // Capture data before deletion for audit trail
+            $customerName = $customer->name;
+            $attributes = $this->normalizeAttributes($customer->toArray());
+
             $customer->delete();
 
-            // Clear cached data
+            // Clear related caches
             Cache::forget('customers.metrics');
             Cache::forget('operations.customer_options');
-            // Clear report caches
             Cache::forget('reports.customer_profitability.customer_options');
 
             return redirect()->route('customers.index')
-                ->with('success', 'Customer deleted successfully.');
+                ->with('success', sprintf('Customer %s deleted successfully.', $customerName));
 
         } catch (Exception $e) {
+            $this->logError('destroy', 'Customer', $e);
+
             return back()->withErrors(['error' => 'Failed to delete customer. Please try again.']);
         }
     }

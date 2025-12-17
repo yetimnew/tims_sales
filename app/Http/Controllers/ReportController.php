@@ -50,7 +50,6 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Response as HttpResponse;
-use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 use Maatwebsite\Excel\Facades\Excel;
@@ -1725,5 +1724,239 @@ class ReportController extends Controller
         } catch (Exception $e) {
             return back()->withErrors(['error' => 'Failed to load cost per kilometer report.']);
         }
+    }
+
+    /**
+     * Export load factor utilization report.
+     */
+    public function loadFactorUtilizationExport(LoadFactorUtilizationRequest $request, string $format)
+    {
+        $format = strtolower($format);
+
+        if (! in_array($format, ['csv', 'xlsx', 'pdf'], true)) {
+            abort(404);
+        }
+
+        $validated = array_merge($request->validated(), ['format' => $format]);
+        $result = $this->loadFactorUtilizationReport->build($validated);
+
+        $rows = $result['rows'] instanceof Collection
+            ? $result['rows']
+            : collect($result['rows']);
+
+        $filename = 'load_factor_utilization_'.now()->format('Y-m-d_H-i-s');
+
+        return match ($format) {
+            'csv' => $this->exportLoadFactorCsv($rows, $result['summary'], $result['resolved_from'], $result['resolved_to'], $filename.'.csv'),
+            'xlsx' => $this->exportLoadFactorExcel($rows, $result['summary'], $filename.'.xlsx'),
+            'pdf' => $this->exportLoadFactorPdf($rows, $result['summary'], $result['resolved_from'], $result['resolved_to'], $filename.'.pdf'),
+            default => abort(404),
+        };
+    }
+
+    /**
+     * Export cost per kilometer report.
+     */
+    public function costPerKilometerExport(CostPerKilometerRequest $request, string $format)
+    {
+        $format = strtolower($format);
+
+        if (! in_array($format, ['csv', 'xlsx', 'pdf'], true)) {
+            abort(404);
+        }
+
+        $validated = array_merge($request->validated(), ['format' => $format]);
+        $result = $this->costPerKilometerReport->build($validated);
+
+        $rows = $result['rows'] instanceof Collection
+            ? $result['rows']
+            : collect($result['rows']);
+
+        $filename = 'cost_per_kilometer_'.now()->format('Y-m-d_H-i-s');
+
+        return match ($format) {
+            'csv' => $this->exportCostPerKmCsv($rows, $result['summary'], $result['resolved_from'], $result['resolved_to'], $filename.'.csv'),
+            'xlsx' => $this->exportCostPerKmExcel($rows, $result['summary'], $filename.'.xlsx'),
+            'pdf' => $this->exportCostPerKmPdf($rows, $result['summary'], $result['resolved_from'], $result['resolved_to'], $filename.'.pdf'),
+            default => abort(404),
+        };
+    }
+
+    private function exportLoadFactorCsv(Collection $rows, array $summary, string $from, string $to, string $filename)
+    {
+        $headings = [
+            'Label',
+            'Trips',
+            'Loaded Distance (KM)',
+            'Empty Distance (KM)',
+            'Total Distance (KM)',
+            'Tonnage (MT)',
+            'Ton-KM',
+            'Load Factor %',
+            'Empty Miles %',
+            'Deadhead Ratio',
+            'Utilization Rate %',
+        ];
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+
+        return HttpResponse::streamDownload(static function () use ($rows, $headings, $from, $to, $summary) {
+            $handle = fopen('php://output', 'w');
+
+            fputcsv($handle, ['Load Factor & Utilization Analysis']);
+            fputcsv($handle, ["Reporting window: {$from} to {$to}"]);
+            fputcsv($handle, []);
+            fputcsv($handle, ['Summary']);
+            fputcsv($handle, ['Total Trips', $summary['total_trips']]);
+            fputcsv($handle, ['Total Distance (KM)', $summary['total_distance']]);
+            fputcsv($handle, ['Load Factor %', $summary['overall_load_factor_percent']]);
+            fputcsv($handle, ['Empty Miles %', $summary['overall_empty_miles_percent']]);
+            fputcsv($handle, ['Deadhead Ratio', $summary['overall_deadhead_ratio']]);
+            fputcsv($handle, ['Utilization Rate %', $summary['overall_utilization_rate']]);
+            fputcsv($handle, []);
+            fputcsv($handle, $headings);
+
+            foreach ($rows as $row) {
+                fputcsv($handle, [
+                    $row['label'],
+                    $row['trips'],
+                    $row['distance_loaded'],
+                    $row['distance_empty'],
+                    $row['distance_total'],
+                    $row['tonnage'],
+                    $row['ton_km'],
+                    $row['load_factor_percent'],
+                    $row['empty_miles_percent'],
+                    $row['deadhead_ratio'],
+                    $row['utilization_rate'],
+                ]);
+            }
+
+            fclose($handle);
+        }, $filename, $headers);
+    }
+
+    private function exportLoadFactorExcel(Collection $rows, array $summary, string $filename)
+    {
+        // For now, use CSV format for Excel - can be enhanced with proper Excel export class later
+        return $this->exportLoadFactorCsv($rows, $summary, '', '', str_replace('.xlsx', '.csv', $filename));
+    }
+
+    private function exportLoadFactorPdf(Collection $rows, array $summary, string $from, string $to, string $filename)
+    {
+        $options = new Options;
+        $options->set('isRemoteEnabled', true);
+        $options->set('defaultFont', 'DejaVu Sans');
+
+        $dompdf = new Dompdf($options);
+        $html = view('reports.load_factor_utilization_pdf', [
+            'rows' => $rows->all(),
+            'summary' => $summary,
+            'from' => $from,
+            'to' => $to,
+        ])->render();
+
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'landscape');
+        $dompdf->render();
+
+        return HttpResponse::make($dompdf->output(), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ]);
+    }
+
+    private function exportCostPerKmCsv(Collection $rows, array $summary, string $from, string $to, string $filename)
+    {
+        $headings = [
+            'Label',
+            'Trips',
+            'Distance (KM)',
+            'Fuel Cost',
+            'Perdiem',
+            'Work Ongoing',
+            'Other Cost',
+            'Total Cost',
+            'Total CPK',
+            'Fuel CPK',
+            'Perdiem CPK',
+            'Work Ongoing CPK',
+            'Other CPK',
+        ];
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+
+        return HttpResponse::streamDownload(static function () use ($rows, $headings, $from, $to, $summary) {
+            $handle = fopen('php://output', 'w');
+
+            fputcsv($handle, ['Cost Per Kilometer Analysis']);
+            fputcsv($handle, ["Reporting window: {$from} to {$to}"]);
+            fputcsv($handle, []);
+            fputcsv($handle, ['Summary']);
+            fputcsv($handle, ['Total Trips', $summary['total_trips']]);
+            fputcsv($handle, ['Total Distance (KM)', $summary['total_distance']]);
+            fputcsv($handle, ['Total Cost', $summary['total_cost']]);
+            fputcsv($handle, ['Overall CPK', $summary['overall_cpk']]);
+            fputcsv($handle, ['Fuel CPK', $summary['overall_fuel_cpk']]);
+            fputcsv($handle, ['Perdiem CPK', $summary['overall_perdiem_cpk']]);
+            fputcsv($handle, []);
+            fputcsv($handle, $headings);
+
+            foreach ($rows as $row) {
+                fputcsv($handle, [
+                    $row['label'],
+                    $row['trips'],
+                    $row['distance_total'],
+                    $row['fuel_cost'],
+                    $row['perdiem'],
+                    $row['work_on_going'],
+                    $row['other_cost'],
+                    $row['total_cost'],
+                    $row['total_cpk'],
+                    $row['fuel_cpk'],
+                    $row['perdiem_cpk'],
+                    $row['work_on_going_cpk'],
+                    $row['other_cpk'],
+                ]);
+            }
+
+            fclose($handle);
+        }, $filename, $headers);
+    }
+
+    private function exportCostPerKmExcel(Collection $rows, array $summary, string $filename)
+    {
+        // For now, use CSV format for Excel - can be enhanced with proper Excel export class later
+        return $this->exportCostPerKmCsv($rows, $summary, '', '', str_replace('.xlsx', '.csv', $filename));
+    }
+
+    private function exportCostPerKmPdf(Collection $rows, array $summary, string $from, string $to, string $filename)
+    {
+        $options = new Options;
+        $options->set('isRemoteEnabled', true);
+        $options->set('defaultFont', 'DejaVu Sans');
+
+        $dompdf = new Dompdf($options);
+        $html = view('reports.cost_per_kilometer_pdf', [
+            'rows' => $rows->all(),
+            'summary' => $summary,
+            'from' => $from,
+            'to' => $to,
+        ])->render();
+
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'landscape');
+        $dompdf->render();
+
+        return HttpResponse::make($dompdf->output(), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ]);
     }
 }

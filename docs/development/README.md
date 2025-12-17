@@ -1,4 +1,13 @@
-# Development Guide - TIMS
+# Development Documentation - TIMS
+
+This directory contains comprehensive development guidelines and resources for the Transport Information Management System (TIMS).
+
+## 📚 Files in This Directory
+
+- **[README.md](./README.md)** - This file: Comprehensive development guide
+- **[notifications-reverb.md](./notifications-reverb.md)** - Real-time notifications setup with Laravel Reverb
+
+## 📖 Overview
 
 This document provides comprehensive development guidelines for the Transport Information Management System (TIMS).
 

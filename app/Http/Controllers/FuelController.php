@@ -18,9 +18,8 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
-use Spatie\Activitylog\Models\Activity;
 
-class FuelController extends Controller
+class FuelController extends BaseResourceController
 {
     public function __construct(private FuelRecordIndexService $fuelRecordIndexService) {}
 
@@ -95,12 +94,13 @@ class FuelController extends Controller
 
             $fuelRecord = FuelRecord::create($validated);
 
-            event(new FuelRecordCreated($fuelRecord->loadMissing(['truck', 'driver']), Auth::user()));
-
-            // Clear cached options
+            // Clear all related caches systematically
             Cache::forget('fuel_records.fuel_type_options');
             Cache::forget('fuel_records.truck_options');
             Cache::forget('fuel_records.driver_options');
+
+            // Dispatch event for audit trail
+            event(new FuelRecordCreated($fuelRecord->loadMissing(['truck', 'driver']), Auth::user()));
 
             return redirect()->route('fuel.index')
                 ->with('success', 'Fuel record created successfully.');
@@ -108,6 +108,11 @@ class FuelController extends Controller
         } catch (ValidationException $exception) {
             throw $exception;
         } catch (Exception $e) {
+            $this->logError('store', 'FuelRecord', $e, [
+                'created_by' => Auth::id(),
+                'driver_truck_id' => $request->input('driver_truck_id'),
+            ]);
+
             return back()->withErrors(['error' => 'Failed to create fuel record. Please try again.']);
         }
     }
@@ -119,11 +124,8 @@ class FuelController extends Controller
     {
         $fuel->load(['truck', 'driver', 'user']);
 
-        // Load activity logs for this fuel record using Spatie Activity Log
-        $activityLogs = Activity::forSubject($fuel)
-            ->with('causer')
-            ->orderByDesc('created_at')
-            ->get();
+        // Get activity logs using base controller method
+        $activityLogs = $this->getActivityLogs($fuel);
 
         return Inertia::render('Fuel/Show', [
             'fuel' => $fuel,
@@ -201,31 +203,21 @@ class FuelController extends Controller
             $validated['driver_id'] = $assignment->driver_id;
             $validated['total_cost'] = $validated['fuel_quantity_liters'] * $validated['fuel_price_per_liter'];
 
-            $original = $fuel->getOriginal();
+            // Capture original values before update
+            $original = $this->normalizeAttributes($fuel->getOriginal());
 
-            $fuel->fill($validated);
+            $fuel->update($validated);
 
-            $dirty = $fuel->getDirty();
-            $changes = [];
+            // Format changes for audit trail
+            $changes = $this->formatChanges($original, $this->normalizeAttributes($fuel->getChanges()));
 
-            foreach ($dirty as $attribute => $newValue) {
-                $changes[$attribute] = [
-                    'old' => $original[$attribute] ?? null,
-                    'new' => $newValue,
-                ];
-            }
-
-            $fuel->save();
-
-            if ($changes !== []) {
-                event(new FuelRecordUpdated($fuel->fresh(['truck', 'driver']), $changes, Auth::user()));
-            }
-
-            // Clear cached options if fuel_type, truck_id, or driver_id changed
-            if (isset($changes['fuel_type']) || isset($changes['truck_id']) || isset($changes['driver_id'])) {
+            // Clear related caches if changes exist
+            if (! empty($changes)) {
                 Cache::forget('fuel_records.fuel_type_options');
                 Cache::forget('fuel_records.truck_options');
                 Cache::forget('fuel_records.driver_options');
+
+                event(new FuelRecordUpdated($fuel->fresh(['truck', 'driver']), $changes, Auth::user()));
             }
 
             return redirect()->route('fuel.index')
@@ -234,6 +226,8 @@ class FuelController extends Controller
         } catch (ValidationException $exception) {
             throw $exception;
         } catch (Exception $e) {
+            $this->logError('update', 'FuelRecord', $e);
+
             return back()->withErrors(['error' => 'Failed to update fuel record. Please try again.']);
         }
     }
@@ -244,23 +238,27 @@ class FuelController extends Controller
     public function destroy(FuelRecord $fuel)
     {
         try {
-            $fuelRecordId = $fuel->getKey();
+            // Capture data before deletion for audit trail
+            $fuelRecordId = $fuel->id;
             $receiptNumber = $fuel->receipt_number;
-            $attributes = $fuel->getAttributes();
+            $attributes = $this->normalizeAttributes($fuel->toArray());
 
             $fuel->delete();
 
-            event(new FuelRecordDeleted($fuelRecordId, $receiptNumber, $attributes, Auth::user()));
-
-            // Clear cached options
+            // Clear related caches
             Cache::forget('fuel_records.fuel_type_options');
             Cache::forget('fuel_records.truck_options');
             Cache::forget('fuel_records.driver_options');
 
+            // Dispatch event with deleted data for audit trail
+            event(new FuelRecordDeleted($fuelRecordId, $receiptNumber, $attributes, Auth::user()));
+
             return redirect()->route('fuel.index')
-                ->with('success', 'Fuel record deleted successfully.');
+                ->with('success', sprintf('Fuel record %s deleted successfully.', $receiptNumber ?? 'Unknown'));
 
         } catch (Exception $e) {
+            $this->logError('destroy', 'FuelRecord', $e);
+
             return back()->withErrors(['error' => 'Failed to delete fuel record. Please try again.']);
         }
     }

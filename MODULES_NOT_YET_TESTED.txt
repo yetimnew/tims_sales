@@ -1,0 +1,676 @@
+╔════════════════════════════════════════════════════════════════════════════════╗
+║                                                                                ║
+║                   MODULES NOT YET TESTED - COMPLETE LIST                       ║
+║                                                                                ║
+║                        IDENTIFIED BY ROUTE ANALYSIS                            ║
+║                                                                                ║
+╚════════════════════════════════════════════════════════════════════════════════╝
+
+
+TESTING SUMMARY
+════════════════════════════════════════════════════════════════════════════════
+
+Modules Already Tested:      3
+  ✅ Maintenance (15 permissions)
+  ✅ Operations (11 permissions)
+  ✅ Reports (28 permissions)
+
+Total Permissions Tested:    54 ✅
+
+Modules NOT Yet Tested:      25+ ⏳
+Total NOT Tested:            ~200+ permissions
+
+
+════════════════════════════════════════════════════════════════════════════════
+                    COMPREHENSIVE LIST OF UNTESTED MODULES
+════════════════════════════════════════════════════════════════════════════════
+
+
+SECTION 1: FLEET MANAGEMENT
+════════════════════════════════════════════════════════════════════════════════
+
+❌ TRUCKS (trucks.* permissions)
+   Estimated Permissions: 8-10
+   Routes:
+     • GET /trucks
+     • GET /trucks/create
+     • POST /trucks
+     • GET /trucks/{truck}
+     • GET /trucks/{truck}/assignments/{driverTruck}/performances
+     • GET /trucks/{truck}/edit
+     • PUT /trucks/{truck}
+     • DELETE /trucks/{truck}
+     • POST /trucks/{truck}/deactivate
+     • POST /trucks/{truck}/activate
+     • GET /trucks/{truck}/status-history
+
+   Testing Required:
+     ☐ trucks.view
+     ☐ trucks.create
+     ☐ trucks.store
+     ☐ trucks.show
+     ☐ trucks.edit
+     ☐ trucks.update
+     ☐ trucks.destroy
+     ☐ trucks.activate
+     ☐ trucks.deactivate
+     ☐ trucks.status-history (if exists)
+
+❌ DRIVERS (drivers.* permissions)
+   Estimated Permissions: 8-10
+   Routes:
+     • GET /drivers
+     • GET /drivers/create
+     • POST /drivers
+     • GET /drivers/{driver}
+     • GET /drivers/{driver}/assignments/{driverTruck}/performances
+     • GET /drivers/{driver}/edit
+     • PUT /drivers/{driver}
+     • DELETE /drivers/{driver}
+     • POST /drivers/{driver}/deactivate
+     • POST /drivers/{driver}/activate
+     • GET /drivers/export
+
+   Testing Required:
+     ☐ drivers.view
+     ☐ drivers.create
+     ☐ drivers.store
+     ☐ drivers.show
+     ☐ drivers.edit
+     ☐ drivers.update
+     ☐ drivers.destroy
+     ☐ drivers.activate
+     ☐ drivers.deactivate
+     ☐ drivers.export
+
+❌ DRIVER-TRUCK ASSIGNMENTS (driver-trucks.* permissions)
+   Estimated Permissions: 5-7
+   Routes:
+     • GET /driver-trucks
+     • GET /driver-trucks/create
+     • POST /driver-trucks
+     • GET /driver-trucks/{driverTruck}
+     • GET /driver-trucks/{driverTruck}/edit
+     • PUT /driver-trucks/{driverTruck}
+     • DELETE /driver-trucks/{driverTruck}
+     • GET /driver-trucks/{driverTruck}/detach
+     • POST /driver-trucks/{driverTruck}/detach
+
+   Testing Required:
+     ☐ driver-trucks.view
+     ☐ driver-trucks.create
+     ☐ driver-trucks.store
+     ☐ driver-trucks.show
+     ☐ driver-trucks.edit
+     ☐ driver-trucks.update
+     ☐ driver-trucks.destroy
+     ☐ driver-trucks.detach
+
+❌ PERFORMANCES (performances.* permissions)
+   Estimated Permissions: 8-10
+   Routes:
+     • GET /performances
+     • GET /performances/create
+     • POST /performances
+     • GET /performances/{performance}
+     • GET /performances/{performance}/edit
+     • PUT /performances/{performance}
+     • DELETE /performances/{performance}
+     • POST /performances/{performance}/deactivate
+     • GET /performances/active/list
+     • GET /performances/status/list
+     • GET /performances/calculate-distance
+
+   Testing Required:
+     ☐ performances.view
+     ☐ performances.create
+     ☐ performances.store
+     ☐ performances.show
+     ☐ performances.edit
+     ☐ performances.update
+     ☐ performances.destroy
+     ☐ performances.deactivate
+     ☐ performances.active
+
+❌ FUEL MANAGEMENT (fuel.* permissions)
+   Estimated Permissions: 6-8
+   Routes:
+     • GET /fuel
+     • GET /fuel/create
+     • POST /fuel
+     • GET /fuel/{fuel}
+     • GET /fuel/{fuel}/edit
+     • PUT /fuel/{fuel}
+     • DELETE /fuel/{fuel}
+     • GET /fuel/analysis
+     • POST /fuel/generate-analysis
+
+   Testing Required:
+     ☐ fuel.view
+     ☐ fuel.create
+     ☐ fuel.store
+     ☐ fuel.show
+     ☐ fuel.edit
+     ☐ fuel.update
+     ☐ fuel.destroy
+     ☐ fuel.analysis
+
+❌ VEHICLE TYPES (vehicletypes.* permissions)
+   Estimated Permissions: 6-8
+   Routes:
+     • GET /vehicletypes
+     • GET /vehicletypes/create
+     • POST /vehicletypes
+     • GET /vehicletypes/{vehicletype}
+     • GET /vehicletypes/{vehicletype}/edit
+     • PUT /vehicletypes/{vehicletype}
+     • DELETE /vehicletypes/{vehicletype}
+
+   Testing Required:
+     ☐ vehicletypes.view
+     ☐ vehicletypes.create
+     ☐ vehicletypes.store
+     ☐ vehicletypes.show
+     ☐ vehicletypes.edit
+     ☐ vehicletypes.update
+     ☐ vehicletypes.destroy
+
+
+SECTION 2: DRIVER & VEHICLE MANAGEMENT
+════════════════════════════════════════════════════════════════════════════════
+
+❌ DRIVER PERFORMANCE (driver-performance.* permissions)
+   Estimated Permissions: 5-7
+   Routes:
+     • GET /driver-performance
+     • GET /driver-performance/{id}
+     • POST /driver-performance
+     • PUT /driver-performance/{id}
+     • DELETE /driver-performance/{id}
+     • GET /driver-performance/analytics
+     • GET /driver-performance/top-performers
+
+   Testing Required:
+     ☐ driver-performance.view
+     ☐ driver-performance.show
+     ☐ driver-performance.create
+     ☐ driver-performance.edit
+     ☐ driver-performance.update
+     ☐ driver-performance.destroy
+
+❌ DRIVER SAFETY (driver-safety.* permissions)
+   Estimated Permissions: 5-7
+   Routes:
+     • GET /driver-safety
+     • GET /driver-safety/{id}
+     • POST /driver-safety
+     • PUT /driver-safety/{id}
+     • DELETE /driver-safety/{id}
+     • GET /driver-safety/analytics
+     • GET /driver-safety/drivers-with-issues
+
+   Testing Required:
+     ☐ driver-safety.view
+     ☐ driver-safety.show
+     ☐ driver-safety.create
+     ☐ driver-safety.edit
+     ☐ driver-safety.update
+     ☐ driver-safety.destroy
+
+
+SECTION 3: OPERATIONAL MANAGEMENT
+════════════════════════════════════════════════════════════════════════════════
+
+❌ CUSTOMERS (customers.* permissions)
+   Estimated Permissions: 7-9
+   Routes:
+     • GET /customers
+     • GET /customers/create
+     • POST /customers
+     • GET /customers/{customer}
+     • GET /customers/{customer}/edit
+     • PUT /customers/{customer}
+     • DELETE /customers/{customer}
+     • POST /customers/{customer}/deactivate
+     • GET /customers/active/list
+
+   Testing Required:
+     ☐ customers.view
+     ☐ customers.create
+     ☐ customers.store
+     ☐ customers.show
+     ☐ customers.edit
+     ☐ customers.update
+     ☐ customers.destroy
+     ☐ customers.deactivate
+     ☐ customers.active
+
+❌ CARGO TYPES (cargo-types.* permissions)
+   Estimated Permissions: 5-7
+   Routes:
+     • GET /cargo-types
+     • GET /cargo-types/{id}
+     • POST /cargo-types
+     • PUT /cargo-types/{id}
+     • DELETE /cargo-types/{id}
+     • GET /cargo-types/statistics
+     • GET /cargo-types/by-category
+
+   Testing Required:
+     ☐ cargo-types.view
+     ☐ cargo-types.show
+     ☐ cargo-types.create
+     ☐ cargo-types.edit
+     ☐ cargo-types.update
+     ☐ cargo-types.destroy
+
+❌ ROUTE PLANNING (route-plans.* permissions)
+   Estimated Permissions: 5-7
+   Routes:
+     • GET /route-plans
+     • GET /route-plans/{id}
+     • POST /route-plans
+     • PUT /route-plans/{id}
+     • DELETE /route-plans/{id}
+     • POST /route-plans/optimize
+     • GET /route-plans/analytics
+
+   Testing Required:
+     ☐ route-plans.view
+     ☐ route-plans.show
+     ☐ route-plans.create
+     ☐ route-plans.edit
+     ☐ route-plans.update
+     ☐ route-plans.destroy
+
+❌ FINANCIAL MANAGEMENT (financial.* permissions)
+   Estimated Permissions: 6-8
+   Routes:
+     • GET /financial
+     • GET /financial/create
+     • POST /financial
+     • GET /financial/{financial}
+     • GET /financial/{financial}/edit
+     • PUT /financial/{financial}
+     • DELETE /financial/{financial}
+     • GET /financial/analytics
+     • GET /financial/profit-loss
+
+   Testing Required:
+     ☐ financial.view
+     ☐ financial.create
+     ☐ financial.store
+     ☐ financial.show
+     ☐ financial.edit
+     ☐ financial.update
+     ☐ financial.destroy
+
+❌ TRUCK STATUS BOARD (truck-status-board.* permissions)
+   Estimated Permissions: 2-3
+   Routes:
+     • GET /truck-status-board
+     • POST /truck-status-board
+
+   Testing Required:
+     ☐ truck-status-board.view
+     ☐ truck-status-board.update
+
+
+SECTION 4: GEOGRAPHIC MANAGEMENT
+════════════════════════════════════════════════════════════════════════════════
+
+❌ REGIONS (regions.* permissions)
+   Estimated Permissions: 7-9
+   Routes:
+     • GET /regions
+     • GET /regions/{region}
+     • POST /regions
+     • PUT /regions/{region}
+     • DELETE /regions/{region}
+     • POST /regions/{region}/deactivate
+     • GET /regions/active/list
+
+   Testing Required:
+     ☐ regions.view
+     ☐ regions.show
+     ☐ regions.create
+     ☐ regions.edit
+     ☐ regions.update
+     ☐ regions.destroy
+     ☐ regions.deactivate
+
+❌ ZONES (zones.* permissions)
+   Estimated Permissions: 7-9
+   Routes:
+     • GET /zones
+     • GET /zones/{zone}
+     • POST /zones
+     • PUT /zones/{zone}
+     • DELETE /zones/{zone}
+     • POST /zones/{zone}/deactivate
+     • GET /zones/active/list
+
+   Testing Required:
+     ☐ zones.view
+     ☐ zones.show
+     ☐ zones.create
+     ☐ zones.edit
+     ☐ zones.update
+     ☐ zones.destroy
+     ☐ zones.deactivate
+
+❌ WOREDAS (woredas.* permissions)
+   Estimated Permissions: 7-9
+   Routes:
+     • GET /woredas
+     • GET /woredas/{woreda}
+     • POST /woredas
+     • PUT /woredas/{woreda}
+     • DELETE /woredas/{woreda}
+     • POST /woredas/{woreda}/deactivate
+     • GET /woredas/active/list
+
+   Testing Required:
+     ☐ woredas.view
+     ☐ woredas.show
+     ☐ woredas.create
+     ☐ woredas.edit
+     ☐ woredas.update
+     ☐ woredas.destroy
+     ☐ woredas.deactivate
+
+❌ PLACES (places.* permissions)
+   Estimated Permissions: 7-9
+   Routes:
+     • GET /places
+     • GET /places/{place}
+     • POST /places
+     • PUT /places/{place}
+     • DELETE /places/{place}
+     • POST /places/{place}/deactivate
+     • GET /places/active/list
+     • GET /places/search
+
+   Testing Required:
+     ☐ places.view
+     ☐ places.show
+     ☐ places.create
+     ☐ places.edit
+     ☐ places.update
+     ☐ places.destroy
+     ☐ places.deactivate
+     ☐ places.search
+
+❌ DISTANCES (distances.* permissions)
+   Estimated Permissions: 7-9
+   Routes:
+     • GET /distances
+     • GET /distances/{distance}
+     • POST /distances
+     • PUT /distances/{distance}
+     • DELETE /distances/{distance}
+     • POST /distances/{distance}/deactivate
+     • GET /distances/active/list
+
+   Testing Required:
+     ☐ distances.view
+     ☐ distances.show
+     ☐ distances.create
+     ☐ distances.edit
+     ☐ distances.update
+     ☐ distances.destroy
+     ☐ distances.deactivate
+
+
+SECTION 5: OUTSOURCING
+════════════════════════════════════════════════════════════════════════════════
+
+❌ OUTSOURCES (outsources.* permissions)
+   Estimated Permissions: 6-8
+   Routes:
+     • GET /outsources
+     • GET /outsources/{outsource}
+     • POST /outsources
+     • PUT /outsources/{outsource}
+     • DELETE /outsources/{outsource}
+
+   Testing Required:
+     ☐ outsources.view
+     ☐ outsources.show
+     ☐ outsources.create
+     ☐ outsources.edit
+     ☐ outsources.update
+     ☐ outsources.destroy
+
+❌ OUTSOURCE PERFORMANCES (outsource-performances.* permissions)
+   Estimated Permissions: 6-8
+   Routes:
+     • GET /outsource-performances
+     • GET /outsource-performances/{id}
+     • POST /outsource-performances
+     • PUT /outsource-performances/{id}
+     • DELETE /outsource-performances/{id}
+
+   Testing Required:
+     ☐ outsource-performances.view
+     ☐ outsource-performances.show
+     ☐ outsource-performances.create
+     ☐ outsource-performances.edit
+     ☐ outsource-performances.update
+     ☐ outsource-performances.destroy
+
+
+SECTION 6: ADMIN & SYSTEM
+════════════════════════════════════════════════════════════════════════════════
+
+❌ ACTIVITY LOGS (activity-logs.* permissions)
+   Estimated Permissions: 3-4
+   Routes:
+     • GET /activity-logs
+     • GET /activity-logs/{activity}
+     • GET /activity-logs/export/excel
+     • GET /activity-logs/export/csv
+
+   Testing Required:
+     ☐ activity-logs.view
+     ☐ activity-logs.show
+     ☐ activity-logs.export
+
+❌ USER MANAGEMENT (users.* permissions)
+   Estimated Permissions: 7-9
+   Routes:
+     • GET /users
+     • GET /users/create
+     • POST /users
+     • GET /users/{user}
+     • GET /users/{user}/edit
+     • PUT /users/{user}
+     • DELETE /users/{user}
+     • GET /users/export/csv
+
+   Testing Required:
+     ☐ users.view
+     ☐ users.create
+     ☐ users.store
+     ☐ users.show
+     ☐ users.edit
+     ☐ users.update
+     ☐ users.destroy
+     ☐ users.export
+
+❌ ROLE MANAGEMENT (roles.* permissions)
+   Estimated Permissions: 7-9
+   Routes:
+     • GET /roles
+     • GET /roles/create
+     • POST /roles
+     • GET /roles/{role}
+     • GET /roles/{role}/edit
+     • PUT /roles/{role}
+     • DELETE /roles/{role}
+     • GET /roles/export/csv
+
+   Testing Required:
+     ☐ roles.view
+     ☐ roles.create
+     ☐ roles.store
+     ☐ roles.show
+     ☐ roles.edit
+     ☐ roles.update
+     ☐ roles.destroy
+     ☐ roles.export
+
+❌ PERMISSION MANAGEMENT (permissions.* permissions)
+   Estimated Permissions: 4-6
+   Routes:
+     • GET /permissions
+     • GET /permissions/{permission}
+     • GET /permissions/export/csv
+
+   Testing Required:
+     ☐ permissions.view
+     ☐ permissions.show
+     ☐ permissions.export
+
+
+SECTION 7: STATUS MANAGEMENT
+════════════════════════════════════════════════════════════════════════════════
+
+❌ STATUS TYPES (statustypes.* permissions)
+   Estimated Permissions: 6-8
+   Routes:
+     • GET /statustypes
+     • GET /statustypes/{id}
+     • POST /statustypes
+     • PUT /statustypes/{id}
+     • DELETE /statustypes/{id}
+
+   Testing Required:
+     ☐ statustypes.view
+     ☐ statustypes.show
+     ☐ statustypes.create
+     ☐ statustypes.edit
+     ☐ statustypes.update
+     ☐ statustypes.destroy
+
+❌ STATUSES (statuses.* permissions)
+   Estimated Permissions: 6-8
+   Routes:
+     • GET /statuses
+     • GET /statuses/{status}/daily
+     • GET /statuses/{id}
+     • POST /statuses
+     • PUT /statuses/{id}
+     • DELETE /statuses/{id}
+
+   Testing Required:
+     ☐ statuses.view
+     ☐ statuses.show
+     ☐ statuses.create
+     ☐ statuses.edit
+     ☐ statuses.update
+     ☐ statuses.destroy
+
+
+════════════════════════════════════════════════════════════════════════════════
+                            SUMMARY BY SECTION
+════════════════════════════════════════════════════════════════════════════════
+
+FLEET MANAGEMENT              5 modules × 8-10 permissions = ~45 permissions
+  └─ Trucks, Drivers, Driver-Trucks, Performances, Fuel, Vehicle Types
+
+DRIVER & VEHICLE              2 modules × 6-8 permissions = ~14 permissions
+  └─ Driver Performance, Driver Safety
+
+OPERATIONAL MANAGEMENT        4 modules × 6-9 permissions = ~30 permissions
+  └─ Customers, Cargo Types, Route Planning, Financial, Truck Status Board
+
+GEOGRAPHIC MANAGEMENT         5 modules × 7-9 permissions = ~40 permissions
+  └─ Regions, Zones, Woredas, Places, Distances
+
+OUTSOURCING                   2 modules × 6-8 permissions = ~14 permissions
+  └─ Outsources, Outsource Performances
+
+ADMIN & SYSTEM                4 modules × 4-9 permissions = ~30 permissions
+  └─ Activity Logs, Users, Roles, Permissions
+
+STATUS MANAGEMENT             2 modules × 6-8 permissions = ~14 permissions
+  └─ Status Types, Statuses
+
+DASHBOARD & ANALYTICS         (Not permission-protected)
+  └─ Dashboard, Fleet Analytics Cockpit, Notifications
+
+
+════════════════════════════════════════════════════════════════════════════════
+                         DETAILED STATISTICS
+════════════════════════════════════════════════════════════════════════════════
+
+Total Modules in Application:  32
+Modules Already Tested:        3 (Maintenance, Operations, Reports)
+Modules NOT Yet Tested:        25+
+
+Permissions Already Tested:    54
+Permissions NOT Yet Tested:    ~185-200+
+
+Testing Coverage:              ~20-25%
+Remaining Work:                ~75-80%
+
+
+════════════════════════════════════════════════════════════════════════════════
+                      RECOMMENDED TESTING PRIORITY
+════════════════════════════════════════════════════════════════════════════════
+
+PRIORITY 1 - CRITICAL CORE MODULES (Foundation)
+  1. Trucks (trucks.*)                    - 8-10 perms
+  2. Drivers (drivers.*)                  - 8-10 perms
+  3. Driver-Truck Assignments             - 6-8 perms
+  Total: 22-28 permissions
+
+PRIORITY 2 - IMPORTANT OPERATIONAL (High Use)
+  4. Customers (customers.*)              - 7-9 perms
+  5. Operations (ALREADY TESTED ✅)
+  6. Performances (performances.*)         - 8-10 perms
+  Total: 15-19 permissions
+
+PRIORITY 3 - GEOGRAPHIC & ADMIN (Medium Priority)
+  7. Geographic Management (Regions, Zones, Woredas, Places, Distances)
+     - 35-45 permissions total
+  8. User Management (users.*, roles.*, permissions.*)
+     - 18-24 permissions
+
+PRIORITY 4 - SPECIALIZED MODULES (Lower Priority)
+  9. Fuel, Vehicle Types, Driver Performance/Safety
+  10. Outsourcing, Financial, Route Planning
+  11. Status Management, Activity Logs
+     - 80-100+ permissions total
+
+
+════════════════════════════════════════════════════════════════════════════════
+                        ESTIMATED TESTING TIME
+════════════════════════════════════════════════════════════════════════════════
+
+PRIORITY 1 (Core):              ~2-3 hours
+PRIORITY 2 (Operational):       ~2-3 hours
+PRIORITY 3 (Geographic/Admin):  ~4-6 hours
+PRIORITY 4 (Specialized):       ~3-5 hours
+
+TOTAL ESTIMATED TIME:           ~11-17 hours
+
+
+════════════════════════════════════════════════════════════════════════════════
+                              CURRENT STATUS
+════════════════════════════════════════════════════════════════════════════════
+
+Testing Status:                 ~20% Complete
+Remaining Modules:              25+
+Remaining Permissions:          ~185-200+
+
+Deployment Readiness:           ~60% (Core modules still need testing)
+Critical Gap:                   TRUCKS & DRIVERS not yet tested
+Blocking Issues:                NONE (but gaps exist)
+
+Recommendation:                 Continue testing in priority order
+
+
+════════════════════════════════════════════════════════════════════════════════
+

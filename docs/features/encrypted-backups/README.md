@@ -1,4 +1,12 @@
-# Encrypted Backup Workflow
+# Encrypted Backups Documentation - TIMS
+
+This directory contains documentation for the encrypted backup and restore workflow in the Transport Information Management System (TIMS).
+
+## 📚 Files in This Directory
+
+- **[README.md](./README.md)** - This file: Complete encrypted backup and restore guide
+
+## 📖 Overview
 
 This document captures the agreed approach for shipping encrypted TIMS backups with a custom `.tims` extension and a guided restore process. Follow these steps before building the UI or automation around backup management.
 

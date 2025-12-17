@@ -17,8 +17,10 @@ use App\Services\Drivers\DriverIndexService;
 use App\Support\PerformanceRecordPresenter;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
 use Spatie\Activitylog\Models\Activity;
@@ -172,9 +174,9 @@ class DriverController extends BaseResourceController
         ];
     }
 
-    private function toCarbon(null|string|Carbon $value): ?Carbon
+    protected function toCarbon(null|string|\Illuminate\Support\Carbon $value): ?\Illuminate\Support\Carbon
     {
-        if ($value instanceof Carbon) {
+        if ($value instanceof \Illuminate\Support\Carbon) {
             return $value;
         }
 
@@ -183,7 +185,7 @@ class DriverController extends BaseResourceController
         }
 
         try {
-            return Carbon::parse($value);
+            return \Illuminate\Support\Carbon::parse($value);
         } catch (Exception) {
             return null;
         }
@@ -225,7 +227,7 @@ class DriverController extends BaseResourceController
                 'created_by' => Auth::id(),
                 'driverid' => $request->input('driverid'),
             ]);
-            
+
             return back()->withErrors(['error' => 'Failed to create driver. Please try again.']);
         }
     }
@@ -589,9 +591,9 @@ class DriverController extends BaseResourceController
         try {
             // Capture original values before update
             $original = $this->normalizeAttributes($driver->getOriginal());
-            
+
             $driver->update($request->validated());
-            
+
             // Format changes for audit trail
             $changes = $this->formatChanges($original, $this->normalizeAttributes($driver->getChanges()));
 
@@ -614,6 +616,7 @@ class DriverController extends BaseResourceController
 
         } catch (Exception $e) {
             $this->logError('update', 'Driver', $e);
+
             return back()->withErrors(['error' => 'Failed to update driver. Please try again.']);
         }
     }
@@ -686,6 +689,7 @@ class DriverController extends BaseResourceController
 
         } catch (Exception $e) {
             $this->logError('destroy', 'Driver', $e);
+
             return back()->withErrors(['error' => 'Failed to delete driver. Please try again.']);
         }
     }

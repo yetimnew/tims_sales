@@ -422,7 +422,6 @@ Route::middleware(['auth'])->group(function () {
             ->name('operations.index');
 
         Route::get('operations/search', [\App\Http\Controllers\OperationController::class, 'search'])
-            ->middleware('can:operations.search')
             ->name('operations.search');
 
         Route::get('operations/create', [\App\Http\Controllers\OperationController::class, 'create'])
@@ -651,6 +650,20 @@ Route::middleware(['auth'])->group(function () {
     Route::get('reports/route-profitability', [\App\Http\Controllers\ReportController::class, 'routeProfitability'])
         ->middleware('can:reports.route-profitability.view')
         ->name('reports.route-profitability');
+    Route::get('reports/load-factor-utilization', [\App\Http\Controllers\ReportController::class, 'loadFactorUtilization'])
+        ->middleware('can:reports.load-factor-utilization.view')
+        ->name('reports.load-factor-utilization');
+    Route::get('reports/load-factor-utilization/export/{format}', [\App\Http\Controllers\ReportController::class, 'loadFactorUtilizationExport'])
+        ->whereIn('format', ['csv', 'xlsx', 'pdf'])
+        ->middleware('can:reports.load-factor-utilization.export')
+        ->name('reports.load-factor-utilization.export');
+    Route::get('reports/cost-per-kilometer', [\App\Http\Controllers\ReportController::class, 'costPerKilometer'])
+        ->middleware('can:reports.cost-per-kilometer.view')
+        ->name('reports.cost-per-kilometer');
+    Route::get('reports/cost-per-kilometer/export/{format}', [\App\Http\Controllers\ReportController::class, 'costPerKilometerExport'])
+        ->whereIn('format', ['csv', 'xlsx', 'pdf'])
+        ->middleware('can:reports.cost-per-kilometer.export')
+        ->name('reports.cost-per-kilometer.export');
 
     // Activity Logs
     Route::middleware(['throttle:60,1'])->group(function () {
@@ -770,6 +783,8 @@ Route::middleware(['auth'])->group(function () {
         ->name('notifications.read');
     Route::post('notifications/read-all', [\App\Http\Controllers\NotificationController::class, 'markAllAsRead'])
         ->name('notifications.read-all');
+
 });
 
+require __DIR__.'/help.php';
 require __DIR__.'/settings.php';

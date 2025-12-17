@@ -59,6 +59,7 @@ interface DriverTruck {
 interface Place {
     id: number;
     name: string;
+    fullName?: string;
 }
 
 interface Performance {
@@ -214,11 +215,11 @@ export default function PerformancesEdit({ driverTrucks, performance, places }: 
     const operationSelectedIds = useMemo(() => {
         const ids = new Set<string>();
         if (data.operation_id) {
-            ids.add(data.operation_id);
+            ids.add(String(data.operation_id));
         }
         recent.operations.forEach(id => {
             if (id) {
-                ids.add(id);
+                ids.add(String(id));
             }
         });
         return Array.from(ids);
@@ -226,7 +227,7 @@ export default function PerformancesEdit({ driverTrucks, performance, places }: 
 
     const operationsLookup = useRemoteLookup<Operation>({
         endpoint: operationsSearch.url(),
-        getId: operation => operation.id,
+        getId: operation => String(operation.id),
         selectedIds: operationSelectedIds,
         limit: 20,
     });
@@ -635,7 +636,7 @@ export default function PerformancesEdit({ driverTrucks, performance, places }: 
                             required
                             value={data.operation_id}
                             items={operationsLookup.items}
-                            getValue={operation => operation.id}
+                            getValue={operation => String(operation.id)}
                             getLabel={operation => operation.operationid}
                             getDescription={operation => operation.customer?.name}
                             getKeywords={operation => [operation.operationid, operation.customer?.name]}
@@ -656,12 +657,12 @@ export default function PerformancesEdit({ driverTrucks, performance, places }: 
                         {recent.operations.length > 0 && (
                             <div className="flex flex-wrap gap-2">
                                 {recent.operations.map(id => {
-                                    const operation = operationsLookup.getCachedItem(id);
+                                    const operation = operationsLookup.getCachedItem(String(id));
                                     if (!operation) {
                                         return null;
                                     }
 
-                                    const isActive = data.operation_id === id;
+                                    const isActive = data.operation_id === String(id);
 
                                     return (
                                         <button

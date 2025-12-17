@@ -1,5 +1,13 @@
 # Database Documentation - TIMS
 
+This directory contains comprehensive documentation for the TIMS database schema, relationships, and data management.
+
+## 📚 Files in This Directory
+
+- **[README.md](./README.md)** - This file: Complete database schema and relationships documentation
+
+## 📖 Overview
+
 This document provides comprehensive documentation for the TIMS database schema, relationships, and data management.
 
 ## 🗄️ Database Overview

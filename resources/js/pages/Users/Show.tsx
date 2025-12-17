@@ -141,9 +141,9 @@ export default function UsersShow({ user, activityLogs }: UsersShowProps) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`User · ${user.name}`} />
 
-            <div className="flex flex-1 flex-col gap-8 overflow-y-auto p-6 pb-24">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex flex-col gap-3">
+            <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-4 lg:p-6 pb-24">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pb-2 border-b border-slate-200/60 dark:border-slate-700/60">
+                    <div className="flex flex-col gap-2">
                         <Button variant="ghost" size="sm" asChild>
                             <Link href="/users">
                                 <ArrowLeft className="mr-2 h-4 w-4" />
@@ -151,8 +151,8 @@ export default function UsersShow({ user, activityLogs }: UsersShowProps) {
                             </Link>
                         </Button>
                         <div>
-                            <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{user.name}</h1>
-                            <p className="text-sm text-muted-foreground">#{user.id} · Last updated {formatDate(user.updated_at)}</p>
+                            <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">{user.name}</h1>
+                            <p className="text-xs text-muted-foreground mt-0.5">#{user.id} · Last updated {formatDate(user.updated_at)}</p>
                         </div>
                     </div>
                     <DropdownMenu>
@@ -197,63 +197,63 @@ export default function UsersShow({ user, activityLogs }: UsersShowProps) {
                     </DropdownMenu>
                 </div>
 
-                <section className="relative overflow-hidden rounded-2xl border border-slate-200/70 bg-slate-900 text-slate-100 shadow-lg dark:border-slate-800">
-                    <div className="absolute inset-0 opacity-30" aria-hidden="true">
+                <section className="relative overflow-hidden rounded-xl border border-slate-200/60 bg-slate-900 text-slate-100 shadow-sm dark:border-slate-700/60">
+                    <div className="absolute inset-0 opacity-20" aria-hidden="true">
                         <div className="absolute -left-40 top-10 h-64 w-64 rounded-full bg-blue-500 blur-3xl" />
                         <div className="absolute -right-32 bottom-0 h-56 w-56 rounded-full bg-emerald-500 blur-3xl" />
                     </div>
-                    <div className="relative flex flex-col gap-6 p-8">
-                        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                    <div className="relative flex flex-col gap-4 p-6">
+                        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                             <div className="flex items-start gap-3">
-                                <span className="rounded-lg bg-white/15 p-3 text-white shadow-sm">
-                                    <User className="h-5 w-5" />
+                                <span className="rounded-lg bg-white/15 p-2.5 text-white shadow-sm">
+                                    <User className="h-4 w-4" />
                                 </span>
                                 <div>
-                                    <p className="text-sm uppercase tracking-wide text-white/70">User snapshot</p>
-                                    <h2 className="text-2xl font-semibold text-white">{user.name}</h2>
-                                    <p className="mt-2 text-sm text-white/70">{user.email}</p>
+                                    <p className="text-xs uppercase tracking-wide text-white/70">User snapshot</p>
+                                    <h2 className="text-xl font-semibold text-white mt-0.5">{user.name}</h2>
+                                    <p className="mt-1 text-xs text-white/70">{user.email}</p>
                                 </div>
                             </div>
-                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                                <div className="rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-sm">
+                            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                                <div className="rounded-lg border border-white/20 bg-white/10 px-3 py-2.5 text-xs">
                                     <p className="text-white/60">Roles</p>
-                                    <p className="mt-1 text-lg font-semibold text-white">{totalRoles}</p>
+                                    <p className="mt-0.5 text-base font-semibold text-white">{totalRoles}</p>
                                 </div>
-                                <div className="rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-sm">
+                                <div className="rounded-lg border border-white/20 bg-white/10 px-3 py-2.5 text-xs">
                                     <p className="text-white/60">Status</p>
-                                    <p className="mt-1 text-lg font-semibold text-white">{isVerified ? 'Verified' : 'Pending'}</p>
+                                    <p className="mt-0.5 text-base font-semibold text-white">{isVerified ? 'Verified' : 'Pending'}</p>
                                 </div>
-                                <div className="rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-sm">
+                                <div className="rounded-lg border border-white/20 bg-white/10 px-3 py-2.5 text-xs">
                                     <p className="text-white/60">Activity entries</p>
-                                    <p className="mt-1 text-lg font-semibold text-white">{activityCount}</p>
+                                    <p className="mt-0.5 text-base font-semibold text-white">{activityCount}</p>
                                 </div>
                             </div>
                         </div>
-                        <div className="flex flex-wrap items-center gap-3 text-xs text-white/70">
-                            <Badge variant="outline" className="border-white/30 bg-white/10 text-white">
-                                <CalendarClock className="mr-1 h-3.5 w-3.5" />
+                        <div className="flex flex-wrap items-center gap-2 text-xs text-white/70">
+                            <Badge variant="outline" className="border-white/30 bg-white/10 text-white text-xs px-2 py-0.5">
+                                <CalendarClock className="mr-1 h-3 w-3" />
                                 Joined {formatDate(user.created_at)}
                             </Badge>
-                            <Badge variant="outline" className="border-white/30 bg-white/10 text-white">
-                                <Clock className="mr-1 h-3.5 w-3.5" />
+                            <Badge variant="outline" className="border-white/30 bg-white/10 text-white text-xs px-2 py-0.5">
+                                <Clock className="mr-1 h-3 w-3" />
                                 {lastActivityAt ? `Last activity ${formatDateTime(lastActivityAt)}` : 'No recent activity'}
                             </Badge>
-                            <Badge variant="outline" className="border-white/30 bg-white/10 text-white">
-                                <UsersIcon className="mr-1 h-3.5 w-3.5" />
+                            <Badge variant="outline" className="border-white/30 bg-white/10 text-white text-xs px-2 py-0.5">
+                                <UsersIcon className="mr-1 h-3 w-3" />
                                 {totalRoles === 1 ? 'Single role access' : `${totalRoles} role assignments`}
                             </Badge>
                         </div>
                     </div>
                 </section>
 
-                <section className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
-                    <div className="space-y-6">
-                        <Card className="border-slate-200/70 bg-white/90 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/40">
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-slate-100">
-                                    <User className="h-5 w-5" /> Profile details
+                <section className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+                    <div className="space-y-4">
+                        <Card className="border-slate-200/60 bg-white/90 shadow-sm dark:border-slate-700/60 dark:bg-slate-900/40">
+                            <CardHeader className="bg-gradient-to-r from-slate-50/80 to-slate-100/50 dark:from-slate-800/80 dark:to-slate-700/50 border-b border-slate-200/60 dark:border-slate-700/60">
+                                <CardTitle className="flex items-center gap-2 text-base font-semibold text-slate-900 dark:text-slate-100">
+                                    <User className="h-4 w-4" /> Profile details
                                 </CardTitle>
-                                <CardDescription className="text-sm text-muted-foreground">
+                                <CardDescription className="text-xs text-muted-foreground mt-0.5">
                                     Core contact information for this teammate.
                                 </CardDescription>
                             </CardHeader>
@@ -283,12 +283,12 @@ export default function UsersShow({ user, activityLogs }: UsersShowProps) {
                             </CardContent>
                         </Card>
 
-                        <Card className="border-slate-200/70 bg-white/90 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/40">
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-slate-100">
-                                    <Shield className="h-5 w-5" /> Roles &amp; access
+                        <Card className="border-slate-200/60 bg-white/90 shadow-sm dark:border-slate-700/60 dark:bg-slate-900/40">
+                            <CardHeader className="bg-gradient-to-r from-slate-50/80 to-slate-100/50 dark:from-slate-800/80 dark:to-slate-700/50 border-b border-slate-200/60 dark:border-slate-700/60">
+                                <CardTitle className="flex items-center gap-2 text-base font-semibold text-slate-900 dark:text-slate-100">
+                                    <Shield className="h-4 w-4" /> Roles &amp; access
                                 </CardTitle>
-                                <CardDescription className="text-sm text-muted-foreground">
+                                <CardDescription className="text-xs text-muted-foreground mt-0.5">
                                     Review which permission bundles this user inherits.
                                 </CardDescription>
                             </CardHeader>
@@ -329,12 +329,12 @@ export default function UsersShow({ user, activityLogs }: UsersShowProps) {
                             </CardContent>
                         </Card>
 
-                        <Card className="border-slate-200/70 bg-white/90 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/40">
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-slate-100">
-                                    <CalendarClock className="h-5 w-5" /> Record history
+                        <Card className="border-slate-200/60 bg-white/90 shadow-sm dark:border-slate-700/60 dark:bg-slate-900/40">
+                            <CardHeader className="bg-gradient-to-r from-slate-50/80 to-slate-100/50 dark:from-slate-800/80 dark:to-slate-700/50 border-b border-slate-200/60 dark:border-slate-700/60">
+                                <CardTitle className="flex items-center gap-2 text-base font-semibold text-slate-900 dark:text-slate-100">
+                                    <CalendarClock className="h-4 w-4" /> Record history
                                 </CardTitle>
-                                <CardDescription className="text-sm text-muted-foreground">
+                                <CardDescription className="text-xs text-muted-foreground mt-0.5">
                                     Important milestones for this profile.
                                 </CardDescription>
                             </CardHeader>
@@ -354,10 +354,10 @@ export default function UsersShow({ user, activityLogs }: UsersShowProps) {
                     </div>
 
                     <aside className="space-y-4 lg:sticky lg:top-24">
-                        <Card className="border-slate-200/70 bg-white/90 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/50">
-                            <CardHeader>
+                        <Card className="border-slate-200/60 bg-white/90 shadow-sm dark:border-slate-700/60 dark:bg-slate-900/50">
+                            <CardHeader className="bg-gradient-to-r from-slate-50/80 to-slate-100/50 dark:from-slate-800/80 dark:to-slate-700/50 border-b border-slate-200/60 dark:border-slate-700/60">
                                 <CardTitle className="text-sm font-semibold text-slate-900 dark:text-slate-100">Quick snapshot</CardTitle>
-                                <CardDescription className="text-xs text-muted-foreground">
+                                <CardDescription className="text-xs text-muted-foreground mt-0.5">
                                     Key reference points while you audit access.
                                 </CardDescription>
                             </CardHeader>
@@ -399,12 +399,12 @@ export default function UsersShow({ user, activityLogs }: UsersShowProps) {
                             </CardContent>
                         </Card>
 
-                        <Card className="border-slate-200/70 bg-white/90 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/50">
-                            <CardHeader>
+                        <Card className="border-slate-200/60 bg-white/90 shadow-sm dark:border-slate-700/60 dark:bg-slate-900/50">
+                            <CardHeader className="bg-gradient-to-r from-slate-50/80 to-slate-100/50 dark:from-slate-800/80 dark:to-slate-700/50 border-b border-slate-200/60 dark:border-slate-700/60">
                                 <CardTitle className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
                                     <Clock className="h-4 w-4" /> Recent activity
                                 </CardTitle>
-                                <CardDescription className="text-xs text-muted-foreground">
+                                <CardDescription className="text-xs text-muted-foreground mt-0.5">
                                     Last five log entries for this user.
                                 </CardDescription>
                             </CardHeader>
@@ -441,12 +441,12 @@ export default function UsersShow({ user, activityLogs }: UsersShowProps) {
                     </aside>
                 </section>
 
-                <Card className="border-slate-200/70 bg-white/90 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/40">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-slate-100">
-                            <Activity className="h-5 w-5" /> Activity log
+                <Card className="border-slate-200/60 bg-white/90 shadow-sm dark:border-slate-700/60 dark:bg-slate-900/40">
+                    <CardHeader className="bg-gradient-to-r from-slate-50/80 to-slate-100/50 dark:from-slate-800/80 dark:to-slate-700/50 border-b border-slate-200/60 dark:border-slate-700/60">
+                        <CardTitle className="flex items-center gap-2 text-base font-semibold text-slate-900 dark:text-slate-100">
+                            <Activity className="h-4 w-4" /> Activity log
                         </CardTitle>
-                        <CardDescription className="text-sm text-muted-foreground">
+                        <CardDescription className="text-xs text-muted-foreground mt-0.5">
                             Full audit trail for the user, including older entries.
                         </CardDescription>
                     </CardHeader>

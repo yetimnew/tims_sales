@@ -1,5 +1,13 @@
 # Frontend Documentation - TIMS
 
+This directory contains comprehensive documentation for the TIMS frontend, built with React 19, TypeScript, and modern web technologies.
+
+## 📚 Files in This Directory
+
+- **[README.md](./README.md)** - This file: Complete frontend architecture and implementation guide
+
+## 📖 Overview
+
 This document provides comprehensive documentation for the TIMS frontend, built with React 19, TypeScript, and modern web technologies.
 
 ## 🏗️ Architecture Overview

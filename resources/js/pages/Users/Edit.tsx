@@ -185,18 +185,18 @@ export default function UsersEdit({ user, roles }: UserEditProps) {
             <form
                 ref={formRef}
                 onSubmit={handleSubmit}
-                className="flex flex-1 flex-col gap-8 overflow-y-auto p-6 pb-32"
+                className="flex flex-1 flex-col gap-6 overflow-y-auto p-4 lg:p-6 pb-32"
                 style={{ minHeight: 0 }}
             >
                 {hasErrors && (
-                    <Alert variant="destructive">
+                    <Alert variant="destructive" className="mb-2">
                         <AlertCircle className="h-4 w-4" />
-                        <AlertDescription>Please resolve the highlighted issues before saving.</AlertDescription>
+                        <AlertDescription className="text-sm">Please resolve the highlighted issues before saving.</AlertDescription>
                     </Alert>
                 )}
 
-                <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
-                    <div className="space-y-6">
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+                    <div className="space-y-4">
                         <FormSection
                             title="Profile & Contact"
                             description="Keep the name and email aligned with your directory."
@@ -348,9 +348,9 @@ export default function UsersEdit({ user, roles }: UserEditProps) {
                     </div>
 
                     <aside className="space-y-4 lg:sticky lg:top-24">
-                        <div className="rounded-2xl border border-slate-200/70 bg-white/90 p-6 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/50">
+                        <div className="rounded-lg border border-slate-200/60 bg-white/90 p-4 shadow-sm dark:border-slate-700/60 dark:bg-slate-900/50">
                             <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Account snapshot</h3>
-                            <p className="mt-1 text-xs text-muted-foreground">Quickly confirm the essentials before saving.</p>
+                            <p className="mt-0.5 text-xs text-muted-foreground">Quickly confirm the essentials before saving.</p>
                             <dl className="mt-5 space-y-4 text-sm">
                                 <div className="flex items-center justify-between">
                                     <dt className="flex items-center gap-2 text-muted-foreground">
@@ -396,7 +396,7 @@ export default function UsersEdit({ user, roles }: UserEditProps) {
                             </dl>
                         </div>
 
-                        <div className="rounded-xl border border-dashed border-slate-200/70 bg-slate-50/70 p-4 text-xs text-muted-foreground dark:border-slate-800/70 dark:bg-slate-900/40">
+                        <div className="rounded-lg border border-dashed border-slate-200/60 bg-slate-50/70 p-3 text-xs text-muted-foreground dark:border-slate-700/60 dark:bg-slate-900/40">
                             <p className="font-medium text-slate-700 dark:text-slate-200">Tip</p>
                             <p className="mt-1 leading-relaxed">
                                 If you rotate credentials, let the teammate know so they can sign in with the updated password immediately.

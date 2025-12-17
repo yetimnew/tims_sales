@@ -11,12 +11,11 @@ use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
-class OutsourceController extends Controller
+class OutsourceController extends BaseResourceController
 {
     /**
      * Display a listing of the resource.
@@ -206,6 +205,7 @@ class OutsourceController extends Controller
                 'status' => 'nullable|string|in:active,inactive',
             ]);
 
+            // Normalize nullable fields
             foreach (['phone', 'email', 'address', 'service_type'] as $nullableField) {
                 if (($validated[$nullableField] ?? null) === '') {
                     $validated[$nullableField] = null;
@@ -214,33 +214,24 @@ class OutsourceController extends Controller
 
             $validated['status'] = $validated['status'] ?? 'active';
 
-            $actor = Auth::user();
-
             $outsource = Outsource::create($validated);
 
-            Log::info('Outsource created', [
-                'outsource_id' => $outsource->id,
-                'name' => $outsource->name,
-                'user_id' => Auth::id(),
-            ]);
-
-            event(new OutsourceCreated($outsource->fresh(), $actor));
-
-            // Clear cached options
+            // Clear all related caches systematically
             Cache::forget('outsources.status_options');
             Cache::forget('outsources.service_type_options');
-            Cache::forget('outsource_performances.outsource_options'); // Clear outsource performances options
-            // Clear report caches
+            Cache::forget('outsource_performances.outsource_options');
             Cache::forget('reports.outsource_performance.vendor_options');
 
+            // Dispatch event for audit trail
+            event(new OutsourceCreated($outsource->fresh(), Auth::user()));
+
             return redirect()->route('outsources.index')
-                ->with('success', 'Outsource created successfully.');
+                ->with('success', sprintf('Outsource %s created successfully.', $outsource->name));
 
         } catch (Exception $e) {
-            Log::error('Outsource creation failed', [
-                'error' => $e->getMessage(),
-                'data' => $request->all(),
-                'user_id' => Auth::id(),
+            $this->logError('store', 'Outsource', $e, [
+                'created_by' => Auth::id(),
+                'name' => $request->input('name'),
             ]);
 
             return back()->withErrors(['error' => 'Failed to create outsource. Please try again.']);
@@ -369,6 +360,7 @@ class OutsourceController extends Controller
                 'status' => 'nullable|string|in:active,inactive',
             ]);
 
+            // Normalize nullable fields
             foreach (['phone', 'email', 'address', 'service_type'] as $nullableField) {
                 if (($validated[$nullableField] ?? null) === '') {
                     $validated[$nullableField] = null;
@@ -377,51 +369,30 @@ class OutsourceController extends Controller
 
             $validated['status'] = $validated['status'] ?? $outsource->status ?? 'active';
 
-            $actor = Auth::user();
+            // Capture original values before update
+            $original = $this->normalizeAttributes($outsource->getOriginal());
 
-            $original = $outsource->getOriginal();
-            $outsource->fill($validated);
+            $outsource->update($validated);
 
-            $changes = [];
+            // Format changes for audit trail
+            $changes = $this->formatChanges($original, $this->normalizeAttributes($outsource->getChanges()));
 
-            foreach ($outsource->getDirty() as $attribute => $newValue) {
-                $changes[$attribute] = [
-                    'old' => $original[$attribute] ?? null,
-                    'new' => $newValue,
-                ];
-            }
-
-            if ($changes !== []) {
-                $outsource->save();
-            }
-
-            Log::info('Outsource updated', [
-                'outsource_id' => $outsource->id,
-                'name' => $outsource->name,
-                'user_id' => Auth::id(),
-            ]);
-
-            if ($changes !== []) {
-                event(new OutsourceUpdated($outsource->fresh(), $changes, $actor));
-            }
-
-            // Clear cached options if status or service_type changed
-            if (isset($changes['status']) || isset($changes['service_type'])) {
+            // Clear related caches if changes exist
+            if (! empty($changes)) {
                 Cache::forget('outsources.status_options');
                 Cache::forget('outsources.service_type_options');
-                Cache::forget('outsource_performances.outsource_options'); // Clear outsource performances options
-                Cache::forget('reports.outsource_performance.vendor_options'); // Clear report cache
+                Cache::forget('outsource_performances.outsource_options');
+                Cache::forget('reports.outsource_performance.vendor_options');
+
+                event(new OutsourceUpdated($outsource->fresh(), $changes, Auth::user()));
             }
 
             return redirect()->route('outsources.index')
-                ->with('success', 'Outsource updated successfully.');
+                ->with('success', sprintf('Outsource %s updated successfully.', $outsource->name));
 
         } catch (Exception $e) {
-            Log::error('Outsource update failed', [
+            $this->logError('update', 'Outsource', $e, [
                 'outsource_id' => $outsource->id,
-                'error' => $e->getMessage(),
-                'data' => $request->all(),
-                'user_id' => Auth::id(),
             ]);
 
             return back()->withErrors(['error' => 'Failed to update outsource. Please try again.']);
@@ -439,37 +410,28 @@ class OutsourceController extends Controller
                 return back()->withErrors(['error' => 'Cannot delete outsource that has performances.']);
             }
 
-            $actor = Auth::user();
-
-            $outsourceData = $outsource->toArray();
-            $outsourceId = $outsource->getKey();
+            // Capture data before deletion for audit trail
             $outsourceName = $outsource->name;
+            $attributes = $this->normalizeAttributes($outsource->toArray());
+            $outsourceId = $outsource->id;
 
             $outsource->delete();
 
-            Log::info('Outsource deleted', [
-                'outsource_id' => $outsource->id,
-                'name' => $outsourceData['name'],
-                'user_id' => Auth::id(),
-            ]);
-
-            event(new OutsourceDeleted($outsourceId, $outsourceName, $outsourceData, $actor));
-
-            // Clear cached options
+            // Clear related caches
             Cache::forget('outsources.status_options');
             Cache::forget('outsources.service_type_options');
-            Cache::forget('outsource_performances.outsource_options'); // Clear outsource performances options
-            // Clear report caches
+            Cache::forget('outsource_performances.outsource_options');
             Cache::forget('reports.outsource_performance.vendor_options');
 
+            // Dispatch event with deleted data for audit trail
+            event(new OutsourceDeleted($outsourceId, $outsourceName, $attributes, Auth::user()));
+
             return redirect()->route('outsources.index')
-                ->with('success', 'Outsource deleted successfully.');
+                ->with('success', sprintf('Outsource %s deleted successfully.', $outsourceName));
 
         } catch (Exception $e) {
-            Log::error('Outsource deletion failed', [
+            $this->logError('destroy', 'Outsource', $e, [
                 'outsource_id' => $outsource->id,
-                'error' => $e->getMessage(),
-                'user_id' => Auth::id(),
             ]);
 
             return back()->withErrors(['error' => 'Failed to delete outsource. Please try again.']);

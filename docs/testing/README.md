@@ -1,5 +1,13 @@
 # Testing Documentation - TIMS
 
+This directory contains comprehensive testing guidelines and documentation for the Transport Information Management System (TIMS).
+
+## 📚 Files in This Directory
+
+- **[README.md](./README.md)** - This file: Complete testing strategy and implementation guide
+
+## 📖 Overview
+
 This document provides comprehensive testing guidelines and documentation for the Transport Information Management System (TIMS).
 
 ## 📋 Table of Contents

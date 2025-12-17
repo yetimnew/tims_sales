@@ -20,9 +20,8 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
-use Spatie\Activitylog\Models\Activity;
 
-class DriverTruckController extends Controller
+class DriverTruckController extends BaseResourceController
 {
     public function __construct(
         private DriverTruckDeletionGuard $driverTruckDeletionGuard,
@@ -73,6 +72,18 @@ class DriverTruckController extends Controller
             // Get validated data (includes auto-populated fields)
             $validatedData = $request->validated();
 
+            // Additional validation: Only active drivers and trucks can be assigned
+            $driver = Driver::find($validatedData['driver_id']);
+            $truck = Truck::find($validatedData['truck_id']);
+
+            if (! $driver || $driver->status !== 'active') {
+                return back()->withErrors(['error' => 'Selected driver is not active or does not exist.']);
+            }
+
+            if (! $truck || $truck->status !== 'active') {
+                return back()->withErrors(['error' => 'Selected truck is not active or does not exist.']);
+            }
+
             // Create the assignment
             $assignment = DriverTruck::create([
                 'truck_id' => $validatedData['truck_id'],
@@ -85,14 +96,25 @@ class DriverTruckController extends Controller
                 'user_id' => Auth::id(),
             ]);
 
+            // Clear all related caches systematically
+            Cache::forget('driver_trucks.status_options');
+            Cache::forget('driver_trucks.driver_options');
+            Cache::forget('driver_trucks.truck_options');
+
+            // Dispatch event for audit trail
             event(new DriverTruckCreated($assignment->loadMissing(['driver', 'truck']), Auth::user()));
 
-            Cache::forget('driver_trucks.status_options'); // Clear cached status options
-
             return redirect()->route('driver-trucks.index')
-                ->with('success', 'Driver and truck assigned successfully.');
+                ->with('success', sprintf('Driver %s assigned to truck %s successfully.',
+                    $driver->name, $truck->plate));
 
         } catch (Exception $e) {
+            $this->logError('store', 'DriverTruck', $e, [
+                'created_by' => Auth::id(),
+                'driver_id' => $request->input('driver_id'),
+                'truck_id' => $request->input('truck_id'),
+            ]);
+
             return back()->withErrors(['error' => 'Failed to create assignment. Please try again.']);
         }
     }
@@ -119,11 +141,8 @@ class DriverTruckController extends Controller
             $dateDifference = $diff->d.' days '.$diff->h.' hours '.$diff->i.' minutes';
         }
 
-        // Load activity logs
-        $activityLogs = Activity::forSubject($driverTruck)
-            ->with('causer')
-            ->orderByDesc('created_at')
-            ->get();
+        // Get activity logs using base controller method
+        $activityLogs = $this->getActivityLogs($driverTruck);
 
         return Inertia::render('DriverTrucks/Show', [
             'driverTruck' => $driverTruck,
@@ -169,12 +188,22 @@ class DriverTruckController extends Controller
         ]);
 
         try {
-            $truck = Truck::findOrFail($request->truck_id);
-            $driver = Driver::findOrFail($request->driver_id);
+            // Validate that only active drivers and trucks can be assigned
+            $truck = Truck::find($request->truck_id);
+            $driver = Driver::find($request->driver_id);
 
-            $original = $driverTruck->getOriginal();
+            if (! $truck || $truck->status !== 'active') {
+                return back()->withErrors(['error' => 'Selected truck is not active or does not exist.']);
+            }
 
-            $driverTruck->fill([
+            if (! $driver || $driver->status !== 'active') {
+                return back()->withErrors(['error' => 'Selected driver is not active or does not exist.']);
+            }
+
+            // Capture original values before update
+            $original = $this->normalizeAttributes($driverTruck->getOriginal());
+
+            $driverTruck->update([
                 'truck_id' => $request->truck_id,
                 'driver_id' => $request->driver_id,
                 'plate' => $truck->plate,
@@ -185,28 +214,26 @@ class DriverTruckController extends Controller
                 'is_attached' => $request->has('date_detach') ? 0 : 1,
             ]);
 
-            $dirty = $driverTruck->getDirty();
-            $changes = [];
+            // Format changes for audit trail
+            $changes = $this->formatChanges($original, $this->normalizeAttributes($driverTruck->getChanges()));
 
-            foreach ($dirty as $attribute => $newValue) {
-                $changes[$attribute] = [
-                    'old' => $original[$attribute] ?? null,
-                    'new' => $newValue,
-                ];
-            }
+            // Clear related caches
+            Cache::forget('driver_trucks.status_options');
+            Cache::forget('driver_trucks.driver_options');
+            Cache::forget('driver_trucks.truck_options');
 
-            $driverTruck->save();
-
-            if ($changes !== []) {
+            // Only dispatch event if there were actual changes
+            if (! empty($changes)) {
                 event(new DriverTruckUpdated($driverTruck->fresh(['driver', 'truck']), $changes, Auth::user()));
             }
 
-            Cache::forget('driver_trucks.status_options'); // Clear cached status options if status changed
-
             return redirect()->route('driver-trucks.index')
-                ->with('success', 'Driver-truck assignment updated successfully.');
+                ->with('success', sprintf('Assignment for driver %s and truck %s updated successfully.',
+                    $driver->name, $truck->plate));
 
         } catch (Exception $e) {
+            $this->logError('update', 'DriverTruck', $e);
+
             return back()->withErrors(['error' => 'Failed to update assignment. Please try again.']);
         }
     }
@@ -225,16 +252,23 @@ class DriverTruckController extends Controller
 
             $driverTruck->loadMissing(['driver', 'truck']);
 
-            $assignmentId = $driverTruck->getKey();
-            $driverId = $driverTruck->driver?->getKey();
+            // Capture data before deletion for audit trail
+            $assignmentId = $driverTruck->id;
+            $driverId = $driverTruck->driver?->id;
             $driverName = $driverTruck->driver?->name;
-            $truckId = $driverTruck->truck?->getKey();
+            $truckId = $driverTruck->truck?->id;
             $truckPlate = $driverTruck->truck?->plate ?? $driverTruck->plate;
-            $attributes = $driverTruck->getAttributes();
+            $attributes = $this->normalizeAttributes($driverTruck->toArray());
 
             $driverTruck->delete();
             $this->driverTruckDeletionGuard->clearCache($driverTruck);
 
+            // Clear related caches
+            Cache::forget('driver_trucks.status_options');
+            Cache::forget('driver_trucks.driver_options');
+            Cache::forget('driver_trucks.truck_options');
+
+            // Dispatch event with deleted data for audit trail
             event(new DriverTruckDeleted(
                 $assignmentId,
                 $driverId,
@@ -245,13 +279,12 @@ class DriverTruckController extends Controller
                 Auth::user(),
             ));
 
-            Cache::forget('driver_trucks.status_options'); // Clear cached status options
-
             return redirect()->route('driver-trucks.index')
-                ->with('success', 'Driver-truck assignment deleted successfully.');
+                ->with('success', sprintf('Assignment for driver %s and truck %s deleted successfully.',
+                    $driverName ?? 'Unknown', $truckPlate ?? 'Unknown'));
 
         } catch (Exception $e) {
-            report($e);
+            $this->logError('destroy', 'DriverTruck', $e);
 
             return back()->withErrors(['error' => 'Failed to delete assignment. Please try again.']);
         }

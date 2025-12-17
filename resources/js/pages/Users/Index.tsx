@@ -1,8 +1,8 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TableCell, TableRow } from '@/components/ui/table';
 import ListPageLayout from '@/components/layouts/list-page-layout';
-import { ListingStatsHeader } from '@/components/listing/stats-header';
 import { ListingFilterBar } from '@/components/listing/filter-bar';
 import { ListingTableShell } from '@/components/listing/data-table-shell';
 import { ListingMobileItemList } from '@/components/listing/mobile-item-list';
@@ -17,6 +17,7 @@ import { Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
 import * as React from 'react';
 import {
     Users as UsersIcon,
@@ -429,95 +430,98 @@ export default function UsersIndex({ users, filters, roleOptions, statusOptions,
         [handleNavigate, resolvedPerPage],
     );
 
-    const statsDefinitions = [
+    const statsCards = [
         {
             id: 'total-users',
             label: 'Total Users',
-            icon: <UsersIcon className="h-3.5 w-3.5 text-sky-500" />,
-            className: 'min-w-[220px] flex-shrink-0',
-            value: isLoading ? (
-                <Skeleton className="h-3.5 w-20" aria-hidden="true" />
-            ) : (
-                formatCount(totalUsers)
-            ),
-            description: isLoading ? (
-                <Skeleton className="h-3 w-24" aria-hidden="true" />
-            ) : (
-                'All accounts'
-            ),
-            valueClassName: isLoading ? undefined : 'text-sky-600',
+            icon: UsersIcon,
+            iconColor: 'text-blue-600 dark:text-blue-400',
+            gradient: 'from-blue-50 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/20',
+            value: isLoading ? null : formatCount(totalUsers),
+            description: 'All accounts',
         },
         {
             id: 'verified-users',
             label: 'Verified Users',
-            icon: <CheckCircle className="h-3.5 w-3.5 text-emerald-500" />,
-            className: 'min-w-[220px] flex-shrink-0',
-            value: isLoading ? (
-                <Skeleton className="h-3.5 w-16" aria-hidden="true" />
-            ) : (
-                formatCount(verifiedUsers)
-            ),
-            description: isLoading ? (
-                <Skeleton className="h-3 w-28" aria-hidden="true" />
-            ) : (
-                'Email confirmed'
-            ),
-            valueClassName: isLoading ? undefined : 'text-emerald-600',
+            icon: CheckCircle,
+            iconColor: 'text-emerald-600 dark:text-emerald-400',
+            gradient: 'from-emerald-50 to-emerald-100/50 dark:from-emerald-950/30 dark:to-emerald-900/20',
+            value: isLoading ? null : formatCount(verifiedUsers),
+            description: 'Email confirmed',
         },
         {
             id: 'pending-users',
             label: 'Pending Verification',
-            icon: <XCircle className="h-3.5 w-3.5 text-amber-500" />,
-            className: 'min-w-[220px] flex-shrink-0',
-            value: isLoading ? (
-                <Skeleton className="h-3.5 w-16" aria-hidden="true" />
-            ) : (
-                formatCount(pendingUsers)
-            ),
-            description: isLoading ? (
-                <Skeleton className="h-3 w-32" aria-hidden="true" />
-            ) : (
-                'Awaiting confirmation'
-            ),
-            valueClassName: isLoading ? undefined : 'text-amber-600',
+            icon: XCircle,
+            iconColor: 'text-amber-600 dark:text-amber-400',
+            gradient: 'from-amber-50 to-amber-100/50 dark:from-amber-950/30 dark:to-amber-900/20',
+            value: isLoading ? null : formatCount(pendingUsers),
+            description: 'Awaiting confirmation',
         },
         {
             id: 'admin-users',
             label: 'Admins',
-            icon: <Shield className="h-3.5 w-3.5 text-rose-500" />,
-            className: 'min-w-[220px] flex-shrink-0',
-            value: isLoading ? (
-                <Skeleton className="h-3.5 w-16" aria-hidden="true" />
-            ) : (
-                formatCount(adminUsers)
-            ),
-            description: isLoading ? (
-                <Skeleton className="h-3 w-28" aria-hidden="true" />
-            ) : (
-                'Full access roles'
-            ),
-            valueClassName: isLoading ? undefined : 'text-rose-600',
+            icon: Shield,
+            iconColor: 'text-rose-600 dark:text-rose-400',
+            gradient: 'from-rose-50 to-rose-100/50 dark:from-rose-950/30 dark:to-rose-900/20',
+            value: isLoading ? null : formatCount(adminUsers),
+            description: 'Full access roles',
         },
         {
             id: 'manager-users',
             label: 'Managers',
-            icon: <Shield className="h-3.5 w-3.5 text-indigo-500" />,
-            className: 'min-w-[220px] flex-shrink-0',
-            value: isLoading ? (
-                <Skeleton className="h-3.5 w-16" aria-hidden="true" />
-            ) : (
-                formatCount(managerUsers)
-            ),
-            description: isLoading ? (
-                <Skeleton className="h-3 w-28" aria-hidden="true" />
-            ) : (
-                'Management roles'
-            ),
-            valueClassName: isLoading ? undefined : 'text-indigo-600',
+            icon: Shield,
+            iconColor: 'text-indigo-600 dark:text-indigo-400',
+            gradient: 'from-indigo-50 to-indigo-100/50 dark:from-indigo-950/30 dark:to-indigo-900/20',
+            value: isLoading ? null : formatCount(managerUsers),
+            description: 'Management roles',
         },
     ];
 
-    const statsSection = <ListingStatsHeader stats={statsDefinitions} orientation="row" />;
+    const statsSection = (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            {statsCards.map((stat) => {
+                const Icon = stat.icon;
+                return (
+                    <Card
+                        key={stat.id}
+                        className={cn(
+                            'relative overflow-hidden border border-slate-200/60 dark:border-slate-700/60',
+                            'bg-gradient-to-br',
+                            stat.gradient,
+                            'hover:shadow-md hover:border-slate-300 dark:hover:border-slate-600',
+                            'transition-all duration-200',
+                        )}
+                    >
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 pt-3 px-4">
+                            <CardTitle className="text-xs font-medium text-slate-600 dark:text-slate-400 leading-tight">
+                                {stat.label}
+                            </CardTitle>
+                            <Icon className={cn('h-4 w-4', stat.iconColor)} />
+                        </CardHeader>
+                        <CardContent className="px-4 pb-3 pt-0">
+                            <div className="space-y-1">
+                                <div className="flex items-baseline gap-1.5">
+                                    {isLoading ? (
+                                        <Skeleton className="h-7 w-16" />
+                                    ) : (
+                                        <span className="text-2xl font-bold text-slate-900 dark:text-white leading-none">
+                                            {stat.value}
+                                        </span>
+                                    )}
+                                </div>
+                                {isLoading ? (
+                                    <Skeleton className="h-3 w-24" />
+                                ) : (
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">{stat.description}</p>
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
+                );
+            })}
+        </div>
+    );
 
     const tableColumns = React.useMemo(
         () => [
@@ -877,6 +881,7 @@ export default function UsersIndex({ users, filters, roleOptions, statusOptions,
                 tableTitle="User Directory"
                 tableDescription={`${formatCount(totalUsers)} total user${totalUsers === 1 ? '' : 's'} in system`}
                 tableHeaderExtras={tableHeaderExtras}
+                className="gap-6"
                 pagination={
                     !isLoading && users?.links ? (
                         <ListingPaginationFooter

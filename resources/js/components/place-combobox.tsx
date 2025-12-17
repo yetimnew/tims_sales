@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 interface PlaceOption {
     id: number;
     name: string;
+    fullName?: string;
 }
 
 interface PlaceComboboxProps {
@@ -82,7 +83,7 @@ export function PlaceCombobox({
                         )}
                     >
                         <span className={cn('line-clamp-1', selectedPlace ? 'text-foreground' : 'text-muted-foreground')}>
-                            {selectedPlace ? selectedPlace.name : placeholder}
+                            {selectedPlace ? (selectedPlace.fullName || selectedPlace.name) : placeholder}
                         </span>
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
@@ -100,13 +101,13 @@ export function PlaceCombobox({
                                 {places.map(place => (
                                     <CommandItem
                                         key={place.id}
-                                        value={place.name}
+                                        value={place.fullName || place.name}
                                         onSelect={() => {
                                             onSelect(place.id.toString());
                                             setOpen(false);
                                         }}
                                     >
-                                        <span className="line-clamp-1 text-sm">{place.name}</span>
+                                        <span className="line-clamp-1 text-sm">{place.fullName || place.name}</span>
                                     </CommandItem>
                                 ))}
                             </CommandGroup>

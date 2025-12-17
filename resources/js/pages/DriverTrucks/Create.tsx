@@ -21,14 +21,14 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 interface Truck {
     id: number;
     plate: string;
-    status: number;
+    status: string;
 }
 
 interface Driver {
     id: number;
     name: string;
     driverid: string;
-    status: number;
+    status: string;
 }
 
 interface Props {
@@ -336,7 +336,7 @@ export default function DriverTrucksCreate({ trucks, drivers, error }: Props) {
                                     <strong>Plate:</strong> {selectedTruck.plate}
                                 </p>
                                 <p className="text-slate-600 dark:text-slate-400">
-                                    <strong>Status:</strong> {selectedTruck.status === 1 ? 'Active' : 'Inactive'}
+                                    <strong>Status:</strong> {selectedTruck.status === 'active' ? 'Active' : 'Inactive'}
                                 </p>
                             </div>
                         )}
@@ -400,7 +400,7 @@ export default function DriverTrucksCreate({ trucks, drivers, error }: Props) {
                                     <strong>Driver ID:</strong> {selectedDriver.driverid}
                                 </p>
                                 <p className="text-slate-600 dark:text-slate-400">
-                                    <strong>Status:</strong> {selectedDriver.status === 1 ? 'Active' : 'Inactive'}
+                                    <strong>Status:</strong> {selectedDriver.status === 'active' ? 'Active' : 'Inactive'}
                                 </p>
                             </div>
                         )}

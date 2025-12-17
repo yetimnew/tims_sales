@@ -6,10 +6,15 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ReportSummaryGrid, type ReportSummaryItem } from '@/components/reports/report-summary-grid';
+import { ReportFiltersDialog } from '@/components/reports/report-filters-dialog';
+import type { ReportSelectionOption } from '@/components/reports/types';
 import { formatCurrency, formatDecimal, formatInteger, formatPercentage } from '@/components/reports/formatters';
-import { RefreshCcw, DollarSign, TrendingDown, Route, BarChart3, Fuel, User, Wrench } from 'lucide-react';
+import { RefreshCcw, DollarSign, TrendingDown, Route, BarChart3, Fuel, User, Wrench, Download, FileDigit, FileSpreadsheet, FileType2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { usePermissions } from '@/hooks/use-permissions';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, ComposedChart, Line } from 'recharts';
 
 interface TruckOption {
     id: number;
@@ -68,6 +73,8 @@ interface Filters {
     truck_ids?: number[];
     driver_ids?: number[];
     group_by?: string;
+    compare_from?: string | null;
+    compare_to?: string | null;
 }
 
 interface CostPerKilometerProps {
@@ -78,6 +85,9 @@ interface CostPerKilometerProps {
         trucks: TruckOption[];
         drivers: DriverOption[];
     };
+    comparison?: {
+        summary: Summary;
+    };
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -85,13 +95,51 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Cost Per Kilometer Analysis', href: '/reports/cost-per-kilometer' },
 ];
 
-export default function CostPerKilometer({ filters, rows = [], summary, options }: CostPerKilometerProps) {
+const toParamsArray = (key: string, values: number[], params: URLSearchParams) => {
+    values.forEach((value) => params.append(`${key}[]`, String(value)));
+};
+
+export default function CostPerKilometer({ filters, rows = [], summary, options, comparison }: CostPerKilometerProps) {
+    const { hasPermission } = usePermissions();
+    const canExport = hasPermission('reports.cost-per-kilometer.export');
+    
+    const [filtersOpen, setFiltersOpen] = useState(false);
     const [from, setFrom] = useState(filters?.from ?? '');
     const [to, setTo] = useState(filters?.to ?? '');
     const [groupBy, setGroupBy] = useState(filters?.group_by ?? 'overall');
+    const [selectedTrucks, setSelectedTrucks] = useState<number[]>(filters?.truck_ids ?? []);
+    const [selectedDrivers, setSelectedDrivers] = useState<number[]>(filters?.driver_ids ?? []);
+    const [compareEnabled, setCompareEnabled] = useState(false);
+    const [compareFrom, setCompareFrom] = useState(filters?.compare_from ?? '');
+    const [compareTo, setCompareTo] = useState(filters?.compare_to ?? '');
     const [dateError, setDateError] = useState<string | null>(null);
 
+    const truckSource = options?.trucks;
+    const driverSource = options?.drivers;
+    const truckOptions = useMemo<TruckOption[]>(() => (Array.isArray(truckSource) ? truckSource : []), [truckSource]);
+    const driverOptions = useMemo<DriverOption[]>(() => (Array.isArray(driverSource) ? driverSource : []), [driverSource]);
+
     const safeRows = useMemo<CostPerKmRow[]>(() => (Array.isArray(rows) ? rows : []), [rows]);
+
+    const truckSelectionOptions = useMemo<ReportSelectionOption[]>(
+        () =>
+            truckOptions.map((option) => ({
+                id: option.id,
+                label: option.name ?? '—',
+                badge: option.status ?? undefined,
+            })),
+        [truckOptions],
+    );
+
+    const driverSelectionOptions = useMemo<ReportSelectionOption[]>(
+        () =>
+            driverOptions.map((option) => ({
+                id: option.id,
+                label: option.name ?? 'Unassigned',
+                badge: option.status ?? undefined,
+            })),
+        [driverOptions],
+    );
 
     const validateDateRange = useCallback(
         (fromValue: string, toValue: string) => {
@@ -121,14 +169,29 @@ export default function CostPerKilometer({ filters, rows = [], summary, options 
 
     const handleApplyFilters = () => {
         if (!validateDateRange(from, to)) {
+            setFiltersOpen(true);
             return;
         }
+
+        if (compareEnabled && (!validateDateRange(compareFrom, compareTo))) {
+            setFiltersOpen(true);
+            return;
+        }
+
+        setFiltersOpen(false);
 
         const params: Record<string, unknown> = {
             from,
             to,
             group_by: groupBy,
         };
+
+        if (selectedTrucks.length > 0) params.truck_ids = selectedTrucks;
+        if (selectedDrivers.length > 0) params.driver_ids = selectedDrivers;
+        if (compareEnabled && compareFrom && compareTo) {
+            params.compare_from = compareFrom;
+            params.compare_to = compareTo;
+        }
 
         router.get('/reports/cost-per-kilometer', params, {
             preserveState: true,
@@ -140,6 +203,12 @@ export default function CostPerKilometer({ filters, rows = [], summary, options 
         setFrom(filters?.from ?? '');
         setTo(filters?.to ?? '');
         setGroupBy(filters?.group_by ?? 'overall');
+        setSelectedTrucks(filters?.truck_ids ?? []);
+        setSelectedDrivers(filters?.driver_ids ?? []);
+        setCompareEnabled(false);
+        setCompareFrom('');
+        setCompareTo('');
+        setFiltersOpen(false);
         setDateError(null);
         router.get('/reports/cost-per-kilometer', {}, { preserveState: false, preserveScroll: true });
     };
@@ -154,6 +223,36 @@ export default function CostPerKilometer({ filters, rows = [], summary, options 
         setTo(value);
         validateDateRange(from, value);
     };
+
+    const handleExport = (format: 'csv' | 'xlsx' | 'pdf') => {
+        if (!validateDateRange(from, to)) {
+            return;
+        }
+
+        if (!canExport) {
+            return;
+        }
+
+        const params = new URLSearchParams();
+
+        if (from) params.set('from', from);
+        if (to) params.set('to', to);
+        if (groupBy) params.set('group_by', groupBy);
+
+        if (selectedTrucks.length > 0) toParamsArray('truck_ids', selectedTrucks, params);
+        if (selectedDrivers.length > 0) toParamsArray('driver_ids', selectedDrivers, params);
+
+        const query = params.toString();
+        const url = `/reports/cost-per-kilometer/export/${format}${query ? `?${query}` : ''}`;
+        window.location.href = url;
+    };
+
+    const activeFilterCount = useMemo(() => {
+        let count = 0;
+        if (selectedTrucks.length > 0) count++;
+        if (selectedDrivers.length > 0) count++;
+        return count;
+    }, [selectedTrucks.length, selectedDrivers.length]);
 
     const summaryItems = useMemo<ReportSummaryItem[]>(
         () => [
@@ -210,6 +309,35 @@ export default function CostPerKilometer({ filters, rows = [], summary, options 
         }
     }, [groupBy]);
 
+    // Chart data
+    const cpkChartData = useMemo(() => {
+        if (safeRows.length === 0) return [];
+        return safeRows.slice(0, 10).map((row) => ({
+            name: row.label.length > 15 ? `${row.label.substring(0, 15)}...` : row.label,
+            'Total CPK': row.total_cpk,
+            'Fuel CPK': row.fuel_cpk,
+            'Perdiem CPK': row.perdiem_cpk,
+        }));
+    }, [safeRows]);
+
+    const costBreakdownPieData = useMemo(() => {
+        if (!summary) return [];
+        return [
+            { name: 'Fuel', value: summary.total_fuel_cost, color: '#f97316' },
+            { name: 'Perdiem', value: summary.total_perdiem, color: '#6366f1' },
+            { name: 'Work Ongoing', value: summary.total_work_on_going, color: '#8b5cf6' },
+            { name: 'Other', value: summary.total_other_cost, color: '#64748b' },
+        ].filter((item) => item.value > 0);
+    }, [summary]);
+
+    const comparisonData = useMemo(() => {
+        if (!comparison || !compareEnabled) return null;
+        return {
+            current: summary,
+            previous: comparison.summary,
+        };
+    }, [comparison, compareEnabled, summary]);
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Cost Per Kilometer Analysis" />
@@ -225,24 +353,25 @@ export default function CostPerKilometer({ filters, rows = [], summary, options 
                                 </p>
                             </div>
                             <div className="flex flex-wrap items-center gap-2">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-xs font-medium text-slate-600 dark:text-slate-400">From</span>
-                                    <input
-                                        type="date"
-                                        value={from}
-                                        onChange={(e) => handleDateChange('from', e.target.value)}
-                                        className="h-9 rounded-md border border-slate-300 bg-white px-3 text-sm dark:border-slate-600 dark:bg-slate-800"
-                                    />
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-xs font-medium text-slate-600 dark:text-slate-400">To</span>
-                                    <input
-                                        type="date"
-                                        value={to}
-                                        onChange={(e) => handleDateChange('to', e.target.value)}
-                                        className="h-9 rounded-md border border-slate-300 bg-white px-3 text-sm dark:border-slate-600 dark:bg-slate-800"
-                                    />
-                                </div>
+                                <ReportFiltersDialog
+                                    open={filtersOpen}
+                                    onOpenChange={setFiltersOpen}
+                                    activeFilterCount={activeFilterCount}
+                                    from={from}
+                                    to={to}
+                                    onDateChange={handleDateChange}
+                                    onReset={handleReset}
+                                    onApply={handleApplyFilters}
+                                    driverOptions={driverSelectionOptions}
+                                    truckOptions={truckSelectionOptions}
+                                    selectedDrivers={selectedDrivers}
+                                    selectedTrucks={selectedTrucks}
+                                    onDriversChange={setSelectedDrivers}
+                                    onTrucksChange={setSelectedTrucks}
+                                    showDriverFilter={true}
+                                    showTruckFilter={true}
+                                    dateError={dateError}
+                                />
                                 <div className="flex items-center gap-2">
                                     <span className="text-xs font-medium text-slate-600 dark:text-slate-400">Group By</span>
                                     <Select value={groupBy} onValueChange={setGroupBy}>
@@ -257,8 +386,29 @@ export default function CostPerKilometer({ filters, rows = [], summary, options 
                                         </SelectContent>
                                     </Select>
                                 </div>
-                                {dateError && (
-                                    <span className="text-xs text-rose-600 dark:text-rose-400">{dateError}</span>
+                                {canExport && (
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button type="button" variant="secondary" className="gap-2">
+                                                <Download className="h-4 w-4" />
+                                                Export
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end" className="w-44">
+                                            <DropdownMenuItem onSelect={() => handleExport('csv')} className="gap-2">
+                                                <FileDigit className="h-4 w-4 text-amber-500" />
+                                                CSV
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onSelect={() => handleExport('xlsx')} className="gap-2">
+                                                <FileSpreadsheet className="h-4 w-4 text-emerald-500" />
+                                                Excel
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onSelect={() => handleExport('pdf')} className="gap-2">
+                                                <FileType2 className="h-4 w-4 text-rose-500" />
+                                                PDF
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
                                 )}
                                 <Button type="button" variant="outline" className="gap-2" onClick={handleReset}>
                                     <RefreshCcw className="h-4 w-4" />
@@ -271,7 +421,94 @@ export default function CostPerKilometer({ filters, rows = [], summary, options 
                         </div>
                     </header>
 
+                    {comparisonData && (
+                        <Card className="border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
+                            <CardHeader>
+                                <CardTitle className="text-lg font-semibold">Period Comparison</CardTitle>
+                                <CardDescription>Comparing current period with previous period</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="grid gap-4 md:grid-cols-3">
+                                    <div className="space-y-1">
+                                        <p className="text-xs text-slate-500">Overall CPK</p>
+                                        <div className="flex items-baseline gap-2">
+                                            <span className="text-lg font-semibold">{formatCurrency(comparisonData.current.overall_cpk)}</span>
+                                            <span className="text-xs text-slate-400">vs {formatCurrency(comparisonData.previous.overall_cpk)}</span>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <p className="text-xs text-slate-500">Fuel CPK</p>
+                                        <div className="flex items-baseline gap-2">
+                                            <span className="text-lg font-semibold">{formatCurrency(comparisonData.current.overall_fuel_cpk)}</span>
+                                            <span className="text-xs text-slate-400">vs {formatCurrency(comparisonData.previous.overall_fuel_cpk)}</span>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <p className="text-xs text-slate-500">Total Cost</p>
+                                        <div className="flex items-baseline gap-2">
+                                            <span className="text-lg font-semibold">{formatCurrency(comparisonData.current.total_cost)}</span>
+                                            <span className="text-xs text-slate-400">vs {formatCurrency(comparisonData.previous.total_cost)}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
+
                     <ReportSummaryGrid items={summaryItems} />
+
+                    {cpkChartData.length > 0 && (
+                        <div className="grid gap-6 lg:grid-cols-2">
+                            <Card className="border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
+                                <CardHeader>
+                                    <CardTitle className="text-lg font-semibold">Cost Per Kilometer Breakdown</CardTitle>
+                                    <CardDescription>Top 10 {groupByLabel.toLowerCase()}s by total CPK</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <ResponsiveContainer width="100%" height={300}>
+                                        <ComposedChart data={cpkChartData}>
+                                            <CartesianGrid strokeDasharray="3 3" />
+                                            <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} />
+                                            <YAxis />
+                                            <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                                            <Legend />
+                                            <Bar dataKey="Total CPK" fill="#06b6d4" />
+                                            <Bar dataKey="Fuel CPK" fill="#f97316" />
+                                            <Bar dataKey="Perdiem CPK" fill="#6366f1" />
+                                        </ComposedChart>
+                                    </ResponsiveContainer>
+                                </CardContent>
+                            </Card>
+
+                            <Card className="border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
+                                <CardHeader>
+                                    <CardTitle className="text-lg font-semibold">Cost Breakdown</CardTitle>
+                                    <CardDescription>Distribution of costs by category</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <ResponsiveContainer width="100%" height={300}>
+                                        <PieChart>
+                                            <Pie
+                                                data={costBreakdownPieData}
+                                                cx="50%"
+                                                cy="50%"
+                                                labelLine={false}
+                                                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                                outerRadius={100}
+                                                fill="#8884d8"
+                                                dataKey="value"
+                                            >
+                                                {costBreakdownPieData.map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} fill={entry.color} />
+                                                ))}
+                                            </Pie>
+                                            <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    )}
 
                     <Card className="border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
                         <CardHeader className="space-y-3 border-b border-slate-200/60 pb-5 dark:border-slate-700/60">
@@ -368,4 +605,3 @@ export default function CostPerKilometer({ filters, rows = [], summary, options 
         </AppLayout>
     );
 }
-

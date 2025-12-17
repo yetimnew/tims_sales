@@ -1,4 +1,12 @@
-# Installation Guide - TIMS
+# Installation Documentation - TIMS
+
+This directory contains step-by-step installation instructions for the Transport Information Management System (TIMS).
+
+## 📚 Files in This Directory
+
+- **[README.md](./README.md)** - This file: Complete installation and setup guide
+
+## 📖 Overview
 
 This document provides step-by-step installation instructions for the Transport Information Management System (TIMS).
 

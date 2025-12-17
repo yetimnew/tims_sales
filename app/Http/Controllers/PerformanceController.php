@@ -191,15 +191,41 @@ class PerformanceController extends Controller
             ->isAttached()
             ->get();
 
-        $places = Place::query()
-            ->select(['id', 'name'])
-            ->orderBy('name')
-            ->get()
-            ->map(fn (Place $place) => [
-                'id' => $place->id,
-                'name' => $place->name,
-            ])
-            ->values();
+        // Cache places with full hierarchy (1 hour) - optimized with eager loading
+        $places = Cache::remember('performances.create_places', 3600, function () {
+            return Place::query()
+                ->select(['id', 'name', 'woreda_id'])
+                ->with([
+                    'woreda:id,name,zone_id',
+                    'woreda.zone:id,name,region_id',
+                    'woreda.zone.region:id,name',
+                ])
+                ->orderBy('name')
+                ->get()
+                ->map(function (Place $place) {
+                    $hierarchy = [];
+                    $hierarchy[] = $place->name;
+
+                    if ($place->woreda) {
+                        $hierarchy[] = $place->woreda->name;
+
+                        if ($place->woreda->zone) {
+                            $hierarchy[] = $place->woreda->zone->name;
+
+                            if ($place->woreda->zone->region) {
+                                $hierarchy[] = $place->woreda->zone->region->name;
+                            }
+                        }
+                    }
+
+                    return [
+                        'id' => $place->id,
+                        'name' => $place->name,
+                        'fullName' => implode(' → ', $hierarchy),
+                    ];
+                })
+                ->values();
+        });
 
         return Inertia::render('Performances/Create', [
             'driverTrucks' => $driverTrucks,
@@ -500,15 +526,41 @@ class PerformanceController extends Controller
             ->isAttached()
             ->get();
 
-        $places = Place::query()
-            ->select(['id', 'name'])
-            ->orderBy('name')
-            ->get()
-            ->map(fn (Place $place) => [
-                'id' => $place->id,
-                'name' => $place->name,
-            ])
-            ->values();
+        // Cache places with full hierarchy (1 hour) - optimized with eager loading
+        $places = Cache::remember('performances.edit_places', 3600, function () {
+            return Place::query()
+                ->select(['id', 'name', 'woreda_id'])
+                ->with([
+                    'woreda:id,name,zone_id',
+                    'woreda.zone:id,name,region_id',
+                    'woreda.zone.region:id,name',
+                ])
+                ->orderBy('name')
+                ->get()
+                ->map(function (Place $place) {
+                    $hierarchy = [];
+                    $hierarchy[] = $place->name;
+
+                    if ($place->woreda) {
+                        $hierarchy[] = $place->woreda->name;
+
+                        if ($place->woreda->zone) {
+                            $hierarchy[] = $place->woreda->zone->name;
+
+                            if ($place->woreda->zone->region) {
+                                $hierarchy[] = $place->woreda->zone->region->name;
+                            }
+                        }
+                    }
+
+                    return [
+                        'id' => $place->id,
+                        'name' => $place->name,
+                        'fullName' => implode(' → ', $hierarchy),
+                    ];
+                })
+                ->values();
+        });
 
         return Inertia::render('Performances/Edit', [
             'performance' => $performance,

@@ -1,5 +1,13 @@
 # Technical Documentation - TIMS
 
+This directory contains comprehensive technical documentation for the Transport Information Management System (TIMS), covering architecture, implementation details, and technical specifications.
+
+## 📚 Files in This Directory
+
+- **[README.md](./README.md)** - This file: Complete technical architecture and specifications
+
+## 📖 Overview
+
 This document provides comprehensive technical documentation for the Transport Information Management System (TIMS), covering architecture, implementation details, and technical specifications.
 
 ## 📋 Table of Contents

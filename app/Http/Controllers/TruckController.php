@@ -707,7 +707,7 @@ class TruckController extends Controller
      * @param  array<string, mixed>  $changes
      * @return array<string, array{old: mixed, new: mixed}>
      */
-    private function formatChanges(array $original, array $changes): array
+    protected function formatChanges(array $original, array $changes): array
     {
         $formatted = [];
 
@@ -725,7 +725,7 @@ class TruckController extends Controller
      * @param  array<string, mixed>  $attributes
      * @return array<string, mixed>
      */
-    private function normalizeAttributes(array $attributes): array
+    protected function normalizeAttributes(array $attributes): array
     {
         foreach ($attributes as $key => $value) {
             $attributes[$key] = $this->normalizeValue($value);
@@ -734,7 +734,7 @@ class TruckController extends Controller
         return $attributes;
     }
 
-    private function normalizeValue(mixed $value): mixed
+    protected function normalizeValue(mixed $value): mixed
     {
         if (is_array($value)) {
             foreach ($value as $key => $item) {

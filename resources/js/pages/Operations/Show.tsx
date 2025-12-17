@@ -375,6 +375,8 @@ export default function OperationsShow({ operation, activityLogs = [], performan
         : null;
     const expectedRevenue = operation.volume !== undefined && operation.volume !== null
         && operation.tariff !== undefined && operation.tariff !== null
+        && Number.isFinite(Number(operation.volume)) && Number.isFinite(Number(operation.tariff))
+        && Number(operation.volume) >= 0 && Number(operation.tariff) >= 0
         ? Number(operation.volume) * Number(operation.tariff)
         : null;
 
@@ -542,7 +544,7 @@ export default function OperationsShow({ operation, activityLogs = [], performan
     const hasTonnageData = tonnageBreakdown.some((item) => item.value > 0);
     const pieColors = ['#6366f1', '#8b5cf6', '#22c55e'];
 
-    const completionPercentage = totals.completionRate ?? ((totals.plannedVolume && totals.plannedVolume > 0)
+    const completionPercentage = totals.completionRate ?? ((totals.plannedVolume !== null && totals.plannedVolume !== undefined && totals.plannedVolume > 0)
         ? Number(((totals.totalTonnage / totals.plannedVolume) * 100).toFixed(2))
         : null);
     const completionLabel = completionPercentage === null ? 'N/A' : `${completionPercentage.toFixed(1)}%`;
@@ -569,12 +571,13 @@ export default function OperationsShow({ operation, activityLogs = [], performan
     const loadedDistanceLabel = formatOptionalNumber(economics.loadedDistance, ' km');
     const emptyDistanceLabel = formatOptionalNumber(economics.emptyDistance, ' km');
 
-    const contractTariff = operation.tariff !== undefined && operation.tariff !== null && Number.isFinite(Number(operation.tariff))
+    const contractTariff = operation.tariff !== undefined && operation.tariff !== null && Number.isFinite(Number(operation.tariff)) && Number(operation.tariff) >= 0
         ? Number(operation.tariff)
         : null;
     const realisedTariffPerTonKm = deliveredTonKm !== null
         && deliveredTonKm > 0
         && economics.actualRevenue !== null
+        && economics.actualRevenue >= 0
         ? Number((economics.actualRevenue / deliveredTonKm).toFixed(2))
         : null;
     const tariffVariance = contractTariff !== null && realisedTariffPerTonKm !== null
@@ -619,11 +622,13 @@ export default function OperationsShow({ operation, activityLogs = [], performan
     const revenueRealisationShare = economics.actualRevenue !== null
         && economics.potentialRevenue !== null
         && economics.potentialRevenue > 0
+        && economics.actualRevenue >= 0
         ? Number(((economics.actualRevenue / economics.potentialRevenue) * 100).toFixed(1))
         : null;
     const costToRevenueShare = economics.actualRevenue !== null
         && economics.actualRevenue > 0
         && financials.totalCost !== null
+        && financials.totalCost >= 0
         ? Number(((financials.totalCost / economics.actualRevenue) * 100).toFixed(1))
         : null;
     const contributionMetrics = [
