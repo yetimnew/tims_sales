@@ -29,8 +29,23 @@ class DailyTruckStatusController extends Controller
 
         // Cache trucks list (1 hour) - changes when trucks are added/removed/updated
         $trucks = Cache::remember('daily_truck_status.trucks', 3600, function () {
-            return Truck::with(['vehicleType', 'drivers'])->get();
+            return Truck::query()
+                ->active()
+                ->with([
+                    'vehicleType',
+                    'drivers' => function ($query) {
+                        $query->wherePivot('status', 'active');
+                    },
+                ])
+                ->orderBy('plate')
+                ->get();
         });
+
+            if (method_exists($trucks, 'filter')) {
+                $trucks = $trucks
+                ->filter(static fn (Truck $truck): bool => ($truck->status ?? 'active') === 'active')
+                ->values();
+            }
 
         // Cache operational status type (1 hour) - changes when status types are modified
         $operationalStatusType = Cache::remember('daily_truck_status.operational_status_type', 3600, function () {
@@ -39,9 +54,10 @@ class DailyTruckStatusController extends Controller
 
         // Cache statuses list (1 hour) - changes when statuses are added/removed/updated
         $statuses = Cache::remember('daily_truck_status.statuses', 3600, function () use ($operationalStatusType) {
-            if (!$operationalStatusType) {
+            if (! $operationalStatusType) {
                 return collect();
             }
+
             return Status::where('statustype_id', $operationalStatusType->id)
                 ->orderBy('name')
                 ->get();
@@ -64,6 +80,10 @@ class DailyTruckStatusController extends Controller
 
         // Assign trucks to their status
         foreach ($trucks as $truck) {
+            if (($truck->status ?? 'active') !== 'active') {
+                continue;
+            }
+
             $dailyStatus = $dailyStatuses->get($truck->id);
 
             if ($dailyStatus) {
@@ -81,8 +101,13 @@ class DailyTruckStatusController extends Controller
                 ];
             } else {
                 // Trucks without status go to "Available" or first status
-                $firstStatusId = $statuses->first()->id;
-                $trucksByStatus[$firstStatusId]['trucks'][] = [
+                $firstStatus = $statuses->first();
+
+                if (! $firstStatus) {
+                    continue;
+                }
+
+                $trucksByStatus[$firstStatus->id]['trucks'][] = [
                     'id' => $truck->id,
                     'plate' => $truck->plate,
                     'vehicleType' => $truck->vehicleType ? $truck->vehicleType->name : 'N/A',

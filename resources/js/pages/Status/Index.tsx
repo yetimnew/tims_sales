@@ -7,8 +7,11 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { ReportMultiSelectFilter } from '@/components/reports/report-multi-select-filter';
+import type { ReportSelectionOption } from '@/components/reports/types';
 import { type BreadcrumbItem } from '@/types';
-import { Truck, Calendar, Search, MessageSquare } from 'lucide-react';
+import { Truck, Calendar, Search, MessageSquare, Info, Filter, Users, StickyNote, User, Wrench, Tag } from 'lucide-react';
 import * as React from 'react';
 import { DndContext, DragEndEvent, DragStartEvent, PointerSensor, useSensor, useSensors, useDroppable, closestCorners, DragOverEvent } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
@@ -20,6 +23,21 @@ const breadcrumbs: BreadcrumbItem[] = [
         href: '/truck-status-board',
     },
 ];
+
+const STATUS_COLOR_PALETTE = [
+    'from-sky-500 to-sky-600',
+    'from-emerald-500 to-emerald-600',
+    'from-amber-500 to-amber-600',
+    'from-indigo-500 to-indigo-600',
+    'from-rose-500 to-rose-600',
+    'from-fuchsia-500 to-fuchsia-600',
+] as const;
+
+const getStatusAccent = (statusId: number): string => {
+    const paletteIndex = Math.abs(statusId) % STATUS_COLOR_PALETTE.length;
+
+    return STATUS_COLOR_PALETTE[paletteIndex];
+};
 
 interface Driver {
     id: number;
@@ -41,7 +59,7 @@ interface TruckCard {
 interface Status {
     id: number;
     name: string;
-    description: string;
+    description: string | null;
 }
 
 interface TrucksByStatus {
@@ -74,38 +92,71 @@ function TruckCardComponent({ truck, onCommentClick }: { truck: TruckCard; onCom
         opacity: isDragging ? 0.5 : 1,
     };
 
+    const hasNotes = typeof truck.notes === 'string' && truck.notes.trim() !== '';
+    const equipmentLabel = truck.equipmentType ?? truck.vehicleType;
+
     return (
         <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-            <Card className={`mb-1 cursor-move hover:shadow-sm transition-all border-l-2 ${
-                isDragging ? 'opacity-50 shadow-lg' : 'border-l-blue-500'
+            <Card className={`mb-2 cursor-move border border-slate-200/80 shadow-sm transition-all hover:shadow-md ${
+                isDragging ? 'opacity-75 ring-2 ring-blue-400 shadow-lg' : 'bg-white'
             }`}>
-                <CardContent className="p-2">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 min-w-0">
-                            <Truck className="h-3.5 w-3.5 text-blue-600 flex-shrink-0" />
-                            <span className="font-semibold text-xs truncate">{truck.plate}</span>
+                <CardContent className="p-3">
+                    <div className="flex items-start justify-between gap-2">
+                        <div className="flex flex-col gap-1 min-w-0">
+                            <div className="flex items-center gap-2 min-w-0">
+                                <div className="flex h-6 w-6 items-center justify-center rounded-md bg-blue-50 text-blue-600">
+                                    <Truck className="h-3.5 w-3.5" />
+                                </div>
+                                <span className="font-semibold text-sm truncate text-slate-900">{truck.plate}</span>
+                                {hasNotes && (
+                                    <Badge variant="secondary" className="bg-amber-100 text-amber-700 border-amber-200 text-[10px]">
+                                        Notes
+                                    </Badge>
+                                )}
+                            </div>
+                            <div className="flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground">
+                                {equipmentLabel && <span className="truncate">{equipmentLabel}</span>}
+                                {truck.vehicleType && truck.vehicleType !== equipmentLabel && (
+                                    <span className="truncate text-slate-500">• {truck.vehicleType}</span>
+                                )}
+                                {truck.driver && (
+                                    <span className="flex items-center gap-1 truncate">
+                                        <span className="text-slate-400">•</span>
+                                        <span>Driver: {truck.driver.name}</span>
+                                    </span>
+                                )}
+                            </div>
                         </div>
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-5 w-5 p-0"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onCommentClick(truck);
-                            }}
-                        >
-                            <MessageSquare className="h-3 w-3" />
-                        </Button>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant={hasNotes ? 'secondary' : 'ghost'}
+                                    size="sm"
+                                    className={`h-7 w-7 rounded-full p-0 ${hasNotes ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' : ''}`}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onCommentClick(truck);
+                                    }}
+                                >
+                                    <MessageSquare className="h-3.5 w-3.5" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="left" className="text-xs font-medium">
+                                {hasNotes ? 'View or update notes' : 'Add a quick note'}
+                            </TooltipContent>
+                        </Tooltip>
                     </div>
-                    <div className="mt-1 flex items-center justify-between text-[10px] text-gray-500">
-                        <span className="truncate">{truck.vehicleType}</span>
-                        {truck.driver && <span className="truncate ml-2">👤 {truck.driver.name}</span>}
+                    <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500">
+                        {truck.changed_at && (
+                            <span className="flex items-center gap-1">
+                                ⏰
+                                {new Date(truck.changed_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                        )}
+                        {truck.changed_by && (
+                            <span className="truncate">By {truck.changed_by}</span>
+                        )}
                     </div>
-                    {truck.changed_at && (
-                        <div className="text-[10px] text-gray-400 mt-0.5">
-                            ⏰ {new Date(truck.changed_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                        </div>
-                    )}
                 </CardContent>
             </Card>
         </div>
@@ -113,7 +164,21 @@ function TruckCardComponent({ truck, onCommentClick }: { truck: TruckCard; onCom
 }
 
 // Status Column Component
-function StatusColumn({ status, trucks, onCommentClick, highlight }: { status: Status; trucks: TruckCard[]; onCommentClick: (truck: TruckCard) => void; highlight: boolean }) {
+function StatusColumn({
+    status,
+    trucks,
+    onCommentClick,
+    highlight,
+    accent,
+    isFiltered,
+}: {
+    status: Status;
+    trucks: TruckCard[];
+    onCommentClick: (truck: TruckCard) => void;
+    highlight: boolean;
+    accent: string;
+    isFiltered: boolean;
+}) {
     const { setNodeRef, isOver } = useDroppable({
         id: `status-${status.id}`,
         data: { statusId: status.id },
@@ -122,25 +187,52 @@ function StatusColumn({ status, trucks, onCommentClick, highlight }: { status: S
     return (
         <div
             ref={setNodeRef}
-            className={`flex-shrink-0 w-72 bg-gray-50 rounded-lg p-3 border-2 transition-colors ${
-                (isOver || highlight) ? 'border-blue-500 bg-blue-50' : 'border-transparent'
+            className={`flex w-80 flex-shrink-0 flex-col overflow-hidden rounded-2xl border border-slate-200/70 bg-white/70 backdrop-blur transition-all ${
+                isOver || highlight ? 'ring-2 ring-offset-2 ring-blue-400' : 'shadow-sm'
             }`}
         >
-            <div className="flex items-center justify-between mb-2">
-                <h3 className="font-semibold text-sm">{status.name}</h3>
-                <Badge variant="secondary" className="bg-blue-500 text-white">{trucks.length}</Badge>
+            <div className={`sticky top-0 z-10 -mx-0.5 -mt-0.5 rounded-t-2xl bg-gradient-to-r ${accent} px-4 pb-4 pt-5 text-white shadow-sm`}>
+                <div className="flex items-start justify-between gap-3">
+                    <div className="flex flex-col">
+                        <h3 className="text-base font-semibold leading-tight drop-shadow-sm">{status.name}</h3>
+                        {status.description && (
+                            <p className="mt-1 text-xs text-white/80 line-clamp-2">
+                                {status.description}
+                            </p>
+                        )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className="bg-white/20 text-white border-white/30 text-xs">
+                            {trucks.length}
+                        </Badge>
+                        {status.description && (
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <button
+                                        type="button"
+                                        className="rounded-full border border-white/40 bg-white/20 p-1 text-white/80 transition hover:bg-white/30"
+                                    >
+                                        <Info className="h-3.5 w-3.5" />
+                                    </button>
+                                </TooltipTrigger>
+                                <TooltipContent side="left" className="max-w-xs text-xs">
+                                    {status.description}
+                                </TooltipContent>
+                            </Tooltip>
+                        )}
+                    </div>
+                </div>
             </div>
-            <div className="overflow-y-auto" style={{ maxHeight: 'calc(100vh - 180px)' }}>
-                {/* Include a hidden anchor at top so dropping at header still works */}
-                <div className="h-1" />
+            <div className="flex-1 overflow-y-auto px-4 pb-4" style={{ maxHeight: 'calc(100vh - 220px)' }}>
+                <div className="h-2" />
                 <SortableContext items={trucks.map(t => `truck-${t.id}`)} strategy={verticalListSortingStrategy}>
                     {trucks.length > 0 ? (
                         trucks.map((truck) => (
                             <TruckCardComponent key={truck.id} truck={truck} onCommentClick={onCommentClick} />
                         ))
                     ) : (
-                        <div className="text-center text-gray-400 py-8 text-sm">
-                            Drop trucks here
+                        <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50/60 py-10 text-center text-sm text-slate-400">
+                            {isFiltered ? 'No trucks match the current filters' : 'Drop trucks here'}
                         </div>
                     )}
                 </SortableContext>
@@ -151,11 +243,14 @@ function StatusColumn({ status, trucks, onCommentClick, highlight }: { status: S
 
 export default function TruckStatusBoard({ trucksByStatus, statuses, selectedDate }: TruckStatusBoardProps) {
     const [searchTerm, setSearchTerm] = React.useState('');
-    const [activeId, setActiveId] = React.useState<string | null>(null);
+    const [, setActiveId] = React.useState<string | null>(null);
     const [overStatusId, setOverStatusId] = React.useState<number | null>(null);
     const [selectedTruck, setSelectedTruck] = React.useState<TruckCard | null>(null);
     const [commentText, setCommentText] = React.useState('');
     const [isDialogOpen, setIsDialogOpen] = React.useState(false);
+    const [selectedDrivers, setSelectedDrivers] = React.useState<string[]>([]);
+    const [selectedEquipment, setSelectedEquipment] = React.useState<string[]>([]);
+    const [selectedPlates, setSelectedPlates] = React.useState<string[]>([]);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -163,6 +258,55 @@ export default function TruckStatusBoard({ trucksByStatus, statuses, selectedDat
                 distance: 8,
             },
         })
+    );
+
+    const { driverValues, equipmentValues, plateValues } = React.useMemo(() => {
+        const driverSet = new Set<string>();
+        const equipmentSet = new Set<string>();
+        const plateSet = new Set<string>();
+
+        Object.values(trucksByStatus).forEach((statusData) => {
+            statusData.trucks.forEach((truck) => {
+                const driverName = truck.driver?.name?.trim();
+                if (driverName) {
+                    driverSet.add(driverName);
+                }
+
+                const equipmentName = (truck.equipmentType ?? truck.vehicleType ?? '').trim();
+                if (equipmentName !== '') {
+                    equipmentSet.add(equipmentName);
+                }
+
+                const plate = truck.plate.trim();
+                if (plate !== '') {
+                    plateSet.add(plate);
+                }
+            });
+        });
+
+        const toValues = (values: Set<string>): string[] =>
+            Array.from(values).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+
+        return {
+            driverValues: toValues(driverSet),
+            equipmentValues: toValues(equipmentSet),
+            plateValues: toValues(plateSet),
+        };
+    }, [trucksByStatus]);
+
+    const driverFilterOptions = React.useMemo<ReportSelectionOption[]>(
+        () => driverValues.map((value) => ({ id: value, label: value })),
+        [driverValues],
+    );
+
+    const equipmentFilterOptions = React.useMemo<ReportSelectionOption[]>(
+        () => equipmentValues.map((value) => ({ id: value, label: value })),
+        [equipmentValues],
+    );
+
+    const plateFilterOptions = React.useMemo<ReportSelectionOption[]>(
+        () => plateValues.map((value) => ({ id: value, label: value })),
+        [plateValues],
     );
 
     const handleDragStart = (event: DragStartEvent) => {
@@ -272,47 +416,109 @@ export default function TruckStatusBoard({ trucksByStatus, statuses, selectedDat
         });
     };
 
-    // Filter trucks based on search
+    // Filter trucks based on search and quick filters
     const filteredTrucksByStatus = React.useMemo(() => {
-        if (!searchTerm) return trucksByStatus;
-
+        const normalizedSearch = searchTerm.trim().toLowerCase();
         const filtered: TrucksByStatus = {};
-        Object.keys(trucksByStatus).forEach(key => {
-            const statusData = trucksByStatus[parseInt(key)];
-            const filteredTrucks = statusData.trucks.filter(truck =>
-                truck.plate.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                truck.vehicleType.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                truck.driver?.name.toLowerCase().includes(searchTerm.toLowerCase())
-            );
 
-            if (filteredTrucks.length > 0) {
-                filtered[parseInt(key)] = {
-                    status: statusData.status,
-                    trucks: filteredTrucks,
-                };
-            }
+        Object.values(trucksByStatus).forEach((statusData) => {
+            const filteredTrucks = statusData.trucks.filter((truck) => {
+                const plate = truck.plate.trim();
+                const vehicleType = truck.vehicleType?.trim() ?? '';
+                const equipmentName = (truck.equipmentType ?? truck.vehicleType ?? '').trim();
+                const driverName = truck.driver?.name?.trim() ?? '';
+                const notes = truck.notes ?? '';
+
+                const matchesSearch =
+                    normalizedSearch === '' ||
+                    plate.toLowerCase().includes(normalizedSearch) ||
+                    vehicleType.toLowerCase().includes(normalizedSearch) ||
+                    driverName.toLowerCase().includes(normalizedSearch) ||
+                    equipmentName.toLowerCase().includes(normalizedSearch) ||
+                    notes.toLowerCase().includes(normalizedSearch);
+
+                const matchesDriver =
+                    selectedDrivers.length === 0 ||
+                    (driverName !== '' && selectedDrivers.includes(driverName));
+
+                const matchesEquipment =
+                    selectedEquipment.length === 0 ||
+                    (equipmentName !== '' && selectedEquipment.includes(equipmentName));
+
+                const matchesPlate =
+                    selectedPlates.length === 0 ||
+                    selectedPlates.includes(plate);
+
+                return matchesSearch && matchesDriver && matchesEquipment && matchesPlate;
+            });
+
+            filtered[statusData.status.id] = {
+                status: statusData.status,
+                trucks: filteredTrucks,
+            };
         });
+
         return filtered;
-    }, [trucksByStatus, searchTerm]);
+    }, [searchTerm, selectedDrivers, selectedEquipment, selectedPlates, trucksByStatus]);
 
     // Calculate total trucks
     const totalTrucks = Object.values(trucksByStatus).reduce((sum, statusData) => sum + statusData.trucks.length, 0);
 
     // Calculate trucks with drivers
-    const trucksWithDrivers = Object.values(trucksByStatus).reduce((sum, statusData) =>
-        sum + statusData.trucks.filter(t => t.driver).length, 0
-    , 0);
+    const trucksWithDrivers = Object.values(trucksByStatus).reduce(
+        (sum, statusData) => sum + statusData.trucks.filter((t) => t.driver).length,
+        0,
+    );
 
     // Calculate trucks with notes
-    const trucksWithNotes = Object.values(trucksByStatus).reduce((sum, statusData) =>
-        sum + statusData.trucks.filter(t => t.notes).length, 0
-    , 0);
+    const trucksWithNotes = Object.values(trucksByStatus).reduce(
+        (sum, statusData) => sum + statusData.trucks.filter((t) => t.notes).length,
+        0,
+    );
+
+    const hasActiveFilters =
+        searchTerm.trim() !== '' ||
+        selectedDrivers.length > 0 ||
+        selectedEquipment.length > 0 ||
+        selectedPlates.length > 0;
+    const hasFilteredResults = React.useMemo(
+        () => Object.values(filteredTrucksByStatus).some((statusData) => statusData.trucks.length > 0),
+        [filteredTrucksByStatus],
+    );
+
+    const summaryStats = React.useMemo(
+        () => [
+            {
+                id: 'total-trucks',
+                label: 'Total Trucks',
+                value: totalTrucks.toLocaleString(),
+                description: 'Tracked today',
+                icon: <Truck className="h-4 w-4 text-blue-500" />,
+            },
+            {
+                id: 'assigned-drivers',
+                label: 'With Drivers',
+                value: trucksWithDrivers.toLocaleString(),
+                description: 'Assigned operators',
+                icon: <Users className="h-4 w-4 text-emerald-500" />,
+            },
+            {
+                id: 'notes-present',
+                label: 'With Notes',
+                value: trucksWithNotes.toLocaleString(),
+                description: 'Awaiting review',
+                icon: <StickyNote className="h-4 w-4 text-amber-500" />,
+            },
+        ],
+        [totalTrucks, trucksWithDrivers, trucksWithNotes],
+    );
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Truck Status Board" />
 
-            <div className="flex h-full flex-1 flex-col gap-6 overflow-hidden rounded-xl p-4">
+            <TooltipProvider delayDuration={150}>
+                <div className="flex h-full flex-1 flex-col gap-6 overflow-hidden rounded-xl p-4">
                 {/* Header Section */}
                 <div className="flex items-center justify-between">
                     <div>
@@ -335,21 +541,97 @@ export default function TruckStatusBoard({ trucksByStatus, statuses, selectedDat
                     </div>
                 </div>
 
-                {/* (KPI cards removed) */}
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        {summaryStats.map((stat) => (
+                            <Card key={stat.id} className="border-none bg-gradient-to-br from-slate-50 to-white shadow-sm">
+                                <CardContent className="flex items-center gap-4 p-4">
+                                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-slate-800 shadow-inner">
+                                        {stat.icon}
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-muted-foreground">{stat.label}</p>
+                                        <p className="text-lg font-semibold text-slate-900">{stat.value}</p>
+                                        <p className="text-xs text-slate-400">{stat.description}</p>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
 
                 {/* Search Bar */}
-                <div className="flex items-center gap-2">
-                    <div className="relative flex-1 max-w-md">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                        <Input
-                            type="text"
-                            placeholder="Search trucks by plate, type, or driver..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="pl-10 focus:ring-2 focus:ring-blue-500"
-                        />
+                    <div className="flex flex-wrap items-center gap-3">
+                        <div className="relative flex-1 min-w-[220px] max-w-md">
+                            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
+                            <Input
+                                type="text"
+                                placeholder="Search trucks by plate, type, or driver..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="pl-10 focus:ring-2 focus:ring-blue-500"
+                            />
+                        </div>
+                        <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                            <Filter className="h-3.5 w-3.5" /> Filters
+                        </div>
+                        <div className="flex w-full flex-wrap gap-3 md:w-auto">
+                            <div className="min-w-[220px] flex-1 md:flex-none md:max-w-xs">
+                                <ReportMultiSelectFilter
+                                    label="Drivers"
+                                    icon={User}
+                                    triggerLabelWhenAll="All drivers"
+                                    summaryLabelWhenAll="All drivers shown"
+                                    heading="Drivers"
+                                    searchPlaceholder="Search driver..."
+                                    emptyMessage="No drivers found."
+                                    options={driverFilterOptions}
+                                    selectedIds={selectedDrivers}
+                                    onChange={(ids) => setSelectedDrivers(ids.map((value) => String(value)))}
+                                />
+                            </div>
+                            <div className="min-w-[220px] flex-1 md:flex-none md:max-w-xs">
+                                <ReportMultiSelectFilter
+                                    label="Equipment"
+                                    icon={Wrench}
+                                    triggerLabelWhenAll="All equipment"
+                                    summaryLabelWhenAll="All equipment shown"
+                                    heading="Equipment"
+                                    searchPlaceholder="Search equipment..."
+                                    emptyMessage="No equipment found."
+                                    options={equipmentFilterOptions}
+                                    selectedIds={selectedEquipment}
+                                    onChange={(ids) => setSelectedEquipment(ids.map((value) => String(value)))}
+                                />
+                            </div>
+                            <div className="min-w-[220px] flex-1 md:flex-none md:max-w-xs">
+                                <ReportMultiSelectFilter
+                                    label="Plates"
+                                    icon={Tag}
+                                    triggerLabelWhenAll="All plates"
+                                    summaryLabelWhenAll="All plates shown"
+                                    heading="Plates"
+                                    searchPlaceholder="Search plate..."
+                                    emptyMessage="No plates found."
+                                    options={plateFilterOptions}
+                                    selectedIds={selectedPlates}
+                                    onChange={(ids) => setSelectedPlates(ids.map((value) => String(value)))}
+                                />
+                            </div>
+                        </div>
+                        {hasActiveFilters && (
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                    setSearchTerm('');
+                                    setSelectedDrivers([]);
+                                    setSelectedEquipment([]);
+                                    setSelectedPlates([]);
+                                }}
+                            >
+                                Clear filters
+                            </Button>
+                        )}
                     </div>
-                </div>
 
                 {/* Kanban Board - Full Height Scrollable */}
                 <Card className="flex flex-1 flex-col overflow-hidden">
@@ -362,25 +644,35 @@ export default function TruckStatusBoard({ trucksByStatus, statuses, selectedDat
                     <CardContent className="flex-1 p-4 flex flex-col overflow-hidden">
                         <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragOver={handleDragOver} autoScroll collisionDetection={closestCorners}>
                             <div className="flex gap-4 overflow-x-auto flex-1 pb-4">
-                                {statuses.map((status) => {
-                                    const statusData = filteredTrucksByStatus[status.id];
-                                    if (!statusData) return null;
+                                    {statuses.map((status) => {
+                                        const statusData = filteredTrucksByStatus[status.id] ?? {
+                                            status,
+                                            trucks: [],
+                                        };
 
-                                    return (
-                                        <StatusColumn
-                                            key={status.id}
-                                            status={statusData.status}
-                                            trucks={statusData.trucks}
-                                            onCommentClick={handleCommentClick}
-                                            highlight={overStatusId === status.id}
-                                        />
-                                    );
-                                })}
+                                        return (
+                                            <StatusColumn
+                                                key={status.id}
+                                                status={statusData.status}
+                                                trucks={statusData.trucks}
+                                                onCommentClick={handleCommentClick}
+                                                highlight={overStatusId === status.id}
+                                                accent={getStatusAccent(status.id)}
+                                                isFiltered={hasActiveFilters}
+                                            />
+                                        );
+                                    })}
                             </div>
                         </DndContext>
+                            {!hasFilteredResults && hasActiveFilters && (
+                                <div className="mt-4 flex flex-1 items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50/50 p-12 text-sm text-slate-500">
+                                    No trucks found for the current filters.
+                                </div>
+                            )}
                     </CardContent>
                 </Card>
-            </div>
+                </div>
+            </TooltipProvider>
 
             {/* Comment Dialog */}
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

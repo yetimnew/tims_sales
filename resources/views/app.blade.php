@@ -40,11 +40,30 @@
         <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />
 
         @viteReactRefresh
-        @if (app()->environment('testing'))
-            @vite('resources/js/app.tsx')
-        @else
-            @vite(['resources/js/app.tsx', "resources/js/pages/{$page['component']}.tsx"])
-        @endif
+        @php
+            $entries = ['resources/js/app.tsx'];
+
+            if (! app()->environment('testing')) {
+                $pageEntry = "resources/js/pages/{$page['component']}.tsx";
+                $includePageEntry = false;
+
+                if (\Illuminate\Support\Facades\Vite::isRunningHot()) {
+                    $includePageEntry = true;
+                } else {
+                    $manifestPath = public_path('build/manifest.json');
+
+                    if (\Illuminate\Support\Facades\File::exists($manifestPath)) {
+                        $manifest = json_decode(\Illuminate\Support\Facades\File::get($manifestPath), true);
+                        $includePageEntry = is_array($manifest) && isset($manifest[$pageEntry]);
+                    }
+                }
+
+                if ($includePageEntry) {
+                    $entries[] = $pageEntry;
+                }
+            }
+        @endphp
+        @vite($entries)
         @inertiaHead
     </head>
     <body class="font-sans antialiased">
