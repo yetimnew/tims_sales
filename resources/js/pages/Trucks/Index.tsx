@@ -55,6 +55,7 @@ interface TruckData {
     purchasePrice?: number;
     status: string;
     created_at?: string;
+    currentDriverName?: string | null;
 }
 
 interface PaginationMeta {
@@ -149,6 +150,7 @@ type NavigateOverrides = {
 const columns: Array<{ key: string; label: string }> = [
     { key: 'plate', label: 'Plate' },
     { key: 'vehicleType', label: 'Vehicle Type' },
+    { key: 'currentDriverName', label: 'Driver' },
     { key: 'chasisNumber', label: 'Chassis' },
     { key: 'engineNumber', label: 'Engine' },
     { key: 'serviceIntervalKM', label: 'Service (KM)' },
@@ -559,6 +561,9 @@ export default function TrucksIndex({
                       {truck.vehicleType?.name || 'N/A'}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
+                      {truck.currentDriverName || 'No driver assigned'}
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
                       {truck.chasisNumber || '—'}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
@@ -638,6 +643,12 @@ export default function TrucksIndex({
                         {renderStatusBadge(item.truck.status)}
                     </div>
                     <div className="grid grid-cols-1 gap-3 text-sm text-muted-foreground">
+                        <div className="flex items-center justify-between">
+                            <span className="font-medium text-slate-600 dark:text-slate-300">Driver</span>
+                            <span className="text-right font-semibold text-slate-900 dark:text-slate-100">
+                                {item.truck.currentDriverName || 'No driver assigned'}
+                            </span>
+                        </div>
                         <div className="flex items-center justify-between">
                             <span className="font-medium text-slate-600 dark:text-slate-300">Chassis</span>
                             <span className="text-right font-semibold text-slate-900 dark:text-slate-100">

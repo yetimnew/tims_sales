@@ -10,6 +10,7 @@ use App\Services\Trucks\Data\TruckIndexResult;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class TruckIndexService
@@ -33,9 +34,7 @@ class TruckIndexService
         'created_at',
     ];
 
-    public function __construct(private readonly TruckMetricsService $truckMetrics)
-    {
-    }
+    public function __construct(private readonly TruckMetricsService $truckMetrics) {}
 
     public function getIndexResult(Request $request): TruckIndexResult
     {
@@ -63,6 +62,65 @@ class TruckIndexService
                     'created_at',
                     'updated_at',
                 ])
+                ->selectSub(function ($query) {
+                    $query->from('driver_truck')
+                        ->leftJoin('drivers', 'drivers.id', '=', 'driver_truck.driver_id')
+                        ->selectRaw('COALESCE(drivers.name, driver_truck.driverid)')
+                        ->whereColumn('driver_truck.truck_id', 'trucks.id')
+                        ->whereNull('driver_truck.deleted_at')
+                        ->whereNull('driver_truck.date_detach')
+                        ->whereNull('driver_truck.unassigned_date')
+                        ->where(function ($assignmentQuery) {
+                            $assignmentQuery
+                                ->where('driver_truck.is_attached', true)
+                                ->orWhere(function ($statusQuery) {
+                                    $statusQuery
+                                        ->whereNull('driver_truck.is_attached')
+                                        ->where('driver_truck.status', 'active');
+                                });
+                        })
+                        ->whereNotExists(function ($conflicting) {
+                            $conflicting
+                                ->from('driver_truck as recent_assignments')
+                                ->whereNull('recent_assignments.deleted_at')
+                                ->whereNull('recent_assignments.date_detach')
+                                ->whereNull('recent_assignments.unassigned_date')
+                                ->where(function ($identifier) {
+                                    $identifier
+                                        ->where(function ($matchByDriverId) {
+                                            $matchByDriverId
+                                                ->whereNotNull('driver_truck.driver_id')
+                                                ->whereColumn('recent_assignments.driver_id', 'driver_truck.driver_id');
+                                        })
+                                        ->orWhere(function ($matchByLegacyId) {
+                                            $matchByLegacyId
+                                                ->whereNull('driver_truck.driver_id')
+                                                ->whereColumn('recent_assignments.driverid', 'driver_truck.driverid');
+                                        });
+                                })
+                                ->where(function ($activeAssignment) {
+                                    $activeAssignment
+                                        ->where('recent_assignments.is_attached', true)
+                                        ->orWhere(function ($statusQuery) {
+                                            $statusQuery
+                                                ->whereNull('recent_assignments.is_attached')
+                                                ->where('recent_assignments.status', 'active');
+                                        });
+                                })
+                                ->where(function ($recencyCheck) {
+                                    $recencyCheck
+                                        ->whereRaw('COALESCE(recent_assignments.date_recived, recent_assignments.created_at) > COALESCE(driver_truck.date_recived, driver_truck.created_at)')
+                                        ->orWhere(function ($conflictWithSameDate) {
+                                            $conflictWithSameDate
+                                                ->whereRaw('COALESCE(recent_assignments.date_recived, recent_assignments.created_at) = COALESCE(driver_truck.date_recived, driver_truck.created_at)')
+                                                ->whereColumn('recent_assignments.id', '>', 'driver_truck.id');
+                                        });
+                                });
+                        })
+                        ->orderByDesc(DB::raw('COALESCE(driver_truck.date_recived, driver_truck.created_at)'))
+                        ->orderByDesc('driver_truck.id')
+                        ->limit(1);
+                }, 'current_driver_name')
                 ->with(['vehicleType:id,name']),
             $filters->search,
             $filters->vehicleTypeId,
@@ -92,6 +150,7 @@ class TruckIndexService
                     'serviceStartDate' => $truck->serviceStartDate,
                     'created_at' => $truck->created_at,
                     'updated_at' => $truck->updated_at,
+                    'currentDriverName' => $truck->current_driver_name,
                 ];
             })
         );

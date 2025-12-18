@@ -17,6 +17,7 @@ use App\Services\TruckDeletionGuard;
 use App\Services\TruckGradeService;
 use App\Services\TruckMetricsService;
 use App\Services\Trucks\TruckIndexService;
+use App\Services\Trucks\TruckStatusHistoryService;
 use App\Support\PerformanceRecordPresenter;
 use Carbon\CarbonInterface;
 use Exception;
@@ -36,6 +37,7 @@ class TruckController extends Controller
         private TruckMetricsService $truckMetrics,
         private TruckGradeService $truckGrade,
         private TruckIndexService $truckIndexService,
+        private TruckStatusHistoryService $truckStatusHistory,
     ) {}
 
     /**
@@ -397,6 +399,11 @@ class TruckController extends Controller
         $financialSnapshot = $this->truckMetrics->financialForTruck($truck);
         $staffingSnapshot = $this->truckMetrics->staffingForTruck($truck);
 
+        $statusHistoryPayload = $this->truckStatusHistory->recentForTruck($truck);
+
+        $recentStatusHistory = $statusHistoryPayload['history'];
+        $recentStatusSummary = $statusHistoryPayload['summary'];
+
         $truckData = [
             'id' => $truck->id,
             'plate' => $truck->plate,
@@ -431,6 +438,8 @@ class TruckController extends Controller
             'performanceSummary' => $performanceSummary,
             'maintenanceSummary' => $maintenanceSummary,
             'gradeReport' => $this->truckGrade->grade($truck),
+            'recentStatusHistory' => $recentStatusHistory,
+            'recentStatusSummary' => $recentStatusSummary,
         ]);
     }
 

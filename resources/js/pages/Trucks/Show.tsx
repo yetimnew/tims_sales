@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, type ReactNode } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
@@ -12,19 +12,26 @@ import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { usePermissions } from '@/hooks/use-permissions';
 import {
     Activity,
+    AlertTriangle,
     ArrowLeft,
     ArrowUpRight,
     Ban,
     BarChart3,
+    ChevronDown,
+    ChevronUp,
     Calendar,
     CheckCircle,
     DollarSign,
     Edit,
     Hash,
     History,
+    Info,
+    Sparkles,
+    Target,
     Truck,
     Trash2,
     Wrench,
@@ -103,6 +110,42 @@ type MaintenanceRecord = {
     service_provider?: string | null;
     status?: string | null;
     is_overdue?: boolean;
+};
+
+type TruckStatusHistoryRecord = {
+    id: number;
+    status_id: number | null;
+    status?: {
+        id: number;
+        name: string;
+        statustype_id: number | null;
+        status_type: {
+            id: number;
+            name: string;
+        } | null;
+    } | null;
+    status_date?: string | null;
+    notes?: string | null;
+    changed_at?: string | null;
+    changed_by?: {
+        id: number;
+        name: string;
+    } | null;
+};
+
+type TruckStatusSummary = {
+    window_start: string;
+    window_end: string;
+    total_records: number;
+    days_with_status: number;
+    distinct_statuses: number;
+    current_status?: string | null;
+    current_status_changed_at?: string | null;
+    status_counts: Array<{
+        status_id: number | null;
+        status_name?: string | null;
+        occurrences: number;
+    }>;
 };
 
 type GradeCategoryKey = 'utilization' | 'efficiency' | 'reliability' | 'financial' | 'compliance';
@@ -235,6 +278,8 @@ interface TrucksShowProps {
         total_cost: number;
     };
     gradeReport?: GradeReport;
+    recentStatusHistory?: TruckStatusHistoryRecord[];
+    recentStatusSummary?: TruckStatusSummary | null;
 }
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Trucks', href: '/trucks' }];
@@ -257,6 +302,14 @@ const shortDateFormatter = new Intl.DateTimeFormat('en-US', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
+});
+
+const dateTimeFormatter = new Intl.DateTimeFormat('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
 });
 
 const formatNumber = (value?: number | null, options?: Intl.NumberFormatOptions): string => {
@@ -322,6 +375,20 @@ const formatShortDate = (value?: string | null): string => {
     }
 
     return shortDateFormatter.format(parsed);
+};
+
+const formatDateTime = (value?: string | null): string => {
+    if (!value) {
+        return 'N/A';
+    }
+
+    const parsed = new Date(value);
+
+    if (Number.isNaN(parsed.getTime())) {
+        return 'N/A';
+    }
+
+    return dateTimeFormatter.format(parsed);
 };
 
 const formatKilometers = (value?: number | null, maximumFractionDigits = 0): string => {
@@ -476,7 +543,53 @@ const gradeCategoryConfig: Record<GradeCategoryKey, {
     },
 };
 
-export default function TrucksShow({ truck, activityLogs = [], counts, performanceSummary, maintenanceSummary, gradeReport }: TrucksShowProps) {
+type InsightTone = 'opportunity' | 'watch' | 'neutral';
+
+type DecisionInsight = {
+    id: string;
+    tone: InsightTone;
+    headline: string;
+    description: string;
+    actionLabel?: string;
+    actionHref?: string;
+};
+
+const insightToneConfig: Record<InsightTone, {
+    label: string;
+    badgeClass: string;
+    accentClass: string;
+    icon: (className?: string) => ReactNode;
+}> = {
+    opportunity: {
+        label: 'Opportunity',
+        badgeClass: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+        accentClass: 'border-emerald-200 dark:border-emerald-800',
+        icon: (className = 'h-4 w-4') => <Sparkles className={className} />,
+    },
+    watch: {
+        label: 'Watch',
+        badgeClass: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+        accentClass: 'border-amber-200 dark:border-amber-800',
+        icon: (className = 'h-4 w-4') => <AlertTriangle className={className} />,
+    },
+    neutral: {
+        label: 'Snapshot',
+        badgeClass: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+        accentClass: 'border-blue-200 dark:border-blue-800',
+        icon: (className = 'h-4 w-4') => <Info className={className} />,
+    },
+};
+
+export default function TrucksShow({
+    truck,
+    activityLogs = [],
+    counts,
+    performanceSummary,
+    maintenanceSummary,
+    gradeReport,
+    recentStatusHistory = [],
+    recentStatusSummary = null,
+}: TrucksShowProps) {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -496,12 +609,53 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
     const showDeactivateButton = canDeactivateTruck && truck.status !== 'inactive';
     const showActivateButton = canActivateTruck && truck.status === 'inactive';
     const showActionButtons = canEditTruck || canDeleteTruck || showDeactivateButton || showActivateButton;
+    const [insightFilter, setInsightFilter] = useState<'all' | InsightTone>('all');
+    const [showAllAssignments, setShowAllAssignments] = useState(false);
 
     const driverAssignments = truck.driverTrucks ?? [];
     const maintenanceRecords = truck.maintenanceRecords ?? [];
     const performanceRecords = truck.performances ?? [];
     const financial = truck.financial ?? null;
     const staffing = truck.staffing ?? null;
+    const statusHistory = recentStatusHistory ?? [];
+    const statusSummary = recentStatusSummary ?? null;
+    const displayedAssignments = useMemo(
+        () => (showAllAssignments ? driverAssignments : driverAssignments.slice(0, 3)),
+        [driverAssignments, showAllAssignments],
+    );
+    const hiddenAssignmentsCount = Math.max(driverAssignments.length - displayedAssignments.length, 0);
+
+    const statusOverview = useMemo(() => {
+        if (!statusSummary) {
+            return null;
+        }
+
+        return {
+            ...statusSummary,
+            windowLabel: `${formatShortDate(statusSummary.window_start)} – ${formatShortDate(statusSummary.window_end)}`,
+            currentStatusLabel: statusSummary.current_status ?? 'No status recorded',
+            currentStatusChangedAtLabel: formatDateTime(statusSummary.current_status_changed_at),
+        };
+    }, [statusSummary]);
+
+    const statusDistribution = useMemo(() => {
+        if (!statusSummary) {
+            return [] as Array<{ status_id: number | null; status_name?: string | null; occurrences: number; label: string }>;
+        }
+
+        return statusSummary.status_counts.map((entry) => ({
+            ...entry,
+            label: entry.status_name ?? 'Unassigned',
+        }));
+    }, [statusSummary]);
+
+    const enrichedStatusHistory = useMemo(() => statusHistory.map((record) => ({
+        ...record,
+        statusLabel: record.status?.name ?? 'Unassigned',
+        statusDateLabel: formatShortDate(record.status_date),
+        changedAtLabel: formatDateTime(record.changed_at),
+        changedByLabel: record.changed_by?.name ?? 'System',
+    })), [statusHistory]);
 
     // Memoize financial calculations to avoid recalculation on every render
     const financialCalculations = useMemo(() => {
@@ -512,7 +666,7 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
         const averageRevenuePerTruck = financial?.avg_revenue_per_truck ?? null;
         const totalTonKmFinancial = financial?.ton_km ?? null;
         const tonKmPerBirr = financial?.ton_km_per_birr ?? null;
-        
+
         return {
             financialWindowDays,
             totalRevenue,
@@ -557,7 +711,7 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
         const churnStatusHelper = isHighChurn
             ? `Average tenure ${averageTenureDisplay} across ${highChurnAssignments} assignment${highChurnAssignments === 1 ? '' : 's'} (< ${highChurnThresholdDays} days)`
             : `${highChurnAssignments} assignment${highChurnAssignments === 1 ? '' : 's'} reviewed · Threshold ${highChurnThresholdDays} days`;
-        
+
         return {
             staffingWindowDays,
             averageTenureDays,
@@ -601,7 +755,7 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
         const totalPayloadTons = performanceSummary?.total_payload_tons ?? null;
         const avgPayloadTonsPerTrip = performanceSummary?.avg_payload_tons_per_trip ?? null;
         const tripCompletionRate = performanceSummary?.trip_completion_rate ?? null;
-        
+
         return {
             totalDistanceKm,
             totalLoadedDistanceKm,
@@ -654,7 +808,7 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
         const utilizationServiceDays = utilization?.service_days ?? null;
         const utilizationIdleDays = utilization?.idle_days ?? null;
         const utilizationUnknownDays = utilization?.unknown_days ?? null;
-        
+
         return {
             utilization,
             utilizationWindowDays,
@@ -988,6 +1142,133 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
         },
     ], [avgLoadedDistanceKm, avgEmptyDistanceKm, avgTonKmPerTrip, totalTonKm, totalPayloadTons, performanceSummary?.avg_cargo_volume_mt_per_trip]);
 
+    const decisionInsights = useMemo<DecisionInsight[]>(() => {
+        const insights: DecisionInsight[] = [];
+        const overdueMaintenance = maintenanceSummary?.overdue ?? 0;
+        const maintenanceTotal = maintenanceSummary?.total_records ?? 0;
+        const completionRate = tripCompletionRate ?? null;
+        const fuelEfficiency = avgFuelEfficiency ?? null;
+        const utilizationValue = utilizationRate ?? null;
+
+        if (utilizationValue !== null) {
+            if (utilizationValue < 0.55) {
+                insights.push({
+                    id: 'utilization-low',
+                    tone: 'watch',
+                    headline: 'Utilization is under 55%',
+                    description: 'Consider reallocating routes or assignments to increase usage over the next period.',
+                    actionLabel: 'Review assignments',
+                    actionHref: `/driver-trucks?truck_id=${truck.id}`,
+                });
+            } else if (utilizationValue > 0.8) {
+                insights.push({
+                    id: 'utilization-strong',
+                    tone: 'opportunity',
+                    headline: 'High utilization streak',
+                    description: 'This truck is staying productive. Lock in scheduled maintenance to protect uptime.',
+                    actionLabel: 'Plan maintenance',
+                    actionHref: `/maintenance/create?truck_id=${truck.id}`,
+                });
+            }
+        }
+
+        if (overdueMaintenance > 0) {
+            insights.push({
+                id: 'maintenance-overdue',
+                tone: 'watch',
+                headline: `${overdueMaintenance} maintenance task${overdueMaintenance === 1 ? '' : 's'} overdue`,
+                description: 'Prioritise these work orders to avoid unexpected downtime.',
+                actionLabel: 'View maintenance',
+                actionHref: `/maintenance?truck_id=${truck.id}`,
+            });
+        } else if (maintenanceTotal > 0) {
+            insights.push({
+                id: 'maintenance-ontrack',
+                tone: 'opportunity',
+                headline: 'Maintenance cadence is on track',
+                description: 'No overdue jobs at the moment. Consider extending the service window while utilisation is high.',
+            });
+        }
+
+        if (fuelEfficiency !== null) {
+            if (fuelEfficiency < 2.5) {
+                insights.push({
+                    id: 'fuel-efficiency-low',
+                    tone: 'watch',
+                    headline: 'Fuel efficiency trending low',
+                    description: 'Explore coaching the assigned driver or reviewing load mix to improve fuel economy.',
+                    actionLabel: 'Check performance',
+                    actionHref: `/performances?truck_id=${truck.id}`,
+                });
+            } else if (fuelEfficiency > 3.5) {
+                insights.push({
+                    id: 'fuel-efficiency-strong',
+                    tone: 'opportunity',
+                    headline: 'Fuel efficiency is a standout',
+                    description: 'Capture and share the driving pattern that led to this gain across the fleet.',
+                });
+            }
+        }
+
+        if (completionRate !== null) {
+            if (completionRate < 0.7) {
+                insights.push({
+                    id: 'completion-low',
+                    tone: 'watch',
+                    headline: 'Trip completion rate below 70%',
+                    description: 'Investigate in-progress trips and clear blockers with operations and drivers.',
+                    actionLabel: 'Open trips',
+                    actionHref: `/performances?truck_id=${truck.id}&status=open`,
+                });
+            } else if (completionRate >= 0.85) {
+                insights.push({
+                    id: 'completion-strong',
+                    tone: 'opportunity',
+                    headline: 'Trips close reliably',
+                    description: 'Great closure discipline. This truck is safe to schedule for high-priority operations.',
+                });
+            }
+        }
+
+        if (isHighChurn) {
+            insights.push({
+                id: 'staffing-churn',
+                tone: 'watch',
+                headline: 'Driver turnover is elevated',
+                description: `Average driver tenure is ${averageTenureDisplay}. Keep assignments stable for at least ${highChurnThresholdDays} days.`,
+                actionLabel: 'Review staffing',
+                actionHref: `/driver-trucks?truck_id=${truck.id}`,
+            });
+        }
+
+        if (!insights.length) {
+            insights.push({
+                id: 'default-snapshot',
+                tone: 'neutral',
+                headline: 'Performance looks balanced',
+                description: 'No urgent risks detected. Monitor utilisation and maintenance to keep things steady.',
+            });
+        }
+
+        return insights;
+    }, [
+        maintenanceSummary?.overdue,
+        maintenanceSummary?.total_records,
+        tripCompletionRate,
+        avgFuelEfficiency,
+        utilizationRate,
+        isHighChurn,
+        averageTenureDisplay,
+        highChurnThresholdDays,
+        truck.id,
+    ]);
+
+    const filteredInsights = useMemo(() => (
+        insightFilter === 'all'
+            ? decisionInsights
+            : decisionInsights.filter((insight) => insight.tone === insightFilter)
+    ), [decisionInsights, insightFilter]);
+
     const overallGrade = gradeReport?.overall ?? null;
     const gradeWeights = gradeReport?.weights ?? null;
     const gradeCategories = gradeReport
@@ -1161,7 +1442,7 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`View Truck - ${truck.plate}`} />
-            <div className="flex flex-1 min-h-0 flex-col gap-6 rounded-xl p-4">
+            <div className="flex h-full flex-1 flex-col overflow-hidden rounded-xl p-4">
                 {/* Header */}
                 <DetailHeader
                     leading={
@@ -1238,7 +1519,7 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
                     }
                 />
 
-                <Tabs defaultValue="overview" className="flex-1 overflow-hidden flex flex-col">
+                <Tabs defaultValue="overview" className="mt-6 flex flex-1 flex-col overflow-hidden">
                     <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
                         <TabsTrigger value="overview" className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:border data-[state=active]:border-slate-200 dark:data-[state=active]:bg-slate-700 dark:data-[state=active]:border-slate-600 rounded-lg transition-all duration-200 font-medium">
                             <CheckCircle className="h-4 w-4" />
@@ -1259,7 +1540,92 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
                     </TabsList>
 
                     <TabsContent value="overview" className="space-y-6 h-full overflow-y-auto">
-                        <DetailSummaryGrid items={overviewSummaryCards} />
+                        <div className="space-y-6">
+                            <DetailSummaryGrid items={overviewSummaryCards} />
+                            <Card className="border-0 shadow-lg bg-gradient-to-br from-background to-muted/20">
+                                <CardHeader className="border-b bg-gradient-to-r from-indigo-50 to-slate-50 dark:from-indigo-950/20 dark:to-slate-900/30">
+                                    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                                        <div>
+                                            <CardTitle className="flex items-center gap-2 text-xl">
+                                                <div className="rounded-lg bg-indigo-100 p-2 dark:bg-indigo-900/30">
+                                                    <Target className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                                                </div>
+                                                Decision Highlights
+                                            </CardTitle>
+                                            <CardDescription className="text-base">
+                                                Filter insights to focus on opportunities or watch items quickly
+                                            </CardDescription>
+                                        </div>
+                                        <ToggleGroup
+                                            type="single"
+                                            variant="outline"
+                                            size="sm"
+                                            value={insightFilter}
+                                            onValueChange={(value) => {
+                                                if (!value) {
+                                                    return;
+                                                }
+
+                                                setInsightFilter(value as 'all' | InsightTone);
+                                            }}
+                                            className="self-start md:self-auto"
+                                        >
+                                            <ToggleGroupItem value="all" aria-label="Show all insights" className="font-medium">
+                                                All
+                                            </ToggleGroupItem>
+                                            <ToggleGroupItem value="opportunity" aria-label="Show opportunities" className="font-medium">
+                                                Opportunities
+                                            </ToggleGroupItem>
+                                            <ToggleGroupItem value="watch" aria-label="Show watch items" className="font-medium">
+                                                Watch
+                                            </ToggleGroupItem>
+                                        </ToggleGroup>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="grid gap-4 md:grid-cols-2">
+                                    {filteredInsights.length > 0 ? (
+                                        filteredInsights.map((insight) => {
+                                            const tone = insightToneConfig[insight.tone];
+
+                                            return (
+                                                <div
+                                                    key={insight.id}
+                                                    className={`flex flex-col gap-3 rounded-xl border bg-white/80 p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:bg-slate-900/50 ${tone.accentClass}`}
+                                                >
+                                                    <div className="flex items-start justify-between gap-3">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className={`rounded-lg p-2 ${tone.badgeClass}`}>
+                                                                {tone.icon('h-4 w-4')}
+                                                            </div>
+                                                            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                                                {tone.label}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <p className="text-base font-semibold text-slate-900 dark:text-slate-100">{insight.headline}</p>
+                                                        <p className="text-sm text-muted-foreground">{insight.description}</p>
+                                                    </div>
+                                                    {insight.actionHref && insight.actionLabel && (
+                                                        <Button variant="link" size="sm" className="px-0 self-start" asChild>
+                                                            <Link href={insight.actionHref} className="flex items-center gap-2">
+                                                                {insight.actionLabel}
+                                                                <ArrowUpRight className="h-4 w-4" />
+                                                            </Link>
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                            );
+                                        })
+                                    ) : (
+                                        <div className="col-span-full flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50/80 p-6 text-center text-sm text-muted-foreground dark:border-slate-700 dark:bg-slate-900/40">
+                                            <Info className="mb-2 h-5 w-5" />
+                                            No insights for this filter yet. Try switching the filter or adjusting operational priorities.
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        </div>
                         <div className="flex flex-col lg:flex-row gap-6">
                             {/* Main Details */}
                             <div className="flex-1 space-y-6">
@@ -1341,7 +1707,9 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
                                     </CardHeader>
                                     <CardContent className="space-y-4 p-4">
                                         {driverAssignments.length > 0 ? (
-                                            driverAssignments.map((assignment) => {
+                                            <>
+                                                <div className="space-y-4">
+                                                    {displayedAssignments.map((assignment) => {
                                                 const driverName = assignment.driver?.name ?? 'Unknown driver';
                                                 const driverCode = assignment.driver?.driverid ?? assignment.driverid ?? 'N/A';
                                                 const assignmentStatusLabel = assignment.status
@@ -1398,7 +1766,25 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
                                                         </div>
                                                     </div>
                                                 );
-                                            })
+                                                })}
+                                                </div>
+                                                {driverAssignments.length > 3 && (
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="self-start"
+                                                        onClick={() => setShowAllAssignments((previous) => !previous)}
+                                                    >
+                                                        <span className="flex items-center gap-2">
+                                                            {showAllAssignments ? 'Show fewer assignments' : `Show all assignments (${driverAssignments.length})`}
+                                                            {showAllAssignments ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                                                        </span>
+                                                        {!showAllAssignments && hiddenAssignmentsCount > 0 && (
+                                                            <span className="ml-2 text-xs text-muted-foreground">+{hiddenAssignmentsCount} more</span>
+                                                        )}
+                                                    </Button>
+                                                )}
+                                            </>
                                         ) : (
                                             <div className="text-center py-8 text-sm text-muted-foreground">
                                                 <User className="mx-auto mb-3 h-10 w-10 opacity-60" />
@@ -1959,6 +2345,98 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
                     </TabsContent>
 
                     <TabsContent value="history" className="space-y-6 h-full overflow-y-auto">
+                        <Card className="shadow-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/60">
+                            <CardHeader className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40">
+                                <CardTitle className="flex items-center gap-2 text-slate-900 dark:text-slate-100">
+                                    <Truck className="h-5 w-5" />
+                                    Daily Status (Last 30 Days)
+                                </CardTitle>
+                                <CardDescription>Snapshot of recent operational status changes</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                {statusHistory.length > 0 ? (
+                                    <>
+                                        {statusOverview && (
+                                            <div className="space-y-4">
+                                                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                                                    <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/40 p-4">
+                                                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Window</p>
+                                                        <p className="mt-2 text-base font-semibold text-slate-900 dark:text-slate-100">{statusOverview.windowLabel}</p>
+                                                    </div>
+                                                    <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/40 p-4">
+                                                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Total updates</p>
+                                                        <p className="mt-2 text-base font-semibold text-slate-900 dark:text-slate-100">{formatNumber(statusOverview.total_records)}</p>
+                                                    </div>
+                                                    <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/40 p-4">
+                                                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Days recorded</p>
+                                                        <p className="mt-2 text-base font-semibold text-slate-900 dark:text-slate-100">{formatNumber(statusOverview.days_with_status)}</p>
+                                                    </div>
+                                                    <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/40 p-4">
+                                                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Distinct statuses</p>
+                                                        <p className="mt-2 text-base font-semibold text-slate-900 dark:text-slate-100">{formatNumber(statusOverview.distinct_statuses)}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="grid gap-4 md:grid-cols-2">
+                                                    <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/40 p-4">
+                                                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Current status</p>
+                                                        <p className="mt-2 text-base font-semibold text-slate-900 dark:text-slate-100">{statusOverview.currentStatusLabel}</p>
+                                                    </div>
+                                                    <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/40 p-4">
+                                                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Last changed</p>
+                                                        <p className="mt-2 text-base font-semibold text-slate-900 dark:text-slate-100">{statusOverview.currentStatusChangedAtLabel}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {statusDistribution.length > 0 && (
+                                            <div>
+                                                <p className="text-sm font-medium text-muted-foreground mb-2">Status distribution</p>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {statusDistribution.map((entry) => (
+                                                        <Badge key={`${entry.status_id ?? 'none'}-${entry.label}`} variant="secondary" className="flex items-center gap-1">
+                                                            {entry.label}
+                                                            <span className="text-xs text-muted-foreground">({entry.occurrences})</span>
+                                                        </Badge>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        <div className="space-y-3">
+                                            {enrichedStatusHistory.map((record) => (
+                                                <div key={record.id} className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/40 p-4">
+                                                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                                        <div className="flex items-center gap-2">
+                                                            <Badge variant="outline" className="text-xs font-semibold capitalize">
+                                                                {record.statusLabel}
+                                                            </Badge>
+                                                            <span className="text-xs text-muted-foreground">on {record.statusDateLabel}</span>
+                                                        </div>
+                                                        <div className="text-xs text-muted-foreground">
+                                                            Updated {record.changedAtLabel} by {record.changedByLabel}
+                                                        </div>
+                                                    </div>
+                                                    {record.notes && (
+                                                        <p className="mt-3 text-sm text-slate-700 dark:text-slate-200">
+                                                            {record.notes}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="text-center py-8">
+                                        <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                                        <h3 className="text-lg font-semibold mb-2">No recent status updates</h3>
+                                        <p className="text-muted-foreground">
+                                            Status changes within the last 30 days will appear here.
+                                        </p>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
                         <Card className="shadow-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/60">
                             <CardHeader className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40">
                                 <CardTitle className="flex items-center gap-2 text-slate-900 dark:text-slate-100">

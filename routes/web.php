@@ -582,6 +582,10 @@ Route::middleware(['auth'])->group(function () {
             ->middleware('can:truck-status-board.view')
             ->name('truck-status-board.index');
 
+        Route::get('truck-status-board/trucks/{truck}', [\App\Http\Controllers\DailyTruckStatusController::class, 'show'])
+            ->middleware('can:truck-status-board.view')
+            ->name('truck-status-board.trucks.show');
+
         Route::post('truck-status-board', [\App\Http\Controllers\DailyTruckStatusController::class, 'store'])
             ->middleware('can:truck-status-board.update')
             ->name('truck-status-board.store');

@@ -58,7 +58,7 @@ export default function StatusDaily({ status, date, trucks }: { status: any; dat
                         <Truck className="h-4 w-4 text-blue-600" />
                         <span className="font-medium">{row.truck?.plate}</span>
                       </div>
-                      <Link href={`/trucks/${row.truck?.id}/status-history`} className="text-sm text-primary hover:underline">View History</Link>
+                      <Link href={`/truck-status-board/trucks/${row.truck?.id}`} className="text-sm text-primary hover:underline">View History</Link>
                     </li>
                   ))}
                 </ul>

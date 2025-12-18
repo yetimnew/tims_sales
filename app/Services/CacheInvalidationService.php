@@ -20,6 +20,7 @@ class CacheInvalidationService
             'fuel_records.truck_options',
             'maintenance.create_trucks',
             'daily_truck_status.trucks',
+            'daily_truck_status.active_trucks',
             'reports.maintenance.truck_options',
             'reports.fuel_efficiency.truck_options',
             'reports.performance_all.truck_options',
@@ -174,6 +175,7 @@ class CacheInvalidationService
         // Daily Truck Statuses
         \App\Models\DailyTruckStatus::class => [
             'daily_truck_status.trucks',
+            'daily_truck_status.active_trucks',
             'daily_truck_status.operational_status_type',
             'daily_truck_status.statuses',
         ],

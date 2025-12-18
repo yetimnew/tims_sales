@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\DailyTruckStatus;
+use App\Models\Driver;
 use App\Models\DriverTruck;
 use App\Models\MaintenanceType;
 use App\Models\Operation;
@@ -86,6 +87,65 @@ class TruckControllerTest extends TestCase
                 ->component('Trucks/Index')
                 ->has('trucks.data', 1)
                 ->where('trucks.data.0.plate', 'AA-1234')
+            );
+    }
+
+    #[Test]
+    public function it_hides_stale_driver_assignments_on_index()
+    {
+        $driver = Driver::factory()->create(['name' => 'Abel Kebede']);
+
+        $truckWithOldAssignment = Truck::factory()->create([
+            'plate' => 'AA-0001',
+            'vehicletype_id' => $this->vehicleType->id,
+            'status' => 'active',
+        ]);
+
+        $truckWithCurrentAssignment = Truck::factory()->create([
+            'plate' => 'BB-0002',
+            'vehicletype_id' => $this->vehicleType->id,
+            'status' => 'active',
+        ]);
+
+        DriverTruck::factory()->for($driver, 'driver')->for($truckWithOldAssignment, 'truck')->create([
+            'driverid' => 'DRV-9001',
+            'plate' => $truckWithOldAssignment->plate,
+            'date_recived' => Carbon::now()->subDays(7),
+            'assigned_date' => Carbon::now()->subDays(7),
+            'user_id' => $this->user->id,
+            'is_attached' => false,
+            'status' => 'inactive',
+            'date_detach' => Carbon::now()->subDays(2),
+            'unassigned_date' => Carbon::now()->subDays(2),
+        ]);
+
+        DriverTruck::factory()->for($driver, 'driver')->for($truckWithCurrentAssignment, 'truck')->create([
+            'driverid' => 'DRV-9001',
+            'plate' => $truckWithCurrentAssignment->plate,
+            'date_recived' => Carbon::now()->subDay(),
+            'assigned_date' => Carbon::now()->subDay(),
+            'user_id' => $this->user->id,
+            'is_attached' => true,
+            'status' => 'active',
+            'date_detach' => null,
+            'unassigned_date' => null,
+        ]);
+
+        $response = $this->actingAs($this->user)
+            ->get(route('trucks.index'));
+
+        $response->assertStatus(200)
+            ->assertInertia(fn ($page) => $page
+                ->component('Trucks/Index')
+                ->where('trucks.data', function ($data) use ($truckWithOldAssignment, $truckWithCurrentAssignment) {
+                    $collection = collect($data);
+
+                    $oldAssignment = $collection->firstWhere('id', $truckWithOldAssignment->id);
+                    $currentAssignment = $collection->firstWhere('id', $truckWithCurrentAssignment->id);
+
+                    return ($oldAssignment !== null && ($oldAssignment['currentDriverName'] ?? null) === null)
+                        && ($currentAssignment !== null && $currentAssignment['currentDriverName'] === 'Abel Kebede');
+                })
             );
     }
 
@@ -223,6 +283,22 @@ class TruckControllerTest extends TestCase
             $destination = Place::factory()->create();
             $maintenanceType = MaintenanceType::factory()->create();
 
+            $statusType = StatusType::factory()->create([
+                'name' => 'Operational Status',
+            ]);
+
+            $availableStatus = Status::factory()->for($statusType)->create([
+                'name' => 'Available',
+            ]);
+
+            $maintenanceStatus = Status::factory()->for($statusType)->create([
+                'name' => 'Maintenance',
+            ]);
+
+            Status::factory()->for($statusType)->create([
+                'name' => 'Out of Service',
+            ]);
+
             $driverAssignments = DriverTruck::factory()
                 ->for($truck)
                 ->count(6)
@@ -286,6 +362,24 @@ class TruckControllerTest extends TestCase
                     ]);
             }
 
+            foreach (range(0, 4) as $index) {
+                DailyTruckStatus::create([
+                    'truck_id' => $truck->id,
+                    'status_id' => $index % 2 === 0 ? $availableStatus->id : $maintenanceStatus->id,
+                    'status_date' => Carbon::now()->subDays($index)->toDateString(),
+                    'notes' => $index % 2 === 0 ? 'Ready for dispatch' : 'Scheduled maintenance',
+                    'changed_by' => $this->user->id,
+                ]);
+            }
+
+            DailyTruckStatus::create([
+                'truck_id' => $truck->id,
+                'status_id' => $maintenanceStatus->id,
+                'status_date' => Carbon::now()->subDays(40)->toDateString(),
+                'notes' => 'Outside summary window',
+                'changed_by' => $this->user->id,
+            ]);
+
             $response = $this->actingAs($this->user)
                 ->get(route('trucks.show', $truck));
 
@@ -314,6 +408,18 @@ class TruckControllerTest extends TestCase
                     ->where('maintenanceSummary.scheduled', 7)
                     ->where('maintenanceSummary.overdue', 3)
                     ->where('maintenanceSummary.total_cost', fn ($value) => abs($value - 1200) < 0.01)
+                    ->where('recentStatusHistory', fn ($history) => count($history) === 5)
+                    ->where('recentStatusHistory.0.status.name', 'Available')
+                    ->where('recentStatusHistory.0.status_date', Carbon::now()->toDateString())
+                    ->where('recentStatusSummary.total_records', 5)
+                    ->where('recentStatusSummary.days_with_status', 5)
+                    ->where('recentStatusSummary.distinct_statuses', 2)
+                    ->where('recentStatusSummary.window_start', Carbon::now()->subDays(29)->toDateString())
+                    ->where('recentStatusSummary.window_end', Carbon::now()->toDateString())
+                    ->where('recentStatusSummary.current_status', 'Available')
+                    ->where('recentStatusSummary.status_counts', fn ($counts) => collect($counts)->contains(fn ($entry) => $entry['status_name'] === 'Available' && $entry['occurrences'] === 3)
+                        && collect($counts)->contains(fn ($entry) => $entry['status_name'] === 'Maintenance' && $entry['occurrences'] === 2)
+                    )
                 );
         } finally {
             Carbon::setTestNow();

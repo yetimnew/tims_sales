@@ -1,5 +1,5 @@
 import AppLayout from '@/layouts/app-layout';
-import { Head, router } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { DatePicker } from '@/components/ui/date-picker';
@@ -11,11 +11,12 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { ReportMultiSelectFilter } from '@/components/reports/report-multi-select-filter';
 import type { ReportSelectionOption } from '@/components/reports/types';
 import { type BreadcrumbItem } from '@/types';
-import { Truck, Calendar, Search, MessageSquare, Info, Filter, Users, StickyNote, User, Wrench, Tag } from 'lucide-react';
+import { Truck, Search, MessageSquare, Info, Filter, User, Wrench, Tag } from 'lucide-react';
 import * as React from 'react';
 import { DndContext, DragEndEvent, DragStartEvent, PointerSensor, useSensor, useSensors, useDroppable, closestCorners, DragOverEvent } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { toast } from '@/hooks/use-toast';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -40,8 +41,9 @@ const getStatusAccent = (statusId: number): string => {
 };
 
 interface Driver {
-    id: number;
+    id: number | null;
     name: string;
+    legacy_id?: string | null;
 }
 
 interface TruckCard {
@@ -75,8 +77,60 @@ interface TruckStatusBoardProps {
     selectedDate: string;
 }
 
+interface PendingMove {
+    fromStatusId: number;
+    fromIndex: number;
+    originalTruck: TruckCard;
+    outstandingStatusId: number;
+    inFlightStatusId: number | null;
+}
+
+interface StatusUpdateResponse {
+    truck_id: number;
+    status_id: number | null;
+    notes: string | null;
+    changed_at: string | null;
+    changed_by: string | null;
+}
+
+const resolveCsrfToken = (): string | undefined => {
+    if (typeof document === 'undefined') {
+        return undefined;
+    }
+
+    const meta = document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement | null;
+
+    return meta?.content;
+};
+
+const cloneBoardData = (source: TrucksByStatus): TrucksByStatus => {
+    const clone: TrucksByStatus = {};
+
+    Object.entries(source).forEach(([key, value]) => {
+        clone[Number(key)] = {
+            status: value.status,
+            trucks: value.trucks.map((truck) => ({
+                ...truck,
+                driver: truck.driver ? { ...truck.driver } : null,
+            })),
+        };
+    });
+
+    return clone;
+};
+
 // Truck Card Component (compact)
-function TruckCardComponent({ truck, onCommentClick }: { truck: TruckCard; onCommentClick: (truck: TruckCard) => void }) {
+function TruckCardComponent({
+    truck,
+    onCommentClick,
+    onViewDetails,
+    isSyncing = false,
+}: {
+    truck: TruckCard;
+    onCommentClick: (truck: TruckCard) => void;
+    onViewDetails: (truck: TruckCard) => void;
+    isSyncing?: boolean;
+}) {
     const {
         attributes,
         listeners,
@@ -97,9 +151,24 @@ function TruckCardComponent({ truck, onCommentClick }: { truck: TruckCard; onCom
 
     return (
         <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-            <Card className={`mb-2 cursor-move border border-slate-200/80 shadow-sm transition-all hover:shadow-md ${
-                isDragging ? 'opacity-75 ring-2 ring-blue-400 shadow-lg' : 'bg-white'
-            }`}>
+            <Card
+                role="button"
+                tabIndex={0}
+                onClick={() => {
+                    if (!isDragging) {
+                        onViewDetails(truck);
+                    }
+                }}
+                onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        onViewDetails(truck);
+                    }
+                }}
+                className={`mb-2 cursor-move border border-slate-200/80 shadow-sm transition-all hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 ${
+                    isDragging ? 'opacity-75 ring-2 ring-blue-400 shadow-lg' : 'bg-white'
+                }`}
+            >
                 <CardContent className="p-3">
                     <div className="flex items-start justify-between gap-2">
                         <div className="flex flex-col gap-1 min-w-0">
@@ -111,6 +180,11 @@ function TruckCardComponent({ truck, onCommentClick }: { truck: TruckCard; onCom
                                 {hasNotes && (
                                     <Badge variant="secondary" className="bg-amber-100 text-amber-700 border-amber-200 text-[10px]">
                                         Notes
+                                    </Badge>
+                                )}
+                                {isSyncing && (
+                                    <Badge variant="outline" className="border-blue-200 bg-blue-50 text-blue-600 text-[10px] uppercase tracking-wide">
+                                        Syncing
                                     </Badge>
                                 )}
                             </div>
@@ -156,6 +230,18 @@ function TruckCardComponent({ truck, onCommentClick }: { truck: TruckCard; onCom
                         {truck.changed_by && (
                             <span className="truncate">By {truck.changed_by}</span>
                         )}
+                        <Link
+                            href={`/truck-status-board/trucks/${truck.id}`}
+                            className="ml-auto text-xs font-medium text-blue-600 hover:text-blue-700"
+                            onClick={(event) => {
+                                event.stopPropagation();
+                            }}
+                            onKeyDown={(event) => {
+                                event.stopPropagation();
+                            }}
+                        >
+                            View details →
+                        </Link>
                     </div>
                 </CardContent>
             </Card>
@@ -168,16 +254,20 @@ function StatusColumn({
     status,
     trucks,
     onCommentClick,
+    onViewDetails,
     highlight,
     accent,
     isFiltered,
+    pendingTruckIds,
 }: {
     status: Status;
     trucks: TruckCard[];
     onCommentClick: (truck: TruckCard) => void;
+    onViewDetails: (truck: TruckCard) => void;
     highlight: boolean;
     accent: string;
     isFiltered: boolean;
+    pendingTruckIds: Set<number>;
 }) {
     const { setNodeRef, isOver } = useDroppable({
         id: `status-${status.id}`,
@@ -228,7 +318,13 @@ function StatusColumn({
                 <SortableContext items={trucks.map(t => `truck-${t.id}`)} strategy={verticalListSortingStrategy}>
                     {trucks.length > 0 ? (
                         trucks.map((truck) => (
-                            <TruckCardComponent key={truck.id} truck={truck} onCommentClick={onCommentClick} />
+                            <TruckCardComponent
+                                key={truck.id}
+                                truck={truck}
+                                onCommentClick={onCommentClick}
+                                onViewDetails={onViewDetails}
+                                isSyncing={pendingTruckIds.has(truck.id)}
+                            />
                         ))
                     ) : (
                         <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50/60 py-10 text-center text-sm text-slate-400">
@@ -251,6 +347,207 @@ export default function TruckStatusBoard({ trucksByStatus, statuses, selectedDat
     const [selectedDrivers, setSelectedDrivers] = React.useState<string[]>([]);
     const [selectedEquipment, setSelectedEquipment] = React.useState<string[]>([]);
     const [selectedPlates, setSelectedPlates] = React.useState<string[]>([]);
+    const [isFiltersOpen, setIsFiltersOpen] = React.useState(false);
+    const [boardData, setBoardData] = React.useState<TrucksByStatus>(() => cloneBoardData(trucksByStatus));
+    const [pendingTruckIds, setPendingTruckIds] = React.useState<Set<number>>(new Set());
+    const pendingMovesRef = React.useRef(new Map<number, PendingMove>());
+    const csrfToken = React.useMemo(() => resolveCsrfToken(), []);
+
+    React.useEffect(() => {
+        setBoardData(cloneBoardData(trucksByStatus));
+        setPendingTruckIds(() => new Set());
+        pendingMovesRef.current.clear();
+    }, [trucksByStatus]);
+
+    const submitStatusUpdate = React.useCallback(async (truckId: number, statusId: number): Promise<StatusUpdateResponse> => {
+        const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+        };
+
+        if (csrfToken) {
+            headers['X-CSRF-TOKEN'] = csrfToken;
+        }
+
+        const response = await fetch('/truck-status-board', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers,
+            body: JSON.stringify({
+                truck_id: truckId,
+                status_id: statusId,
+                status_date: selectedDate,
+            }),
+        });
+
+        if (response.ok) {
+            return response.json() as Promise<StatusUpdateResponse>;
+        }
+
+        let message = 'Failed to update truck status.';
+
+        try {
+            const errorBody = (await response.json()) as { message?: string };
+            if (typeof errorBody.message === 'string' && errorBody.message.trim() !== '') {
+                message = errorBody.message;
+            }
+        } catch {
+            // ignore malformed payloads
+        }
+
+        throw new Error(message);
+    }, [csrfToken, selectedDate]);
+
+    const processPendingMove = React.useCallback((truckId: number) => {
+        const pendingMove = pendingMovesRef.current.get(truckId);
+
+        if (!pendingMove) {
+            return;
+        }
+
+        if (pendingMove.inFlightStatusId !== null) {
+            return;
+        }
+
+        const statusToSync = pendingMove.outstandingStatusId;
+        pendingMove.inFlightStatusId = statusToSync;
+
+        setPendingTruckIds((current) => {
+            if (current.has(truckId)) {
+                return current;
+            }
+
+            const next = new Set(current);
+            next.add(truckId);
+            return next;
+        });
+
+        (async () => {
+            try {
+                const payload = await submitStatusUpdate(truckId, statusToSync);
+
+                const activeMove = pendingMovesRef.current.get(truckId);
+                if (!activeMove) {
+                    return;
+                }
+
+                setBoardData((current) => {
+                    const next = cloneBoardData(current);
+
+                    let updatedIndex = -1;
+
+                    const resolvedStatusId = payload.status_id ?? statusToSync;
+                    const destination = next[resolvedStatusId];
+
+                    if (destination) {
+                        const locatedIndex = destination.trucks.findIndex((entry) => entry.id === truckId);
+
+                        if (locatedIndex !== -1) {
+                            destination.trucks[locatedIndex] = {
+                                ...destination.trucks[locatedIndex],
+                                status_id: resolvedStatusId,
+                                notes: payload.notes,
+                                changed_at: payload.changed_at,
+                                changed_by: payload.changed_by ?? destination.trucks[locatedIndex].changed_by,
+                            };
+
+                            updatedIndex = locatedIndex;
+                        }
+                    }
+
+                    if (updatedIndex !== -1 && destination) {
+                        const snapshot = destination.trucks[updatedIndex];
+
+                        activeMove.originalTruck = {
+                            ...snapshot,
+                            driver: snapshot.driver ? { ...snapshot.driver } : null,
+                        };
+                        activeMove.fromStatusId = resolvedStatusId;
+                        activeMove.fromIndex = updatedIndex;
+                    }
+
+                    return next;
+                });
+
+                const refreshedMove = pendingMovesRef.current.get(truckId);
+
+                if (!refreshedMove) {
+                    return;
+                }
+
+                if (refreshedMove.outstandingStatusId !== statusToSync) {
+                    refreshedMove.inFlightStatusId = null;
+                    processPendingMove(truckId);
+                    return;
+                }
+
+                pendingMovesRef.current.delete(truckId);
+            } catch (error) {
+                const failedMove = pendingMovesRef.current.get(truckId);
+
+                if (failedMove) {
+                    setBoardData((current) => {
+                        const next = cloneBoardData(current);
+
+                        for (const column of Object.values(next)) {
+                            const index = column.trucks.findIndex((entry) => entry.id === truckId);
+                            if (index !== -1) {
+                                column.trucks.splice(index, 1);
+                                break;
+                            }
+                        }
+
+                        const sourceColumn = next[failedMove.fromStatusId];
+
+                        if (sourceColumn) {
+                            sourceColumn.trucks.splice(failedMove.fromIndex, 0, {
+                                ...failedMove.originalTruck,
+                                driver: failedMove.originalTruck.driver ? { ...failedMove.originalTruck.driver } : null,
+                            });
+                        }
+
+                        return next;
+                    });
+
+                    pendingMovesRef.current.delete(truckId);
+                }
+
+                toast({
+                    title: 'Status update failed',
+                    description: error instanceof Error ? error.message : 'We could not sync this move. The truck was returned to its previous column.',
+                    variant: 'destructive',
+                });
+            } finally {
+                if (!pendingMovesRef.current.has(truckId)) {
+                    setPendingTruckIds((current) => {
+                        if (!current.has(truckId)) {
+                            return current;
+                        }
+
+                        const next = new Set(current);
+                        next.delete(truckId);
+                        return next;
+                    });
+                }
+            }
+        })();
+    }, [submitStatusUpdate, toast]);
+
+    const clearFilterSelections = React.useCallback(() => {
+        setSelectedDrivers([]);
+        setSelectedEquipment([]);
+        setSelectedPlates([]);
+    }, []);
+
+    const handleClearFilters = React.useCallback(() => {
+        setSearchTerm('');
+        clearFilterSelections();
+    }, [clearFilterSelections]);
+
+    const handleViewTruck = React.useCallback((truck: TruckCard) => {
+        router.visit(`/truck-status-board/trucks/${truck.id}`);
+    }, []);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -265,7 +562,7 @@ export default function TruckStatusBoard({ trucksByStatus, statuses, selectedDat
         const equipmentSet = new Set<string>();
         const plateSet = new Set<string>();
 
-        Object.values(trucksByStatus).forEach((statusData) => {
+        Object.values(boardData).forEach((statusData) => {
             statusData.trucks.forEach((truck) => {
                 const driverName = truck.driver?.name?.trim();
                 if (driverName) {
@@ -292,7 +589,7 @@ export default function TruckStatusBoard({ trucksByStatus, statuses, selectedDat
             equipmentValues: toValues(equipmentSet),
             plateValues: toValues(plateSet),
         };
-    }, [trucksByStatus]);
+    }, [boardData]);
 
     const driverFilterOptions = React.useMemo<ReportSelectionOption[]>(
         () => driverValues.map((value) => ({ id: value, label: value })),
@@ -320,52 +617,101 @@ export default function TruckStatusBoard({ trucksByStatus, statuses, selectedDat
 
         if (!over) return;
 
-        // Resolve active truck id from sortable id format truck-<id>
         const activeIdStr = String(active.id);
         const truckId = activeIdStr.startsWith('truck-') ? parseInt(activeIdStr.replace('truck-', '')) : parseInt(activeIdStr);
-        // Support droppable id format: status-<id>
+
         const overId = String(over.id);
         let newStatusId = 0;
+        let overTruckId: number | null = null;
+
         if (overId.startsWith('status-')) {
             newStatusId = parseInt(overId.replace('status-', ''));
         } else if (overId.startsWith('truck-')) {
-            const overTruckId = parseInt(overId.replace('truck-', ''));
-            // Find which status column currently contains the truck being hovered
-            for (const statusData of Object.values(trucksByStatus)) {
-                if (statusData.trucks.some(t => t.id === overTruckId)) {
+            overTruckId = parseInt(overId.replace('truck-', ''));
+
+            for (const statusData of Object.values(boardData)) {
+                if (statusData.trucks.some((entry) => entry.id === overTruckId)) {
                     newStatusId = statusData.status.id;
                     break;
                 }
             }
         } else {
-            // Fallback if ids are numeric (legacy case)
             newStatusId = parseInt(overId);
         }
 
-        // Find the truck
+        if (!Number.isFinite(newStatusId) || !boardData[newStatusId]) {
+            return;
+        }
+
         let truck: TruckCard | null = null;
         let currentStatusId: number | null = null;
+        let fromIndex = -1;
 
-        for (const statusData of Object.values(trucksByStatus)) {
-            const foundTruck = statusData.trucks.find(t => t.id === truckId);
-            if (foundTruck) {
-                truck = foundTruck;
+        for (const statusData of Object.values(boardData)) {
+            const locatedIndex = statusData.trucks.findIndex((entry) => entry.id === truckId);
+
+            if (locatedIndex !== -1) {
+                truck = statusData.trucks[locatedIndex];
                 currentStatusId = statusData.status.id;
+                fromIndex = locatedIndex;
                 break;
             }
         }
 
         if (!truck || currentStatusId === newStatusId) return;
 
-        // Update truck status
-        router.post('/truck-status-board', {
-            truck_id: truckId,
-            status_id: newStatusId,
-            status_date: selectedDate,
-        }, {
-            preserveState: false,
-            preserveScroll: true,
+        setBoardData((current) => {
+            const next = cloneBoardData(current);
+
+            const sourceColumn = next[currentStatusId!];
+            const destinationColumn = next[newStatusId];
+
+            if (!sourceColumn || !destinationColumn) {
+                return current;
+            }
+
+            const sourceIndex = sourceColumn.trucks.findIndex((entry) => entry.id === truckId);
+            if (sourceIndex === -1) {
+                return current;
+            }
+
+            const [movedTruck] = sourceColumn.trucks.splice(sourceIndex, 1);
+            const updatedTruck: TruckCard = {
+                ...movedTruck,
+                status_id: newStatusId,
+            };
+
+            let insertIndex = 0;
+            if (overTruckId !== null && overTruckId !== truckId) {
+                const targetIndex = destinationColumn.trucks.findIndex((entry) => entry.id === overTruckId);
+                insertIndex = targetIndex === -1 ? 0 : targetIndex;
+            }
+
+            destinationColumn.trucks.splice(insertIndex, 0, updatedTruck);
+
+            return next;
         });
+
+        const existingMove = pendingMovesRef.current.get(truckId);
+
+        if (existingMove) {
+            existingMove.outstandingStatusId = newStatusId;
+        } else {
+            const originalTruck: TruckCard = {
+                ...truck,
+                driver: truck.driver ? { ...truck.driver } : null,
+            };
+
+            pendingMovesRef.current.set(truckId, {
+                fromStatusId: currentStatusId!,
+                fromIndex,
+                originalTruck,
+                outstandingStatusId: newStatusId,
+                inFlightStatusId: null,
+            });
+        }
+
+        processPendingMove(truckId);
     };
 
     const handleDragOver = (event: DragOverEvent) => {
@@ -381,8 +727,8 @@ export default function TruckStatusBoard({ trucksByStatus, statuses, selectedDat
         }
         if (overId.startsWith('truck-')) {
             const overTruckId = parseInt(overId.replace('truck-', ''));
-            for (const statusData of Object.values(trucksByStatus)) {
-                if (statusData.trucks.some(t => t.id === overTruckId)) {
+            for (const statusData of Object.values(boardData)) {
+                if (statusData.trucks.some((entry) => entry.id === overTruckId)) {
                     setOverStatusId(statusData.status.id);
                     return;
                 }
@@ -421,7 +767,7 @@ export default function TruckStatusBoard({ trucksByStatus, statuses, selectedDat
         const normalizedSearch = searchTerm.trim().toLowerCase();
         const filtered: TrucksByStatus = {};
 
-        Object.values(trucksByStatus).forEach((statusData) => {
+        Object.values(boardData).forEach((statusData) => {
             const filteredTrucks = statusData.trucks.filter((truck) => {
                 const plate = truck.plate.trim();
                 const vehicleType = truck.vehicleType?.trim() ?? '';
@@ -459,58 +805,25 @@ export default function TruckStatusBoard({ trucksByStatus, statuses, selectedDat
         });
 
         return filtered;
-    }, [searchTerm, selectedDrivers, selectedEquipment, selectedPlates, trucksByStatus]);
+    }, [searchTerm, selectedDrivers, selectedEquipment, selectedPlates, boardData]);
 
     // Calculate total trucks
-    const totalTrucks = Object.values(trucksByStatus).reduce((sum, statusData) => sum + statusData.trucks.length, 0);
+    const totalTrucks = Object.values(boardData).reduce((sum, statusData) => sum + statusData.trucks.length, 0);
 
-    // Calculate trucks with drivers
-    const trucksWithDrivers = Object.values(trucksByStatus).reduce(
-        (sum, statusData) => sum + statusData.trucks.filter((t) => t.driver).length,
-        0,
-    );
+    const appliedFilterCount = React.useMemo(() => {
+        let count = 0;
 
-    // Calculate trucks with notes
-    const trucksWithNotes = Object.values(trucksByStatus).reduce(
-        (sum, statusData) => sum + statusData.trucks.filter((t) => t.notes).length,
-        0,
-    );
+        if (selectedDrivers.length > 0) count += 1;
+        if (selectedEquipment.length > 0) count += 1;
+        if (selectedPlates.length > 0) count += 1;
 
-    const hasActiveFilters =
-        searchTerm.trim() !== '' ||
-        selectedDrivers.length > 0 ||
-        selectedEquipment.length > 0 ||
-        selectedPlates.length > 0;
+        return count;
+    }, [selectedDrivers, selectedEquipment, selectedPlates]);
+
+    const hasActiveFilters = searchTerm.trim() !== '' || appliedFilterCount > 0;
     const hasFilteredResults = React.useMemo(
         () => Object.values(filteredTrucksByStatus).some((statusData) => statusData.trucks.length > 0),
         [filteredTrucksByStatus],
-    );
-
-    const summaryStats = React.useMemo(
-        () => [
-            {
-                id: 'total-trucks',
-                label: 'Total Trucks',
-                value: totalTrucks.toLocaleString(),
-                description: 'Tracked today',
-                icon: <Truck className="h-4 w-4 text-blue-500" />,
-            },
-            {
-                id: 'assigned-drivers',
-                label: 'With Drivers',
-                value: trucksWithDrivers.toLocaleString(),
-                description: 'Assigned operators',
-                icon: <Users className="h-4 w-4 text-emerald-500" />,
-            },
-            {
-                id: 'notes-present',
-                label: 'With Notes',
-                value: trucksWithNotes.toLocaleString(),
-                description: 'Awaiting review',
-                icon: <StickyNote className="h-4 w-4 text-amber-500" />,
-            },
-        ],
-        [totalTrucks, trucksWithDrivers, trucksWithNotes],
     );
 
     return (
@@ -519,48 +832,25 @@ export default function TruckStatusBoard({ trucksByStatus, statuses, selectedDat
 
             <TooltipProvider delayDuration={150}>
                 <div className="flex h-full flex-1 flex-col gap-6 overflow-hidden rounded-xl p-4">
-                {/* Header Section */}
-                <div className="flex items-center justify-between">
-                    <div>
+                <div className="flex flex-wrap items-center gap-4">
+                    <div className="min-w-[220px] flex-1 md:flex-none">
                         <h1 className="text-3xl font-bold">Truck Status Board</h1>
-                        <p className="text-muted-foreground mt-2">
+                        <p className="text-muted-foreground mt-1 text-sm">
                             Manage daily truck operational status - {totalTrucks} truck{totalTrucks !== 1 ? 's' : ''}
                         </p>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-1 flex-wrap items-center justify-end gap-3">
                         <div className="flex items-center gap-2">
-                            <Calendar className="h-5 w-5 text-gray-600" />
                             <DatePicker
-                                className="w-40 h-10 justify-start text-left"
+                                className="h-10 w-40 justify-start text-left"
                                 value={selectedDate}
+                                showClearButton={false}
                                 onChange={(next) => {
                                     router.get('/truck-status-board', { date: next ?? '' });
                                 }}
                             />
                         </div>
-                    </div>
-                </div>
-
-                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                        {summaryStats.map((stat) => (
-                            <Card key={stat.id} className="border-none bg-gradient-to-br from-slate-50 to-white shadow-sm">
-                                <CardContent className="flex items-center gap-4 p-4">
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-slate-800 shadow-inner">
-                                        {stat.icon}
-                                    </div>
-                                    <div>
-                                        <p className="text-sm text-muted-foreground">{stat.label}</p>
-                                        <p className="text-lg font-semibold text-slate-900">{stat.value}</p>
-                                        <p className="text-xs text-slate-400">{stat.description}</p>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </div>
-
-                {/* Search Bar */}
-                    <div className="flex flex-wrap items-center gap-3">
-                        <div className="relative flex-1 min-w-[220px] max-w-md">
+                        <div className="relative flex-1 min-w-[220px] max-w-lg">
                             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
                             <Input
                                 type="text"
@@ -570,11 +860,41 @@ export default function TruckStatusBoard({ trucksByStatus, statuses, selectedDat
                                 className="pl-10 focus:ring-2 focus:ring-blue-500"
                             />
                         </div>
-                        <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                            <Filter className="h-3.5 w-3.5" /> Filters
-                        </div>
-                        <div className="flex w-full flex-wrap gap-3 md:w-auto">
-                            <div className="min-w-[220px] flex-1 md:flex-none md:max-w-xs">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className="gap-2"
+                            onClick={() => setIsFiltersOpen(true)}
+                        >
+                            <Filter className="h-4 w-4" />
+                            Filters
+                            {appliedFilterCount > 0 ? (
+                                <Badge variant="secondary" className="ml-1 h-5 min-w-[1.75rem] justify-center px-1 text-xs">
+                                    {appliedFilterCount}
+                                </Badge>
+                            ) : null}
+                        </Button>
+                        {hasActiveFilters && (
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={handleClearFilters}
+                            >
+                                Clear filters
+                            </Button>
+                        )}
+                    </div>
+                </div>
+
+                    <Dialog open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
+                        <DialogContent className="sm:max-w-lg">
+                            <DialogHeader className="text-left">
+                                <DialogTitle>Filter trucks</DialogTitle>
+                                <DialogDescription>
+                                    Choose the drivers, equipment, and plates you want to display on the board.
+                                </DialogDescription>
+                            </DialogHeader>
+                            <div className="grid gap-4">
                                 <ReportMultiSelectFilter
                                     label="Drivers"
                                     icon={User}
@@ -587,8 +907,6 @@ export default function TruckStatusBoard({ trucksByStatus, statuses, selectedDat
                                     selectedIds={selectedDrivers}
                                     onChange={(ids) => setSelectedDrivers(ids.map((value) => String(value)))}
                                 />
-                            </div>
-                            <div className="min-w-[220px] flex-1 md:flex-none md:max-w-xs">
                                 <ReportMultiSelectFilter
                                     label="Equipment"
                                     icon={Wrench}
@@ -601,8 +919,6 @@ export default function TruckStatusBoard({ trucksByStatus, statuses, selectedDat
                                     selectedIds={selectedEquipment}
                                     onChange={(ids) => setSelectedEquipment(ids.map((value) => String(value)))}
                                 />
-                            </div>
-                            <div className="min-w-[220px] flex-1 md:flex-none md:max-w-xs">
                                 <ReportMultiSelectFilter
                                     label="Plates"
                                     icon={Tag}
@@ -616,22 +932,16 @@ export default function TruckStatusBoard({ trucksByStatus, statuses, selectedDat
                                     onChange={(ids) => setSelectedPlates(ids.map((value) => String(value)))}
                                 />
                             </div>
-                        </div>
-                        {hasActiveFilters && (
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                    setSearchTerm('');
-                                    setSelectedDrivers([]);
-                                    setSelectedEquipment([]);
-                                    setSelectedPlates([]);
-                                }}
-                            >
-                                Clear filters
-                            </Button>
-                        )}
-                    </div>
+                            <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                <Button type="button" variant="ghost" onClick={clearFilterSelections}>
+                                    Clear selections
+                                </Button>
+                                <Button type="button" onClick={() => setIsFiltersOpen(false)}>
+                                    Close
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
 
                 {/* Kanban Board - Full Height Scrollable */}
                 <Card className="flex flex-1 flex-col overflow-hidden">
@@ -656,9 +966,11 @@ export default function TruckStatusBoard({ trucksByStatus, statuses, selectedDat
                                                 status={statusData.status}
                                                 trucks={statusData.trucks}
                                                 onCommentClick={handleCommentClick}
+                                                onViewDetails={handleViewTruck}
                                                 highlight={overStatusId === status.id}
                                                 accent={getStatusAccent(status.id)}
                                                 isFiltered={hasActiveFilters}
+                                                pendingTruckIds={pendingTruckIds}
                                             />
                                         );
                                     })}

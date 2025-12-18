@@ -43,6 +43,7 @@ class DatabaseSeeder extends Seeder
 
         // Seed truck statuses
         $this->call(TruckStatusSeeder::class);
+        $this->call(ActiveTruckStatusSeeder::class);
 
         // Create a test user if none exist
         if (User::count() === 0) {
