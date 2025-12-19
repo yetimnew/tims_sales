@@ -1,7 +1,9 @@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { TableCell, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
+import { TableCell, TableRow } from '@/components/ui/table';
 import ListPageLayout from '@/components/layouts/list-page-layout';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { ListingStatsHeader, type ListingStatDefinition } from '@/components/listing/stats-header';
@@ -25,22 +27,16 @@ import {
     Wrench,
     CheckCircle,
     XCircle,
-    AlertTriangle,
+    Gauge,
+    DollarSign,
 } from 'lucide-react';
 import * as React from 'react';
-import { Skeleton } from '@/components/ui/skeleton';
 
 const SKELETON_FLAG_KEY = 'maintenance-types.index.shouldShowSkeleton';
 
 const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Maintenance',
-        href: '/maintenance',
-    },
-    {
-        title: 'Maintenance Types',
-        href: '/maintenance-types',
-    },
+    { title: 'Maintenance', href: '/maintenance' },
+    { title: 'Maintenance Types', href: '/maintenance-types' },
 ];
 
 interface MaintenanceType {
@@ -52,37 +48,63 @@ interface MaintenanceType {
     estimated_cost?: number | null;
     is_active: boolean;
     description?: string | null;
-    trucks_count?: number;
-    active_trucks_count?: number;
     created_at?: string | null;
+    updated_at?: string | null;
+    trucks_count?: number | null;
+    active_trucks_count?: number | null;
 }
 
-interface MaintenanceTypesCollection {
-    data: MaintenanceType[];
+interface PaginationMeta {
     current_page: number;
     last_page: number;
     per_page: number;
     total: number;
-    from: number;
-    to: number;
-    links: Array<{
-        url: string | null;
-        label: string;
-        active: boolean;
-    }>;
+    from: number | null;
+    to: number | null;
 }
 
-interface MaintenanceTypeStatistics {
-    total: number;
-    active: number;
-    inactive: number;
-    preventive: number;
-    corrective: number;
-    emergency: number;
+interface PaginationLink {
+    url: string | null;
+    label: string;
+    active: boolean;
+}
+
+interface MaintenanceTypesCollection {
+    data: MaintenanceType[];
+    meta: PaginationMeta;
+    links: PaginationLink[];
+}
+
+interface Option {
+    label: string;
+    value: string;
+}
+
+interface CategoryMetric extends Option {
+    count: number;
+}
+
+interface MaintenanceTypeMetrics {
+    counts: {
+        total: number;
+        active: number;
+        inactive: number;
+    };
+    categories: CategoryMetric[];
+    intervals: {
+        average_km: number | null;
+        average_months: number | null;
+    };
+    costs: {
+        average: number | null;
+        total: number | null;
+    };
 }
 
 interface MaintenanceTypeFilters {
     search?: string | null;
+    status?: string | null;
+    category?: string | null;
     sort?: string | null;
     direction?: 'asc' | 'desc' | null;
     per_page?: number | null;
@@ -92,6 +114,8 @@ type BulkActionType = 'delete' | 'activate' | 'deactivate';
 
 type NavigateOverrides = {
     search?: string;
+    status?: string;
+    category?: string;
     sort?: string;
     direction?: 'asc' | 'desc';
     page?: number;
@@ -99,9 +123,12 @@ type NavigateOverrides = {
 };
 
 interface MaintenanceTypesIndexProps {
-    maintenanceTypes?: MaintenanceTypesCollection;
-    statistics?: MaintenanceTypeStatistics;
-    filters?: MaintenanceTypeFilters;
+    maintenanceTypes?: MaintenanceTypesCollection | null;
+    metrics?: MaintenanceTypeMetrics | null;
+    filters?: MaintenanceTypeFilters | null;
+    statusOptions?: Option[] | null;
+    categoryOptions?: Option[] | null;
+    perPageOptions?: number[] | null;
 }
 
 const toNumeric = (value: number | string | null | undefined): number | null => {
@@ -110,6 +137,7 @@ const toNumeric = (value: number | string | null | undefined): number | null => 
     }
 
     const numeric = typeof value === 'string' ? Number(value) : value;
+
     if (!Number.isFinite(numeric)) {
         return null;
     }
@@ -119,6 +147,7 @@ const toNumeric = (value: number | string | null | undefined): number | null => 
 
 const formatNumber = (value: number | string | null | undefined): string => {
     const numeric = toNumeric(value);
+
     if (numeric === null) {
         return '0';
     }
@@ -128,13 +157,14 @@ const formatNumber = (value: number | string | null | undefined): string => {
 
 const formatCurrency = (value: number | string | null | undefined): string => {
     const numeric = toNumeric(value);
+
     if (numeric === null) {
-        return '$0.00';
+        return '—';
     }
 
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-ET', {
         style: 'currency',
-        currency: 'USD',
+        currency: 'ETB',
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
     }).format(numeric);
@@ -156,130 +186,278 @@ const formatIntervalMonths = (value?: number | null): string => {
     return `${value} month${value === 1 ? '' : 's'}`;
 };
 
-const getStatusBadge = (isActive: boolean) => (
-    <Badge variant={isActive ? 'default' : 'secondary'}>
-        {isActive ? 'Active' : 'Inactive'}
-    </Badge>
-);
-
-const getCategoryBadgeVariant = (category: string) => {
-    switch (category.toLowerCase()) {
-        case 'preventive':
-            return 'default' as const;
-        case 'corrective':
-            return 'secondary' as const;
-        case 'emergency':
-            return 'destructive' as const;
-        default:
-            return 'outline' as const;
+const renderStatusBadge = (isActive: boolean) => {
+    if (isActive) {
+        return (
+            <Badge className="flex w-fit items-center gap-1 border border-emerald-200 bg-emerald-100 text-emerald-700 hover:bg-emerald-200">
+                <CheckCircle className="h-3 w-3" />
+                Active
+            </Badge>
+        );
     }
+
+    return (
+        <Badge className="flex w-fit items-center gap-1 border border-slate-200 bg-slate-100 text-slate-700 hover:bg-slate-200">
+            <XCircle className="h-3 w-3" />
+            Inactive
+        </Badge>
+    );
 };
 
-export default function MaintenanceTypesIndex({ maintenanceTypes, statistics, filters }: MaintenanceTypesIndexProps) {
+const normalizeFilterValue = (value?: string | null): string => (value && value !== '' ? value : 'all');
+
+export default function MaintenanceTypesIndex({
+    maintenanceTypes,
+    metrics,
+    filters,
+    statusOptions,
+    categoryOptions,
+    perPageOptions,
+}: MaintenanceTypesIndexProps) {
     const { hasPermission } = usePermissions();
 
-    const safeMaintenanceTypes = maintenanceTypes ?? {
+    const safeStatusOptions = statusOptions ?? [];
+    const safeCategoryOptions = categoryOptions ?? [];
+
+    const availablePerPageOptions = React.useMemo(() => {
+        if (perPageOptions && perPageOptions.length) {
+            return perPageOptions;
+        }
+
+        return [15, 25, 50, 100];
+    }, [perPageOptions]);
+
+    const defaultPerPage = availablePerPageOptions[0] ?? 15;
+
+    const safeMaintenanceTypes: MaintenanceTypesCollection = maintenanceTypes ?? {
         data: [],
-        current_page: 1,
-        last_page: 1,
-        per_page: 15,
-        total: 0,
-        from: 0,
-        to: 0,
+        meta: {
+            current_page: 1,
+            last_page: 1,
+            per_page: defaultPerPage,
+            total: 0,
+            from: 0,
+            to: 0,
+        },
         links: [],
     };
 
-    const safeStatistics = statistics ?? {
-        total: 0,
-        active: 0,
-        inactive: 0,
-        preventive: 0,
-        corrective: 0,
-        emergency: 0,
+    const maintenanceTypeData = safeMaintenanceTypes.data ?? [];
+    const meta = safeMaintenanceTypes.meta ?? {
+        current_page: 1,
+        last_page: 1,
+        per_page: defaultPerPage,
+        total: maintenanceTypeData.length,
+        from: maintenanceTypeData.length > 0 ? 1 : 0,
+        to: maintenanceTypeData.length,
     };
+    const links = safeMaintenanceTypes.links ?? [];
 
-    const safeFilters = filters ?? {
-        search: '',
-        sort: 'name',
-        direction: 'asc',
-        per_page: safeMaintenanceTypes.per_page,
-    };
-
-    const [searchTerm, setSearchTerm] = React.useState<string>(safeFilters.search ?? '');
-    const [sortColumn, setSortColumn] = React.useState<string>(safeFilters.sort ?? 'name');
-    const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>(
-        safeFilters.direction === 'desc' ? 'desc' : 'asc',
+    const metricsData: MaintenanceTypeMetrics = React.useMemo(
+        () => ({
+            counts: {
+                total: metrics?.counts?.total ?? (meta?.total ?? maintenanceTypeData.length ?? 0),
+                active: metrics?.counts?.active ?? 0,
+                inactive: metrics?.counts?.inactive ?? 0,
+            },
+            categories: metrics?.categories ?? [],
+            intervals: {
+                average_km: metrics?.intervals?.average_km ?? null,
+                average_months: metrics?.intervals?.average_months ?? null,
+            },
+            costs: {
+                average: metrics?.costs?.average ?? null,
+                total: metrics?.costs?.total ?? null,
+            },
+        }),
+        [metrics, meta?.total, maintenanceTypeData.length],
     );
-    const [perPage, setPerPage] = React.useState<string>(() => String(safeFilters.per_page ?? safeMaintenanceTypes.per_page ?? 15));
+
+    const totalMaintenanceTypes = metricsData.counts.total ?? meta.total ?? maintenanceTypeData.length;
+
+    const [searchTerm, setSearchTerm] = React.useState(filters?.search ?? '');
+    const [sortColumn, setSortColumn] = React.useState(filters?.sort ?? 'created_at');
+    const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>(
+        filters?.direction === 'asc' ? 'asc' : 'desc',
+    );
+    const [perPage, setPerPage] = React.useState<string>(
+        () => String(filters?.per_page ?? meta.per_page ?? defaultPerPage),
+    );
+    const [selectedStatus, setSelectedStatus] = React.useState<string>(() => normalizeFilterValue(filters?.status));
+    const [selectedCategory, setSelectedCategory] = React.useState<string>(() => normalizeFilterValue(filters?.category));
     const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
     const [selectedMaintenanceType, setSelectedMaintenanceType] = React.useState<MaintenanceType | null>(null);
     const [isDeleting, setIsDeleting] = React.useState(false);
-
     const [selectedIds, setSelectedIds] = React.useState<number[]>([]);
     const [bulkActionDialogOpen, setBulkActionDialogOpen] = React.useState(false);
     const [bulkActionType, setBulkActionType] = React.useState<BulkActionType>('delete');
     const [isBulkActionProcessing, setIsBulkActionProcessing] = React.useState(false);
 
-    const maintenanceTypeData = safeMaintenanceTypes.data ?? [];
-    const totalMaintenanceTypes = safeMaintenanceTypes.total ?? maintenanceTypeData.length ?? 0;
-
-    const availablePerPageOptions = React.useMemo(() => {
-        const base = [10, 15, 25, 50, 100];
-        const serverPerPage = safeMaintenanceTypes.per_page;
-        if (serverPerPage && !base.includes(serverPerPage)) {
-            base.push(serverPerPage);
-        }
-        return Array.from(new Set(base)).sort((a, b) => a - b);
-    }, [safeMaintenanceTypes.per_page]);
-
-    const resolvedPerPage = React.useMemo(() => {
-        const candidate = safeFilters.per_page ?? safeMaintenanceTypes.per_page;
-        if (typeof candidate === 'number' && availablePerPageOptions.includes(candidate)) {
-            return candidate;
-        }
-
-        return availablePerPageOptions[0] ?? 15;
-    }, [availablePerPageOptions, safeFilters.per_page, safeMaintenanceTypes.per_page]);
+    React.useEffect(() => {
+        setSearchTerm(filters?.search ?? '');
+    }, [filters?.search]);
 
     React.useEffect(() => {
-        setSearchTerm(safeFilters.search ?? '');
-    }, [safeFilters.search]);
+        setSortColumn(filters?.sort ?? 'created_at');
+    }, [filters?.sort]);
 
     React.useEffect(() => {
-        setSortColumn(safeFilters.sort ?? 'name');
-    }, [safeFilters.sort]);
+        setSortDirection(filters?.direction === 'asc' ? 'asc' : 'desc');
+    }, [filters?.direction]);
 
     React.useEffect(() => {
-        setSortDirection(safeFilters.direction === 'desc' ? 'desc' : 'asc');
-    }, [safeFilters.direction]);
+        const nextPerPage = filters?.per_page ?? meta.per_page ?? defaultPerPage;
+        setPerPage(String(nextPerPage));
+    }, [filters?.per_page, meta.per_page, defaultPerPage]);
 
     React.useEffect(() => {
-        setPerPage(String(resolvedPerPage));
-    }, [resolvedPerPage]);
+        setSelectedStatus(normalizeFilterValue(filters?.status));
+    }, [filters?.status]);
+
+    React.useEffect(() => {
+        setSelectedCategory(normalizeFilterValue(filters?.category));
+    }, [filters?.category]);
 
     const isDataReady = Array.isArray(maintenanceTypeData);
+
     const { isLoading: isTableLoading } = useListingLoading({
         storageKey: SKELETON_FLAG_KEY,
         isDataReady,
         minimumDuration: 200,
         onlySamePath: true,
-        initialIsLoading: false,
+        targetPath: '/maintenance-types',
+        initialIsLoading: true,
     });
 
-    const rowOffset = Math.max((safeMaintenanceTypes.from ?? 1) - 1, 0);
+    const rowOffset = Math.max((meta.from ?? 1) - 1, 0);
 
     const canCreateMaintenanceType = hasPermission('maintenance-types.create');
     const canEditMaintenanceType = hasPermission('maintenance-types.edit');
     const canDeleteMaintenanceType = hasPermission('maintenance-types.destroy');
+    const canViewMaintenanceType = hasPermission('maintenance-types.show');
+
+    const categoryCount = React.useCallback(
+        (value: string) => metricsData.categories.find((item) => item.value === value)?.count ?? 0,
+        [metricsData.categories],
+    );
+
+    const categorySummary = React.useMemo(() => {
+        if (!metricsData.categories.length) {
+            return 'No category breakdown yet';
+        }
+
+        return metricsData.categories
+            .map((item) => `${formatNumber(item.count)} ${item.label.toLowerCase()}`)
+            .join(' · ');
+    }, [metricsData.categories]);
+
+    const averageKmDisplay =
+        metricsData.intervals.average_km !== null && metricsData.intervals.average_km !== undefined
+            ? `${Math.round(metricsData.intervals.average_km).toLocaleString()} km`
+            : '—';
+
+    const averageMonthsDisplay =
+        metricsData.intervals.average_months !== null && metricsData.intervals.average_months !== undefined
+            ? `${metricsData.intervals.average_months.toFixed(1)} mo`
+            : '—';
+
+    const averageCostDisplay = formatCurrency(metricsData.costs.average);
+    const totalCostDisplay = formatCurrency(metricsData.costs.total);
+    const inactiveCountDisplay = formatNumber(metricsData.counts.inactive);
+
+    const preventiveCount = categoryCount('Preventive');
+    const correctiveCount = categoryCount('Corrective');
+    const emergencyCount = categoryCount('Emergency');
+
+    const statsDefinitions = React.useMemo<ListingStatDefinition[]>(
+        () => [
+            {
+                id: 'total-types',
+                label: 'Total Types',
+                icon: <Settings className="h-3.5 w-3.5 text-blue-600" />,
+                className: 'min-w-[220px] flex-shrink-0',
+                value: isTableLoading ? <Skeleton className="h-4 w-16" aria-hidden="true" /> : formatNumber(metricsData.counts.total),
+                description: isTableLoading ? <Skeleton className="h-3 w-36" aria-hidden="true" /> : categorySummary,
+                valueClassName: 'text-blue-600',
+            },
+            {
+                id: 'active-types',
+                label: 'Active',
+                icon: <CheckCircle className="h-3.5 w-3.5 text-emerald-600" />,
+                className: 'min-w-[220px] flex-shrink-0',
+                value: isTableLoading ? <Skeleton className="h-4 w-12" aria-hidden="true" /> : formatNumber(metricsData.counts.active),
+                description: isTableLoading ? <Skeleton className="h-3 w-32" aria-hidden="true" /> : `${inactiveCountDisplay} inactive`,
+                valueClassName: 'text-emerald-600',
+            },
+            {
+                id: 'preventive-coverage',
+                label: 'Preventive Coverage',
+                icon: <Wrench className="h-3.5 w-3.5 text-amber-600" />,
+                className: 'min-w-[220px] flex-shrink-0',
+                value: isTableLoading ? <Skeleton className="h-4 w-14" aria-hidden="true" /> : formatNumber(preventiveCount),
+                description: isTableLoading
+                    ? <Skeleton className="h-3 w-40" aria-hidden="true" />
+                    : `${formatNumber(correctiveCount)} corrective · ${formatNumber(emergencyCount)} emergency`,
+                valueClassName: 'text-amber-600',
+            },
+            {
+                id: 'average-interval',
+                label: 'Average Interval',
+                icon: <Gauge className="h-3.5 w-3.5 text-indigo-600" />,
+                className: 'min-w-[220px] flex-shrink-0',
+                value: isTableLoading ? <Skeleton className="h-4 w-20" aria-hidden="true" /> : averageKmDisplay,
+                description: isTableLoading ? <Skeleton className="h-3 w-32" aria-hidden="true" /> : `Avg months ${averageMonthsDisplay}`,
+                valueClassName: 'text-indigo-600',
+            },
+            {
+                id: 'average-cost',
+                label: 'Average Cost',
+                icon: <DollarSign className="h-3.5 w-3.5 text-purple-600" />,
+                className: 'min-w-[220px] flex-shrink-0',
+                value: isTableLoading ? <Skeleton className="h-4 w-24" aria-hidden="true" /> : averageCostDisplay,
+                description: isTableLoading ? <Skeleton className="h-3 w-32" aria-hidden="true" /> : `Total ${totalCostDisplay}`,
+                valueClassName: 'text-purple-600',
+            },
+        ],
+        [
+            averageCostDisplay,
+            averageKmDisplay,
+            averageMonthsDisplay,
+            categorySummary,
+            correctiveCount,
+            emergencyCount,
+            inactiveCountDisplay,
+            isTableLoading,
+            metricsData.counts.active,
+            metricsData.counts.total,
+            preventiveCount,
+            totalCostDisplay,
+        ],
+    );
+
+    const statsSection = <ListingStatsHeader stats={statsDefinitions} orientation="row" />;
 
     const handleNavigate = React.useCallback(
         (overrides: NavigateOverrides = {}) => {
-            const hasOverride = (key: keyof NavigateOverrides) => Object.prototype.hasOwnProperty.call(overrides, key);
+            const hasOverride = (key: keyof NavigateOverrides) =>
+                Object.prototype.hasOwnProperty.call(overrides, key);
 
             const nextSearch = hasOverride('search')
                 ? overrides.search
                 : searchTerm.trim()
                     ? searchTerm.trim()
+                    : undefined;
+
+            const nextStatus = hasOverride('status')
+                ? overrides.status
+                : selectedStatus !== 'all'
+                    ? selectedStatus
+                    : undefined;
+
+            const nextCategory = hasOverride('category')
+                ? overrides.category
+                : selectedCategory !== 'all'
+                    ? selectedCategory
                     : undefined;
 
             const nextSort = hasOverride('sort') ? overrides.sort ?? sortColumn : sortColumn;
@@ -289,6 +467,8 @@ export default function MaintenanceTypesIndex({ maintenanceTypes, statistics, fi
 
             const params: Record<string, string | number | undefined> = {
                 search: nextSearch && nextSearch !== '' ? nextSearch : undefined,
+                status: nextStatus && nextStatus !== 'all' ? nextStatus : undefined,
+                category: nextCategory && nextCategory !== 'all' ? nextCategory : undefined,
                 sort: nextSort,
                 direction: nextDirection,
                 page: nextPage,
@@ -310,12 +490,22 @@ export default function MaintenanceTypesIndex({ maintenanceTypes, statistics, fi
 
             router.get('/maintenance-types', params, { preserveState: true, replace: false });
         },
-        [perPage, searchTerm, sortColumn, sortDirection],
+        [perPage, searchTerm, selectedCategory, selectedStatus, sortColumn, sortDirection],
     );
 
     const handleSearchChange = (value: string) => {
         setSearchTerm(value);
         handleNavigate({ search: value.trim() ? value.trim() : undefined, page: 1 });
+    };
+
+    const handleStatusChange = (value: string) => {
+        setSelectedStatus(value);
+        handleNavigate({ status: value !== 'all' ? value : undefined, page: 1 });
+    };
+
+    const handleCategoryChange = (value: string) => {
+        setSelectedCategory(value);
+        handleNavigate({ category: value !== 'all' ? value : undefined, page: 1 });
     };
 
     const handlePerPageChange = (value: string) => {
@@ -326,89 +516,14 @@ export default function MaintenanceTypesIndex({ maintenanceTypes, statistics, fi
 
     const handleSort = React.useCallback(
         (column: string) => {
-            const newDirection: 'asc' | 'desc' = sortColumn === column && sortDirection === 'asc' ? 'desc' : 'asc';
+            const newDirection: 'asc' | 'desc' =
+                sortColumn === column && sortDirection === 'asc' ? 'desc' : 'asc';
             setSortColumn(column);
             setSortDirection(newDirection);
             handleNavigate({ sort: column, direction: newDirection });
         },
         [handleNavigate, sortColumn, sortDirection],
     );
-
-    const handleBulkAction = (action: BulkActionType) => {
-        if (selectedIds.length === 0) {
-            return;
-        }
-
-        setBulkActionType(action);
-        setBulkActionDialogOpen(true);
-    };
-
-    const handleBulkActionConfirm = () => {
-        if (selectedIds.length === 0) {
-            setBulkActionDialogOpen(false);
-            return;
-        }
-
-        setIsBulkActionProcessing(true);
-
-        const endpoints: Record<BulkActionType, string> = {
-            delete: '/maintenance-types/bulk-delete',
-            activate: '/maintenance-types/bulk-activate',
-            deactivate: '/maintenance-types/bulk-deactivate',
-        };
-
-        const onError = (errors: unknown) => {
-            if (errors && typeof errors === 'object') {
-                const messages = Object.values(errors as Record<string, unknown>)
-                    .flatMap((value) => (Array.isArray(value) ? value : [value]))
-                    .filter(Boolean)
-                    .join('\n');
-
-                if (messages) {
-                    toast({
-                        title: '❌ Bulk Action Failed',
-                        description: messages,
-                        variant: 'destructive',
-                    });
-                }
-            }
-        };
-
-        const onSuccess = () => {
-            setBulkActionDialogOpen(false);
-            setSelectedIds([]);
-            toast({
-                title: '✅ Bulk Action Completed',
-                description: `Successfully ${bulkActionType}d ${selectedIds.length} maintenance type(s).`,
-            });
-        };
-
-        const onFinish = () => {
-            setIsBulkActionProcessing(false);
-        };
-
-        if (bulkActionType === 'delete') {
-            router.delete(endpoints.delete, {
-                data: { ids: selectedIds },
-                preserveScroll: true,
-                onSuccess,
-                onError,
-                onFinish,
-            });
-            return;
-        }
-
-        router.patch(
-            endpoints[bulkActionType],
-            { ids: selectedIds },
-            {
-                preserveScroll: true,
-                onSuccess,
-                onError,
-                onFinish,
-            },
-        );
-    };
 
     const handleSelectAll = React.useCallback(
         (value: boolean) => {
@@ -429,14 +544,17 @@ export default function MaintenanceTypesIndex({ maintenanceTypes, statistics, fi
         }
     }, []);
 
-    const handleDeleteClick = React.useCallback((maintenanceType: MaintenanceType) => {
-        if (!canDeleteMaintenanceType) {
-            return;
-        }
+    const handleDeleteClick = React.useCallback(
+        (maintenanceType: MaintenanceType) => {
+            if (!canDeleteMaintenanceType) {
+                return;
+            }
 
-        setSelectedMaintenanceType(maintenanceType);
-        setDeleteDialogOpen(true);
-    }, [canDeleteMaintenanceType]);
+            setSelectedMaintenanceType(maintenanceType);
+            setDeleteDialogOpen(true);
+        },
+        [canDeleteMaintenanceType],
+    );
 
     const handleDeleteDialogChange = React.useCallback((open: boolean) => {
         setDeleteDialogOpen(open);
@@ -483,73 +601,14 @@ export default function MaintenanceTypesIndex({ maintenanceTypes, statistics, fi
     }, [selectedMaintenanceType]);
 
     React.useEffect(() => {
-        setSelectedIds((current) => current.filter((id) => maintenanceTypeData.some((item) => item.id === id)));
+        setSelectedIds((current) =>
+            current.filter((id) => maintenanceTypeData.some((item) => item.id === id)),
+        );
     }, [maintenanceTypeData]);
 
     const isAllSelected = maintenanceTypeData.length > 0 && selectedIds.length === maintenanceTypeData.length;
     const isSomeSelected = selectedIds.length > 0 && selectedIds.length < maintenanceTypeData.length;
     const selectedCount = selectedIds.length;
-
-    const statsDefinitions = React.useMemo<ListingStatDefinition[]>(
-        () => [
-            {
-                id: 'total-types',
-                label: 'Total Types',
-                value: isTableLoading ? <Skeleton className="h-4 w-16" aria-hidden="true" /> : formatNumber(safeStatistics.total),
-                description: isTableLoading ? <Skeleton className="h-3 w-24" aria-hidden="true" /> : 'All maintenance types',
-                icon: <Settings className="h-3.5 w-3.5 text-slate-600" />,
-                valueClassName: isTableLoading ? undefined : 'text-slate-700',
-            },
-            {
-                id: 'active-types',
-                label: 'Active',
-                value: isTableLoading ? <Skeleton className="h-4 w-14" aria-hidden="true" /> : formatNumber(safeStatistics.active),
-                description: isTableLoading ? <Skeleton className="h-3 w-28" aria-hidden="true" /> : 'Currently active',
-                icon: <Wrench className="h-3.5 w-3.5 text-emerald-600" />,
-                valueClassName: isTableLoading ? undefined : 'text-emerald-600',
-            },
-            {
-                id: 'inactive-types',
-                label: 'Inactive',
-                value: isTableLoading ? <Skeleton className="h-4 w-16" aria-hidden="true" /> : formatNumber(safeStatistics.inactive),
-                description: isTableLoading ? <Skeleton className="h-3 w-28" aria-hidden="true" /> : 'Currently inactive',
-                icon: <Trash2 className="h-3.5 w-3.5 text-rose-600" />,
-                valueClassName: isTableLoading ? undefined : 'text-rose-600',
-            },
-            {
-                id: 'preventive-types',
-                label: 'Preventive',
-                value: isTableLoading ? <Skeleton className="h-4 w-16" aria-hidden="true" /> : formatNumber(safeStatistics.preventive),
-                description: isTableLoading ? <Skeleton className="h-3 w-32" aria-hidden="true" /> : 'Preventive tasks',
-                icon: <CheckCircle className="h-3.5 w-3.5 text-blue-600" />,
-                valueClassName: isTableLoading ? undefined : 'text-blue-600',
-            },
-            {
-                id: 'corrective-types',
-                label: 'Corrective',
-                value: isTableLoading ? <Skeleton className="h-4 w-16" aria-hidden="true" /> : formatNumber(safeStatistics.corrective),
-                description: isTableLoading ? <Skeleton className="h-3 w-32" aria-hidden="true" /> : 'Corrective tasks',
-                icon: <Edit className="h-3.5 w-3.5 text-orange-600" />,
-                valueClassName: isTableLoading ? undefined : 'text-orange-600',
-            },
-            {
-                id: 'emergency-types',
-                label: 'Emergency',
-                value: isTableLoading ? <Skeleton className="h-4 w-16" aria-hidden="true" /> : formatNumber(safeStatistics.emergency),
-                description: isTableLoading ? <Skeleton className="h-3 w-32" aria-hidden="true" /> : 'Emergency tasks',
-                icon: <AlertTriangle className="h-3.5 w-3.5 text-red-600" />,
-                valueClassName: isTableLoading ? undefined : 'text-red-600',
-            },
-        ],
-        [isTableLoading, safeStatistics.active, safeStatistics.corrective, safeStatistics.emergency, safeStatistics.inactive, safeStatistics.preventive, safeStatistics.total],
-    );
-
-    const statsSection = <ListingStatsHeader stats={statsDefinitions} orientation="row" />;
-
-    const perPageSelectOptions = React.useMemo(
-        () => availablePerPageOptions.map((option) => ({ value: String(option), label: `${option} / page` })),
-        [availablePerPageOptions],
-    );
 
     const tableColumns = React.useMemo<ListingTableColumn[]>(
         () => [
@@ -566,6 +625,7 @@ export default function MaintenanceTypesIndex({ maintenanceTypes, statistics, fi
                 align: 'center',
                 className: 'w-[52px]',
             },
+            { id: 'index', label: '#', align: 'center', className: 'w-[64px]' },
             { id: 'name', label: 'Name', sortable: true },
             { id: 'category', label: 'Category', sortable: true },
             { id: 'interval_km', label: 'Interval KM' },
@@ -593,7 +653,7 @@ export default function MaintenanceTypesIndex({ maintenanceTypes, statistics, fi
             ];
         }
 
-        return maintenanceTypeData.map((maintenanceType) => (
+        return maintenanceTypeData.map((maintenanceType, index) => (
             <TableRow key={maintenanceType.id} className="hover:bg-muted/50">
                 <TableCell className="text-center">
                     <Checkbox
@@ -602,6 +662,7 @@ export default function MaintenanceTypesIndex({ maintenanceTypes, statistics, fi
                         onCheckedChange={(value) => handleSelectItem(maintenanceType.id, value === true)}
                     />
                 </TableCell>
+                <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
                 <TableCell className="font-medium">
                     <div className="flex flex-col gap-1">
                         <span>{maintenanceType.name}</span>
@@ -609,20 +670,24 @@ export default function MaintenanceTypesIndex({ maintenanceTypes, statistics, fi
                     </div>
                 </TableCell>
                 <TableCell>
-                    <Badge variant={getCategoryBadgeVariant(maintenanceType.category)}>
+                    <Badge variant="outline" className="border-slate-200 text-slate-700">
                         {maintenanceType.category}
                     </Badge>
                 </TableCell>
-                <TableCell className="text-muted-foreground">{formatIntervalKm(maintenanceType.interval_km)}</TableCell>
-                <TableCell className="text-muted-foreground">{formatIntervalMonths(maintenanceType.interval_months)}</TableCell>
+                <TableCell className="text-muted-foreground">
+                    {formatIntervalKm(maintenanceType.interval_km)}
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                    {formatIntervalMonths(maintenanceType.interval_months)}
+                </TableCell>
                 <TableCell className="text-right font-medium text-slate-700 dark:text-slate-200">
                     {formatCurrency(maintenanceType.estimated_cost)}
                 </TableCell>
-                <TableCell className="text-center">{getStatusBadge(maintenanceType.is_active)}</TableCell>
+                <TableCell className="text-center">{renderStatusBadge(maintenanceType.is_active)}</TableCell>
                 <TableCell className="text-center">
                     <ListingRowActionsMenu
                         actions={[
-                            {
+                            canViewMaintenanceType && {
                                 label: 'View',
                                 icon: <Eye className="h-4 w-4" />,
                                 href: `/maintenance-types/${maintenanceType.id}`,
@@ -648,17 +713,23 @@ export default function MaintenanceTypesIndex({ maintenanceTypes, statistics, fi
         canCreateMaintenanceType,
         canDeleteMaintenanceType,
         canEditMaintenanceType,
-        handleSelectItem,
+        canViewMaintenanceType,
         handleDeleteClick,
+        handleSelectItem,
         isDeleting,
         maintenanceTypeData,
+        rowOffset,
         selectedIds,
         selectedMaintenanceType,
-        tableColumns,
+        tableColumns.length,
     ]);
 
     const mobileItems = React.useMemo(
-        () => maintenanceTypeData.map((maintenanceType, index) => ({ maintenanceType, position: rowOffset + index + 1 })),
+        () =>
+            maintenanceTypeData.map((maintenanceType, index) => ({
+                maintenanceType,
+                position: rowOffset + index + 1,
+            })),
         [maintenanceTypeData, rowOffset],
     );
 
@@ -677,19 +748,27 @@ export default function MaintenanceTypesIndex({ maintenanceTypes, statistics, fi
                 <div className="space-y-3 text-sm text-muted-foreground">
                     <div className="flex items-center justify-between">
                         <span className="font-medium text-slate-600 dark:text-slate-300">Interval (KM)</span>
-                        <span className="text-right text-slate-900 dark:text-slate-100">{formatIntervalKm(item.maintenanceType.interval_km)}</span>
+                        <span className="text-right text-slate-900 dark:text-slate-100">
+                            {formatIntervalKm(item.maintenanceType.interval_km)}
+                        </span>
                     </div>
                     <div className="flex items-center justify-between">
                         <span className="font-medium text-slate-600 dark:text-slate-300">Interval (Months)</span>
-                        <span className="text-right text-slate-900 dark:text-slate-100">{formatIntervalMonths(item.maintenanceType.interval_months)}</span>
+                        <span className="text-right text-slate-900 dark:text-slate-100">
+                            {formatIntervalMonths(item.maintenanceType.interval_months)}
+                        </span>
                     </div>
                     <div className="flex items-center justify-between">
                         <span className="font-medium text-slate-600 dark:text-slate-300">Estimated Cost</span>
-                        <span className="text-right text-slate-900 dark:text-slate-100">{formatCurrency(item.maintenanceType.estimated_cost)}</span>
+                        <span className="text-right text-slate-900 dark:text-slate-100">
+                            {formatCurrency(item.maintenanceType.estimated_cost)}
+                        </span>
                     </div>
                     <div className="flex items-center justify-between">
                         <span className="font-medium text-slate-600 dark:text-slate-300">Status</span>
-                        <span className="text-right text-slate-900 dark:text-slate-100">{getStatusBadge(item.maintenanceType.is_active)}</span>
+                        <span className="text-right text-slate-900 dark:text-slate-100">
+                            {renderStatusBadge(item.maintenanceType.is_active)}
+                        </span>
                     </div>
                 </div>
             )}
@@ -701,12 +780,14 @@ export default function MaintenanceTypesIndex({ maintenanceTypes, statistics, fi
                         onCheckedChange={(value) => handleSelectItem(item.maintenanceType.id, value === true)}
                     />
                     <span className="text-xs text-muted-foreground">Select</span>
-                    <Button asChild size="sm" variant="outline" className="flex-1 sm:flex-auto">
-                        <Link href={`/maintenance-types/${item.maintenanceType.id}`}>
-                            <Eye className="mr-2 h-4 w-4" />
-                            View
-                        </Link>
-                    </Button>
+                    {canViewMaintenanceType && (
+                        <Button asChild size="sm" variant="outline" className="flex-1 sm:flex-auto">
+                            <Link href={`/maintenance-types/${item.maintenanceType.id}`}>
+                                <Eye className="mr-2 h-4 w-4" />
+                                View
+                            </Link>
+                        </Button>
+                    )}
                     {canEditMaintenanceType && (
                         <Button asChild size="sm" variant="secondary" className="flex-1 sm:flex-none">
                             <Link href={`/maintenance-types/${item.maintenanceType.id}/edit`}>
@@ -760,6 +841,84 @@ export default function MaintenanceTypesIndex({ maintenanceTypes, statistics, fi
         </div>
     );
 
+    const handleBulkAction = (action: BulkActionType) => {
+        if (selectedIds.length === 0) {
+            return;
+        }
+
+        setBulkActionType(action);
+        setBulkActionDialogOpen(true);
+    };
+
+    const handleBulkActionConfirm = () => {
+        if (selectedIds.length === 0) {
+            setBulkActionDialogOpen(false);
+            return;
+        }
+
+        setIsBulkActionProcessing(true);
+
+        const endpoints: Record<BulkActionType, string> = {
+            delete: '/maintenance-types/bulk-delete',
+            activate: '/maintenance-types/bulk-activate',
+            deactivate: '/maintenance-types/bulk-deactivate',
+        };
+
+        const selectionCount = selectedIds.length;
+
+        const onError = (errors: unknown) => {
+            if (errors && typeof errors === 'object') {
+                const messages = Object.values(errors as Record<string, unknown>)
+                    .flatMap((value) => (Array.isArray(value) ? value : [value]))
+                    .filter(Boolean)
+                    .join('\n');
+
+                if (messages) {
+                    toast({
+                        title: '❌ Bulk Action Failed',
+                        description: messages,
+                        variant: 'destructive',
+                    });
+                }
+            }
+        };
+
+        const onSuccess = () => {
+            setBulkActionDialogOpen(false);
+            setSelectedIds([]);
+            toast({
+                title: '✅ Bulk Action Completed',
+                description: `Successfully ${bulkActionType}d ${selectionCount} maintenance type(s).`,
+            });
+        };
+
+        const onFinish = () => {
+            setIsBulkActionProcessing(false);
+        };
+
+        if (bulkActionType === 'delete') {
+            router.delete(endpoints.delete, {
+                data: { ids: selectedIds },
+                preserveScroll: true,
+                onSuccess,
+                onError,
+                onFinish,
+            });
+            return;
+        }
+
+        router.patch(
+            endpoints[bulkActionType],
+            { ids: selectedIds },
+            {
+                preserveScroll: true,
+                onSuccess,
+                onError,
+                onFinish,
+            },
+        );
+    };
+
     const selectionActions = selectedCount > 0 ? (
         <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm font-medium text-muted-foreground">{selectedCount} selected</span>
@@ -802,6 +961,11 @@ export default function MaintenanceTypesIndex({ maintenanceTypes, statistics, fi
         </div>
     ) : undefined;
 
+    const perPageSelectOptions = React.useMemo(
+        () => availablePerPageOptions.map((option) => ({ value: String(option), label: `${option} / page` })),
+        [availablePerPageOptions],
+    );
+
     const tableHeaderExtras = (
         <ListingFilterBar
             search={{
@@ -817,7 +981,34 @@ export default function MaintenanceTypesIndex({ maintenanceTypes, statistics, fi
                 options: perPageSelectOptions,
             }}
             trailing={selectionActions}
-        />
+        >
+            <Select value={selectedStatus} onValueChange={handleStatusChange}>
+                <SelectTrigger className="w-full min-w-[150px] sm:w-auto">
+                    <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">All statuses</SelectItem>
+                    {safeStatusOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                        </SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+            <Select value={selectedCategory} onValueChange={handleCategoryChange}>
+                <SelectTrigger className="w-full min-w-[180px] sm:w-auto">
+                    <SelectValue placeholder="Category" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">All categories</SelectItem>
+                    {safeCategoryOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                        </SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+        </ListingFilterBar>
     );
 
     const headerActions = (
@@ -833,15 +1024,19 @@ export default function MaintenanceTypesIndex({ maintenanceTypes, statistics, fi
         </>
     );
 
-    const capitalize = (value: string) => value.charAt(0).toUpperCase() + value.slice(1);
-    const bulkActionLabel = capitalize(bulkActionType);
+    const bulkActionLabel = React.useMemo(
+        () => bulkActionType.charAt(0).toUpperCase() + bulkActionType.slice(1),
+        [bulkActionType],
+    );
 
     return (
         <>
             <ListPageLayout
                 headTitle="Maintenance Types"
                 title="Maintenance Types"
-                description={`Manage your catalog of ${formatNumber(totalMaintenanceTypes)} maintenance type${totalMaintenanceTypes === 1 ? '' : 's'}`}
+                description={`Manage your catalog of ${formatNumber(totalMaintenanceTypes)} maintenance type${
+                    totalMaintenanceTypes === 1 ? '' : 's'
+                }`}
                 breadcrumbs={breadcrumbs}
                 actions={headerActions}
                 stats={statsSection}
@@ -849,13 +1044,13 @@ export default function MaintenanceTypesIndex({ maintenanceTypes, statistics, fi
                 tableDescription="Complete list of all maintenance type templates"
                 tableHeaderExtras={tableHeaderExtras}
                 pagination={
-                    !isTableLoading && safeMaintenanceTypes.links.length > 0 ? (
+                    !isTableLoading && links.length > 0 ? (
                         <ListingPaginationFooter
                             className="mt-4"
-                            links={safeMaintenanceTypes.links}
-                            from={safeMaintenanceTypes.from}
-                            to={safeMaintenanceTypes.to}
-                            total={safeMaintenanceTypes.total}
+                            links={links}
+                            from={meta.from ?? undefined}
+                            to={meta.to ?? undefined}
+                            total={meta.total ?? undefined}
                         />
                     ) : null
                 }

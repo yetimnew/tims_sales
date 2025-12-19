@@ -35,6 +35,8 @@ class MaintenancePerformanceRequest extends FormRequest
             'service_providers' => ['nullable', 'array'],
             'service_providers.*' => ['string', 'max:255'],
             'service_provider' => ['nullable', 'string', 'max:255'],
+            'page' => ['nullable', 'integer', 'min:1'],
+            'per_page' => ['nullable', 'integer', Rule::in([10, 25, 50, 100])],
             'format' => ['nullable', Rule::in(['csv', 'xlsx', 'pdf'])],
         ];
     }

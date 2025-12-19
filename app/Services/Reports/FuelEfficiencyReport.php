@@ -2,7 +2,7 @@
 
 namespace App\Services\Reports;
 
-use App\Models\FuelRecord;
+use App\Models\Driver;
 use App\Models\Truck;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
@@ -18,15 +18,25 @@ class FuelEfficiencyReport
         $truckIds = $this->resolveTruckIds($filters);
 
         $aggregated = $this->aggregateByTruck($from, $to, $truckIds);
-        $truckDetails = Truck::query()
-            ->select(['id', 'plate', 'status'])
-            ->whereIn('id', $aggregated->pluck('truck_id')->all())
-            ->get()
-            ->keyBy('id');
 
-        $breakdown = $this->buildBreakdown($aggregated, $truckDetails);
+        $truckDetails = $aggregated->isEmpty()
+            ? collect()
+            : Truck::query()
+                ->select(['id', 'plate', 'status'])
+                ->whereIn('id', $aggregated->pluck('truck_id')->all())
+                ->get()
+                ->keyBy('id');
+
+        $driversByTruck = $this->mapDriversByTruck(
+            $from,
+            $to,
+            $truckIds,
+            $aggregated->pluck('truck_id')->all()
+        );
+
+        $breakdown = $this->buildBreakdown($aggregated, $truckDetails, $driversByTruck);
         $totals = $this->summariseTotals($breakdown);
-        $summary = $this->buildSummary($breakdown, $totals);
+        $summary = $this->buildSummary($totals);
         $trend = $this->trend($from, $to, $truckIds);
         $highlights = $this->buildHighlights($breakdown);
 
@@ -76,77 +86,175 @@ class FuelEfficiencyReport
 
     private function aggregateByTruck(CarbonInterface $from, CarbonInterface $to, array $truckIds): Collection
     {
-        return FuelRecord::query()
-            ->select('truck_id')
-            ->selectRaw('COUNT(*) as refuel_events')
-            ->selectRaw('SUM(COALESCE(fuel_quantity_liters, 0)) as total_liters')
-            ->selectRaw('SUM(COALESCE(total_cost, 0)) as total_cost')
-            ->selectRaw('MIN(fuel_date) as first_fill')
-            ->selectRaw('MAX(fuel_date) as last_fill')
-            ->selectRaw('MIN(odometer_reading) as min_odometer')
-            ->selectRaw('MAX(odometer_reading) as max_odometer')
-            ->whereBetween('fuel_date', [$from->toDateString(), $to->toDateString()])
-            ->when(! empty($truckIds), static fn ($query) => $query->whereIn('truck_id', $truckIds))
-            ->groupBy('truck_id')
-            ->get();
+        $query = DB::table('performances')
+            ->selectRaw('driver_truck.truck_id as truck_id')
+            ->selectRaw('COUNT(*) as trip_count')
+            ->selectRaw('SUM(COALESCE(performances.fuelInLitter, 0)) as total_liters')
+            ->selectRaw('SUM(COALESCE(performances.fuelInBirr, 0)) as total_cost')
+            ->selectRaw('SUM(COALESCE(performances.DistanceWCargo, 0)) as distance_loaded')
+            ->selectRaw('SUM(COALESCE(performances.DistanceWOCargo, 0)) as distance_empty')
+            ->selectRaw('MIN(performances.DateDispach) as first_activity')
+            ->selectRaw('MAX(performances.DateDispach) as last_activity')
+            ->leftJoin('driver_truck', 'driver_truck.id', '=', 'performances.driver_truck_id')
+            ->whereBetween('performances.DateDispach', [$from->toDateTimeString(), $to->toDateTimeString()])
+            ->whereNotNull('driver_truck.truck_id')
+            ->groupBy('driver_truck.truck_id');
+
+        if (! empty($truckIds)) {
+            $query->whereIn('driver_truck.truck_id', $truckIds);
+        }
+
+        return collect($query->get());
     }
 
-    private function buildBreakdown(Collection $aggregated, Collection $truckDetails): Collection
-    {
+    private function mapDriversByTruck(
+        CarbonInterface $from,
+        CarbonInterface $to,
+        array $requestedTruckIds,
+        array $aggregatedTruckIds,
+    ): Collection {
+        if (empty($aggregatedTruckIds)) {
+            return collect();
+        }
+
+        $driverQuery = DB::table('performances')
+            ->select('driver_truck.truck_id', 'driver_truck.driver_id')
+            ->leftJoin('driver_truck', 'driver_truck.id', '=', 'performances.driver_truck_id')
+            ->whereBetween('performances.DateDispach', [$from->toDateTimeString(), $to->toDateTimeString()])
+            ->whereNotNull('driver_truck.truck_id')
+            ->whereNotNull('driver_truck.driver_id')
+            ->whereIn('driver_truck.truck_id', $aggregatedTruckIds)
+            ->distinct();
+
+        if (! empty($requestedTruckIds)) {
+            $driverQuery->whereIn('driver_truck.truck_id', $requestedTruckIds);
+        }
+
+        $assignments = collect($driverQuery->get());
+
+        if ($assignments->isEmpty()) {
+            return collect();
+        }
+
+        $driverIds = $assignments
+            ->pluck('driver_id')
+            ->filter()
+            ->map(static fn ($id) => (int) $id)
+            ->unique()
+            ->values();
+
+        $drivers = $driverIds->isEmpty()
+            ? collect()
+            : Driver::query()
+                ->select(['id', 'name', 'status'])
+                ->whereIn('id', $driverIds->all())
+                ->get()
+                ->keyBy('id');
+
+        return $assignments
+            ->groupBy('truck_id')
+            ->map(function (Collection $rows) use ($drivers) {
+                return $rows
+                    ->map(function ($row) use ($drivers) {
+                        $driver = $drivers->get($row->driver_id);
+
+                        if ($driver === null) {
+                            return null;
+                        }
+
+                        return [
+                            'id' => (int) $driver->id,
+                            'name' => $driver->name,
+                            'status' => $driver->status,
+                        ];
+                    })
+                    ->filter()
+                    ->unique('id')
+                    ->values()
+                    ->all();
+            });
+    }
+
+    private function buildBreakdown(
+        Collection $aggregated,
+        Collection $truckDetails,
+        Collection $driversByTruck,
+    ): Collection {
         return $aggregated
-            ->map(function ($row) use ($truckDetails) {
+            ->map(function ($row) use ($truckDetails, $driversByTruck) {
                 $truckId = (int) $row->truck_id;
                 $truck = $truckDetails->get($truckId);
 
-                $refuelEvents = (int) $row->refuel_events;
+                $tripCount = (int) $row->trip_count;
                 $totalLiters = (float) $row->total_liters;
                 $totalCost = (float) $row->total_cost;
+                $distanceLoaded = (float) $row->distance_loaded;
+                $distanceEmpty = (float) $row->distance_empty;
+                $distanceTotal = $distanceLoaded + $distanceEmpty;
 
-                $minOdometer = $row->min_odometer !== null ? (float) $row->min_odometer : null;
-                $maxOdometer = $row->max_odometer !== null ? (float) $row->max_odometer : null;
-                $distance = null;
-
-                if ($minOdometer !== null && $maxOdometer !== null && $maxOdometer >= $minOdometer) {
-                    $distance = $maxOdometer - $minOdometer;
-                }
-
-                $distanceValue = $distance !== null ? round($distance, 2) : null;
-                $efficiency = ($distance !== null && $totalLiters > 0)
-                    ? round($distance / $totalLiters, 2)
+                $efficiency = ($totalLiters > 0 && $distanceTotal > 0)
+                    ? round($distanceTotal / $totalLiters, 2)
                     : null;
 
-                $costPerKm = ($distance !== null && $distance > 0)
-                    ? round($totalCost / $distance, 2)
+                $costPerKm = ($distanceTotal > 0 && $totalCost > 0)
+                    ? round($totalCost / $distanceTotal, 2)
                     : null;
 
                 $costPerLiter = $totalLiters > 0
                     ? round($totalCost / $totalLiters, 2)
                     : null;
 
-                $avgLitersPerEvent = $refuelEvents > 0
-                    ? round($totalLiters / $refuelEvents, 2)
+                $avgLitersPerTrip = $tripCount > 0
+                    ? round($totalLiters / $tripCount, 2)
                     : null;
 
-                $avgCostPerEvent = $refuelEvents > 0
-                    ? round($totalCost / $refuelEvents, 2)
+                $avgCostPerTrip = $tripCount > 0
+                    ? round($totalCost / $tripCount, 2)
+                    : null;
+
+                $drivers = collect($driversByTruck->get($truckId, []))
+                    ->map(static fn ($driver) => [
+                        'id' => (int) $driver['id'],
+                        'name' => $driver['name'],
+                        'status' => $driver['status'] ?? null,
+                    ])
+                    ->values()
+                    ->all();
+
+                $distanceLoadedRounded = round($distanceLoaded, 2);
+                $distanceEmptyRounded = round($distanceEmpty, 2);
+                $distanceTotalRounded = round($distanceTotal, 2);
+
+                $loadedShare = $distanceTotal > 0
+                    ? round(($distanceLoaded / $distanceTotal) * 100, 2)
+                    : null;
+
+                $emptyShare = $distanceTotal > 0
+                    ? round(($distanceEmpty / $distanceTotal) * 100, 2)
                     : null;
 
                 return [
                     'truck_id' => $truckId,
                     'plate' => $truck?->plate ?? 'Truck #'.$truckId,
                     'status' => $truck?->status,
-                    'refuel_events' => $refuelEvents,
+                    'trip_count' => $tripCount,
                     'total_liters' => round($totalLiters, 2),
                     'total_cost' => round($totalCost, 2),
-                    'distance_km' => $distanceValue,
+                    'distance_loaded_km' => $distanceLoadedRounded,
+                    'distance_empty_km' => $distanceEmptyRounded,
+                    'distance_total_km' => $distanceTotalRounded,
                     'efficiency_km_per_liter' => $efficiency,
                     'cost_per_km' => $costPerKm,
                     'cost_per_liter' => $costPerLiter,
-                    'avg_liters_per_event' => $avgLitersPerEvent,
-                    'avg_cost_per_event' => $avgCostPerEvent,
-                    'first_fill_on' => $row->first_fill ? Carbon::parse($row->first_fill)->toDateString() : null,
-                    'last_fill_on' => $row->last_fill ? Carbon::parse($row->last_fill)->toDateString() : null,
-                    'has_distance' => $distance !== null,
+                    'avg_liters_per_trip' => $avgLitersPerTrip,
+                    'avg_cost_per_trip' => $avgCostPerTrip,
+                    'first_activity_on' => $row->first_activity ? Carbon::parse($row->first_activity)->toDateString() : null,
+                    'last_activity_on' => $row->last_activity ? Carbon::parse($row->last_activity)->toDateString() : null,
+                    'drivers' => $drivers,
+                    'driver_names' => collect($drivers)->pluck('name')->unique()->values()->all(),
+                    'loaded_distance_share_percent' => $loadedShare,
+                    'empty_distance_share_percent' => $emptyShare,
+                    'has_distance' => $distanceTotal > 0,
                 ];
             })
             ->sort(function (array $a, array $b) {
@@ -172,29 +280,25 @@ class FuelEfficiencyReport
 
     private function summariseTotals(Collection $breakdown): array
     {
-        $totalLiters = (float) $breakdown->sum('total_liters');
-        $totalCost = (float) $breakdown->sum('total_cost');
-        $totalDistance = (float) $breakdown->reduce(
-            static fn (float $carry, array $row) => $carry + ($row['distance_km'] ?? 0.0),
-            0.0
-        );
-        $refuelEvents = (int) $breakdown->sum('refuel_events');
-
         return [
-            'total_liters' => round($totalLiters, 2),
-            'total_cost' => round($totalCost, 2),
-            'total_distance_km' => round($totalDistance, 2),
-            'refuel_events' => $refuelEvents,
+            'total_liters' => round((float) $breakdown->sum('total_liters'), 2),
+            'total_cost' => round((float) $breakdown->sum('total_cost'), 2),
+            'total_loaded_distance_km' => round((float) $breakdown->sum('distance_loaded_km'), 2),
+            'total_empty_distance_km' => round((float) $breakdown->sum('distance_empty_km'), 2),
+            'total_distance_km' => round((float) $breakdown->sum('distance_total_km'), 2),
+            'trip_count' => (int) $breakdown->sum('trip_count'),
             'truck_count' => $breakdown->count(),
         ];
     }
 
-    private function buildSummary(Collection $breakdown, array $totals): array
+    private function buildSummary(array $totals): array
     {
         $totalLiters = $totals['total_liters'];
         $totalCost = $totals['total_cost'];
         $totalDistance = $totals['total_distance_km'];
-        $refuelEvents = $totals['refuel_events'];
+        $totalLoadedDistance = $totals['total_loaded_distance_km'];
+        $totalEmptyDistance = $totals['total_empty_distance_km'];
+        $tripCount = $totals['trip_count'];
 
         return [
             'fleet_efficiency_km_per_liter' => ($totalLiters > 0 && $totalDistance > 0)
@@ -206,14 +310,23 @@ class FuelEfficiencyReport
             'average_cost_per_liter' => $totalLiters > 0
                 ? round($totalCost / $totalLiters, 2)
                 : null,
-            'average_liters_per_event' => $refuelEvents > 0
-                ? round($totalLiters / $refuelEvents, 2)
+            'average_liters_per_trip' => $tripCount > 0
+                ? round($totalLiters / $tripCount, 2)
                 : null,
-            'average_cost_per_event' => $refuelEvents > 0
-                ? round($totalCost / $refuelEvents, 2)
+            'average_cost_per_trip' => $tripCount > 0
+                ? round($totalCost / $tripCount, 2)
                 : null,
-            'average_distance_per_event' => ($refuelEvents > 0 && $totalDistance > 0)
-                ? round($totalDistance / $refuelEvents, 2)
+            'average_loaded_distance_per_trip' => ($tripCount > 0 && $totalLoadedDistance > 0)
+                ? round($totalLoadedDistance / $tripCount, 2)
+                : null,
+            'average_empty_distance_per_trip' => ($tripCount > 0 && $totalEmptyDistance > 0)
+                ? round($totalEmptyDistance / $tripCount, 2)
+                : null,
+            'loaded_distance_share_percent' => $totalDistance > 0
+                ? round(($totalLoadedDistance / $totalDistance) * 100, 2)
+                : null,
+            'empty_distance_share_percent' => $totalDistance > 0
+                ? round(($totalEmptyDistance / $totalDistance) * 100, 2)
                 : null,
         ];
     }
@@ -224,31 +337,52 @@ class FuelEfficiencyReport
         $driverName = $connection->getDriverName();
 
         $periodExpression = $driverName === 'sqlite'
-            ? "strftime('%Y-%m', fuel_date)"
-            : "DATE_FORMAT(fuel_date, '%Y-%m')";
+            ? "strftime('%Y-%m', performances.DateDispach)"
+            : "DATE_FORMAT(performances.DateDispach, '%Y-%m')";
 
-        return FuelRecord::query()
+        $query = DB::table('performances')
             ->selectRaw("{$periodExpression} as period")
-            ->selectRaw('SUM(COALESCE(fuel_quantity_liters, 0)) as total_liters')
-            ->selectRaw('SUM(COALESCE(total_cost, 0)) as total_cost')
-            ->selectRaw('COUNT(*) as refuel_events')
-            ->whereBetween('fuel_date', [$from->toDateString(), $to->toDateString()])
-            ->when(! empty($truckIds), static fn ($query) => $query->whereIn('truck_id', $truckIds))
+            ->selectRaw('SUM(COALESCE(performances.fuelInLitter, 0)) as total_liters')
+            ->selectRaw('SUM(COALESCE(performances.fuelInBirr, 0)) as total_cost')
+            ->selectRaw('SUM(COALESCE(performances.DistanceWCargo, 0)) as distance_loaded')
+            ->selectRaw('SUM(COALESCE(performances.DistanceWOCargo, 0)) as distance_empty')
+            ->selectRaw('COUNT(*) as trip_count')
+            ->leftJoin('driver_truck', 'driver_truck.id', '=', 'performances.driver_truck_id')
+            ->whereBetween('performances.DateDispach', [$from->toDateTimeString(), $to->toDateTimeString()])
+            ->whereNotNull('driver_truck.truck_id')
             ->groupBy('period')
-            ->orderBy('period')
+            ->orderBy('period');
+
+        if (! empty($truckIds)) {
+            $query->whereIn('driver_truck.truck_id', $truckIds);
+        }
+
+        return $query
             ->get()
             ->map(static function ($row) {
                 $totalLiters = (float) $row->total_liters;
                 $totalCost = (float) $row->total_cost;
-                $events = (int) $row->refuel_events;
+                $distanceLoaded = (float) $row->distance_loaded;
+                $distanceEmpty = (float) $row->distance_empty;
+                $distanceTotal = $distanceLoaded + $distanceEmpty;
+                $tripCount = (int) $row->trip_count;
 
                 return [
                     'period' => $row->period,
+                    'trip_count' => $tripCount,
                     'total_liters' => round($totalLiters, 2),
                     'total_cost' => round($totalCost, 2),
-                    'average_price_per_liter' => $totalLiters > 0 ? round($totalCost / $totalLiters, 2) : null,
-                    'refuel_events' => $events,
-                    'average_liters_per_event' => $events > 0 ? round($totalLiters / $events, 2) : null,
+                    'distance_loaded_km' => round($distanceLoaded, 2),
+                    'distance_empty_km' => round($distanceEmpty, 2),
+                    'distance_total_km' => round($distanceTotal, 2),
+                    'average_liters_per_trip' => $tripCount > 0 ? round($totalLiters / $tripCount, 2) : null,
+                    'average_cost_per_trip' => $tripCount > 0 ? round($totalCost / $tripCount, 2) : null,
+                    'fleet_efficiency_km_per_liter' => ($totalLiters > 0 && $distanceTotal > 0)
+                        ? round($distanceTotal / $totalLiters, 2)
+                        : null,
+                    'fleet_cost_per_km' => $distanceTotal > 0
+                        ? round($totalCost / $distanceTotal, 2)
+                        : null,
                 ];
             })
             ->values()
@@ -271,9 +405,17 @@ class FuelEfficiencyReport
             ->values()
             ->all();
 
+        $highestEmptyShare = $breakdown
+            ->filter(static fn (array $row) => $row['empty_distance_share_percent'] !== null)
+            ->sortByDesc('empty_distance_share_percent')
+            ->take(3)
+            ->values()
+            ->all();
+
         return [
             'best_efficiency' => $bestEfficiency,
             'highest_cost_per_km' => $highestCostPerKm,
+            'highest_empty_distance_share' => $highestEmptyShare,
         ];
     }
 }

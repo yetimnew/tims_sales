@@ -1,5 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { InertiaPagination } from '@/components/ui/pagination';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { formatCurrency, formatDecimal, formatInteger, formatPercentage } from './formatters';
 
@@ -42,6 +44,18 @@ interface ReportMaintenanceTableProps {
     totals: MaintenanceReportTotals | null;
     filterBadges: string[];
     emptyMessage?: string;
+    paginatorMeta?: {
+        current_page?: number | null;
+        last_page?: number | null;
+        per_page?: number | null;
+        total?: number | null;
+        from?: number | null;
+        to?: number | null;
+    } | null;
+    paginationLinks?: Array<{ url: string | null; label: string; active?: boolean }>;
+    perPageOptions?: number[];
+    perPage?: number;
+    onPerPageChange?: (value: number) => void;
 }
 
 const formatOptionalDecimal = (value: number | null): string => {
@@ -73,6 +87,11 @@ export function ReportMaintenanceTable({
     totals,
     filterBadges,
     emptyMessage = 'No maintenance records match the selected filters.',
+    paginatorMeta,
+    paginationLinks,
+    perPageOptions,
+    perPage,
+    onPerPageChange,
 }: ReportMaintenanceTableProps) {
     const safeRows = Array.isArray(rows) ? rows : [];
     const safeTotals = totals ?? {
@@ -86,13 +105,48 @@ export function ReportMaintenanceTable({
         open_cost: 0,
         average_completion_days: null,
     };
+    const safeMeta = paginatorMeta ?? null;
+    const safePerPageOptions = Array.isArray(perPageOptions) && perPageOptions.length > 0 ? perPageOptions : [10, 25, 50];
+    const currentPerPage = perPage ?? safePerPageOptions[0] ?? 25;
+    const allowPerPageChange = typeof onPerPageChange === 'function';
+    const handlePerPageSelect = (value: string) => {
+        if (!onPerPageChange) {
+            return;
+        }
+
+        const parsed = Number(value);
+
+        if (!Number.isNaN(parsed) && parsed > 0) {
+            onPerPageChange(parsed);
+        }
+    };
+    const showingText = safeMeta
+        ? `Showing ${safeMeta.from ?? 0}–${safeMeta.to ?? (safeMeta.total ?? 0)} of ${safeMeta.total ?? 0}`
+        : null;
 
     return (
         <Card className="border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
             <CardHeader className="space-y-3 border-b border-slate-200/60 pb-5 dark:border-slate-700/60">
-                <div className="space-y-1">
-                    <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50">Maintenance Detail</CardTitle>
-                    <CardDescription className="text-sm">Asset workload, completion outcomes, and spend per truck.</CardDescription>
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div className="space-y-1">
+                        <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50">Maintenance Detail</CardTitle>
+                        <CardDescription className="text-sm">Asset workload, completion outcomes, and spend per truck.</CardDescription>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        <span>Rows per page</span>
+                        <Select value={String(currentPerPage)} onValueChange={handlePerPageSelect}>
+                            <SelectTrigger className="h-8 w-[150px]" disabled={!allowPerPageChange}>
+                                <SelectValue placeholder={`${currentPerPage} / page`} />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {safePerPageOptions.map((option) => (
+                                    <SelectItem key={option} value={String(option)}>
+                                        {option} / page
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
                 </div>
                 <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                     {filterBadges.map((badge) => (
@@ -102,7 +156,17 @@ export function ReportMaintenanceTable({
                     ))}
                 </div>
             </CardHeader>
-            <CardContent className="p-0">
+            <CardContent className="space-y-4 p-0">
+                {showingText ? (
+                    <div className="flex flex-col gap-1 border-b border-slate-200/60 px-4 py-3 text-xs text-muted-foreground dark:border-slate-800/60 sm:flex-row sm:items-center sm:justify-between">
+                        <span>{showingText}</span>
+                        {safeMeta?.current_page && safeMeta?.last_page ? (
+                            <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                                Page {safeMeta.current_page} of {safeMeta.last_page}
+                            </span>
+                        ) : null}
+                    </div>
+                ) : null}
                 <div className="overflow-x-auto">
                     <Table>
                         <TableHeader className="bg-slate-50/60 text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-900/60 dark:text-slate-400">
@@ -183,6 +247,16 @@ export function ReportMaintenanceTable({
                             </TableRow>
                         </TableFooter>
                     </Table>
+                </div>
+                <div className="px-4 pb-4">
+                    <InertiaPagination
+                        links={paginationLinks ?? []}
+                        from={safeMeta?.from ?? undefined}
+                        to={safeMeta?.to ?? undefined}
+                        total={safeMeta?.total ?? undefined}
+                        currentPage={safeMeta?.current_page ?? undefined}
+                        lastPage={safeMeta?.last_page ?? undefined}
+                    />
                 </div>
             </CardContent>
         </Card>

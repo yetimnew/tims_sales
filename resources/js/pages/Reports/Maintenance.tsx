@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Head, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
@@ -20,6 +20,7 @@ interface MaintenanceFilters {
     maintenance_type_ids?: number[];
     statuses?: string[];
     service_providers?: string[];
+    per_page?: number | null;
 }
 
 interface MaintenanceOptions {
@@ -120,6 +121,18 @@ interface MaintenanceProps {
     totals: MaintenanceTotals;
     summary: MaintenanceSummary;
     breakdown: MaintenanceBreakdownRow[];
+    breakdown_paginator?: {
+        meta?: {
+            current_page?: number | null;
+            last_page?: number | null;
+            per_page?: number | null;
+            total?: number | null;
+            from?: number | null;
+            to?: number | null;
+        } | null;
+        links?: Array<{ url: string | null; label: string; active?: boolean }>;
+    } | null;
+    per_page_options?: number[];
     type_breakdown: MaintenanceTypeBreakdownRow[];
     trend: MaintenanceTrendRow[];
     upcoming: MaintenanceUpcomingRow[];
@@ -153,9 +166,11 @@ export default function MaintenanceReport({
     totals,
     summary,
     breakdown = [],
+    breakdown_paginator: breakdownPaginator = null,
     type_breakdown: typeBreakdown = [],
     trend = [],
     upcoming = [],
+    per_page_options: perPageOptionsProp = [],
     highlights,
 }: MaintenanceProps) {
     const truckSelectionOptions = useMemo<ReportSelectionOption[]>(
@@ -227,6 +242,30 @@ export default function MaintenanceReport({
         [highlights],
     );
 
+    const breakdownPaginatorMeta = useMemo(
+        () => (breakdownPaginator && typeof breakdownPaginator === 'object' ? breakdownPaginator.meta ?? null : null),
+        [breakdownPaginator],
+    );
+
+    const breakdownPaginationLinks = useMemo(
+        () => (breakdownPaginator && Array.isArray(breakdownPaginator.links) ? breakdownPaginator.links : []),
+        [breakdownPaginator],
+    );
+
+    const perPageOptionsList = useMemo<number[]>(
+        () => (Array.isArray(perPageOptionsProp) && perPageOptionsProp.length > 0 ? perPageOptionsProp : [10, 25, 50]),
+        [perPageOptionsProp],
+    );
+
+    const breakdownPerPage = breakdownPaginatorMeta?.per_page ?? null;
+
+    const [perPage, setPerPage] = useState<number>(filters?.per_page ?? breakdownPerPage ?? perPageOptionsList[0] ?? 25);
+
+    useEffect(() => {
+        const next = filters?.per_page ?? breakdownPerPage ?? perPageOptionsList[0] ?? 25;
+        setPerPage(next);
+    }, [filters?.per_page, breakdownPerPage, perPageOptionsList]);
+
     const [from, setFrom] = useState(filters?.from ?? '');
     const [to, setTo] = useState(filters?.to ?? '');
     const [selectedTruckIds, setSelectedTruckIds] = useState<number[]>(filters?.truck_ids ?? []);
@@ -269,6 +308,23 @@ export default function MaintenanceReport({
         [],
     );
 
+    const buildAppliedParams = useCallback(
+        (overrides: Record<string, unknown> = {}) => {
+            const params: Record<string, unknown> = {};
+
+            if (filters?.from) params.from = filters.from;
+            if (filters?.to) params.to = filters.to;
+            if (Array.isArray(filters?.truck_ids) && filters.truck_ids.length > 0) params.truck_ids = filters.truck_ids;
+            if (Array.isArray(filters?.maintenance_type_ids) && filters.maintenance_type_ids.length > 0) params.maintenance_type_ids = filters.maintenance_type_ids;
+            if (Array.isArray(filters?.statuses) && filters.statuses.length > 0) params.statuses = filters.statuses;
+            if (Array.isArray(filters?.service_providers) && filters.service_providers.length > 0) params.service_providers = filters.service_providers;
+            if (filters?.per_page) params.per_page = filters.per_page;
+
+            return { ...params, ...overrides };
+        },
+        [filters],
+    );
+
     const handleApplyFilters = () => {
         if (!validateDateRange(from, to)) {
             setFiltersOpen(true);
@@ -286,6 +342,8 @@ export default function MaintenanceReport({
         if (selectedMaintenanceTypes.length > 0) params.maintenance_type_ids = selectedMaintenanceTypes;
         if (selectedStatuses.length > 0) params.statuses = selectedStatuses;
         if (selectedProviders.length > 0) params.service_providers = selectedProviders;
+        params.per_page = perPage;
+        params.page = 1;
 
         router.get('/reports/maintenance', params, {
             preserveState: true,
@@ -294,6 +352,8 @@ export default function MaintenanceReport({
     };
 
     const handleReset = () => {
+        const defaultPerPage = perPageOptionsList[0] ?? 25;
+        setPerPage(defaultPerPage);
         setFrom(filters?.from ?? '');
         setTo(filters?.to ?? '');
         setSelectedTruckIds(filters?.truck_ids ?? []);
@@ -303,8 +363,21 @@ export default function MaintenanceReport({
         setFiltersOpen(false);
         setDateError(null);
 
-        router.get('/reports/maintenance', {}, { preserveState: false, preserveScroll: true });
+        router.get('/reports/maintenance', { per_page: defaultPerPage }, { preserveState: false, preserveScroll: true });
     };
+
+    const handlePerPageChange = useCallback(
+        (value: number) => {
+            setPerPage(value);
+
+            router.get(
+                '/reports/maintenance',
+                buildAppliedParams({ per_page: value, page: 1 }),
+                { preserveState: true, preserveScroll: true },
+            );
+        },
+        [buildAppliedParams],
+    );
 
     const handleDateChange = (field: 'from' | 'to', value: string) => {
         if (field === 'from') {
@@ -463,7 +536,16 @@ export default function MaintenanceReport({
 
                     <ReportSummaryGrid items={summaryItems} />
 
-                    <ReportMaintenanceTable rows={safeBreakdown} totals={totals} filterBadges={filterBadges} />
+                    <ReportMaintenanceTable
+                        rows={safeBreakdown}
+                        totals={totals}
+                        filterBadges={filterBadges}
+                        paginatorMeta={breakdownPaginatorMeta}
+                        paginationLinks={breakdownPaginationLinks}
+                        perPageOptions={perPageOptionsList}
+                        perPage={perPage}
+                        onPerPageChange={handlePerPageChange}
+                    />
 
                     <section className="grid gap-6 xl:grid-cols-3">
                         <Card className="border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">

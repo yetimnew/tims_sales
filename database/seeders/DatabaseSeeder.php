@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\MaintenanceType;
 use App\Models\User;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -35,6 +36,12 @@ class DatabaseSeeder extends Seeder
         $this->call(OperationsSeeder::class);
         $this->call(PerformancesSeeder::class);
         $this->call(OutsourcePerformancesSeeder::class);
+
+        if (MaintenanceType::query()->count() === 0) {
+            $this->call(MaintenanceTypeSeeder::class);
+        }
+
+        $this->call(MaintenanceSeeder::class);
 
         // Optionally import legacy data from old TIMS dump if configured
         if (config('database.connections.legacy.database')) {

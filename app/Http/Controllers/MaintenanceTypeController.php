@@ -4,65 +4,223 @@ namespace App\Http\Controllers;
 
 use App\Models\MaintenanceType;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
+use Inertia\Response;
 use Spatie\Activitylog\Models\Activity;
 
 class MaintenanceTypeController extends Controller
 {
+    private const PER_PAGE_OPTIONS = [15, 25, 50, 100];
+
+    private const DEFAULT_PER_PAGE = 15;
+
+    private const DEFAULT_SORT = 'created_at';
+
+    /**
+     * @var array<int, string>
+     */
+    private const ALLOWED_SORTS = [
+        'name',
+        'category',
+        'interval_km',
+        'interval_months',
+        'estimated_cost',
+        'is_active',
+        'created_at',
+    ];
+
+    /**
+     * @var array<int, array{label: string, value: string}>
+     */
+    private const STATUS_OPTIONS = [
+        ['label' => 'Active', 'value' => 'active'],
+        ['label' => 'Inactive', 'value' => 'inactive'],
+    ];
+
+    private const CACHE_KEY_METRICS = 'maintenance_types.metrics';
+
+    private const CACHE_KEY_CATEGORY_DATA = 'maintenance_types.category_data';
+
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request)
+    public function index(Request $request): Response
     {
-        // Handle search
-        $query = MaintenanceType::query();
+        $search = trim((string) $request->input('search', ''));
+        $status = $request->input('status');
+        $category = $request->input('category');
+        $sort = $request->input('sort', self::DEFAULT_SORT);
+        $direction = strtolower((string) $request->input('direction', 'desc')) === 'asc' ? 'asc' : 'desc';
+        $perPageInput = (int) $request->input('per_page', self::DEFAULT_PER_PAGE);
+        $perPage = in_array($perPageInput, self::PER_PAGE_OPTIONS, true) ? $perPageInput : self::DEFAULT_PER_PAGE;
 
-        if ($request->has('search') && ! empty($request->search)) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('category', 'like', "%{$search}%")
-                    ->orWhere('description', 'like', "%{$search}%");
-            });
+        if (! in_array($sort, self::ALLOWED_SORTS, true)) {
+            $sort = self::DEFAULT_SORT;
         }
 
-        // Handle sorting
-        $sort = $request->input('sort', 'name');
-        $direction = $request->input('direction', 'asc');
+        $query = MaintenanceType::query()
+            ->when($search !== '', function ($builder) use ($search) {
+                $builder->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('category', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%");
+                });
+            })
+            ->when($status === 'active', fn ($builder) => $builder->where('is_active', true))
+            ->when($status === 'inactive', fn ($builder) => $builder->where('is_active', false))
+            ->when($category && $category !== 'all', fn ($builder) => $builder->where('category', $category));
 
-        // Validate sort column to prevent SQL injection
-        $allowedSorts = ['name', 'category', 'interval_km', 'interval_months', 'estimated_cost', 'is_active', 'created_at'];
-        if (! in_array($sort, $allowedSorts, true)) {
-            $sort = 'name';
+        $paginator = $query
+            ->orderBy($sort, $direction)
+            ->paginate($perPage)
+            ->appends($request->only(['search', 'status', 'category', 'sort', 'direction', 'per_page']));
+
+        $paginator->setCollection(
+            $paginator->getCollection()->map(static function (MaintenanceType $maintenanceType): array {
+                return [
+                    'id' => $maintenanceType->id,
+                    'name' => $maintenanceType->name,
+                    'category' => $maintenanceType->category,
+                    'interval_km' => $maintenanceType->interval_km,
+                    'interval_months' => $maintenanceType->interval_months,
+                    'estimated_cost' => $maintenanceType->estimated_cost !== null
+                        ? (float) $maintenanceType->estimated_cost
+                        : null,
+                    'is_active' => (bool) $maintenanceType->is_active,
+                    'description' => $maintenanceType->description,
+                    'created_at' => $maintenanceType->created_at?->toDateTimeString(),
+                    'updated_at' => $maintenanceType->updated_at?->toDateTimeString(),
+                ];
+            })
+        );
+
+        $categoryData = Cache::remember(self::CACHE_KEY_CATEGORY_DATA, 3600, function () {
+            return MaintenanceType::query()
+                ->select('category')
+                ->selectRaw('COUNT(*) as count')
+                ->groupBy('category')
+                ->orderBy('category')
+                ->get()
+                ->map(static function ($row): array {
+                    return [
+                        'label' => $row->category,
+                        'value' => $row->category,
+                        'count' => (int) $row->count,
+                    ];
+                })
+                ->values()
+                ->all();
+        });
+
+        $categoryOptions = array_map(static fn (array $item): array => [
+            'label' => $item['label'],
+            'value' => $item['value'],
+        ], $categoryData);
+
+        $categoryCounts = [];
+
+        foreach ($categoryData as $item) {
+            $categoryCounts[$item['value']] = $item['count'];
         }
 
-        $query->orderBy($sort, $direction);
+        $metrics = Cache::remember(self::CACHE_KEY_METRICS, 3600, function () use ($categoryCounts): array {
+            $aggregate = MaintenanceType::query()
+                ->selectRaw('COUNT(*) as total_count')
+                ->selectRaw('SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as active_count')
+                ->selectRaw('SUM(CASE WHEN is_active = 0 THEN 1 ELSE 0 END) as inactive_count')
+                ->selectRaw('AVG(interval_km) as avg_interval_km')
+                ->selectRaw('AVG(interval_months) as avg_interval_months')
+                ->selectRaw('AVG(estimated_cost) as avg_estimated_cost')
+                ->selectRaw('SUM(estimated_cost) as total_estimated_cost')
+                ->first();
 
-        $maintenanceTypes = $query->paginate(5);
-
-        // Cache statistics (1 hour) - changes when types are added/removed/updated
-        $statistics = Cache::remember('maintenance_types.statistics', 3600, function () {
             return [
-                'total' => MaintenanceType::count(),
-                'active' => MaintenanceType::where('is_active', true)->count(),
-                'inactive' => MaintenanceType::where('is_active', false)->count(),
-                'preventive' => MaintenanceType::where('category', 'Preventive')->count(),
-                'corrective' => MaintenanceType::where('category', 'Corrective')->count(),
-                'emergency' => MaintenanceType::where('category', 'Emergency')->count(),
+                'counts' => [
+                    'total' => (int) ($aggregate?->total_count ?? 0),
+                    'active' => (int) ($aggregate?->active_count ?? 0),
+                    'inactive' => (int) ($aggregate?->inactive_count ?? 0),
+                ],
+                'categories' => array_map(
+                    static fn (string $label, int $count): array => [
+                        'label' => $label,
+                        'value' => $label,
+                        'count' => $count,
+                    ],
+                    array_keys($categoryCounts),
+                    array_values($categoryCounts)
+                ),
+                'intervals' => [
+                    'average_km' => $aggregate?->avg_interval_km !== null
+                        ? (float) $aggregate->avg_interval_km
+                        : null,
+                    'average_months' => $aggregate?->avg_interval_months !== null
+                        ? (float) $aggregate->avg_interval_months
+                        : null,
+                ],
+                'costs' => [
+                    'average' => $aggregate?->avg_estimated_cost !== null
+                        ? (float) $aggregate->avg_estimated_cost
+                        : null,
+                    'total' => $aggregate?->total_estimated_cost !== null
+                        ? (float) $aggregate->total_estimated_cost
+                        : null,
+                ],
             ];
         });
 
+        $filters = [
+            'search' => $search !== '' ? $search : null,
+            'status' => in_array($status, ['active', 'inactive'], true) ? $status : null,
+            'category' => $category && $category !== 'all' ? $category : null,
+            'sort' => $sort,
+            'direction' => $direction,
+            'per_page' => $perPage,
+        ];
+
         return Inertia::render('MaintenanceTypes/Index', [
-            'maintenanceTypes' => $maintenanceTypes,
-            'statistics' => $statistics,
-            'filters' => [
-                'search' => $request->input('search', ''),
-                'sort' => $sort,
-                'direction' => $direction,
-            ],
+            'maintenanceTypes' => $this->presentPaginator($paginator),
+            'metrics' => $metrics,
+            'filters' => $filters,
+            'statusOptions' => self::STATUS_OPTIONS,
+            'categoryOptions' => $categoryOptions,
+            'perPageOptions' => self::PER_PAGE_OPTIONS,
         ]);
+    }
+
+    /**
+     * @return array{data: array<int, array<string, mixed>>, meta: array<string, mixed>, links: array<int, array<string, mixed>>}
+     */
+    private function presentPaginator(LengthAwarePaginator $paginator): array
+    {
+        $links = $paginator->linkCollection()->map(static function (array $link): array {
+            $label = $link['label'];
+
+            if (is_string($label)) {
+                $label = trim(strip_tags(html_entity_decode($label)));
+            }
+
+            return [
+                'url' => $link['url'],
+                'label' => $label,
+                'active' => (bool) $link['active'],
+            ];
+        })->values()->all();
+
+        return [
+            'data' => $paginator->items(),
+            'meta' => [
+                'current_page' => $paginator->currentPage(),
+                'last_page' => $paginator->lastPage(),
+                'per_page' => $paginator->perPage(),
+                'total' => $paginator->total(),
+                'from' => $paginator->firstItem(),
+                'to' => $paginator->lastItem(),
+            ],
+            'links' => $links,
+        ];
     }
 
     /**
@@ -92,6 +250,8 @@ class MaintenanceTypeController extends Controller
 
         // Clear cached data
         Cache::forget('maintenance_types.statistics');
+        Cache::forget(self::CACHE_KEY_METRICS);
+        Cache::forget(self::CACHE_KEY_CATEGORY_DATA);
         Cache::forget('maintenance.maintenance_type_options');
         Cache::forget('maintenance.create_maintenance_types');
         // Clear report caches
@@ -156,6 +316,8 @@ class MaintenanceTypeController extends Controller
 
         // Clear cached data
         Cache::forget('maintenance_types.statistics');
+        Cache::forget(self::CACHE_KEY_METRICS);
+        Cache::forget(self::CACHE_KEY_CATEGORY_DATA);
         Cache::forget('maintenance.maintenance_type_options');
         Cache::forget('maintenance.create_maintenance_types');
         // Clear report caches
@@ -201,6 +363,8 @@ class MaintenanceTypeController extends Controller
 
             // Clear cached data
             Cache::forget('maintenance_types.statistics');
+            Cache::forget(self::CACHE_KEY_METRICS);
+            Cache::forget(self::CACHE_KEY_CATEGORY_DATA);
             Cache::forget('maintenance.maintenance_type_options');
             Cache::forget('maintenance.create_maintenance_types');
             // Clear report caches
@@ -306,6 +470,8 @@ class MaintenanceTypeController extends Controller
 
             // Clear cached data
             Cache::forget('maintenance_types.statistics');
+            Cache::forget(self::CACHE_KEY_METRICS);
+            Cache::forget(self::CACHE_KEY_CATEGORY_DATA);
             Cache::forget('maintenance.maintenance_type_options');
             Cache::forget('maintenance.create_maintenance_types');
 
@@ -343,6 +509,8 @@ class MaintenanceTypeController extends Controller
 
             // Clear cached data
             Cache::forget('maintenance_types.statistics');
+            Cache::forget(self::CACHE_KEY_METRICS);
+            Cache::forget(self::CACHE_KEY_CATEGORY_DATA);
             Cache::forget('maintenance.maintenance_type_options');
             Cache::forget('maintenance.create_maintenance_types');
 
@@ -380,6 +548,8 @@ class MaintenanceTypeController extends Controller
 
             // Clear cached data
             Cache::forget('maintenance_types.statistics');
+            Cache::forget(self::CACHE_KEY_METRICS);
+            Cache::forget(self::CACHE_KEY_CATEGORY_DATA);
             Cache::forget('maintenance.maintenance_type_options');
             Cache::forget('maintenance.create_maintenance_types');
 

@@ -7,12 +7,18 @@ use App\Models\Truck;
 use App\Models\VehicleMaintenanceRecord;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class MaintenancePerformanceReport
 {
+    private const DEFAULT_PER_PAGE = 25;
+
+    private const PER_PAGE_OPTIONS = [10, 25, 50, 100];
+
     public function build(array $filters): array
     {
         [$from, $to] = $this->resolveDateRange($filters);
@@ -39,6 +45,8 @@ class MaintenancePerformanceReport
         $upcoming = $this->upcoming($truckIds, $maintenanceTypeIds, $statuses, $serviceProviders);
         $highlights = $this->buildHighlights($truckBreakdown, $typeBreakdown, $upcoming);
 
+        $breakdownPaginator = $this->paginateBreakdown($truckBreakdown, $filters);
+
         return [
             'resolved_from' => $fromDate,
             'resolved_to' => $toDate,
@@ -48,7 +56,10 @@ class MaintenancePerformanceReport
             'service_providers' => $serviceProviders,
             'totals' => $totals,
             'summary' => $summary,
-            'breakdown' => $truckBreakdown->values()->all(),
+            'breakdown' => $breakdownPaginator['data'],
+            'breakdown_paginator' => Arr::except($breakdownPaginator, ['data']),
+            'per_page' => $breakdownPaginator['meta']['per_page'] ?? self::DEFAULT_PER_PAGE,
+            'per_page_options' => self::PER_PAGE_OPTIONS,
             'type_breakdown' => $typeBreakdown->values()->all(),
             'trend' => $trend,
             'upcoming' => $upcoming,
@@ -102,6 +113,20 @@ class MaintenancePerformanceReport
             ->unique()
             ->values()
             ->all();
+    }
+
+    private function resolvePerPage(array $filters): int
+    {
+        $perPage = (int) ($filters['per_page'] ?? self::DEFAULT_PER_PAGE);
+
+        return in_array($perPage, self::PER_PAGE_OPTIONS, true) ? $perPage : self::DEFAULT_PER_PAGE;
+    }
+
+    private function resolvePage(array $filters): int
+    {
+        $page = (int) ($filters['page'] ?? 1);
+
+        return $page > 0 ? $page : 1;
     }
 
     private function applyFilters(Builder $query, string $fromDate, string $toDate, array $truckIds, array $maintenanceTypeIds, array $statuses, array $serviceProviders): Builder
@@ -343,6 +368,62 @@ class MaintenancePerformanceReport
             'average_completion_days' => $totals['average_completion_days'],
             'share_of_cost_tracked_types_pct' => $totalCost > 0 ? round(($typeTotalCost / $totalCost) * 100, 2) : null,
             'upcoming_within_seven_days' => $upcomingWithinSevenDays,
+        ];
+    }
+
+    private function paginateBreakdown(Collection $breakdown, array $filters): array
+    {
+        $perPage = $this->resolvePerPage($filters);
+        $total = $breakdown->count();
+        $page = $this->resolvePage($filters);
+        $maxPage = max(1, (int) ceil($total / max(1, $perPage)));
+
+        if ($page > $maxPage) {
+            $page = $maxPage;
+        }
+
+        $items = $breakdown->forPage($page, $perPage)->values();
+
+        $paginator = new LengthAwarePaginator(
+            $items,
+            $total,
+            $perPage,
+            $page,
+            [
+                'path' => Paginator::resolveCurrentPath(),
+                'pageName' => 'page',
+                'query' => request()?->query() ?? [],
+            ]
+        );
+
+        $links = $paginator->linkCollection()
+            ->map(static function (array $link): array {
+                $label = $link['label'];
+
+                if (is_string($label)) {
+                    $label = trim(strip_tags(html_entity_decode($label)));
+                }
+
+                return [
+                    'url' => $link['url'],
+                    'label' => $label,
+                    'active' => (bool) ($link['active'] ?? false),
+                ];
+            })
+            ->values()
+            ->all();
+
+        return [
+            'data' => $items->all(),
+            'meta' => [
+                'current_page' => $paginator->currentPage(),
+                'last_page' => $paginator->lastPage(),
+                'per_page' => $paginator->perPage(),
+                'total' => $paginator->total(),
+                'from' => $paginator->firstItem(),
+                'to' => $paginator->lastItem(),
+            ],
+            'links' => $links,
         ];
     }
 
