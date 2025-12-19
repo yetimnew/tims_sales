@@ -351,117 +351,138 @@ export default function Dashboard({
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Dashboard" />
             <div className={cn(
-                'flex flex-1 flex-col gap-8 p-4 lg:p-6',
-                'bg-gradient-to-br from-indigo-50 via-white to-sky-50 dark:from-slate-950 dark:via-indigo-950 dark:to-slate-900',
+                'flex flex-1 flex-col gap-8 p-4 lg:p-8',
+                'bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-indigo-950',
                 'transition-opacity duration-500',
                 isVisible ? 'opacity-100' : 'opacity-0'
             )}>
-                <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                    <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                            <Sparkles className="h-6 w-6 text-primary" />
-                            <h1 className="text-4xl font-bold tracking-tight text-slate-900 dark:text-white">
-                                Network Intelligence Center
-                            </h1>
+                <header className="space-y-6 border-b border-slate-200/50 dark:border-slate-800/50 pb-6">
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                        <div className="space-y-3">
+                            <div className="flex items-center gap-3">
+                                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-blue-600 shadow-lg">
+                                    <Sparkles className="h-6 w-6 text-white" />
+                                </div>
+                                <div>
+                                    <h1 className="text-4xl font-black tracking-tighter text-slate-900 dark:text-white leading-tight">
+                                        Executive Dashboard
+                                    </h1>
+                                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                                        Real-time fleet & financial intelligence
+                                    </p>
+                                </div>
+                            </div>
+                            <p className="text-base text-slate-600 dark:text-slate-400 pl-0">
+                                Monitor network performance, cost recovery, and operational excellence across your fleet.
+                            </p>
                         </div>
-                        <p className="text-base text-slate-600 dark:text-slate-400">
-                            Consolidated view across fleet utilisation, financial recovery, and safety performance.
-                        </p>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                        <Button asChild variant="outline" size="sm" className="transition-all duration-200 hover:shadow-md">
-                            <Link href="/performances">View Performances</Link>
-                        </Button>
-                        <Button asChild size="sm" className="btn-gradient">
-                            <Link href="/performances/create">
-                                <Zap className="mr-2 h-4 w-4" />
-                                New Performance
-                            </Link>
-                        </Button>
+                        <div className="flex flex-wrap items-center gap-3">
+                            <Button asChild variant="outline" size="sm" className="transition-all duration-200 hover:shadow-md hover:border-indigo-300">
+                                <Link href="/performances">
+                                    <BarChart3 className="mr-2 h-4 w-4" />
+                                    View All Trips
+                                </Link>
+                            </Button>
+                            <Button asChild size="sm" className="bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white shadow-md hover:shadow-lg transition-all duration-200">
+                                <Link href="/performances/create">
+                                    <Zap className="mr-2 h-4 w-4" />
+                                    New Trip
+                                </Link>
+                            </Button>
+                        </div>
                     </div>
                 </header>
 
                 {statusSummary && (
-                    <section className="grid gap-4 xl:grid-cols-3">
-                        <div className="relative overflow-hidden rounded-2xl border border-indigo-100/60 bg-gradient-to-br from-indigo-600 via-sky-500 to-teal-500 p-6 text-white shadow-xl dark:border-indigo-500/30 dark:from-indigo-600 dark:via-sky-600 dark:to-teal-600">
-                            <div className="pointer-events-none absolute -top-20 -right-24 size-56 rounded-full bg-white/20 blur-3xl" />
-                            <div className="relative space-y-6">
+                    <section className="grid gap-6 xl:grid-cols-3">
+                        <div className="relative overflow-hidden rounded-3xl border border-transparent bg-gradient-to-br from-indigo-600 via-indigo-500 to-blue-600 p-8 text-white shadow-2xl hover:shadow-3xl transition-all duration-300">
+                            <div className="pointer-events-none absolute -top-32 -right-32 size-64 rounded-full bg-white/10 blur-3xl" />
+                            <div className="pointer-events-none absolute -bottom-20 -left-20 size-48 rounded-full bg-blue-400/10 blur-2xl" />
+                            <div className="relative space-y-8">
                                 <div className="flex items-start justify-between">
                                     <div>
-                                        <p className="text-xs font-semibold uppercase tracking-[0.25em] text-indigo-50/80">Latest Fleet Pulse</p>
-                                        <h2 className="mt-2 text-2xl font-semibold">
+                                        <p className="text-xs font-bold uppercase tracking-widest text-indigo-100/90">🚀 Fleet Live Status</p>
+                                        <h2 className="mt-3 text-3xl font-black">
                                             {hasLatestStatusData
-                                                ? `${integerFormatter.format(statusSummary.overview.trucksTracked)} trucks updated`
-                                                : 'Awaiting updates'}
+                                                ? `${integerFormatter.format(statusSummary.overview.trucksTracked)} Active`
+                                                : 'Pending'}
                                         </h2>
+                                        <p className="mt-1 text-sm text-indigo-100/70 font-medium">trucks tracked today</p>
                                     </div>
-                                    <Gauge className="h-10 w-10 text-white/70" />
+                                    <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/15 backdrop-blur-md border border-white/20">
+                                        <Gauge className="h-8 w-8 text-white/90" />
+                                    </div>
                                 </div>
-                                <div className="space-y-2 text-sm text-indigo-50/80">
-                                    {statusSummaryDateLabel ? (
-                                        <p>Captured {statusSummaryDateLabel}</p>
-                                    ) : (
-                                        <p>No daily truck statuses captured yet.</p>
+                                <div className="space-y-2 text-sm text-indigo-100/80">
+                                    {statusSummaryDateLabel && (
+                                        <p className="font-medium">📅 Status as of {statusSummaryDateLabel}</p>
                                     )}
                                     {hasLatestStatusData && (
-                                        <p>{integerFormatter.format(statusSummary.overview.totalEntries)} status records logged</p>
+                                        <p className="text-indigo-100/60">{integerFormatter.format(statusSummary.overview.totalEntries)} records logged</p>
                                     )}
                                 </div>
-                                <div className="grid gap-4 sm:grid-cols-2">
-                                    <div className="rounded-xl bg-white/15 p-4 backdrop-blur-sm">
-                                        <p className="text-xs font-semibold uppercase tracking-wider text-indigo-50/80">Fleet coverage</p>
-                                        <p className="mt-2 text-lg font-semibold">{formatPercent(statusSummary.overview.coverageRate)}</p>
-                                        <p className="text-[11px] text-indigo-50/70">of {integerFormatter.format(executiveSummary.fleet.totalTrucks)} assets</p>
+                                <div className="grid gap-3 sm:grid-cols-2">
+                                    <div className="rounded-2xl bg-white/[0.08] p-4 backdrop-blur-md border border-white/10 hover:bg-white/[0.12] transition-colors">
+                                        <p className="text-xs font-semibold uppercase tracking-wider text-indigo-100/70">Fleet Coverage</p>
+                                        <p className="mt-2 text-2xl font-bold">{formatPercent(statusSummary.overview.coverageRate)}</p>
+                                        <p className="text-xs text-indigo-100/60 mt-1">of {integerFormatter.format(executiveSummary.fleet.totalTrucks)} assets</p>
                                     </div>
-                                    <div className="rounded-xl bg-white/15 p-4 backdrop-blur-sm">
-                                        <p className="text-xs font-semibold uppercase tracking-wider text-indigo-50/80">Operational share</p>
-                                        <p className="mt-2 text-lg font-semibold">{formatPercent(statusSummary.overview.operationalShare)}</p>
-                                        <p className="text-[11px] text-indigo-50/70">portion of daily entries</p>
+                                    <div className="rounded-2xl bg-white/[0.08] p-4 backdrop-blur-md border border-white/10 hover:bg-white/[0.12] transition-colors">
+                                        <p className="text-xs font-semibold uppercase tracking-wider text-indigo-100/70">Operational</p>
+                                        <p className="mt-2 text-2xl font-bold">{formatPercent(statusSummary.overview.operationalShare)}</p>
+                                        <p className="text-xs text-indigo-100/60 mt-1">active assignments</p>
                                     </div>
-                                    <div className="rounded-xl bg-white/15 p-4 backdrop-blur-sm">
-                                        <p className="text-xs font-semibold uppercase tracking-wider text-indigo-50/80">Maintenance load</p>
-                                        <p className="mt-2 text-lg font-semibold">{formatPercent(statusSummary.overview.maintenanceShare)}</p>
-                                        <p className="text-[11px] text-indigo-50/70">entries flagged for service</p>
+                                    <div className="rounded-2xl bg-white/[0.08] p-4 backdrop-blur-md border border-white/10 hover:bg-white/[0.12] transition-colors">
+                                        <p className="text-xs font-semibold uppercase tracking-wider text-indigo-100/70">Maintenance</p>
+                                        <p className="mt-2 text-2xl font-bold">{formatPercent(statusSummary.overview.maintenanceShare)}</p>
+                                        <p className="text-xs text-indigo-100/60 mt-1">in service queue</p>
                                     </div>
-                                    <div className="rounded-xl bg-white/15 p-4 backdrop-blur-sm">
-                                        <p className="text-xs font-semibold uppercase tracking-wider text-indigo-50/80">Most frequent status</p>
-                                        <p className="mt-2 text-lg font-semibold capitalize">
-                                            {statusSummary.overview.mostCommonStatus ?? 'Not available'}
+                                    <div className="rounded-2xl bg-white/[0.08] p-4 backdrop-blur-md border border-white/10 hover:bg-white/[0.12] transition-colors">
+                                        <p className="text-xs font-semibold uppercase tracking-wider text-indigo-100/70">Dominant Status</p>
+                                        <p className="mt-2 text-lg font-bold capitalize">
+                                            {statusSummary.overview.mostCommonStatus ?? '—'}
                                         </p>
-                                        <p className="text-[11px] text-indigo-50/70">latest reporting day</p>
+                                        <p className="text-xs text-indigo-100/60 mt-1">most common</p>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <Card className="h-full border border-slate-200/70 dark:border-slate-700/70">
-                            <CardHeader>
+                        <Card className="h-full border-slate-200/50 dark:border-slate-700/50 shadow-lg hover:shadow-xl transition-all duration-300 rounded-3xl">
+                            <CardHeader className="bg-gradient-to-r from-blue-50/50 to-indigo-50/50 dark:from-slate-800/30 dark:to-slate-700/30 border-b border-slate-200/40 dark:border-slate-700/40">
                                 <div className="flex items-center justify-between gap-2">
-                                    <CardTitle className="text-base font-semibold">Status distribution</CardTitle>
-                                    <Badge variant="outline" className="border-indigo-200 text-xs font-semibold uppercase tracking-wider text-indigo-600 dark:border-indigo-700 dark:text-indigo-300">
+                                    <CardTitle className="text-lg font-bold">Status Breakdown</CardTitle>
+                                    <Badge className="bg-gradient-to-r from-indigo-600 to-blue-600 text-white border-0 text-xs font-bold uppercase">
                                         {statusSummaryDateLabel ?? 'Pending'}
                                     </Badge>
                                 </div>
-                                <CardDescription>Share of trucks captured on the latest reporting day.</CardDescription>
+                                <CardDescription className="text-sm mt-1">Today's operational status distribution</CardDescription>
                             </CardHeader>
-                            <CardContent>
+                            <CardContent className="pt-6">
                                 {hasLatestStatusData ? (
                                     <div className="space-y-3">
                                         {statusSummary.statusBreakdown.slice(0, 6).map((entry) => {
                                             const share = totalStatusEntries > 0 ? (entry.count / totalStatusEntries) * 100 : 0;
+                                            const statusColors: Record<string, { bg: string; bar: string }> = {
+                                                'active': { bg: 'bg-emerald-50/50 dark:bg-emerald-950/30', bar: 'bg-emerald-500' },
+                                                'maintenance': { bg: 'bg-orange-50/50 dark:bg-orange-950/30', bar: 'bg-orange-500' },
+                                                'pending': { bg: 'bg-slate-50/50 dark:bg-slate-800/30', bar: 'bg-slate-500' },
+                                                'returned': { bg: 'bg-blue-50/50 dark:bg-blue-950/30', bar: 'bg-blue-500' },
+                                            };
+                                            const colors = statusColors[entry.status.toLowerCase()] || { bg: 'bg-indigo-50/50 dark:bg-indigo-950/30', bar: 'bg-indigo-500' };
 
                                             return (
-                                                <div key={entry.status} className="space-y-3 rounded-xl border border-slate-200/70 p-3 transition-colors duration-200 hover:border-indigo-200 hover:bg-indigo-50/40 dark:border-slate-700/70 dark:hover:border-indigo-700 dark:hover:bg-indigo-950/30">
+                                                <div key={entry.status} className={cn('space-y-2 rounded-2xl border border-slate-200/60 p-4 transition-all duration-200 hover:border-indigo-200 hover:shadow-md dark:border-slate-700/60 dark:hover:border-indigo-700', colors.bg)}>
                                                     <div className="flex items-center justify-between gap-2">
                                                         <div>
-                                                            <p className="text-sm font-semibold text-slate-900 dark:text-white">{entry.label}</p>
+                                                            <p className="text-sm font-bold text-slate-900 dark:text-white">{entry.label}</p>
                                                             <p className="text-xs text-muted-foreground">{integerFormatter.format(entry.count)} entries</p>
                                                         </div>
-                                                        <span className="text-sm font-bold text-indigo-600 dark:text-indigo-300">{share.toFixed(1)}%</span>
+                                                        <span className="text-lg font-bold bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent">{share.toFixed(1)}%</span>
                                                     </div>
-                                                    <div className="h-2 w-full rounded-full bg-slate-100 dark:bg-slate-800">
+                                                    <div className="h-2.5 w-full rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
                                                         <div
-                                                            className="h-full rounded-full bg-indigo-500 dark:bg-indigo-400"
+                                                            className={cn('h-full rounded-full transition-all duration-500', colors.bar)}
                                                             style={{ width: `${Math.min(share, 100)}%` }}
                                                         />
                                                     </div>
@@ -477,47 +498,46 @@ export default function Dashboard({
                             </CardContent>
                         </Card>
 
-                        <Card className="h-full border border-slate-200/70 dark:border-slate-700/70">
-                            <CardHeader>
+                        <Card className="h-full border-slate-200/50 dark:border-slate-700/50 shadow-lg hover:shadow-xl transition-all duration-300 rounded-3xl">
+                            <CardHeader className="bg-gradient-to-r from-blue-50/50 to-indigo-50/50 dark:from-slate-800/30 dark:to-slate-700/30 border-b border-slate-200/40 dark:border-slate-700/40">
                                 <div className="flex items-center justify-between gap-2">
-                                    <CardTitle className="text-base font-semibold">Latest updates</CardTitle>
-                                    <ClipboardList className="h-5 w-5 text-muted-foreground" />
+                                    <CardTitle className="text-lg font-bold">Latest Activity</CardTitle>
+                                    <ClipboardList className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
                                 </div>
-                                <CardDescription>Most recent status changes and operator notes.</CardDescription>
+                                <CardDescription className="text-sm mt-1">Most recent status updates</CardDescription>
                             </CardHeader>
-                            <CardContent>
+                            <CardContent className="pt-6">
                                 {hasLatestStatusData ? (
                                     <div className="space-y-3">
                                         {statusSummary.recentUpdates.map((update, index) => (
                                             <div
                                                 key={`${update.truck}-${index}`}
-                                                className="rounded-xl border border-slate-200/70 p-3 transition-all duration-200 hover:border-indigo-200 hover:shadow-sm dark:border-slate-700/70 dark:hover:border-indigo-700"
+                                                className="rounded-2xl border border-slate-200/60 p-4 transition-all duration-200 hover:border-indigo-200 hover:shadow-md dark:border-slate-700/60 dark:hover:border-indigo-700 bg-slate-50/30 dark:bg-slate-800/20"
                                             >
-                                                <div className="flex items-center justify-between text-sm font-semibold text-slate-900 dark:text-white">
-                                                    <span>{update.truck}</span>
-                                                    <span className="text-xs font-medium text-muted-foreground">{formatTimeOnly(update.updatedAt)}</span>
+                                                <div className="flex items-center justify-between text-sm font-bold text-slate-900 dark:text-white">
+                                                    <span className="truncate">{update.truck}</span>
+                                                    <span className="text-xs font-medium text-muted-foreground ml-2 whitespace-nowrap">{formatTimeOnly(update.updatedAt)}</span>
                                                 </div>
-                                                <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-                                                    <Truck className="h-3.5 w-3.5 text-indigo-500" />
-                                                    <span className="capitalize">{update.status ?? 'Unknown'}</span>
+                                                <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+                                                    <Truck className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
+                                                    <span className="capitalize font-medium">{update.status ?? 'Unknown'}</span>
                                                 </div>
                                                 {update.notes && (
-                                                    <p className="mt-2 rounded-lg border border-indigo-100/60 bg-indigo-50/60 p-2 text-sm text-indigo-900 dark:border-indigo-900/50 dark:bg-indigo-950/40 dark:text-indigo-200">
-                                                        {update.notes}
+                                                    <p className="mt-3 rounded-lg border border-indigo-200/50 bg-indigo-50/70 p-2 text-xs text-indigo-900 dark:border-indigo-900/30 dark:bg-indigo-950/40 dark:text-indigo-300">
+                                                        💡 {update.notes}
                                                     </p>
                                                 )}
                                             </div>
                                         ))}
 
                                         {statusSummary.notes.length > 0 && (
-                                            <div className="mt-4 space-y-2 rounded-xl border border-indigo-100/60 bg-indigo-50/60 p-3 dark:border-indigo-900/50 dark:bg-indigo-950/30">
-                                                <p className="text-xs font-semibold uppercase tracking-wider text-indigo-700 dark:text-indigo-300">Operator notes</p>
-                                                <div className="space-y-2 text-sm text-indigo-900 dark:text-indigo-200">
+                                            <div className="mt-4 space-y-2 rounded-2xl border border-blue-200/50 bg-blue-50/50 p-4 dark:border-blue-900/30 dark:bg-blue-950/30">
+                                                <p className="text-xs font-bold uppercase tracking-wider text-blue-700 dark:text-blue-300">📌 Manager Notes</p>
+                                                <div className="space-y-2 text-xs">
                                                     {statusSummary.notes.map((note, index) => (
-                                                        <div key={`${note.truck}-${index}`} className="rounded-lg border border-indigo-100/60 bg-white/30 p-2 dark:border-indigo-900/40 dark:bg-indigo-950/20">
-                                                            <p className="text-xs font-semibold uppercase tracking-wide text-indigo-700 dark:text-indigo-300">{note.truck}</p>
-                                                            <p className="text-[11px] text-indigo-600/80 dark:text-indigo-300/80">{note.status ?? 'Status note'}</p>
-                                                            <p className="mt-1 text-sm font-medium text-indigo-900 dark:text-indigo-100">{note.notes}</p>
+                                                        <div key={`${note.truck}-${index}`} className="rounded-lg bg-white/40 p-2 dark:bg-blue-950/50 border border-blue-200/30 dark:border-blue-900/50">
+                                                            <p className="text-xs font-bold uppercase text-blue-700 dark:text-blue-300">{note.truck}</p>
+                                                            <p className="mt-1 text-blue-900/80 dark:text-blue-200/80 font-medium">{note.notes}</p>
                                                         </div>
                                                     ))}
                                                 </div>
@@ -527,7 +547,7 @@ export default function Dashboard({
                                 ) : (
                                     <div className="flex h-full min-h-[12rem] flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
                                         <ClipboardList className="h-5 w-5" />
-                                        <span>No truck status updates recorded yet.</span>
+                                        <span>No updates recorded yet.</span>
                                     </div>
                                 )}
                             </CardContent>
