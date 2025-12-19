@@ -556,57 +556,71 @@ export default function Dashboard({
                 )}
 
                 <section className="space-y-6">
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between border-b border-slate-200/50 dark:border-slate-800/50 pb-6">
                         <div>
-                            <h2 className="text-xl font-semibold text-slate-900 dark:text-white">Executive Snapshot</h2>
-                            <p className="mt-0.5 text-sm text-slate-600 dark:text-slate-400">Rolling 30-day perspective on throughput and service delivery.</p>
+                            <h2 className="text-2xl font-black text-slate-900 dark:text-white">📊 Key Performance Metrics</h2>
+                            <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">30-day performance snapshot for management review</p>
                         </div>
-                        <span className="rounded-full bg-indigo-100 px-2.5 py-1 text-xs font-medium uppercase tracking-wider text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
-                            Updated {new Date().toLocaleDateString()}
-                        </span>
+                        <div className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-indigo-100 to-blue-100 dark:from-indigo-950/50 dark:to-blue-950/50 px-4 py-2 border border-indigo-200/50 dark:border-indigo-700/50">
+                            <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></div>
+                            <span className="text-xs font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-300">
+                                Live • {new Date().toLocaleDateString()}
+                            </span>
+                        </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         {executiveSummary.metrics.map((metric, index) => {
                             const Icon = METRIC_ICONS[metric.key] ?? TrendingUp;
                             const displayValue = metric.unit === '%' ? formatPercent(metric.value) : formatNumber(metric.value);
                             const gradients = [
-                                'from-indigo-50 via-sky-50 to-white dark:from-indigo-950/30 dark:via-sky-950/20 dark:to-indigo-900/20',
-                                'from-teal-50 via-emerald-50 to-white dark:from-teal-950/25 dark:via-emerald-950/20 dark:to-emerald-900/15',
-                                'from-amber-50 via-orange-50 to-white dark:from-amber-950/25 dark:via-orange-950/20 dark:to-orange-900/15',
-                                'from-rose-50 via-fuchsia-50 to-white dark:from-rose-950/25 dark:via-fuchsia-950/20 dark:to-fuchsia-900/15',
+                                'from-indigo-600/10 via-indigo-500/5 to-white dark:from-indigo-950/30 dark:via-indigo-900/20 dark:to-indigo-900/10',
+                                'from-emerald-600/10 via-teal-500/5 to-white dark:from-emerald-950/30 dark:via-teal-900/20 dark:to-teal-900/10',
+                                'from-amber-600/10 via-orange-500/5 to-white dark:from-amber-950/30 dark:via-orange-900/20 dark:to-orange-900/10',
+                                'from-rose-600/10 via-pink-500/5 to-white dark:from-rose-950/30 dark:via-rose-900/20 dark:to-rose-900/10',
+                            ];
+                            const borderColors = [
+                                'border-indigo-200/50 dark:border-indigo-700/50',
+                                'border-emerald-200/50 dark:border-emerald-700/50',
+                                'border-amber-200/50 dark:border-amber-700/50',
+                                'border-rose-200/50 dark:border-rose-700/50',
                             ];
                             const iconColors = [
-                                'text-indigo-600 dark:text-indigo-300',
-                                'text-teal-600 dark:text-teal-300',
-                                'text-amber-600 dark:text-amber-300',
-                                'text-rose-600 dark:text-rose-300',
+                                'text-indigo-600 dark:text-indigo-400',
+                                'text-emerald-600 dark:text-emerald-400',
+                                'text-amber-600 dark:text-amber-400',
+                                'text-rose-600 dark:text-rose-400',
+                            ];
+                            const badgeColors = [
+                                'bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300',
+                                'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300',
+                                'bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300',
+                                'bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300',
                             ];
 
                             return (
                                 <Card
                                     key={metric.key}
                                     className={cn(
-                                        'relative overflow-hidden border border-slate-200/60 dark:border-slate-700/60',
-                                        'bg-gradient-to-br',
+                                        'relative overflow-hidden border bg-gradient-to-br rounded-2xl shadow-md hover:shadow-lg transition-all duration-300',
                                         gradients[index % gradients.length],
-                                        'hover:shadow-md hover:border-slate-300 dark:hover:border-slate-600',
-                                        'transition-all duration-200',
-                                        'dark:bg-gradient-to-br'
+                                        borderColors[index % borderColors.length],
                                     )}
                                 >
-                                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 pt-3 px-4">
-                                        <CardTitle className="text-xs font-medium text-slate-600 dark:text-slate-400 leading-tight">
-                                            {metric.label}
-                                        </CardTitle>
-                                        <Icon className={cn('h-4 w-4', iconColors[index % iconColors.length])} />
+                                    <CardHeader className="pb-3 pt-4 px-5">
+                                        <div className="flex items-start justify-between">
+                                            <CardTitle className="text-xs font-bold text-slate-600 dark:text-slate-400 leading-tight uppercase tracking-wide">
+                                                {metric.label}
+                                            </CardTitle>
+                                            <Icon className={cn('h-5 w-5 opacity-70', iconColors[index % iconColors.length])} />
+                                        </div>
                                     </CardHeader>
-                                    <CardContent className="px-4 pb-3 pt-0">
-                                        <div className="space-y-1.5">
-                                            <div className="flex items-baseline gap-1.5">
-                                                <span className="text-2xl font-bold text-slate-900 dark:text-white leading-none">{displayValue}</span>
-                                                {metric.unit === '%' && (
-                                                    <span className="text-xs text-slate-500 dark:text-slate-400">achieved</span>
+                                    <CardContent className="px-5 pb-4 pt-2">
+                                        <div className="space-y-2">
+                                            <div className="flex items-baseline gap-2">
+                                                <span className="text-3xl font-black text-slate-900 dark:text-white leading-none">{displayValue}</span>
+                                                {metric.unit && metric.unit !== '%' && (
+                                                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-500">{metric.unit}</span>
                                                 )}
                                             </div>
                                             <div className="text-xs">
@@ -619,72 +633,77 @@ export default function Dashboard({
                         })}
                     </div>
 
-                    <div className="grid gap-4 lg:grid-cols-3">
-                        <Card className="lg:col-span-2 border-slate-200/60 dark:border-slate-700/60 shadow-sm hover:shadow-md transition-all duration-200">
-                            <CardHeader className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between bg-gradient-to-r from-slate-50/80 to-slate-100/50 dark:from-slate-800/80 dark:to-slate-700/50 border-b border-slate-200/60 dark:border-slate-700/60">
+                    <div className="grid gap-6 lg:grid-cols-3">
+                        <Card className="lg:col-span-2 border-slate-200/50 dark:border-slate-700/50 shadow-lg hover:shadow-xl transition-all duration-300 rounded-2xl">
+                            <CardHeader className="flex flex-col gap-3 bg-gradient-to-r from-indigo-50/60 to-blue-50/60 dark:from-slate-800/40 dark:to-slate-700/40 border-b border-slate-200/40 dark:border-slate-700/40">
                                 <div>
-                                    <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">Fleet & Workforce Readiness</CardTitle>
-                                    <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Availability across trucks, drivers, and open assignments.</CardDescription>
-                                </div>
-                                <div className="flex flex-wrap gap-6 text-sm text-slate-600 dark:text-slate-400">
-                                    {renderDelta('Fleet utilisation vs total', executiveSummary.metrics.find(m => m.key === 'tonnage')?.change ?? null)}
-                                    {renderDelta('Return rate trend', executiveSummary.metrics.find(m => m.key === 'returnRate')?.change ?? null)}
+                                    <CardTitle className="text-lg font-bold text-slate-900 dark:text-white">🚚 Fleet & Workforce Status</CardTitle>
+                                    <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-1">Real-time availability metrics across trucks and drivers.</CardDescription>
                                 </div>
                             </CardHeader>
-                            <CardContent className="grid gap-6 lg:grid-cols-2">
-                                <div className="space-y-4">
-                                    <div className="flex items-center gap-3">
-                                        <Gauge className="h-9 w-9 text-indigo-500" />
+                            <CardContent className="grid gap-8 lg:grid-cols-2 pt-8">
+                                <div className="space-y-6">
+                                    <div className="flex items-center gap-4">
+                                        <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-100 to-indigo-50 dark:from-indigo-950/50 dark:to-indigo-900/30">
+                                            <Gauge className="h-7 w-7 text-indigo-600 dark:text-indigo-400" />
+                                        </div>
                                         <div>
-                                            <p className="text-sm text-muted-foreground">Fleet availability</p>
-                                            <div className="flex items-baseline gap-2">
-                                                <span className="text-2xl font-semibold">{formatPercent(executiveSummary.fleet.fleetAvailability)}</span>
-                                                <span className="text-xs text-muted-foreground">{integerFormatter.format(executiveSummary.fleet.activeTrucks)} / {integerFormatter.format(executiveSummary.fleet.totalTrucks)} trucks</span>
+                                            <p className="text-sm text-muted-foreground font-medium">Fleet availability</p>
+                                            <div className="flex items-baseline gap-2 mt-1">
+                                                <span className="text-3xl font-black text-slate-900 dark:text-white">{formatPercent(executiveSummary.fleet.fleetAvailability)}</span>
+                                                <span className="text-xs text-muted-foreground font-semibold">{integerFormatter.format(executiveSummary.fleet.activeTrucks)} / {integerFormatter.format(executiveSummary.fleet.totalTrucks)} trucks</span>
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="h-2 rounded-full bg-muted">
-                                        <div className="h-full rounded-full bg-indigo-500" style={{ width: getProgressWidth(executiveSummary.fleet.fleetAvailability) }} />
+                                    <div className="space-y-2">
+                                        <div className="h-3 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                                            <div className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-blue-500" style={{ width: getProgressWidth(executiveSummary.fleet.fleetAvailability) }} />
+                                        </div>
+                                        <p className="text-xs text-muted-foreground">Operational readiness</p>
                                     </div>
-                                    <div className="flex items-center gap-3">
-                                        <Truck className="h-9 w-9 text-teal-500" />
+                                    <div className="flex items-center gap-4 p-4 rounded-xl bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200/50 dark:border-blue-800/50">
+                                        <Truck className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                                         <div>
-                                            <p className="text-sm text-muted-foreground">Active assignments (30d)</p>
-                                            <div className="text-2xl font-semibold">{integerFormatter.format(executiveSummary.fleet.utilizedAssignments30d)}</div>
+                                            <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">Active assignments (30d)</p>
+                                            <p className="text-2xl font-black text-blue-700 dark:text-blue-300">{integerFormatter.format(executiveSummary.fleet.utilizedAssignments30d)}</p>
                                         </div>
                                     </div>
                                 </div>
-                                <div className="space-y-4">
-                                    <div className="flex items-center gap-3">
-                                        <Users className="h-9 w-9 text-amber-500" />
+                                <div className="space-y-6">
+                                    <div className="flex items-center gap-4">
+                                        <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-amber-100 to-amber-50 dark:from-amber-950/50 dark:to-amber-900/30">
+                                            <Users className="h-7 w-7 text-amber-600 dark:text-amber-400" />
+                                        </div>
                                         <div>
-                                            <p className="text-sm text-muted-foreground">Driver availability</p>
-                                            <div className="flex items-baseline gap-2">
-                                                <span className="text-2xl font-semibold">{formatPercent(executiveSummary.drivers.availability)}</span>
-                                                <span className="text-xs text-muted-foreground">{integerFormatter.format(executiveSummary.drivers.active)} / {integerFormatter.format(executiveSummary.drivers.total)} drivers</span>
+                                            <p className="text-sm text-muted-foreground font-medium">Driver availability</p>
+                                            <div className="flex items-baseline gap-2 mt-1">
+                                                <span className="text-3xl font-black text-slate-900 dark:text-white">{formatPercent(executiveSummary.drivers.availability)}</span>
+                                                <span className="text-xs text-muted-foreground font-semibold">{integerFormatter.format(executiveSummary.drivers.active)} / {integerFormatter.format(executiveSummary.drivers.total)} drivers</span>
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="h-2 rounded-full bg-muted">
-                                        <div className="h-full rounded-full bg-amber-500" style={{ width: getProgressWidth(executiveSummary.drivers.availability) }} />
+                                    <div className="space-y-2">
+                                        <div className="h-3 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                                            <div className="h-full rounded-full bg-gradient-to-r from-amber-500 to-orange-500" style={{ width: getProgressWidth(executiveSummary.drivers.availability) }} />
+                                        </div>
+                                        <p className="text-xs text-muted-foreground">Workforce allocation</p>
                                     </div>
-                                    <div className="flex items-center gap-3">
-                                        <ClipboardList className="h-9 w-9 text-rose-500" />
+                                    <div className="flex items-center gap-4 p-4 rounded-xl bg-rose-50/50 dark:bg-rose-950/20 border border-rose-200/50 dark:border-rose-800/50">
+                                        <ClipboardList className="h-6 w-6 text-rose-600 dark:text-rose-400" />
                                         <div>
-                                            <p className="text-sm text-muted-foreground">Open operations</p>
-                                            <div className="text-2xl font-semibold">{integerFormatter.format(executiveSummary.operations.open)}</div>
-                                            <p className="text-xs text-muted-foreground">{integerFormatter.format(executiveSummary.operations.total)} total contracts</p>
+                                            <p className="text-sm font-semibold text-rose-900 dark:text-rose-100">Open operations</p>
+                                            <p className="text-2xl font-black text-rose-700 dark:text-rose-300">{integerFormatter.format(executiveSummary.operations.open)}</p>
                                         </div>
                                     </div>
                                 </div>
                             </CardContent>
                         </Card>
-                        <Card className="border-slate-200/60 dark:border-slate-700/60 shadow-sm hover:shadow-md transition-all duration-200">
-                            <CardHeader className="bg-gradient-to-r from-slate-50/80 to-slate-100/50 dark:from-slate-800/80 dark:to-slate-700/50 border-b border-slate-200/60 dark:border-slate-700/60">
-                                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">Service Highlights</CardTitle>
-                                <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Change over previous 30 days.</CardDescription>
+                        <Card className="border-slate-200/50 dark:border-slate-700/50 shadow-lg hover:shadow-xl transition-all duration-300 rounded-2xl">
+                            <CardHeader className="bg-gradient-to-r from-emerald-50/60 to-teal-50/60 dark:from-slate-800/40 dark:to-slate-700/40 border-b border-slate-200/40 dark:border-slate-700/40">
+                                <CardTitle className="text-lg font-bold text-slate-900 dark:text-white">📈 Performance Trends</CardTitle>
+                                <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-1">30-day change analysis</CardDescription>
                             </CardHeader>
-                            <CardContent className="space-y-4">
+                            <CardContent className="space-y-5 pt-6">
                                 {['tonnage', 'avgDailyTonnage', 'returnRate', 'avgCycle'].map(key => {
                                     const metric = executiveSummary.metrics.find(item => item.key === key);
                                     if (!metric) {
@@ -692,10 +711,10 @@ export default function Dashboard({
                                     }
 
                                     return (
-                                        <div key={metric.key} className="flex items-center justify-between">
+                                        <div key={metric.key} className="flex items-center justify-between p-3 rounded-xl bg-slate-50/50 dark:bg-slate-800/30 border border-slate-200/40 dark:border-slate-700/40 hover:border-indigo-200/50 dark:hover:border-indigo-700/50 transition-colors">
                                             <div>
-                                                <p className="text-sm font-medium">{metric.label}</p>
-                                                <p className="text-xs text-muted-foreground">{metric.unit ?? 'Actuals'}</p>
+                                                <p className="text-sm font-semibold text-slate-900 dark:text-white">{metric.label}</p>
+                                                <p className="text-xs text-muted-foreground">{metric.unit || 'Value'}</p>
                                             </div>
                                             {renderTrendIndicator(metric.change)}
                                         </div>
