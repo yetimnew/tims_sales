@@ -380,280 +380,273 @@ export default function FuelEfficiency({
 
                     <ReportSummaryGrid items={summaryItems} />
 
-                    <section className="grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-                        <Card className="border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
-                            <CardHeader className="space-y-4 border-b border-slate-200/60 pb-4 dark:border-slate-700/60">
-                                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                                    <div className="space-y-1">
-                                        <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50">Per-truck efficiency</CardTitle>
-                                        <CardDescription className="text-sm">Detailed consumption, spend, and efficiency by truck.</CardDescription>
-                                    </div>
-                                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                                        <span>Rows per page</span>
-                                        <Select value={String(perPage)} onValueChange={handlePerPageChange}>
-                                            <SelectTrigger className="h-8 w-[140px]">
-                                                <SelectValue placeholder={`${perPage} / page`} />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {perPageOptions.map((option) => (
-                                                    <SelectItem key={option} value={String(option)}>
-                                                        {option} / page
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
+                    <Card className="border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
+                        <CardHeader className="space-y-4 border-b border-slate-200/60 pb-4 dark:border-slate-700/60">
+                            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                                <div className="space-y-1">
+                                    <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50">Per-truck efficiency</CardTitle>
+                                    <CardDescription className="text-sm">Detailed consumption, spend, and efficiency by truck.</CardDescription>
                                 </div>
-                                <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                                    {filterBadges.map((badge) => (
-                                        <Badge key={badge} variant="outline">
-                                            {badge}
-                                        </Badge>
-                                    ))}
-                                </div>
-                            </CardHeader>
-                            <CardContent className="space-y-4 p-0">
-                                <div className="overflow-x-auto">
-                                    <Table>
-                                        <TableHeader className="bg-slate-50/60 text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-900/60 dark:text-slate-400">
-                                            <TableRow className="divide-x divide-slate-200/40 dark:divide-slate-800/50">
-                                                <TableHead className="whitespace-nowrap">Truck</TableHead>
-                                                <TableHead className="whitespace-nowrap">Drivers</TableHead>
-                                                <TableHead className="whitespace-nowrap">Status</TableHead>
-                                                <TableHead className="whitespace-nowrap text-right">Trips</TableHead>
-                                                <TableHead className="whitespace-nowrap text-right">Liters</TableHead>
-                                                <TableHead className="whitespace-nowrap text-right">Total Cost</TableHead>
-                                                <TableHead className="whitespace-nowrap text-right">Loaded (km)</TableHead>
-                                                <TableHead className="whitespace-nowrap text-right">Empty (km)</TableHead>
-                                                <TableHead className="whitespace-nowrap text-right">Total (km)</TableHead>
-                                                <TableHead className="whitespace-nowrap text-right">Km / L</TableHead>
-                                                <TableHead className="whitespace-nowrap text-right">Cost / Km</TableHead>
-                                                <TableHead className="whitespace-nowrap text-right">Cost / L</TableHead>
-                                                <TableHead className="whitespace-nowrap text-right">Avg L / Trip</TableHead>
-                                                <TableHead className="whitespace-nowrap text-right">Avg Cost / Trip</TableHead>
-                                                <TableHead className="whitespace-nowrap text-right">Empty Share</TableHead>
-                                                <TableHead className="whitespace-nowrap text-right">Last Activity</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {totalRows === 0 && (
-                                                <TableRow>
-                                                    <TableCell colSpan={16} className="py-6 text-center text-sm text-muted-foreground">
-                                                        No data available for the selected filters.
-                                                    </TableCell>
-                                                </TableRow>
-                                            )}
-                                            {paginatedBreakdown.map((row) => (
-                                                <TableRow key={row.truck_id} className="divide-x divide-slate-100/60 dark:divide-slate-800/60">
-                                                    <TableCell className="whitespace-nowrap font-medium text-slate-900 dark:text-slate-50">
-                                                        {row.plate}
-                                                    </TableCell>
-                                                    <TableCell className="max-w-[220px] whitespace-nowrap text-slate-600 dark:text-slate-300">
-                                                        {row.driver_names?.length > 0 ? row.driver_names.join(', ') : '—'}
-                                                    </TableCell>
-                                                    <TableCell className="whitespace-nowrap capitalize text-slate-600 dark:text-slate-300">
-                                                        {row.status ?? '—'}
-                                                    </TableCell>
-                                                    <TableCell className="whitespace-nowrap text-right">{formatNumber(row.trip_count)}</TableCell>
-                                                    <TableCell className="whitespace-nowrap text-right">{formatDecimal(row.total_liters)}</TableCell>
-                                                    <TableCell className="whitespace-nowrap text-right">{formatCurrency(row.total_cost)}</TableCell>
-                                                    <TableCell className="whitespace-nowrap text-right">{formatDecimal(row.distance_loaded_km)} km</TableCell>
-                                                    <TableCell className="whitespace-nowrap text-right">{formatDecimal(row.distance_empty_km)} km</TableCell>
-                                                    <TableCell className="whitespace-nowrap text-right">{formatDecimal(row.distance_total_km)} km</TableCell>
-                                                    <TableCell className="whitespace-nowrap text-right">{formatOptionalDecimal(row.efficiency_km_per_liter, ' km/L')}</TableCell>
-                                                    <TableCell className="whitespace-nowrap text-right">{formatOptionalCurrency(row.cost_per_km, ' / km')}</TableCell>
-                                                    <TableCell className="whitespace-nowrap text-right">{formatOptionalCurrency(row.cost_per_liter, ' / L')}</TableCell>
-                                                    <TableCell className="whitespace-nowrap text-right">{formatOptionalDecimal(row.avg_liters_per_trip, ' L')}</TableCell>
-                                                    <TableCell className="whitespace-nowrap text-right">{formatOptionalCurrency(row.avg_cost_per_trip)}</TableCell>
-                                                    <TableCell className="whitespace-nowrap text-right">{formatPercentage(row.empty_distance_share_percent)}</TableCell>
-                                                    <TableCell className="whitespace-nowrap text-right">{row.last_activity_on ?? '—'}</TableCell>
-                                                </TableRow>
+                                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                    <span>Rows per page</span>
+                                    <Select value={String(perPage)} onValueChange={handlePerPageChange}>
+                                        <SelectTrigger className="h-8 w-[140px]">
+                                            <SelectValue placeholder={`${perPage} / page`} />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {perPageOptions.map((option) => (
+                                                <SelectItem key={option} value={String(option)}>
+                                                    {option} / page
+                                                </SelectItem>
                                             ))}
-                                        </TableBody>
-                                        {safeBreakdown.length > 0 && (
-                                            <TableFooter>
-                                                <TableRow className="divide-x divide-slate-200/40 bg-slate-50/70 font-semibold dark:divide-slate-800/60 dark:bg-slate-900/70">
-                                                    <TableCell colSpan={3}>
-                                                        Totals ({formatNumber(totals?.truck_count ?? 0)} trucks)
-                                                    </TableCell>
-                                                    <TableCell className="text-right">{formatNumber(totals?.trip_count ?? 0)}</TableCell>
-                                                    <TableCell className="text-right">{formatDecimal(totals?.total_liters ?? 0)}</TableCell>
-                                                    <TableCell className="text-right">{formatCurrency(totals?.total_cost ?? 0)}</TableCell>
-                                                    <TableCell className="text-right">{formatDecimal(totals?.total_loaded_distance_km ?? 0)} km</TableCell>
-                                                    <TableCell className="text-right">{formatDecimal(totals?.total_empty_distance_km ?? 0)} km</TableCell>
-                                                    <TableCell className="text-right">{formatDecimal(totals?.total_distance_km ?? 0)} km</TableCell>
-                                                    <TableCell className="text-right">{formatOptionalDecimal(summary?.fleet_efficiency_km_per_liter, ' km/L')}</TableCell>
-                                                    <TableCell className="text-right">{formatOptionalCurrency(summary?.fleet_cost_per_km, ' / km')}</TableCell>
-                                                    <TableCell className="text-right">{formatOptionalCurrency(summary?.average_cost_per_liter, ' / L')}</TableCell>
-                                                    <TableCell className="text-right">{formatOptionalDecimal(summary?.average_liters_per_trip, ' L')}</TableCell>
-                                                    <TableCell className="text-right">{formatOptionalCurrency(summary?.average_cost_per_trip)}</TableCell>
-                                                    <TableCell className="text-right">{formatPercentage(summary?.empty_distance_share_percent)}</TableCell>
-                                                    <TableCell className="text-right">—</TableCell>
-                                                </TableRow>
-                                            </TableFooter>
-                                        )}
-                                    </Table>
+                                        </SelectContent>
+                                    </Select>
                                 </div>
-                                <div className="flex flex-col gap-3 border-t border-slate-200/60 px-4 py-3 text-xs text-muted-foreground dark:border-slate-800/60 sm:flex-row sm:items-center sm:justify-between">
-                                    {totalRows > 0 ? (
-                                        <span>
-                                            Showing {formatNumber(pageRangeStart)}–{formatNumber(pageRangeEnd)} of {formatNumber(totalRows)}
-                                        </span>
-                                    ) : (
-                                        <span>No rows to display</span>
+                            </div>
+                            <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                                {filterBadges.map((badge) => (
+                                    <Badge key={badge} variant="outline">
+                                        {badge}
+                                    </Badge>
+                                ))}
+                            </div>
+                        </CardHeader>
+                        <CardContent className="space-y-4 p-0">
+                            <div className="overflow-x-auto">
+                                <Table>
+                                    <TableHeader className="bg-slate-50/60 text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-900/60 dark:text-slate-400">
+                                        <TableRow className="divide-x divide-slate-200/40 dark:divide-slate-800/50">
+                                            <TableHead className="whitespace-nowrap">Truck</TableHead>
+                                            <TableHead className="whitespace-nowrap">Drivers</TableHead>
+                                            <TableHead className="whitespace-nowrap">Status</TableHead>
+                                            <TableHead className="whitespace-nowrap text-right">Trips</TableHead>
+                                            <TableHead className="whitespace-nowrap text-right">Liters</TableHead>
+                                            <TableHead className="whitespace-nowrap text-right">Total Cost</TableHead>
+                                            <TableHead className="whitespace-nowrap text-right">Loaded (km)</TableHead>
+                                            <TableHead className="whitespace-nowrap text-right">Empty (km)</TableHead>
+                                            <TableHead className="whitespace-nowrap text-right">Total (km)</TableHead>
+                                            <TableHead className="whitespace-nowrap text-right">Km / L</TableHead>
+                                            <TableHead className="whitespace-nowrap text-right">Cost / Km</TableHead>
+                                            <TableHead className="whitespace-nowrap text-right">Cost / L</TableHead>
+                                            <TableHead className="whitespace-nowrap text-right">Avg L / Trip</TableHead>
+                                            <TableHead className="whitespace-nowrap text-right">Avg Cost / Trip</TableHead>
+                                            <TableHead className="whitespace-nowrap text-right">Empty Share</TableHead>
+                                            <TableHead className="whitespace-nowrap text-right">Last Activity</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {totalRows === 0 && (
+                                            <TableRow>
+                                                <TableCell colSpan={16} className="py-6 text-center text-sm text-muted-foreground">
+                                                    No data available for the selected filters.
+                                                </TableCell>
+                                            </TableRow>
+                                        )}
+                                        {paginatedBreakdown.map((row) => (
+                                            <TableRow key={row.truck_id} className="divide-x divide-slate-100/60 dark:divide-slate-800/60">
+                                                <TableCell className="whitespace-nowrap font-medium text-slate-900 dark:text-slate-50">
+                                                    {row.plate}
+                                                </TableCell>
+                                                <TableCell className="max-w-[220px] whitespace-nowrap text-slate-600 dark:text-slate-300">
+                                                    {row.driver_names?.length > 0 ? row.driver_names.join(', ') : '—'}
+                                                </TableCell>
+                                                <TableCell className="whitespace-nowrap capitalize text-slate-600 dark:text-slate-300">
+                                                    {row.status ?? '—'}
+                                                </TableCell>
+                                                <TableCell className="whitespace-nowrap text-right">{formatNumber(row.trip_count)}</TableCell>
+                                                <TableCell className="whitespace-nowrap text-right">{formatDecimal(row.total_liters)}</TableCell>
+                                                <TableCell className="whitespace-nowrap text-right">{formatCurrency(row.total_cost)}</TableCell>
+                                                <TableCell className="whitespace-nowrap text-right">{formatDecimal(row.distance_loaded_km)} km</TableCell>
+                                                <TableCell className="whitespace-nowrap text-right">{formatDecimal(row.distance_empty_km)} km</TableCell>
+                                                <TableCell className="whitespace-nowrap text-right">{formatDecimal(row.distance_total_km)} km</TableCell>
+                                                <TableCell className="whitespace-nowrap text-right">{formatOptionalDecimal(row.efficiency_km_per_liter, ' km/L')}</TableCell>
+                                                <TableCell className="whitespace-nowrap text-right">{formatOptionalCurrency(row.cost_per_km, ' / km')}</TableCell>
+                                                <TableCell className="whitespace-nowrap text-right">{formatOptionalCurrency(row.cost_per_liter, ' / L')}</TableCell>
+                                                <TableCell className="whitespace-nowrap text-right">{formatOptionalDecimal(row.avg_liters_per_trip, ' L')}</TableCell>
+                                                <TableCell className="whitespace-nowrap text-right">{formatOptionalCurrency(row.avg_cost_per_trip)}</TableCell>
+                                                <TableCell className="whitespace-nowrap text-right">{formatPercentage(row.empty_distance_share_percent)}</TableCell>
+                                                <TableCell className="whitespace-nowrap text-right">{row.last_activity_on ?? '—'}</TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                    {safeBreakdown.length > 0 && (
+                                        <TableFooter>
+                                            <TableRow className="divide-x divide-slate-200/40 bg-slate-50/70 font-semibold dark:divide-slate-800/60 dark:bg-slate-900/70">
+                                                <TableCell colSpan={3}>
+                                                    Totals ({formatNumber(totals?.truck_count ?? 0)} trucks)
+                                                </TableCell>
+                                                <TableCell className="text-right">{formatNumber(totals?.trip_count ?? 0)}</TableCell>
+                                                <TableCell className="text-right">{formatDecimal(totals?.total_liters ?? 0)}</TableCell>
+                                                <TableCell className="text-right">{formatCurrency(totals?.total_cost ?? 0)}</TableCell>
+                                                <TableCell className="text-right">{formatDecimal(totals?.total_loaded_distance_km ?? 0)} km</TableCell>
+                                                <TableCell className="text-right">{formatDecimal(totals?.total_empty_distance_km ?? 0)} km</TableCell>
+                                                <TableCell className="text-right">{formatDecimal(totals?.total_distance_km ?? 0)} km</TableCell>
+                                                <TableCell className="text-right">{formatOptionalDecimal(summary?.fleet_efficiency_km_per_liter, ' km/L')}</TableCell>
+                                                <TableCell className="text-right">{formatOptionalCurrency(summary?.fleet_cost_per_km, ' / km')}</TableCell>
+                                                <TableCell className="text-right">{formatOptionalCurrency(summary?.average_cost_per_liter, ' / L')}</TableCell>
+                                                <TableCell className="text-right">{formatOptionalDecimal(summary?.average_liters_per_trip, ' L')}</TableCell>
+                                                <TableCell className="text-right">{formatOptionalCurrency(summary?.average_cost_per_trip)}</TableCell>
+                                                <TableCell className="text-right">{formatPercentage(summary?.empty_distance_share_percent)}</TableCell>
+                                                <TableCell className="text-right">—</TableCell>
+                                            </TableRow>
+                                        </TableFooter>
                                     )}
-                                    {totalRows > 0 && (
-                                        <div className="flex items-center gap-3">
-                                            <span className="hidden text-[11px] font-semibold uppercase tracking-wide text-muted-foreground sm:inline">
-                                                Page {clampedPage} of {totalPages}
-                                            </span>
-                                            <div className="flex items-center gap-2">
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => goToPage(clampedPage - 1)}
-                                                    disabled={clampedPage <= 1}
-                                                >
-                                                    <ChevronLeft className="h-4 w-4" />
-                                                    <span className="sr-only">Previous page</span>
-                                                </Button>
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => goToPage(clampedPage + 1)}
-                                                    disabled={clampedPage >= totalPages}
-                                                >
-                                                    <span className="sr-only">Next page</span>
-                                                    <ChevronRight className="h-4 w-4" />
-                                                </Button>
-                                            </div>
-                                            <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground sm:hidden">
-                                                Page {clampedPage} of {totalPages}
-                                            </span>
+                                </Table>
+                            </div>
+                            <div className="flex flex-col gap-3 border-t border-slate-200/60 px-4 py-3 text-xs text-muted-foreground dark:border-slate-800/60 sm:flex-row sm:items-center sm:justify-between">
+                                <span>
+                                    {totalRows > 0
+                                        ? `Showing ${formatNumber(pageRangeStart)}–${formatNumber(pageRangeEnd)} of ${formatNumber(totalRows)}`
+                                        : 'No rows to display'}
+                                </span>
+                                {totalRows > 0 ? (
+                                    <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+                                        <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground sm:order-last">
+                                            Page {clampedPage} of {totalPages}
+                                        </span>
+                                        <div className="flex items-center justify-between gap-4 sm:justify-end">
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => goToPage(clampedPage - 1)}
+                                                disabled={clampedPage <= 1}
+                                            >
+                                                <ChevronLeft className="h-4 w-4" />
+                                                <span className="sr-only">Previous page</span>
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => goToPage(clampedPage + 1)}
+                                                disabled={clampedPage >= totalPages}
+                                            >
+                                                <span className="sr-only">Next page</span>
+                                                <ChevronRight className="h-4 w-4" />
+                                            </Button>
                                         </div>
+                                    </div>
+                                ) : null}
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <section className="grid gap-6 lg:grid-cols-2">
+                        <Card className="border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
+                            <CardHeader>
+                                <CardTitle className="text-base font-semibold text-slate-900 dark:text-slate-50">Highlights</CardTitle>
+                                <CardDescription className="text-sm">Top performers and cost hotspots.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="grid gap-4 text-sm md:grid-cols-3">
+                                <div className="space-y-2">
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Best efficiency</p>
+                                    {highlightData.best_efficiency.length === 0 && (
+                                        <p className="text-muted-foreground">No efficiency winners yet.</p>
+                                    )}
+                                    {highlightData.best_efficiency.length > 0 && (
+                                        <ol className="space-y-2 text-slate-600 dark:text-slate-300">
+                                            {highlightData.best_efficiency.map((row, index) => (
+                                                <li key={row.truck_id} className="flex items-center justify-between rounded-lg border border-slate-200/70 px-3 py-2 dark:border-slate-800/60">
+                                                    <span className="font-semibold text-slate-900 dark:text-slate-50">
+                                                        {index + 1}. {row.plate}
+                                                    </span>
+                                                    <span>{formatOptionalDecimal(row.efficiency_km_per_liter, ' km/L')}</span>
+                                                </li>
+                                            ))}
+                                        </ol>
+                                    )}
+                                </div>
+                                <div className="space-y-2">
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Highest cost per km</p>
+                                    {highlightData.highest_cost_per_km.length === 0 && (
+                                        <p className="text-muted-foreground">No costly outliers detected.</p>
+                                    )}
+                                    {highlightData.highest_cost_per_km.length > 0 && (
+                                        <ol className="space-y-2 text-slate-600 dark:text-slate-300">
+                                            {highlightData.highest_cost_per_km.map((row, index) => (
+                                                <li key={row.truck_id} className="flex items-center justify-between rounded-lg border border-slate-200/70 px-3 py-2 dark:border-rose-900/40 dark:bg-rose-950/20">
+                                                    <span className="font-semibold text-slate-900 dark:text-slate-50">
+                                                        {index + 1}. {row.plate}
+                                                    </span>
+                                                    <span>{formatOptionalCurrency(row.cost_per_km, ' / km')}</span>
+                                                </li>
+                                            ))}
+                                        </ol>
+                                    )}
+                                </div>
+                                <div className="space-y-2">
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Highest empty share</p>
+                                    {highlightData.highest_empty_distance_share.length === 0 && (
+                                        <p className="text-muted-foreground">No empty mileage spikes detected.</p>
+                                    )}
+                                    {highlightData.highest_empty_distance_share.length > 0 && (
+                                        <ol className="space-y-2 text-slate-600 dark:text-slate-300">
+                                            {highlightData.highest_empty_distance_share.map((row, index) => (
+                                                <li key={row.truck_id} className="flex items-center justify-between rounded-lg border border-slate-200/70 px-3 py-2 dark:border-slate-800/60">
+                                                    <span className="font-semibold text-slate-900 dark:text-slate-50">
+                                                        {index + 1}. {row.plate}
+                                                    </span>
+                                                    <span>{formatPercentage(row.empty_distance_share_percent)}</span>
+                                                </li>
+                                            ))}
+                                        </ol>
                                     )}
                                 </div>
                             </CardContent>
                         </Card>
 
-                        <div className="grid gap-6">
-                            <Card className="border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
-                                <CardHeader className="space-y-2 border-b border-slate-200/60 pb-4 dark:border-slate-700/60">
-                                    <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50">Highlights</CardTitle>
-                                    <CardDescription className="text-sm">Top performers and cost hotspots.</CardDescription>
-                                </CardHeader>
-                                <CardContent className="grid gap-6 md:grid-cols-3">
-                                    <div className="space-y-3">
-                                        <div className="text-sm font-semibold text-slate-700 dark:text-slate-200">Best efficiency</div>
-                                        {highlightData.best_efficiency.length === 0 && (
-                                            <p className="text-sm text-muted-foreground">No efficiency winners yet.</p>
-                                        )}
-                                        {highlightData.best_efficiency.length > 0 && (
-                                            <ol className="space-y-2 text-sm text-slate-600 dark:text-slate-300">
-                                                {highlightData.best_efficiency.map((row, index) => (
-                                                    <li key={row.truck_id} className="flex items-center justify-between rounded-lg border border-slate-200/70 bg-slate-50/60 px-3 py-2 dark:border-slate-800/60 dark:bg-slate-900/60">
-                                                        <span className="font-medium text-slate-900 dark:text-slate-50">
-                                                            {index + 1}. {row.plate}
-                                                        </span>
-                                                        <span>{formatOptionalDecimal(row.efficiency_km_per_liter, ' km/L')}</span>
-                                                    </li>
-                                                ))}
-                                            </ol>
-                                        )}
-                                    </div>
-                                    <div className="space-y-3">
-                                        <div className="text-sm font-semibold text-slate-700 dark:text-slate-200">Highest cost per km</div>
-                                        {highlightData.highest_cost_per_km.length === 0 && (
-                                            <p className="text-sm text-muted-foreground">No costly outliers detected.</p>
-                                        )}
-                                        {highlightData.highest_cost_per_km.length > 0 && (
-                                            <ol className="space-y-2 text-sm text-slate-600 dark:text-slate-300">
-                                                {highlightData.highest_cost_per_km.map((row, index) => (
-                                                    <li key={row.truck_id} className="flex items-center justify-between rounded-lg border border-slate-200/70 bg-rose-50/60 px-3 py-2 dark:border-rose-900/40 dark:bg-rose-950/30">
-                                                        <span className="font-medium text-slate-900 dark:text-slate-50">
-                                                            {index + 1}. {row.plate}
-                                                        </span>
-                                                        <span>{formatOptionalCurrency(row.cost_per_km, ' / km')}</span>
-                                                    </li>
-                                                ))}
-                                            </ol>
-                                        )}
-                                    </div>
-                                    <div className="space-y-3">
-                                        <div className="text-sm font-semibold text-slate-700 dark:text-slate-200">Highest empty share</div>
-                                        {highlightData.highest_empty_distance_share.length === 0 && (
-                                            <p className="text-sm text-muted-foreground">No empty mileage spikes detected.</p>
-                                        )}
-                                        {highlightData.highest_empty_distance_share.length > 0 && (
-                                            <ol className="space-y-2 text-sm text-slate-600 dark:text-slate-300">
-                                                {highlightData.highest_empty_distance_share.map((row, index) => (
-                                                    <li key={row.truck_id} className="flex items-center justify-between rounded-lg border border-slate-200/70 bg-slate-50/60 px-3 py-2 dark:border-slate-800/60 dark:bg-slate-900/60">
-                                                        <span className="font-medium text-slate-900 dark:text-slate-50">
-                                                            {index + 1}. {row.plate}
-                                                        </span>
-                                                        <span>{formatPercentage(row.empty_distance_share_percent)}</span>
-                                                    </li>
-                                                ))}
-                                            </ol>
-                                        )}
-                                    </div>
-                                </CardContent>
-                            </Card>
-
-                            <Card className="border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
-                                <CardHeader className="space-y-2 border-b border-slate-200/60 pb-4 dark:border-slate-700/60">
-                                    <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50">Trip &amp; fuel trend</CardTitle>
-                                    <CardDescription className="text-sm">Month-over-month trip mix, fuel usage, and distance.</CardDescription>
-                                </CardHeader>
-                                <CardContent className="p-0">
-                                    <div className="max-h-[320px] overflow-auto">
-                                        <Table>
-                                            <TableHeader className="bg-slate-50/60 text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-900/60 dark:text-slate-400">
+                        <Card className="border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
+                            <CardHeader>
+                                <CardTitle className="text-base font-semibold text-slate-900 dark:text-slate-50">Trip &amp; fuel trend</CardTitle>
+                                <CardDescription className="text-sm">Month-over-month trip mix, fuel usage, and distance.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="p-0">
+                                <div className="max-h-[320px] overflow-auto">
+                                    <Table>
+                                        <TableHeader className="bg-slate-50/60 text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-900/60 dark:text-slate-400">
+                                            <TableRow>
+                                                <TableHead>Period</TableHead>
+                                                <TableHead className="text-right">Trips</TableHead>
+                                                <TableHead className="text-right">Liters</TableHead>
+                                                <TableHead className="text-right">Total Cost</TableHead>
+                                                <TableHead className="text-right">Loaded (km)</TableHead>
+                                                <TableHead className="text-right">Empty (km)</TableHead>
+                                                <TableHead className="text-right">Total (km)</TableHead>
+                                                <TableHead className="text-right">Km / L</TableHead>
+                                                <TableHead className="text-right">Cost / Km</TableHead>
+                                                <TableHead className="text-right">Avg L / Trip</TableHead>
+                                                <TableHead className="text-right">Avg Cost / Trip</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {safeTrend.length === 0 && (
                                                 <TableRow>
-                                                    <TableHead>Period</TableHead>
-                                                    <TableHead className="text-right">Trips</TableHead>
-                                                    <TableHead className="text-right">Liters</TableHead>
-                                                    <TableHead className="text-right">Total Cost</TableHead>
-                                                    <TableHead className="text-right">Loaded (km)</TableHead>
-                                                    <TableHead className="text-right">Empty (km)</TableHead>
-                                                    <TableHead className="text-right">Total (km)</TableHead>
-                                                    <TableHead className="text-right">Km / L</TableHead>
-                                                    <TableHead className="text-right">Cost / Km</TableHead>
-                                                    <TableHead className="text-right">Avg L / Trip</TableHead>
-                                                    <TableHead className="text-right">Avg Cost / Trip</TableHead>
+                                                    <TableCell colSpan={11} className="py-6 text-center text-sm text-muted-foreground">
+                                                        No trend data available for the selected filters.
+                                                    </TableCell>
                                                 </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {safeTrend.length === 0 && (
-                                                    <TableRow>
-                                                        <TableCell colSpan={11} className="py-6 text-center text-sm text-muted-foreground">
-                                                            No trend data available for the selected filters.
-                                                        </TableCell>
-                                                    </TableRow>
-                                                )}
-                                                {safeTrend.map((row) => (
-                                                    <TableRow key={row.period}>
-                                                        <TableCell>{row.period}</TableCell>
-                                                        <TableCell className="text-right">{formatNumber(row.trip_count)}</TableCell>
-                                                        <TableCell className="text-right">{formatDecimal(row.total_liters)}</TableCell>
-                                                        <TableCell className="text-right">{formatCurrency(row.total_cost)}</TableCell>
-                                                        <TableCell className="text-right">{formatDecimal(row.distance_loaded_km)} km</TableCell>
-                                                        <TableCell className="text-right">{formatDecimal(row.distance_empty_km)} km</TableCell>
-                                                        <TableCell className="text-right">{formatDecimal(row.distance_total_km)} km</TableCell>
-                                                        <TableCell className="text-right">{formatOptionalDecimal(row.fleet_efficiency_km_per_liter, ' km/L')}</TableCell>
-                                                        <TableCell className="text-right">{formatOptionalCurrency(row.fleet_cost_per_km, ' / km')}</TableCell>
-                                                        <TableCell className="text-right">{formatOptionalDecimal(row.average_liters_per_trip, ' L')}</TableCell>
-                                                        <TableCell className="text-right">{formatOptionalCurrency(row.average_cost_per_trip)}</TableCell>
-                                                    </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        </div>
+                                            )}
+                                            {safeTrend.map((row) => (
+                                                <TableRow key={row.period}>
+                                                    <TableCell>{row.period}</TableCell>
+                                                    <TableCell className="text-right">{formatNumber(row.trip_count)}</TableCell>
+                                                    <TableCell className="text-right">{formatDecimal(row.total_liters)}</TableCell>
+                                                    <TableCell className="text-right">{formatCurrency(row.total_cost)}</TableCell>
+                                                    <TableCell className="text-right">{formatDecimal(row.distance_loaded_km)} km</TableCell>
+                                                    <TableCell className="text-right">{formatDecimal(row.distance_empty_km)} km</TableCell>
+                                                    <TableCell className="text-right">{formatDecimal(row.distance_total_km)} km</TableCell>
+                                                    <TableCell className="text-right">{formatOptionalDecimal(row.fleet_efficiency_km_per_liter, ' km/L')}</TableCell>
+                                                    <TableCell className="text-right">{formatOptionalCurrency(row.fleet_cost_per_km, ' / km')}</TableCell>
+                                                    <TableCell className="text-right">{formatOptionalDecimal(row.average_liters_per_trip, ' L')}</TableCell>
+                                                    <TableCell className="text-right">{formatOptionalCurrency(row.average_cost_per_trip)}</TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                            </CardContent>
+                        </Card>
                     </section>
                 </div>
             </div>

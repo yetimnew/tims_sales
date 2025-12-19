@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\DailyTruckStatus;
 use App\Models\Driver;
 use App\Models\DriverSafetyRecord;
 use App\Models\FuelRecord;
@@ -11,6 +12,7 @@ use App\Models\Truck;
 use App\Models\TruckFinancialRecord;
 use App\Models\VehicleMaintenanceRecord;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -481,14 +483,157 @@ class DashboardController extends Controller
             'topIncidentTypes' => $topIncidentTypes,
         ];
 
+        $latestTruckStatusSummary = $this->buildLatestTruckStatusSummary($totalTrucks);
+
         return Inertia::render('Dashboard', [
             'executiveSummary' => $executiveSummary,
             'networkOverview' => $networkOverview,
             'financialOverview' => $financialOverview,
             'assetOverview' => $assetOverview,
             'safetyOverview' => $safetyOverview,
+            'latestTruckStatusSummary' => $latestTruckStatusSummary,
             'topCustomers' => $topCustomersData,
             'recentPerformances' => $recentPerformances,
         ]);
+    }
+
+    /**
+     * Prepare the latest daily truck status snapshot.
+     */
+    private function buildLatestTruckStatusSummary(int $totalTrucks): array
+    {
+        $latestRecord = DailyTruckStatus::query()
+            ->orderByDesc('status_date')
+            ->orderByDesc('updated_at')
+            ->first();
+
+        if (! $latestRecord) {
+            return [
+                'date' => null,
+                'overview' => [
+                    'trucksTracked' => 0,
+                    'totalEntries' => 0,
+                    'coverageRate' => null,
+                    'operationalShare' => null,
+                    'maintenanceShare' => null,
+                    'mostCommonStatus' => null,
+                ],
+                'statusBreakdown' => [],
+                'recentUpdates' => [],
+                'notes' => [],
+            ];
+        }
+
+        $latestDate = $latestRecord->status_date?->toDateString()
+            ?? $latestRecord->created_at?->toDateString();
+
+        $records = DailyTruckStatus::query()
+            ->with(['truck:id,plate', 'status:id,name'])
+            ->whereDate('status_date', $latestDate)
+            ->orderByDesc('updated_at')
+            ->orderByDesc('created_at')
+            ->get();
+
+        if ($records->isEmpty()) {
+            return [
+                'date' => $latestDate,
+                'overview' => [
+                    'trucksTracked' => 0,
+                    'totalEntries' => 0,
+                    'coverageRate' => null,
+                    'operationalShare' => null,
+                    'maintenanceShare' => null,
+                    'mostCommonStatus' => null,
+                ],
+                'statusBreakdown' => [],
+                'recentUpdates' => [],
+                'notes' => [],
+            ];
+        }
+
+        $totalEntries = $records->count();
+        $trucksTracked = $records->pluck('truck_id')->filter()->unique()->count();
+        $coverageRate = $totalTrucks > 0
+            ? round(($trucksTracked / $totalTrucks) * 100, 1)
+            : null;
+
+        $statusBreakdown = $records
+            ->groupBy(fn ($row) => Str::lower($row->status?->name ?? 'unspecified'))
+            ->map(function ($group, string $statusKey) {
+                $label = Str::of($statusKey)
+                    ->replace('_', ' ')
+                    ->replace('-', ' ')
+                    ->headline()
+                    ->toString();
+
+                return [
+                    'status' => $statusKey,
+                    'label' => $label,
+                    'count' => $group->count(),
+                ];
+            })
+            ->sortByDesc('count')
+            ->values()
+            ->all();
+
+        $operationalKeywords = ['active', 'en route', 'enroute', 'assigned', 'dispatched', 'loaded'];
+        $maintenanceKeywords = ['maintenance', 'workshop', 'repair', 'service'];
+
+        $operationalCount = $records->filter(function ($record) use ($operationalKeywords) {
+            $name = Str::lower($record->status?->name ?? '');
+
+            return $name !== '' && Str::contains($name, $operationalKeywords);
+        })->count();
+
+        $maintenanceCount = $records->filter(function ($record) use ($maintenanceKeywords) {
+            $name = Str::lower($record->status?->name ?? '');
+
+            return $name !== '' && Str::contains($name, $maintenanceKeywords);
+        })->count();
+
+        $recentUpdates = $records
+            ->sortByDesc(fn ($record) => $record->updated_at ?? $record->created_at)
+            ->take(6)
+            ->map(function (DailyTruckStatus $record) {
+                return [
+                    'truck' => $record->truck?->plate ?? 'Unassigned',
+                    'status' => $record->status?->name ?? 'Unknown',
+                    'notes' => $record->notes,
+                    'updatedAt' => optional($record->updated_at ?? $record->status_date ?? $record->created_at)?->toDateTimeString(),
+                ];
+            })
+            ->values()
+            ->all();
+
+        $noteHighlights = $records
+            ->filter(fn ($record) => filled($record->notes))
+            ->sortByDesc(fn ($record) => $record->updated_at ?? $record->created_at)
+            ->take(3)
+            ->map(function (DailyTruckStatus $record) {
+                return [
+                    'truck' => $record->truck?->plate ?? 'Unassigned',
+                    'status' => $record->status?->name ?? 'Unknown',
+                    'notes' => $record->notes,
+                ];
+            })
+            ->values()
+            ->all();
+
+        $mostCommonStatus = $statusBreakdown[0]['label'] ?? null;
+
+        return [
+            'date' => $latestDate,
+            'overview' => [
+                'trucksTracked' => $trucksTracked,
+                'totalEntries' => $totalEntries,
+                'coverageRate' => $coverageRate,
+                'operationalShare' => $totalEntries > 0 ? round(($operationalCount / $totalEntries) * 100, 1) : null,
+                'maintenanceShare' => $totalEntries > 0 ? round(($maintenanceCount / $totalEntries) * 100, 1) : null,
+                'mostCommonStatus' => $mostCommonStatus,
+            ],
+            'statusBreakdown' => $statusBreakdown,
+            'recentUpdates' => $recentUpdates,
+            'notes' => $noteHighlights,
+        ];
     }
 }

@@ -48,14 +48,14 @@ import {
     YAxis
 } from 'recharts';
 
-const PIE_COLORS = ['#0ea5e9', '#22c55e', '#f97316', '#eab308', '#6366f1', '#a855f7', '#06b6d4', '#10b981'];
+const PIE_COLORS = ['#4338ca', '#0ea5e9', '#14b8a6', '#f97316', '#facc15', '#7c3aed', '#db2777', '#1d4ed8'];
 const STATUS_COLOR_MAP: Record<string, string> = {
-    completed: 'bg-emerald-500/20 text-emerald-700 border border-emerald-200',
-    in_progress: 'bg-amber-500/20 text-amber-700 border border-amber-200',
-    pending: 'bg-slate-500/20 text-slate-700 border border-slate-200',
-    cancelled: 'bg-rose-500/20 text-rose-700 border border-rose-200',
-    returned: 'bg-sky-500/20 text-sky-700 border border-sky-200',
-    active: 'bg-emerald-500/20 text-emerald-700 border border-emerald-200',
+    completed: 'bg-teal-500/20 text-teal-700 border border-teal-200 dark:border-teal-900/60 dark:text-teal-300',
+    in_progress: 'bg-amber-400/25 text-amber-700 border border-amber-200 dark:border-amber-900/60 dark:text-amber-300',
+    pending: 'bg-slate-500/20 text-slate-700 border border-slate-200 dark:border-slate-800 dark:text-slate-300',
+    cancelled: 'bg-rose-500/20 text-rose-700 border border-rose-200 dark:border-rose-900/60 dark:text-rose-300',
+    returned: 'bg-sky-500/20 text-sky-700 border border-sky-200 dark:border-sky-900/60 dark:text-sky-300',
+    active: 'bg-indigo-500/20 text-indigo-700 border border-indigo-200 dark:border-indigo-900/60 dark:text-indigo-300',
 };
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -144,6 +144,20 @@ interface DashboardProps {
         incidentTrend: Array<{ period: string; total: number; }>;
         topIncidentTypes: Array<{ type: string; count: number; }>;
     };
+    latestTruckStatusSummary: {
+        date: string | null;
+        overview: {
+            trucksTracked: number;
+            totalEntries: number;
+            coverageRate: number | null;
+            operationalShare: number | null;
+            maintenanceShare: number | null;
+            mostCommonStatus: string | null;
+        };
+        statusBreakdown: Array<{ status: string; label: string; count: number; }>;
+        recentUpdates: Array<{ truck: string; status: string; notes: string | null; updatedAt: string | null; }>;
+        notes: Array<{ truck: string; status: string; notes: string | null; }>;
+    };
     topCustomers: Array<{ customer: string; trips: number; tonnage: number; }>;
     recentPerformances: Array<{
         id: number;
@@ -185,6 +199,7 @@ const METRIC_ICONS: MetricIconMap = {
 const numberFormatter = new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 });
 const integerFormatter = new Intl.NumberFormat('en-US');
 const dateFormatter = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+const timeFormatter = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: 'numeric' });
 
 const formatNumber = (value: number | null | undefined, options?: Intl.NumberFormatOptions): string => {
     if (value === null || value === undefined || Number.isNaN(value)) {
@@ -228,6 +243,27 @@ const formatChange = (value: number | null | undefined): string => {
     return `${prefix}${absolute}%`;
 };
 
+const parseDateTime = (value: string | null | undefined): Date | null => {
+    if (!value) {
+        return null;
+    }
+
+    const normalized = value.includes('T') ? value : value.replace(' ', 'T');
+    const parsed = new Date(normalized);
+
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+const formatTimeOnly = (value: string | null | undefined): string => {
+    const parsed = parseDateTime(value);
+
+    if (!parsed) {
+        return '—';
+    }
+
+    return timeFormatter.format(parsed);
+};
+
 const renderTrendIndicator = (value: number | null | undefined) => {
     if (value === null || value === undefined || Number.isNaN(value)) {
         return (
@@ -247,7 +283,7 @@ const renderTrendIndicator = (value: number | null | undefined) => {
         );
     }
 
-    const tone = value > 0 ? 'text-emerald-600' : 'text-rose-600';
+    const tone = value > 0 ? 'text-teal-600 dark:text-teal-400' : 'text-rose-600 dark:text-rose-400';
     const Icon = value > 0 ? ArrowUpRight : ArrowDownRight;
 
     return (
@@ -264,7 +300,7 @@ const renderStatusBadge = (status?: string | null) => {
     }
 
     const normalized = status.toLowerCase();
-    const badgeClass = STATUS_COLOR_MAP[normalized] ?? 'bg-slate-500/15 text-slate-600';
+    const badgeClass = STATUS_COLOR_MAP[normalized] ?? 'bg-slate-500/15 text-slate-600 border border-slate-200 dark:text-slate-300 dark:border-slate-700';
 
     return (
         <span className={cn('inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium capitalize', badgeClass)}>
@@ -294,6 +330,7 @@ export default function Dashboard({
     financialOverview,
     assetOverview,
     safetyOverview,
+    latestTruckStatusSummary,
     topCustomers,
     recentPerformances,
 }: DashboardProps) {
@@ -303,19 +340,26 @@ export default function Dashboard({
         setIsVisible(true);
     }, []);
 
+    const statusSummary = latestTruckStatusSummary;
+    const totalStatusEntries = statusSummary?.overview.totalEntries ?? 0;
+    const hasLatestStatusData = totalStatusEntries > 0;
+    const statusSummaryDateLabel = statusSummary?.date
+        ? dateFormatter.format(new Date(statusSummary.date))
+        : null;
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Dashboard" />
             <div className={cn(
                 'flex flex-1 flex-col gap-8 p-4 lg:p-6',
-                'bg-gradient-to-br from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950',
+                'bg-gradient-to-br from-indigo-50 via-white to-sky-50 dark:from-slate-950 dark:via-indigo-950 dark:to-slate-900',
                 'transition-opacity duration-500',
                 isVisible ? 'opacity-100' : 'opacity-0'
             )}>
                 <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div className="space-y-2">
                         <div className="flex items-center gap-2">
-                            <Sparkles className="h-6 w-6 text-blue-600" />
+                            <Sparkles className="h-6 w-6 text-primary" />
                             <h1 className="text-4xl font-bold tracking-tight text-slate-900 dark:text-white">
                                 Network Intelligence Center
                             </h1>
@@ -328,7 +372,7 @@ export default function Dashboard({
                         <Button asChild variant="outline" size="sm" className="transition-all duration-200 hover:shadow-md">
                             <Link href="/performances">View Performances</Link>
                         </Button>
-                        <Button asChild size="sm" className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg hover:shadow-xl">
+                        <Button asChild size="sm" className="btn-gradient">
                             <Link href="/performances/create">
                                 <Zap className="mr-2 h-4 w-4" />
                                 New Performance
@@ -337,13 +381,167 @@ export default function Dashboard({
                     </div>
                 </header>
 
+                {statusSummary && (
+                    <section className="grid gap-4 xl:grid-cols-3">
+                        <div className="relative overflow-hidden rounded-2xl border border-indigo-100/60 bg-gradient-to-br from-indigo-600 via-sky-500 to-teal-500 p-6 text-white shadow-xl dark:border-indigo-500/30 dark:from-indigo-600 dark:via-sky-600 dark:to-teal-600">
+                            <div className="pointer-events-none absolute -top-20 -right-24 size-56 rounded-full bg-white/20 blur-3xl" />
+                            <div className="relative space-y-6">
+                                <div className="flex items-start justify-between">
+                                    <div>
+                                        <p className="text-xs font-semibold uppercase tracking-[0.25em] text-indigo-50/80">Latest Fleet Pulse</p>
+                                        <h2 className="mt-2 text-2xl font-semibold">
+                                            {hasLatestStatusData
+                                                ? `${integerFormatter.format(statusSummary.overview.trucksTracked)} trucks updated`
+                                                : 'Awaiting updates'}
+                                        </h2>
+                                    </div>
+                                    <Gauge className="h-10 w-10 text-white/70" />
+                                </div>
+                                <div className="space-y-2 text-sm text-indigo-50/80">
+                                    {statusSummaryDateLabel ? (
+                                        <p>Captured {statusSummaryDateLabel}</p>
+                                    ) : (
+                                        <p>No daily truck statuses captured yet.</p>
+                                    )}
+                                    {hasLatestStatusData && (
+                                        <p>{integerFormatter.format(statusSummary.overview.totalEntries)} status records logged</p>
+                                    )}
+                                </div>
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    <div className="rounded-xl bg-white/15 p-4 backdrop-blur-sm">
+                                        <p className="text-xs font-semibold uppercase tracking-wider text-indigo-50/80">Fleet coverage</p>
+                                        <p className="mt-2 text-lg font-semibold">{formatPercent(statusSummary.overview.coverageRate)}</p>
+                                        <p className="text-[11px] text-indigo-50/70">of {integerFormatter.format(executiveSummary.fleet.totalTrucks)} assets</p>
+                                    </div>
+                                    <div className="rounded-xl bg-white/15 p-4 backdrop-blur-sm">
+                                        <p className="text-xs font-semibold uppercase tracking-wider text-indigo-50/80">Operational share</p>
+                                        <p className="mt-2 text-lg font-semibold">{formatPercent(statusSummary.overview.operationalShare)}</p>
+                                        <p className="text-[11px] text-indigo-50/70">portion of daily entries</p>
+                                    </div>
+                                    <div className="rounded-xl bg-white/15 p-4 backdrop-blur-sm">
+                                        <p className="text-xs font-semibold uppercase tracking-wider text-indigo-50/80">Maintenance load</p>
+                                        <p className="mt-2 text-lg font-semibold">{formatPercent(statusSummary.overview.maintenanceShare)}</p>
+                                        <p className="text-[11px] text-indigo-50/70">entries flagged for service</p>
+                                    </div>
+                                    <div className="rounded-xl bg-white/15 p-4 backdrop-blur-sm">
+                                        <p className="text-xs font-semibold uppercase tracking-wider text-indigo-50/80">Most frequent status</p>
+                                        <p className="mt-2 text-lg font-semibold capitalize">
+                                            {statusSummary.overview.mostCommonStatus ?? 'Not available'}
+                                        </p>
+                                        <p className="text-[11px] text-indigo-50/70">latest reporting day</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <Card className="h-full border border-slate-200/70 dark:border-slate-700/70">
+                            <CardHeader>
+                                <div className="flex items-center justify-between gap-2">
+                                    <CardTitle className="text-base font-semibold">Status distribution</CardTitle>
+                                    <Badge variant="outline" className="border-indigo-200 text-xs font-semibold uppercase tracking-wider text-indigo-600 dark:border-indigo-700 dark:text-indigo-300">
+                                        {statusSummaryDateLabel ?? 'Pending'}
+                                    </Badge>
+                                </div>
+                                <CardDescription>Share of trucks captured on the latest reporting day.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                {hasLatestStatusData ? (
+                                    <div className="space-y-3">
+                                        {statusSummary.statusBreakdown.slice(0, 6).map((entry) => {
+                                            const share = totalStatusEntries > 0 ? (entry.count / totalStatusEntries) * 100 : 0;
+
+                                            return (
+                                                <div key={entry.status} className="space-y-3 rounded-xl border border-slate-200/70 p-3 transition-colors duration-200 hover:border-indigo-200 hover:bg-indigo-50/40 dark:border-slate-700/70 dark:hover:border-indigo-700 dark:hover:bg-indigo-950/30">
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <div>
+                                                            <p className="text-sm font-semibold text-slate-900 dark:text-white">{entry.label}</p>
+                                                            <p className="text-xs text-muted-foreground">{integerFormatter.format(entry.count)} entries</p>
+                                                        </div>
+                                                        <span className="text-sm font-bold text-indigo-600 dark:text-indigo-300">{share.toFixed(1)}%</span>
+                                                    </div>
+                                                    <div className="h-2 w-full rounded-full bg-slate-100 dark:bg-slate-800">
+                                                        <div
+                                                            className="h-full rounded-full bg-indigo-500 dark:bg-indigo-400"
+                                                            style={{ width: `${Math.min(share, 100)}%` }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <div className="flex h-full min-h-[12rem] items-center justify-center text-sm text-muted-foreground">
+                                        No truck status updates yet.
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+
+                        <Card className="h-full border border-slate-200/70 dark:border-slate-700/70">
+                            <CardHeader>
+                                <div className="flex items-center justify-between gap-2">
+                                    <CardTitle className="text-base font-semibold">Latest updates</CardTitle>
+                                    <ClipboardList className="h-5 w-5 text-muted-foreground" />
+                                </div>
+                                <CardDescription>Most recent status changes and operator notes.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                {hasLatestStatusData ? (
+                                    <div className="space-y-3">
+                                        {statusSummary.recentUpdates.map((update, index) => (
+                                            <div
+                                                key={`${update.truck}-${index}`}
+                                                className="rounded-xl border border-slate-200/70 p-3 transition-all duration-200 hover:border-indigo-200 hover:shadow-sm dark:border-slate-700/70 dark:hover:border-indigo-700"
+                                            >
+                                                <div className="flex items-center justify-between text-sm font-semibold text-slate-900 dark:text-white">
+                                                    <span>{update.truck}</span>
+                                                    <span className="text-xs font-medium text-muted-foreground">{formatTimeOnly(update.updatedAt)}</span>
+                                                </div>
+                                                <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+                                                    <Truck className="h-3.5 w-3.5 text-indigo-500" />
+                                                    <span className="capitalize">{update.status ?? 'Unknown'}</span>
+                                                </div>
+                                                {update.notes && (
+                                                    <p className="mt-2 rounded-lg border border-indigo-100/60 bg-indigo-50/60 p-2 text-sm text-indigo-900 dark:border-indigo-900/50 dark:bg-indigo-950/40 dark:text-indigo-200">
+                                                        {update.notes}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        ))}
+
+                                        {statusSummary.notes.length > 0 && (
+                                            <div className="mt-4 space-y-2 rounded-xl border border-indigo-100/60 bg-indigo-50/60 p-3 dark:border-indigo-900/50 dark:bg-indigo-950/30">
+                                                <p className="text-xs font-semibold uppercase tracking-wider text-indigo-700 dark:text-indigo-300">Operator notes</p>
+                                                <div className="space-y-2 text-sm text-indigo-900 dark:text-indigo-200">
+                                                    {statusSummary.notes.map((note, index) => (
+                                                        <div key={`${note.truck}-${index}`} className="rounded-lg border border-indigo-100/60 bg-white/30 p-2 dark:border-indigo-900/40 dark:bg-indigo-950/20">
+                                                            <p className="text-xs font-semibold uppercase tracking-wide text-indigo-700 dark:text-indigo-300">{note.truck}</p>
+                                                            <p className="text-[11px] text-indigo-600/80 dark:text-indigo-300/80">{note.status ?? 'Status note'}</p>
+                                                            <p className="mt-1 text-sm font-medium text-indigo-900 dark:text-indigo-100">{note.notes}</p>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="flex h-full min-h-[12rem] flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
+                                        <ClipboardList className="h-5 w-5" />
+                                        <span>No truck status updates recorded yet.</span>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </section>
+                )}
+
                 <section className="space-y-6">
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                         <div>
                             <h2 className="text-xl font-semibold text-slate-900 dark:text-white">Executive Snapshot</h2>
                             <p className="mt-0.5 text-sm text-slate-600 dark:text-slate-400">Rolling 30-day perspective on throughput and service delivery.</p>
                         </div>
-                        <span className="text-xs font-medium uppercase tracking-wider text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950 px-2.5 py-1 rounded-full">
+                        <span className="rounded-full bg-indigo-100 px-2.5 py-1 text-xs font-medium uppercase tracking-wider text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
                             Updated {new Date().toLocaleDateString()}
                         </span>
                     </div>
@@ -353,20 +551,20 @@ export default function Dashboard({
                             const Icon = METRIC_ICONS[metric.key] ?? TrendingUp;
                             const displayValue = metric.unit === '%' ? formatPercent(metric.value) : formatNumber(metric.value);
                             const gradients = [
-                                'from-blue-50 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/20',
-                                'from-emerald-50 to-emerald-100/50 dark:from-emerald-950/30 dark:to-emerald-900/20',
-                                'from-violet-50 to-violet-100/50 dark:from-violet-950/30 dark:to-violet-900/20',
-                                'from-amber-50 to-amber-100/50 dark:from-amber-950/30 dark:to-amber-900/20',
+                                'from-indigo-50 via-sky-50 to-white dark:from-indigo-950/30 dark:via-sky-950/20 dark:to-indigo-900/20',
+                                'from-teal-50 via-emerald-50 to-white dark:from-teal-950/25 dark:via-emerald-950/20 dark:to-emerald-900/15',
+                                'from-amber-50 via-orange-50 to-white dark:from-amber-950/25 dark:via-orange-950/20 dark:to-orange-900/15',
+                                'from-rose-50 via-fuchsia-50 to-white dark:from-rose-950/25 dark:via-fuchsia-950/20 dark:to-fuchsia-900/15',
                             ];
                             const iconColors = [
-                                'text-blue-600 dark:text-blue-400',
-                                'text-emerald-600 dark:text-emerald-400',
-                                'text-violet-600 dark:text-violet-400',
-                                'text-amber-600 dark:text-amber-400',
+                                'text-indigo-600 dark:text-indigo-300',
+                                'text-teal-600 dark:text-teal-300',
+                                'text-amber-600 dark:text-amber-300',
+                                'text-rose-600 dark:text-rose-300',
                             ];
 
                             return (
-                                <Card 
+                                <Card
                                     key={metric.key}
                                     className={cn(
                                         'relative overflow-hidden border border-slate-200/60 dark:border-slate-700/60',
@@ -416,7 +614,7 @@ export default function Dashboard({
                             <CardContent className="grid gap-6 lg:grid-cols-2">
                                 <div className="space-y-4">
                                     <div className="flex items-center gap-3">
-                                        <Gauge className="h-9 w-9 text-sky-500" />
+                                        <Gauge className="h-9 w-9 text-indigo-500" />
                                         <div>
                                             <p className="text-sm text-muted-foreground">Fleet availability</p>
                                             <div className="flex items-baseline gap-2">
@@ -426,7 +624,7 @@ export default function Dashboard({
                                         </div>
                                     </div>
                                     <div className="h-2 rounded-full bg-muted">
-                                        <div className="h-full rounded-full bg-sky-500" style={{ width: getProgressWidth(executiveSummary.fleet.fleetAvailability) }} />
+                                        <div className="h-full rounded-full bg-indigo-500" style={{ width: getProgressWidth(executiveSummary.fleet.fleetAvailability) }} />
                                     </div>
                                     <div className="flex items-center gap-3">
                                         <Truck className="h-9 w-9 text-teal-500" />
@@ -438,7 +636,7 @@ export default function Dashboard({
                                 </div>
                                 <div className="space-y-4">
                                     <div className="flex items-center gap-3">
-                                        <Users className="h-9 w-9 text-emerald-500" />
+                                        <Users className="h-9 w-9 text-amber-500" />
                                         <div>
                                             <p className="text-sm text-muted-foreground">Driver availability</p>
                                             <div className="flex items-baseline gap-2">
@@ -448,10 +646,10 @@ export default function Dashboard({
                                         </div>
                                     </div>
                                     <div className="h-2 rounded-full bg-muted">
-                                        <div className="h-full rounded-full bg-emerald-500" style={{ width: getProgressWidth(executiveSummary.drivers.availability) }} />
+                                        <div className="h-full rounded-full bg-amber-500" style={{ width: getProgressWidth(executiveSummary.drivers.availability) }} />
                                     </div>
                                     <div className="flex items-center gap-3">
-                                        <ClipboardList className="h-9 w-9 text-violet-500" />
+                                        <ClipboardList className="h-9 w-9 text-rose-500" />
                                         <div>
                                             <p className="text-sm text-muted-foreground">Open operations</p>
                                             <div className="text-2xl font-semibold">{integerFormatter.format(executiveSummary.operations.open)}</div>
@@ -510,12 +708,12 @@ export default function Dashboard({
                                         <ComposedChart data={networkOverview.dailyTrend}>
                                             <CartesianGrid strokeDasharray="3 3" />
                                             <XAxis dataKey="date" />
-                                            <YAxis yAxisId="left" orientation="left" stroke="#0ea5e9" />
-                                            <YAxis yAxisId="right" orientation="right" stroke="#22c55e" />
+                                            <YAxis yAxisId="left" orientation="left" stroke="#4338ca" />
+                                            <YAxis yAxisId="right" orientation="right" stroke="#14b8a6" />
                                             <Tooltip />
                                             <Legend />
-                                            <Area yAxisId="left" type="monotone" name="Tonnage (MT)" dataKey="tonnage" stroke="#0ea5e9" fill="#0ea5e9" fillOpacity={0.15} />
-                                            <Line yAxisId="right" type="monotone" name="Trips" dataKey="trips" stroke="#22c55e" strokeWidth={2} />
+                                            <Area yAxisId="left" type="monotone" name="Tonnage (MT)" dataKey="tonnage" stroke="#4338ca" fill="#4338ca" fillOpacity={0.18} />
+                                            <Line yAxisId="right" type="monotone" name="Trips" dataKey="trips" stroke="#14b8a6" strokeWidth={2} />
                                         </ComposedChart>
                                     </ResponsiveContainer>
                                 )}
@@ -537,7 +735,7 @@ export default function Dashboard({
                                             <XAxis dataKey="status" tickFormatter={value => value.replaceAll('_', ' ')} />
                                             <YAxis allowDecimals={false} />
                                             <Tooltip labelFormatter={(value: string) => value.replaceAll('_', ' ')} />
-                                            <Bar dataKey="count" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                                            <Bar dataKey="count" fill="#4338ca" radius={[4, 4, 0, 0]} />
                                         </BarChart>
                                     </ResponsiveContainer>
                                 )}
@@ -561,8 +759,8 @@ export default function Dashboard({
                                         <YAxis dataKey="label" type="category" width={180} />
                                         <Tooltip />
                                         <Legend />
-                                        <Bar dataKey="tonnage" name="Tonnage (MT)" fill="#38bdf8" radius={[0, 4, 4, 0]} />
-                                        <Bar dataKey="trips" name="Trips" fill="#94a3b8" radius={[0, 4, 4, 0]} />
+                                        <Bar dataKey="tonnage" name="Tonnage (MT)" fill="#4338ca" radius={[0, 4, 4, 0]} />
+                                        <Bar dataKey="trips" name="Trips" fill="#14b8a6" radius={[0, 4, 4, 0]} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             )}
@@ -579,43 +777,43 @@ export default function Dashboard({
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
-                        <Card className="border-slate-200/60 dark:border-slate-700/60 bg-gradient-to-br from-emerald-50/80 to-emerald-100/50 dark:from-emerald-950/30 dark:to-emerald-900/20 shadow-sm hover:shadow-md transition-all duration-200">
+                        <Card className="border-slate-200/60 dark:border-slate-700/60 bg-gradient-to-br from-teal-50/80 to-teal-100/50 dark:from-teal-950/30 dark:to-teal-900/20 shadow-sm hover:shadow-md transition-all duration-200">
                             <CardHeader className="pb-2 pt-3 px-4">
                                 <CardTitle className="text-sm font-medium text-slate-700 dark:text-slate-300">Revenue (30d)</CardTitle>
                                 <CardDescription className="text-xs text-slate-600 dark:text-slate-400">Tariff-based income.</CardDescription>
                             </CardHeader>
                             <CardContent className="px-4 pb-3 pt-0 space-y-1.5">
-                                <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-400 leading-none">{formatCurrency(financialOverview.revenue30d)}</p>
+                                <p className="text-2xl font-bold text-teal-700 dark:text-teal-300 leading-none">{formatCurrency(financialOverview.revenue30d)}</p>
                                 <div className="text-xs">{renderTrendIndicator(financialOverview.change.revenue)}</div>
                             </CardContent>
                         </Card>
-                        <Card className="border-slate-200/60 dark:border-slate-700/60 bg-gradient-to-br from-orange-50/80 to-orange-100/50 dark:from-orange-950/30 dark:to-orange-900/20 shadow-sm hover:shadow-md transition-all duration-200">
+                        <Card className="border-slate-200/60 dark:border-slate-700/60 bg-gradient-to-br from-amber-50/80 to-amber-100/50 dark:from-amber-950/30 dark:to-amber-900/20 shadow-sm hover:shadow-md transition-all duration-200">
                             <CardHeader className="pb-2 pt-3 px-4">
                                 <CardTitle className="text-sm font-medium text-slate-700 dark:text-slate-300">Operating Cost (30d)</CardTitle>
                                 <CardDescription className="text-xs text-slate-600 dark:text-slate-400">Fuel, perdiem, and other trip costs.</CardDescription>
                             </CardHeader>
                             <CardContent className="px-4 pb-3 pt-0 space-y-1.5">
-                                <p className="text-2xl font-bold text-orange-700 dark:text-orange-400 leading-none">{formatCurrency(financialOverview.operatingCost30d)}</p>
+                                <p className="text-2xl font-bold text-amber-700 dark:text-amber-300 leading-none">{formatCurrency(financialOverview.operatingCost30d)}</p>
                                 <div className="text-xs">{renderTrendIndicator(financialOverview.change.operatingCost)}</div>
                             </CardContent>
                         </Card>
-                        <Card className="border-slate-200/60 dark:border-slate-700/60 bg-gradient-to-br from-violet-50/80 to-violet-100/50 dark:from-violet-950/30 dark:to-violet-900/20 shadow-sm hover:shadow-md transition-all duration-200">
+                        <Card className="border-slate-200/60 dark:border-slate-700/60 bg-gradient-to-br from-indigo-50/80 to-indigo-100/50 dark:from-indigo-950/30 dark:to-indigo-900/20 shadow-sm hover:shadow-md transition-all duration-200">
                             <CardHeader className="pb-2 pt-3 px-4">
                                 <CardTitle className="text-sm font-medium text-slate-700 dark:text-slate-300">Margin (30d)</CardTitle>
                                 <CardDescription className="text-xs text-slate-600 dark:text-slate-400">Revenue minus operating cost.</CardDescription>
                             </CardHeader>
                             <CardContent className="px-4 pb-3 pt-0 space-y-1.5">
-                                <p className="text-2xl font-bold text-violet-700 dark:text-violet-400 leading-none">{formatCurrency(financialOverview.margin30d)}</p>
+                                <p className="text-2xl font-bold text-indigo-700 dark:text-indigo-300 leading-none">{formatCurrency(financialOverview.margin30d)}</p>
                                 <div className="text-xs">{renderTrendIndicator(financialOverview.change.margin)}</div>
                             </CardContent>
                         </Card>
-                        <Card className="border-slate-200/60 dark:border-slate-700/60 bg-gradient-to-br from-blue-50/80 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/20 shadow-sm hover:shadow-md transition-all duration-200">
+                        <Card className="border-slate-200/60 dark:border-slate-700/60 bg-gradient-to-br from-rose-50/80 to-rose-100/50 dark:from-rose-950/30 dark:to-rose-900/20 shadow-sm hover:shadow-md transition-all duration-200">
                             <CardHeader className="pb-2 pt-3 px-4">
                                 <CardTitle className="text-sm font-medium text-slate-700 dark:text-slate-300">Cost Recovery</CardTitle>
                                 <CardDescription className="text-xs text-slate-600 dark:text-slate-400">Farebox coverage of operating cost.</CardDescription>
                             </CardHeader>
                             <CardContent className="px-4 pb-3 pt-0 space-y-1.5">
-                                <p className="text-2xl font-bold text-blue-700 dark:text-blue-400 leading-none">{formatPercent(financialOverview.fareboxRecovery)}</p>
+                                <p className="text-2xl font-bold text-rose-700 dark:text-rose-300 leading-none">{formatPercent(financialOverview.fareboxRecovery)}</p>
                                 <div className="text-xs">{renderTrendIndicator(financialOverview.change.fareboxRecovery)}</div>
                             </CardContent>
                         </Card>
@@ -638,9 +836,9 @@ export default function Dashboard({
                                             <YAxis />
                                             <Tooltip />
                                             <Legend />
-                                            <Bar dataKey="revenue" name="Revenue" fill="#22c55e" radius={[4, 4, 0, 0]} />
-                                            <Bar dataKey="cost" name="Operating cost" fill="#f97316" radius={[4, 4, 0, 0]} />
-                                            <Line type="monotone" dataKey="net" name="Net" stroke="#6366f1" strokeWidth={2} />
+                                            <Bar dataKey="revenue" name="Revenue" fill="#14b8a6" radius={[4, 4, 0, 0]} />
+                                            <Bar dataKey="cost" name="Operating cost" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                                            <Line type="monotone" dataKey="net" name="Net" stroke="#4338ca" strokeWidth={2} />
                                         </ComposedChart>
                                     </ResponsiveContainer>
                                 )}
@@ -708,12 +906,12 @@ export default function Dashboard({
                                     <ComposedChart data={financialOverview.fuel.trend}>
                                         <CartesianGrid strokeDasharray="3 3" />
                                         <XAxis dataKey="period" />
-                                        <YAxis yAxisId="left" orientation="left" stroke="#f97316" />
-                                        <YAxis yAxisId="right" orientation="right" stroke="#0369a1" />
+                                        <YAxis yAxisId="left" orientation="left" stroke="#f59e0b" />
+                                        <YAxis yAxisId="right" orientation="right" stroke="#14b8a6" />
                                         <Tooltip />
                                         <Legend />
-                                        <Bar yAxisId="left" dataKey="cost" name="Fuel cost" fill="#f97316" radius={[4, 4, 0, 0]} />
-                                        <Line yAxisId="right" type="monotone" dataKey="volume" name="Volume (L)" stroke="#0369a1" strokeWidth={2} />
+                                        <Bar yAxisId="left" dataKey="cost" name="Fuel cost" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                                        <Line yAxisId="right" type="monotone" dataKey="volume" name="Volume (L)" stroke="#14b8a6" strokeWidth={2} />
                                     </ComposedChart>
                                 </ResponsiveContainer>
                             )}
@@ -738,7 +936,7 @@ export default function Dashboard({
                             <CardContent className="space-y-4">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-3">
-                                        <Wrench className="h-9 w-9 text-sky-500" />
+                                        <Wrench className="h-9 w-9 text-indigo-500" />
                                         <div>
                                             <p className="text-sm font-medium">Scheduled</p>
                                             <p className="text-muted-foreground">Booked in calendar</p>
@@ -755,10 +953,10 @@ export default function Dashboard({
                                 </div>
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <p className="text-sm font-medium text-emerald-600">Completed (30d)</p>
+                                        <p className="text-sm font-medium text-teal-600">Completed (30d)</p>
                                         <p className="text-xs text-muted-foreground">Closed work orders</p>
                                     </div>
-                                    <span className="text-xl font-semibold text-emerald-600">{integerFormatter.format(assetOverview.maintenance.completed30d)}</span>
+                                    <span className="text-xl font-semibold text-teal-600">{integerFormatter.format(assetOverview.maintenance.completed30d)}</span>
                                 </div>
                                 <div className="flex items-center justify-between">
                                     <div>
@@ -790,8 +988,8 @@ export default function Dashboard({
                                             <YAxis />
                                             <Tooltip />
                                             <Legend />
-                                            <Bar dataKey="scheduled" name="Scheduled" fill="#38bdf8" radius={[4, 4, 0, 0]} />
-                                            <Bar dataKey="completed" name="Completed" fill="#22c55e" radius={[4, 4, 0, 0]} />
+                                            <Bar dataKey="scheduled" name="Scheduled" fill="#4338ca" radius={[4, 4, 0, 0]} />
+                                            <Bar dataKey="completed" name="Completed" fill="#14b8a6" radius={[4, 4, 0, 0]} />
                                         </ComposedChart>
                                     </ResponsiveContainer>
                                 )}
@@ -805,7 +1003,7 @@ export default function Dashboard({
                                             {assetOverview.maintenance.upcoming.map(item => (
                                                 <div key={item.id} className="flex items-center justify-between rounded-lg border px-3 py-2">
                                                     <div className="flex items-center gap-3">
-                                                        <ShieldCheck className="h-5 w-5 text-sky-500" />
+                                                        <ShieldCheck className="h-5 w-5 text-indigo-500" />
                                                         <div>
                                                             <p className="text-sm font-medium">Truck {item.truck}</p>
                                                             <p className="text-xs text-muted-foreground">Scheduled {item.scheduledDate ? dateFormatter.format(new Date(item.scheduledDate)) : 'TBC'}</p>
@@ -900,7 +1098,7 @@ export default function Dashboard({
                                             <XAxis dataKey="period" />
                                             <YAxis allowDecimals={false} />
                                             <Tooltip />
-                                            <Line type="monotone" dataKey="total" stroke="#ef4444" strokeWidth={2} />
+                                            <Line type="monotone" dataKey="total" stroke="#db2777" strokeWidth={2} />
                                         </LineChart>
                                     </ResponsiveContainer>
                                 )}

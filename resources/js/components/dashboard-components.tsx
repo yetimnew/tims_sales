@@ -5,7 +5,7 @@ import { ArrowDownRight, ArrowUpRight, TrendingUp } from 'lucide-react';
 
 /**
  * Professional Dashboard Components
- * 
+ *
  * A collection of reusable, professional components designed for
  * the dashboard with consistent styling, animations, and dark mode support.
  */
@@ -25,19 +25,19 @@ interface StatCardProps {
 }
 
 const variantStyles = {
-  primary: 'from-blue-500/10 to-blue-600/5 dark:from-blue-950 dark:to-blue-900',
-  success: 'from-emerald-500/10 to-emerald-600/5 dark:from-emerald-950 dark:to-emerald-900',
-  warning: 'from-amber-500/10 to-amber-600/5 dark:from-amber-950 dark:to-amber-900',
-  danger: 'from-rose-500/10 to-rose-600/5 dark:from-rose-950 dark:to-rose-900',
-  info: 'from-violet-500/10 to-violet-600/5 dark:from-violet-950 dark:to-violet-900',
+  primary: 'from-indigo-500/15 via-indigo-400/10 to-indigo-400/0 dark:from-indigo-950/70 dark:via-indigo-900/40 dark:to-indigo-900/10',
+  success: 'from-teal-500/15 via-emerald-400/10 to-emerald-400/0 dark:from-teal-950/60 dark:via-emerald-900/40 dark:to-emerald-900/15',
+  warning: 'from-amber-400/20 via-amber-500/10 to-orange-400/0 dark:from-amber-950/60 dark:via-orange-900/40 dark:to-orange-900/10',
+  danger: 'from-rose-500/20 via-rose-500/10 to-rose-400/0 dark:from-rose-950/65 dark:via-rose-900/40 dark:to-rose-900/10',
+  info: 'from-sky-500/15 via-primary/10 to-indigo-400/0 dark:from-sky-950/60 dark:via-indigo-900/40 dark:to-indigo-900/10',
 };
 
 const variantTextColors = {
-  primary: 'text-blue-700 dark:text-blue-400',
-  success: 'text-emerald-700 dark:text-emerald-400',
-  warning: 'text-amber-700 dark:text-amber-400',
-  danger: 'text-rose-700 dark:text-rose-400',
-  info: 'text-violet-700 dark:text-violet-400',
+  primary: 'text-indigo-700 dark:text-indigo-300',
+  success: 'text-teal-700 dark:text-teal-300',
+  warning: 'text-amber-700 dark:text-amber-300',
+  danger: 'text-rose-700 dark:text-rose-300',
+  info: 'text-sky-700 dark:text-sky-300',
 };
 
 export const StatCard = React.memo(({
@@ -128,7 +128,7 @@ export const TrendChangeIndicator = React.memo(({
   }
 
   const isPositive = value > 0;
-  const tone = isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400';
+  const tone = isPositive ? 'text-teal-600 dark:text-teal-400' : 'text-rose-600 dark:text-rose-400';
   const Icon = isPositive ? ArrowUpRight : ArrowDownRight;
   const displayValue = Math.abs(value).toFixed(1);
 
@@ -173,7 +173,7 @@ export const SectionHeader = React.memo(({
       variant === 'secondary' && 'sm:flex-row sm:items-end sm:justify-between',
     )}>
       <div className="flex items-center gap-2">
-        {Icon && <Icon className="h-6 w-6 text-blue-600 dark:text-blue-400" />}
+        {Icon && <Icon className="h-6 w-6 text-primary" />}
         <div>
           <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
             {title}
@@ -311,8 +311,8 @@ interface ProgressBarProps {
 }
 
 const progressVariants = {
-  primary: 'bg-blue-500',
-  success: 'bg-emerald-500',
+  primary: 'bg-indigo-500',
+  success: 'bg-teal-500',
   warning: 'bg-amber-500',
   danger: 'bg-rose-500',
 };
@@ -367,10 +367,10 @@ interface StatusBadgeProps {
 }
 
 const statusVariants = {
-  success: 'bg-emerald-500/20 text-emerald-700 border-emerald-200 dark:border-emerald-800 dark:text-emerald-400',
-  warning: 'bg-amber-500/20 text-amber-700 border-amber-200 dark:border-amber-800 dark:text-amber-400',
-  danger: 'bg-rose-500/20 text-rose-700 border-rose-200 dark:border-rose-800 dark:text-rose-400',
-  info: 'bg-blue-500/20 text-blue-700 border-blue-200 dark:border-blue-800 dark:text-blue-400',
+  success: 'bg-teal-500/20 text-teal-700 border-teal-200 dark:border-teal-900/60 dark:text-teal-300',
+  warning: 'bg-amber-400/25 text-amber-700 border-amber-200 dark:border-amber-900/60 dark:text-amber-300',
+  danger: 'bg-rose-500/20 text-rose-700 border-rose-200 dark:border-rose-900/60 dark:text-rose-300',
+  info: 'bg-sky-500/20 text-sky-700 border-sky-200 dark:border-sky-900/60 dark:text-sky-300',
   default: 'bg-slate-500/20 text-slate-700 border-slate-200 dark:border-slate-800 dark:text-slate-400',
 };
 
@@ -448,6 +448,7 @@ export default {
   StatusBadge,
   CardGrid,
 };
+
 
 
 
