@@ -6,9 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\RecalculateDriverTruckGradesRequest;
 use App\Jobs\RecalculateDriverTruckGradeSnapshots;
 use App\Models\DriverTruck;
+use App\Models\DriverTruckGradeSnapshot;
 use App\Models\DriverTruckGradingSetting;
-use App\Services\DriverTruckGradeService;
 use App\Services\DriverTruckGradeSnapshotService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -22,7 +23,6 @@ use Inertia\Response;
 class DriverTruckGradingSettingsController extends Controller
 {
     public function __construct(
-        private readonly DriverTruckGradeService $grader,
         private readonly DriverTruckGradeSnapshotService $snapshots,
     ) {}
 
@@ -53,41 +53,105 @@ class DriverTruckGradingSettingsController extends Controller
         $perPageInput = (int) $request->input('per_page', $perPageOptions[0]);
         $perPage = in_array($perPageInput, $perPageOptions, true) ? $perPageInput : $perPageOptions[0];
 
-        $assignmentsQuery = DriverTruck::query()
-            ->with(['driver:id,name', 'truck:id,plate'])
-            ->orderByDesc('date_recived');
+        $latestSnapshotDate = DriverTruckGradeSnapshot::query()
+            ->orderByDesc('snapshot_date')
+            ->value('snapshot_date');
 
-        $paginator = $assignmentsQuery
+        $snapshotDate = $this->resolveSnapshotDate(
+            $request->input('snapshot_date'),
+            $latestSnapshotDate ? Carbon::parse($latestSnapshotDate)->toDateString() : Carbon::now()->toDateString(),
+        );
+
+        $statusInput = $request->input('status');
+        $status = $statusInput !== null && trim((string) $statusInput) !== '' ? trim((string) $statusInput) : null;
+
+        $attachmentStateInput = $request->input('attachment_state');
+        $attachmentState = $attachmentStateInput !== null && trim((string) $attachmentStateInput) !== ''
+            ? strtolower(trim((string) $attachmentStateInput))
+            : null;
+
+        $gradeLetterInput = $request->input('grade_letter');
+        $gradeLetter = $gradeLetterInput !== null && trim((string) $gradeLetterInput) !== ''
+            ? strtoupper(trim((string) $gradeLetterInput))
+            : null;
+
+        $filteredSnapshotQuery = $this->applySnapshotFilters(
+            DriverTruckGradeSnapshot::query(),
+            $snapshotDate,
+            $status,
+            $attachmentState,
+        );
+
+        $latestSnapshot = (clone $filteredSnapshotQuery)
+            ->with('calculatedBy:id,name')
+            ->orderByDesc('calculated_at')
+            ->first();
+
+        $snapshotQuery = (clone $filteredSnapshotQuery)
+            ->with([
+                'assignment:id,driver_id,truck_id,is_attached,status,date_recived',
+                'driver:id,name,driverid',
+                'truck:id,plate',
+                'calculatedBy:id,name',
+            ]);
+
+        if ($gradeLetter) {
+            $snapshotQuery->where('overall_letter', $gradeLetter);
+        }
+
+        $paginator = $snapshotQuery
+            ->orderByDesc('overall_score')
             ->paginate($perPage)
             ->appends($request->query());
 
-        $grades = $this->grader->gradeMany($paginator->getCollection());
-
-        $sorted = $paginator->getCollection()
-            ->map(function (DriverTruck $assignment) use ($grades) {
-                $grade = $grades->get($assignment->id);
+        $paginator->setCollection(
+            $paginator->getCollection()->map(function (DriverTruckGradeSnapshot $snapshot): array {
+                $assignment = $snapshot->assignment;
 
                 return [
-                    'id' => $assignment->id,
-                    'driver' => $assignment->driver?->only(['id', 'name']),
-                    'truck' => $assignment->truck?->only(['id', 'plate']),
-                    'date_received' => $assignment->date_recived?->toDateString(),
-                    'status' => $assignment->status,
-                    'is_attached' => (bool) $assignment->is_attached,
-                    'grade' => $grade ? [
-                        'overall' => $grade['overall'] ?? null,
-                        'weights' => $grade['weights'] ?? null,
-                        'categories' => $grade['categories'] ?? null,
-                        'grade_thresholds' => $grade['grade_thresholds'] ?? null,
-                    ] : null,
+                    'id' => $assignment?->id ?? $snapshot->driver_truck_id,
+                    'driver' => $snapshot->driver?->only(['id', 'name', 'driverid']),
+                    'truck' => $snapshot->truck?->only(['id', 'plate']),
+                    'status' => $snapshot->status ?? $assignment?->status,
+                    'is_attached' => $snapshot->is_attached,
+                    'date_received' => $assignment?->date_recived?->toDateString(),
+                    'grade' => [
+                        'overall' => [
+                            'score' => $snapshot->overall_score,
+                            'letter' => $snapshot->overall_letter,
+                        ],
+                        'weights' => $snapshot->weights,
+                        'categories' => $snapshot->categories,
+                        'metrics' => $snapshot->metrics,
+                        'grade_thresholds' => $snapshot->grade_thresholds,
+                    ],
+                    'snapshot' => [
+                        'calculated_at' => $snapshot->calculated_at?->toIso8601String(),
+                        'calculated_by' => $snapshot->calculatedBy?->only(['id', 'name']),
+                    ],
                 ];
-            })
-            ->sortByDesc(static function (array $assignment): float {
-                return (float) ($assignment['grade']['overall']['score'] ?? -INF);
-            })
-            ->values();
+            }),
+        );
 
-        $paginator->setCollection($sorted);
+        $availableDates = DriverTruckGradeSnapshot::query()
+            ->select('snapshot_date')
+            ->distinct()
+            ->orderByDesc('snapshot_date')
+            ->limit(30)
+            ->pluck('snapshot_date')
+            ->map(static fn ($value) => Carbon::parse($value)->toDateString())
+            ->values()
+            ->all();
+
+        $statuses = DriverTruck::query()
+            ->select('status')
+            ->whereNotNull('status')
+            ->distinct()
+            ->orderBy('status')
+            ->pluck('status')
+            ->filter(static fn (?string $value) => $value !== null && $value !== '')
+            ->values()
+            ->all();
 
         return Inertia::render('settings/driver-truck-grading', [
             'settings' => [
@@ -105,11 +169,25 @@ class DriverTruckGradingSettingsController extends Controller
                 'update' => $request->user()?->can('driver-trucks.update') ?? false,
                 'recalculate' => $request->user()?->can('driver-trucks.update') ?? false,
             ],
-            'assignments' => $this->formatPaginator($paginator),
+            'driverTruckGrades' => $this->formatPaginator($paginator),
             'perPageOptions' => $perPageOptions,
             'filters' => [
+                'snapshot_date' => $snapshotDate,
+                'status' => $status,
+                'attachment_state' => $attachmentState,
+                'grade_letter' => $gradeLetter,
                 'per_page' => $perPage,
             ],
+            'filterOptions' => [
+                'dates' => $availableDates,
+                'statuses' => $statuses,
+                'attachment_states' => ['attached', 'detached'],
+            ],
+            'latestCalculation' => $latestSnapshot ? [
+                'calculated_at' => $latestSnapshot->calculated_at?->toIso8601String(),
+                'calculated_by' => $latestSnapshot->calculatedBy?->only(['id', 'name']),
+                'count' => (clone $filteredSnapshotQuery)->count(),
+            ] : null,
         ]);
     }
 
@@ -319,5 +397,45 @@ class DriverTruckGradingSettingsController extends Controller
             ],
             'links' => $links,
         ];
+    }
+
+    private function resolveSnapshotDate(?string $input, string $fallback): string
+    {
+        if ($input === null || trim($input) === '') {
+            return $fallback;
+        }
+
+        try {
+            return Carbon::parse($input)->toDateString();
+        } catch (\Throwable) {
+            return $fallback;
+        }
+    }
+
+    private function applySnapshotFilters(Builder $query, string $snapshotDate, ?string $status, ?string $attachmentState): Builder
+    {
+        $query->whereDate('snapshot_date', $snapshotDate);
+
+        if ($status !== null) {
+            $query->where('filter_status', $status);
+        } else {
+            $query->whereNull('filter_status');
+        }
+
+        $normalizedAttachment = $attachmentState !== null ? match ($attachmentState) {
+            'attached' => true,
+            'detached' => false,
+            default => null,
+        } : null;
+
+        if ($normalizedAttachment === true) {
+            $query->where('filter_is_attached', true);
+        } elseif ($normalizedAttachment === false) {
+            $query->where('filter_is_attached', false);
+        } else {
+            $query->whereNull('filter_is_attached');
+        }
+
+        return $query;
     }
 }

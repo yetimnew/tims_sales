@@ -344,10 +344,6 @@ export default function WoredasIndex({ woredas, metrics, filters, statusOptions,
             preserveScroll: true,
             onSuccess: () => {
                 setDeleteDialogOpen(false);
-                toast({
-                    title: 'Woreda deleted',
-                    description: `${selectedWoreda.name} has been removed.`,
-                });
                 setSelectedWoreda(null);
                 setIsDeleting(false);
             },

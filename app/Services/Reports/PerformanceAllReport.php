@@ -29,14 +29,17 @@ class PerformanceAllReport
         $operationIds = $this->normaliseIds($filters['operation_ids'] ?? []);
         $destinationIds = $this->normaliseIds($filters['destination_ids'] ?? []);
         $isExport = $this->isExportRequest($filters);
-        $limit = $this->resolveLimit($filters['limit'] ?? null, $isExport);
+        $perPage = $this->resolvePerPage($filters['per_page'] ?? null, $isExport);
 
-        $rows = $this->fetchRows($from, $to, $driverIds, $truckIds, $operationIds, $destinationIds, $limit);
+        $paginator = $this->fetchPaginatedRows($from, $to, $driverIds, $truckIds, $operationIds, $destinationIds, $perPage);
+        
+        // Get the collection for summary calculations
+        $rows = $paginator->getCollection();
         $summary = $this->summarise($rows);
         $highlights = $this->buildHighlights($rows);
 
         return [
-            'rows' => $rows,
+            'paginator' => $paginator, // Return the full paginator for Inertia
             'summary' => $summary,
             'highlights' => $highlights,
             'resolved_from' => $from->toDateString(),
@@ -46,7 +49,7 @@ class PerformanceAllReport
                 'truck_ids' => $truckIds,
                 'operation_ids' => $operationIds,
                 'destination_ids' => $destinationIds,
-                'limit' => $limit,
+                'per_page' => $perPage,
             ],
         ];
     }
@@ -78,6 +81,20 @@ class PerformanceAllReport
         $bounded = max(50, min($limit, $max));
 
         return $bounded;
+    }
+
+    private function resolvePerPage(?int $perPage, bool $isExport): int
+    {
+        if ($isExport) {
+            return $this->resolveLimit(null, true);
+        }
+
+        if ($perPage === null) {
+            return 50; // Default per page
+        }
+
+        // Allow 10, 25, 50, 100, 200
+        return max(10, min($perPage, 200));
     }
 
     private function normaliseIds(mixed $value): array
@@ -193,6 +210,111 @@ class PerformanceAllReport
                 ];
             })
             ->values();
+    }
+
+    private function fetchPaginatedRows(
+        CarbonInterface $from,
+        CarbonInterface $to,
+        array $driverIds,
+        array $truckIds,
+        array $operationIds,
+        array $destinationIds,
+        int $perPage,
+    ) {
+        $query = Performance::query()
+            ->with([
+                'operation.customer',
+                'driverTruck.driver',
+                'driverTruck.truck.vehicleType',
+                'origin',
+                'destination',
+            ])
+            ->whereBetween('DateDispach', [$from->toDateTimeString(), $to->toDateTimeString()])
+            ->orderByDesc('DateDispach');
+
+        if (! empty($driverIds)) {
+            $query->whereHas('driverTruck', static function ($builder) use ($driverIds) {
+                $builder->whereIn('driver_id', $driverIds);
+            });
+        }
+
+        if (! empty($truckIds)) {
+            $query->whereHas('driverTruck', static function ($builder) use ($truckIds) {
+                $builder->whereIn('truck_id', $truckIds);
+            });
+        }
+
+        if (! empty($operationIds)) {
+            $query->whereIn('operation_id', $operationIds);
+        }
+
+        if (! empty($destinationIds)) {
+            $query->whereIn('destination_id', $destinationIds);
+        }
+
+        $paginator = $query->paginate($perPage);
+
+        // Transform the paginated items
+        $paginator->getCollection()->transform(function (Performance $performance) {
+            $driver = $performance->driverTruck?->driver;
+            $truck = $performance->driverTruck?->truck;
+            $vehicleType = $truck?->vehicleType;
+            $operation = $performance->operation;
+            $customer = $operation?->customer;
+            $origin = $performance->origin;
+            $destination = $performance->destination;
+
+            $tonnage = (float) ($performance->CargoVolumMT ?? 0);
+            $tonKm = (float) ($performance->tonkm ?? 0);
+            $distanceWithCargo = (float) ($performance->DistanceWCargo ?? 0);
+            $distanceWithoutCargo = (float) ($performance->DistanceWOCargo ?? 0);
+            $distanceTotal = $distanceWithCargo + $distanceWithoutCargo;
+            $fuelLitres = (float) ($performance->fuelInLitter ?? 0);
+            $fuelCost = (float) ($performance->fuelInBirr ?? 0);
+            $perdiem = (float) ($performance->perdiem ?? 0);
+            $workOnGoing = (float) ($performance->workOnGoing ?? 0);
+            $otherCost = (float) ($performance->other ?? 0);
+            $expense = $fuelCost + $perdiem + $workOnGoing + $otherCost;
+            $tariff = (float) ($operation?->tariff ?? 0);
+            $revenue = $tonKm > 0 ? $tonKm * $tariff : $tonnage * $tariff;
+            $profit = $revenue - $expense;
+            $margin = $revenue > 0 ? round(($profit / $revenue) * 100, 2) : null;
+
+            return [
+                'id' => $performance->id,
+                'fo_number' => $performance->FOnumber ?? '—',
+                'dispatch_date' => $performance->DateDispach?->toDateString(),
+                'driver_id' => $driver?->id,
+                'driver_name' => $driver?->name ?? 'Unassigned',
+                'driver_status' => $driver?->status,
+                'truck_id' => $truck?->id,
+                'truck_plate' => $truck?->plate ?? '—',
+                'truck_status' => $truck?->status,
+                'vehicle_type' => $vehicleType?->type,
+                'operation_code' => $operation?->operationid ?? 'OP-'.$performance->operation_id,
+                'customer_name' => $customer?->name,
+                'origin_id' => $origin?->id,
+                'origin_name' => $origin?->name ?? '—',
+                'destination_id' => $destination?->id,
+                'destination_name' => $destination?->name ?? '—',
+                'tonnage' => round($tonnage, 2),
+                'ton_km' => round($tonKm, 2),
+                'distance_wc' => round($distanceWithCargo, 2),
+                'distance_wo' => round($distanceWithoutCargo, 2),
+                'distance_total' => round($distanceTotal, 2),
+                'fuel_litres' => round($fuelLitres, 2),
+                'fuel_cost' => round($fuelCost, 2),
+                'perdiem' => round($perdiem, 2),
+                'work_on_going' => round($workOnGoing, 2),
+                'other_cost' => round($otherCost, 2),
+                'expense' => round($expense, 2),
+                'revenue' => round($revenue, 2),
+                'profit' => round($profit, 2),
+                'margin_percent' => $margin,
+            ];
+        });
+
+        return $paginator;
     }
 
     private function summarise(Collection $rows): array

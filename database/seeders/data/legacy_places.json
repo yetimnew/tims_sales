@@ -1,7 +1,7 @@
 [
   {
     "legacy_id": 2,
-    "name": "ADDISE ABABA",
+    "name": "Addis Abeba",
     "woreda_legacy_id": 18,
     "comment": "my second contry",
     "status": 1
@@ -10,7 +10,7 @@
     "legacy_id": 3,
     "name": "KOMBOLCHA",
     "woreda_legacy_id": 341,
-    "comment": "ADDISE ABABA",
+    "comment": "Addis Abeba",
     "status": 1
   },
   {
@@ -15506,7 +15506,7 @@
   },
   {
     "legacy_id": 2317,
-    "name": "ADDISE ABABA",
+    "name": "Addise Ababa",
     "woreda_legacy_id": 504,
     "comment": null,
     "status": 1
@@ -25182,6 +25182,153 @@
     "legacy_id": 3704,
     "name": "GABAGABO-01",
     "woreda_legacy_id": 527,
+    "comment": "DE",
+    "status": 1
+  },
+  {
+    "legacy_id": 3705,
+    "name": "GACANTAG",
+    "woreda_legacy_id": 682,
+    "comment": null,
+    "status": 1
+  },
+  {
+    "legacy_id": 3706,
+    "name": "FEEDHACAD",
+    "woreda_legacy_id": 527,
+    "comment": null,
+    "status": 1
+  },
+  {
+    "legacy_id": 3707,
+    "name": "GOD-GOD 02",
+    "woreda_legacy_id": 285,
+    "comment": "DE",
+    "status": 1
+  },
+  {
+    "legacy_id": 3708,
+    "name": "DOOGAAD",
+    "woreda_legacy_id": 285,
+    "comment": "DE",
+    "status": 1
+  },
+  {
+    "legacy_id": 3709,
+    "name": "HARGAYSA YAR",
+    "woreda_legacy_id": 608,
+    "comment": "DE",
+    "status": 1
+  },
+  {
+    "legacy_id": 3710,
+    "name": "DARA JARORA",
+    "woreda_legacy_id": 361,
+    "comment": "DE",
+    "status": 1
+  },
+  {
+    "legacy_id": 3711,
+    "name": "DACARTA",
+    "woreda_legacy_id": 360,
+    "comment": "DE",
+    "status": 1
+  },
+  {
+    "legacy_id": 3712,
+    "name": "REER-BAHEY",
+    "woreda_legacy_id": 542,
+    "comment": "DE",
+    "status": 1
+  },
+  {
+    "legacy_id": 3713,
+    "name": "ALI ETHIOPIA",
+    "woreda_legacy_id": 542,
+    "comment": "DE",
+    "status": 1
+  },
+  {
+    "legacy_id": 3714,
+    "name": "IDISHILE",
+    "woreda_legacy_id": 542,
+    "comment": "DE",
+    "status": 1
+  },
+  {
+    "legacy_id": 3715,
+    "name": "MALAB",
+    "woreda_legacy_id": 55,
+    "comment": "DE",
+    "status": 1
+  },
+  {
+    "legacy_id": 3716,
+    "name": "DEER EeLA",
+    "woreda_legacy_id": 659,
+    "comment": "DE",
+    "status": 1
+  },
+  {
+    "legacy_id": 3717,
+    "name": "TODOBASHUB",
+    "woreda_legacy_id": 659,
+    "comment": "DE",
+    "status": 1
+  },
+  {
+    "legacy_id": 3718,
+    "name": "CALIJIRE",
+    "woreda_legacy_id": 659,
+    "comment": "DE",
+    "status": 1
+  },
+  {
+    "legacy_id": 3719,
+    "name": "CASLE",
+    "woreda_legacy_id": 659,
+    "comment": "DE",
+    "status": 1
+  },
+  {
+    "legacy_id": 3720,
+    "name": "BULESHE",
+    "woreda_legacy_id": 569,
+    "comment": "DE",
+    "status": 1
+  },
+  {
+    "legacy_id": 3721,
+    "name": "MALKADUR",
+    "woreda_legacy_id": 569,
+    "comment": "DE",
+    "status": 1
+  },
+  {
+    "legacy_id": 3722,
+    "name": "QAANSO",
+    "woreda_legacy_id": 72,
+    "comment": "DE",
+    "status": 1
+  },
+  {
+    "legacy_id": 3723,
+    "name": "SOFLEY",
+    "woreda_legacy_id": 140,
+    "comment": "DE",
+    "status": 1
+  },
+  {
+    "legacy_id": 3724,
+    "name": "QARBOSH",
+    "woreda_legacy_id": 563,
+    "comment": "DE",
+    "status": 1
+  },
+  {
+    "legacy_id": 3725,
+    "name": "BURGABO",
+    "woreda_legacy_id": 55,
     "comment": "DE",
     "status": 1
   }

@@ -443,6 +443,7 @@ const formatDays = (value?: number | null, maximumFractionDigits = 0): string =>
 const gradeCategoryConfig: Record<GradeCategoryKey, {
     label: string;
     description: string;
+    detail: string;
     metrics: Array<{
         key: string;
         label: string;
@@ -452,6 +453,7 @@ const gradeCategoryConfig: Record<GradeCategoryKey, {
     utilization: {
         label: 'Utilization',
         description: 'Distance covered and assignment activity.',
+        detail: 'Calculated from recent kilometres travelled, performance submissions, and the proportion of days the truck was actively deployed against its peers.',
         metrics: [
             {
                 key: 'total_distance_km',
@@ -468,6 +470,7 @@ const gradeCategoryConfig: Record<GradeCategoryKey, {
     efficiency: {
         label: 'Efficiency',
         description: 'Fuel economy and cost per kilometre.',
+        detail: 'Evaluates kilometres per litre, empty versus loaded mileage, and fuel spend per kilometre to highlight fuel-saving or wasteful patterns.',
         metrics: [
             {
                 key: 'avg_km_per_liter',
@@ -496,6 +499,7 @@ const gradeCategoryConfig: Record<GradeCategoryKey, {
     reliability: {
         label: 'Reliability',
         description: 'Maintenance completion and overdue tasks.',
+        detail: 'Assesses completion rate for scheduled work orders and applies a deduction for any overdue maintenance items that increase downtime risk.',
         metrics: [
             {
                 key: 'maintenance_completion_rate',
@@ -512,6 +516,7 @@ const gradeCategoryConfig: Record<GradeCategoryKey, {
     financial: {
         label: 'Financial',
         description: 'Recent maintenance spend and asset cost.',
+        detail: "Looks at the past 12 months of maintenance spend alongside the truck's cost profile to flag expensive assets versus low-cost performers.",
         metrics: [
             {
                 key: 'maintenance_total_cost_last_year',
@@ -528,6 +533,7 @@ const gradeCategoryConfig: Record<GradeCategoryKey, {
     compliance: {
         label: 'Compliance',
         description: 'Status changes affecting availability.',
+        detail: 'Tracks maintenance or inactive status updates over the last 90 days to surface trucks that spend more time off the road than their peers.',
         metrics: [
             {
                 key: 'downtime_changes_90d',
@@ -1275,7 +1281,7 @@ export default function TrucksShow({
         ? (Object.entries(gradeCategoryConfig) as Array<[
               GradeCategoryKey,
               (typeof gradeCategoryConfig)[GradeCategoryKey],
-          ]>)
+              ]>)
               .map(([key, config]) => {
                   const category = gradeReport.categories?.[key];
 
@@ -1290,6 +1296,7 @@ export default function TrucksShow({
                       key,
                       label: config.label,
                       description: config.description,
+                      detail: config.detail,
                       score: category.score,
                       weight: gradeWeights ? gradeWeights[weightKey] : null,
                       metrics: config.metrics.map(metric => ({
@@ -1303,6 +1310,7 @@ export default function TrucksShow({
                   label: string;
                   description: string;
                   score: number;
+                  detail: string;
                   weight: number | null;
                   metrics: Array<{ label: string; value: string }>;
               }>
@@ -1942,6 +1950,9 @@ export default function TrucksShow({
                                                                 </p>
                                                                 <p className="text-xs text-muted-foreground">
                                                                     {category.description}
+                                                                </p>
+                                                                <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+                                                                    {category.detail}
                                                                 </p>
                                                             </div>
                                                             <div className="text-right">

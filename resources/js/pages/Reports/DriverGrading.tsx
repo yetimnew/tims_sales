@@ -15,6 +15,7 @@ import {
     DialogTrigger,
 } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { InertiaPagination } from '@/components/ui/pagination';
 import { CalendarClock, Gauge, LineChart, ListFilter, Loader2, RefreshCcw, Settings, User, type LucideIcon } from 'lucide-react';
@@ -146,6 +147,10 @@ export default function DriverGradingReport({ filters, filterOptions, paginator,
     const availablePerPageOptions = useMemo(() => (perPageOptions && perPageOptions.length > 0 ? perPageOptions : fallBackPerPageOptions), [perPageOptions]);
     const canRecalculate = can?.recalculate ?? false;
 
+    // Calculate min/max dates for date picker
+    const minSnapshotDate = useMemo(() => snapshotDates[snapshotDates.length - 1] ?? null, [snapshotDates]);
+    const maxSnapshotDate = useMemo(() => snapshotDates[0] ?? null, [snapshotDates]);
+
     const [recalculationNotice, setRecalculationNotice] = useState<{ status: 'success' | 'error'; message: string } | null>(null);
     const [recalculating, setRecalculating] = useState(false);
 
@@ -198,6 +203,14 @@ export default function DriverGradingReport({ filters, filterOptions, paginator,
         setPerPage(availablePerPageOptions[0] ?? 10);
         setFiltersOpen(false);
         router.get('/reports/driver-grading', {}, { preserveScroll: true, preserveState: false });
+    };
+
+    const handleSnapshotDateChange = (newDate: string) => {
+        setSnapshotDate(newDate);
+        // Reset other filters to 'all' when snapshot date changes
+        // to avoid no-results due to incompatible filter combinations
+        setStatus('all');
+        setGradeLetter('all');
     };
 
     const handleRecalculateSnapshot = useCallback(async () => {
@@ -302,17 +315,22 @@ export default function DriverGradingReport({ filters, filterOptions, paginator,
                                                 <div className="grid gap-4 md:grid-cols-2">
                                                     <div className="space-y-2">
                                                         <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Snapshot date</label>
-                                                        <Select value={snapshotDate} onValueChange={setSnapshotDate}>
-                                                            <SelectTrigger>
-                                                                <SelectValue placeholder="Select snapshot" />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                                {snapshotDates.map((date) => (
-                                                                    <SelectItem key={date} value={date}>{formatDate(date)}</SelectItem>
-                                                                ))}
-                                                            </SelectContent>
-                                                        </Select>
-                                                        <p className="text-xs text-muted-foreground">Snapshots are created whenever grading completes.</p>
+                                                        <DatePicker
+                                                            mode="single"
+                                                            value={snapshotDate}
+                                                            onChange={(newDate) => {
+                                                                if (newDate) {
+                                                                    handleSnapshotDateChange(newDate);
+                                                                }
+                                                            }}
+                                                            placeholder="Select snapshot date"
+                                                            fromDate={minSnapshotDate ? new Date(minSnapshotDate) : undefined}
+                                                            toDate={maxSnapshotDate ? new Date(maxSnapshotDate) : undefined}
+                                                            className="w-full"
+                                                        />
+                                                        <p className="text-xs text-muted-foreground">
+                                                            Pick any date between {formatDate(minSnapshotDate)} and {formatDate(maxSnapshotDate)}. Changing date resets other filters.
+                                                        </p>
                                                     </div>
                                                     <div className="space-y-2">
                                                         <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Driver status</label>

@@ -64,6 +64,12 @@ class PerformanceController extends Controller
         $user = $request->user();
 
         $baseQuery = Performance::query()
+            ->with([
+                'driverTruck.driver:id,name',
+                'driverTruck.truck:id,plate',
+                'origin:id,name',
+                'destination:id,name',
+            ])
             ->select([
                 'id',
                 'FOnumber',
@@ -78,6 +84,9 @@ class PerformanceController extends Controller
                 'fuelInLitter',
                 'created_at',
                 'user_id',
+                'driver_truck_id',
+                'orgion_id',
+                'destination_id',
             ]);
 
         if (! $user->can('performances.view-any')) {
@@ -105,6 +114,11 @@ class PerformanceController extends Controller
             ->withQueryString();
 
         $performances = $performancesPaginator->through(function (Performance $performance) {
+            $hasDistanceValues = $performance->DistanceWCargo !== null || $performance->DistanceWOCargo !== null;
+            $totalDistance = $hasDistanceValues
+                ? (float) (($performance->DistanceWCargo ?? 0) + ($performance->DistanceWOCargo ?? 0))
+                : null;
+
             return [
                 'id' => $performance->id,
                 'foNumber' => $performance->FOnumber,
@@ -114,9 +128,14 @@ class PerformanceController extends Controller
                 'status' => $performance->satus,
                 'distanceWithCargo' => $performance->DistanceWCargo !== null ? (float) $performance->DistanceWCargo : null,
                 'distanceWithoutCargo' => $performance->DistanceWOCargo !== null ? (float) $performance->DistanceWOCargo : null,
+                'totalDistance' => $totalDistance,
                 'tonnage' => $performance->CargoVolumMT !== null ? (float) $performance->CargoVolumMT : null,
                 'fuelCost' => $performance->fuelInBirr !== null ? (float) $performance->fuelInBirr : null,
                 'fuelInLitter' => $performance->fuelInLitter !== null ? (float) $performance->fuelInLitter : null,
+                'truckPlate' => $performance->driverTruck?->truck?->plate,
+                'driverName' => $performance->driverTruck?->driver?->name,
+                'originName' => $performance->origin?->name,
+                'destinationName' => $performance->destination?->name,
                 'createdAt' => $performance->created_at ? $performance->created_at->toDateTimeString() : null,
             ];
         });

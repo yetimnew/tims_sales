@@ -490,5 +490,65 @@
     "deleted_at": null,
     "created_at": "2025-10-07 08:57:36",
     "updated_at": "2025-10-07 08:57:36"
+  },
+  {
+    "legacy_id": 43,
+    "name": "GENERAL TREDING PLC",
+    "address": "Ethiopia.Addis Abeba",
+    "office_number": "0",
+    "mobile": "0948740902",
+    "remark": null,
+    "status": 1,
+    "deleted_at": null,
+    "created_at": "2025-11-10 10:05:49",
+    "updated_at": "2025-11-10 10:05:49"
+  },
+  {
+    "legacy_id": 44,
+    "name": "MSA Transport",
+    "address": "Ethiopia.Addis Abeba",
+    "office_number": "888",
+    "mobile": "0905943720",
+    "remark": null,
+    "status": 1,
+    "deleted_at": null,
+    "created_at": "2025-11-11 09:55:01",
+    "updated_at": "2025-11-11 09:55:01"
+  },
+  {
+    "legacy_id": 45,
+    "name": "SELAMAWIT ARGAW TRANSPORT",
+    "address": "Ethiopia.Addis Abeba",
+    "office_number": "1889",
+    "mobile": "0911224981",
+    "remark": null,
+    "status": 1,
+    "deleted_at": null,
+    "created_at": "2025-11-28 16:45:59",
+    "updated_at": "2025-11-28 16:45:59"
+  },
+  {
+    "legacy_id": 46,
+    "name": "DAR ESKE DAR GENERAL TREDING PLC",
+    "address": "Ethiopia.Addis Abeba",
+    "office_number": "0",
+    "mobile": "0948740902",
+    "remark": null,
+    "status": 1,
+    "deleted_at": null,
+    "created_at": "2025-12-04 15:17:29",
+    "updated_at": "2025-12-04 15:17:29"
+  },
+  {
+    "legacy_id": 47,
+    "name": "DESALENG G/SILASE CROSS  BORDER SPECIAL CARGO",
+    "address": "Ethiopia.Addis Abeba",
+    "office_number": "0",
+    "mobile": "0911527173",
+    "remark": "DE",
+    "status": 1,
+    "deleted_at": null,
+    "created_at": "2025-12-07 10:33:10",
+    "updated_at": "2025-12-07 10:33:10"
   }
 ]

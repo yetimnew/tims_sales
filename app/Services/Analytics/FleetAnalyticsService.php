@@ -4,9 +4,8 @@ namespace App\Services\Analytics;
 
 use App\Models\DriverTruck;
 use App\Models\Operation;
-use App\Models\Place;
 use App\Models\Performance;
-use App\Models\TruckFinancialRecord;
+use App\Models\Place;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -19,10 +18,6 @@ class FleetAnalyticsService
     {
         [$startDate, $endDate] = $this->resolveDateRange($filters);
 
-        $financialQuery = TruckFinancialRecord::query()
-            ->when($startDate, fn ($query) => $query->whereDate('record_date', '>=', $startDate))
-            ->when($endDate, fn ($query) => $query->whereDate('record_date', '<=', $endDate));
-
         $performanceBaseQuery = Performance::query()
             ->when($startDate, fn ($query) => $query->whereDate('DateDispach', '>=', $startDate))
             ->when($endDate, fn ($query) => $query->whereDate('DateDispach', '<=', $endDate));
@@ -30,27 +25,9 @@ class FleetAnalyticsService
         $operationQuery = Operation::query()
             ->when($startDate, fn ($query) => $query->whereDate('startdate', '>=', $startDate))
             ->when($endDate, fn ($query) => $query->whereDate('startdate', '<=', $endDate));
-
-        $financialTotals = (clone $financialQuery)
-            ->selectRaw('COALESCE(SUM(revenue), 0) as total_revenue')
-            ->selectRaw('COALESCE(SUM(fuel_cost), 0) as total_fuel_cost')
-            ->selectRaw('COALESCE(SUM(maintenance_cost), 0) as total_maintenance_cost')
-            ->selectRaw('COALESCE(SUM(driver_salary), 0) as total_driver_salary')
-            ->selectRaw('COALESCE(SUM(insurance_cost), 0) as total_insurance_cost')
-            ->selectRaw('COALESCE(SUM(depreciation), 0) as total_depreciation')
-            ->selectRaw('COALESCE(SUM(other_costs), 0) as total_other_costs')
-            ->selectRaw('COALESCE(SUM(net_profit), 0) as total_net_profit')
-            ->first();
-
-        $totalCost = (float) ($financialTotals->total_fuel_cost
-            + $financialTotals->total_maintenance_cost
-            + $financialTotals->total_driver_salary
-            + $financialTotals->total_insurance_cost
-            + $financialTotals->total_depreciation
-            + $financialTotals->total_other_costs);
-
-        $totalRevenue = (float) $financialTotals->total_revenue;
-        $netProfit = (float) $financialTotals->total_net_profit;
+        $totalCost = 0.0;
+        $totalRevenue = 0.0;
+        $netProfit = 0.0;
 
         $totalTonKm = (float) (clone $performanceBaseQuery)->selectRaw('COALESCE(SUM(COALESCE(tonkm, 0)), 0) as total')->value('total') ?? 0.0;
         $totalTonnage = (float) (clone $performanceBaseQuery)->selectRaw('COALESCE(SUM(COALESCE(CargoVolumMT, 0)), 0) as total')->value('total') ?? 0.0;
@@ -70,39 +47,10 @@ class FleetAnalyticsService
         $targetTrips = (clone $operationQuery)->count();
         $completionRate = $totalTrips > 0 ? round(($completedTrips / $totalTrips) * 100, 1) : 0.0;
 
-        $financialTrend = (clone $financialQuery)
-            ->selectRaw("DATE_FORMAT(record_date, '%Y-%m') as period")
-            ->selectRaw('COALESCE(SUM(revenue), 0) as revenue')
-            ->selectRaw('COALESCE(SUM(fuel_cost), 0) as fuel_cost')
-            ->selectRaw('COALESCE(SUM(maintenance_cost), 0) as maintenance_cost')
-            ->selectRaw('COALESCE(SUM(driver_salary), 0) as driver_salary')
-            ->selectRaw('COALESCE(SUM(insurance_cost), 0) as insurance_cost')
-            ->selectRaw('COALESCE(SUM(depreciation), 0) as depreciation')
-            ->selectRaw('COALESCE(SUM(other_costs), 0) as other_costs')
-            ->selectRaw('COALESCE(SUM(net_profit), 0) as profit')
-            ->groupBy('period')
-            ->orderBy('period', 'asc')
-            ->limit(12)
-            ->get()
-            ->map(fn ($row) => [
-                'period' => $row->period,
-                'revenue' => (float) $row->revenue,
-                'cost' => (float) ($row->fuel_cost + $row->maintenance_cost + $row->driver_salary + $row->insurance_cost + $row->depreciation + $row->other_costs),
-                'profit' => (float) $row->profit,
-            ])
-            ->values()
-            ->all();
+        $financialTrend = [];
+        $costBreakdown = [];
 
-        $costBreakdown = [
-            ['name' => 'Fuel', 'value' => round((float) $financialTotals->total_fuel_cost, 2)],
-            ['name' => 'Maintenance', 'value' => round((float) $financialTotals->total_maintenance_cost, 2)],
-            ['name' => 'Driver Salaries', 'value' => round((float) $financialTotals->total_driver_salary, 2)],
-            ['name' => 'Insurance', 'value' => round((float) $financialTotals->total_insurance_cost, 2)],
-            ['name' => 'Depreciation', 'value' => round((float) $financialTotals->total_depreciation, 2)],
-            ['name' => 'Other', 'value' => round((float) $financialTotals->total_other_costs, 2)],
-        ];
-
-    $routeEfficiency = $this->buildRouteEfficiencyDataset($startDate, $endDate);
+        $routeEfficiency = $this->buildRouteEfficiencyDataset($startDate, $endDate);
         $underperformingTrips = $this->buildUnderperformingTripsDataset($performanceBaseQuery);
         $driverOutliers = $this->buildDriverOutliersDataset($performanceBaseQuery);
 
@@ -151,12 +99,12 @@ class FleetAnalyticsService
             ? Carbon::parse($filters['end_date'])->endOfDay()
             : null;
 
-        if (!$start && !$end) {
+        if (! $start && ! $end) {
             $end = Carbon::now()->endOfDay();
             $start = $end->copy()->subDays(89)->startOfDay();
-        } elseif ($start && !$end) {
+        } elseif ($start && ! $end) {
             $end = Carbon::now()->endOfDay();
-        } elseif (!$start && $end) {
+        } elseif (! $start && $end) {
             $start = $end->copy()->subDays(89)->startOfDay();
         }
 
@@ -213,7 +161,7 @@ class FleetAnalyticsService
                 $avgTonKm = $row->trips > 0 ? (float) $row->total_tonkm / $row->trips : 0.0;
 
                 return [
-                    'id' => $row->orgion_id . '-' . $row->destination_id,
+                    'id' => $row->orgion_id.'-'.$row->destination_id,
                     'origin' => $origin?->name ?? 'Unknown',
                     'destination' => $destination?->name ?? 'Unknown',
                     'totalTrips' => (int) $row->trips,

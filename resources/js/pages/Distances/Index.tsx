@@ -512,10 +512,6 @@ export default function DistancesIndex({ distances, metrics, filters, perPageOpt
         router.delete(`/distances/${selectedDistance.id}`, {
             preserveScroll: true,
             onSuccess: () => {
-                toast({
-                    title: 'Distance deleted',
-                    description: `${routeLabel} has been removed from the matrix.`,
-                });
                 setDeleteDialogOpen(false);
                 setSelectedDistance(null);
             },

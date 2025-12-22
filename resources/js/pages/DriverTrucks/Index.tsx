@@ -90,6 +90,7 @@ interface DriverTrucksIndexProps {
 }
 
 const SKELETON_FLAG_KEY = 'driver-trucks.index.shouldShowSkeleton';
+const ALLOWED_STATUS_VALUES = ['attached', 'detached'];
 
 const COLUMN_DEFINITIONS: Array<{ id: string; label: string; sortKey: string }> = [
     { id: 'driver', label: 'Driver', sortKey: 'driver_name' },
@@ -118,7 +119,11 @@ const formatDate = (value?: string | null): string => {
         return '—';
     }
 
-    return parsed.toLocaleDateString();
+    return parsed.toLocaleDateString('en-US', {
+        month: '2-digit',
+        day: '2-digit',
+        year: 'numeric',
+    });
 };
 
 const getAttachmentBadge = (isAttached?: boolean) => {
@@ -137,7 +142,14 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
     const canCreateAssignment = hasPermission('driver-trucks.create');
 
     const [searchTerm, setSearchTerm] = React.useState(filters?.search ?? '');
-    const [selectedStatus, setSelectedStatus] = React.useState(filters?.status ?? 'all');
+    const [selectedStatus, setSelectedStatus] = React.useState(() => {
+        const incoming = filters?.status ?? 'all';
+        if (incoming !== 'all' && !ALLOWED_STATUS_VALUES.includes(incoming)) {
+            return 'all';
+        }
+
+        return incoming;
+    });
     const [sortColumn, setSortColumn] = React.useState<string>(filters?.sort ?? 'created_at');
     const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>(filters?.direction ?? 'desc');
     const availablePerPageOptions = React.useMemo(
@@ -156,6 +168,20 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
     const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
     const [selectedAssignment, setSelectedAssignment] = React.useState<DriverTruckData | null>(null);
     const [isDeleting, setIsDeleting] = React.useState(false);
+
+    React.useEffect(() => {
+        const incoming = filters?.status ?? 'all';
+        const normalized = incoming !== 'all' && !ALLOWED_STATUS_VALUES.includes(incoming) ? 'all' : incoming;
+
+        if (normalized !== selectedStatus) {
+            setSelectedStatus(normalized);
+        }
+    }, [filters?.status, selectedStatus]);
+
+    const filteredStatusOptions = React.useMemo(
+        () => statusOptions.filter((option) => ALLOWED_STATUS_VALUES.includes(option.value)),
+        [statusOptions],
+    );
 
     const isDataReady = Array.isArray(driverTrucks?.data);
     const { isLoading: isTableLoading } = useListingLoading({
@@ -194,11 +220,13 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
                     ? searchTerm.trim()
                     : undefined;
 
-            const nextStatus = hasOverride('status')
+            const rawStatus = hasOverride('status')
                 ? overrides.status
                 : selectedStatus !== 'all'
                     ? selectedStatus
                     : undefined;
+
+            const nextStatus = rawStatus && ALLOWED_STATUS_VALUES.includes(rawStatus) ? rawStatus : undefined;
 
             const nextSort = hasOverride('sort') ? overrides.sort ?? sortColumn : sortColumn;
             const nextDirection = hasOverride('direction') ? overrides.direction ?? sortDirection : sortDirection;
@@ -207,7 +235,7 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
 
             const params: Record<string, string | number | undefined> = {
                 search: nextSearch && nextSearch !== '' ? nextSearch : undefined,
-                status: nextStatus && nextStatus !== 'all' ? nextStatus : undefined,
+                status: nextStatus,
                 sort: nextSort,
                 direction: nextDirection,
                 page: nextPage,
@@ -427,8 +455,8 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
                       <TableCell>
                           <div className="flex flex-col items-start gap-1">
                               {getAttachmentBadge(assignment.is_attached)}
-                              <span className="text-xs text-muted-foreground capitalize">
-                                  {assignment.status ?? 'n/a'}
+                              <span className="text-xs text-muted-foreground">
+                                  {assignment.is_attached ? 'Attached' : 'Detached'}
                               </span>
                               {assignment.date_detach && (
                                   <span className="text-xs text-muted-foreground">
@@ -526,7 +554,7 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
                         )}
                     </div>
                     <div className="text-xs text-muted-foreground">
-                        {item.assignment.status ? `Status: ${item.assignment.status}` : 'Status pending'}
+                        Status: {item.assignment.is_attached ? 'Attached' : 'Detached'}
                     </div>
                 </div>
             )}
@@ -596,7 +624,7 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
                 </SelectTrigger>
                 <SelectContent>
                     <SelectItem value="all">All statuses</SelectItem>
-                    {statusOptions.map((option) => (
+                    {filteredStatusOptions.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                             {option.label}
                         </SelectItem>

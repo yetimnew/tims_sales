@@ -17,9 +17,7 @@ use App\Models\Operation;
 use App\Models\Performance;
 use App\Models\Place;
 use App\Models\Region;
-use App\Models\RoutePlan;
 use App\Models\Truck;
-use App\Models\TruckFinancialRecord;
 use App\Models\User;
 use App\Models\VehicleMaintenanceRecord;
 use App\Models\VehicleType;
@@ -1006,56 +1004,6 @@ class TimsSeeder extends Seeder
         });
     }
 
-    private function createFinancialRecords($trucks, $users)
-    {
-        $this->command->info('Creating financial records...');
-
-        $financialRecords = collect([
-            [
-                'truck_id' => $trucks->first()->id,
-                'user_id' => $users->first()->id,
-                'record_date' => now()->subDays(30),
-                'revenue' => 150000.00,
-                'fuel_cost' => 25000.00,
-                'maintenance_cost' => 15000.00,
-                'driver_cost' => 8000.00,
-                'insurance_cost' => 5000.00,
-                'depreciation' => 12500.00,
-                'other_costs' => 3000.00,
-                'total_costs' => 65500.00,
-                'net_profit' => 84500.00,
-                'profit_margin_percentage' => 56.33,
-                'notes' => 'Good month for this truck',
-            ],
-            [
-                'truck_id' => $trucks->skip(1)->first()->id,
-                'user_id' => $users->first()->id,
-                'record_date' => now()->subDays(30),
-                'revenue' => 120000.00,
-                'fuel_cost' => 20000.00,
-                'maintenance_cost' => 12000.00,
-                'driver_cost' => 7000.00,
-                'insurance_cost' => 4000.00,
-                'depreciation' => 10000.00,
-                'other_costs' => 2500.00,
-                'total_costs' => 55500.00,
-                'net_profit' => 64500.00,
-                'profit_margin_percentage' => 53.75,
-                'notes' => 'Steady performance',
-            ],
-        ]);
-
-        $financialRecords->each(function ($recordData) {
-            TruckFinancialRecord::firstOrCreate(
-                [
-                    'truck_id' => $recordData['truck_id'],
-                    'record_date' => $recordData['record_date'],
-                ],
-                $recordData
-            );
-        });
-    }
-
     private function createInsuranceRecords($trucks, $users)
     {
         $this->command->info('Creating insurance records...');
@@ -1100,58 +1048,3 @@ class TimsSeeder extends Seeder
         });
     }
 
-    private function createRoutePlans($trucks, $places, $users)
-    {
-        $this->command->info('Creating route plans...');
-
-        $routePlans = collect([
-            [
-                'truck_id' => $trucks->first()->id,
-                'user_id' => $users->first()->id,
-                'route_name' => 'Addise Ababa to Adama',
-                'origin_place_id' => $places->where('code', 'BOL-AIR')->first()->id,
-                'destination_place_id' => $places->where('code', 'ADA')->first()->id,
-                'planned_departure_time' => now()->addDays(1)->setTime(8, 0),
-                'estimated_arrival_time' => now()->addDays(1)->setTime(12, 0),
-                'estimated_distance_km' => 120.00,
-                'estimated_duration_hours' => 4.00,
-                'planned_stops' => json_encode(['Rest stop at 60km']),
-                'road_conditions' => 'Good',
-                'weather_forecast' => 'Clear',
-                'traffic_conditions' => 'Moderate',
-                'fuel_stops' => json_encode(['Shell at 60km']),
-                'notes' => 'Regular route, well maintained',
-                'status' => 'Planned',
-            ],
-            [
-                'truck_id' => $trucks->skip(1)->first()->id,
-                'user_id' => $users->first()->id,
-                'route_name' => 'Addise Ababa to Bahir Dar',
-                'origin_place_id' => $places->where('code', 'MER')->first()->id,
-                'destination_place_id' => $places->where('code', 'BHD')->first()->id,
-                'planned_departure_time' => now()->addDays(2)->setTime(6, 0),
-                'estimated_arrival_time' => now()->addDays(2)->setTime(18, 0),
-                'estimated_distance_km' => 300.00,
-                'estimated_duration_hours' => 12.00,
-                'planned_stops' => json_encode(['Lunch at Debre Markos', 'Fuel at Bahir Dar']),
-                'road_conditions' => 'Good',
-                'weather_forecast' => 'Partly cloudy',
-                'traffic_conditions' => 'Light',
-                'fuel_stops' => json_encode(['Total at Debre Markos', 'Shell at Bahir Dar']),
-                'notes' => 'Long distance route, plan for overnight stay',
-                'status' => 'Planned',
-            ],
-        ]);
-
-        $routePlans->each(function ($planData) {
-            RoutePlan::firstOrCreate(
-                [
-                    'truck_id' => $planData['truck_id'],
-                    'route_name' => $planData['route_name'],
-                    'planned_departure_time' => $planData['planned_departure_time'],
-                ],
-                $planData
-            );
-        });
-    }
-}

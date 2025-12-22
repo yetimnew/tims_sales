@@ -71,6 +71,12 @@ Route::middleware('auth')->group(function () {
     Route::post('settings/driver-grading/recalculate', [DriverGradingSettingsController::class, 'recalculate'])
         ->name('settings.driver-grading.recalculate');
 
+    Route::patch('settings/driver-grading/grade-thresholds', [DriverGradingSettingsController::class, 'updateGradeThresholds'])
+        ->name('settings.driver-grading.grade-thresholds.update');
+
+    Route::patch('settings/driver-grading/weights', [DriverGradingSettingsController::class, 'updateWeights'])
+        ->name('settings.driver-grading.weights.update');
+
     Route::patch('settings/driver-grading', [DriverGradingSettingsController::class, 'update'])
         ->name('settings.driver-grading.update');
 

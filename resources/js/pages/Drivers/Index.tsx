@@ -16,6 +16,7 @@ import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialo
 import { toast } from '@/hooks/use-toast';
 import { Plus, Eye, Edit, Search, Trash2, Users, UserCheck, UserX, User, MapPin as MapPinIcon, Phone } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import * as React from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -103,11 +104,36 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
     const { hasPermission } = usePermissions();
     const canViewDriverDetails = hasPermission('drivers.show');
     const [searchTerm, setSearchTerm] = React.useState(filters?.search ?? '');
-    const [selectedStatus, setSelectedStatus] = React.useState(filters?.status ?? 'all');
+    const [selectedStatus, setSelectedStatus] = React.useState(() => (filters?.status ?? 'active'));
     const [selectedGender, setSelectedGender] = React.useState(filters?.sex ?? 'all');
     const [sortColumn, setSortColumn] = React.useState<string>(filters?.sort ?? 'name');
     const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>(filters?.direction ?? 'asc');
     const availablePerPageOptions = React.useMemo(() => (perPageOptions?.length ? perPageOptions : [10, 15, 25, 50]), [perPageOptions]);
+
+    const statusSegments = React.useMemo(() => {
+        const segments: Array<{ value: string; label: string }> = [];
+        const seen = new Set<string>();
+
+        const pushSegment = (value: string, label: string) => {
+            if (seen.has(value)) {
+                return;
+            }
+
+            segments.push({ value, label });
+            seen.add(value);
+        };
+
+        pushSegment('active', statusOptions.find((option) => option.value === 'active')?.label ?? 'Active');
+        pushSegment('inactive', statusOptions.find((option) => option.value === 'inactive')?.label ?? 'Inactive');
+
+        statusOptions.forEach((option) => {
+            pushSegment(option.value, option.label);
+        });
+
+        pushSegment('all', 'All');
+
+        return segments;
+    }, [statusOptions]);
     const resolvedPerPage = React.useMemo(() => {
         const candidate = filters?.per_page;
         if (typeof candidate === 'number' && availablePerPageOptions.includes(candidate)) {
@@ -153,9 +179,7 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
         const nextSearch = hasOverride('search')
             ? overrides.search
             : (searchTerm.trim() ? searchTerm.trim() : undefined);
-        const nextStatus = hasOverride('status')
-            ? overrides.status
-            : (selectedStatus !== 'all' ? selectedStatus : undefined);
+        const nextStatus = hasOverride('status') ? overrides.status : selectedStatus;
         const nextSex = hasOverride('sex')
             ? overrides.sex
             : (selectedGender !== 'all' ? selectedGender : undefined);
@@ -166,7 +190,7 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
 
         const params: Record<string, string | number | undefined> = {
             search: nextSearch && nextSearch !== '' ? nextSearch : undefined,
-            status: nextStatus && nextStatus !== 'all' ? nextStatus : undefined,
+            status: nextStatus ?? undefined,
             sex: nextSex && nextSex !== 'all' ? nextSex : undefined,
             sort: nextSort,
             direction: nextDirection,
@@ -213,8 +237,12 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
     };
 
     const handleStatusChange = (value: string) => {
+        if (!value) {
+            return;
+        }
+
         setSelectedStatus(value);
-        handleNavigate({ status: value !== 'all' ? value : undefined, page: 1 });
+        handleNavigate({ status: value, page: 1 });
     };
 
     const handleGenderChange = (value: string) => {
@@ -534,19 +562,24 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
                 options: perPageSelectOptions,
             }}
         >
-            <Select value={selectedStatus} onValueChange={handleStatusChange}>
-                <SelectTrigger className="w-full min-w-[150px] sm:w-auto">
-                    <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="all">All statuses</SelectItem>
-                    {statusOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                        </SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
+            <ToggleGroup
+                type="single"
+                value={selectedStatus}
+                onValueChange={handleStatusChange}
+                variant="outline"
+                size="sm"
+                className="flex flex-wrap gap-px rounded-md"
+            >
+                {statusSegments.map((segment) => (
+                    <ToggleGroupItem
+                        key={segment.value}
+                        value={segment.value}
+                        className="px-3 py-1 text-sm font-medium capitalize data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                    >
+                        {segment.value === 'all' ? 'All' : segment.label}
+                    </ToggleGroupItem>
+                ))}
+            </ToggleGroup>
             <Select value={selectedGender} onValueChange={handleGenderChange}>
                 <SelectTrigger className="w-full min-w-[140px] sm:w-auto">
                     <SelectValue placeholder="Gender" />

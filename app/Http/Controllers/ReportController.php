@@ -8,6 +8,7 @@ use App\Exports\Reports\PerformanceAllExport;
 use App\Exports\Reports\TruckPerformanceExport;
 use App\Http\Requests\Reports\CostPerKilometerRequest;
 use App\Http\Requests\Reports\CustomerProfitabilityRequest;
+use App\Http\Requests\Reports\DriverSafetyReportRequest;
 use App\Http\Requests\Reports\FuelEfficiencyRequest;
 use App\Http\Requests\Reports\LoadFactorUtilizationRequest;
 use App\Http\Requests\Reports\MaintenancePerformanceRequest;
@@ -32,6 +33,7 @@ use App\Models\VehicleMaintenanceRecord;
 use App\Models\VehicleType;
 use App\Services\Reports\CostPerKilometerReport;
 use App\Services\Reports\CustomerProfitabilityReport;
+use App\Services\Reports\DriverSafetyReport;
 use App\Services\Reports\DriverTruckGradingReport;
 use App\Services\Reports\FuelEfficiencyReport;
 use App\Services\Reports\LoadFactorUtilizationReport;
@@ -68,6 +70,7 @@ class ReportController extends Controller
         private readonly TruckGradingReport $truckGradingReport,
         private readonly \App\Services\Reports\DriverGradingReport $driverGradingReport,
         private readonly DriverTruckGradingReport $driverTruckGradingReport,
+        private readonly DriverSafetyReport $driverSafetyReport,
         private readonly RouteProfitabilityReport $routeProfitabilityReport,
         private readonly LoadFactorUtilizationReport $loadFactorUtilizationReport,
         private readonly CostPerKilometerReport $costPerKilometerReport,
@@ -320,6 +323,28 @@ class ReportController extends Controller
             report($e);
 
             return back()->withErrors(['error' => 'Failed to generate driver-truck grading report.']);
+        }
+    }
+
+    public function driverSafety(DriverSafetyReportRequest $request): Response|RedirectResponse
+    {
+        try {
+            $payload = $this->driverSafetyReport->build($request->validated());
+
+            return Inertia::render('Reports/DriverSafety', [
+                'filters' => $payload['filters'],
+                'summary' => $payload['summary'],
+                'severityBreakdown' => $payload['severity_breakdown'],
+                'incidentTypeBreakdown' => $payload['incident_type_breakdown'],
+                'driverLeaderboard' => $payload['driver_leaderboard'],
+                'trend' => $payload['trend'],
+                'recentIncidents' => $payload['recent_incidents'],
+                'options' => $payload['options'],
+            ]);
+        } catch (Exception $e) {
+            report($e);
+
+            return back()->withErrors(['error' => 'Failed to generate driver safety report.']);
         }
     }
 
@@ -692,10 +717,7 @@ class ReportController extends Controller
         try {
             $result = $this->performanceAllReport->build($request->validated());
 
-            $rows = $result['rows'] instanceof Collection
-                ? $result['rows']->values()->all()
-                : collect($result['rows'])->values()->all();
-
+            $paginator = $result['paginator'];
             $summary = $result['summary'];
             $highlights = $result['highlights'];
 
@@ -768,11 +790,12 @@ class ReportController extends Controller
                     'truck_ids' => $result['filters']['truck_ids'],
                     'operation_ids' => $result['filters']['operation_ids'],
                     'destination_ids' => $result['filters']['destination_ids'],
-                    'limit' => $result['filters']['limit'],
+                    'per_page' => $result['filters']['per_page'],
                 ],
-                'rows' => $rows,
+                'performances' => $paginator, // Inertia will automatically convert this
                 'summary' => $summary,
                 'highlights' => $highlights,
+                'perPageOptions' => [10, 25, 50, 100, 200],
                 'options' => [
                     'drivers' => $drivers,
                     'trucks' => $trucks,
@@ -799,9 +822,10 @@ class ReportController extends Controller
 
         $result = $this->performanceAllReport->build($validated);
 
-        $rows = $result['rows'] instanceof Collection
-            ? $result['rows']
-            : collect($result['rows']);
+        $paginator = $result['paginator'];
+        $rows = $paginator instanceof \Illuminate\Pagination\LengthAwarePaginator
+            ? $paginator->getCollection()
+            : collect($paginator);
 
         $filename = 'performance_all_'.now()->format('Y-m-d_H-i-s');
 

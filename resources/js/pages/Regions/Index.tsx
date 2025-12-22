@@ -339,10 +339,6 @@ export default function RegionsIndex({ regions, metrics, filters, statusOptions,
             preserveScroll: true,
             onSuccess: () => {
                 setDeleteDialogOpen(false);
-                toast({
-                    title: 'Region deleted',
-                    description: `${selectedRegion.name} has been removed.`,
-                });
                 setSelectedRegion(null);
                 setIsDeleting(false);
             },

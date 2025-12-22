@@ -23,14 +23,35 @@ export function ListingPaginationFooter({ from, to, total, links, className, ext
     }
 
     return (
-        <div className={cn('flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between', className)}>
-            <div className="text-sm text-muted-foreground">
-                {typeof from === 'number' && typeof to === 'number' && typeof total === 'number'
-                    ? `Showing ${from} to ${to} of ${total}`
-                    : 'Showing results'}
+        <div
+            className={cn(
+                'flex flex-col items-center justify-between gap-4 border-t border-slate-200/60 bg-gradient-to-b from-slate-50/50 to-white px-6 py-4 dark:border-slate-700/40 dark:from-slate-900/50 dark:to-slate-900 sm:flex-row',
+                className,
+            )}
+        >
+            {/* Results Info */}
+            <div className="flex items-center gap-2 text-sm">
+                <span className="text-slate-600 dark:text-slate-400">
+                    {typeof from === 'number' && typeof to === 'number' && typeof total === 'number' ? (
+                        <>
+                            Showing{' '}
+                            <span className="font-semibold text-slate-900 dark:text-slate-100">
+                                {from}–{to}
+                            </span>{' '}
+                            of{' '}
+                            <span className="font-semibold text-slate-900 dark:text-slate-100">
+                                {total.toLocaleString()}
+                            </span>
+                        </>
+                    ) : (
+                        'Showing results'
+                    )}
+                </span>
             </div>
-            <div className="flex flex-col items-end gap-2 sm:flex-row sm:items-center">
-                {extra}
+
+            {/* Pagination Controls */}
+            <div className="flex flex-col-reverse items-center gap-4 sm:flex-row">
+                {extra && <div className="flex items-center gap-2">{extra}</div>}
                 <InertiaPagination links={links} />
             </div>
         </div>

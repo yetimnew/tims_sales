@@ -333,6 +333,24 @@ const getMainNavItems = (currentUrl: string): NavItem[] => {
                         requiredPermissions: ['reports.operation-profitability.view'],
                     },
                     {
+                        title: 'Route Profitability',
+                        href: '/reports/route-profitability',
+                        icon: Navigation,
+                        requiredPermissions: ['reports.route-profitability.view'],
+                    },
+                    {
+                        title: 'Cost Per Kilometer',
+                        href: '/reports/cost-per-kilometer',
+                        icon: MapPin,
+                        requiredPermissions: ['reports.cost-per-kilometer.view'],
+                    },
+                    {
+                        title: 'Load Factor & Utilization',
+                        href: '/reports/load-factor-utilization',
+                        icon: Map,
+                        requiredPermissions: ['reports.load-factor-utilization.view'],
+                    },
+                    {
                         title: 'Geographic Heatmaps',
                         href: '/reports/geography-heatmaps',
                         icon: Globe,
@@ -355,6 +373,12 @@ const getMainNavItems = (currentUrl: string): NavItem[] => {
                         href: '/reports/driver-truck-grading',
                         icon: Users,
                         requiredPermissions: ['reports.driver-truck-grading.view'],
+                    },
+                    {
+                        title: 'Driver Safety',
+                        href: '/reports/driver-safety',
+                        icon: Shield,
+                        requiredPermissions: ['reports.driver-safety.view'],
                     },
                     {
                         title: 'Performance (All)',

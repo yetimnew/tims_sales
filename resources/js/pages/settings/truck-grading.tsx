@@ -1,19 +1,22 @@
 import TruckGradingSettingsController from '@/actions/App/Http/Controllers/Settings/TruckGradingSettingsController';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { InertiaPagination } from '@/components/ui/pagination';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Transition } from '@headlessui/react';
-import { Form, Head, Link } from '@inertiajs/react';
+import { Form, Head, Link, router } from '@inertiajs/react';
 import * as React from 'react';
 import { edit as editSettingsRoute } from '@/routes/settings/truck-grading';
 import { truckGrading as truckGradingReport } from '@/routes/reports';
-import { Info } from 'lucide-react';
+import { Loader2, RefreshCcw } from 'lucide-react';
 
 interface WeightSettings {
     utilization_weight: number;
@@ -33,8 +36,14 @@ interface SettingsPayload {
 
 interface TruckGradingSettingsProps {
     settings: SettingsPayload;
+    truckGrades: PaginatorData;
+    filters: FilterState;
+    filterOptions: FilterOptions;
+    latestCalculation: LatestCalculation;
+    perPageOptions: number[];
     can: {
         update: boolean;
+        recalculate: boolean;
     };
     flash?: {
         success?: string;
@@ -47,7 +56,7 @@ type WeightConfig = {
     key: WeightKey;
     label: string;
     description: string;
-    tooltip: string;
+    detail: string;
 };
 
 const weightFields: WeightConfig[] = [
@@ -55,31 +64,31 @@ const weightFields: WeightConfig[] = [
         key: 'utilization_weight',
         label: 'Utilization',
         description: 'How effectively the truck is used compared to peers (distance, assignment activity).',
-        tooltip: 'Calculated from each truck\'s total kilometres travelled, performance logs, and active days versus its peer group. Higher utilisation lifts the score.',
+        detail: 'Calculated from total kilometres travelled, recent performance logs, and the number of active service days compared to the peer sample. Higher utilisation lifts the score.',
     },
     {
         key: 'efficiency_weight',
         label: 'Efficiency',
         description: 'Fuel economy and operating efficiency across recent trips.',
-        tooltip: 'Uses driver performance data for kilometres per litre and fuel cost per kilometre. Trucks that move goods with less fuel than peers score higher.',
+        detail: 'Draws on kilometres per litre, empty versus loaded mileage, and fuel spend per kilometre. Trucks that move freight with less fuel than peers earn stronger scores.',
     },
     {
         key: 'reliability_weight',
         label: 'Reliability',
         description: 'Maintenance completion and overdue counts indicate downtime risk.',
-        tooltip: 'Based on maintenance completion rate with penalties for overdue work orders. Fewer outstanding jobs improve reliability.',
+        detail: 'Measures how consistently maintenance work is completed on schedule and applies penalties for overdue service orders. Keeping the backlog low improves this category.',
     },
     {
         key: 'financial_weight',
         label: 'Financial',
         description: 'Recent maintenance spend and cost profile versus the fleet.',
-        tooltip: 'Compares maintenance spend over the last 12 months and the truck\'s cost profile against peer averages. Lower ongoing costs increase the score.',
+        detail: "Compares the last 12 months of maintenance spend and the truck's ongoing cost profile to peer averages. Lower lifecycle costs improve the financial grade.",
     },
     {
         key: 'compliance_weight',
         label: 'Compliance',
         description: 'Status history changes that trigger maintenance or inactive states.',
-        tooltip: 'Monitors daily status history for maintenance or inactive events during the last 90 days. Frequent downtime activity reduces compliance.',
+        detail: 'Tracks daily status history for maintenance or inactive events across the last 90 days. Frequent downtime events lower the compliance score.',
     },
 ];
 
@@ -87,6 +96,67 @@ const gradeLetters = ['A', 'B', 'C', 'D', 'E'] as const;
 type GradeLetter = (typeof gradeLetters)[number];
 type GradeThresholdSettings = Record<GradeLetter, number>;
 type GradeThresholdState = Record<GradeLetter, string>;
+
+interface TruckGradeRow {
+    id: number | null;
+    plate: string;
+    status?: string | null;
+    vehicleType?: { id: number; name: string } | null;
+    service_start_date?: string | null;
+    production_date?: string | null;
+    purchase_price?: number | null;
+    grade?: {
+        overall?: {
+            score?: number | null;
+            letter?: string | null;
+        };
+    };
+    snapshot?: {
+        calculated_at?: string | null;
+        calculated_by?: { id: number; name: string } | null;
+    };
+}
+
+interface PaginatorMeta {
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+    from: number | null;
+    to: number | null;
+}
+
+interface PaginatorLink {
+    url: string | null;
+    label: string;
+    active: boolean;
+}
+
+interface PaginatorData {
+    data: TruckGradeRow[];
+    meta: PaginatorMeta;
+    links: PaginatorLink[];
+}
+
+interface FilterState {
+    snapshot_date?: string | null;
+    vehicle_type_id?: number | null;
+    status?: string | null;
+    grade_letter?: string | null;
+    per_page?: number;
+}
+
+interface FilterOptions {
+    dates?: string[];
+    vehicle_types?: Array<{ id: number; name: string }>;
+    statuses?: string[];
+}
+
+type LatestCalculation = {
+    calculated_at?: string | null;
+    calculated_by?: { id: number; name: string } | null;
+    count?: number | null;
+} | null;
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -135,8 +205,42 @@ const parseThreshold = (value: string): number | null => {
     return Number.isNaN(numeric) ? null : numeric;
 };
 
+const getGradeColor = (letter?: string | null): string => {
+    switch (letter?.toUpperCase()) {
+        case 'A':
+            return 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900/50';
+        case 'B':
+            return 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-900/50';
+        case 'C':
+            return 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-900/50';
+        case 'D':
+            return 'bg-orange-500/10 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-900/50';
+        case 'E':
+            return 'bg-red-500/10 text-red-700 dark:text-red-300 border-red-200 dark:border-red-900/50';
+        default:
+            return 'bg-slate-500/10 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-900/50';
+    }
+};
+
+const formatScore = (value?: number | null): string => (typeof value !== 'number' ? '—' : value.toFixed(1));
+
+const formatDate = (value?: string | null): string => {
+    if (!value) {
+        return '—';
+    }
+
+    const parsed = new Date(value);
+
+    return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleDateString();
+};
+
 export default function TruckGradingSettings({
     settings,
+    truckGrades,
+    filters,
+    filterOptions,
+    latestCalculation,
+    perPageOptions,
     can,
     flash,
 }: TruckGradingSettingsProps) {
@@ -145,6 +249,12 @@ export default function TruckGradingSettings({
     const [gradeThresholds, setGradeThresholds] = React.useState<GradeThresholdState>(() =>
         toThresholdState(settings.grade_thresholds),
     );
+    const [snapshotDate, setSnapshotDate] = React.useState<string>(filters.snapshot_date ?? filterOptions.dates?.[0] ?? '');
+    const [vehicleType, setVehicleType] = React.useState<string>(filters.vehicle_type_id ? String(filters.vehicle_type_id) : 'all');
+    const [status, setStatus] = React.useState<string>(filters.status ?? 'all');
+    const [gradeLetter, setGradeLetter] = React.useState<string>(filters.grade_letter ?? 'all');
+    const [perPage, setPerPage] = React.useState<number>(filters.per_page ?? truckGrades.meta?.per_page ?? perPageOptions[0] ?? 10);
+    const [isRecalculating, setIsRecalculating] = React.useState(false);
 
     React.useEffect(() => {
         setWeights({ ...settings.weights });
@@ -154,6 +264,14 @@ export default function TruckGradingSettings({
     React.useEffect(() => {
         setGradeThresholds(toThresholdState(settings.grade_thresholds));
     }, [settings.grade_thresholds]);
+
+    React.useEffect(() => {
+        setSnapshotDate(filters.snapshot_date ?? filterOptions.dates?.[0] ?? '');
+        setVehicleType(filters.vehicle_type_id ? String(filters.vehicle_type_id) : 'all');
+        setStatus(filters.status ?? 'all');
+        setGradeLetter(filters.grade_letter ?? 'all');
+        setPerPage(filters.per_page ?? truckGrades.meta?.per_page ?? perPageOptions[0] ?? 10);
+    }, [filters.snapshot_date, filters.vehicle_type_id, filters.status, filters.grade_letter, filters.per_page, filterOptions.dates, truckGrades.meta?.per_page, perPageOptions]);
 
     const totalWeight = React.useMemo(() => {
         return weightFields.reduce((sum, field) => sum + (weights[field.key] ?? 0), 0);
@@ -233,6 +351,106 @@ export default function TruckGradingSettings({
 
     const disableThresholdSubmit = disabled || Boolean(thresholdIssue);
     const disableWeightSubmit = disabled || remaining !== 0;
+
+    const handleFilterChange = React.useCallback(() => {
+        const query: Record<string, string> = {};
+
+        if (snapshotDate) {
+            query.snapshot_date = snapshotDate;
+        }
+
+        if (vehicleType !== 'all') {
+            query.vehicle_type_id = vehicleType;
+        }
+
+        if (status !== 'all') {
+            query.status = status;
+        }
+
+        if (gradeLetter !== 'all') {
+            query.grade_letter = gradeLetter;
+        }
+
+        if (perPage) {
+            query.per_page = String(perPage);
+        }
+
+        router.get(editSettingsRoute().url, query, {
+            preserveScroll: true,
+            preserveState: true,
+        });
+    }, [snapshotDate, vehicleType, status, gradeLetter, perPage]);
+
+    const handlePerPageChange = React.useCallback((value: string) => {
+        const numeric = Number.parseInt(value, 10);
+        const resolved = Number.isNaN(numeric) ? perPage : numeric;
+
+        setPerPage(resolved);
+
+        const query: Record<string, string> = {};
+
+        if (snapshotDate) {
+            query.snapshot_date = snapshotDate;
+        }
+
+        if (vehicleType !== 'all') {
+            query.vehicle_type_id = vehicleType;
+        }
+
+        if (status !== 'all') {
+            query.status = status;
+        }
+
+        if (gradeLetter !== 'all') {
+            query.grade_letter = gradeLetter;
+        }
+
+        query.per_page = String(resolved);
+
+        router.get(editSettingsRoute().url, query, {
+            preserveScroll: true,
+            preserveState: true,
+        });
+    }, [snapshotDate, vehicleType, status, gradeLetter, perPage]);
+
+    const handleRecalculate = React.useCallback(async () => {
+        if (!can.recalculate || isRecalculating || !snapshotDate) {
+            return;
+        }
+
+        try {
+            setIsRecalculating(true);
+
+            const formData = new FormData();
+            formData.append('snapshot_date', snapshotDate);
+
+            if (vehicleType !== 'all') {
+                formData.append('vehicle_type_id', vehicleType);
+            }
+
+            if (status !== 'all') {
+                formData.append('status', status);
+            }
+
+            const response = await fetch(TruckGradingSettingsController.recalculate.url(), {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '',
+                },
+                body: formData,
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to recalculate');
+            }
+
+            router.reload({ preserveScroll: true, preserveState: true });
+        } catch (error) {
+            console.error('Truck grading recalculation error:', error);
+        } finally {
+            setIsRecalculating(false);
+        }
+    }, [snapshotDate, vehicleType, status, can.recalculate, isRecalculating]);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -419,26 +637,13 @@ export default function TruckGradingSettings({
                                         </CardHeader>
                                         <CardContent className="space-y-4">
                                             {weightFields.map(field => (
-                                                <div key={field.key} className="grid gap-2 md:grid-cols-[1fr_160px] md:items-center">
+                                                <div key={field.key} className="grid gap-3 md:grid-cols-[1fr_160px] md:items-center">
                                                     <div>
-                                                        <div className="flex items-center gap-2">
-                                                            <Label htmlFor={field.key}>{field.label}</Label>
-                                                            <Tooltip>
-                                                                <TooltipTrigger asChild>
-                                                                    <button
-                                                                        type="button"
-                                                                        className="rounded-full p-1 text-muted-foreground transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                                                                        aria-label={`How ${field.label.toLowerCase()} is calculated`}
-                                                                    >
-                                                                        <Info className="h-4 w-4" aria-hidden="true" />
-                                                                    </button>
-                                                                </TooltipTrigger>
-                                                                <TooltipContent align="start" side="top">
-                                                                    {field.tooltip}
-                                                                </TooltipContent>
-                                                            </Tooltip>
-                                                        </div>
-                                                        <p className="text-sm text-muted-foreground">{field.description}</p>
+                                                        <Label htmlFor={field.key}>{field.label}</Label>
+                                                        <p className="mt-1 text-sm text-muted-foreground">{field.description}</p>
+                                                        <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
+                                                            {field.detail}
+                                                        </p>
                                                     </div>
                                                     <div className="flex items-center gap-2">
                                                         <Input
@@ -493,6 +698,187 @@ export default function TruckGradingSettings({
                                 </>
                             )}
                         </Form>
+
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Latest truck grades</CardTitle>
+                                <CardDescription>
+                                    {latestCalculation?.calculated_at ? (
+                                        <>
+                                            Calculated {formatTimestamp(latestCalculation.calculated_at)}
+                                            {latestCalculation.calculated_by ? ` by ${latestCalculation.calculated_by.name}` : ''}
+                                            {latestCalculation.count ? ` • ${latestCalculation.count} trucks` : ''}
+                                        </>
+                                    ) : (
+                                        'No calculations yet'
+                                    )}
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="flex flex-wrap items-end gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="snapshot-date">Snapshot date</Label>
+                                        <Select value={snapshotDate} onValueChange={setSnapshotDate}>
+                                            <SelectTrigger id="snapshot-date" className="w-48">
+                                                <SelectValue placeholder="Select date" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {filterOptions?.dates?.map(date => (
+                                                    <SelectItem key={date} value={date}>
+                                                        {new Date(date).toLocaleDateString()}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="vehicle-type">Vehicle type</Label>
+                                        <Select value={vehicleType} onValueChange={setVehicleType}>
+                                            <SelectTrigger id="vehicle-type" className="w-48">
+                                                <SelectValue placeholder="All types" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">All types</SelectItem>
+                                                {filterOptions?.vehicle_types?.map(type => (
+                                                    <SelectItem key={type.id} value={String(type.id)}>
+                                                        {type.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="status-filter">Status</Label>
+                                        <Select value={status} onValueChange={setStatus}>
+                                            <SelectTrigger id="status-filter" className="w-48">
+                                                <SelectValue placeholder="All statuses" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">All statuses</SelectItem>
+                                                {filterOptions?.statuses?.map(option => (
+                                                    <SelectItem key={option} value={option}>
+                                                        {option}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="grade-filter">Grade</Label>
+                                        <Select value={gradeLetter} onValueChange={setGradeLetter}>
+                                            <SelectTrigger id="grade-filter" className="w-32">
+                                                <SelectValue placeholder="All grades" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">All grades</SelectItem>
+                                                {gradeLetters.map(letter => (
+                                                    <SelectItem key={letter} value={letter}>
+                                                        Grade {letter}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    <div className="flex gap-2">
+                                        <Button onClick={handleFilterChange} variant="outline" size="sm">
+                                            Apply filters
+                                        </Button>
+                                        <Button
+                                            onClick={handleRecalculate}
+                                            disabled={isRecalculating || !can.recalculate}
+                                            variant="outline"
+                                            size="sm"
+                                        >
+                                            {isRecalculating ? (
+                                                <>
+                                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                    Recalculating…
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <RefreshCcw className="mr-2 h-4 w-4" />
+                                                    Recalculate
+                                                </>
+                                            )}
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                <div className="rounded-lg border overflow-hidden">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Truck</TableHead>
+                                                <TableHead>Type</TableHead>
+                                                <TableHead>Status</TableHead>
+                                                <TableHead>In service</TableHead>
+                                                <TableHead className="text-right">Score</TableHead>
+                                                <TableHead className="text-center">Grade</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {truckGrades?.data?.length > 0 ? (
+                                                truckGrades.data.map(row => (
+                                                    <TableRow key={row.id ?? row.plate}>
+                                                        <TableCell className="font-medium">{row.plate}</TableCell>
+                                                        <TableCell className="text-sm text-muted-foreground">
+                                                            {row.vehicleType?.name ?? '—'}
+                                                        </TableCell>
+                                                        <TableCell>{row.status ?? '—'}</TableCell>
+                                                        <TableCell className="text-sm text-muted-foreground">
+                                                            {formatDate(row.service_start_date)}
+                                                        </TableCell>
+                                                        <TableCell className="text-right font-semibold">
+                                                            {formatScore(row.grade?.overall?.score)}
+                                                        </TableCell>
+                                                        <TableCell className="text-center">
+                                                            <Badge className={`${getGradeColor(row.grade?.overall?.letter)} border`}>
+                                                                {row.grade?.overall?.letter ?? 'N/A'}
+                                                            </Badge>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))
+                                            ) : (
+                                                <TableRow>
+                                                    <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
+                                                        No truck grades found. Run a recalculation to populate results.
+                                                    </TableCell>
+                                                </TableRow>
+                                            )}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+
+                                {truckGrades?.data?.length > 0 && (
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between text-sm">
+                                            <span className="text-muted-foreground">
+                                                Showing {truckGrades.meta?.from} to {truckGrades.meta?.to} of {truckGrades.meta?.total} trucks
+                                            </span>
+                                            <Select value={String(perPage)} onValueChange={handlePerPageChange}>
+                                                <SelectTrigger className="w-auto">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {perPageOptions?.map(option => (
+                                                        <SelectItem key={option} value={String(option)}>
+                                                            {option} per page
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        {truckGrades?.links && (
+                                            <InertiaPagination links={truckGrades.links} meta={truckGrades.meta} />
+                                        )}
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
                 </div>
             </div>
         </div>

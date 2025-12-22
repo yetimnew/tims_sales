@@ -30,8 +30,9 @@ class DriverIndexFilters
         $search = trim((string) $request->input('search', ''));
         $search = $search !== '' ? $search : null;
 
-        $rawStatus = trim((string) $request->input('status', ''));
-        $status = $rawStatus !== '' ? strtolower($rawStatus) : null;
+        $statusInput = $request->has('status') ? (string) $request->input('status') : 'active';
+        $rawStatus = trim($statusInput);
+        $status = $rawStatus !== '' ? strtolower($rawStatus) : 'active';
 
         $rawSex = trim((string) $request->input('sex', ''));
         $sex = $rawSex !== '' ? strtolower($rawSex) : null;
@@ -47,7 +48,7 @@ class DriverIndexFilters
 
         return new self(
             $search,
-            $status === 'all' ? null : $status,
+            $status === 'all' ? 'all' : $status,
             $sex === 'all' ? null : $sex,
             $sort,
             $direction,

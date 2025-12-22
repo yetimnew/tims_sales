@@ -76,6 +76,8 @@ class DashboardController extends Controller
         $returnedTripsPrev30 = Performance::whereBetween('DateDispach', [$previousStart30, $previousEnd30])->where('is_returned', true)->count();
         $returnRateLast30 = $totalTripsLast30 > 0 ? ($returnedTripsLast30 / $totalTripsLast30) * 100 : null;
         $returnRatePrev30 = $totalTripsPrev30 > 0 ? ($returnedTripsPrev30 / $totalTripsPrev30) * 100 : null;
+        $avgLoadPerTripLast30 = $totalTripsLast30 > 0 ? $tonnageLast30 / $totalTripsLast30 : null;
+        $avgLoadPerTripPrev30 = $totalTripsPrev30 > 0 ? $tonnagePrev30 / $totalTripsPrev30 : null;
 
         $avgCycleLast30 = Performance::whereBetween('DateDispach', [$start30, $today])
             ->whereNotNull('returned_date')
@@ -485,12 +487,64 @@ class DashboardController extends Controller
 
         $latestTruckStatusSummary = $this->buildLatestTruckStatusSummary($totalTrucks);
 
+        $primaryKpis = [
+            [
+                'key' => 'tonnage30d',
+                'label' => 'Tonnage moved (30d)',
+                'value' => $tonnageLast30,
+                'unit' => 'MT',
+                'format' => 'number',
+                'change' => $percentChange($tonnageLast30, $tonnagePrev30),
+            ],
+            [
+                'key' => 'trips30d',
+                'label' => 'Trips completed (30d)',
+                'value' => (float) $totalTripsLast30,
+                'unit' => 'Trips',
+                'format' => 'integer',
+                'change' => $percentChange((float) $totalTripsLast30, (float) $totalTripsPrev30),
+            ],
+            [
+                'key' => 'avgLoadPerTrip',
+                'label' => 'Avg load per trip',
+                'value' => $avgLoadPerTripLast30,
+                'unit' => 'MT / trip',
+                'format' => 'number',
+                'change' => $percentChange($avgLoadPerTripLast30, $avgLoadPerTripPrev30),
+            ],
+            [
+                'key' => 'margin30d',
+                'label' => 'Operating margin (30d)',
+                'value' => $marginLast30,
+                'unit' => 'ETB',
+                'format' => 'currency',
+                'change' => $percentChange($marginLast30, $marginPrev30),
+            ],
+            [
+                'key' => 'fareboxRecovery',
+                'label' => 'Farebox recovery',
+                'value' => $fareboxRecovery,
+                'unit' => '%',
+                'format' => 'percent',
+                'change' => $percentChange($fareboxRecovery, $fareboxRecoveryPrev),
+            ],
+            [
+                'key' => 'fleetUtilisation',
+                'label' => 'Fleet utilisation',
+                'value' => $fleetUtilisation,
+                'unit' => '%',
+                'format' => 'percent',
+                'change' => null,
+            ],
+        ];
+
         return Inertia::render('Dashboard', [
             'executiveSummary' => $executiveSummary,
             'networkOverview' => $networkOverview,
             'financialOverview' => $financialOverview,
             'assetOverview' => $assetOverview,
             'safetyOverview' => $safetyOverview,
+            'primaryKpis' => $primaryKpis,
             'latestTruckStatusSummary' => $latestTruckStatusSummary,
             'topCustomers' => $topCustomersData,
             'recentPerformances' => $recentPerformances,

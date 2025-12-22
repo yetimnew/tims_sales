@@ -4,9 +4,7 @@ namespace App\Services;
 
 use App\Models\DailyTruckStatus;
 use App\Models\DriverTruck;
-use App\Models\Performance;
 use App\Models\Truck;
-use App\Models\TruckFinancialRecord;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -62,7 +60,6 @@ class TruckMetricsService
             'maintenance' => (int) ($metricsRow->maintenance_count ?? 0),
             'fleet_value' => (float) ($metricsRow->fleet_value_sum ?? 0.0),
             'utilization' => $this->calculateUtilizationSnapshot($filteredTruckIds),
-            'financial' => $this->calculateFinancialSnapshot($filteredTruckIds),
             'staffing' => $this->calculateStaffingSnapshot($filteredTruckIds),
         ];
 
@@ -109,17 +106,6 @@ class TruckMetricsService
         return $this->calculateUtilizationSnapshot(collect([$truckId]));
     }
 
-    public function financialForTruck(Truck|int $truck): array
-    {
-        $truckId = $truck instanceof Truck ? $truck->id : $truck;
-
-        if (! $truckId) {
-            return $this->calculateFinancialSnapshot(collect());
-        }
-
-        return $this->calculateFinancialSnapshot(collect([$truckId]));
-    }
-
     public function staffingForTruck(Truck|int $truck): array
     {
         $truckId = $truck instanceof Truck ? $truck->id : $truck;
@@ -129,6 +115,19 @@ class TruckMetricsService
         }
 
         return $this->calculateStaffingSnapshot(collect([$truckId]));
+    }
+
+    public function financialForTruck(Truck|int $truck): array
+    {
+        return [
+            'window_days' => self::UTILIZATION_LOOKBACK_DAYS,
+            'total_revenue' => 0.0,
+            'total_cost' => 0.0,
+            'total_profit' => 0.0,
+            'avg_revenue_per_truck' => 0.0,
+            'ton_km' => 0.0,
+            'ton_km_per_birr' => null,
+        ];
     }
 
     private function calculateUtilizationSnapshot(Collection $truckIds): array
@@ -260,82 +259,6 @@ class TruckMetricsService
     public function clearCache(): void
     {
         $this->localMetrics = [];
-    }
-
-    private function calculateFinancialSnapshot(Collection $truckIds): array
-    {
-        $windowDays = self::UTILIZATION_LOOKBACK_DAYS;
-
-        $default = [
-            'window_days' => $windowDays,
-            'total_revenue' => 0.0,
-            'total_cost' => 0.0,
-            'total_profit' => 0.0,
-            'avg_revenue_per_truck' => 0.0,
-            'ton_km' => 0.0,
-            'ton_km_per_birr' => null,
-        ];
-
-        if ($truckIds->isEmpty()) {
-            return $default;
-        }
-
-        $endDate = Carbon::today();
-        $startDate = $endDate->copy()->subDays($windowDays - 1);
-
-        $financialTotals = TruckFinancialRecord::query()
-            ->whereIn('truck_id', $truckIds)
-            ->whereDate('record_date', '>=', $startDate)
-            ->whereDate('record_date', '<=', $endDate)
-            ->selectRaw('COALESCE(SUM(revenue), 0) as total_revenue')
-            ->selectRaw('COALESCE(SUM(fuel_cost), 0) as total_fuel_cost')
-            ->selectRaw('COALESCE(SUM(maintenance_cost), 0) as total_maintenance_cost')
-            ->selectRaw('COALESCE(SUM(driver_salary), 0) as total_driver_salary')
-            ->selectRaw('COALESCE(SUM(insurance_cost), 0) as total_insurance_cost')
-            ->selectRaw('COALESCE(SUM(depreciation), 0) as total_depreciation')
-            ->selectRaw('COALESCE(SUM(other_costs), 0) as total_other_costs')
-            ->selectRaw('COALESCE(SUM(net_profit), 0) as total_net_profit')
-            ->first();
-
-        $totalRevenue = (float) ($financialTotals?->total_revenue ?? 0.0);
-
-        $totalCost = (float) (
-            ($financialTotals?->total_fuel_cost ?? 0)
-            + ($financialTotals?->total_maintenance_cost ?? 0)
-            + ($financialTotals?->total_driver_salary ?? 0)
-            + ($financialTotals?->total_insurance_cost ?? 0)
-            + ($financialTotals?->total_depreciation ?? 0)
-            + ($financialTotals?->total_other_costs ?? 0)
-        );
-
-        $totalProfit = (float) ($financialTotals?->total_net_profit ?? 0.0);
-
-        $tonKmAggregate = Performance::query()
-            ->whereHas('driverTruck', function (Builder $query) use ($truckIds) {
-                $query->whereIn('truck_id', $truckIds);
-            })
-            ->whereDate('DateDispach', '>=', $startDate)
-            ->whereDate('DateDispach', '<=', $endDate)
-            ->selectRaw('COALESCE(SUM(COALESCE(tonkm, 0)), 0) as ton_km')
-            ->first();
-
-        $totalTonKm = (float) ($tonKmAggregate?->ton_km ?? 0.0);
-
-        $tonKmPerBirr = $totalRevenue > 0.0
-            ? round($totalTonKm / $totalRevenue, 4)
-            : null;
-
-        $truckCount = max($truckIds->count(), 1);
-
-        return [
-            'window_days' => $windowDays,
-            'total_revenue' => round($totalRevenue, 2),
-            'total_cost' => round($totalCost, 2),
-            'total_profit' => round($totalProfit, 2),
-            'avg_revenue_per_truck' => round($totalRevenue / $truckCount, 2),
-            'ton_km' => round($totalTonKm, 2),
-            'ton_km_per_birr' => $tonKmPerBirr,
-        ];
     }
 
     private function calculateStaffingSnapshot(Collection $truckIds): array

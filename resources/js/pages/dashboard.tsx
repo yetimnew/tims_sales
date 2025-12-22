@@ -15,19 +15,20 @@ import {
     BarChart3,
     ClipboardList,
     Clock3,
+    DollarSign,
     Flame,
     Gauge,
     Minus,
     Package,
     RefreshCcw,
     ShieldCheck,
+    Target,
     TrendingUp,
     Truck,
     Users,
     Wrench,
     Zap,
-    Target,
-    Sparkles
+    Sparkles,
 } from 'lucide-react';
 import {
     Area,
@@ -45,7 +46,7 @@ import {
     ResponsiveContainer,
     Tooltip,
     XAxis,
-    YAxis
+    YAxis,
 } from 'recharts';
 
 const PIE_COLORS = ['#4338ca', '#0ea5e9', '#14b8a6', '#f97316', '#facc15', '#7c3aed', '#db2777', '#1d4ed8'];
@@ -73,7 +74,20 @@ interface ExecutiveMetric {
     change: number | null;
 }
 
+type MetricIconMap = Record<string, ComponentType<{ className?: string }>>;
+type KpiFormat = 'currency' | 'percent' | 'integer' | 'number';
+
+interface PrimaryKpi {
+    key: string;
+    label: string;
+    value: number | null;
+    unit?: string | null;
+    format?: KpiFormat | null;
+    change: number | null;
+}
+
 interface DashboardProps {
+    primaryKpis: PrimaryKpi[];
     executiveSummary: {
         metrics: ExecutiveMetric[];
         fleet: {
@@ -94,9 +108,9 @@ interface DashboardProps {
         };
     };
     networkOverview: {
-        dailyTrend: Array<{ date: string; tonnage: number; trips: number; tonkm: number; }>;
-        statusBreakdown: Array<{ status: string; count: number; }>;
-        corridors: Array<{ origin: string; destination: string; label: string; tonnage: number; trips: number; }>;
+        dailyTrend: Array<{ date: string; tonnage: number; trips: number; tonkm: number }>;
+        statusBreakdown: Array<{ status: string; count: number }>;
+        corridors: Array<{ origin: string; destination: string; label: string; tonnage: number; trips: number }>;
     };
     financialOverview: {
         revenue30d: number;
@@ -111,13 +125,13 @@ interface DashboardProps {
             margin: number | null;
             fareboxRecovery: number | null;
         };
-        trend: Array<{ period: string; revenue: number; cost: number; net: number; }>;
-        costBreakdown: Array<{ label: string; value: number; }>;
+        trend: Array<{ period: string; revenue: number; cost: number; net: number }>;
+        costBreakdown: Array<{ label: string; value: number }>;
         fuel: {
             totalCost30d: number;
             totalVolume30d: number;
             avgCostPerLiter30d: number | null;
-            trend: Array<{ period: string; cost: number; volume: number; }>;
+            trend: Array<{ period: string; cost: number; volume: number }>;
         };
     };
     assetOverview: {
@@ -129,8 +143,8 @@ interface DashboardProps {
             overdue: number;
             completed30d: number;
             averageTurnaroundDays: number | null;
-            trend: Array<{ period: string; completed: number; scheduled: number; }>;
-            upcoming: Array<{ id: number; truck: string; scheduledDate: string | null; daysUntil: number | null; status: string | null; }>;
+            trend: Array<{ period: string; completed: number; scheduled: number }>;
+            upcoming: Array<{ id: number; truck: string; scheduledDate: string | null; daysUntil: number | null; status: string | null }>;
         };
     };
     safetyOverview: {
@@ -140,9 +154,9 @@ interface DashboardProps {
             incidents: number | null;
             incidentRate: number | null;
         };
-        severityMix: Array<{ severity: string; count: number; }>;
-        incidentTrend: Array<{ period: string; total: number; }>;
-        topIncidentTypes: Array<{ type: string; count: number; }>;
+        severityMix: Array<{ severity: string; count: number }>;
+        incidentTrend: Array<{ period: string; total: number }>;
+        topIncidentTypes: Array<{ type: string; count: number }>;
     };
     latestTruckStatusSummary: {
         date: string | null;
@@ -154,11 +168,11 @@ interface DashboardProps {
             maintenanceShare: number | null;
             mostCommonStatus: string | null;
         };
-        statusBreakdown: Array<{ status: string; label: string; count: number; }>;
-        recentUpdates: Array<{ truck: string; status: string; notes: string | null; updatedAt: string | null; }>;
-        notes: Array<{ truck: string; status: string; notes: string | null; }>;
+        statusBreakdown: Array<{ status: string; label: string; count: number }>;
+        recentUpdates: Array<{ truck: string; status: string; notes: string | null; updatedAt: string | null }>;
+        notes: Array<{ truck: string; status: string; notes: string | null }>;
     };
-    topCustomers: Array<{ customer: string; trips: number; tonnage: number; }>;
+    topCustomers: Array<{ customer: string; trips: number; tonnage: number }>;
     recentPerformances: Array<{
         id: number;
         trip: string;
@@ -187,13 +201,20 @@ interface DashboardProps {
     }>;
 }
 
-type MetricIconMap = Record<string, ComponentType<{ className?: string }>>;
-
 const METRIC_ICONS: MetricIconMap = {
     tonnage: Package,
     avgDailyTonnage: BarChart3,
     returnRate: RefreshCcw,
     avgCycle: Clock3,
+};
+
+const PRIMARY_KPI_ICONS: Record<string, ComponentType<{ className?: string }>> = {
+    tonnage30d: Package,
+    trips30d: Truck,
+    avgLoadPerTrip: Gauge,
+    margin30d: DollarSign,
+    fareboxRecovery: Target,
+    fleetUtilisation: Sparkles,
 };
 
 const numberFormatter = new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 });
@@ -228,7 +249,7 @@ const formatCurrency = (value: number | null | undefined): string => {
     return new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency: 'ETB',
-        maximumFractionDigits: value >= 1000000 ? 0 : 1,
+        maximumFractionDigits: value >= 1_000_000 ? 0 : 1,
     }).format(value);
 };
 
@@ -241,6 +262,26 @@ const formatChange = (value: number | null | undefined): string => {
     const prefix = value > 0 ? '+' : value < 0 ? '-' : '';
 
     return `${prefix}${absolute}%`;
+};
+
+const formatPrimaryKpiValue = (kpi: PrimaryKpi): string => {
+    if (kpi.value === null || kpi.value === undefined || Number.isNaN(kpi.value)) {
+        return '—';
+    }
+
+    const formatType: KpiFormat = kpi.format ?? (kpi.unit === '%' ? 'percent' : 'number');
+
+    switch (formatType) {
+        case 'currency':
+            return formatCurrency(kpi.value);
+        case 'percent':
+            return formatPercent(kpi.value);
+        case 'integer':
+            return integerFormatter.format(Math.round(kpi.value));
+        case 'number':
+        default:
+            return formatNumber(kpi.value);
+    }
 };
 
 const parseDateTime = (value: string | null | undefined): Date | null => {
@@ -325,6 +366,7 @@ const renderDelta = (label: string, value: number | null | undefined) => (
 const getProgressWidth = (value: number) => `${Math.min(Math.max(value, 0), 100)}%`;
 
 export default function Dashboard({
+    primaryKpis,
     executiveSummary,
     networkOverview,
     financialOverview,
@@ -393,168 +435,92 @@ export default function Dashboard({
                     </div>
                 </header>
 
-                {statusSummary && (
-                    <section className="grid gap-6 xl:grid-cols-3">
-                        <div className="relative overflow-hidden rounded-3xl border border-transparent bg-gradient-to-br from-indigo-600 via-indigo-500 to-blue-600 p-8 text-white shadow-2xl hover:shadow-3xl transition-all duration-300">
-                            <div className="pointer-events-none absolute -top-32 -right-32 size-64 rounded-full bg-white/10 blur-3xl" />
-                            <div className="pointer-events-none absolute -bottom-20 -left-20 size-48 rounded-full bg-blue-400/10 blur-2xl" />
-                            <div className="relative space-y-8">
-                                <div className="flex items-start justify-between">
-                                    <div>
-                                        <p className="text-xs font-bold uppercase tracking-widest text-indigo-100/90">🚀 Fleet Live Status</p>
-                                        <h2 className="mt-3 text-3xl font-black">
-                                            {hasLatestStatusData
-                                                ? `${integerFormatter.format(statusSummary.overview.trucksTracked)} Active`
-                                                : 'Pending'}
-                                        </h2>
-                                        <p className="mt-1 text-sm text-indigo-100/70 font-medium">trucks tracked today</p>
-                                    </div>
-                                    <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/15 backdrop-blur-md border border-white/20">
-                                        <Gauge className="h-8 w-8 text-white/90" />
-                                    </div>
-                                </div>
-                                <div className="space-y-2 text-sm text-indigo-100/80">
-                                    {statusSummaryDateLabel && (
-                                        <p className="font-medium">📅 Status as of {statusSummaryDateLabel}</p>
-                                    )}
-                                    {hasLatestStatusData && (
-                                        <p className="text-indigo-100/60">{integerFormatter.format(statusSummary.overview.totalEntries)} records logged</p>
-                                    )}
-                                </div>
-                                <div className="grid gap-3 sm:grid-cols-2">
-                                    <div className="rounded-2xl bg-white/[0.08] p-4 backdrop-blur-md border border-white/10 hover:bg-white/[0.12] transition-colors">
-                                        <p className="text-xs font-semibold uppercase tracking-wider text-indigo-100/70">Fleet Coverage</p>
-                                        <p className="mt-2 text-2xl font-bold">{formatPercent(statusSummary.overview.coverageRate)}</p>
-                                        <p className="text-xs text-indigo-100/60 mt-1">of {integerFormatter.format(executiveSummary.fleet.totalTrucks)} assets</p>
-                                    </div>
-                                    <div className="rounded-2xl bg-white/[0.08] p-4 backdrop-blur-md border border-white/10 hover:bg-white/[0.12] transition-colors">
-                                        <p className="text-xs font-semibold uppercase tracking-wider text-indigo-100/70">Operational</p>
-                                        <p className="mt-2 text-2xl font-bold">{formatPercent(statusSummary.overview.operationalShare)}</p>
-                                        <p className="text-xs text-indigo-100/60 mt-1">active assignments</p>
-                                    </div>
-                                    <div className="rounded-2xl bg-white/[0.08] p-4 backdrop-blur-md border border-white/10 hover:bg-white/[0.12] transition-colors">
-                                        <p className="text-xs font-semibold uppercase tracking-wider text-indigo-100/70">Maintenance</p>
-                                        <p className="mt-2 text-2xl font-bold">{formatPercent(statusSummary.overview.maintenanceShare)}</p>
-                                        <p className="text-xs text-indigo-100/60 mt-1">in service queue</p>
-                                    </div>
-                                    <div className="rounded-2xl bg-white/[0.08] p-4 backdrop-blur-md border border-white/10 hover:bg-white/[0.12] transition-colors">
-                                        <p className="text-xs font-semibold uppercase tracking-wider text-indigo-100/70">Dominant Status</p>
-                                        <p className="mt-2 text-lg font-bold capitalize">
-                                            {statusSummary.overview.mostCommonStatus ?? '—'}
-                                        </p>
-                                        <p className="text-xs text-indigo-100/60 mt-1">most common</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <Card className="h-full border-slate-200/50 dark:border-slate-700/50 shadow-lg hover:shadow-xl transition-all duration-300 rounded-3xl">
-                            <CardHeader className="bg-gradient-to-r from-blue-50/50 to-indigo-50/50 dark:from-slate-800/30 dark:to-slate-700/30 border-b border-slate-200/40 dark:border-slate-700/40">
-                                <div className="flex items-center justify-between gap-2">
-                                    <CardTitle className="text-lg font-bold">Status Breakdown</CardTitle>
-                                    <Badge className="bg-gradient-to-r from-indigo-600 to-blue-600 text-white border-0 text-xs font-bold uppercase">
-                                        {statusSummaryDateLabel ?? 'Pending'}
-                                    </Badge>
-                                </div>
-                                <CardDescription className="text-sm mt-1">Today's operational status distribution</CardDescription>
-                            </CardHeader>
-                            <CardContent className="pt-6">
-                                {hasLatestStatusData ? (
-                                    <div className="space-y-3">
-                                        {statusSummary.statusBreakdown.slice(0, 6).map((entry) => {
-                                            const share = totalStatusEntries > 0 ? (entry.count / totalStatusEntries) * 100 : 0;
-                                            const statusColors: Record<string, { bg: string; bar: string }> = {
-                                                'active': { bg: 'bg-emerald-50/50 dark:bg-emerald-950/30', bar: 'bg-emerald-500' },
-                                                'maintenance': { bg: 'bg-orange-50/50 dark:bg-orange-950/30', bar: 'bg-orange-500' },
-                                                'pending': { bg: 'bg-slate-50/50 dark:bg-slate-800/30', bar: 'bg-slate-500' },
-                                                'returned': { bg: 'bg-blue-50/50 dark:bg-blue-950/30', bar: 'bg-blue-500' },
-                                            };
-                                            const colors = statusColors[entry.status.toLowerCase()] || { bg: 'bg-indigo-50/50 dark:bg-indigo-950/30', bar: 'bg-indigo-500' };
-
-                                            return (
-                                                <div key={entry.status} className={cn('space-y-2 rounded-2xl border border-slate-200/60 p-4 transition-all duration-200 hover:border-indigo-200 hover:shadow-md dark:border-slate-700/60 dark:hover:border-indigo-700', colors.bg)}>
-                                                    <div className="flex items-center justify-between gap-2">
-                                                        <div>
-                                                            <p className="text-sm font-bold text-slate-900 dark:text-white">{entry.label}</p>
-                                                            <p className="text-xs text-muted-foreground">{integerFormatter.format(entry.count)} entries</p>
-                                                        </div>
-                                                        <span className="text-lg font-bold bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent">{share.toFixed(1)}%</span>
-                                                    </div>
-                                                    <div className="h-2.5 w-full rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
-                                                        <div
-                                                            className={cn('h-full rounded-full transition-all duration-500', colors.bar)}
-                                                            style={{ width: `${Math.min(share, 100)}%` }}
-                                                        />
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                ) : (
-                                    <div className="flex h-full min-h-[12rem] items-center justify-center text-sm text-muted-foreground">
-                                        No truck status updates yet.
-                                    </div>
-                                )}
+                {/* Aggregated KPI Cards Row */}
+                <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 2xl:grid-cols-6">
+                    {primaryKpis.length === 0 && (
+                        <Card className="sm:col-span-2 lg:col-span-3 xl:col-span-5 2xl:col-span-6 border-dashed border-slate-300/70 dark:border-slate-700/70">
+                            <CardContent className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                                No KPI insights available yet.
                             </CardContent>
                         </Card>
+                    )}
 
-                        <Card className="h-full border-slate-200/50 dark:border-slate-700/50 shadow-lg hover:shadow-xl transition-all duration-300 rounded-3xl">
-                            <CardHeader className="bg-gradient-to-r from-blue-50/50 to-indigo-50/50 dark:from-slate-800/30 dark:to-slate-700/30 border-b border-slate-200/40 dark:border-slate-700/40">
-                                <div className="flex items-center justify-between gap-2">
-                                    <CardTitle className="text-lg font-bold">Latest Activity</CardTitle>
-                                    <ClipboardList className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-                                </div>
-                                <CardDescription className="text-sm mt-1">Most recent status updates</CardDescription>
-                            </CardHeader>
-                            <CardContent className="pt-6">
-                                {hasLatestStatusData ? (
-                                    <div className="space-y-3">
-                                        {statusSummary.recentUpdates.map((update, index) => (
-                                            <div
-                                                key={`${update.truck}-${index}`}
-                                                className="rounded-2xl border border-slate-200/60 p-4 transition-all duration-200 hover:border-indigo-200 hover:shadow-md dark:border-slate-700/60 dark:hover:border-indigo-700 bg-slate-50/30 dark:bg-slate-800/20"
-                                            >
-                                                <div className="flex items-center justify-between text-sm font-bold text-slate-900 dark:text-white">
-                                                    <span className="truncate">{update.truck}</span>
-                                                    <span className="text-xs font-medium text-muted-foreground ml-2 whitespace-nowrap">{formatTimeOnly(update.updatedAt)}</span>
-                                                </div>
-                                                <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
-                                                    <Truck className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
-                                                    <span className="capitalize font-medium">{update.status ?? 'Unknown'}</span>
-                                                </div>
-                                                {update.notes && (
-                                                    <p className="mt-3 rounded-lg border border-indigo-200/50 bg-indigo-50/70 p-2 text-xs text-indigo-900 dark:border-indigo-900/30 dark:bg-indigo-950/40 dark:text-indigo-300">
-                                                        💡 {update.notes}
-                                                    </p>
+                    {primaryKpis.map((kpi, index) => {
+                        const Icon = PRIMARY_KPI_ICONS[kpi.key] ?? Sparkles;
+                        const displayValue = formatPrimaryKpiValue(kpi);
+                        const backgrounds = [
+                            'from-indigo-600/10 via-indigo-500/5 to-white dark:from-indigo-950/40 dark:via-indigo-900/30 dark:to-indigo-900/10',
+                            'from-emerald-600/10 via-teal-500/5 to-white dark:from-emerald-950/40 dark:via-teal-900/30 dark:to-teal-900/10',
+                            'from-amber-600/10 via-orange-500/5 to-white dark:from-amber-950/40 dark:via-orange-900/30 dark:to-orange-900/10',
+                            'from-sky-600/10 via-blue-500/5 to-white dark:from-sky-950/40 dark:via-blue-900/30 dark:to-blue-900/10',
+                            'from-rose-600/10 via-pink-500/5 to-white dark:from-rose-950/40 dark:via-pink-900/30 dark:to-pink-900/10',
+                            'from-purple-600/10 via-violet-500/5 to-white dark:from-purple-950/40 dark:via-violet-900/30 dark:to-violet-900/10',
+                        ];
+                        const borderColors = [
+                            'border-indigo-200/60 dark:border-indigo-800/60',
+                            'border-emerald-200/60 dark:border-emerald-800/60',
+                            'border-amber-200/60 dark:border-amber-800/60',
+                            'border-sky-200/60 dark:border-sky-800/60',
+                            'border-rose-200/60 dark:border-rose-800/60',
+                            'border-purple-200/60 dark:border-purple-800/60',
+                        ];
+                        const iconBackgrounds = [
+                            'bg-indigo-100 dark:bg-indigo-950/40',
+                            'bg-emerald-100 dark:bg-emerald-950/40',
+                            'bg-amber-100 dark:bg-amber-950/40',
+                            'bg-sky-100 dark:bg-sky-950/40',
+                            'bg-rose-100 dark:bg-rose-950/40',
+                            'bg-purple-100 dark:bg-purple-950/40',
+                        ];
+                        const iconColors = [
+                            'text-indigo-600 dark:text-indigo-300',
+                            'text-emerald-600 dark:text-emerald-300',
+                            'text-amber-600 dark:text-amber-300',
+                            'text-sky-600 dark:text-sky-300',
+                            'text-rose-600 dark:text-rose-300',
+                            'text-purple-600 dark:text-purple-300',
+                        ];
+
+                        return (
+                            <Card
+                                key={kpi.key}
+                                className={cn(
+                                    'relative overflow-hidden rounded-2xl border bg-gradient-to-br shadow-sm hover:shadow-lg transition-all duration-300',
+                                    backgrounds[index % backgrounds.length],
+                                    borderColors[index % borderColors.length],
+                                )}
+                            >
+                                <CardContent className="p-5">
+                                    <div className="flex items-start justify-between gap-4">
+                                        <div className="space-y-2">
+                                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400">
+                                                {kpi.label}
+                                            </p>
+                                            <div className="flex items-baseline gap-2">
+                                                <span className="text-3xl font-black text-slate-900 dark:text-white leading-none">
+                                                    {displayValue}
+                                                </span>
+                                                {kpi.format !== 'percent' && kpi.format !== 'currency' && kpi.unit && (
+                                                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                                                        {kpi.unit}
+                                                    </span>
                                                 )}
                                             </div>
-                                        ))}
-
-                                        {statusSummary.notes.length > 0 && (
-                                            <div className="mt-4 space-y-2 rounded-2xl border border-blue-200/50 bg-blue-50/50 p-4 dark:border-blue-900/30 dark:bg-blue-950/30">
-                                                <p className="text-xs font-bold uppercase tracking-wider text-blue-700 dark:text-blue-300">📌 Manager Notes</p>
-                                                <div className="space-y-2 text-xs">
-                                                    {statusSummary.notes.map((note, index) => (
-                                                        <div key={`${note.truck}-${index}`} className="rounded-lg bg-white/40 p-2 dark:bg-blue-950/50 border border-blue-200/30 dark:border-blue-900/50">
-                                                            <p className="text-xs font-bold uppercase text-blue-700 dark:text-blue-300">{note.truck}</p>
-                                                            <p className="mt-1 text-blue-900/80 dark:text-blue-200/80 font-medium">{note.notes}</p>
-                                                        </div>
-                                                    ))}
-                                                </div>
+                                            <div className="text-xs">
+                                                {renderTrendIndicator(kpi.change)}
                                             </div>
-                                        )}
+                                        </div>
+                                        <div className={cn('flex h-12 w-12 items-center justify-center rounded-full', iconBackgrounds[index % iconBackgrounds.length])}>
+                                            <Icon className={cn('h-6 w-6', iconColors[index % iconColors.length])} />
+                                        </div>
                                     </div>
-                                ) : (
-                                    <div className="flex h-full min-h-[12rem] flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
-                                        <ClipboardList className="h-5 w-5" />
-                                        <span>No updates recorded yet.</span>
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
-                    </section>
-                )}
+                                </CardContent>
+                            </Card>
+                        );
+                    })}
+                </section>
 
+                {false && (
                 <section className="space-y-6">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between border-b border-slate-200/50 dark:border-slate-800/50 pb-6">
                         <div>
@@ -724,6 +690,7 @@ export default function Dashboard({
                         </Card>
                     </div>
                 </section>
+                )}
 
                 <section className="space-y-6">
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
@@ -808,56 +775,6 @@ export default function Dashboard({
                 </section>
 
                 <section className="space-y-6">
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-                        <div>
-                            <h2 className="text-xl font-semibold text-slate-900 dark:text-white">Financial Health</h2>
-                            <p className="mt-0.5 text-sm text-slate-600 dark:text-slate-400">Revenue recovery, operating cost, and fuel exposure.</p>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
-                        <Card className="border-slate-200/60 dark:border-slate-700/60 bg-gradient-to-br from-teal-50/80 to-teal-100/50 dark:from-teal-950/30 dark:to-teal-900/20 shadow-sm hover:shadow-md transition-all duration-200">
-                            <CardHeader className="pb-2 pt-3 px-4">
-                                <CardTitle className="text-sm font-medium text-slate-700 dark:text-slate-300">Revenue (30d)</CardTitle>
-                                <CardDescription className="text-xs text-slate-600 dark:text-slate-400">Tariff-based income.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="px-4 pb-3 pt-0 space-y-1.5">
-                                <p className="text-2xl font-bold text-teal-700 dark:text-teal-300 leading-none">{formatCurrency(financialOverview.revenue30d)}</p>
-                                <div className="text-xs">{renderTrendIndicator(financialOverview.change.revenue)}</div>
-                            </CardContent>
-                        </Card>
-                        <Card className="border-slate-200/60 dark:border-slate-700/60 bg-gradient-to-br from-amber-50/80 to-amber-100/50 dark:from-amber-950/30 dark:to-amber-900/20 shadow-sm hover:shadow-md transition-all duration-200">
-                            <CardHeader className="pb-2 pt-3 px-4">
-                                <CardTitle className="text-sm font-medium text-slate-700 dark:text-slate-300">Operating Cost (30d)</CardTitle>
-                                <CardDescription className="text-xs text-slate-600 dark:text-slate-400">Fuel, perdiem, and other trip costs.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="px-4 pb-3 pt-0 space-y-1.5">
-                                <p className="text-2xl font-bold text-amber-700 dark:text-amber-300 leading-none">{formatCurrency(financialOverview.operatingCost30d)}</p>
-                                <div className="text-xs">{renderTrendIndicator(financialOverview.change.operatingCost)}</div>
-                            </CardContent>
-                        </Card>
-                        <Card className="border-slate-200/60 dark:border-slate-700/60 bg-gradient-to-br from-indigo-50/80 to-indigo-100/50 dark:from-indigo-950/30 dark:to-indigo-900/20 shadow-sm hover:shadow-md transition-all duration-200">
-                            <CardHeader className="pb-2 pt-3 px-4">
-                                <CardTitle className="text-sm font-medium text-slate-700 dark:text-slate-300">Margin (30d)</CardTitle>
-                                <CardDescription className="text-xs text-slate-600 dark:text-slate-400">Revenue minus operating cost.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="px-4 pb-3 pt-0 space-y-1.5">
-                                <p className="text-2xl font-bold text-indigo-700 dark:text-indigo-300 leading-none">{formatCurrency(financialOverview.margin30d)}</p>
-                                <div className="text-xs">{renderTrendIndicator(financialOverview.change.margin)}</div>
-                            </CardContent>
-                        </Card>
-                        <Card className="border-slate-200/60 dark:border-slate-700/60 bg-gradient-to-br from-rose-50/80 to-rose-100/50 dark:from-rose-950/30 dark:to-rose-900/20 shadow-sm hover:shadow-md transition-all duration-200">
-                            <CardHeader className="pb-2 pt-3 px-4">
-                                <CardTitle className="text-sm font-medium text-slate-700 dark:text-slate-300">Cost Recovery</CardTitle>
-                                <CardDescription className="text-xs text-slate-600 dark:text-slate-400">Farebox coverage of operating cost.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="px-4 pb-3 pt-0 space-y-1.5">
-                                <p className="text-2xl font-bold text-rose-700 dark:text-rose-300 leading-none">{formatPercent(financialOverview.fareboxRecovery)}</p>
-                                <div className="text-xs">{renderTrendIndicator(financialOverview.change.fareboxRecovery)}</div>
-                            </CardContent>
-                        </Card>
-                    </div>
-
                     <div className="grid gap-4 xl:grid-cols-3">
                         <Card className="xl:col-span-2 border-slate-200/60 dark:border-slate-700/60 shadow-sm hover:shadow-md transition-all duration-200">
                             <CardHeader className="bg-gradient-to-r from-slate-50/80 to-slate-100/50 dark:from-slate-800/80 dark:to-slate-700/50 border-b border-slate-200/60 dark:border-slate-700/60">
@@ -1256,6 +1173,60 @@ export default function Dashboard({
                         </CardContent>
                     </Card>
                 </section>
+
+                {statusSummary && (
+                    <section className="max-w-2xl">
+                        <Card className="border-slate-200/50 dark:border-slate-700/50 shadow-lg hover:shadow-xl transition-all duration-300 rounded-3xl">
+                            <CardHeader className="bg-gradient-to-r from-blue-50/50 to-indigo-50/50 dark:from-slate-800/30 dark:to-slate-700/30 border-b border-slate-200/40 dark:border-slate-700/40">
+                                <div className="flex items-center justify-between gap-2">
+                                    <CardTitle className="text-lg font-bold">Status Breakdown</CardTitle>
+                                    <Badge className="bg-gradient-to-r from-indigo-600 to-blue-600 text-white border-0 text-xs font-bold uppercase">
+                                        {statusSummaryDateLabel ?? 'Pending'}
+                                    </Badge>
+                                </div>
+                                <CardDescription className="text-sm mt-1">Today's operational status distribution</CardDescription>
+                            </CardHeader>
+                            <CardContent className="pt-6">
+                                {hasLatestStatusData ? (
+                                    <div className="space-y-3">
+                                        {statusSummary.statusBreakdown.slice(0, 6).map((entry) => {
+                                            const share = totalStatusEntries > 0 ? (entry.count / totalStatusEntries) * 100 : 0;
+                                            const statusColors: Record<string, { bg: string; bar: string }> = {
+                                                'active': { bg: 'bg-emerald-50/50 dark:bg-emerald-950/30', bar: 'bg-emerald-500' },
+                                                'maintenance': { bg: 'bg-orange-50/50 dark:bg-orange-950/30', bar: 'bg-orange-500' },
+                                                'pending': { bg: 'bg-slate-50/50 dark:bg-slate-800/30', bar: 'bg-slate-500' },
+                                                'returned': { bg: 'bg-blue-50/50 dark:bg-blue-950/30', bar: 'bg-blue-500' },
+                                            };
+                                            const colors = statusColors[entry.status.toLowerCase()] || { bg: 'bg-indigo-50/50 dark:bg-indigo-950/30', bar: 'bg-indigo-500' };
+
+                                            return (
+                                                <div key={entry.status} className={cn('space-y-2 rounded-2xl border border-slate-200/60 p-4 transition-all duration-200 hover:border-indigo-200 hover:shadow-md dark:border-slate-700/60 dark:hover:border-indigo-700', colors.bg)}>
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <div>
+                                                            <p className="text-sm font-bold text-slate-900 dark:text-white">{entry.label}</p>
+                                                            <p className="text-xs text-muted-foreground">{integerFormatter.format(entry.count)} entries</p>
+                                                        </div>
+                                                        <span className="text-lg font-bold bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent">{share.toFixed(1)}%</span>
+                                                    </div>
+                                                    <div className="h-2.5 w-full rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                                                        <div
+                                                            className={cn('h-full rounded-full transition-all duration-500', colors.bar)}
+                                                            style={{ width: `${Math.min(share, 100)}%` }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <div className="flex h-full min-h-[12rem] items-center justify-center text-sm text-muted-foreground">
+                                        No truck status updates yet.
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </section>
+                )}
             </div>
         </AppLayout>
     );

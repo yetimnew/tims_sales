@@ -134,6 +134,3 @@ echo "  ☐ Assignment history visible\n\n";
 echo "==================================================================\n";
 echo "REFRESH BROWSER NOW AND TEST EACH FEATURE\n";
 echo "==================================================================\n";
-
-
-

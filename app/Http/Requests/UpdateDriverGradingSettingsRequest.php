@@ -46,7 +46,7 @@ class UpdateDriverGradingSettingsRequest extends FormRequest
     {
         return [
             function (Validator $validator): void {
-                if ($validator->fails()) {
+                if ($validator->errors()->isNotEmpty()) {
                     return;
                 }
 

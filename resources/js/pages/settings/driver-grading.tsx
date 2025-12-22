@@ -441,7 +441,7 @@ export default function DriverGradingSettings({
                         </Card>
 
                         <Form
-                            {...DriverGradingSettingsController.update.form()}
+                            {...DriverGradingSettingsController.updateGradeThresholds.form()}
                             options={{ preserveScroll: true }}
                             className="space-y-4"
                         >
@@ -524,7 +524,7 @@ export default function DriverGradingSettings({
                         </Form>
 
                         <Form
-                            {...DriverGradingSettingsController.update.form()}
+                            {...DriverGradingSettingsController.updateWeights.form()}
                             options={{ preserveScroll: true }}
                             className="space-y-6"
                         >

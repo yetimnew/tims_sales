@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Settings;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\RecalculateDriverGradesRequest;
+use App\Http\Requests\UpdateDriverGradeThresholdsRequest;
 use App\Http\Requests\UpdateDriverGradingSettingsRequest;
+use App\Http\Requests\UpdateDriverGradingWeightsRequest;
 use App\Jobs\RecalculateDriverGradeSnapshots;
 use App\Models\Driver;
 use App\Models\DriverGradeSnapshot;
@@ -191,6 +193,36 @@ class DriverGradingSettingsController extends Controller
 
         return to_route('settings.driver-grading.edit')
             ->with('success', 'Driver grading settings updated. Snapshot recalculation queued.');
+    }
+
+    public function updateGradeThresholds(UpdateDriverGradeThresholdsRequest $request): RedirectResponse
+    {
+        $payload = [
+            'grade_thresholds' => $request->gradeThresholds(),
+            'updated_by' => $request->user()?->id,
+        ];
+
+        $this->saveSettingAttributes($payload);
+        $this->queueSnapshotRefresh($request->user()?->id);
+
+        return to_route('settings.driver-grading.edit')
+            ->with('success', 'Driver grading grade thresholds updated.');
+    }
+
+    public function updateWeights(UpdateDriverGradingWeightsRequest $request): RedirectResponse
+    {
+        $payload = array_merge(
+            $request->weights(),
+            [
+                'updated_by' => $request->user()?->id,
+            ],
+        );
+
+        $this->saveSettingAttributes($payload);
+        $this->queueSnapshotRefresh($request->user()?->id);
+
+        return to_route('settings.driver-grading.edit')
+            ->with('success', 'Driver grading weights updated.');
     }
 
     public function recalculate(RecalculateDriverGradesRequest $request): RedirectResponse|JsonResponse

@@ -5,7 +5,7 @@
     "email": "yetimnew@gmail.com",
     "email_verified_at": null,
     "password": "$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi",
-    "remember_token": "VKm4JM4JsJBvjcBZyKDV334bAQk6Q98ZMgk478HQsFsRbPdygOu59Lfp4leH",
+    "remember_token": "AkIAw6XidVwSPGzPAaXNAaj7Q6g5QdAD0Mm86XqiIgmg8RKwPhmzdNNy3azn",
     "created_at": "2019-11-04 14:34:44",
     "updated_at": "2020-10-26 11:02:10"
   },
@@ -44,20 +44,20 @@
     "name": "Milliyard Menberu",
     "email": "milliyard@gmail.com",
     "email_verified_at": null,
-    "password": "$2y$10$P/GSBgVbyN.u.TPkEO6.ZeIjb49S.nQkVqQSiWtWxmULic3TCr6MG",
+    "password": "$2y$10$uM.Ne8KSdsVf/X8t2DkGLO3QIMTyhoBiKec/sLXFaLuFC/hBAH66y",
     "remember_token": "bRVi8yv3qoNcREVGx3dWabbVsJqKnA4Qiq0UHr79TRNeeJqqvJi1iYgNf7Vq",
     "created_at": "2020-05-11 07:49:44",
-    "updated_at": "2022-06-20 09:56:44"
+    "updated_at": "2025-11-28 11:40:07"
   },
   {
     "legacy_id": 6,
     "name": "Yalemzewd Tamirat",
     "email": "yalemzewd@gmail.com",
     "email_verified_at": null,
-    "password": "$2y$10$Dovftow/qxi2sUeftm.GLOkSRjkcrLiww1WJfqTbKZ3Sagz4vhOsG",
+    "password": "$2y$10$RdNhkILLSFs5wyiR7QNxG.NB1nh3aSLbcziyjNFikVMVswljs9md.",
     "remember_token": "tjVnk2k3BsLEbVQYDIz29Ms7MVEZheFuIivKFOCQXSda20XDJacy5YJSCAy8",
     "created_at": "2020-05-11 10:09:46",
-    "updated_at": "2021-11-02 16:13:54"
+    "updated_at": "2025-11-28 11:41:03"
   },
   {
     "legacy_id": 7,
@@ -74,10 +74,10 @@
     "name": "Solomon Erte",
     "email": "natansolo16@gmail.com",
     "email_verified_at": null,
-    "password": "$2y$10$4B/MB1MuGU1MAh8DBJQ1.un2nwJmbK.iZzL5y1Tna43cOp.TL//mC",
+    "password": "$2y$10$P5vyZqPrAxfTspwy9erBO.qEFNT0xOuC3cFDXJzn2lWq8YrdM7.HG",
     "remember_token": "UY1OyYIWzYunx3Tnb6nzDpkSKSWlw3mKMHIA8FyfbAd0GzFDWSOC0EtVrDM4",
     "created_at": "2020-06-18 13:56:51",
-    "updated_at": "2020-12-15 14:46:05"
+    "updated_at": "2025-11-28 11:42:30"
   },
   {
     "legacy_id": 9,
@@ -94,20 +94,20 @@
     "name": "Birhane M",
     "email": "bire@gmail.com",
     "email_verified_at": null,
-    "password": "$2y$10$unLeDxbi7rPA3mldpdLnqeYUCTanMGG7cB/xWc0BKf6bK7ShN78KG",
+    "password": "$2y$10$ktpgCuht7zsj.4CfsN1aYeLYiL36doHnzp2mciAputE7WRQ2iNe1y",
     "remember_token": null,
     "created_at": "2020-06-22 08:21:54",
-    "updated_at": "2020-06-22 08:21:54"
+    "updated_at": "2025-11-28 11:43:16"
   },
   {
     "legacy_id": 11,
     "name": "Wonde Admasu",
     "email": "wonde@gmail.com",
     "email_verified_at": null,
-    "password": "$2y$10$5MyFI8ynFvE3gC.9ifitBukbIno02G8Ap2kP37u/DMssufBPFxPAW",
+    "password": "$2y$10$ME75xiFH/Uq2OYBt.o1uH.PZlipviLZXUb5rBn8ZvQbCljZyGpFhW",
     "remember_token": null,
     "created_at": "2020-06-22 09:34:21",
-    "updated_at": "2020-06-22 09:36:02"
+    "updated_at": "2025-11-28 11:43:48"
   },
   {
     "legacy_id": 12,
@@ -124,10 +124,10 @@
     "name": "Amare Dechasa",
     "email": "amare@gmail.com",
     "email_verified_at": null,
-    "password": "$2y$10$BEFNkDX/gO880GIaXMg5vu3UnqAI9AVaWdMzDpU0ZGANbxCd58Gqe",
+    "password": "$2y$10$M2JK/FFNpoYmLzNPmSEGTeNtpdg.mtj2eiLodm5OlA5dNRvSsa6km",
     "remember_token": "1fPsS3jJvsuIZqI2Hyp85UFLCoJwSmjJ2cSBwMsYFK2CD5IGefUuablmvVMT",
     "created_at": "2020-07-27 10:31:31",
-    "updated_at": "2021-06-02 14:38:10"
+    "updated_at": "2025-11-28 11:44:10"
   },
   {
     "legacy_id": 14,
@@ -224,10 +224,10 @@
     "name": "BIniyam",
     "email": "biniam@gmail.com",
     "email_verified_at": null,
-    "password": "$2y$10$LKRbGlaFzk5BPQK0cS8bXOrlhjrhoEqT5dTjTLAMDHT4/jpw6iW6G",
+    "password": "$2y$10$U3qct6MOJvvnOLdeVpOJDu5NfiJjJoQpaMRZgzWXdFGX5PhftS18K",
     "remember_token": null,
     "created_at": "2022-09-19 12:48:05",
-    "updated_at": "2025-01-13 09:47:22"
+    "updated_at": "2025-11-28 11:39:29"
   },
   {
     "legacy_id": 24,
@@ -314,10 +314,10 @@
     "name": "Mesfin",
     "email": "mesfin@gmail.com",
     "email_verified_at": null,
-    "password": "$2y$10$7NkeWLmU2WXmqjiwtBEIw.UUk/teq07e1PJtLHJ9VTYpwMbDxSqsq",
+    "password": "$2y$10$zG4XGmh5KnDAYfDlZ.BcKuI6zvrsEEoG8.aqklW/xf9tVnWEaN06e",
     "remember_token": "k0eJGzhVFQP5sk0JsmIp7EZdEZlyQelTuU5PgOwEUIU4mxbmdUirGXPwQIHG",
     "created_at": "2023-11-29 08:40:20",
-    "updated_at": "2023-11-29 08:40:20"
+    "updated_at": "2025-11-28 11:45:47"
   },
   {
     "legacy_id": 33,
@@ -335,7 +335,7 @@
     "email": "tigist@gmail.com",
     "email_verified_at": null,
     "password": "$2y$10$Raoz.LlsTads6GeNqPcA0uZckfMypHb92V9gOyDcgFx9LElbABIpu",
-    "remember_token": null,
+    "remember_token": "7LxNffPkFLuaSeHU8rSi5Kr4PqGFEJnDIFtUT3YWJPFpr0sNMoIBNGIx99Et",
     "created_at": "2024-04-23 15:06:43",
     "updated_at": "2024-04-24 13:12:19"
   },
@@ -348,5 +348,15 @@
     "remember_token": null,
     "created_at": "2025-01-13 10:00:54",
     "updated_at": "2025-01-13 10:00:54"
+  },
+  {
+    "legacy_id": 36,
+    "name": "Hayle Natan",
+    "email": "hayalnatan@gmail.com",
+    "email_verified_at": null,
+    "password": "$2y$10$xOIvHh4uAod3kJaBlIlYqeHLBDVXMMUga/Q8qHLKUp2UNfQcrhvkG",
+    "remember_token": "hdLdo7OBZiO5yPeO7c3gBNjFo1WOvwJnPmnPxGNJjTXpnPikuyXXqgzfOIgf",
+    "created_at": "2025-11-28 09:30:07",
+    "updated_at": "2025-11-28 09:30:07"
   }
 ]

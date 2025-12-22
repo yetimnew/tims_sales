@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, router } from '@inertiajs/react'
-import { Eye, Trash2, SquarePen, Plus, Search } from 'lucide-react'
+import { Eye, Trash2, SquarePen, Plus, Search, TrendingUp, Wallet, PiggyBank, CalendarClock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { InertiaPagination } from '@/components/ui/pagination'
 import { Input } from '@/components/ui/input'
@@ -40,14 +40,28 @@ interface FinancialIndexProps {
     to: number
     links?: Array<{ url: string | null; label: string; active?: boolean }>
   }
+  statistics: {
+    total_records: number
+    total_revenue: number
+    total_costs: number
+    total_profit: number
+    average_profit_margin: number | null
+    profitable_trucks: number
+    last_recorded_at: string | null
+  }
+  filters: {
+    search: string
+    sort: string
+    direction: 'asc' | 'desc'
+  }
 }
 
-export default function FinancialIndex({ financialRecords }: FinancialIndexProps) {
+export default function FinancialIndex({ financialRecords, statistics, filters }: FinancialIndexProps) {
   const { toast } = useToast()
   const { hasPermission } = usePermissions()
-  const [search, setSearch] = useState('')
-  const [sortColumn, setSortColumn] = useState('record_date')
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
+  const [search, setSearch] = useState(filters?.search ?? '')
+  const [sortColumn, setSortColumn] = useState(filters?.sort ?? 'record_date')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>(filters?.direction ?? 'desc')
   const [deleteConfirmation, setDeleteConfirmation] = useState<{ id: number; name: string } | null>(null)
 
   const handleSort = (column: string) => {
@@ -103,20 +117,68 @@ export default function FinancialIndex({ financialRecords }: FinancialIndexProps
     }).format(amount)
   }
 
-  const getPeriodBadge = (type: string) => {
-    const colors: Record<string, string> = {
-      Daily: 'bg-blue-500',
-      Weekly: 'bg-green-500',
-      Monthly: 'bg-purple-500',
-      Quarterly: 'bg-orange-500',
-      Yearly: 'bg-red-500',
+  const formatPercent = (value: number | null | undefined) => {
+    if (value === null || value === undefined) {
+      return '—'
     }
-    return colors[type] || 'bg-gray-500'
+
+    return `${value.toFixed(1)}%`
+  }
+
+  const getPeriodStyles = (type: string) => {
+    const normalized = type?.toLowerCase() ?? ''
+    const styles: Record<string, string> = {
+      daily: 'bg-blue-100 text-blue-700 border border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-900/40',
+      weekly: 'bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900/40',
+      monthly: 'bg-purple-100 text-purple-700 border border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-900/40',
+      quarterly: 'bg-amber-100 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900/40',
+      yearly: 'bg-rose-100 text-rose-700 border border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-900/40',
+    }
+    return styles[normalized] ?? 'bg-slate-100 text-slate-700 border border-slate-200 dark:bg-slate-900/60 dark:text-slate-200 dark:border-slate-800'
+  }
+
+  const formatPeriodLabel = (type: string) => {
+    if (!type) {
+      return 'Unknown'
+    }
+
+    return type
+      .toLowerCase()
+      .split('_')
+      .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+      .join(' ')
   }
 
   const getProfitColor = (profit: number) => {
     return profit >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'
   }
+
+  const statHighlights = useMemo(
+    () => [
+      {
+        key: 'totalRevenue',
+        label: 'Total Revenue',
+        value: statistics?.total_revenue ?? 0,
+        icon: Wallet,
+        tone: 'text-emerald-600 dark:text-emerald-300',
+      },
+      {
+        key: 'totalCosts',
+        label: 'Total Costs',
+        value: statistics?.total_costs ?? 0,
+        icon: PiggyBank,
+        tone: 'text-amber-600 dark:text-amber-300',
+      },
+      {
+        key: 'totalProfit',
+        label: 'Net Profit',
+        value: statistics?.total_profit ?? 0,
+        icon: TrendingUp,
+        tone: 'text-indigo-600 dark:text-indigo-300',
+      },
+    ],
+    [statistics?.total_costs, statistics?.total_profit, statistics?.total_revenue]
+  )
 
   return (
     <>
@@ -138,6 +200,42 @@ export default function FinancialIndex({ financialRecords }: FinancialIndexProps
               </Button>
             )}
           </div>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {statHighlights.map((stat) => {
+            const Icon = stat.icon
+            return (
+              <Card key={stat.key} className="border border-slate-200/60 dark:border-slate-800/60 shadow-sm">
+                <CardContent className="flex items-center justify-between gap-6 py-5">
+                  <div className="space-y-1">
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground">{stat.label}</p>
+                    <p className={`text-xl font-semibold ${stat.tone}`}>{formatCurrency(stat.value)}</p>
+                  </div>
+                  <span className="rounded-full bg-slate-100 p-2 dark:bg-slate-800/80">
+                    <Icon className={`h-5 w-5 ${stat.tone}`} />
+                  </span>
+                </CardContent>
+              </Card>
+            )
+          })}
+
+          <Card className="border border-slate-200/60 dark:border-slate-800/60 shadow-sm">
+            <CardContent className="flex h-full flex-col justify-center gap-2 py-5">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">Average Margin</p>
+              <p className="text-xl font-semibold text-teal-600 dark:text-teal-300">
+                {formatPercent(statistics?.average_profit_margin)}
+              </p>
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>Profitable Fleets</span>
+                <span className="font-semibold text-slate-700 dark:text-slate-200">{statistics?.profitable_trucks ?? 0}</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <CalendarClock className="h-3.5 w-3.5" />
+                <span>Last entry: {statistics?.last_recorded_at ? formatDate(statistics.last_recorded_at) : '—'}</span>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         <Card className="flex flex-1 flex-col overflow-hidden">
@@ -201,8 +299,8 @@ export default function FinancialIndex({ financialRecords }: FinancialIndexProps
                         <TableCell className="font-medium">{formatDate(financial.record_date)}</TableCell>
                         <TableCell className="text-muted-foreground">{financial.truck?.plate || 'N/A'}</TableCell>
                         <TableCell>
-                          <Badge className={getPeriodBadge(financial.period_type)}>
-                            {financial.period_type}
+                          <Badge className={getPeriodStyles(financial.period_type)}>
+                            {formatPeriodLabel(financial.period_type)}
                           </Badge>
                         </TableCell>
                         <TableCell className="font-semibold">{formatCurrency(financial.revenue)}</TableCell>
@@ -239,7 +337,7 @@ export default function FinancialIndex({ financialRecords }: FinancialIndexProps
                       <TableCell colSpan={6} className="h-24 text-center">
                         No financial records found.{' '}
                         {hasPermission('financial.create') && (
-                          <Link href={route('financial.create')} className="text-primary hover:underline">
+                          <Link href="/financial/create" className="text-primary hover:underline">
                             Create one
                           </Link>
                         )}

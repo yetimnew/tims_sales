@@ -1,4 +1,3 @@
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { TableCell, TableRow } from '@/components/ui/table';
 import ListPageLayout from '@/components/layouts/list-page-layout';
@@ -29,11 +28,10 @@ const breadcrumbs: BreadcrumbItem[] = [
 type ColumnKey =
     | 'foNumber'
     | 'dispatchDate'
-    | 'loadPhase'
-    | 'loadCompletion'
-    | 'status'
-    | 'distanceWithCargo'
-    | 'fuelCost';
+    | 'truckDriver'
+    | 'origin'
+    | 'destination'
+    | 'distance';
 
 interface PerformanceData {
     id: number;
@@ -47,6 +45,11 @@ interface PerformanceData {
     distanceWithoutCargo?: number | null;
     tonnage?: number | null;
     fuelInLitter?: number | null;
+    totalDistance?: number | null;
+    truckPlate?: string | null;
+    driverName?: string | null;
+    originName?: string | null;
+    destinationName?: string | null;
 }
 
 interface PerformancesIndexProps {
@@ -94,11 +97,10 @@ const COLUMN_DEFINITIONS: Array<{
 }> = [
     { id: 'foNumber', label: 'FO Number', sortKey: 'FOnumber' },
     { id: 'dispatchDate', label: 'Dispatch Date', sortKey: 'DateDispach' },
-    { id: 'loadPhase', label: 'Load Phase', sortKey: 'load_phase', align: 'center' },
-    { id: 'loadCompletion', label: 'Load Completion', sortKey: 'load_completion', align: 'center' },
-    { id: 'status', label: 'Status', sortKey: 'satus', align: 'center' },
-    { id: 'distanceWithCargo', label: 'Distance (KM)', sortKey: 'DistanceWCargo', align: 'right' },
-    { id: 'fuelCost', label: 'Fuel Cost (Birr)', sortKey: 'fuelInBirr', align: 'right' },
+    { id: 'truckDriver', label: 'Truck / Driver' },
+    { id: 'origin', label: 'Origin' },
+    { id: 'destination', label: 'Destination' },
+    { id: 'distance', label: 'Distance (KM)', sortKey: 'DistanceWCargo', align: 'right' },
 ];
 
 const formatNumberValue = (value?: number | null, fractionDigits = 2): string => {
@@ -112,19 +114,6 @@ const formatNumberValue = (value?: number | null, fractionDigits = 2): string =>
     });
 };
 
-const formatCurrency = (value?: number | null): string => {
-    if (value === null || value === undefined || Number.isNaN(Number(value))) {
-        return 'ETB 0.00';
-    }
-
-    return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'ETB',
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    }).format(value);
-};
-
 const formatDateValue = (value?: string | null): string => {
     if (!value) {
         return '—';
@@ -135,7 +124,32 @@ const formatDateValue = (value?: string | null): string => {
         return '—';
     }
 
-    return parsed.toLocaleDateString();
+    const formattedDate = parsed.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'numeric',
+        day: 'numeric',
+    });
+
+    const now = new Date();
+    const parsedDay = new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const diffDays = Math.round((parsedDay.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+    let relativeLabel: string;
+
+    if (diffDays === 0) {
+        relativeLabel = 'Today';
+    } else if (diffDays === -1) {
+        relativeLabel = 'Yesterday';
+    } else if (diffDays === 1) {
+        relativeLabel = 'Tomorrow';
+    } else if (diffDays < 0) {
+        relativeLabel = `${Math.abs(diffDays)} days ago`;
+    } else {
+        relativeLabel = `In ${diffDays} days`;
+    }
+
+    return `${formattedDate} (${relativeLabel})`;
 };
 
 const formatCount = (value?: number | null): string => {
@@ -146,35 +160,24 @@ const formatCount = (value?: number | null): string => {
     return value.toLocaleString();
 };
 
-const getStatusBadge = (status?: string | null): React.ReactNode => {
-    if (!status) {
-        return <Badge variant="outline">Unknown</Badge>;
+const formatTruckDriver = (plate?: string | null, driver?: string | null): string => {
+    if (plate && driver) {
+        return `${plate} • ${driver}`;
     }
 
-    const normalized = status.toLowerCase();
-    if (normalized === 'completed') {
-        return <Badge className="bg-blue-500 text-white hover:bg-blue-600">Completed</Badge>;
-    }
-    if (normalized === 'active') {
-        return <Badge className="bg-emerald-600 text-white hover:bg-emerald-700">Active</Badge>;
-    }
-    if (normalized === 'failed') {
-        return <Badge className="bg-rose-500 text-white hover:bg-rose-600">Failed</Badge>;
-    }
-
-    return <Badge variant="outline">{status}</Badge>;
+    return plate ?? driver ?? '—';
 };
 
-const getPhaseBadge = (value?: string | null): React.ReactNode => {
-    if (!value) {
-        return '—';
+const resolveDistanceValue = (performance: PerformanceData): number | null => {
+    if (typeof performance.totalDistance === 'number') {
+        return performance.totalDistance;
     }
 
-    return (
-        <Badge variant="secondary" className="capitalize">
-            {value}
-        </Badge>
-    );
+    if (typeof performance.distanceWithCargo === 'number') {
+        return performance.distanceWithCargo;
+    }
+
+    return null;
 };
 
 export default function PerformancesIndex({
@@ -425,7 +428,19 @@ export default function PerformancesIndex({
         [handleNavigate, sortColumn, sortDirection],
     );
 
-    const tableColumns = COLUMN_DEFINITIONS.map(col => ({ key: col.id, label: col.label }));
+    const tableColumns = React.useMemo(
+        () => [
+            ...COLUMN_DEFINITIONS.map((column) => ({
+                id: column.id,
+                label: column.label,
+                sortable: Boolean(column.sortKey),
+                sortKey: column.sortKey,
+                align: column.align,
+            })),
+            { id: 'actions', label: 'Actions', align: 'center' as const },
+        ],
+        [],
+    );
 
     const perPageSelectOptions = React.useMemo(
         () => availablePerPageOptions.map(option => ({ label: String(option), value: String(option) })),
@@ -437,39 +452,50 @@ export default function PerformancesIndex({
     );
 
     const tableRows = performanceData.length > 0
-        ? performanceData.map((performance) => (
-              <TableRow key={performance.id} className="hover:bg-muted/50">
-                  <TableCell className="font-medium">{performance.foNumber}</TableCell>
-                  <TableCell className="text-muted-foreground">{formatDateValue(performance.dispatchDate)}</TableCell>
-                  <TableCell className="text-center">{getPhaseBadge(performance.loadPhase)}</TableCell>
-                  <TableCell className="text-center">{performance.loadCompletion ?? '—'}</TableCell>
-                  <TableCell className="text-center">{getStatusBadge(performance.status)}</TableCell>
-                  <TableCell className="text-right">{formatNumberValue(performance.distanceWithCargo, 0)}</TableCell>
-                  <TableCell className="text-right">{formatCurrency(performance.fuelCost)}</TableCell>
-                  <TableCell className="text-center">
-                      <ListingRowActionsMenu
-                          actions={[
-                              canViewPerformance && {
-                                  label: 'View',
-                                  icon: <Eye className="h-4 w-4" />,
-                                  href: `/performances/${performance.id}`,
-                              },
-                              canEditPerformance && {
-                                  label: 'Edit',
-                                  icon: <Edit className="h-4 w-4" />,
-                                  href: `/performances/${performance.id}/edit`,
-                              },
-                              canDeletePerformance && {
-                                  label: 'Delete',
-                                  icon: <Trash2 className="h-4 w-4" />,
-                                  danger: true,
-                                  onSelect: () => handleDeleteClick(performance),
-                              },
-                          ].filter(Boolean)}
-                      />
-                  </TableCell>
-              </TableRow>
-          ))
+        ? performanceData.map((performance) => {
+              const distanceValue = resolveDistanceValue(performance);
+
+              return (
+                  <TableRow key={performance.id} className="hover:bg-muted/50">
+                      <TableCell className="font-medium">{performance.foNumber}</TableCell>
+                      <TableCell className="text-muted-foreground">{formatDateValue(performance.dispatchDate)}</TableCell>
+                      <TableCell>
+                          <div className="flex flex-col gap-1">
+                              <span className="font-medium text-foreground">
+                                  {formatTruckDriver(performance.truckPlate, performance.driverName)}
+                              </span>
+                          </div>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{performance.originName ?? '—'}</TableCell>
+                      <TableCell className="text-muted-foreground">{performance.destinationName ?? '—'}</TableCell>
+                      <TableCell className="text-right">
+                          {distanceValue !== null ? `${formatNumberValue(distanceValue, 0)} km` : '—'}
+                      </TableCell>
+                      <TableCell className="text-center">
+                          <ListingRowActionsMenu
+                              actions={[
+                                  canViewPerformance && {
+                                      label: 'View',
+                                      icon: <Eye className="h-4 w-4" />,
+                                      href: `/performances/${performance.id}`,
+                                  },
+                                  canEditPerformance && {
+                                      label: 'Edit',
+                                      icon: <Edit className="h-4 w-4" />,
+                                      href: `/performances/${performance.id}/edit`,
+                                  },
+                                  canDeletePerformance && {
+                                      label: 'Delete',
+                                      icon: <Trash2 className="h-4 w-4" />,
+                                      danger: true,
+                                      onSelect: () => handleDeleteClick(performance),
+                                  },
+                              ].filter(Boolean)}
+                          />
+                      </TableCell>
+                  </TableRow>
+              );
+          })
         : !isTableLoading
             ? (
                 <TableRow>
@@ -524,38 +550,46 @@ export default function PerformancesIndex({
                 </div>
             )}
             renderSubtitle={(item) => formatDateValue(item.record.dispatchDate)}
-            renderContent={(item) => (
-                <div className="space-y-3 text-sm text-muted-foreground">
+            renderContent={(item) => {
+                const mobileDistance = resolveDistanceValue(item.record);
+
+                return (
+                    <div className="space-y-3 text-sm text-muted-foreground">
                     <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Status</span>
+                        <span className="font-medium text-slate-600 dark:text-slate-300">Driver</span>
                         <span className="text-right text-slate-900 dark:text-slate-100">
-                            {item.record.status || 'Unknown'}
+                            {item.record.driverName ?? '—'}
                         </span>
                     </div>
                     <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Load Phase</span>
+                        <span className="font-medium text-slate-600 dark:text-slate-300">Truck</span>
                         <span className="text-right text-slate-900 dark:text-slate-100">
-                            {item.record.loadPhase || '—'}
+                            {item.record.truckPlate ?? '—'}
+                        </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <span className="font-medium text-slate-600 dark:text-slate-300">Origin</span>
+                        <span className="text-right text-slate-900 dark:text-slate-100">
+                            {item.record.originName ?? '—'}
+                        </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <span className="font-medium text-slate-600 dark:text-slate-300">Destination</span>
+                        <span className="text-right text-slate-900 dark:text-slate-100">
+                            {item.record.destinationName ?? '—'}
                         </span>
                     </div>
                     <div className="flex items-center justify-between">
                         <span className="font-medium text-slate-600 dark:text-slate-300">Distance</span>
                         <span className="text-right text-slate-900 dark:text-slate-100">
-                            {item.record.distanceWithCargo !== null && item.record.distanceWithCargo !== undefined
-                                ? `${formatNumberValue(item.record.distanceWithCargo)} km`
+                            {mobileDistance !== null
+                                ? `${formatNumberValue(mobileDistance, 0)} km`
                                 : '—'}
                         </span>
                     </div>
-                    <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Fuel Cost</span>
-                        <span className="text-right text-slate-900 dark:text-slate-100">
-                            {item.record.fuelCost !== null && item.record.fuelCost !== undefined
-                                ? formatCurrency(item.record.fuelCost)
-                                : 'ETB 0.00'}
-                        </span>
                     </div>
-                </div>
-            )}
+                );
+            }}
             renderFooter={(item) => (
                 <div className="flex w-full flex-wrap items-center justify-end gap-2">
                     {canViewPerformance && (

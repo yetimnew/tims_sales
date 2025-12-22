@@ -31,6 +31,7 @@ import {
     Users,
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import * as React from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -217,6 +218,31 @@ export default function TrucksIndex({
         () => (perPageOptions?.length ? perPageOptions : [10, 15, 25, 50]),
         [perPageOptions],
     );
+
+    const statusSegments = React.useMemo(() => {
+        const segments: Array<{ value: string; label: string }> = [];
+        const seen = new Set<string>();
+
+        const pushSegment = (value: string, label: string) => {
+            if (seen.has(value)) {
+                return;
+            }
+
+            segments.push({ value, label });
+            seen.add(value);
+        };
+
+        pushSegment('active', statusOptions.find((option) => option.value === 'active')?.label ?? 'Active');
+        pushSegment('inactive', statusOptions.find((option) => option.value === 'inactive')?.label ?? 'Inactive');
+
+        statusOptions.forEach((option) => {
+            pushSegment(option.value, option.label);
+        });
+
+        pushSegment('all', 'All');
+
+        return segments;
+    }, [statusOptions]);
 
     const resolvedPerPage = React.useMemo(() => {
         const candidate = filters?.per_page;
@@ -747,19 +773,30 @@ export default function TrucksIndex({
                 options: perPageSelectOptions,
             }}
         >
-            <Select value={selectedStatus} onValueChange={handleStatusChange}>
-                <SelectTrigger className="w-full min-w-[150px] sm:w-auto">
-                    <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="all">All statuses</SelectItem>
-                    {statusOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                        </SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
+            <ToggleGroup
+                type="single"
+                value={selectedStatus}
+                onValueChange={(value) => {
+                    if (!value) {
+                        return;
+                    }
+
+                    handleStatusChange(value);
+                }}
+                variant="outline"
+                size="sm"
+                className="flex flex-wrap gap-px rounded-md"
+            >
+                {statusSegments.map((segment) => (
+                    <ToggleGroupItem
+                        key={segment.value}
+                        value={segment.value}
+                        className="px-3 py-1 text-sm font-medium capitalize data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                    >
+                        {segment.value === 'all' ? 'All' : segment.label}
+                    </ToggleGroupItem>
+                ))}
+            </ToggleGroup>
             <Select value={selectedVehicleType} onValueChange={handleVehicleTypeChange}>
                 <SelectTrigger className="w-full min-w-[180px] sm:w-auto">
                     <SelectValue placeholder="Vehicle type" />

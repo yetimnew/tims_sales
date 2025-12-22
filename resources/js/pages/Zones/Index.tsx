@@ -334,10 +334,6 @@ export default function ZonesIndex({ zones, metrics, filters, statusOptions, per
             preserveScroll: true,
             onSuccess: () => {
                 setDeleteDialogOpen(false);
-                toast({
-                    title: 'Zone deleted',
-                    description: `${selectedZone.name} has been removed.`,
-                });
                 setSelectedZone(null);
                 setIsDeleting(false);
             },

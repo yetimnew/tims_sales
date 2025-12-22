@@ -370,50 +370,6 @@ Route::middleware(['auth'])->group(function () {
     Route::get('cargo-types/statistics', [\App\Http\Controllers\CargoTypeController::class, 'statistics'])->name('cargo-types.statistics');
     Route::get('cargo-types/by-category', [\App\Http\Controllers\CargoTypeController::class, 'byCategory'])->name('cargo-types.by-category');
 
-    // Financial Management
-    Route::middleware(['throttle:60,1'])->group(function () {
-        Route::get('financial', [\App\Http\Controllers\FinancialController::class, 'index'])
-            ->middleware('can:financial.view')
-            ->name('financial.index');
-
-        Route::get('financial/create', [\App\Http\Controllers\FinancialController::class, 'create'])
-            ->middleware('can:financial.create')
-            ->name('financial.create');
-
-        Route::post('financial', [\App\Http\Controllers\FinancialController::class, 'store'])
-            ->middleware('can:financial.store')
-            ->name('financial.store');
-
-        Route::get('financial/{financial}', [\App\Http\Controllers\FinancialController::class, 'show'])
-            ->middleware('can:financial.show')
-            ->name('financial.show');
-
-        Route::get('financial/{financial}/edit', [\App\Http\Controllers\FinancialController::class, 'edit'])
-            ->middleware('can:financial.edit')
-            ->name('financial.edit');
-
-        Route::put('financial/{financial}', [\App\Http\Controllers\FinancialController::class, 'update'])
-            ->middleware('can:financial.update')
-            ->name('financial.update');
-
-        Route::delete('financial/{financial}', [\App\Http\Controllers\FinancialController::class, 'destroy'])
-            ->middleware('can:financial.destroy')
-            ->name('financial.destroy');
-
-        Route::get('financial/analytics', [\App\Http\Controllers\FinancialController::class, 'analytics'])
-            ->middleware('can:financial.view')
-            ->name('financial.analytics');
-
-        Route::get('financial/profit-loss', [\App\Http\Controllers\FinancialController::class, 'profitLoss'])
-            ->middleware('can:financial.view')
-            ->name('financial.profit-loss');
-    });
-
-    // Route Planning and Optimization
-    Route::resource('route-plans', \App\Http\Controllers\RoutePlanController::class);
-    Route::post('route-plans/optimize', [\App\Http\Controllers\RoutePlanController::class, 'optimizeRoute'])->name('route-plans.optimize');
-    Route::get('route-plans/analytics', [\App\Http\Controllers\RoutePlanController::class, 'analytics'])->name('route-plans.analytics');
-
     // Operations with rate limiting and permission middleware
     Route::middleware(['throttle:60,1'])->group(function () {
         // All operation routes with individual permission checks
@@ -627,6 +583,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('reports/driver-truck-grading', [\App\Http\Controllers\ReportController::class, 'driverTruckGrading'])
         ->middleware('can:reports.driver-truck-grading.view')
         ->name('reports.driver-truck-grading');
+    Route::get('reports/driver-safety', [\App\Http\Controllers\ReportController::class, 'driverSafety'])
+        ->middleware('can:reports.driver-safety.view')
+        ->name('reports.driver-safety');
     Route::get('reports/performance-all', [\App\Http\Controllers\ReportController::class, 'performanceAll'])
         ->middleware('can:reports.performance-all.view')
         ->name('reports.performance-all');

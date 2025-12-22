@@ -15,7 +15,7 @@ import { Transition } from '@headlessui/react';
 import { Form, Head, Link, router } from '@inertiajs/react';
 import * as React from 'react';
 import { edit as driverTruckGradingRoute } from '@/routes/settings/driver-truck-grading';
-import { ArrowUpRight, Info, Activity } from 'lucide-react';
+import { ArrowUpRight, Info, Activity, Loader2, RefreshCcw } from 'lucide-react';
 
 type GradeLetter = 'A' | 'B' | 'C' | 'D' | 'E';
 
@@ -45,39 +45,68 @@ interface GradeCategoryDetails {
 
 interface GradeWeights extends WeightSettings {}
 
-interface AssignmentGrade {
+interface GradePayload {
     overall?: GradeSummary | null;
     weights?: GradeWeights | null;
     categories?: Partial<Record<GradeCategoryKey, GradeCategoryDetails>> | null;
+    metrics?: Record<string, unknown> | null;
     grade_thresholds?: Record<GradeLetter, number> | null;
 }
 
-interface AssignmentRow {
-    id: number;
-    driver?: { id: number; name: string } | null;
+interface DriverTruckGradeRow {
+    id: number | null;
+    driver?: { id: number; name: string; driverid?: string | null } | null;
     truck?: { id: number; plate: string } | null;
-    date_received?: string | null;
     status?: string | null;
-    is_attached: boolean;
-    grade?: AssignmentGrade | null;
+    is_attached?: boolean;
+    date_received?: string | null;
+    grade?: GradePayload | null;
+    snapshot?: {
+        calculated_at?: string | null;
+        calculated_by?: { id: number; name: string } | null;
+    } | null;
 }
 
-interface Paginator<T> {
-    data: T[];
-    meta: {
-        current_page: number;
-        last_page: number;
-        per_page: number;
-        total: number;
-        from: number | null;
-        to: number | null;
-    };
-    links: Array<{
-        url: string | null;
-        label: string;
-        active: boolean;
-    }>;
+interface PaginatorMeta {
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+    from: number | null;
+    to: number | null;
 }
+
+interface PaginatorLink {
+    url: string | null;
+    label: string;
+    active: boolean;
+}
+
+interface DriverTruckGradesPaginator {
+    data: DriverTruckGradeRow[];
+    meta: PaginatorMeta;
+    links: PaginatorLink[];
+}
+
+interface FilterState {
+    snapshot_date?: string | null;
+    status?: string | null;
+    attachment_state?: string | null;
+    grade_letter?: string | null;
+    per_page?: number;
+}
+
+interface FilterOptions {
+    dates?: string[];
+    statuses?: string[];
+    attachment_states?: string[];
+}
+
+type LatestCalculation = {
+    calculated_at?: string | null;
+    calculated_by?: { id: number; name: string } | null;
+    count?: number | null;
+} | null;
 
 interface DriverTruckGradingSettingsProps {
     settings: {
@@ -89,15 +118,16 @@ interface DriverTruckGradingSettingsProps {
     };
     can: {
         update: boolean;
+        recalculate: boolean;
     };
     flash?: {
         success?: string;
     };
-    assignments: Paginator<AssignmentRow>;
+    driverTruckGrades: DriverTruckGradesPaginator;
     perPageOptions: number[];
-    filters: {
-        per_page: number;
-    };
+    filters: FilterState;
+    filterOptions: FilterOptions;
+    latestCalculation: LatestCalculation;
 }
 
 type WeightConfig = {
@@ -197,6 +227,30 @@ const parseThreshold = (value: string): number | null => {
     return Number.isNaN(numeric) ? null : numeric;
 };
 
+const getGradeColor = (letter?: string | null): string => {
+    switch (letter?.toUpperCase()) {
+        case 'A':
+            return 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900/50';
+        case 'B':
+            return 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-900/50';
+        case 'C':
+            return 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-900/50';
+        case 'D':
+            return 'bg-orange-500/10 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-900/50';
+        case 'E':
+            return 'bg-red-500/10 text-red-700 dark:text-red-300 border-red-200 dark:border-red-900/50';
+        default:
+            return 'bg-slate-500/10 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-900/50';
+    }
+};
+
+const humanizeFilterValue = (value: string): string => {
+    return value
+        .split('_')
+        .map(segment => segment.charAt(0).toUpperCase() + segment.slice(1))
+        .join(' ');
+};
+
 const formatScore = (value?: number | null, digits = 1): string => {
     if (value === null || value === undefined || Number.isNaN(Number(value))) {
         return 'N/A';
@@ -209,15 +263,25 @@ export default function DriverTruckGradingSettings({
     settings,
     can,
     flash,
-    assignments,
+    driverTruckGrades,
     perPageOptions,
     filters,
+    filterOptions,
+    latestCalculation,
 }: DriverTruckGradingSettingsProps) {
     const [weights, setWeights] = React.useState<WeightSettings>({ ...settings.weights });
     const [peerSample, setPeerSample] = React.useState<number>(settings.peer_sample_size);
     const [gradeThresholds, setGradeThresholds] = React.useState<GradeThresholdState>(() =>
         toThresholdState(settings.grade_thresholds),
     );
+    const [snapshotDate, setSnapshotDate] = React.useState<string>(filters.snapshot_date ?? filterOptions.dates?.[0] ?? '');
+    const [statusFilter, setStatusFilter] = React.useState<string>(filters.status ?? 'all');
+    const [attachmentState, setAttachmentState] = React.useState<string>(filters.attachment_state ?? 'all');
+    const [gradeLetter, setGradeLetter] = React.useState<string>(filters.grade_letter ?? 'all');
+    const [perPage, setPerPage] = React.useState<number>(
+        filters.per_page ?? driverTruckGrades.meta?.per_page ?? perPageOptions[0] ?? 10,
+    );
+    const [isRecalculating, setIsRecalculating] = React.useState(false);
 
     React.useEffect(() => {
         setWeights({ ...settings.weights });
@@ -227,6 +291,23 @@ export default function DriverTruckGradingSettings({
     React.useEffect(() => {
         setGradeThresholds(toThresholdState(settings.grade_thresholds));
     }, [settings.grade_thresholds]);
+
+    React.useEffect(() => {
+        setSnapshotDate(filters.snapshot_date ?? filterOptions.dates?.[0] ?? '');
+        setStatusFilter(filters.status ?? 'all');
+        setAttachmentState(filters.attachment_state ?? 'all');
+        setGradeLetter(filters.grade_letter ?? 'all');
+        setPerPage(filters.per_page ?? driverTruckGrades.meta?.per_page ?? perPageOptions[0] ?? 10);
+    }, [
+        filters.snapshot_date,
+        filters.status,
+        filters.attachment_state,
+        filters.grade_letter,
+        filters.per_page,
+        filterOptions.dates,
+        driverTruckGrades.meta?.per_page,
+        perPageOptions,
+    ]);
 
     const totalWeight = React.useMemo(() => {
         return weightFields.reduce((sum, field) => sum + (weights[field.key] ?? 0), 0);
@@ -307,27 +388,118 @@ export default function DriverTruckGradingSettings({
     const disableThresholdSubmit = disabled || Boolean(thresholdIssue);
     const disableWeightSubmit = disabled || remaining !== 0;
 
-    const meta = assignments.meta;
-    const links = assignments.links;
+    const meta = driverTruckGrades.meta;
+    const links = driverTruckGrades.links;
+
+    const handleFilterChange = React.useCallback(() => {
+        const query: Record<string, string> = {};
+
+        if (snapshotDate) {
+            query.snapshot_date = snapshotDate;
+        }
+
+        if (statusFilter !== 'all') {
+            query.status = statusFilter;
+        }
+
+        if (attachmentState !== 'all') {
+            query.attachment_state = attachmentState;
+        }
+
+        if (gradeLetter !== 'all') {
+            query.grade_letter = gradeLetter;
+        }
+
+        if (perPage) {
+            query.per_page = String(perPage);
+        }
+
+        router.get(driverTruckGradingRoute.url(), query, {
+            preserveScroll: true,
+            preserveState: true,
+        });
+    }, [snapshotDate, statusFilter, attachmentState, gradeLetter, perPage]);
 
     const handlePerPageChange = React.useCallback(
         (value: string) => {
             const numeric = Number.parseInt(value, 10);
+            const resolved = Number.isNaN(numeric) ? perPage : numeric;
 
-            router.visit(
-                driverTruckGradingRoute.url({
-                    query: {
-                        per_page: Number.isNaN(numeric) ? filters.per_page : numeric,
-                    },
-                }),
-                {
-                    preserveScroll: true,
-                    preserveState: true,
-                },
-            );
+            setPerPage(resolved);
+
+            const query: Record<string, string> = {};
+
+            if (snapshotDate) {
+                query.snapshot_date = snapshotDate;
+            }
+
+            if (statusFilter !== 'all') {
+                query.status = statusFilter;
+            }
+
+            if (attachmentState !== 'all') {
+                query.attachment_state = attachmentState;
+            }
+
+            if (gradeLetter !== 'all') {
+                query.grade_letter = gradeLetter;
+            }
+
+            query.per_page = String(resolved);
+
+            router.get(driverTruckGradingRoute.url(), query, {
+                preserveScroll: true,
+                preserveState: true,
+            });
         },
-        [filters.per_page],
+        [snapshotDate, statusFilter, attachmentState, gradeLetter, perPage],
     );
+
+    const handleRecalculate = React.useCallback(async () => {
+        if (!can.recalculate || isRecalculating) {
+            return;
+        }
+
+        try {
+            setIsRecalculating(true);
+
+            const formData = new FormData();
+
+            if (snapshotDate) {
+                formData.append('snapshot_date', snapshotDate);
+            }
+
+            if (statusFilter !== 'all') {
+                formData.append('status', statusFilter);
+            }
+
+            if (attachmentState !== 'all') {
+                formData.append('attachment_state', attachmentState);
+            }
+
+            if (gradeLetter !== 'all') {
+                formData.append('grade_letter', gradeLetter);
+            }
+
+            const response = await fetch(DriverTruckGradingSettingsController.recalculate.url(), {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '',
+                },
+                body: formData,
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to recalculate');
+            }
+
+            router.reload({ preserveScroll: true, preserveState: true });
+        } catch (error) {
+            console.error('Driver-truck grading recalculation error:', error);
+        } finally {
+            setIsRecalculating(false);
+        }
+    }, [can.recalculate, isRecalculating, snapshotDate, statusFilter, attachmentState, gradeLetter]);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -587,20 +759,133 @@ export default function DriverTruckGradingSettings({
 
                         <Card>
                             <CardHeader>
-                                <CardTitle>Recent assignment grades</CardTitle>
+                                <CardTitle>Latest assignment grades</CardTitle>
                                 <CardDescription>
-                                    Review recent driver-truck assignments with their overall grade and category breakdowns.
+                                    {latestCalculation?.calculated_at ? (
+                                        <>
+                                            Calculated {formatTimestamp(latestCalculation.calculated_at)}
+                                            {latestCalculation.calculated_by ? ` by ${latestCalculation.calculated_by.name}` : ''}
+                                            {latestCalculation.count ? ` • ${latestCalculation.count} assignments` : ''}
+                                        </>
+                                    ) : (
+                                        'No calculations yet'
+                                    )}
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
+                                <div className="flex flex-wrap items-end gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="snapshot-date">Snapshot date</Label>
+                                        <Select
+                                            value={snapshotDate}
+                                            onValueChange={setSnapshotDate}
+                                            disabled={!filterOptions?.dates?.length}
+                                        >
+                                            <SelectTrigger id="snapshot-date" className="w-48">
+                                                <SelectValue placeholder="Select date" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {filterOptions?.dates?.map(date => (
+                                                    <SelectItem key={date} value={date}>
+                                                        {formatDate(date)}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="status-filter">Status</Label>
+                                        <Select value={statusFilter} onValueChange={setStatusFilter}>
+                                            <SelectTrigger id="status-filter" className="w-48">
+                                                <SelectValue placeholder="All statuses" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">All statuses</SelectItem>
+                                                {filterOptions?.statuses?.map(option => (
+                                                    <SelectItem key={option} value={option}>
+                                                        {humanizeFilterValue(option)}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="attachment-filter">Attachment</Label>
+                                        <Select value={attachmentState} onValueChange={setAttachmentState}>
+                                            <SelectTrigger id="attachment-filter" className="w-40">
+                                                <SelectValue placeholder="All assignments" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">All assignments</SelectItem>
+                                                {filterOptions?.attachment_states?.map(option => (
+                                                    <SelectItem key={option} value={option}>
+                                                        {humanizeFilterValue(option)}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="grade-filter">Grade</Label>
+                                        <Select value={gradeLetter} onValueChange={setGradeLetter}>
+                                            <SelectTrigger id="grade-filter" className="w-32">
+                                                <SelectValue placeholder="All grades" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">All grades</SelectItem>
+                                                {gradeLetters.map(letter => (
+                                                    <SelectItem key={letter} value={letter}>
+                                                        Grade {letter}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    <div className="flex gap-2">
+                                        <Button onClick={handleFilterChange} variant="outline" size="sm">
+                                            Apply filters
+                                        </Button>
+                                        <Button
+                                            onClick={handleRecalculate}
+                                            disabled={!can.recalculate || isRecalculating}
+                                            variant="outline"
+                                            size="sm"
+                                        >
+                                            {isRecalculating ? (
+                                                <>
+                                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                    Recalculating…
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <RefreshCcw className="mr-2 h-4 w-4" />
+                                                    Recalculate
+                                                </>
+                                            )}
+                                        </Button>
+                                    </div>
+                                </div>
+
                                 <div className="flex flex-wrap items-center justify-between gap-3">
                                     <div className="text-sm text-muted-foreground">
-                                        Showing {meta.from ?? 0} – {meta.to ?? 0} of {meta.total} assignments
+                                        {meta.total > 0 ? (
+                                            <>
+                                                Showing {meta.from ?? 0} – {meta.to ?? 0} of {meta.total} assignments
+                                            </>
+                                        ) : (
+                                            'No assignments found for the selected filters.'
+                                        )}
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <Label htmlFor="per-page" className="text-sm">Rows per page</Label>
+                                        <Label htmlFor="per-page" className="text-sm">
+                                            Rows per page
+                                        </Label>
                                         <Select
-                                            value={String(filters.per_page)}
+                                            value={String(perPage)}
                                             onValueChange={handlePerPageChange}
                                             disabled={meta.total === 0}
                                         >
@@ -618,7 +903,7 @@ export default function DriverTruckGradingSettings({
                                     </div>
                                 </div>
 
-                                {assignments.data.length > 0 ? (
+                                {driverTruckGrades.data.length > 0 ? (
                                     <div className="overflow-x-auto">
                                         <table className="w-full min-w-[720px] table-auto border-collapse">
                                             <thead>
@@ -632,12 +917,15 @@ export default function DriverTruckGradingSettings({
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {assignments.data.map(row => {
+                                                {driverTruckGrades.data.map(row => {
                                                     const grade = row.grade ?? null;
                                                     const categories = grade?.categories ?? {};
 
                                                     return (
-                                                        <tr key={row.id} className="border-b border-border text-sm">
+                                                        <tr
+                                                            key={row.id ?? `${row.driver?.id ?? 'driver'}-${row.truck?.id ?? 'truck'}-${row.date_received ?? 'date'}`}
+                                                            className="border-b border-border text-sm"
+                                                        >
                                                             <td className="px-4 py-3 align-top">
                                                                 <div className="flex flex-col">
                                                                     <span className="font-medium text-foreground">
@@ -654,7 +942,7 @@ export default function DriverTruckGradingSettings({
                                                             <td className="px-4 py-3 align-top">
                                                                 {grade?.overall ? (
                                                                     <div className="flex items-center gap-2">
-                                                                        <Badge variant="outline" className="text-base font-semibold">
+                                                                        <Badge className={`${getGradeColor(grade.overall.letter)} border text-base font-semibold`}>
                                                                             {grade.overall.letter}
                                                                         </Badge>
                                                                         <span className="text-sm text-muted-foreground">
@@ -691,12 +979,16 @@ export default function DriverTruckGradingSettings({
                                                                 {row.status ?? '—'}
                                                             </td>
                                                             <td className="px-4 py-3 align-top text-right">
-                                                                <Button variant="ghost" size="sm" asChild>
-                                                                    <Link href={`/driver-trucks/${row.id}`} className="inline-flex items-center gap-1">
-                                                                        View
-                                                                        <ArrowUpRight className="h-4 w-4" />
-                                                                    </Link>
-                                                                </Button>
+                                                                {row.id ? (
+                                                                    <Button variant="ghost" size="sm" asChild>
+                                                                        <Link href={`/driver-trucks/${row.id}`} className="inline-flex items-center gap-1">
+                                                                            View
+                                                                            <ArrowUpRight className="h-4 w-4" />
+                                                                        </Link>
+                                                                    </Button>
+                                                                ) : (
+                                                                    <span className="text-sm text-muted-foreground">No record</span>
+                                                                )}
                                                             </td>
                                                         </tr>
                                                     );

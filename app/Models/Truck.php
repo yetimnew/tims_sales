@@ -10,12 +10,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class Truck extends Model
 {
-    use HasFactory, SoftDeletes, LogsActivity, ClearsCacheOnModelEvents;
+    use ClearsCacheOnModelEvents, HasFactory, LogsActivity, SoftDeletes;
 
     protected $fillable = [
         'plate',
@@ -95,27 +95,11 @@ class Truck extends Model
     }
 
     /**
-     * Get the financial records for the truck.
-     */
-    public function financialRecords(): HasMany
-    {
-        return $this->hasMany(TruckFinancialRecord::class);
-    }
-
-    /**
      * Get the insurance records for the truck.
      */
     public function insuranceRecords(): HasMany
     {
         return $this->hasMany(InsuranceRecord::class);
-    }
-
-    /**
-     * Get the route plans for the truck.
-     */
-    public function routePlans(): HasMany
-    {
-        return $this->hasMany(RoutePlan::class);
     }
 
     /**

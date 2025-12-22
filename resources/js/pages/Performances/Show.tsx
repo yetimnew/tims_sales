@@ -506,16 +506,38 @@ export default function PerformancesShow({ performance, activityLogs, operationI
                                                 </Link>
                                             )}
                                             {driver?.name && (
-                                                <span className="inline-flex items-center gap-1 rounded-full bg-muted px-3 py-1 font-medium text-foreground">
-                                                    <User className="h-3.5 w-3.5 text-blue-600" />
-                                                    {driver.name}
-                                                </span>
+                                                driver?.id ? (
+                                                    <Link
+                                                        href={`/drivers/${driver.id}`}
+                                                        className="inline-flex items-center gap-1 rounded-full bg-muted px-3 py-1 font-medium text-foreground transition-colors hover:text-primary"
+                                                    >
+                                                        <User className="h-3.5 w-3.5 text-blue-600" />
+                                                        {driver.name}
+                                                        <ExternalLink className="h-3 w-3" />
+                                                    </Link>
+                                                ) : (
+                                                    <span className="inline-flex items-center gap-1 rounded-full bg-muted px-3 py-1 font-medium text-foreground">
+                                                        <User className="h-3.5 w-3.5 text-blue-600" />
+                                                        {driver.name}
+                                                    </span>
+                                                )
                                             )}
                                             {truck?.plate && (
-                                                <span className="inline-flex items-center gap-1 rounded-full bg-muted px-3 py-1 font-medium text-foreground">
-                                                    <Truck className="h-3.5 w-3.5 text-amber-600" />
-                                                    {truck.plate}
-                                                </span>
+                                                truck?.id ? (
+                                                    <Link
+                                                        href={`/trucks/${truck.id}`}
+                                                        className="inline-flex items-center gap-1 rounded-full bg-muted px-3 py-1 font-medium text-foreground transition-colors hover:text-primary"
+                                                    >
+                                                        <Truck className="h-3.5 w-3.5 text-amber-600" />
+                                                        {truck.plate}
+                                                        <ExternalLink className="h-3 w-3" />
+                                                    </Link>
+                                                ) : (
+                                                    <span className="inline-flex items-center gap-1 rounded-full bg-muted px-3 py-1 font-medium text-foreground">
+                                                        <Truck className="h-3.5 w-3.5 text-amber-600" />
+                                                        {truck.plate}
+                                                    </span>
+                                                )
                                             )}
                                         </div>
                                     </div>
@@ -1394,7 +1416,20 @@ export default function PerformancesShow({ performance, activityLogs, operationI
                                                 </div>
                                                 <div className="min-w-0 space-y-1">
                                                     <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Driver</p>
-                                                    <p className="font-medium text-foreground">{driver?.name ?? 'Unassigned driver'}</p>
+                                                    {driver?.name ? (
+                                                        driver.id ? (
+                                                            <Link
+                                                                href={`/drivers/${driver.id}`}
+                                                                className="font-medium text-foreground transition-colors hover:text-primary"
+                                                            >
+                                                                {driver.name}
+                                                            </Link>
+                                                        ) : (
+                                                            <p className="font-medium text-foreground">{driver.name}</p>
+                                                        )
+                                                    ) : (
+                                                        <p className="font-medium text-foreground">Unassigned driver</p>
+                                                    )}
                                                     <div className="space-y-1 text-xs text-muted-foreground">
                                                         {driver?.phone && (
                                                             <div className="flex items-center gap-1">
@@ -1419,7 +1454,20 @@ export default function PerformancesShow({ performance, activityLogs, operationI
                                                 </div>
                                                 <div className="min-w-0 space-y-1">
                                                     <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Truck</p>
-                                                    <p className="font-medium text-foreground">{truck?.plate ?? 'Unassigned truck'}</p>
+                                                    {truck?.plate ? (
+                                                        truck.id ? (
+                                                            <Link
+                                                                href={`/trucks/${truck.id}`}
+                                                                className="font-medium text-foreground transition-colors hover:text-primary"
+                                                            >
+                                                                {truck.plate}
+                                                            </Link>
+                                                        ) : (
+                                                            <p className="font-medium text-foreground">{truck.plate}</p>
+                                                        )
+                                                    ) : (
+                                                        <p className="font-medium text-foreground">Unassigned truck</p>
+                                                    )}
                                                     <div className="space-y-1 text-xs text-muted-foreground">
                                                         {truck?.model && <p>Model: {truck.model}</p>}
                                                         {truckCapacity > 0 && <p>Capacity: {truckCapacity} MT</p>}

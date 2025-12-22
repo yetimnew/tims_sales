@@ -39,6 +39,8 @@ class DriverIndexService
     {
         $filters = $this->resolveFilters($request);
 
+        $statusFilter = $filters->status === 'all' ? null : $filters->status;
+
         $driversQuery = $this->driverMetrics->applyFilters(
             Driver::query()->select([
                 'id',
@@ -54,7 +56,7 @@ class DriverIndexService
             ]),
             $filters->search,
             $filters->sex,
-            $filters->status,
+            $statusFilter,
         );
 
         $driversQuery->orderBy($filters->sort, $filters->direction);
@@ -112,7 +114,7 @@ class DriverIndexService
                 ->all();
         });
 
-        $metrics = $this->driverMetrics->metrics($filters->search, $filters->sex, $filters->status);
+        $metrics = $this->driverMetrics->metrics($filters->search, $filters->sex, $statusFilter);
 
         return new DriverIndexResult(
             $driversData,

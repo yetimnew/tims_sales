@@ -22,6 +22,8 @@ class ReportPermissionSeeder extends Seeder
             'geography-heatmaps' => ['view', 'export'],
             'truck-grading' => ['view', 'export'],
             'driver-grading' => ['view', 'export'],
+            'driver-truck-grading' => ['view', 'export'],
+            'driver-safety' => ['view', 'export'],
             'performance-all' => ['view', 'export'],
             'performance-by-driver' => ['view', 'export'],
             'performance-by-truck' => ['view', 'export'],

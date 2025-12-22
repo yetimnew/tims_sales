@@ -5,7 +5,15 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List
 
 ROOT = Path(__file__).resolve().parents[1]
-SQL_DUMP = ROOT / "eletderashcom_tims.sql" / "eletderashcom_tims.sql"
+SQL_CANDIDATES = [
+    ROOT / "database" / "eletderashcom_tims_12_19.sql",
+    ROOT / "eletderashcom_tims.sql" / "eletderashcom_tims.sql",
+    ROOT / "eletderashcom_tims (1).sql",
+]
+SQL_DUMP = next((path for path in SQL_CANDIDATES if path.exists()), None)
+
+if SQL_DUMP is None:
+    raise FileNotFoundError("No SQL dump found. Expected one of: " + ", ".join(str(path) for path in SQL_CANDIDATES))
 OUTPUT_DIR = ROOT / "database" / "seeders" / "data"
 
 
@@ -21,6 +29,7 @@ def main() -> None:
     outsources_rows = parse_inserts(sql, "outsources")
     outsource_performances_rows = parse_inserts(sql, "outsource_performances")
     users_rows = parse_inserts(sql, "users")
+    places_rows = parse_inserts(sql, "places")
 
     trucks_payload = [transform_truck(row) for row in trucks_rows]
     drivers_payload = [transform_driver(row) for row in drivers_rows]
@@ -38,6 +47,7 @@ def main() -> None:
         transform_outsource_performance(row) for row in outsource_performances_rows
     ]
     users_payload = [transform_user(row) for row in users_rows]
+    places_payload = [transform_place(row) for row in places_rows]
 
     write_json("legacy_trucks.json", trucks_payload)
     write_json("legacy_drivers.json", drivers_payload)
@@ -48,6 +58,7 @@ def main() -> None:
     write_json("legacy_users.json", users_payload)
     write_json("legacy_outsources.json", outsources_payload)
     write_json("legacy_outsource_performances.json", outsource_performances_payload)
+    write_json("legacy_places.json", places_payload)
 
     print(f"Exported {len(trucks_payload)} trucks")
     print(f"Exported {len(drivers_payload)} drivers")
@@ -58,10 +69,14 @@ def main() -> None:
     print(f"Exported {len(users_payload)} users")
     print(f"Exported {len(outsources_payload)} outsources")
     print(f"Exported {len(outsource_performances_payload)} outsource performances")
+    print(f"Exported {len(places_payload)} places")
 
 
 def parse_inserts(sql: str, table: str) -> List[Dict[str, Any]]:
-    pattern = re.compile(rf"INSERT INTO `{table}` \((.*?)\) VALUES (.*?);", re.DOTALL)
+    pattern = re.compile(
+        rf"INSERT INTO `{table}`\s*\((.*?)\)\s+VALUES\s*(.*?);",
+        re.DOTALL | re.IGNORECASE,
+    )
     rows: List[Dict[str, Any]] = []
 
     for match in pattern.finditer(sql):
@@ -337,6 +352,18 @@ def transform_user(row: Dict[str, Any]) -> Dict[str, Any]:
         "remember_token": to_optional_string(row.get("remember_token")),
         "created_at": normalize_timestamp(row.get("created_at")),
         "updated_at": normalize_timestamp(row.get("updated_at")),
+    }
+
+
+def transform_place(row: Dict[str, Any]) -> Dict[str, Any]:
+    woreda_id = row.get("woreda_id")
+
+    return {
+        "legacy_id": row["id"],
+        "name": normalize_string(row.get("name"), strict=False),
+        "woreda_legacy_id": int(woreda_id) if woreda_id not in (None, "") else None,
+        "comment": normalize_string(row.get("comment"), strict=False),
+        "status": row.get("status"),
     }
 
 

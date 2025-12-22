@@ -407,10 +407,6 @@ export default function PlacesIndex({ places, metrics, filters, statusOptions, p
         router.delete(`/places/${selectedPlace.id}`, {
             preserveScroll: true,
             onSuccess: () => {
-                toast({
-                    title: 'Place deleted',
-                    description: `${name} has been removed.`,
-                });
                 setDeleteDialogOpen(false);
                 setSelectedPlace(null);
             },
