@@ -2,6 +2,8 @@
 import { login } from '@/routes';
 import { email } from '@/routes/password';
 import { Form, Head } from '@inertiajs/react';
+import { useState } from 'react';
+import type { ChangeEvent, FocusEvent, FormEvent } from 'react';
 import { LoaderCircle } from 'lucide-react';
 
 import InputError from '@/components/input-error';
@@ -12,6 +14,55 @@ import { Label } from '@/components/ui/label';
 import AuthLayout from '@/layouts/auth-layout';
 
 export default function ForgotPassword({ status }: { status?: string }) {
+    const [emailError, setEmailError] = useState<string | null>(null);
+
+    const validateEmail = (value: string): string | null => {
+        const trimmedValue = value.trim();
+
+        if (!trimmedValue.length) {
+            return 'Email is required.';
+        }
+
+        const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        if (!emailPattern.test(trimmedValue)) {
+            return 'Enter a valid email address.';
+        }
+
+        return null;
+    };
+
+    const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+        const form = event.currentTarget;
+        const formData = new FormData(form);
+        const value = String(formData.get('email') ?? '');
+        const validationMessage = validateEmail(value);
+
+        if (validationMessage) {
+            event.preventDefault();
+            event.stopPropagation();
+            setEmailError(validationMessage);
+            form.querySelector<HTMLInputElement>('input[name="email"]')?.focus();
+            return;
+        }
+
+        setEmailError(null);
+    };
+
+    const handleEmailBlur = (event: FocusEvent<HTMLInputElement>) => {
+        const validationMessage = validateEmail(event.target.value);
+        setEmailError(validationMessage);
+    };
+
+    const handleEmailChange = (event: ChangeEvent<HTMLInputElement>) => {
+        if (emailError) {
+            setEmailError(null);
+        }
+        if (event.target.value.includes(' ')) {
+            event.target.value = event.target.value.trim();
+        }
+    };
+
     return (
         <AuthLayout
             title="Forgot password"
@@ -26,7 +77,11 @@ export default function ForgotPassword({ status }: { status?: string }) {
             )}
 
             <div className="space-y-6">
-                <Form {...email.form()}>
+                <Form
+                    {...email.form()}
+                    noValidate
+                    onSubmit={handleSubmit}
+                >
                     {({ processing, errors }) => (
                         <>
                             <div className="grid gap-2">
@@ -38,9 +93,12 @@ export default function ForgotPassword({ status }: { status?: string }) {
                                     autoComplete="off"
                                     autoFocus
                                     placeholder="email@example.com"
+                                    aria-invalid={Boolean(emailError ?? errors.email)}
+                                    onBlur={handleEmailBlur}
+                                    onChange={handleEmailChange}
                                 />
 
-                                <InputError message={errors.email} />
+                                <InputError message={emailError ?? errors.email} />
                             </div>
 
                             <div className="my-6 flex items-center justify-start">

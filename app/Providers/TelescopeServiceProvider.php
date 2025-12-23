@@ -3,66 +3,76 @@
 namespace App\Providers;
 
 use Illuminate\Support\Facades\Gate;
-use Laravel\Telescope\IncomingEntry;
-use Laravel\Telescope\Telescope;
-use Laravel\Telescope\TelescopeApplicationServiceProvider;
+use Illuminate\Support\ServiceProvider;
 
-class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
-{
-    /**
-     * Register any application services.
-     */
-    public function register(): void
+if (class_exists(\Laravel\Telescope\TelescopeApplicationServiceProvider::class)) {
+    class TelescopeServiceProvider extends \Laravel\Telescope\TelescopeApplicationServiceProvider
     {
-        // Telescope::night();
+        /**
+         * Register any application services.
+         */
+        public function register(): void
+        {
+            // \Laravel\Telescope\Telescope::night();
 
-        $this->hideSensitiveRequestDetails();
+            $this->hideSensitiveRequestDetails();
 
-        $isLocal = $this->app->environment('local');
+            $isLocal = $this->app->environment('local');
 
-        Telescope::filter(function (IncomingEntry $entry) use ($isLocal) {
-            return $isLocal ||
-                   $entry->isReportableException() ||
-                   $entry->isFailedRequest() ||
-                   $entry->isFailedJob() ||
-                   $entry->isScheduledTask() ||
-                   $entry->hasMonitoredTag();
-        });
-    }
-
-    /**
-     * Prevent sensitive request details from being logged by Telescope.
-     */
-    protected function hideSensitiveRequestDetails(): void
-    {
-        if ($this->app->environment('local')) {
-            return;
+            \Laravel\Telescope\Telescope::filter(function (\Laravel\Telescope\IncomingEntry $entry) use ($isLocal) {
+                return $isLocal ||
+                       $entry->isReportableException() ||
+                       $entry->isFailedRequest() ||
+                       $entry->isFailedJob() ||
+                       $entry->isScheduledTask() ||
+                       $entry->hasMonitoredTag();
+            });
         }
 
-        Telescope::hideRequestParameters(['_token']);
-
-        Telescope::hideRequestHeaders([
-            'cookie',
-            'x-csrf-token',
-            'x-xsrf-token',
-        ]);
-    }
-
-    /**
-     * Register the Telescope gate.
-     *
-     * This gate determines who can access Telescope in non-local environments.
-     */
-    protected function gate(): void
-    {
-        Gate::define('viewTelescope', function ($user) {
-            // Allow access in local environment
+        /**
+         * Prevent sensitive request details from being logged by Telescope.
+         */
+        protected function hideSensitiveRequestDetails(): void
+        {
             if ($this->app->environment('local')) {
-                return true;
+                return;
             }
 
-            // Allow access for users with admin role or specific permission
-            return $user->hasRole('admin') || $user->can('view telescope');
-        });
+            \Laravel\Telescope\Telescope::hideRequestParameters(['_token']);
+
+            \Laravel\Telescope\Telescope::hideRequestHeaders([
+                'cookie',
+                'x-csrf-token',
+                'x-xsrf-token',
+            ]);
+        }
+
+        /**
+         * Register the Telescope gate.
+         *
+         * This gate determines who can access Telescope in non-local environments.
+         */
+        protected function gate(): void
+        {
+            Gate::define('viewTelescope', function ($user) {
+                // Allow access in local environment
+                if ($this->app->environment('local')) {
+                    return true;
+                }
+
+                // Allow access for users with admin role or specific permission
+                return $user->hasRole('admin') || $user->can('view telescope');
+            });
+        }
+    }
+} else {
+    class TelescopeServiceProvider extends ServiceProvider
+    {
+        /**
+         * Register any application services.
+         */
+        public function register(): void
+        {
+        }
     }
 }
