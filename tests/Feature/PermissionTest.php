@@ -34,6 +34,12 @@ class PermissionTest extends TestCase
         $this->assertTrue(Permission::where('name', 'roles.view')->exists());
         $this->assertTrue(Permission::where('name', 'permissions.view')->exists());
         $this->assertTrue(Permission::where('name', 'trucks.show')->exists());
+        $this->assertTrue(Permission::where('name', 'reports.route-profitability.view')->exists());
+        $this->assertTrue(Permission::where('name', 'reports.route-profitability.export')->exists());
+        $this->assertTrue(Permission::where('name', 'reports.cost-per-kilometer.view')->exists());
+        $this->assertTrue(Permission::where('name', 'reports.cost-per-kilometer.export')->exists());
+        $this->assertTrue(Permission::where('name', 'reports.load-factor-utilization.view')->exists());
+        $this->assertTrue(Permission::where('name', 'reports.load-factor-utilization.export')->exists());
     }
 
     #[Test]

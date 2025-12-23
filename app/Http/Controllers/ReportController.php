@@ -6,6 +6,7 @@ use App\Exports\Reports\DriverPerformanceExport;
 use App\Exports\Reports\OutsourcePerformanceExport;
 use App\Exports\Reports\PerformanceAllExport;
 use App\Exports\Reports\TruckPerformanceExport;
+use App\Exports\Reports\DailyStatusExport;
 use App\Http\Requests\Reports\CostPerKilometerRequest;
 use App\Http\Requests\Reports\CustomerProfitabilityRequest;
 use App\Http\Requests\Reports\DriverSafetyReportRequest;
@@ -17,6 +18,7 @@ use App\Http\Requests\Reports\PerformanceAllRequest;
 use App\Http\Requests\Reports\PerformanceByDriverRequest;
 use App\Http\Requests\Reports\PerformanceByStatusRequest;
 use App\Http\Requests\Reports\PerformanceByTruckRequest;
+use App\Http\Requests\Reports\DailyStatusReportRequest;
 use App\Http\Requests\Reports\RouteProfitabilityRequest;
 use App\Http\Requests\Reports\TruckGradingReportRequest;
 use App\Models\Customer;
@@ -44,11 +46,15 @@ use App\Services\Reports\PerformanceByStatusReport;
 use App\Services\Reports\RouteProfitabilityReport;
 use App\Services\Reports\TruckGradingReport;
 use App\Services\Reports\TruckPerformanceReport;
+use App\Services\Reports\DailyStatusReport;
+use App\Jobs\WarmDailyStatusReportSnapshot;
+use App\Services\TruckAssignmentService;
 use Dompdf\Dompdf;
 use Dompdf\Options;
 use Exception;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -62,6 +68,7 @@ class ReportController extends Controller
     public function __construct(
         private readonly PerformanceAllReport $performanceAllReport,
         private readonly PerformanceByStatusReport $performanceByStatusReport,
+        private readonly DailyStatusReport $dailyStatusReport,
         private readonly TruckPerformanceReport $truckPerformanceReport,
         private readonly CustomerProfitabilityReport $customerProfitabilityReport,
         private readonly FuelEfficiencyReport $fuelEfficiencyReport,
@@ -74,6 +81,7 @@ class ReportController extends Controller
         private readonly RouteProfitabilityReport $routeProfitabilityReport,
         private readonly LoadFactorUtilizationReport $loadFactorUtilizationReport,
         private readonly CostPerKilometerReport $costPerKilometerReport,
+        private readonly TruckAssignmentService $truckAssignmentService,
     ) {}
 
     /**
@@ -1584,13 +1592,172 @@ class ReportController extends Controller
         }
     }
 
+    public function dailyStatus(DailyStatusReportRequest $request): Response|RedirectResponse
+    {
+        try {
+            $payload = $this->dailyStatusReport->build($request->validated());
+
+            $trucks = Cache::remember('reports.daily_status.truck_options', 900, static function () {
+                return Truck::query()
+                    ->select('id', 'plate', 'status')
+                    ->orderBy('plate')
+                    ->get()
+                    ->map(static fn (Truck $truck) => [
+                        'id' => $truck->id,
+                        'plate' => $truck->plate ?? 'Truck #'.$truck->id,
+                        'status' => $truck->status,
+                    ])
+                    ->values();
+            });
+
+            return Inertia::render('Reports/DailyStatus', [
+                'filters' => $payload['filters'],
+                'summary' => $payload['summary'],
+                'statusSummary' => $payload['status_summary'],
+                'daily' => $payload['daily'],
+                'options' => [
+                    'trucks' => $trucks,
+                    'statuses' => $payload['status_options'],
+                ],
+                'meta' => [
+                    'resolved_from' => $payload['resolved_from'],
+                    'resolved_to' => $payload['resolved_to'],
+                    'total_days' => $payload['total_days'],
+                    'truncated' => $payload['truncated'],
+                ],
+                'can' => [
+                    'export' => $request->user()?->can('reports.daily-status.export') ?? false,
+                ],
+            ]);
+        } catch (Exception $e) {
+            report($e);
+
+            return back()->withErrors(['error' => 'Failed to generate the daily status report.']);
+        }
+    }
+
+    public function dailyStatusExport(DailyStatusReportRequest $request, string $format)
+    {
+        $format = strtolower($format);
+
+        if (! in_array($format, ['csv', 'xlsx', 'pdf'], true)) {
+            abort(404);
+        }
+
+        $validated = array_merge($request->validated(), ['format' => $format]);
+        $payload = $this->dailyStatusReport->build($validated, $request->boolean('refresh_cache'));
+
+        $flattened = $this->flattenDailyRows($payload['daily']);
+        $filename = 'daily_status_'.now()->format('Y-m-d_H-i-s');
+
+        return match ($format) {
+            'csv' => $this->exportDailyCsv($flattened, $payload['summary'], $payload['resolved_from'], $payload['resolved_to'], $filename.'.csv'),
+            'xlsx' => $this->exportDailyExcel($flattened, $filename.'.xlsx'),
+            'pdf' => $this->exportDailyPdf($flattened, $payload['summary'], $payload['status_summary'], $payload['resolved_from'], $payload['resolved_to'], $filename.'.pdf'),
+            default => abort(404),
+        };
+    }
+
+    /**
+     * @param  \Illuminate\Pagination\LengthAwarePaginator  $paginator
+     */
+    private function flattenDailyRows($paginator): Collection
+    {
+        return collect($paginator->items())
+            ->flatMap(static function (array $day) {
+                return collect($day['entries'])
+                    ->map(static function (array $entry) use ($day) {
+                        return [
+                            'date' => $day['date'],
+                            'truck_plate' => $entry['plate'] ?? '—',
+                            'truck_id' => $entry['truck_id'] ?? null,
+                            'status_name' => $entry['status_name'] ?? '—',
+                            'status_date' => $entry['status_date'] ?? null,
+                            'registered_at' => $entry['registered_at'] ?? null,
+                            'changed_by' => $entry['changed_by'] ?? null,
+                            'notes' => $entry['notes'] ?? null,
+                        ];
+                    })
+                    ->values();
+            })
+            ->values();
+    }
+
+    private function exportDailyCsv(Collection $rows, array $summary, string $from, string $to, string $filename)
+    {
+        $headings = ['Date', 'Truck Plate', 'Truck ID', 'Status', 'Status Date', 'Recorded At', 'Changed By', 'Notes'];
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+
+        return HttpResponse::streamDownload(static function () use ($rows, $headings, $summary, $from, $to) {
+            $handle = fopen('php://output', 'w');
+
+            fputcsv($handle, ['Daily Status Report']);
+            fputcsv($handle, ["Reporting window: {$from} to {$to}"]);
+            fputcsv($handle, [
+                "Total updates: {$summary['total_updates']} · Unique trucks: {$summary['unique_trucks']} · Unique statuses: {$summary['unique_statuses']}",
+            ]);
+            fputcsv($handle, []);
+            fputcsv($handle, $headings);
+
+            foreach ($rows as $row) {
+                fputcsv($handle, [
+                    $row['date'],
+                    $row['truck_plate'],
+                    $row['truck_id'],
+                    $row['status_name'],
+                    $row['status_date'],
+                    $row['registered_at'],
+                    $row['changed_by'],
+                    $row['notes'],
+                ]);
+            }
+
+            fclose($handle);
+        }, $filename, $headers);
+    }
+
+    private function exportDailyExcel(Collection $rows, string $filename)
+    {
+        return Excel::download(new DailyStatusExport($rows), $filename);
+    }
+
+    private function exportDailyPdf(Collection $rows, array $summary, array $statusSummary, string $from, string $to, string $filename)
+    {
+        $options = new Options;
+        $options->set('isRemoteEnabled', true);
+        $options->set('defaultFont', 'DejaVu Sans');
+
+        $dompdf = new Dompdf($options);
+        $html = view('reports.daily_status_pdf', [
+            'rows' => $rows->all(),
+            'summary' => $summary,
+            'statusSummary' => $statusSummary,
+            'from' => $from,
+            'to' => $to,
+        ])->render();
+
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'landscape');
+        $dompdf->render();
+
+        return HttpResponse::make($dompdf->output(), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ]);
+    }
+
+
     /**
      * Legacy-style: driver-truck attach/detach listing.
      */
     public function driverTruckAttachDetach(Request $request): Response|RedirectResponse
     {
         try {
-            $rows = DB::table('driver_truck')
+            $history = DB::table('driver_truck')
                 ->select(
                     'driver_truck.id',
                     'drivers.name as driver_name',
@@ -1604,8 +1771,94 @@ class ReportController extends Controller
                 ->orderByDesc('driver_truck.created_at')
                 ->get();
 
+            $rows = $history->map(static function ($row) {
+                $assignedDate = $row->assigned_date ? Carbon::parse($row->assigned_date) : null;
+                $unassignedDate = $row->unassigned_date ? Carbon::parse($row->unassigned_date) : null;
+
+                return [
+                    'id' => (int) $row->id,
+                    'driver_name' => $row->driver_name ?? '—',
+                    'truck_plate' => $row->truck_plate ?? '—',
+                    'assigned_date' => $assignedDate?->toIso8601String(),
+                    'assigned_display' => $assignedDate?->format('M j, Y g:i A'),
+                    'assigned_relative' => $assignedDate?->diffForHumans(),
+                    'unassigned_date' => $unassignedDate?->toIso8601String(),
+                    'unassigned_display' => $unassignedDate?->format('M j, Y g:i A'),
+                    'unassigned_relative' => $unassignedDate?->diffForHumans(),
+                    'is_attached' => (bool) $row->is_attached,
+                ];
+            });
+
+            $currentAssignments = $this->truckAssignmentService
+                ->getCurrentAssignments()
+                ->map(static function (\App\Models\DriverTruck $assignment) {
+                    $assigned = $assignment->assigned_date;
+
+                    return [
+                        'id' => $assignment->id,
+                        'driver' => $assignment->driver ? [
+                            'id' => $assignment->driver->id,
+                            'name' => $assignment->driver->name,
+                            'mobile' => $assignment->driver->mobile,
+                        ] : null,
+                        'truck' => $assignment->truck ? [
+                            'id' => $assignment->truck->id,
+                            'plate' => $assignment->truck->plate,
+                            'status' => $assignment->truck->status,
+                        ] : null,
+                        'assignedDate' => $assigned?->toIso8601String(),
+                        'assignedDisplay' => $assigned?->format('M j, Y'),
+                        'assignedRelative' => $assigned?->diffForHumans(),
+                        'daysActive' => $assigned?->diffInDays(now()),
+                    ];
+                })
+                ->values();
+
+            $availableDrivers = $this->truckAssignmentService
+                ->getAvailableDrivers()
+                ->map(static function (\App\Models\Driver $driver) {
+                    $hired = $driver->hireddate;
+
+                    return [
+                        'id' => $driver->id,
+                        'name' => $driver->name,
+                        'mobile' => $driver->mobile,
+                        'hireDate' => $hired?->toDateString(),
+                        'hireDisplay' => $hired?->format('M j, Y'),
+                    ];
+                })
+                ->values();
+
+            $availableTrucks = $this->truckAssignmentService
+                ->getAvailableTrucks()
+                ->map(static function (\App\Models\Truck $truck) {
+                    $serviceStart = $truck->serviceStartDate;
+
+                    return [
+                        'id' => $truck->id,
+                        'plate' => $truck->plate,
+                        'status' => $truck->status,
+                        'serviceStartDate' => $serviceStart?->toDateString(),
+                        'serviceStartDisplay' => $serviceStart?->format('M j, Y'),
+                    ];
+                })
+                ->values();
+
+            $summary = [
+                'totalAssignments' => $rows->count(),
+                'attached' => $rows->where('is_attached', true)->count(),
+                'detached' => $rows->where('is_attached', false)->count(),
+                'currentActive' => $currentAssignments->count(),
+                'availableDrivers' => $availableDrivers->count(),
+                'availableTrucks' => $availableTrucks->count(),
+            ];
+
             return Inertia::render('Reports/DriverTruckAttachDetach', [
-                'rows' => $rows,
+                'rows' => $rows->values()->all(),
+                'summary' => $summary,
+                'currentAssignments' => $currentAssignments->all(),
+                'availableDrivers' => $availableDrivers->all(),
+                'availableTrucks' => $availableTrucks->all(),
             ]);
         } catch (Exception $e) {
             return back()->withErrors(['error' => 'Failed to load attach/detach report.']);

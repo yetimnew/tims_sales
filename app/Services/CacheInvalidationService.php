@@ -26,6 +26,7 @@ class CacheInvalidationService
             'reports.performance_all.truck_options',
             'reports.performance_by_truck.truck_options',
             'reports.performance_by_truck.statuses',
+            'reports.daily_status.truck_options',
             'financial.create_trucks',
             'route_plans.create_trucks',
             'driver_performance.create_trucks',
@@ -183,6 +184,7 @@ class CacheInvalidationService
         // Statuses
         \App\Models\Status::class => [
             'daily_truck_status.statuses',
+            'reports.daily_status.status_options',
         ],
 
         // Outsources

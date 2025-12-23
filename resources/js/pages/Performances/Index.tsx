@@ -240,6 +240,16 @@ export default function PerformancesIndex({
             ? Number(perPageCountRaw)
             : performanceData.length || 1;
     const rowOffset = (currentPage - 1) * perPageCount;
+    const metricsWindowLabel = 'Last 30 days';
+    const metricsCounts = React.useMemo(
+        () => ({
+            total: metrics?.total ?? 0,
+            active: metrics?.active ?? 0,
+            completed: metrics?.completed ?? 0,
+            failed: metrics?.failed ?? 0,
+        }),
+        [metrics],
+    );
 
     const handleNavigate = React.useCallback(
         (overrides: {
@@ -313,12 +323,12 @@ export default function PerformancesIndex({
             value: isTableLoading ? (
                 <Skeleton className="h-3.5 w-20" aria-hidden="true" />
             ) : (
-                totalRecords.toLocaleString()
+                metricsCounts.total.toLocaleString()
             ),
             description: isTableLoading ? (
                 <Skeleton className="h-3 w-28" aria-hidden="true" />
             ) : (
-                'All dispatches'
+                metricsWindowLabel
             ),
             valueClassName: isTableLoading ? undefined : 'text-blue-600',
         },
@@ -330,12 +340,12 @@ export default function PerformancesIndex({
             value: isTableLoading ? (
                 <Skeleton className="h-3.5 w-16" aria-hidden="true" />
             ) : (
-                (metrics?.active ?? 0).toLocaleString()
+                metricsCounts.active.toLocaleString()
             ),
             description: isTableLoading ? (
                 <Skeleton className="h-3 w-24" aria-hidden="true" />
             ) : (
-                'In progress'
+                'Active in last 30 days'
             ),
             valueClassName: isTableLoading ? undefined : 'text-emerald-600',
         },
@@ -347,12 +357,12 @@ export default function PerformancesIndex({
             value: isTableLoading ? (
                 <Skeleton className="h-3.5 w-16" aria-hidden="true" />
             ) : (
-                (metrics?.completed ?? 0).toLocaleString()
+                metricsCounts.completed.toLocaleString()
             ),
             description: isTableLoading ? (
                 <Skeleton className="h-3 w-24" aria-hidden="true" />
             ) : (
-                'Finished'
+                'Completed in last 30 days'
             ),
             valueClassName: isTableLoading ? undefined : 'text-blue-600',
         },
@@ -364,12 +374,12 @@ export default function PerformancesIndex({
             value: isTableLoading ? (
                 <Skeleton className="h-3.5 w-16" aria-hidden="true" />
             ) : (
-                (metrics?.failed ?? 0).toLocaleString()
+                metricsCounts.failed.toLocaleString()
             ),
             description: isTableLoading ? (
                 <Skeleton className="h-3 w-24" aria-hidden="true" />
             ) : (
-                'Unsuccessful'
+                'Failed in last 30 days'
             ),
             valueClassName: isTableLoading ? undefined : 'text-rose-600',
         },
@@ -697,7 +707,7 @@ export default function PerformancesIndex({
             <ListPageLayout
                 headTitle="Performances"
                 title="Performances"
-                description={`Manage your fleet performance (${formatCount(totalRecords)})`}
+                description={`Manage your fleet performance (${formatCount(metricsCounts.total)} in last 30 days)`}
                 breadcrumbs={breadcrumbs}
                 actions={headerActions}
                 stats={statsSection}

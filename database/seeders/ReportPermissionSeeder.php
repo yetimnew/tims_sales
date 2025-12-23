@@ -19,6 +19,9 @@ class ReportPermissionSeeder extends Seeder
             'customer-profitability' => ['view', 'export'],
             'outsource-performance' => ['view', 'export'],
             'operation-profitability' => ['view', 'export'],
+            'route-profitability' => ['view', 'export'],
+            'cost-per-kilometer' => ['view', 'export'],
+            'load-factor-utilization' => ['view', 'export'],
             'geography-heatmaps' => ['view', 'export'],
             'truck-grading' => ['view', 'export'],
             'driver-grading' => ['view', 'export'],
@@ -28,6 +31,7 @@ class ReportPermissionSeeder extends Seeder
             'performance-by-driver' => ['view', 'export'],
             'performance-by-truck' => ['view', 'export'],
             'performance-by-status' => ['view', 'export'],
+            'daily-status' => ['view', 'export'],
             'attach-detach' => ['view', 'export'],
         ];
 

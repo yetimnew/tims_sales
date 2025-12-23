@@ -29,7 +29,8 @@ class PerformanceController extends Controller
         $search = trim((string) $request->input('search'));
         $status = $request->input('status');
         $loadPhase = $request->input('load_phase');
-        $sort = $request->input('sort', 'DateDispach');
+        $requestedSort = $request->input('sort');
+        $sort = is_string($requestedSort) ? $requestedSort : null;
         $direction = strtolower((string) $request->input('direction', 'desc'));
         $perPageOptions = [15, 25, 50, 100];
         $perPageDefault = 15;
@@ -58,7 +59,7 @@ class PerformanceController extends Controller
         ];
 
         if (! in_array($sort, $allowedSorts, true)) {
-            $sort = 'DateDispach';
+            $sort = null;
         }
 
         $user = $request->user();
@@ -108,8 +109,20 @@ class PerformanceController extends Controller
             $baseQuery->where('load_phase', $loadPhase);
         }
 
-        $performancesPaginator = (clone $baseQuery)
-            ->orderBy($sort, $direction)
+        $performancesQuery = clone $baseQuery;
+
+        if ($sort !== null) {
+            $performancesQuery->orderBy($sort, $direction);
+        } else {
+            $performancesQuery
+                ->orderByDesc('DateDispach')
+                ->orderByDesc('created_at');
+
+            $sort = 'DateDispach';
+            $direction = 'desc';
+        }
+
+        $performancesPaginator = $performancesQuery
             ->paginate($perPage)
             ->withQueryString();
 
@@ -140,7 +153,10 @@ class PerformanceController extends Controller
             ];
         });
 
-        $metricsQuery = clone $baseQuery;
+        $metricsWindowStart = Carbon::now()->subDays(30)->startOfDay();
+
+        $metricsQuery = (clone $baseQuery)
+            ->whereDate('DateDispach', '>=', $metricsWindowStart);
 
         $metrics = [
             'total' => (clone $metricsQuery)->count(),
@@ -581,8 +597,12 @@ class PerformanceController extends Controller
                 ->values();
         });
 
+        $performanceData = $performance->toArray();
+        $performanceData['DateDispach'] = optional($performance->DateDispach)->toDateString();
+        $performanceData['returned_date'] = optional($performance->returned_date)->toDateString();
+
         return Inertia::render('Performances/Edit', [
-            'performance' => $performance,
+            'performance' => $performanceData,
             'driverTrucks' => $driverTrucks,
             'places' => $places,
         ]);

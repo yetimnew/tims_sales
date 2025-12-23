@@ -610,6 +610,13 @@ Route::middleware(['auth'])->group(function () {
     Route::get('reports/performance-by-status', [\App\Http\Controllers\ReportController::class, 'performanceByStatus'])
         ->middleware('can:reports.performance-by-status.view')
         ->name('reports.performance-by-status');
+    Route::get('reports/daily-status', [\App\Http\Controllers\ReportController::class, 'dailyStatus'])
+        ->middleware('can:reports.daily-status.view')
+        ->name('reports.daily-status');
+    Route::get('reports/daily-status/export/{format}', [\App\Http\Controllers\ReportController::class, 'dailyStatusExport'])
+        ->whereIn('format', ['csv', 'xlsx', 'pdf'])
+        ->middleware('can:reports.daily-status.export')
+        ->name('reports.daily-status.export');
     Route::get('reports/driver-truck-attach-detach', [\App\Http\Controllers\ReportController::class, 'driverTruckAttachDetach'])
         ->middleware('can:reports.attach-detach.view')
         ->name('reports.attach-detach');

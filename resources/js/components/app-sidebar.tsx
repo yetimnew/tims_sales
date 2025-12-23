@@ -410,6 +410,12 @@ const getMainNavItems = (currentUrl: string): NavItem[] => {
                         icon: Users,
                         requiredPermissions: ['reports.attach-detach.view'],
                     },
+                    {
+                        title: 'Daily Status Report',
+                        href: '/reports/daily-status',
+                        icon: BarChart3,
+                        requiredPermissions: ['reports.daily-status.view'],
+                    },
                 ],
             },
             {
