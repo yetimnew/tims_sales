@@ -1,5 +1,6 @@
 import { InertiaLinkProps } from '@inertiajs/react';
 import { LucideIcon } from 'lucide-react';
+import type { NotificationItem } from '../lib/notification-utils';
 
 export interface Auth {
     user: User;
@@ -31,8 +32,18 @@ export interface SharedData {
     quote: { message: string; author: string };
     auth: Auth;
     sidebarOpen: boolean;
+    notifications?: {
+        unread_count: number;
+        recent: NotificationItem[];
+    };
     [key: string]: unknown;
 }
+
+declare global {
+    function route(name?: string, params?: Record<string, unknown> | number | string, absolute?: boolean): string;
+}
+
+export {}
 
 export interface User {
     id: number;

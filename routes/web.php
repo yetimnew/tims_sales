@@ -4,6 +4,7 @@ use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DriverController;
 use App\Http\Controllers\FleetAnalyticsController;
+use App\Http\Controllers\NotificationFeedController;
 use App\Http\Controllers\NotificationPreferenceAdminController;
 use App\Http\Controllers\PerformanceController;
 use App\Http\Controllers\TruckController;
@@ -749,6 +750,10 @@ Route::middleware(['auth'])->group(function () {
     });
 
     // In-app notifications list and actions
+    Route::get('notifications/feed', [NotificationFeedController::class, 'index'])
+        ->middleware('throttle:30,1')
+        ->name('notifications.feed');
+
     Route::get('notifications', [\App\Http\Controllers\NotificationController::class, 'index'])
         ->name('notifications.index');
     Route::post('notifications/{notification}/read', [\App\Http\Controllers\NotificationController::class, 'markAsRead'])

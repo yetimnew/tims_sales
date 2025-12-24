@@ -14,6 +14,20 @@ export type NotificationItem = {
   data: NotificationData
 }
 
+export type NotificationFeedResponse = {
+  unread_count: number
+  data: NotificationItem[]
+  meta: {
+    current_page: number
+    per_page: number
+    total: number
+    last_page: number
+    has_more: boolean
+    next_page: number | null
+    previous_page: number | null
+  }
+}
+
 const RELATIVE_TIME_FORMATTER = new Intl.RelativeTimeFormat(undefined, {
   numeric: 'auto',
 })

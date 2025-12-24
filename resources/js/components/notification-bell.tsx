@@ -3,8 +3,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Badge } from '@/components/ui/badge'
 import { Link, router, usePage } from '@inertiajs/react'
 import { Bell, Check } from 'lucide-react'
-import { useEffect, useRef } from 'react'
-import { echo, echoIsConfigured } from '@laravel/echo-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { type SharedData } from '@/types'
 import {
   formatNotificationBody,
@@ -12,58 +11,121 @@ import {
   formatNotificationTitle,
   isNotificationUnread,
   notificationAccentKey,
+  type NotificationFeedResponse,
   type NotificationItem,
 } from '@/lib/notification-utils'
 import { cn } from '@/lib/utils'
 
+const HEADER_FEED_LIMIT = 10
+const FALLBACK_POLL_INTERVAL = 45000
+
+const POLL_INTERVAL_MS = (() => {
+  const parsed = Number(import.meta.env.VITE_NOTIFICATIONS_POLL_INTERVAL ?? FALLBACK_POLL_INTERVAL)
+  return Number.isFinite(parsed) ? Math.max(parsed, 10000) : FALLBACK_POLL_INTERVAL
+})()
+
 export default function NotificationBell() {
-  const page = usePage<SharedData & { notifications: { unread_count: number, recent: NotificationItem[] } }>()
-  const { notifications, auth } = page.props
-  const refreshingRef = useRef(false)
+  const page = usePage<SharedData & { notifications?: { unread_count: number, recent: NotificationItem[] } }>()
+  const { auth, notifications: sharedNotifications } = page.props
+  const [feed, setFeed] = useState<{ unread_count: number, recent: NotificationItem[] }>(() => sharedNotifications ?? { unread_count: 0, recent: [] })
+  const isFetchingRef = useRef(false)
+  const timerRef = useRef<number | null>(null)
+  const abortRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
-    const userId = auth?.user?.id
-
-    if (!userId) {
+    if (!sharedNotifications) {
       return
     }
 
-    const channelName = `App.Models.User.${userId}`
-    const echoInstance = echoIsConfigured() ? echo() : null
+    setFeed({
+      unread_count: sharedNotifications.unread_count,
+      recent: [...sharedNotifications.recent],
+    })
+  }, [sharedNotifications?.unread_count, sharedNotifications?.recent])
 
-    if (!echoInstance) {
+  const applyFeed = useCallback((payload: NotificationFeedResponse) => {
+    setFeed({
+      unread_count: payload.unread_count,
+      recent: payload.data,
+    })
+  }, [])
+
+  const fetchFeed = useCallback(async () => {
+    if (isFetchingRef.current) {
       return
     }
 
-    const channel = echoInstance.private(channelName)
+    if (!auth?.user?.id) {
+      return
+    }
 
-    const handleBroadcastNotification = () => {
-      if (refreshingRef.current) {
+    isFetchingRef.current = true
+
+    abortRef.current?.abort()
+    const controller = new AbortController()
+    abortRef.current = controller
+
+    try {
+      const url = new URL(route('notifications.feed'), window.location.origin)
+      url.searchParams.set('per_page', HEADER_FEED_LIMIT.toString())
+
+      const response = await fetch(url.toString(), {
+        headers: {
+          Accept: 'application/json',
+        },
+        signal: controller.signal,
+      })
+
+      if (!response.ok) {
         return
       }
 
-      refreshingRef.current = true
+      const payload = (await response.json()) as NotificationFeedResponse
+      applyFeed(payload)
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        return
+      }
 
-      router.reload({
-        only: ['notifications'],
-        onFinish: () => {
-          refreshingRef.current = false
-        },
-        onError: () => {
-          refreshingRef.current = false
-        },
-      })
+      console.error('Failed to poll notifications', error)
+    } finally {
+      isFetchingRef.current = false
+    }
+  }, [applyFeed, auth?.user?.id])
+
+  const schedulePolling = useCallback(() => {
+    if (timerRef.current !== null) {
+      window.clearInterval(timerRef.current)
     }
 
-    channel.notification(handleBroadcastNotification)
+    timerRef.current = window.setInterval(() => {
+      void fetchFeed()
+    }, POLL_INTERVAL_MS)
+  }, [fetchFeed])
+
+  useEffect(() => {
+    if (!auth?.user?.id) {
+      return () => {}
+    }
+
+    void fetchFeed()
+    schedulePolling()
 
     return () => {
-      echoInstance.leave(channelName)
-    }
-  }, [auth?.user?.id])
+      if (timerRef.current !== null) {
+        window.clearInterval(timerRef.current)
+      }
 
-  const unread = notifications?.unread_count ?? 0
-  const recent = notifications?.recent ?? []
+      abortRef.current?.abort()
+    }
+  }, [auth?.user?.id, fetchFeed, schedulePolling])
+
+  const refreshFeed = useCallback(() => {
+    void fetchFeed()
+  }, [fetchFeed])
+
+  const unread = feed.unread_count ?? 0
+  const recent = feed.recent ?? []
 
   const items = recent.map((notification) => {
     const timestamp = formatNotificationTimestamp(notification.created_at)
@@ -104,7 +166,9 @@ export default function NotificationBell() {
           <div className="px-3 pb-3">
             <button
               type="button"
-              onClick={() => router.post('/notifications/read-all')}
+              onClick={() => router.post('/notifications/read-all', undefined, {
+                onSuccess: refreshFeed,
+              })}
               className="inline-flex items-center gap-2 rounded-md bg-neutral-900 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-neutral-800 dark:bg-neutral-700 dark:hover:bg-neutral-600"
             >
               <Check className="size-3.5" />
@@ -147,7 +211,9 @@ export default function NotificationBell() {
                   {unread && (
                     <button
                       type="button"
-                      onClick={() => router.post(`/notifications/${notification.id}/read`)}
+                      onClick={() => router.post(`/notifications/${notification.id}/read`, undefined, {
+                        onSuccess: refreshFeed,
+                      })}
                       className="shrink-0 rounded-md border border-neutral-200 px-2 py-1 text-[11px] font-semibold text-neutral-600 transition hover:border-neutral-300 hover:text-neutral-900 dark:border-neutral-700 dark:text-neutral-300 dark:hover:border-neutral-600 dark:hover:text-white"
                     >
                       Mark read

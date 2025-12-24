@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\User;
+use App\Support\NotificationFeedBuilder;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -137,27 +138,8 @@ class HandleInertiaRequests extends Middleware
             ];
         }
 
-        $unreadCount = (int) $user->unreadNotifications()->count();
+        $builder = app(NotificationFeedBuilder::class);
 
-        $recent = $user->notifications()
-            ->latest()
-            ->limit(8)
-            ->get()
-            ->map(function ($notification) {
-                return [
-                    'id' => $notification->id,
-                    'type' => class_basename($notification->type),
-                    'read_at' => $notification->read_at?->toIso8601String(),
-                    'created_at' => $notification->created_at?->toIso8601String(),
-                    'data' => $notification->data,
-                ];
-            })
-            ->values()
-            ->all();
-
-        return [
-            'unread_count' => $unreadCount,
-            'recent' => $recent,
-        ];
+        return $builder->summary($user, 8);
     }
 }

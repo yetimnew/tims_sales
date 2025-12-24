@@ -78,7 +78,7 @@ class NotificationPreferenceService
             ) {
                 $channels = ['database'];
 
-                if (in_array(config('broadcasting.default'), ['pusher', 'reverb'], true)) {
+                if (config('broadcasting.default') === 'pusher') {
                     $channels[] = 'broadcast';
                 }
 
@@ -94,7 +94,7 @@ class NotificationPreferenceService
             // In-app experiences rely on stored notifications; broadcast is optional
             $channels[] = 'database';
 
-            if (in_array(config('broadcasting.default'), ['pusher', 'reverb'], true)) {
+            if (config('broadcasting.default') === 'pusher') {
                 $channels[] = 'broadcast';
             }
         }

@@ -5,27 +5,11 @@ import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { initializeTheme } from './hooks/use-appearance';
-import { configureEcho } from '@laravel/echo-react';
 
 // Lazy load routes to improve initial bundle size
 // Routes are loaded asynchronously after the app initializes
 import('./routes').catch((err) => {
     console.error('Failed to load routes:', err);
-});
-
-const reverbScheme = import.meta.env.VITE_REVERB_SCHEME ?? 'http';
-const reverbPort = Number(import.meta.env.VITE_REVERB_PORT ?? (reverbScheme === 'https' ? 443 : 80));
-
-configureEcho({
-    broadcaster: 'reverb',
-    key: import.meta.env.VITE_REVERB_APP_KEY,
-    wsHost: import.meta.env.VITE_REVERB_HOST,
-    wsPort: reverbPort,
-    wssPort: reverbPort,
-    scheme: reverbScheme,
-    forceTLS: reverbScheme === 'https',
-    enabledTransports: ['ws', 'wss'],
-    path: import.meta.env.VITE_REVERB_PATH ?? '',
 });
 
 // Global error handler
