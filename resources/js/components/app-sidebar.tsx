@@ -81,7 +81,7 @@ const getMainNavItems = (currentUrl: string): NavItem[] => {
                     currentUrl.startsWith('/drivers') ||
                     currentUrl.startsWith('/driver-trucks') ||
                     currentUrl.startsWith('/vehicletypes') ||
-                    currentUrl.startsWith('/fuel') ||
+                    // currentUrl.startsWith('/fuel') ||
                     currentUrl.startsWith('/driver-performance') ||
                     currentUrl.startsWith('/driver-safety') ||
                     currentUrl.startsWith('/cargo-types') ||
@@ -111,12 +111,14 @@ const getMainNavItems = (currentUrl: string): NavItem[] => {
                         icon: Settings,
                         requiredPermissions: ['vehicletypes.view', 'vehicletypes.show'],
                     },
+                    /*
                     {
                         title: 'Fuel Records',
                         href: '/fuel',
                         icon: Fuel,
                         requiredPermissions: ['fuel.view', 'fuel.show'],
                     },
+                    */
                     {
                         title: 'Driver Safety',
                         href: '/driver-safety',
@@ -165,6 +167,7 @@ const getMainNavItems = (currentUrl: string): NavItem[] => {
                     },
                 ],
             },
+            /*
             {
                 title: 'Financial Management',
                 icon: DollarSign,
@@ -185,6 +188,7 @@ const getMainNavItems = (currentUrl: string): NavItem[] => {
                     },
                 ],
             },
+            */
             {
                 title: 'Operations',
                 icon: Activity,

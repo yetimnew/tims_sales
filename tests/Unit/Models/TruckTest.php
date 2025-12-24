@@ -4,7 +4,11 @@ namespace Tests\Unit\Models;
 
 use App\Models\Driver;
 use App\Models\FuelRecord;
+use App\Models\Operation;
+use App\Models\RoutePlan;
 use App\Models\Truck;
+use App\Models\TruckFinancialRecord;
+use App\Models\User;
 use App\Models\VehicleMaintenanceRecord;
 use App\Models\VehicleType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -89,6 +93,53 @@ class TruckTest extends TestCase
 
         $this->assertCount(5, $truck->fuelRecords);
         $this->assertInstanceOf(FuelRecord::class, $truck->fuelRecords->first());
+    }
+
+    #[Test]
+    public function it_has_many_financial_records()
+    {
+        $truck = Truck::factory()->create();
+        TruckFinancialRecord::factory()->count(2)->create(['truck_id' => $truck->id]);
+
+        $truck->refresh();
+
+        $this->assertCount(2, $truck->financialRecords);
+        $this->assertInstanceOf(TruckFinancialRecord::class, $truck->financialRecords->first());
+    }
+
+    #[Test]
+    public function it_has_many_route_plans()
+    {
+        $truck = Truck::factory()->create();
+        $operation = Operation::factory()->create();
+        $driver = Driver::factory()->create();
+        $user = User::factory()->create();
+
+        $routePlanData = [
+            'operation_id' => $operation->id,
+            'truck_id' => $truck->id,
+            'driver_id' => $driver->id,
+            'planned_date' => now()->toDateString(),
+            'planned_departure_time' => now()->setTime(8, 0),
+            'planned_arrival_time' => now()->setTime(16, 0),
+            'route_waypoints' => [],
+            'total_distance_km' => 100.50,
+            'total_travel_time_minutes' => 480,
+            'estimated_fuel_cost' => 750.00,
+            'status' => 'planned',
+            'notes' => null,
+            'user_id' => $user->id,
+        ];
+
+        RoutePlan::create($routePlanData);
+        RoutePlan::create(array_merge($routePlanData, [
+            'planned_date' => now()->addDay()->toDateString(),
+        ]));
+
+        $truck->load('routePlans');
+
+        $this->assertCount(2, $truck->routePlans);
+        $this->assertInstanceOf(RoutePlan::class, $truck->routePlans->first());
     }
 
     #[Test]
