@@ -19,6 +19,9 @@ return new class extends Migration
             $table->unsignedTinyInteger('financial_weight')->default(15);
             $table->unsignedTinyInteger('compliance_weight')->default(5);
             $table->unsignedTinyInteger('peer_sample_size')->default(10);
+            $table->integer('min_performance_records')->default(5);
+            $table->integer('min_days_in_service')->default(30);
+             $table->json('grade_thresholds')->nullable();
             $table->foreignId('updated_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
         });

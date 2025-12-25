@@ -24,12 +24,14 @@ return new class extends Migration
             $table->string('mobile')->nullable();
             $table->date('hireddate')->nullable();
             $table->string('status')->default('active');
+             $table->index('name', 'idx_drivers_name');
+            $table->index('mobile', 'idx_drivers_mobile');
             $table->timestamps();
             $table->softDeletes();
 
             $table->index(['status'], 'idx_drivers_status');
             $table->index(['zone'], 'idx_drivers_zone');
-            
+
             // Composite indexes for performance optimization
             $table->index(['status', 'sex'], 'idx_drivers_status_sex');
             $table->index(['status', 'created_at'], 'idx_drivers_status_created');

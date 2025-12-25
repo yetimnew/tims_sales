@@ -11,13 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('truck_grading_settings', function (Blueprint $table) {
-            $table->json('grade_thresholds')->nullable()->after('peer_sample_size');
-        });
+        if (! Schema::hasColumn('truck_grading_settings', 'grade_thresholds')) {
+            Schema::table('truck_grading_settings', function (Blueprint $table) {
+                $table->json('grade_thresholds')->nullable()->after('peer_sample_size');
+            });
+        }
 
-        Schema::table('truck_grade_snapshots', function (Blueprint $table) {
-            $table->json('grade_thresholds')->nullable()->after('weights');
-        });
+        if (! Schema::hasColumn('truck_grade_snapshots', 'grade_thresholds')) {
+            Schema::table('truck_grade_snapshots', function (Blueprint $table) {
+                $table->json('grade_thresholds')->nullable()->after('weights');
+            });
+        }
     }
 
     /**
@@ -25,12 +29,16 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('truck_grade_snapshots', function (Blueprint $table) {
-            $table->dropColumn('grade_thresholds');
-        });
+        if (Schema::hasColumn('truck_grade_snapshots', 'grade_thresholds')) {
+            Schema::table('truck_grade_snapshots', function (Blueprint $table) {
+                $table->dropColumn('grade_thresholds');
+            });
+        }
 
-        Schema::table('truck_grading_settings', function (Blueprint $table) {
-            $table->dropColumn('grade_thresholds');
-        });
+        if (Schema::hasColumn('truck_grading_settings', 'grade_thresholds')) {
+            Schema::table('truck_grading_settings', function (Blueprint $table) {
+                $table->dropColumn('grade_thresholds');
+            });
+        }
     }
 };

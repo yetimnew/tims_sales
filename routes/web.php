@@ -572,6 +572,11 @@ Route::middleware(['auth'])->group(function () {
     Route::get('reports/operation-profitability', [\App\Http\Controllers\ReportController::class, 'operationProfitability'])
         ->middleware('can:reports.operation-profitability.view')
         ->name('reports.operation-profitability');
+    Route::get('reports/operational-profitability', function (\Illuminate\Http\Request $request) {
+        return redirect()->route('reports.operation-profitability', $request->query());
+    })
+        ->middleware('can:reports.operation-profitability.view')
+        ->name('reports.operational-profitability');
     Route::get('reports/geography-heatmaps', [\App\Http\Controllers\ReportController::class, 'geographyHeatmaps'])
         ->middleware('can:reports.geography-heatmaps.view')
         ->name('reports.geography-heatmaps');

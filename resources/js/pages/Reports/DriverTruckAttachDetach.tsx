@@ -1,11 +1,20 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
 import { Head } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
-import { Link2, Clock, Users, UserMinus, Truck } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import { Link2, Clock, Users, UserMinus, Truck, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 
 interface Row {
     id: number;
@@ -45,6 +54,9 @@ interface AvailableDriver {
     mobile?: string | null;
     hireDate?: string | null;
     hireDisplay?: string | null;
+    lastDetachedDate?: string | null;
+    lastDetachedDisplay?: string | null;
+    lastDetachedRelative?: string | null;
 }
 
 interface AvailableTruck {
@@ -53,6 +65,9 @@ interface AvailableTruck {
     status?: string | null;
     serviceStartDate?: string | null;
     serviceStartDisplay?: string | null;
+    lastDetachedDate?: string | null;
+    lastDetachedDisplay?: string | null;
+    lastDetachedRelative?: string | null;
 }
 
 interface DriverTruckAttachDetachProps {
@@ -190,6 +205,62 @@ export default function DriverTruckAttachDetach({ rows, summary, currentAssignme
         [summary]
     );
 
+    const [searchQuery, setSearchQuery] = useState('');
+    const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'detached'>('all');
+    const [perPage, setPerPage] = useState(25);
+    const [page, setPage] = useState(1);
+
+    const filteredRows = useMemo(() => {
+        const normalizedQuery = searchQuery.trim().toLowerCase();
+        return rows.filter((row) => {
+            const matchesStatus =
+                statusFilter === 'all' || (statusFilter === 'active' ? row.is_attached : !row.is_attached);
+
+            if (!matchesStatus) {
+                return false;
+            }
+
+            if (normalizedQuery.length === 0) {
+                return true;
+            }
+
+            const searchableFields = [
+                row.driver_name ?? '',
+                row.truck_plate ?? '',
+                row.assigned_display ?? '',
+                row.unassigned_display ?? '',
+            ];
+
+            return searchableFields.some((field) => field.toLowerCase().includes(normalizedQuery));
+        });
+    }, [rows, searchQuery, statusFilter]);
+
+    useEffect(() => {
+        setPage(1);
+    }, [searchQuery, statusFilter, perPage]);
+
+    const totalPages = useMemo(() => {
+        const pageCount = Math.ceil(filteredRows.length / perPage);
+        return pageCount > 0 ? pageCount : 1;
+    }, [filteredRows.length, perPage]);
+
+    useEffect(() => {
+        if (page > totalPages) {
+            setPage(totalPages);
+        }
+    }, [page, totalPages]);
+
+    const startIndex = (page - 1) * perPage;
+    const paginatedRows = useMemo(
+        () => filteredRows.slice(startIndex, startIndex + perPage),
+        [filteredRows, startIndex, perPage]
+    );
+
+    const totalCount = filteredRows.length;
+    const showingFrom = totalCount === 0 ? 0 : startIndex + 1;
+    const showingTo = totalCount === 0 ? 0 : startIndex + paginatedRows.length;
+    const perPageOptions = [25, 50, 100, 200];
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Attach / Detach History" />
@@ -226,10 +297,10 @@ export default function DriverTruckAttachDetach({ rows, summary, currentAssignme
                     <section className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
                         <Card className="border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
                             <CardHeader className="space-y-2 border-b border-slate-200/60 pb-5 dark:border-slate-800/60">
-                                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50">Current Attachments</CardTitle>
+                                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50">{`${currentAssignments.length.toLocaleString()} Current Attachments`}</CardTitle>
                                 <CardDescription className="text-sm">Drivers paired with trucks and actively in service.</CardDescription>
                             </CardHeader>
-                            <CardContent className="space-y-3 p-6">
+                            <CardContent className="space-y-3 p-6 max-h-96 overflow-y-auto pr-4">
                                 {currentAssignments.length > 0 ? (
                                     currentAssignments.map((assignment) => (
                                         <div key={assignment.id} className="rounded-xl border border-slate-200/70 bg-slate-50/70 p-4 dark:border-slate-800/60 dark:bg-slate-950/30">
@@ -260,10 +331,10 @@ export default function DriverTruckAttachDetach({ rows, summary, currentAssignme
 
                         <Card className="border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
                             <CardHeader className="space-y-2 border-b border-slate-200/60 pb-5 dark:border-slate-800/60">
-                                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50">Available Drivers</CardTitle>
+                                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50">{`${availableDrivers.length.toLocaleString()} Available Drivers`}</CardTitle>
                                 <CardDescription className="text-sm">Drivers ready to be attached to a truck.</CardDescription>
                             </CardHeader>
-                            <CardContent className="space-y-3 p-6">
+                            <CardContent className="space-y-3 p-6 max-h-96 overflow-y-auto pr-4">
                                 {availableDrivers.length > 0 ? (
                                     <ul className="space-y-3">
                                         {availableDrivers.map((driver) => (
@@ -272,9 +343,13 @@ export default function DriverTruckAttachDetach({ rows, summary, currentAssignme
                                                     <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{driver.name}</p>
                                                     <p className="text-xs text-slate-500 dark:text-slate-400">{driver.mobile ?? 'No contact available'}</p>
                                                 </div>
-                                                <div className="text-right">
-                                                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Hired</p>
-                                                    <p className="text-xs text-slate-500 dark:text-slate-400">{formatDate(driver.hireDate, driver.hireDisplay)}</p>
+                                                <div className="text-right space-y-1">
+                                                    <div>
+                                                        <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Last detached</p>
+                                                        <p className="text-xs text-slate-500 dark:text-slate-400">{formatDateTime(driver.lastDetachedDate, driver.lastDetachedDisplay)}</p>
+                                                        <p className="text-[0.65rem] text-slate-400 dark:text-slate-500">{driver.lastDetachedRelative ?? 'No detach history yet'}</p>
+                                                    </div>
+                                                    <p className="text-[0.65rem] text-slate-400 dark:text-slate-500">Hired {formatDate(driver.hireDate, driver.hireDisplay)}</p>
                                                 </div>
                                             </li>
                                         ))}
@@ -287,10 +362,10 @@ export default function DriverTruckAttachDetach({ rows, summary, currentAssignme
 
                         <Card className="border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
                             <CardHeader className="space-y-2 border-b border-slate-200/60 pb-5 dark:border-slate-800/60">
-                                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50">Available Trucks</CardTitle>
+                                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50">{`${availableTrucks.length.toLocaleString()} Available Trucks`}</CardTitle>
                                 <CardDescription className="text-sm">Trucks currently released and unassigned.</CardDescription>
                             </CardHeader>
-                            <CardContent className="space-y-3 p-6">
+                            <CardContent className="space-y-3 p-6 max-h-96 overflow-y-auto pr-4">
                                 {availableTrucks.length > 0 ? (
                                     <ul className="space-y-3">
                                         {availableTrucks.map((truck) => (
@@ -301,9 +376,13 @@ export default function DriverTruckAttachDetach({ rows, summary, currentAssignme
                                                         {truck.status ?? 'Unknown'}
                                                     </Badge>
                                                 </div>
-                                                <div className="text-right">
-                                                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">In Service Since</p>
-                                                    <p className="text-xs text-slate-500 dark:text-slate-400">{formatDate(truck.serviceStartDate, truck.serviceStartDisplay)}</p>
+                                                <div className="text-right space-y-1">
+                                                    <div>
+                                                        <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Last detached</p>
+                                                        <p className="text-xs text-slate-500 dark:text-slate-400">{formatDateTime(truck.lastDetachedDate, truck.lastDetachedDisplay)}</p>
+                                                        <p className="text-[0.65rem] text-slate-400 dark:text-slate-500">{truck.lastDetachedRelative ?? 'No detach history yet'}</p>
+                                                    </div>
+                                                    <p className="text-[0.65rem] text-slate-400 dark:text-slate-500">In service since {formatDate(truck.serviceStartDate, truck.serviceStartDisplay)}</p>
                                                 </div>
                                             </li>
                                         ))}
@@ -323,6 +402,82 @@ export default function DriverTruckAttachDetach({ rows, summary, currentAssignme
                             </div>
                         </CardHeader>
                         <CardContent className="p-0">
+                            <div className="flex flex-col gap-4 border-b border-slate-200/60 px-6 py-5 dark:border-slate-700/60">
+                                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                                    <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center">
+                                        <div className="relative flex-1 min-w-[200px]">
+                                            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                                            <Input
+                                                value={searchQuery}
+                                                onChange={(event) => setSearchQuery(event.target.value)}
+                                                placeholder="Search by driver, truck, or dates"
+                                                className="pl-9"
+                                            />
+                                        </div>
+                                        <Select
+                                            value={statusFilter}
+                                            onValueChange={(value: 'all' | 'active' | 'detached') => setStatusFilter(value)}
+                                        >
+                                            <SelectTrigger className="w-full sm:w-48">
+                                                <SelectValue placeholder="Status" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">All statuses</SelectItem>
+                                                <SelectItem value="active">Active attachments</SelectItem>
+                                                <SelectItem value="detached">Detached records</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+                                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                    <span className="text-xs text-slate-500 dark:text-slate-400">
+                                        Showing {showingFrom.toLocaleString()}-{showingTo.toLocaleString()} of {totalCount.toLocaleString()} records
+                                    </span>
+                                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+                                        <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                                            <span>Rows</span>
+                                            <Select
+                                                value={perPage.toString()}
+                                                onValueChange={(value) => setPerPage(Number(value))}
+                                            >
+                                                <SelectTrigger className="h-8 w-20">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {perPageOptions.map((option) => (
+                                                        <SelectItem key={option} value={option.toString()}>
+                                                            {option}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => setPage((current) => Math.max(1, current - 1))}
+                                                disabled={page <= 1}
+                                                className="h-8 w-8 p-0"
+                                            >
+                                                <ChevronLeft className="h-4 w-4" />
+                                            </Button>
+                                            <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                                                Page {page.toLocaleString()} of {totalPages.toLocaleString()}
+                                            </span>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+                                                disabled={page >= totalPages || totalCount === 0}
+                                                className="h-8 w-8 p-0"
+                                            >
+                                                <ChevronRight className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                             <div className="overflow-x-auto">
                                 <Table>
                                     <TableHeader className="bg-slate-50/60 text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-900/60 dark:text-slate-400">
@@ -336,8 +491,8 @@ export default function DriverTruckAttachDetach({ rows, summary, currentAssignme
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {rows.length > 0 ? (
-                                            rows.map((r) => (
+                                        {paginatedRows.length > 0 ? (
+                                            paginatedRows.map((r) => (
                                                 <TableRow key={r.id} className="divide-x divide-slate-100 hover:bg-slate-50/70 dark:divide-slate-800/50 dark:hover:bg-slate-900/50">
                                                     <TableCell className="whitespace-nowrap font-medium text-slate-900 dark:text-slate-100">{r.driver_name}</TableCell>
                                                     <TableCell className="whitespace-nowrap text-slate-600 dark:text-slate-400">{r.truck_plate}</TableCell>
@@ -366,7 +521,7 @@ export default function DriverTruckAttachDetach({ rows, summary, currentAssignme
                                         ) : (
                                             <TableRow>
                                                 <TableCell colSpan={6} className="py-10 text-center text-sm text-muted-foreground">
-                                                    No assignment history available.
+                                                    No assignment history matches your filters.
                                                 </TableCell>
                                             </TableRow>
                                         )}

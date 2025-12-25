@@ -18,6 +18,8 @@ return new class extends Migration
             $table->unsignedTinyInteger('consistency_weight')->default(25);
             $table->unsignedTinyInteger('peer_sample_size')->default(25);
             $table->json('grade_thresholds')->nullable();
+            $table->integer('min_trips')->default(2);
+            $table->integer('min_days_assigned')->default(14);
             $table->foreignId('updated_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
         });

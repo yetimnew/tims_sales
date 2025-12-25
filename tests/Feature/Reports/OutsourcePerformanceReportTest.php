@@ -6,9 +6,12 @@ use App\Models\Operation;
 use App\Models\Outsource;
 use App\Models\OutsourcePerformance;
 use App\Models\Place;
+use App\Models\User;
 use App\Services\Reports\OutsourcePerformanceReport;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia;
+use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 
 class OutsourcePerformanceReportTest extends TestCase
@@ -169,5 +172,55 @@ class OutsourcePerformanceReportTest extends TestCase
         $this->assertSame('completed', $result['rows'][0]['driver_status']);
 
         Carbon::setTestNow();
+    }
+
+    public function test_report_route_renders_with_rows_and_summary(): void
+    {
+        /** @var User $user */
+        $user = User::factory()->create();
+
+        $this->grantPermissions($user, 'reports.outsource-performance.view');
+
+        OutsourcePerformance::factory()->count(3)->create([
+            'dispatch_date' => now()->subDays(3),
+            'status' => 'completed',
+        ]);
+
+        $response = $this->actingAs($user)->get(route('reports.outsource-performance', [
+            'from' => now()->subMonth()->toDateString(),
+            'to' => now()->toDateString(),
+        ]));
+
+        $props = [];
+
+        $response->assertOk()->assertInertia(function (AssertableInertia $page) use (&$props) {
+            $page->component('Reports/OutsourcePerformance')
+                ->has('rows', 3)
+                ->has('summary', function (AssertableInertia $summary) {
+                    $summary->where('records', 3)->etc();
+                })
+                ->has('filters')
+                ->has('options.vendors')
+                ->has('options.operations')
+                ->has('options.destinations')
+                ->has('options.statuses');
+
+            $props = $page->toArray()['props'];
+        });
+
+        $this->assertEquals(3, $props['summary']['records']);
+        $this->assertCount(3, $props['rows']);
+    }
+
+    private function grantPermissions(User $user, string ...$permissions): void
+    {
+        foreach ($permissions as $permission) {
+            Permission::firstOrCreate([
+                'name' => $permission,
+                'guard_name' => 'web',
+            ]);
+        }
+
+        $user->givePermissionTo($permissions);
     }
 }

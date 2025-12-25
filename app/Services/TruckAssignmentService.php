@@ -117,11 +117,20 @@ class TruckAssignmentService
      */
     public function getAvailableDrivers()
     {
-        return Driver::where('drivers.status', 'active')
+        return Driver::query()
+            ->select('drivers.*')
+            ->where('drivers.status', 'active')
             ->whereDoesntHave('trucks', function ($query) {
                 $query->where('driver_truck.status', 'active')
                     ->whereNull('driver_truck.unassigned_date');
             })
+            ->addSelect([
+                'last_detached_at' => DriverTruck::select('unassigned_date')
+                    ->whereColumn('driver_truck.driver_id', 'drivers.id')
+                    ->whereNotNull('driver_truck.unassigned_date')
+                    ->orderByDesc('driver_truck.unassigned_date')
+                    ->limit(1),
+            ])
             ->get();
     }
 
@@ -130,11 +139,20 @@ class TruckAssignmentService
      */
     public function getAvailableTrucks()
     {
-        return Truck::where('trucks.status', 'active')
+        return Truck::query()
+            ->select('trucks.*')
+            ->where('trucks.status', 'active')
             ->whereDoesntHave('drivers', function ($query) {
                 $query->where('driver_truck.status', 'active')
                     ->whereNull('driver_truck.unassigned_date');
             })
+            ->addSelect([
+                'last_detached_at' => DriverTruck::select('unassigned_date')
+                    ->whereColumn('driver_truck.truck_id', 'trucks.id')
+                    ->whereNotNull('driver_truck.unassigned_date')
+                    ->orderByDesc('driver_truck.unassigned_date')
+                    ->limit(1),
+            ])
             ->get();
     }
 

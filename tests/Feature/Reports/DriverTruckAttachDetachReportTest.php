@@ -112,8 +112,30 @@ class DriverTruckAttachDetachReportTest extends TestCase
         $this->assertTrue($availableDriverNames->contains('Available Driver'));
         $this->assertTrue($availableDriverNames->contains('Historical Driver'));
 
+        $availableDriversPayload = collect($props['availableDrivers']);
+        $historicalDriverPayload = $availableDriversPayload->firstWhere('name', 'Historical Driver');
+        $this->assertNotNull($historicalDriverPayload);
+        $this->assertSame('2024-10-05T17:15:00+00:00', $historicalDriverPayload['lastDetachedDate']);
+        $this->assertSame('Oct 5, 2024 5:15 PM', $historicalDriverPayload['lastDetachedDisplay']);
+
+        $availableDriverPayload = $availableDriversPayload->firstWhere('name', 'Available Driver');
+        $this->assertNotNull($availableDriverPayload);
+        $this->assertNull($availableDriverPayload['lastDetachedDate']);
+        $this->assertNull($availableDriverPayload['lastDetachedDisplay']);
+
         $availableTruckPlates = collect($props['availableTrucks'])->pluck('plate');
         $this->assertTrue($availableTruckPlates->contains('CC-9012'));
         $this->assertTrue($availableTruckPlates->contains('BB-5678'));
+
+        $availableTrucksPayload = collect($props['availableTrucks']);
+        $historicalTruckPayload = $availableTrucksPayload->firstWhere('plate', 'BB-5678');
+        $this->assertNotNull($historicalTruckPayload);
+        $this->assertSame('2024-10-05T17:15:00+00:00', $historicalTruckPayload['lastDetachedDate']);
+        $this->assertSame('Oct 5, 2024 5:15 PM', $historicalTruckPayload['lastDetachedDisplay']);
+
+        $availableTruckPayload = $availableTrucksPayload->firstWhere('plate', 'CC-9012');
+        $this->assertNotNull($availableTruckPayload);
+        $this->assertNull($availableTruckPayload['lastDetachedDate']);
+        $this->assertNull($availableTruckPayload['lastDetachedDisplay']);
     }
 }

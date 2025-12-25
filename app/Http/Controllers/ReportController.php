@@ -1818,6 +1818,7 @@ class ReportController extends Controller
                 ->getAvailableDrivers()
                 ->map(static function (\App\Models\Driver $driver) {
                     $hired = $driver->hireddate;
+                    $lastDetached = $driver->last_detached_at ? Carbon::parse($driver->last_detached_at) : null;
 
                     return [
                         'id' => $driver->id,
@@ -1825,6 +1826,9 @@ class ReportController extends Controller
                         'mobile' => $driver->mobile,
                         'hireDate' => $hired?->toDateString(),
                         'hireDisplay' => $hired?->format('M j, Y'),
+                        'lastDetachedDate' => $lastDetached?->toIso8601String(),
+                        'lastDetachedDisplay' => $lastDetached?->format('M j, Y g:i A'),
+                        'lastDetachedRelative' => $lastDetached?->diffForHumans(),
                     ];
                 })
                 ->values();
@@ -1833,6 +1837,7 @@ class ReportController extends Controller
                 ->getAvailableTrucks()
                 ->map(static function (\App\Models\Truck $truck) {
                     $serviceStart = $truck->serviceStartDate;
+                    $lastDetached = $truck->last_detached_at ? Carbon::parse($truck->last_detached_at) : null;
 
                     return [
                         'id' => $truck->id,
@@ -1840,6 +1845,9 @@ class ReportController extends Controller
                         'status' => $truck->status,
                         'serviceStartDate' => $serviceStart?->toDateString(),
                         'serviceStartDisplay' => $serviceStart?->format('M j, Y'),
+                        'lastDetachedDate' => $lastDetached?->toIso8601String(),
+                        'lastDetachedDisplay' => $lastDetached?->format('M j, Y g:i A'),
+                        'lastDetachedRelative' => $lastDetached?->diffForHumans(),
                     ];
                 })
                 ->values();
