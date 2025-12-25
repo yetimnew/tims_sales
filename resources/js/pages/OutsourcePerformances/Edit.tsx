@@ -346,7 +346,7 @@ export default function OutsourcePerformancesEdit({ outsourcePerformance, outsou
             preserveScroll: true,
             onSuccess: () => {
                 toast({
-                    title: 'Trip updated',
+                    title: '✅ Trip Updated',
                     description: 'The outsource performance record has been updated successfully.',
                 });
                 setClientErrors({});

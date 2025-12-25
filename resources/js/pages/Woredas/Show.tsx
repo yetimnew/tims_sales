@@ -142,18 +142,23 @@ export default function WoredasShow({ woreda, activityLogs = [] }: WoredasShowPr
   const handleDelete = () => {
     setIsDeleting(true)
     router.delete(`/woredas/${woreda.id}`, {
+      preserveScroll: true,
       onSuccess: () => {
-        toast({ title: 'Woreda deleted', description: `${woreda.name} was removed successfully.` })
+        toast({ title: '✅ Woreda Deleted', description: `${woreda.name} was removed successfully.` })
         setDeleteDialogOpen(false)
+        setIsDeleting(false)
       },
-      onError: () => {
+      onError: (errors) => {
+        const errorMessage = errors && typeof errors === 'object' && 'message' in errors
+          ? String(errors.message)
+          : 'Unable to delete this woreda right now. Try again later.'
         toast({
-          title: 'Deletion failed',
-          description: 'Unable to delete this woreda right now. Try again later.',
+          title: '❌ Delete Failed',
+          description: errorMessage,
           variant: 'destructive',
         })
+        setIsDeleting(false)
       },
-      onFinish: () => setIsDeleting(false),
     })
   }
 

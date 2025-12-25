@@ -254,7 +254,7 @@ export default function OutsourcesEdit({ outsource, statusOptions, serviceTypeOp
                 setFrontendErrors({});
                 setIsDirty(false);
                 toast({
-                    title: 'Vendor updated',
+                    title: '✅ Vendor Updated',
                     description: 'The vendor record has been saved successfully.',
                 });
             },
@@ -291,13 +291,20 @@ export default function OutsourcesEdit({ outsource, statusOptions, serviceTypeOp
                 setDeleteDialogOpen(false);
                 setIsDeleting(false);
                 toast({
-                    title: 'Vendor removed',
+                    title: '✅ Vendor Deleted',
                     description: 'The vendor was deleted successfully.',
-                    variant: 'destructive',
                 });
             },
-            onError: () => {
+            onError: (errors) => {
                 setIsDeleting(false);
+                const errorMessage = errors && typeof errors === 'object' && 'message' in errors
+                    ? String(errors.message)
+                    : 'Failed to delete vendor. Please try again.';
+                toast({
+                    title: '❌ Delete Failed',
+                    description: errorMessage,
+                    variant: 'destructive',
+                });
             },
         });
     };

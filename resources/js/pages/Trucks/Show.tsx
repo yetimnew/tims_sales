@@ -202,12 +202,21 @@ type StaffingMetrics = {
 };
 
 interface GradeReport {
+    status?: 'graded' | 'insufficient_data';
+    message?: string;
+    requirements?: Array<{
+        description: string;
+        minimum: number;
+        current: number;
+        met: boolean;
+    }>;
+    current?: Record<string, any>;
     overall: {
         score: number;
         letter: string;
-    };
+    } | null;
     weights: GradeWeights;
-    categories: Partial<Record<GradeCategoryKey, GradeCategoryDetails>>;
+    categories: Partial<Record<GradeCategoryKey, GradeCategoryDetails>> | null;
     metrics?: {
         truck?: Record<string, number | null>;
         peer_averages?: Record<string, number | null>;
@@ -1359,12 +1368,13 @@ export default function TrucksShow({
 
         setIsDeleting(true);
         router.delete(`/trucks/${truck.id}`, {
+            preserveScroll: true,
             onSuccess: () => {
                 setDeleteDialogOpen(false);
                 setIsDeleting(false);
                 setDeleteError(null);
                 toast({
-                    title: 'Truck deleted',
+                    title: '✅ Truck Deleted',
                     description: `${truck.plate} has been removed from the fleet.`,
                 });
             },
@@ -1380,7 +1390,7 @@ export default function TrucksShow({
                     setDeleteError(messages || fallback);
 
                     toast({
-                        title: 'Delete failed',
+                        title: '❌ Delete Failed',
                         description: messages || fallback,
                         variant: 'destructive',
                     });
@@ -1388,7 +1398,7 @@ export default function TrucksShow({
                     const fallback = 'An unexpected error occurred while deleting the truck. Please try again.';
                     setDeleteError(fallback);
                     toast({
-                        title: 'Delete failed',
+                        title: '❌ Delete Failed',
                         description: fallback,
                         variant: 'destructive',
                     });

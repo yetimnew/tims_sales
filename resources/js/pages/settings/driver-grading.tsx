@@ -18,6 +18,7 @@ import * as React from 'react';
 import { edit as editSettingsRoute } from '@/routes/settings/driver-grading';
 import { driverGrading as driverGradingReport } from '@/routes/reports';
 import { Info, Loader2, RefreshCcw } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 
 interface WeightSettings {
     performance_weight: number;
@@ -371,8 +372,17 @@ export default function DriverGradingSettings({
             }
 
             router.reload({ preserveScroll: true, preserveState: true });
+            toast({
+                title: '✅ Grades Recalculated',
+                description: 'Driver grades have been updated successfully.',
+            });
         } catch (error) {
             console.error('Recalculation error:', error);
+            toast({
+                title: '❌ Recalculation Failed',
+                description: 'Failed to recalculate driver grades. Please try again.',
+                variant: 'destructive',
+            });
         } finally {
             setIsRecalculating(false);
         }

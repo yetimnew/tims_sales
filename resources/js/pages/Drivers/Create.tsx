@@ -13,8 +13,9 @@ import { FormEventHandler, useEffect, useRef, useState } from 'react';
 import { validateDriver } from '@/lib/validation';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { Info, User, MapPin, CheckCircle, Save, User as UserIcon, Hash, ArrowLeft } from 'lucide-react';
+import { Info, User, MapPin, CheckCircle, Save, User as UserIcon, Hash, ArrowLeft, AlertCircle } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 type DriverFormData = {
     driverid: string;
@@ -138,10 +139,15 @@ export default function DriversCreate() {
         }
 
         post('/drivers', {
+            preserveScroll: true,
             onSuccess: () => {
                 clearErrors();
                 setFrontendErrors({});
                 setIsDirty(false);
+                toast({
+                    title: '✅ Driver Created',
+                    description: 'The driver has been added to the workforce successfully.',
+                });
             },
         });
     };
@@ -171,6 +177,15 @@ export default function DriversCreate() {
                 </>
             }
         >
+            {(Object.keys(errors).length > 0 || Object.keys(frontendErrors).length > 0) && (
+                <div className="px-6 pt-6">
+                    <Alert variant="destructive">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>Please resolve the highlighted fields before submitting the form.</AlertDescription>
+                    </Alert>
+                </div>
+            )}
+
             <form
                 ref={scrollContainerRef}
                 onSubmit={submit}

@@ -18,17 +18,45 @@ class DriverGradeService
     {
         $settings = $this->resolveSettings();
 
+        // Check if driver has sufficient data for grading
+        $dataSufficiency = $this->assessDataSufficiency($driver, $settings);
+
+        if ($dataSufficiency['status'] === 'insufficient') {
+            return [
+                'status' => 'insufficient_data',
+                'message' => $dataSufficiency['message'],
+                'requirements' => $dataSufficiency['requirements'],
+                'current' => $dataSufficiency['current'],
+                'overall' => null,
+                'categories' => null,
+                'weights' => Arr::only($settings, [
+                    'performance_weight',
+                    'efficiency_weight',
+                    'safety_weight',
+                    'compliance_weight',
+                    'engagement_weight',
+                ]),
+                'grade_thresholds' => $settings['grade_thresholds'],
+                'metrics' => null,
+            ];
+        }
+
         $peerIds = $this->determinePeerDriverIds($driver, $settings['peer_sample_size']);
         $comparisonIds = $peerIds->concat([$driver->id])->unique()->values();
 
         $metricDataset = $this->buildMetricDataset($comparisonIds);
 
-        return $this->buildReport(
+        $report = $this->buildReport(
             $driver->id,
             $metricDataset,
             $peerIds->unique()->values(),
             $settings,
         );
+
+        // Add status to report
+        $report['status'] = 'graded';
+
+        return $report;
     }
 
     /**
@@ -112,7 +140,11 @@ class DriverGradeService
 
         $defaults = array_merge(
             DriverGradingSetting::defaultWeights(),
-            ['grade_thresholds' => DriverGradingSetting::defaultGradeThresholds()],
+            [
+                'grade_thresholds' => DriverGradingSetting::defaultGradeThresholds(),
+                'min_trips' => 3,
+                'min_days_employed' => 30,
+            ],
         );
 
         if (! $latest) {
@@ -128,6 +160,8 @@ class DriverGradeService
                 'compliance_weight',
                 'engagement_weight',
                 'peer_sample_size',
+                'min_trips',
+                'min_days_employed',
             ]), static fn ($value) => $value !== null),
         );
 
@@ -137,6 +171,80 @@ class DriverGradeService
         );
 
         return $settings;
+    }
+
+    private function assessDataSufficiency(Driver $driver, array $settings): array
+    {
+        $minTrips = $settings['min_trips'] ?? 3;
+        $minDaysEmployed = $settings['min_days_employed'] ?? 30;
+
+        // Count trips from performance records
+        $tripCount = DriverPerformanceRecord::query()
+            ->where('driver_id', $driver->id)
+            ->sum('total_trips');
+
+        // Calculate days employed
+        $daysEmployed = 0;
+        if ($driver->hireddate) {
+            $daysEmployed = Carbon::parse($driver->hireddate)->diffInDays(Carbon::now());
+        }
+
+        $requirements = [];
+        $unmetCount = 0;
+
+        // Check trips requirement
+        $tripsMet = $tripCount >= $minTrips;
+        if (!$tripsMet) {
+            $unmetCount++;
+        }
+        $requirements[] = [
+            'description' => 'Minimum completed trips',
+            'minimum' => $minTrips,
+            'current' => (int) $tripCount,
+            'met' => $tripsMet,
+        ];
+
+        // Check days employed requirement
+        $daysMet = $daysEmployed >= $minDaysEmployed;
+        if (!$daysMet) {
+            $unmetCount++;
+        }
+        $requirements[] = [
+            'description' => 'Minimum days employed',
+            'minimum' => $minDaysEmployed,
+            'current' => $daysEmployed,
+            'met' => $daysMet,
+        ];
+
+        // Determine if data is sufficient (at least one requirement must be met)
+        $isSufficient = $tripsMet || $daysMet;
+
+        if (!$isSufficient) {
+            $message = sprintf(
+                'This driver needs %d more trip(s) or %d more day(s) of employment before grading can be calculated.',
+                max(0, $minTrips - $tripCount),
+                max(0, $minDaysEmployed - $daysEmployed)
+            );
+
+            return [
+                'status' => 'insufficient',
+                'message' => $message,
+                'requirements' => $requirements,
+                'current' => [
+                    'trips' => (int) $tripCount,
+                    'days_employed' => $daysEmployed,
+                ],
+            ];
+        }
+
+        return [
+            'status' => 'sufficient',
+            'requirements' => $requirements,
+            'current' => [
+                'trips' => (int) $tripCount,
+                'days_employed' => $daysEmployed,
+            ],
+        ];
     }
 
     private function determinePeerDriverIds(Driver $driver, int $sampleSize): Collection

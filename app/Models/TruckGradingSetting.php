@@ -17,6 +17,8 @@ class TruckGradingSetting extends Model
         'financial_weight',
         'compliance_weight',
         'peer_sample_size',
+        'min_performance_records',
+        'min_days_in_service',
         'grade_thresholds',
         'updated_by',
     ];
@@ -28,6 +30,8 @@ class TruckGradingSetting extends Model
         'financial_weight' => 'integer',
         'compliance_weight' => 'integer',
         'peer_sample_size' => 'integer',
+        'min_performance_records' => 'integer',
+        'min_days_in_service' => 'integer',
         'grade_thresholds' => 'array',
         'updated_by' => 'integer',
     ];

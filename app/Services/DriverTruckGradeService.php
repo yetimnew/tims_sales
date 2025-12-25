@@ -17,18 +17,40 @@ class DriverTruckGradeService
     {
         $settings = $this->resolveSettings();
 
+        // Check if assignment has sufficient data for grading
+        $dataSufficiency = $this->assessDataSufficiency($assignment, $settings);
+
+        if ($dataSufficiency['status'] === 'insufficient') {
+            return [
+                'status' => 'insufficient_data',
+                'message' => $dataSufficiency['message'],
+                'requirements' => $dataSufficiency['requirements'],
+                'current' => $dataSufficiency['current'],
+                'overall' => null,
+                'categories' => null,
+                'weights' => $settings['weights'],
+                'grade_thresholds' => $settings['grade_thresholds'],
+                'metrics' => null,
+            ];
+        }
+
         $peerIds = $this->determinePeerAssignmentIds($assignment, $settings['peer_sample_size']);
         $comparisonIds = $peerIds->concat([$assignment->id])->unique()->values();
 
         $metricDataset = $this->buildMetricDataset($comparisonIds);
 
-        return $this->buildReport(
+        $report = $this->buildReport(
             $assignment->id,
             $metricDataset,
             $peerIds->unique()->values(),
             $settings['weights'],
             $settings['grade_thresholds'],
         );
+
+        // Add status to report
+        $report['status'] = 'graded';
+
+        return $report;
     }
 
     /**
@@ -78,7 +100,13 @@ class DriverTruckGradeService
             return $this->resolvedSettings;
         }
 
-        $defaults = DriverTruckGradingSetting::defaultWeights();
+        $defaults = array_merge(
+            DriverTruckGradingSetting::defaultWeights(),
+            [
+                'min_trips' => 2,
+                'min_days_assigned' => 14,
+            ]
+        );
         $defaultThresholds = DriverTruckGradingSetting::defaultGradeThresholds();
 
         $latest = DriverTruckGradingSetting::query()->latest('updated_at')->first();
@@ -101,6 +129,84 @@ class DriverTruckGradeService
             ]),
             'peer_sample_size' => $weights['peer_sample_size'],
             'grade_thresholds' => array_map(static fn ($value) => (float) $value, $thresholds),
+            'min_trips' => $weights['min_trips'] ?? 2,
+            'min_days_assigned' => $weights['min_days_assigned'] ?? 14,
+        ];
+    }
+
+    private function assessDataSufficiency(DriverTruck $assignment, array $settings): array
+    {
+        $minTrips = $settings['min_trips'] ?? 2;
+        $minDaysAssigned = $settings['min_days_assigned'] ?? 14;
+
+        // Count trips for this assignment
+        $tripCount = Performance::query()
+            ->where('driver_truck_id', $assignment->id)
+            ->whereNull('deleted_at')
+            ->count();
+
+        // Calculate days assigned
+        $daysAssigned = 0;
+        if ($assignment->date_recived) {
+            $endDate = $assignment->date_detach ? Carbon::parse($assignment->date_detach) : Carbon::now();
+            $daysAssigned = Carbon::parse($assignment->date_recived)->diffInDays($endDate);
+        }
+
+        $requirements = [];
+        $unmetCount = 0;
+
+        // Check trips requirement
+        $tripsMet = $tripCount >= $minTrips;
+        if (!$tripsMet) {
+            $unmetCount++;
+        }
+        $requirements[] = [
+            'description' => 'Minimum trips with this assignment',
+            'minimum' => $minTrips,
+            'current' => $tripCount,
+            'met' => $tripsMet,
+        ];
+
+        // Check days assigned requirement
+        $daysMet = $daysAssigned >= $minDaysAssigned;
+        if (!$daysMet) {
+            $unmetCount++;
+        }
+        $requirements[] = [
+            'description' => 'Minimum days in this assignment',
+            'minimum' => $minDaysAssigned,
+            'current' => $daysAssigned,
+            'met' => $daysMet,
+        ];
+
+        // Determine if data is sufficient (at least one requirement must be met)
+        $isSufficient = $tripsMet || $daysMet;
+
+        if (!$isSufficient) {
+            $message = sprintf(
+                'This assignment needs %d more trip(s) or %d more day(s) before grading can be calculated.',
+                max(0, $minTrips - $tripCount),
+                max(0, $minDaysAssigned - $daysAssigned)
+            );
+
+            return [
+                'status' => 'insufficient',
+                'message' => $message,
+                'requirements' => $requirements,
+                'current' => [
+                    'trips' => $tripCount,
+                    'days_assigned' => $daysAssigned,
+                ],
+            ];
+        }
+
+        return [
+            'status' => 'sufficient',
+            'requirements' => $requirements,
+            'current' => [
+                'trips' => $tripCount,
+                'days_assigned' => $daysAssigned,
+            ],
         ];
     }
 

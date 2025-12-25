@@ -449,18 +449,27 @@ export default function OutsourcePerformancesShow({ performance, metrics, recent
             onSuccess: () => {
                 setDeleteDialogOpen(false);
                 setIsDeleting(false);
+                toast({
+                    title: '✅ Trip Deleted',
+                    description: `Trip ${performance.trip_number} has been removed successfully.`,
+                });
             },
             onError: (errors) => {
                 setIsDeleting(false);
+                const fallback = 'An unexpected error occurred while deleting the trip.';
                 if (errors && typeof errors === 'object') {
                     const message = Object.values(errors).flat().join('\n');
-                    if (message) {
-                        toast({
-                            title: 'Delete failed',
-                            description: message,
-                            variant: 'destructive',
-                        });
-                    }
+                    toast({
+                        title: '❌ Delete Failed',
+                        description: message || fallback,
+                        variant: 'destructive',
+                    });
+                } else {
+                    toast({
+                        title: '❌ Delete Failed',
+                        description: fallback,
+                        variant: 'destructive',
+                    });
                 }
             },
         });

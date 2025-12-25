@@ -46,6 +46,11 @@ class DriverTruckGradeSnapshotService
                         continue;
                     }
 
+                    // Skip assignments with insufficient data - only store graded entities in snapshots
+                    if (($grade['status'] ?? null) === 'insufficient_data') {
+                        continue;
+                    }
+
                     $batch[] = $this->normalizeSnapshotPayload([
                         'snapshot_date' => $resolvedSnapshotDate,
                         'driver_truck_id' => $assignment->id,

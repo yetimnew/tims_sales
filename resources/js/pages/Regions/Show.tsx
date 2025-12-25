@@ -134,14 +134,23 @@ export default function RegionsShow({ region, activityLogs = [] }: RegionShowPro
   const handleDelete = () => {
     setIsDeleting(true)
     router.delete(`/regions/${region.id}`, {
+      preserveScroll: true,
       onSuccess: () => {
-        toast({ title: 'Region Deleted', description: `${region.name} was removed successfully.` })
+        toast({ title: '✅ Region Deleted', description: `${region.name} was removed successfully.` })
         setDeleteDialogOpen(false)
+        setIsDeleting(false)
       },
-      onError: () => {
-        toast({ title: 'Deletion Failed', description: 'Unable to delete the region. Try again later.', variant: 'destructive' })
+      onError: (errors) => {
+        const errorMessage = errors && typeof errors === 'object' && 'message' in errors
+          ? String(errors.message)
+          : 'Unable to delete the region. Try again later.'
+        toast({ 
+          title: '❌ Delete Failed', 
+          description: errorMessage, 
+          variant: 'destructive' 
+        })
+        setIsDeleting(false)
       },
-      onFinish: () => setIsDeleting(false),
     })
   }
 

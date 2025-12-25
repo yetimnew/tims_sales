@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea'
 import { validateZone, type ValidationErrors } from '@/lib/validation'
 import { toast } from '@/hooks/use-toast'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import {
   AlertCircle,
   ArrowLeft,
@@ -221,6 +222,15 @@ export default function ZonesCreate({ regions }: ZonesCreateProps) {
           </CardHeader>
 
           <CardContent className="flex flex-1 flex-col overflow-hidden p-0">
+            {hasErrors && (
+              <div className="px-6 pt-6">
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>Please resolve the highlighted fields before submitting the form.</AlertDescription>
+                </Alert>
+              </div>
+            )}
+
             <form
               ref={scrollContainerRef}
               onSubmit={submit}
@@ -228,15 +238,6 @@ export default function ZonesCreate({ regions }: ZonesCreateProps) {
               style={{ minHeight: 0 }}
               noValidate
             >
-              {hasErrors && (
-                <div className="flex items-start gap-3 rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-destructive">
-                  <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0" />
-                  <div>
-                    <h3 className="font-semibold">Please review the highlighted fields</h3>
-                    <p className="text-sm opacity-80">Correct the validation errors before creating the zone record.</p>
-                  </div>
-                </div>
-              )}
 
               <section className="space-y-4 rounded-xl border border-slate-200/60 bg-white/75 p-5 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/35">
                 <div className="flex items-center gap-2.5 text-sm">

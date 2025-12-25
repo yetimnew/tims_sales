@@ -41,7 +41,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-const TABLE_LOADING_STORAGE_KEY = 'trucks.index.table-loading';
+const SKELETON_FLAG_KEY = 'trucks.index.table-loading';
 
 interface TruckData {
     id: number;
@@ -193,7 +193,7 @@ export default function TrucksIndex({
     const { hasPermission } = usePermissions();
     const isDataReady = Array.isArray(trucks?.data);
     const { isLoading: isTableLoading } = useListingLoading({
-        storageKey: TABLE_LOADING_STORAGE_KEY,
+        storageKey: SKELETON_FLAG_KEY,
         isDataReady,
         minimumDuration: 200,
         onlySamePath: true, // Still show loading for same-path navigation (pagination, filtering)
@@ -215,7 +215,7 @@ export default function TrucksIndex({
     const [deleteError, setDeleteError] = React.useState<string | null>(null);
 
     const availablePerPageOptions = React.useMemo(
-        () => (perPageOptions?.length ? perPageOptions : [10, 15, 25, 50]),
+        () => (perPageOptions?.length ? perPageOptions : [15, 25, 50, 100]),
         [perPageOptions],
     );
 
@@ -249,7 +249,7 @@ export default function TrucksIndex({
         if (typeof candidate === 'number' && availablePerPageOptions.includes(candidate)) {
             return candidate;
         }
-        return availablePerPageOptions[0] ?? 10;
+        return availablePerPageOptions[0] ?? 15;
     }, [filters?.per_page, availablePerPageOptions]);
 
     const [perPage, setPerPage] = React.useState<string>(() => String(resolvedPerPage));

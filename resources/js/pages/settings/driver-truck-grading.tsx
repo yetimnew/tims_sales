@@ -16,6 +16,7 @@ import { Form, Head, Link, router } from '@inertiajs/react';
 import * as React from 'react';
 import { edit as driverTruckGradingRoute } from '@/routes/settings/driver-truck-grading';
 import { ArrowUpRight, Info, Activity, Loader2, RefreshCcw } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 
 type GradeLetter = 'A' | 'B' | 'C' | 'D' | 'E';
 
@@ -494,8 +495,17 @@ export default function DriverTruckGradingSettings({
             }
 
             router.reload({ preserveScroll: true, preserveState: true });
+            toast({
+                title: '✅ Grades Recalculated',
+                description: 'Driver-truck grades have been updated successfully.',
+            });
         } catch (error) {
             console.error('Driver-truck grading recalculation error:', error);
+            toast({
+                title: '❌ Recalculation Failed',
+                description: 'Failed to recalculate driver-truck grades. Please try again.',
+                variant: 'destructive',
+            });
         } finally {
             setIsRecalculating(false);
         }

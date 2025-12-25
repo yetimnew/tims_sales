@@ -306,7 +306,7 @@ export default function DistancesIndex({ distances, metrics, filters, perPageOpt
     const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>(filters?.direction ?? 'asc');
 
     const availablePerPageOptions = React.useMemo(
-        () => (perPageOptions?.length ? perPageOptions : [10, 15, 25, 50]),
+        () => (perPageOptions?.length ? perPageOptions : [15, 25, 50, 100]),
         [perPageOptions],
     );
 
@@ -514,8 +514,14 @@ export default function DistancesIndex({ distances, metrics, filters, perPageOpt
             onSuccess: () => {
                 setDeleteDialogOpen(false);
                 setSelectedDistance(null);
+                setIsDeleting(false);
+                toast({
+                    title: '✅ Distance Record Deleted',
+                    description: `Route ${routeLabel} has been removed successfully.`,
+                });
             },
             onError: (errors) => {
+                setIsDeleting(false);
                 const fallback = 'Unable to delete distance. Please try again.';
 
                 if (errors && typeof errors === 'object') {
@@ -525,20 +531,17 @@ export default function DistancesIndex({ distances, metrics, filters, perPageOpt
                         .join('\n');
 
                     toast({
-                        title: 'Delete failed',
+                        title: '❌ Delete Failed',
                         description: errorMessages || fallback,
                         variant: 'destructive',
                     });
                 } else {
                     toast({
-                        title: 'Delete failed',
+                        title: '❌ Delete Failed',
                         description: fallback,
                         variant: 'destructive',
                     });
                 }
-            },
-            onFinish: () => {
-                setIsDeleting(false);
             },
         });
     };

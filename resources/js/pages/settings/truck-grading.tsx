@@ -17,6 +17,7 @@ import * as React from 'react';
 import { edit as editSettingsRoute } from '@/routes/settings/truck-grading';
 import { truckGrading as truckGradingReport } from '@/routes/reports';
 import { Loader2, RefreshCcw } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 
 interface WeightSettings {
     utilization_weight: number;
@@ -445,8 +446,17 @@ export default function TruckGradingSettings({
             }
 
             router.reload({ preserveScroll: true, preserveState: true });
+            toast({
+                title: '✅ Grades Recalculated',
+                description: 'Truck grades have been updated successfully.',
+            });
         } catch (error) {
             console.error('Truck grading recalculation error:', error);
+            toast({
+                title: '❌ Recalculation Failed',
+                description: 'Failed to recalculate truck grades. Please try again.',
+                variant: 'destructive',
+            });
         } finally {
             setIsRecalculating(false);
         }

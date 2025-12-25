@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import AppLayout from '@/layouts/app-layout';
 import { Head, Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
+import { toast } from '@/hooks/use-toast';
 import {
     ArrowLeft,
     Edit,
@@ -66,8 +67,26 @@ export default function CustomersShow({ customer, activityLogs = [], activeOpera
     const handleDelete = () => {
         setIsDeleting(true);
         router.delete(`/customers/${customer.id}`, {
-            onSuccess: () => { setDeleteDialogOpen(false); setIsDeleting(false); },
-            onError: () => { setIsDeleting(false); },
+            preserveScroll: true,
+            onSuccess: () => {
+                setDeleteDialogOpen(false);
+                setIsDeleting(false);
+                toast({
+                    title: '✅ Customer Deleted',
+                    description: `${customer.name} has been removed successfully.`,
+                });
+            },
+            onError: (errors) => {
+                setIsDeleting(false);
+                const errorMessage = errors && typeof errors === 'object' && 'message' in errors
+                    ? String(errors.message)
+                    : 'An unexpected error occurred while deleting the customer.';
+                toast({
+                    title: '❌ Delete Failed',
+                    description: errorMessage,
+                    variant: 'destructive',
+                });
+            },
         });
     };
 

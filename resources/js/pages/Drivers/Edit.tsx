@@ -13,7 +13,8 @@ import { FormEventHandler, useEffect, useRef, useState } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { validateDriver } from '@/lib/validation';
 import { cn } from '@/lib/utils';
-import { Info, User, MapPin, CheckCircle, Save, User as UserIcon, Hash, ArrowLeft } from 'lucide-react';
+import { Info, User, MapPin, CheckCircle, Save, User as UserIcon, Hash, ArrowLeft, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { type BreadcrumbItem } from '@/types';
 
 interface Driver {
@@ -197,6 +198,15 @@ export default function DriversEdit({ driver }: DriversEditProps) {
                 </>
             }
         >
+            {(Object.keys(errors).length > 0 || Object.keys(frontendErrors).length > 0) && (
+                <div className="px-6 pt-6">
+                    <Alert variant="destructive">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>Please resolve the highlighted fields before submitting the form.</AlertDescription>
+                    </Alert>
+                </div>
+            )}
+
             <form
                 ref={scrollContainerRef}
                 onSubmit={submit}

@@ -137,18 +137,23 @@ export default function PlacesShow({ place, activityLogs }: PlacesShowProps) {
   const confirmDelete = () => {
     setIsDeleting(true)
     router.delete(`/places/${place.id}`, {
+      preserveScroll: true,
       onSuccess: () => {
-        toast({ title: 'Place deleted', description: `${place.name} was removed successfully.` })
+        toast({ title: '✅ Place Deleted', description: `${place.name} was removed successfully.` })
         setDeleteDialogOpen(false)
+        setIsDeleting(false)
       },
-      onError: () => {
+      onError: (errors) => {
+        const errorMessage = errors && typeof errors === 'object' && 'message' in errors
+          ? String(errors.message)
+          : 'Unable to delete the place. Try again later.'
         toast({
-          title: 'Deletion failed',
-          description: 'Unable to delete the place. Try again later.',
+          title: '❌ Delete Failed',
+          description: errorMessage,
           variant: 'destructive',
         })
+        setIsDeleting(false)
       },
-      onFinish: () => setIsDeleting(false),
     })
   }
 

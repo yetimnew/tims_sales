@@ -382,7 +382,7 @@ export default function OperationsIndex({
                 setSelectedOperation(null);
                 setIsDeleting(false);
                 toast({
-                    title: 'Operation deleted',
+                    title: '✅ Operation Deleted',
                     description: 'The operation was removed successfully.',
                 });
             },
@@ -397,13 +397,13 @@ export default function OperationsIndex({
                         .join('\n');
 
                     toast({
-                        title: 'Delete failed',
+                        title: '❌ Delete Failed',
                         description: errorMessages || fallback,
                         variant: 'destructive',
                     });
                 } else {
                     toast({
-                        title: 'Delete failed',
+                        title: '❌ Delete Failed',
                         description: fallback,
                         variant: 'destructive',
                     });

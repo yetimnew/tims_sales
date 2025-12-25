@@ -157,7 +157,7 @@ export default function RolesIndex({ roles, filters, permissionGroupOptions, per
     const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>(filters?.direction ?? 'asc');
 
     const availablePerPageOptions = React.useMemo(
-        () => (perPageOptions?.length ? perPageOptions : [10, 15, 25, 50]),
+        () => (perPageOptions?.length ? perPageOptions : [15, 25, 50, 100]),
         [perPageOptions],
     );
 
@@ -306,22 +306,21 @@ export default function RolesIndex({ roles, filters, permissionGroupOptions, per
         router.delete(`/roles/${selectedRole.id}`, {
             preserveScroll: true,
             onSuccess: () => {
-                toast({
-                    title: 'Role deleted',
-                    description: `${name} has been removed from the system.`,
-                });
                 setDeleteDialogOpen(false);
                 setSelectedRole(null);
+                setIsDeleting(false);
+                toast({
+                    title: '✅ Role Deleted',
+                    description: `${name} has been removed from the system successfully.`,
+                });
             },
             onError: () => {
+                setIsDeleting(false);
                 toast({
-                    title: 'Unable to delete role',
+                    title: '❌ Delete Failed',
                     description: 'Please try again or contact support if the issue persists.',
                     variant: 'destructive',
                 });
-            },
-            onFinish: () => {
-                setIsDeleting(false);
             },
         });
     };

@@ -179,7 +179,7 @@ export default function PermissionsIndex({ permissions, filters, moduleOptions, 
     const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>(filters?.direction ?? 'asc');
 
     const availablePerPageOptions = React.useMemo(
-        () => (perPageOptions?.length ? perPageOptions : [10, 15, 25, 50]),
+        () => (perPageOptions?.length ? perPageOptions : [15, 25, 50, 100]),
         [perPageOptions],
     );
 

@@ -112,9 +112,14 @@ export default function VehicleTypesShow({ vehicleType, activityLogs = [] }: Veh
     const handleDeleteConfirm = () => {
         setIsDeleting(true);
         router.delete(`/vehicletypes/${vehicleType.id}`, {
+            preserveScroll: true,
             onSuccess: () => {
                 setDeleteDialogOpen(false);
                 setIsDeleting(false);
+                toast({
+                    title: '✅ Vehicle Type Deleted',
+                    description: `${vehicleType.name} has been removed from the fleet classifications.`,
+                });
             },
             onError: (errors) => {
                 setIsDeleting(false);
@@ -124,13 +129,17 @@ export default function VehicleTypesShow({ vehicleType, activityLogs = [] }: Veh
                         .filter((message): message is string => typeof message === 'string')
                         .join('\n');
 
-                    if (errorMessages) {
-                        toast({
-                            title: '❌ Delete Failed',
-                            description: errorMessages,
-                            variant: 'destructive',
-                        });
-                    }
+                    toast({
+                        title: '❌ Delete Failed',
+                        description: errorMessages || 'Unable to delete this vehicle type. Please resolve any blocking records first.',
+                        variant: 'destructive',
+                    });
+                } else {
+                    toast({
+                        title: '❌ Delete Failed',
+                        description: 'An unexpected error occurred while deleting the vehicle type. Please try again.',
+                        variant: 'destructive',
+                    });
                 }
             },
         });

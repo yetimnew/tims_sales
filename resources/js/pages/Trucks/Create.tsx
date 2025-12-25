@@ -11,10 +11,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Link, useForm } from '@inertiajs/react';
 import { toast } from '@/hooks/use-toast';
 import { validateTruck, type ValidationErrors, truckValidation } from '@/lib/validation';
-import { Info, Wrench, DollarSign, CheckCircle, Save, Truck, Hash, ArrowLeft } from 'lucide-react';
+import { Info, Wrench, DollarSign, CheckCircle, Save, Truck, Hash, ArrowLeft, AlertCircle } from 'lucide-react';
 import { FormEventHandler, useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { type BreadcrumbItem } from '@/types';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Trucks', href: '/trucks' },
@@ -129,10 +130,15 @@ export default function TrucksCreate({ vehicleTypes }: TrucksCreateProps) {
             return;
         }
         post('/trucks', {
+            preserveScroll: true,
             onSuccess: () => {
                 clearErrors();
                 setFrontendErrors({});
                 setIsDirty(false);
+                toast({
+                    title: '✅ Truck Created',
+                    description: 'The truck has been added to the fleet successfully.',
+                });
             },
         });
     };
@@ -162,6 +168,15 @@ export default function TrucksCreate({ vehicleTypes }: TrucksCreateProps) {
                 </>
             }
         >
+            {(Object.keys(errors).length > 0 || Object.keys(frontendErrors).length > 0) && (
+                <div className="px-6 pt-6">
+                    <Alert variant="destructive">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>Please resolve the highlighted fields before submitting the form.</AlertDescription>
+                    </Alert>
+                </div>
+            )}
+
             <form
                 ref={scrollContainerRef}
                 onSubmit={submit}

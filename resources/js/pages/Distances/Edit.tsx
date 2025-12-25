@@ -1,9 +1,10 @@
 import { useForm } from '@inertiajs/react'
-import { ArrowLeft } from 'lucide-react'
+import { AlertCircle, ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
 import AppLayout from '@/layouts/app-layout'
@@ -40,16 +41,17 @@ export default function DistancesEdit({ distance, places }: DistancesEditProps) 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     put(`/distances/${distance.id}`, {
+      preserveScroll: true,
       onSuccess: () => {
         toast({
-          title: 'Success',
-          description: 'Distance updated successfully.',
+          title: '✅ Distance Updated',
+          description: 'Distance record has been saved successfully.',
         })
       },
       onError: () => {
         toast({
-          title: 'Error',
-          description: 'Failed to update distance.',
+          title: '❌ Update Failed',
+          description: 'Failed to update distance record.',
           variant: 'destructive',
         })
       },
@@ -78,6 +80,14 @@ export default function DistancesEdit({ distance, places }: DistancesEditProps) 
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
+              {Object.keys(errors).length > 0 && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Please correct the validation errors below before submitting.
+                  </AlertDescription>
+                </Alert>
+              )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="from_place_id">From Place *</Label>

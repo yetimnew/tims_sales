@@ -166,7 +166,7 @@ export default function CustomersIndex({ customers, metrics, filters, statusOpti
     const [sortColumn, setSortColumn] = React.useState<string>(filters?.sort ?? 'name');
     const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>(filters?.direction ?? 'asc');
     const availablePerPageOptions = React.useMemo(
-        () => (perPageOptions?.length ? perPageOptions : [10, 15, 25, 50]),
+        () => (perPageOptions?.length ? perPageOptions : [15, 25, 50, 100]),
         [perPageOptions],
     );
     const resolvedPerPage = React.useMemo(() => {
@@ -302,7 +302,7 @@ export default function CustomersIndex({ customers, metrics, filters, statusOpti
                 setDeleteDialogOpen(false);
                 setIsDeleting(false);
                 toast({
-                    title: 'Customer deleted',
+                    title: '✅ Customer Deleted',
                     description: selectedCustomer.name
                         ? `The customer "${selectedCustomer.name}" was removed successfully.`
                         : 'The customer was removed successfully.',
@@ -319,7 +319,7 @@ export default function CustomersIndex({ customers, metrics, filters, statusOpti
                     : fallback;
 
                 toast({
-                    title: 'Delete failed',
+                    title: '❌ Delete Failed',
                     description: errorMessages || fallback,
                     variant: 'destructive',
                 });

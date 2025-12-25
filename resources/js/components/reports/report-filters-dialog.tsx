@@ -6,7 +6,7 @@ import { DatePicker } from '@/components/ui/date-picker';
 import { ReportMultiSelectFilter } from './report-multi-select-filter';
 import { ReportDateRangePicker } from './report-date-range-picker';
 import type { ReportSelectionOption } from './types';
-import { Building2, ChevronDown, ChevronUp, Filter, MapPin, PackageCheck, Truck, User } from 'lucide-react';
+import { BarChart3, Building2, ChevronDown, ChevronUp, Filter, MapPin, PackageCheck, RefreshCcw, Truck, User } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 interface FilterTextOverrides {
@@ -340,72 +340,112 @@ export function ReportFiltersDialog({
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogTrigger asChild>
-                <Button type="button" variant="outline" className="gap-2">
+                <Button type="button" variant="outline" className="gap-2 shadow-sm hover:shadow-md transition-all duration-200">
                     <Filter className="h-4 w-4" />
-                    Filters
+                    <span className="font-medium">Filters</span>
                     {activeFilterCount > 0 ? (
-                        <Badge variant="secondary" className="h-5 min-w-[2rem] justify-center px-2 text-xs font-semibold">
+                        <Badge variant="secondary" className="h-5 min-w-[1.25rem] justify-center px-1.5 text-xs font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
                             {activeFilterCount}
                         </Badge>
                     ) : null}
-                    {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    {open ? <ChevronUp className="h-4 w-4 ml-1" /> : <ChevronDown className="h-4 w-4 ml-1" />}
                 </Button>
             </DialogTrigger>
-            <DialogContent className="w-full sm:max-w-6xl lg:max-w-7xl sm:rounded-2xl">
-                <DialogHeader className="text-left">
-                    <DialogTitle>{title}</DialogTitle>
-                    <DialogDescription>{description}</DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-6">
-                    <div className="grid gap-8 rounded-xl border border-slate-200 bg-white/95 p-6 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
-                        <div className="flex flex-wrap items-start gap-6">
-                            {shouldShowDateRange ? (
-                                <ReportDateRangePicker
-                                    from={from}
-                                    to={to}
-                                    onChange={(field, value) => {
-                                        onDateChange?.(field, value);
-                                    }}
-                                    error={dateError}
-                                    description={dateRangeDescription}
-                                />
-                            ) : null}
-                            {shouldShowSingleDate ? (
-                                <div className="flex min-w-[220px] flex-col gap-3">
-                                    <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{singleDateLabel}</span>
-                                    <DatePicker
-                                        value={singleDate || ''}
-                                        onChange={(value) => onSingleDateChange?.(value ?? '')}
-                                        placeholder="Select date"
-                                        className="min-w-[220px] justify-start text-left"
-                                    />
-                                    {singleDateDescription ? <p className="text-xs text-muted-foreground">{singleDateDescription}</p> : null}
-                                </div>
-                            ) : null}
-                            {shouldShowLimit ? (
-                                <div className="flex min-w-[220px] flex-col gap-3">
-                                    <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{limitLabel}</span>
-                                    <Input
-                                        type="number"
-                                        min={50}
-                                        max={5000}
-                                        step={50}
-                                        value={typeof limit === 'number' ? limit : ''}
-                                        onChange={(event) => onLimitChange?.(Number(event.target.value))}
-                                    />
-                                    <p className="text-xs text-muted-foreground">{limitDescription}</p>
-                                </div>
-                            ) : null}
+            <DialogContent className="w-full max-w-[95vw] sm:max-w-6xl lg:max-w-7xl sm:rounded-2xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader className="text-left pb-6 border-b border-slate-200 dark:border-slate-800">
+                    <div className="flex items-start gap-3">
+                        <div className="rounded-lg bg-blue-100 p-2.5 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+                            <Filter className="h-5 w-5" />
                         </div>
-                        {filterSections.length > 0 ? <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">{filterSections}</div> : null}
+                        <div className="flex-1">
+                            <DialogTitle className="text-xl font-semibold text-slate-900 dark:text-slate-100">{title}</DialogTitle>
+                            <DialogDescription className="text-sm text-slate-600 dark:text-slate-400 mt-1">{description}</DialogDescription>
+                        </div>
+                    </div>
+                </DialogHeader>
+                <div className="grid gap-6 py-6">
+                    <div className="grid gap-8 rounded-xl border border-slate-200/80 bg-gradient-to-br from-slate-50 to-slate-100/50 p-6 shadow-md dark:border-slate-800/70 dark:from-slate-900/50 dark:to-slate-900/30">
+                        {/* Date Range / Date / Limit Section */}
+                        {(shouldShowDateRange || shouldShowSingleDate || shouldShowLimit) && (
+                            <div className="flex flex-wrap items-start gap-6">
+                                {shouldShowDateRange ? (
+                                    <div className="flex-1 min-w-[280px]">
+                                        <ReportDateRangePicker
+                                            from={from}
+                                            to={to}
+                                            onChange={(field, value) => {
+                                                onDateChange?.(field, value);
+                                            }}
+                                            error={dateError}
+                                            description={dateRangeDescription}
+                                        />
+                                    </div>
+                                ) : null}
+                                {shouldShowSingleDate ? (
+                                    <div className="flex min-w-[240px] flex-col gap-3">
+                                        <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">{singleDateLabel}</span>
+                                        <DatePicker
+                                            value={singleDate || ''}
+                                            onChange={(value) => onSingleDateChange?.(value ?? '')}
+                                            placeholder="Select date"
+                                            className="min-w-[240px] justify-start text-left bg-white dark:bg-slate-950 shadow-sm"
+                                        />
+                                        {singleDateDescription ? <p className="text-xs text-slate-500 dark:text-slate-400">{singleDateDescription}</p> : null}
+                                    </div>
+                                ) : null}
+                                {shouldShowLimit ? (
+                                    <div className="flex min-w-[240px] flex-col gap-3">
+                                        <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">{limitLabel}</span>
+                                        <Input
+                                            type="number"
+                                            min={50}
+                                            max={5000}
+                                            step={50}
+                                            value={typeof limit === 'number' ? limit : ''}
+                                            onChange={(event) => onLimitChange?.(Number(event.target.value))}
+                                            className="bg-white dark:bg-slate-950 shadow-sm"
+                                        />
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">{limitDescription}</p>
+                                    </div>
+                                ) : null}
+                            </div>
+                        )}
+                        
+                        {/* Filters Section */}
+                        {filterSections.length > 0 ? (
+                            <div>
+                                {(shouldShowDateRange || shouldShowSingleDate || shouldShowLimit) && (
+                                    <div className="mb-6 border-t border-slate-200/60 dark:border-slate-700/60 pt-6">
+                                        <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2">
+                                            <span className="h-1 w-1 rounded-full bg-blue-500"></span>
+                                            Filter Criteria
+                                        </h3>
+                                    </div>
+                                )}
+                                <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
+                                    {filterSections}
+                                </div>
+                            </div>
+                        ) : null}
                     </div>
                 </div>
-                <DialogFooter>
-                    <Button type="button" variant="outline" onClick={onReset}>
-                        Reset
+                <DialogFooter className="flex items-center justify-between gap-4 pt-6 border-t border-slate-200 dark:border-slate-800 sm:justify-between">
+                    <Button 
+                        type="button" 
+                        variant="ghost" 
+                        onClick={onReset}
+                        className="text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+                    >
+                        <RefreshCcw className="h-4 w-4 mr-2" />
+                        Reset All
                     </Button>
-                    <Button type="button" onClick={onApply}>
-                        Generate report
+                    <Button 
+                        type="button" 
+                        onClick={onApply}
+                        className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all duration-200 min-w-[160px]"
+                    >
+                        <BarChart3 className="h-4 w-4 mr-2" />
+                        Generate Report
                     </Button>
                 </DialogFooter>
             </DialogContent>

@@ -396,7 +396,7 @@ export default function OutsourcePerformancesCreate({ outsources, statusOptions,
             preserveScroll: true,
             onSuccess: () => {
                 toast({
-                    title: 'Trip logged',
+                    title: '✅ Trip Logged',
                     description: 'The outsource performance record has been saved successfully.',
                 });
                 setClientErrors({});

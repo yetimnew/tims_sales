@@ -43,7 +43,11 @@ class TruckLifecycleNotification extends Notification implements ChannelAwareNot
 
     public function via(object $notifiable): array
     {
-        return $this->channels ?: ['database'];
+        // Filter out 'broadcast' channel for shared hosting compatibility
+        return array_values(array_filter(
+            $this->channels ?: ['database'],
+            fn($channel) => $channel !== 'broadcast'
+        )) ?: ['database'];
     }
 
     public function toMail(object $notifiable): MailMessage

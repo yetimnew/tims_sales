@@ -250,7 +250,7 @@ export default function OutsourcePerformancesIndex({
     const [isDeleting, setIsDeleting] = useState(false);
 
     const availablePerPageOptions = useMemo(
-        () => (perPageOptions?.length ? perPageOptions : [10, 15, 25, 50]),
+        () => (perPageOptions?.length ? perPageOptions : [15, 25, 50, 100]),
         [perPageOptions],
     );
 
@@ -435,17 +435,18 @@ export default function OutsourcePerformancesIndex({
         router.delete(`/outsource-performances/${recordToDelete.id}`, {
             preserveScroll: true,
             onSuccess: () => {
+                setDeleteDialogOpen(false);
+                setSelectedRecord(null);
+                setIsDeleting(false);
                 toast({
-                    title: 'Trip deleted',
+                    title: '✅ Trip Deleted',
                     description: recordToDelete.trip_number
                         ? `Outsource trip ${recordToDelete.trip_number} was deleted successfully.`
                         : 'The outsource performance record was removed successfully.',
                 });
-
-                setDeleteDialogOpen(false);
-                setSelectedRecord(null);
             },
             onError: (errors) => {
+                setIsDeleting(false);
                 const fallback = 'Failed to delete outsource performance. Please try again.';
 
                 if (errors && typeof errors === 'object') {
@@ -455,20 +456,17 @@ export default function OutsourcePerformancesIndex({
                         .join('\n');
 
                     toast({
-                        title: 'Delete failed',
+                        title: '❌ Delete Failed',
                         description: errorMessages || fallback,
                         variant: 'destructive',
                     });
                 } else {
                     toast({
-                        title: 'Delete failed',
+                        title: '❌ Delete Failed',
                         description: fallback,
                         variant: 'destructive',
                     });
                 }
-            },
-            onFinish: () => {
-                setIsDeleting(false);
             },
         });
     };

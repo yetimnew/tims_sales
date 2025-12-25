@@ -239,7 +239,7 @@ export default function OutsourcesCreate({ statusOptions, serviceTypeOptions }: 
                 reset();
                 transform(data => data);
                 toast({
-                    title: 'Outsource created',
+                    title: '✅ Outsource Created',
                     description: 'The vendor has been registered successfully.',
                 });
             },

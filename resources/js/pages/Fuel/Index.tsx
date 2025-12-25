@@ -179,6 +179,7 @@ export default function FuelIndex({
     const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
     const [selectedRecord, setSelectedRecord] = React.useState<FuelRecord | null>(null);
     const [isDeleting, setIsDeleting] = React.useState(false);
+    const [deleteError, setDeleteError] = React.useState<string | null>(null);
 
     const isDataReady = Array.isArray(fuelRecords?.data);
     const { isLoading: isTableLoading } = useListingLoading({
@@ -310,6 +311,7 @@ export default function FuelIndex({
     const handleDeleteClick = (record: FuelRecord) => {
         setSelectedRecord(record);
         setDeleteDialogOpen(true);
+        setDeleteError(null);
     };
 
     const handleDeleteConfirm = () => {
@@ -325,6 +327,7 @@ export default function FuelIndex({
                 setDeleteDialogOpen(false);
                 setSelectedRecord(null);
                 setIsDeleting(false);
+                setDeleteError(null);
                 toast({
                     title: 'Fuel record removed',
                     description: 'The fuel record was deleted successfully.',
@@ -333,21 +336,25 @@ export default function FuelIndex({
             onError: (errors) => {
                 setIsDeleting(false);
 
-                const fallback = 'Failed to delete fuel record. Please try again.';
+                const fallback = 'Failed to delete fuel record. Please review the requirements and try again.';
                 if (errors && typeof errors === 'object') {
-                    const errorMessages = Object.values(errors)
+                    const messages = Object.values(errors)
                         .flatMap((value) => (Array.isArray(value) ? value : [value]))
-                        .filter(Boolean)
+                        .filter((value) => Boolean(value))
                         .join('\n');
 
+                    setDeleteError(messages || fallback);
+
                     toast({
-                        title: 'Delete failed',
-                        description: errorMessages || fallback,
+                        title: '❌ Delete Failed',
+                        description: messages || fallback,
                         variant: 'destructive',
                     });
                 } else {
+                    setDeleteError(fallback);
+
                     toast({
-                        title: 'Delete failed',
+                        title: '❌ Delete Failed',
                         description: fallback,
                         variant: 'destructive',
                     });
@@ -730,7 +737,7 @@ export default function FuelIndex({
                     setDeleteDialogOpen(open);
                     if (!open) {
                         setSelectedRecord(null);
-                        setIsDeleting(false);
+                        setDeleteError(null);
                     }
                 }}
                 title="Delete Fuel Record"
@@ -742,6 +749,7 @@ export default function FuelIndex({
                 }
                 onConfirm={handleDeleteConfirm}
                 isLoading={isDeleting}
+                errorMessage={deleteError}
             />
         </>
     );

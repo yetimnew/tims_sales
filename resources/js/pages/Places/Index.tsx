@@ -248,7 +248,7 @@ export default function PlacesIndex({ places, metrics, filters, statusOptions, p
     const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>(filters?.direction ?? 'asc');
 
     const availablePerPageOptions = React.useMemo(
-        () => (perPageOptions?.length ? perPageOptions : [10, 15, 25, 50]),
+        () => (perPageOptions?.length ? perPageOptions : [15, 25, 50, 100]),
         [perPageOptions],
     );
 
@@ -409,8 +409,14 @@ export default function PlacesIndex({ places, metrics, filters, statusOptions, p
             onSuccess: () => {
                 setDeleteDialogOpen(false);
                 setSelectedPlace(null);
+                setIsDeleting(false);
+                toast({
+                    title: '✅ Place Deleted',
+                    description: `${name} has been removed successfully.`,
+                });
             },
             onError: (errors) => {
+                setIsDeleting(false);
                 const fallback = 'Failed to delete place. Please try again.';
 
                 if (errors && typeof errors === 'object') {
@@ -420,20 +426,17 @@ export default function PlacesIndex({ places, metrics, filters, statusOptions, p
                         .join('\n');
 
                     toast({
-                        title: 'Delete failed',
+                        title: '❌ Delete Failed',
                         description: errorMessages || fallback,
                         variant: 'destructive',
                     });
                 } else {
                     toast({
-                        title: 'Delete failed',
+                        title: '❌ Delete Failed',
                         description: fallback,
                         variant: 'destructive',
                     });
                 }
-            },
-            onFinish: () => {
-                setIsDeleting(false);
             },
         });
     };

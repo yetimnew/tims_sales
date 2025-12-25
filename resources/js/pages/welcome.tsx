@@ -3,253 +3,138 @@ import { Button } from '@/components/ui/button';
 import { dashboard, home, login } from '@/routes';
 import { type SharedData } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
-import type { LucideIcon } from 'lucide-react';
-import { ArrowRight, BarChart3, Compass, GaugeCircle, Route, ShieldCheck, Truck, Users2 } from 'lucide-react';
-import { useMemo, useState } from 'react';
-
-interface Highlight {
-    title: string;
-    description: string;
-    icon: LucideIcon;
-}
-
-const HIGHLIGHTS: Highlight[] = [
-    {
-        title: 'End-to-end Fleet Visibility',
-        description: 'Monitor every truck, route, and dispatch window in one live control tower.',
-        icon: Truck
-    },
-    {
-        title: 'Operational Discipline',
-        description: 'Standard operating procedures, digital waybills, and automated status updates.',
-        icon: Route
-    },
-    {
-        title: 'Safety & Compliance',
-        description: 'Daily readiness checks, incident logging, and proactive risk mitigation.',
-        icon: ShieldCheck
-    },
-    {
-        title: 'Executive Intelligence',
-        description: 'KPIs, variance alerts, and performance narratives for strategic steering.',
-        icon: BarChart3
-    }
-];
-
-interface FocusArea {
-    id: string;
-    label: string;
-    title: string;
-    description: string;
-    insights: string[];
-    icon: LucideIcon;
-}
-
-const FOCUS_AREAS: FocusArea[] = [
-    {
-        id: 'dispatch',
-        label: 'Dispatch & control',
-        title: 'Dispatch & control desk',
-        description: 'Monitor departures, returns, and live route adherence from one synchronized timeline.',
-        insights: [
-            'Project ETAs with live traffic overlays and corridor intel.',
-            'Trigger corrective playbooks the moment variance crosses thresholds.',
-            'Share secure snapshots with corridor leaders in one click.',
-        ],
-        icon: Compass,
-    },
-    {
-        id: 'performance',
-        label: 'Performance pulse',
-        title: 'Performance pulse board',
-        description: 'Surface KPIs, trend deviations, and customer commitments before they become escalations.',
-        insights: [
-            'Compare planned vs actual cycle times across corridors.',
-            'Spot outliers with auto-grouped variance digests.',
-            'Push executive summaries to leadership channels instantly.',
-        ],
-        icon: GaugeCircle,
-    },
-    {
-        id: 'people',
-        label: 'People readiness',
-        title: 'People readiness suite',
-        description: 'Coordinate driver availability, compliance, and rest resets with proactive alerts.',
-        insights: [
-            'Track certifications and readiness in a real-time roster.',
-            'Lock-in backup drivers before a shift falls behind.',
-            'Escalate wellbeing issues to the right supervisor immediately.',
-        ],
-        icon: Users2,
-    },
-];
-
-const CORE_PURPOSE: string[] = [
-    'Create a unified command centre that connects planning, dispatch, execution, and reporting.',
-    'Provide a transparent view of fleet utilisation, driver readiness, and customer commitments.',
-    'Empower leadership with reliable insights for tactical decisions and long-term optimisation.'
-];
+import { ArrowRight, BarChart3, Lock, Sparkles } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 const Welcome = (): JSX.Element => {
-    const { auth, name, quote } = usePage<SharedData>().props;
+    const { auth, name } = usePage<SharedData>().props;
     const isAuthenticated = Boolean(auth?.user);
-    const defaultArea = useMemo(() => FOCUS_AREAS[0], []);
-    const [activeArea, setActiveArea] = useState(defaultArea);
+    const [isVisible, setIsVisible] = useState(false);
 
-    const heroQuote = quote?.message ?? 'Operational excellence happens when technology, process, and people execute with clarity.';
-    const heroQuoteAuthor = quote?.author ?? 'Transport Operations Office';
+    useEffect(() => {
+        setIsVisible(true);
+    }, []);
 
     return (
-        <div className="relative grid min-h-screen w-full overflow-hidden bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100 lg:grid-cols-[1.1fr_0.9fr]">
-            <div className="relative hidden h-full flex-col overflow-hidden lg:flex">
+        <div className="relative h-screen w-full overflow-hidden bg-slate-950">
+            <Head title="Welcome to TIMS" />
+            
+            {/* Background Image with Overlay */}
+            <div className="absolute inset-0">
                 <img
                     src="/black.png"
-                    alt="TIMS logistics operations"
-                    className="absolute inset-0 h-full w-full object-cover"
+                    alt="TIMS Fleet Operations"
+                    className="h-full w-full object-cover opacity-40"
                 />
-                <div className="absolute inset-0 bg-gradient-to-br from-white/75 via-white/55 to-emerald-50/45 dark:from-slate-950/95 dark:via-slate-950/80 dark:to-slate-900/60" />
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_20%,_rgba(14,165,233,0.25),_transparent_60%)]" />
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_85%,_rgba(34,197,94,0.25),_transparent_60%)]" />
-                <div className="relative z-10 flex h-full flex-col justify-between p-12 text-slate-800 xl:p-16 dark:text-slate-100">
-                    <Link href={home()} className="flex items-center gap-3 text-base font-semibold uppercase tracking-[0.3em] text-slate-700 transition hover:text-slate-900 dark:text-slate-300 dark:hover:text-white">
-                        <AppLogoIcon className="size-8 fill-current text-sky-500 dark:text-sky-400" />
-                        {name || 'TIMS'}
-                    </Link>
-                    <div className="space-y-8">
-                        <div className="space-y-3">
-                            <span className="inline-flex items-center gap-2 rounded-full border border-slate-300/70 bg-white/70 px-4 py-2 text-xs uppercase tracking-[0.35em] text-slate-600 dark:border-white/15 dark:bg-white/10 dark:text-slate-200">
-                                Transport Information Management System
-                            </span>
-                            <h2 className="text-3xl font-semibold leading-snug text-slate-900 dark:text-white">
-                                A command centre for modern transport operations
-                            </h2>
-                            <p className="max-w-xl text-sm text-slate-600 dark:text-slate-200">
-                                TIMS unifies dispatch, compliance, safety, and analytics so your team makes confident, timely decisions.
-                            </p>
-                        </div>
-                        <ul className="grid gap-4 text-sm text-slate-600 dark:text-slate-200">
-                            {CORE_PURPOSE.map(item => (
-                                <li key={item} className="flex items-start gap-3">
-                                    <span className="mt-1 inline-flex size-2 flex-shrink-0 rounded-full bg-sky-500" />
-                                    <span>{item}</span>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-                    {quote && (
-                        <div className="space-y-3 text-slate-700 dark:text-slate-200">
-                            <blockquote className="text-lg font-medium">
-                                “{heroQuote}”
-                            </blockquote>
-                            <footer className="text-sm uppercase tracking-[0.35em] text-slate-500 dark:text-slate-400">
-                                {heroQuoteAuthor}
-                            </footer>
-                        </div>
-                    )}
-                </div>
+                <div className="absolute inset-0 bg-gradient-to-br from-slate-950/95 via-slate-900/90 to-blue-950/95" />
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,_rgba(59,130,246,0.15),_transparent_50%)]" />
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_70%,_rgba(14,165,233,0.1),_transparent_50%)]" />
             </div>
 
-            <div className="relative flex min-h-screen items-center justify-center px-6 py-12 sm:px-10 lg:px-14">
-                <div className="absolute inset-0 bg-gradient-to-br from-white via-white to-slate-100 dark:from-slate-950 dark:via-slate-950/95 dark:to-slate-900/80 lg:bg-none" />
-                <div className="relative z-10 flex w-full max-w-md flex-col gap-10">
-                    <Link href={home()} className="flex items-center gap-3 text-sm uppercase tracking-[0.35em] text-slate-600 transition hover:text-slate-900 dark:text-slate-300 dark:hover:text-white lg:hidden">
-                        <AppLogoIcon className="size-8 fill-current text-sky-500 dark:text-sky-400" />
-                        {name || 'TIMS'}
+            {/* Animated Grid Pattern */}
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e293b15_1px,transparent_1px),linear-gradient(to_bottom,#1e293b15_1px,transparent_1px)] bg-[size:4rem_4rem]" />
+
+            {/* Content Container - Centered */}
+            <div className={`relative z-10 flex h-full items-center justify-center transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+                <div className="max-w-5xl px-8 text-center">
+                    {/* Logo */}
+                    <Link href={home()} className="inline-flex items-center gap-3 mb-12 group">
+                        <AppLogoIcon className="h-16 fill-current text-sky-400 transition-transform group-hover:scale-110 duration-300" />
                     </Link>
 
-                    <div className="space-y-6">
-                        <div className="space-y-3">
-                            <span className="inline-flex items-center gap-2 rounded-full border border-slate-200/80 bg-slate-50 px-3 py-1 text-[0.65rem] uppercase tracking-[0.4em] text-slate-500 dark:border-white/15 dark:bg-white/10 dark:text-slate-300">
-                                Unified control tower
+                    {/* Main Heading */}
+                    <div className="space-y-6 mb-12">
+                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-sky-500/10 border border-sky-500/20 backdrop-blur-sm mb-6">
+                            <Sparkles className="h-4 w-4 text-sky-400" />
+                            <span className="text-sm font-semibold text-sky-300 uppercase tracking-wider">
+                                Transport Information Management System
                             </span>
-                            <h1 className="text-3xl font-semibold text-slate-900 dark:text-white">
-                                Welcome to TIMS
-                            </h1>
-                            <p className="text-sm text-slate-600 dark:text-slate-300">
-                                Coordinate heavy-transport operations with precision, accountability, and realtime visibility.
-                            </p>
                         </div>
+                        
+                        <h1 className="text-6xl md:text-7xl font-extrabold text-white leading-tight mb-6">
+                            Command Your
+                            <span className="block bg-gradient-to-r from-sky-400 via-blue-400 to-indigo-400 bg-clip-text text-transparent">
+                                Fleet Operations
+                            </span>
+                        </h1>
+                        
+                        <p className="text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed">
+                            Unified dispatch control, real-time fleet visibility, and executive intelligence 
+                            for modern transport operations.
+                        </p>
+                    </div>
 
-                        <Button asChild size="lg" className="w-full rounded-xl bg-sky-500 text-white shadow-md shadow-sky-200/60 transition hover:bg-sky-500/90 dark:bg-sky-500 dark:shadow-none">
+                    {/* CTA Button */}
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
+                        <Button 
+                            asChild 
+                            size="lg" 
+                            className="group relative px-8 py-6 text-lg font-semibold bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-500 hover:to-blue-500 text-white shadow-2xl shadow-sky-500/30 rounded-2xl transition-all duration-300 hover:scale-105 hover:shadow-sky-500/50"
+                        >
                             <Link href={isAuthenticated ? dashboard.url() : login.url()}>
-                                {isAuthenticated ? 'Go to dashboard' : 'Access TIMS'}
-                                <ArrowRight className="ml-2 size-4" />
+                                <div className="flex items-center gap-3">
+                                    {isAuthenticated ? (
+                                        <>
+                                            <BarChart3 className="h-5 w-5" />
+                                            <span>Open Dashboard</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Lock className="h-5 w-5" />
+                                            <span>Access Control Tower</span>
+                                        </>
+                                    )}
+                                    <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+                                </div>
                             </Link>
                         </Button>
                     </div>
 
-                    <div className="space-y-5">
-                        <div className="space-y-2">
-                            <p className="text-xs uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500">Command centre modes</p>
-                            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Pair the console to your shift</h2>
-                        </div>
-                        <div className="grid gap-3 sm:grid-cols-3">
-                            {FOCUS_AREAS.map(area => {
-                                const isActive = activeArea.id === area.id;
-                                return (
-                                    <button
-                                        key={area.id}
-                                        type="button"
-                                        onClick={() => setActiveArea(area)}
-                                        aria-pressed={isActive}
-                                        className={`flex flex-col items-start gap-2 rounded-xl border px-3 py-3 text-left text-xs font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 ${
-                                            isActive
-                                                ? 'border-sky-500 bg-sky-500/10 text-sky-700 dark:border-sky-400 dark:bg-sky-400/10 dark:text-sky-200'
-                                                : 'border-slate-200/80 bg-white/80 text-slate-600 hover:border-sky-400 hover:text-slate-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-300'
-                                        }`}
-                                    >
-                                        <area.icon className={`size-4 ${isActive ? 'text-sky-600 dark:text-sky-300' : 'text-slate-400 dark:text-slate-500'}`} />
-                                        <span>{area.label}</span>
-                                    </button>
-                                );
-                            })}
-                        </div>
-                        <div className="rounded-2xl border border-slate-200/80 bg-white/80 p-5 text-sm text-slate-700 shadow-sm shadow-slate-200/40 dark:border-white/10 dark:bg-slate-900/80 dark:text-slate-200 dark:shadow-none">
-                            <div className="flex items-start gap-3">
-                                <activeArea.icon className="mt-1 size-6 text-sky-500 dark:text-sky-300" />
-                                <div className="space-y-1">
-                                    <h3 className="text-base font-semibold text-slate-900 dark:text-white">{activeArea.title}</h3>
-                                    <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-300">{activeArea.description}</p>
-                                </div>
+                    {/* Feature Badges */}
+                    <div className="flex flex-wrap items-center justify-center gap-6 text-sm">
+                        {[
+                            'Live Fleet Tracking',
+                            'Dispatch Control',
+                            'Performance Analytics',
+                            'Safety Compliance',
+                        ].map((feature, index) => (
+                            <div
+                                key={feature}
+                                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 border border-white/10 backdrop-blur-sm transition-all duration-300 hover:bg-white/10 hover:border-sky-500/30"
+                                style={{ 
+                                    animation: `fadeInUp 0.6s ease-out ${index * 0.1}s both`,
+                                }}
+                            >
+                                <div className="h-2 w-2 rounded-full bg-sky-400" />
+                                <span className="text-slate-300 font-medium">{feature}</span>
                             </div>
-                            <ul className="mt-4 grid gap-2">
-                                {activeArea.insights.map(insight => (
-                                    <li key={insight} className="flex items-start gap-2">
-                                        <span className="mt-1 inline-flex size-2 flex-shrink-0 rounded-full bg-sky-400 dark:bg-sky-300" />
-                                        <span className="text-xs leading-relaxed text-slate-600 dark:text-slate-300">{insight}</span>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    </div>
-
-                    <div className="space-y-6">
-                        <div className="space-y-2">
-                            <p className="text-xs uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500">System capabilities</p>
-                            <h2 className="text-xl font-semibold text-slate-900 dark:text-white">What TIMS enables</h2>
-                        </div>
-                        <div className="grid gap-4 sm:grid-cols-2">
-                            {HIGHLIGHTS.map(({ title, description, icon: Icon }) => (
-                                <div key={title} className="flex gap-4 rounded-xl border border-slate-200/80 bg-white/80 p-4 shadow-sm shadow-slate-200/40 transition hover:shadow-md dark:border-white/10 dark:bg-slate-900/75 dark:shadow-none">
-                                    <div className="flex size-10 flex-shrink-0 items-center justify-center rounded-full bg-sky-500/10 text-sky-500 dark:text-sky-300">
-                                        <Icon className="size-5" />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <h3 className="text-sm font-semibold text-slate-900 dark:text-white">{title}</h3>
-                                        <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-300">{description}</p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div className="border-t border-slate-200/80 pt-4 text-center text-xs text-slate-500 dark:border-white/10 dark:text-slate-400">
-                        Transport Information Management System
+                        ))}
                     </div>
                 </div>
             </div>
 
-            <Head title="Transport Information Management System" />
+            {/* Footer Badge */}
+            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20">
+                <div className="px-6 py-3 rounded-full bg-slate-900/50 border border-slate-700/50 backdrop-blur-md">
+                    <p className="text-xs text-slate-400 font-medium uppercase tracking-wider">
+                        Powered by {name || 'TIMS'} • Enterprise Fleet Management
+                    </p>
+                </div>
+            </div>
+
+            {/* CSS Animations */}
+            <style>{`
+                @keyframes fadeInUp {
+                    from {
+                        opacity: 0;
+                        transform: translateY(20px);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
+            `}</style>
         </div>
     );
 };

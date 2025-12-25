@@ -204,7 +204,7 @@ export default function WoredasIndex({ woredas, metrics, filters, statusOptions,
     const [sortColumn, setSortColumn] = React.useState<string>(filters?.sort ?? 'name');
     const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>(filters?.direction ?? 'asc');
     const availablePerPageOptions = React.useMemo(
-        () => (perPageOptions?.length ? perPageOptions : [10, 15, 25, 50]),
+        () => (perPageOptions?.length ? perPageOptions : [15, 25, 50, 100]),
         [perPageOptions],
     );
     const resolvedPerPage = React.useMemo(() => {
@@ -346,6 +346,10 @@ export default function WoredasIndex({ woredas, metrics, filters, statusOptions,
                 setDeleteDialogOpen(false);
                 setSelectedWoreda(null);
                 setIsDeleting(false);
+                toast({
+                    title: '✅ Woreda Deleted',
+                    description: `${selectedWoreda.name} has been removed successfully.`,
+                });
             },
             onError: (errors) => {
                 setIsDeleting(false);
@@ -358,13 +362,13 @@ export default function WoredasIndex({ woredas, metrics, filters, statusOptions,
                         .join('\n');
 
                     toast({
-                        title: 'Delete failed',
+                        title: '❌ Delete Failed',
                         description: errorMessages || fallback,
                         variant: 'destructive',
                     });
                 } else {
                     toast({
-                        title: 'Delete failed',
+                        title: '❌ Delete Failed',
                         description: fallback,
                         variant: 'destructive',
                     });

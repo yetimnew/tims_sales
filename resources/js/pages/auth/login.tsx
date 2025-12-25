@@ -1,17 +1,18 @@
+import AppLogoIcon from '@/components/app-logo-icon';
 import InputError from '@/components/input-error';
-import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
-import AuthLayout from '@/layouts/auth-layout';
+import { home } from '@/routes';
 import { store } from '@/routes/login';
 import { request } from '@/routes/password';
-import { Form, Head } from '@inertiajs/react';
-import { AlertTriangle, ArrowUpRight, Eye, EyeOff, ShieldCheck, Truck } from 'lucide-react';
-import { useMemo, useState } from 'react';
-import type { ChangeEvent, FocusEvent, FormEvent, KeyboardEvent } from 'react';
+import { type SharedData } from '@/types';
+import { Form, Head, Link, usePage } from '@inertiajs/react';
+import { Eye, EyeOff, Lock, Shield } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import type { ChangeEvent, FocusEvent, FormEvent } from 'react';
 
 interface LoginProps {
     status?: string;
@@ -19,242 +20,284 @@ interface LoginProps {
     canRegister: boolean;
 }
 
-const SUPPORT_CHANNELS = [
-    {
-        label: 'Control tower hotline',
-        value: '0929 102 926',
-        href: 'tel:0929102926',
-    },
-    {
-        label: 'Operations desk',
-        value: '0916 666 254',
-        href: 'tel:0916666254',
-    },
-    {
-        label: 'Email support',
-        value: 'yetimnew@gmail.com',
-        href: 'mailto:yetimnew@gmail.com',
-    },
-];
-
-export default function Login({ status, canResetPassword, canRegister }: LoginProps) {
+export default function Login({ status, canResetPassword }: LoginProps) {
+    const { name } = usePage<SharedData>().props;
     const [showPassword, setShowPassword] = useState(false);
+    const [isVisible, setIsVisible] = useState(false);
+    
+    // Form field states
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
     const [emailError, setEmailError] = useState<string | null>(null);
-    const [capsLockActive, setCapsLockActive] = useState(false);
-    const formattedStatus = useMemo(() => status?.trim(), [status]);
+    const [passwordError, setPasswordError] = useState<string | null>(null);
+    const [touched, setTouched] = useState({ email: false, password: false });
+
+    useEffect(() => {
+        setIsVisible(true);
+    }, []);
 
     const validateEmail = (value: string): string | null => {
         const trimmedValue = value.trim();
-
-        if (!trimmedValue.length) {
-            return 'Email is required.';
-        }
-
+        if (!trimmedValue.length) return 'Email address is required';
         const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-        if (!emailPattern.test(trimmedValue)) {
-            return 'Enter a valid email address.';
-        }
-
+        if (!emailPattern.test(trimmedValue)) return 'Please enter a valid email address';
         return null;
     };
 
-    const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-        const form = event.currentTarget;
-        const formData = new FormData(form);
-        const value = String(formData.get('email') ?? '');
-        const validationMessage = validateEmail(value);
-
-        if (validationMessage) {
-            event.preventDefault();
-            event.stopPropagation();
-            setEmailError(validationMessage);
-            form.querySelector<HTMLInputElement>('input[name="email"]')?.focus();
-            return;
-        }
-
-        setEmailError(null);
+    const validatePassword = (value: string): string | null => {
+        if (!value.length) return 'Password is required';
+        return null;
     };
 
-    const handleEmailBlur = (event: FocusEvent<HTMLInputElement>) => {
-        const validationMessage = validateEmail(event.target.value);
-        setEmailError(validationMessage);
+    // Check if form is valid
+    const isFormValid = () => {
+        return (
+            email.trim().length > 0 &&
+            password.length > 0 &&
+            validateEmail(email) === null &&
+            validatePassword(password) === null
+        );
     };
 
     const handleEmailChange = (event: ChangeEvent<HTMLInputElement>) => {
-        if (emailError) {
-            setEmailError(null);
-        }
-        if (event.target.value.includes(' ')) {
-            event.target.value = event.target.value.trim();
+        const value = event.target.value;
+        setEmail(value);
+        
+        // Validate on change if field was touched
+        if (touched.email) {
+            const error = validateEmail(value);
+            setEmailError(error);
         }
     };
 
-    const syncCapsLock = (event: KeyboardEvent<HTMLInputElement>) => {
-        setCapsLockActive(event.getModifierState('CapsLock'));
+    const handleEmailBlur = (event: FocusEvent<HTMLInputElement>) => {
+        setTouched(prev => ({ ...prev, email: true }));
+        const error = validateEmail(event.target.value);
+        setEmailError(error);
     };
 
-    const handlePasswordBlur = () => {
-        setCapsLockActive(false);
+    const handlePasswordChange = (event: ChangeEvent<HTMLInputElement>) => {
+        const value = event.target.value;
+        setPassword(value);
+        
+        // Validate on change if field was touched
+        if (touched.password) {
+            const error = validatePassword(value);
+            setPasswordError(error);
+        }
+    };
+
+    const handlePasswordBlur = (event: FocusEvent<HTMLInputElement>) => {
+        setTouched(prev => ({ ...prev, password: true }));
+        const error = validatePassword(event.target.value);
+        setPasswordError(error);
+    };
+
+    const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+        // Mark all fields as touched
+        setTouched({ email: true, password: true });
+        
+        // Validate all fields
+        const emailValidation = validateEmail(email);
+        const passwordValidation = validatePassword(password);
+        
+        setEmailError(emailValidation);
+        setPasswordError(passwordValidation);
+        
+        // Prevent submission if invalid
+        if (emailValidation || passwordValidation) {
+            event.preventDefault();
+            event.stopPropagation();
+            
+            // Focus first invalid field
+            const form = event.currentTarget;
+            if (emailValidation) {
+                form.querySelector<HTMLInputElement>('input[name="email"]')?.focus();
+            } else if (passwordValidation) {
+                form.querySelector<HTMLInputElement>('input[name="password"]')?.focus();
+            }
+            return;
+        }
     };
 
     return (
-        <AuthLayout
-            title="Access the TIMS control tower"
-            description="Authenticate with your fleet credentials to continue orchestrating dispatch, compliance, and performance workflows."
-        >
+        <div className="relative h-screen w-full overflow-hidden bg-slate-950">
             <Head title="Log in" />
+            
+            {/* Background */}
+            <div className="absolute inset-0">
+                <img
+                    src="/black.png"
+                    alt="TIMS Login"
+                    className="h-full w-full object-cover opacity-30"
+                />
+                <div className="absolute inset-0 bg-gradient-to-br from-slate-950/98 via-slate-900/95 to-blue-950/98" />
+            </div>
 
-            <Form
-                {...store.form()}
-                resetOnSuccess={['password']}
-                noValidate
-                onSubmit={handleSubmit}
-                className="relative flex flex-col gap-6 overflow-hidden rounded-3xl border border-slate-200/80 bg-white/80 p-8 shadow-lg shadow-slate-200/40 backdrop-blur lg:gap-8 lg:p-10 dark:border-white/10 dark:bg-slate-900/70 dark:shadow-none"
-            >
-                {({ processing, errors }) => (
-                    <>
-                        <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-sky-100/70 via-transparent to-emerald-100/60 dark:from-sky-400/5 dark:to-emerald-400/5" />
-                        <div className="relative flex flex-col gap-6 lg:gap-8">
-                            {formattedStatus && (
-                                <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-700 dark:text-emerald-200">
-                                    {formattedStatus}
-                                </div>
-                            )}
-                            <div className="grid gap-6">
-                                <div className="grid gap-2">
-                                    <Label htmlFor="email" className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                                        Email address
+            {/* Animated Grid */}
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e293b15_1px,transparent_1px),linear-gradient(to_bottom,#1e293b15_1px,transparent_1px)] bg-[size:4rem_4rem]" />
+
+            {/* Gradient Orbs */}
+            <div className="absolute top-0 right-0 w-96 h-96 bg-sky-500/20 rounded-full blur-3xl" />
+            <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl" />
+
+            {/* Content - Perfectly Centered */}
+            <div className={`relative z-10 flex h-full items-center justify-center px-6 transition-all duration-1000 ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
+                <div className="w-full max-w-md">
+                    {/* Logo */}
+                    <Link href={home()} className="flex justify-center mb-8 group">
+                        <AppLogoIcon className="h-12 fill-current text-sky-400 transition-transform group-hover:scale-110 duration-300" />
+                    </Link>
+
+                    {/* Header */}
+                    <div className="text-center mb-8">
+                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-sky-500/10 border border-sky-500/20 backdrop-blur-sm mb-4">
+                            <Shield className="h-4 w-4 text-sky-400" />
+                            <span className="text-xs font-semibold text-sky-300 uppercase tracking-wider">
+                                Secure Access
+                            </span>
+                        </div>
+                        <h1 className="text-3xl font-bold text-white mb-2">
+                            Welcome Back
+                        </h1>
+                        <p className="text-slate-400">
+                            Access the {name || 'TIMS'} control tower
+                        </p>
+                    </div>
+
+                    {/* Login Form */}
+                    <Form
+                        {...store.form()}
+                        resetOnSuccess={['password']}
+                        noValidate
+                        onSubmit={handleSubmit}
+                        className="relative rounded-2xl border border-slate-700/50 bg-slate-900/80 backdrop-blur-xl p-8 shadow-2xl"
+                    >
+                        {({ processing, errors }) => (
+                            <div className="space-y-6">
+                                {status && (
+                                    <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-300">
+                                        {status}
+                                    </div>
+                                )}
+
+                                {/* Email Field */}
+                                <div className="space-y-2">
+                                    <Label htmlFor="email" className="text-sm font-medium text-slate-200">
+                                        Email Address <span className="text-red-400">*</span>
                                     </Label>
                                     <Input
                                         id="email"
                                         type="email"
                                         name="email"
+                                        value={email}
                                         required
                                         autoFocus
-                                        tabIndex={1}
                                         autoComplete="email"
                                         placeholder="email@example.com"
-                                        aria-invalid={Boolean(emailError ?? errors.email)}
                                         onBlur={handleEmailBlur}
                                         onChange={handleEmailChange}
-                                        className="bg-white/90 text-slate-900 placeholder:text-slate-400 focus-visible:ring-sky-500 dark:bg-slate-900/80 dark:text-slate-100 dark:placeholder:text-slate-500"
+                                        className={`h-12 bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500 focus:border-sky-500 focus:ring-sky-500/20 rounded-xl ${
+                                            emailError ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''
+                                        }`}
+                                        aria-invalid={!!emailError}
+                                        aria-describedby={emailError ? 'email-error' : undefined}
                                     />
-                                    <InputError message={emailError ?? errors.email} />
+                                    {emailError && (
+                                        <p id="email-error" className="text-sm text-red-400 flex items-center gap-1">
+                                            <span className="text-lg">⚠</span> {emailError}
+                                        </p>
+                                    )}
+                                    <InputError message={errors.email} />
                                 </div>
 
-                                <div className="grid gap-2">
-                                    <Label htmlFor="password" className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                                        Password
+                                {/* Password Field */}
+                                <div className="space-y-2">
+                                    <Label htmlFor="password" className="text-sm font-medium text-slate-200">
+                                        Password <span className="text-red-400">*</span>
                                     </Label>
-                                    <div className="flex flex-col gap-3">
-                                        <div className="flex items-center gap-3">
-                                            <div className="relative flex-1">
-                                                <Input
-                                                    id="password"
-                                                    type={showPassword ? 'text' : 'password'}
-                                                    name="password"
-                                                    required
-                                                    tabIndex={2}
-                                                    autoComplete="current-password"
-                                                    placeholder="Password"
-                                                    className="bg-white/90 pr-10 text-slate-900 placeholder:text-slate-400 focus-visible:ring-sky-500 dark:bg-slate-900/80 dark:text-slate-100 dark:placeholder:text-slate-500"
-                                                    onBlur={handlePasswordBlur}
-                                                    onKeyDown={syncCapsLock}
-                                                    onKeyUp={syncCapsLock}
-                                                />
-                                                <button
-                                                    type="button"
-                                                    aria-label={showPassword ? 'Hide password' : 'Show password'}
-                                                    onClick={() => setShowPassword(prev => !prev)}
-                                                    className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-500 transition hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
-                                                    tabIndex={2}
-                                                >
-                                                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                                                </button>
-                                            </div>
-                                        </div>
-                                        {capsLockActive && (
-                                            <div className="flex items-center gap-2 rounded-lg border border-amber-300/60 bg-amber-200/70 px-3 py-2 text-xs text-amber-800 dark:border-amber-300/30 dark:bg-amber-400/10 dark:text-amber-200">
-                                                <AlertTriangle className="size-4" />
-                                                Caps Lock is on. Passwords are case-sensitive.
-                                            </div>
-                                        )}
-                                        <InputError message={errors.password} />
+                                    <div className="relative">
+                                        <Input
+                                            id="password"
+                                            type={showPassword ? 'text' : 'password'}
+                                            name="password"
+                                            value={password}
+                                            required
+                                            autoComplete="current-password"
+                                            placeholder="Enter your password"
+                                            onBlur={handlePasswordBlur}
+                                            onChange={handlePasswordChange}
+                                            className={`h-12 pr-12 bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500 focus:border-sky-500 focus:ring-sky-500/20 rounded-xl ${
+                                                passwordError ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''
+                                            }`}
+                                            aria-invalid={!!passwordError}
+                                            aria-describedby={passwordError ? 'password-error' : undefined}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
+                                            tabIndex={-1}
+                                        >
+                                            {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                                        </button>
                                     </div>
+                                    {passwordError && (
+                                        <p id="password-error" className="text-sm text-red-400 flex items-center gap-1">
+                                            <span className="text-lg">⚠</span> {passwordError}
+                                        </p>
+                                    )}
+                                    <InputError message={errors.password} />
                                 </div>
 
-                                <div className="flex flex-wrap items-center gap-3 rounded-xl bg-slate-100/80 px-3 py-2 text-sm text-slate-600 shadow-sm dark:bg-white/5 dark:text-slate-300">
-                                    <div className="flex items-center gap-3">
-                                        <Checkbox id="remember" name="remember" tabIndex={3} />
-                                        <Label htmlFor="remember" className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                                {/* Remember Me & Forgot Password */}
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <Checkbox id="remember" name="remember" className="border-slate-600 data-[state=checked]:bg-sky-600" />
+                                        <Label htmlFor="remember" className="text-sm text-slate-300 cursor-pointer">
                                             Remember me
                                         </Label>
                                     </div>
                                     {canResetPassword && (
-                                        <TextLink
+                                        <Link
                                             href={request()}
-                                            className="ml-auto inline-flex items-center gap-2 rounded-full bg-sky-500/10 px-3 py-1.5 font-semibold text-sky-600 transition hover:bg-sky-500/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 dark:bg-sky-400/10 dark:text-sky-200"
-                                            tabIndex={5}
+                                            className="text-sm font-medium text-sky-400 hover:text-sky-300 transition-colors"
                                         >
                                             Forgot password?
-                                            <ArrowUpRight className="h-3.5 w-3.5" />
-                                        </TextLink>
+                                        </Link>
                                     )}
                                 </div>
 
+                                {/* Submit Button */}
                                 <Button
                                     type="submit"
-                                    className="mt-2 w-full rounded-xl bg-sky-500 text-white shadow-md shadow-sky-200/60 transition hover:bg-sky-500/90 focus-visible:ring-sky-500 dark:bg-sky-500 dark:shadow-none"
-                                    tabIndex={4}
-                                    disabled={processing}
-                                    data-test="login-button"
+                                    disabled={processing || !isFormValid()}
+                                    className="w-full h-12 bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-500 hover:to-blue-500 text-white font-semibold rounded-xl shadow-lg shadow-sky-500/30 transition-all duration-300 hover:scale-105 hover:shadow-sky-500/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                                 >
-                                    {processing && <Spinner />}
-                                    Log in
+                                    {processing ? (
+                                        <Spinner className="mr-2" />
+                                    ) : (
+                                        <Lock className="h-4 w-4 mr-2" />
+                                    )}
+                                    {processing ? 'Authenticating...' : 'Sign In'}
                                 </Button>
+                                
+                                {/* Validation Helper Text */}
+                                {(!isFormValid() && (touched.email || touched.password)) && (
+                                    <p className="text-xs text-center text-slate-400">
+                                        Please fill in all required fields with valid information
+                                    </p>
+                                )}
                             </div>
+                        )}
+                    </Form>
 
-                            {canRegister && (
-                                <div className="rounded-xl border border-slate-200/80 bg-white/80 p-4 text-center text-sm text-slate-600 dark:border-white/10 dark:bg-slate-900/80 dark:text-slate-300">
-                                    Don't have an account?{' '}
-                                    <TextLink href="#" tabIndex={5} className="font-medium text-sky-600 hover:text-sky-500 dark:text-sky-300">
-                                        Contact administrator
-                                    </TextLink>
-                                </div>
-                            )}
-
-                            <div className="grid gap-4 rounded-2xl border border-slate-200/80 bg-white/80 p-6 text-sm text-slate-700 dark:border-white/10 dark:bg-slate-900/80 dark:text-slate-200">
-                                <div className="flex items-start gap-3">
-                                    <ShieldCheck className="mt-1 size-5 text-emerald-600 dark:text-emerald-300" />
-                                    <div className="space-y-1">
-                                        <p className="font-medium text-slate-900 dark:text-white">Security first</p>
-                                        <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-300">
-                                            All TIMS sessions are monitored and protected. If you suspect any suspicious activity, alert the control tower immediately.
-                                        </p>
-                                    </div>
-                                </div>
-                                <div className="flex items-start gap-3">
-                                    <Truck className="mt-1 size-5 text-sky-600 dark:text-sky-300" />
-                                    <div className="space-y-1">
-                                        <p className="font-medium text-slate-900 dark:text-white">Need assistance?</p>
-                                        <ul className="space-y-1 text-xs text-slate-600 dark:text-slate-300">
-                                            {SUPPORT_CHANNELS.map(channel => (
-                                                <li key={channel.label} className="flex items-center justify-between gap-3">
-                                                    <span className="uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500">{channel.label}</span>
-                                                    <a className="font-medium text-sky-600 transition hover:text-sky-500 dark:text-sky-300" href={channel.href}>
-                                                        {channel.value}
-                                                    </a>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </>
-                )}
-            </Form>
-        </AuthLayout>
+                    {/* Footer */}
+                    <p className="text-center text-sm text-slate-500 mt-6">
+                        Protected by {name || 'TIMS'} • Enterprise Security
+                    </p>
+                </div>
+            </div>
+        </div>
     );
 }

@@ -8,11 +8,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from '@/hooks/use-toast';
 import { customerValidation, validateCustomer } from '@/lib/validation';
 import { type BreadcrumbItem } from '@/types';
 import { Link, useForm } from '@inertiajs/react';
-import { ArrowLeft, Building2, CheckCircle, Info, Mail, Phone, Save, UserCircle } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Building2, CheckCircle, Info, Mail, Phone, Save, UserCircle } from 'lucide-react';
 import { type FormEventHandler, useEffect, useMemo, useRef, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -149,10 +150,15 @@ export default function CustomersCreate() {
         }
 
         post('/customers', {
+            preserveScroll: true,
             onSuccess: () => {
                 setFrontendErrors({});
                 setIsDirty(false);
                 clearErrors();
+                toast({
+                    title: '✅ Customer Created',
+                    description: 'The customer has been registered successfully.',
+                });
             },
         });
     };
@@ -203,6 +209,14 @@ export default function CustomersCreate() {
                 className="flex flex-1 flex-col gap-8 overflow-y-auto p-6 pb-24"
                 style={{ minHeight: 0 }}
             >
+                {hasErrors && (
+                    <Alert variant="destructive">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>
+                            Please correct the validation errors before submitting the form.
+                        </AlertDescription>
+                    </Alert>
+                )}
                 <FormSection
                     title="Relationship Profile"
                     description="Core identifiers and client health metadata."

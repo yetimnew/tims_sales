@@ -166,9 +166,14 @@ export default function OperationsShow({ operation, activityLogs = [], performan
     const handleDelete = () => {
         setIsDeleting(true);
         router.delete(`/operations/${operation.id}`, {
+            preserveScroll: true,
             onSuccess: () => {
                 setDeleteDialogOpen(false);
                 setIsDeleting(false);
+                toast({
+                    title: '✅ Operation Deleted',
+                    description: `${operation.operationid} has been removed successfully.`,
+                });
             },
             onError: (deleteErrors) => {
                 setIsDeleting(false);

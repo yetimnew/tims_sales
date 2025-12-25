@@ -49,21 +49,30 @@ export default function MaintenanceTypesShow({ maintenanceType, activityLogs = [
     const handleDeleteConfirm = () => {
         setIsDeleting(true);
         router.delete(`/maintenance-types/${maintenanceType.id}`, {
+            preserveScroll: true,
             onSuccess: () => {
                 setDeleteDialogOpen(false);
                 setIsDeleting(false);
+                toast({
+                    title: '✅ Maintenance Type Deleted',
+                    description: `${maintenanceType.name} has been removed successfully.`,
+                });
             },
             onError: (errors) => {
                 setIsDeleting(false);
                 if (errors && typeof errors === 'object') {
                     const errorMessages = Object.values(errors).flat().join('\n');
-                    if (errorMessages) {
-                        toast({
-                            title: '❌ Delete Failed',
-                            description: errorMessages,
-                            variant: 'destructive',
-                        });
-                    }
+                    toast({
+                        title: '❌ Delete Failed',
+                        description: errorMessages || 'Unable to delete this maintenance type. Please try again.',
+                        variant: 'destructive',
+                    });
+                } else {
+                    toast({
+                        title: '❌ Delete Failed',
+                        description: 'An unexpected error occurred while deleting the maintenance type. Please try again.',
+                        variant: 'destructive',
+                    });
                 }
             },
         });

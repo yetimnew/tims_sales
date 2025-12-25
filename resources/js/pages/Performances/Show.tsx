@@ -4,7 +4,9 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import AppLayout from '@/layouts/app-layout';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
+import { toast } from '@/hooks/use-toast';
+import { usePermissions } from '@/hooks/use-permissions';
 import { type BreadcrumbItem } from '@/types';
 import {
     Activity, DollarSign, Edit2, Trash2, ArrowLeft,
@@ -165,7 +167,35 @@ interface TripEconomics {
 }
 
 export default function PerformancesShow({ performance, activityLogs, operationInsights }: ShowProps) {
+    const { hasPermission } = usePermissions();
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const handleDelete = () => {
+        setIsDeleting(true);
+        router.delete(`/performances/${performance.id}`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setDeleteDialogOpen(false);
+                setIsDeleting(false);
+                toast({
+                    title: '✅ Performance Deleted',
+                    description: `${performance.FOnumber} has been removed successfully.`,
+                });
+            },
+            onError: (errors) => {
+                setIsDeleting(false);
+                const errorMessage = errors && typeof errors === 'object' && 'message' in errors
+                    ? String(errors.message)
+                    : 'An unexpected error occurred while deleting the performance.';
+                toast({
+                    title: '❌ Delete Failed',
+                    description: errorMessage,
+                    variant: 'destructive',
+                });
+            },
+        });
+    };
 
     const formatDisplayDate = (value?: string | null) => {
         if (!value) return 'N/A';
@@ -1548,11 +1578,11 @@ export default function PerformancesShow({ performance, activityLogs, operationI
                 <DeleteConfirmationDialog
                     open={deleteDialogOpen}
                     onOpenChange={setDeleteDialogOpen}
-                    onConfirm={() => {
-                        window.location.href = `/performances/${performance.id}?_method=DELETE`;
-                    }}
+                    onConfirm={handleDelete}
+                    isLoading={isDeleting}
                     title="Delete Performance Record"
                     description={`Are you sure you want to delete performance record "${foNumber}"? This action cannot be undone.`}
+                    itemName={foNumber}
                 />
             </div>
         </AppLayout>

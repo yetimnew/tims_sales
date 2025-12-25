@@ -17,6 +17,8 @@ class DriverGradingSetting extends Model
         'compliance_weight',
         'engagement_weight',
         'peer_sample_size',
+        'min_trips',
+        'min_days_employed',
         'grade_thresholds',
         'updated_by',
     ];
@@ -28,6 +30,8 @@ class DriverGradingSetting extends Model
         'compliance_weight' => 'integer',
         'engagement_weight' => 'integer',
         'peer_sample_size' => 'integer',
+        'min_trips' => 'integer',
+        'min_days_employed' => 'integer',
         'grade_thresholds' => 'array',
         'updated_by' => 'integer',
     ];

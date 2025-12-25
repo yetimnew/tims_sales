@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react'
 import { Head, Link, router, useForm } from '@inertiajs/react'
-import { ArrowLeft, MapPin, Route, Save, Navigation } from 'lucide-react'
+import { ArrowLeft, MapPin, Route, Save, Navigation, AlertCircle } from 'lucide-react'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { toast } from '@/hooks/use-toast'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -47,6 +49,10 @@ export default function DistancesCreate({ places }: DistancesCreateProps) {
   const [calculatedDistance, setCalculatedDistance] = useState<number>(0)
   const [calculatedTime, setCalculatedTime] = useState<number>(0)
   const [frontendErrors, setFrontendErrors] = useState<Record<string, string>>({})
+  const hasErrors = useMemo(
+    () => Object.keys(errors).length > 0 || Object.keys(frontendErrors).length > 0,
+    [errors, frontendErrors]
+  )
 
   const { data, setData, post, processing, errors, reset } = useForm({
     from_place_id: '',
@@ -194,6 +200,10 @@ export default function DistancesCreate({ places }: DistancesCreateProps) {
         setRoutePoints([])
         setCalculatedDistance(0)
         setCalculatedTime(0)
+        toast({
+          title: '✅ Distance Record Created',
+          description: 'The route distance has been registered successfully.',
+        })
       },
     })
   }
@@ -290,6 +300,15 @@ export default function DistancesCreate({ places }: DistancesCreateProps) {
                 <CardDescription>Select the endpoints and confirm the calculated metrics.</CardDescription>
               </CardHeader>
               <CardContent className="flex flex-1 flex-col overflow-hidden p-0">
+                {hasErrors && (
+                  <div className="px-6 pt-6">
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>Please resolve the highlighted fields before submitting the form.</AlertDescription>
+                    </Alert>
+                  </div>
+                )}
+
                 <form
                   onSubmit={handleSubmit}
                   className="flex flex-1 flex-col gap-6 overflow-y-auto p-6 pb-24"

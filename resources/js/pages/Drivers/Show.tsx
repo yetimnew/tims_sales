@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { toast } from '@/hooks/use-toast';
 import { AlertCircle, Ban, BarChart3, History, ShieldCheck, CheckCircle, Calendar, User, ArrowLeft, Edit, Trash2, Hash, Activity, Truck, ArrowUpRight } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { Head, Link, router } from '@inertiajs/react';
@@ -587,11 +588,36 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
     const handleDeleteConfirm = () => {
         setIsDeleting(true);
         router.delete(`/drivers/${driver.id}`, {
+            preserveScroll: true,
             onSuccess: () => {
                 setDeleteDialogOpen(false);
                 setIsDeleting(false);
+                toast({
+                    title: '✅ Driver Deleted',
+                    description: `${driver.name} has been removed from the workforce.`,
+                });
             },
-            onError: () => setIsDeleting(false),
+            onError: (errors) => {
+                setIsDeleting(false);
+                if (errors && typeof errors === 'object') {
+                    const messages = Object.values(errors)
+                        .flatMap((value) => (Array.isArray(value) ? value : [value]))
+                        .filter((value) => Boolean(value))
+                        .join('\n');
+
+                    toast({
+                        title: '❌ Delete Failed',
+                        description: messages || 'Unable to delete this driver. Please resolve any blocking records first.',
+                        variant: 'destructive',
+                    });
+                } else {
+                    toast({
+                        title: '❌ Delete Failed',
+                        description: 'An unexpected error occurred while deleting the driver. Please try again.',
+                        variant: 'destructive',
+                    });
+                }
+            },
         });
     };
 

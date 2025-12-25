@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, ArrowUp, CheckCircle2, ClipboardList, DollarSign, Info, Settings, SlidersHorizontal } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { validateMaintenanceType, type ValidationErrors } from '@/lib/validation';
@@ -115,7 +116,7 @@ export default function MaintenanceTypesCreate() {
             preserveScroll: true,
             onSuccess: () => {
                 toast({
-                    title: 'Maintenance Type Created',
+                    title: '✅ Maintenance Type Created',
                     description: 'The maintenance type has been saved successfully.',
                 });
                 setFrontendErrors({});
@@ -173,6 +174,15 @@ export default function MaintenanceTypesCreate() {
                     </CardHeader>
 
                     <CardContent className="flex flex-1 flex-col overflow-hidden p-0">
+                        {hasErrors && (
+                            <div className="px-6 pt-6">
+                                <Alert variant="destructive">
+                                    <AlertCircle className="h-4 w-4" />
+                                    <AlertDescription>Please resolve the highlighted fields before submitting the form.</AlertDescription>
+                                </Alert>
+                            </div>
+                        )}
+
                         <form
                             ref={scrollContainerRef}
                             onSubmit={submit}

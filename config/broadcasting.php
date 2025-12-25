@@ -17,7 +17,7 @@ return [
     |
     */
 
-    'default' => $defaultConnection === 'reverb' ? 'null' : $defaultConnection,
+    'default' => 'null', // Disabled for shared hosting - using database notifications only
 
     /*
     |--------------------------------------------------------------------------

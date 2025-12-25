@@ -12,7 +12,8 @@ import { Link, useForm } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import { toast } from '@/hooks/use-toast';
 import { validateTruck, truckValidation, type ValidationErrors } from '@/lib/validation';
-import { Info, Wrench, DollarSign, CheckCircle, ArrowLeft, Save, Truck, Hash } from 'lucide-react';
+import { Info, Wrench, DollarSign, CheckCircle, ArrowLeft, Save, Truck, Hash, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FormEventHandler, useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -157,6 +158,10 @@ export default function TrucksEdit({ truck, vehicleTypes }: TrucksEditProps) {
                 clearErrors();
                 setFrontendErrors({});
                 setIsDirty(false);
+                toast({
+                    title: '✅ Truck Updated',
+                    description: 'The truck information has been updated successfully.',
+                });
             },
         });
     };
@@ -191,6 +196,15 @@ export default function TrucksEdit({ truck, vehicleTypes }: TrucksEditProps) {
                 </>
             }
         >
+            {(Object.keys(errors).length > 0 || Object.keys(frontendErrors).length > 0) && (
+                <div className="px-6 pt-6">
+                    <Alert variant="destructive">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>Please resolve the highlighted fields before submitting the form.</AlertDescription>
+                    </Alert>
+                </div>
+            )}
+
             <form
                 ref={scrollContainerRef}
                 onSubmit={submit}

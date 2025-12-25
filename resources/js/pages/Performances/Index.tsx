@@ -415,17 +415,34 @@ export default function PerformancesIndex({
         if (!selectedPerformance || !canDeletePerformance) return;
 
         setIsDeleting(true);
-        try {
-            await router.delete(`/performances/${selectedPerformance.id}`, {
-                onSuccess: () => {
-                    setDeleteDialogOpen(false);
-                    setSelectedPerformance(null);
-                    handleNavigate({ page: 1 });
-                },
-            });
-        } finally {
-            setIsDeleting(false);
-        }
+        router.delete(`/performances/${selectedPerformance.id}`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setDeleteDialogOpen(false);
+                setSelectedPerformance(null);
+                setIsDeleting(false);
+                toast({
+                    title: '✅ Performance Deleted',
+                    description: `${selectedPerformance.foNumber} has been removed successfully.`,
+                });
+            },
+            onError: (errors) => {
+                setIsDeleting(false);
+                const fallback = 'Failed to delete performance. Please try again.';
+                const errorMessages = errors && typeof errors === 'object'
+                    ? Object.values(errors)
+                          .flatMap((value) => (Array.isArray(value) ? value : [value]))
+                          .filter(Boolean)
+                          .join(', ')
+                    : fallback;
+
+                toast({
+                    title: '❌ Delete Failed',
+                    description: errorMessages || fallback,
+                    variant: 'destructive',
+                });
+            },
+        });
     }, [selectedPerformance, canDeletePerformance, handleNavigate]);
 
     const handleSort = React.useCallback(

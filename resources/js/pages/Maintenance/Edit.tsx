@@ -372,7 +372,7 @@ export default function MaintenanceEdit({ maintenance, trucks, maintenanceTypes,
             preserveScroll: true,
             onSuccess: () => {
                 toast({
-                    title: 'Maintenance updated',
+                    title: '✅ Maintenance Record Updated',
                     description: 'The maintenance record has been updated successfully.',
                 });
                 setFrontendErrors({});

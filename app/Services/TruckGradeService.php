@@ -17,17 +17,45 @@ class TruckGradeService
     {
         $settings = $this->resolveSettings();
 
+        // Check if truck has sufficient data for grading
+        $dataSufficiency = $this->assessDataSufficiency($truck, $settings);
+
+        if ($dataSufficiency['status'] === 'insufficient') {
+            return [
+                'status' => 'insufficient_data',
+                'message' => $dataSufficiency['message'],
+                'requirements' => $dataSufficiency['requirements'],
+                'current' => $dataSufficiency['current'],
+                'overall' => null,
+                'categories' => null,
+                'weights' => Arr::only($settings, [
+                    'utilization_weight',
+                    'efficiency_weight',
+                    'reliability_weight',
+                    'financial_weight',
+                    'compliance_weight',
+                ]),
+                'grade_thresholds' => $settings['grade_thresholds'],
+                'metrics' => null,
+            ];
+        }
+
         $peerIds = $this->determinePeerTruckIds($truck, $settings['peer_sample_size']);
         $comparisonIds = $peerIds->concat([$truck->id])->unique()->values();
 
         $metricDataset = $this->buildMetricDataset($comparisonIds);
 
-        return $this->buildReport(
+        $report = $this->buildReport(
             $truck->id,
             $metricDataset,
             $peerIds->unique()->values(),
             $settings,
         );
+
+        // Add status to report
+        $report['status'] = 'graded';
+
+        return $report;
     }
 
     /**
@@ -111,6 +139,8 @@ class TruckGradeService
             TruckGradingSetting::defaultWeights(),
             [
                 'grade_thresholds' => TruckGradingSetting::defaultGradeThresholds(),
+                'min_performance_records' => 5,
+                'min_days_in_service' => 30,
             ],
         );
 
@@ -129,6 +159,8 @@ class TruckGradeService
                 'financial_weight',
                 'compliance_weight',
                 'peer_sample_size',
+                'min_performance_records',
+                'min_days_in_service',
             ]), static fn ($value) => $value !== null),
         );
 
@@ -138,6 +170,85 @@ class TruckGradeService
         );
 
         return $settings;
+    }
+
+    private function assessDataSufficiency(Truck $truck, array $settings): array
+    {
+        $minPerformanceRecords = $settings['min_performance_records'] ?? 5;
+        $minDaysInService = $settings['min_days_in_service'] ?? 30;
+
+        // Count performance records
+        $performanceCount = DriverTruck::query()
+            ->where('truck_id', $truck->id)
+            ->whereNull('deleted_at')
+            ->withCount(['performances' => function ($query) {
+                $query->whereNull('deleted_at');
+            }])
+            ->get()
+            ->sum('performances_count');
+
+        // Calculate days in service
+        $daysInService = 0;
+        if ($truck->serviceStartDate) {
+            $daysInService = Carbon::parse($truck->serviceStartDate)->diffInDays(Carbon::now());
+        }
+
+        $requirements = [];
+        $unmetCount = 0;
+
+        // Check performance records requirement
+        $perfMet = $performanceCount >= $minPerformanceRecords;
+        if (!$perfMet) {
+            $unmetCount++;
+        }
+        $requirements[] = [
+            'description' => 'Minimum performance records',
+            'minimum' => $minPerformanceRecords,
+            'current' => $performanceCount,
+            'met' => $perfMet,
+        ];
+
+        // Check days in service requirement
+        $daysMet = $daysInService >= $minDaysInService;
+        if (!$daysMet) {
+            $unmetCount++;
+        }
+        $requirements[] = [
+            'description' => 'Minimum days in service',
+            'minimum' => $minDaysInService,
+            'current' => $daysInService,
+            'met' => $daysMet,
+        ];
+
+        // Determine if data is sufficient (at least one requirement must be met)
+        $isSufficient = $perfMet || $daysMet;
+
+        if (!$isSufficient) {
+            $message = sprintf(
+                'This truck needs %d more performance record(s) or %d more day(s) in service before grading can be calculated.',
+                max(0, $minPerformanceRecords - $performanceCount),
+                max(0, $minDaysInService - $daysInService)
+            );
+
+            return [
+                'status' => 'insufficient',
+                'message' => $message,
+                'requirements' => $requirements,
+                'current' => [
+                    'performance_records' => $performanceCount,
+                    'days_in_service' => $daysInService,
+                ],
+            ];
+        }
+
+        return [
+            'status' => 'sufficient',
+            'requirements' => $requirements,
+            'current' => [
+                'performance_records' => $performanceCount,
+                'days_in_service' => $daysInService,
+            ],
+        ];
     }
 
     private function determinePeerTruckIds(Truck $truck, int $sampleSize): Collection

@@ -168,6 +168,7 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
     const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
     const [selectedAssignment, setSelectedAssignment] = React.useState<DriverTruckData | null>(null);
     const [isDeleting, setIsDeleting] = React.useState(false);
+    const [deleteError, setDeleteError] = React.useState<string | null>(null);
 
     React.useEffect(() => {
         const incoming = filters?.status ?? 'all';
@@ -289,6 +290,7 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
     const handleDeleteClick = (assignment: DriverTruckData) => {
         setSelectedAssignment(assignment);
         setDeleteDialogOpen(true);
+        setDeleteError(null);
     };
 
     const handleDeleteConfirm = () => {
@@ -303,23 +305,28 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
                 setDeleteDialogOpen(false);
                 setSelectedAssignment(null);
                 setIsDeleting(false);
+                setDeleteError(null);
             },
             onError: (errors) => {
                 setIsDeleting(false);
 
-                const fallback = 'Failed to delete assignment. Please try again.';
+                const fallback = 'Failed to delete assignment. Please review the requirements and try again.';
                 if (errors && typeof errors === 'object') {
-                    const errorMessages = Object.values(errors)
+                    const messages = Object.values(errors)
                         .flatMap((value) => (Array.isArray(value) ? value : [value]))
-                        .filter(Boolean)
+                        .filter((value) => Boolean(value))
                         .join('\n');
+
+                    setDeleteError(messages || fallback);
 
                     toast({
                         title: '❌ Delete Failed',
-                        description: errorMessages || fallback,
+                        description: messages || fallback,
                         variant: 'destructive',
                     });
                 } else {
+                    setDeleteError(fallback);
+
                     toast({
                         title: '❌ Delete Failed',
                         description: fallback,
@@ -336,7 +343,7 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
                 <Button asChild>
                     <Link href="/driver-trucks/create">
                         <Plus className="mr-2 h-4 w-4" />
-                        Assign Driver to Truck
+                        Add Assignment
                     </Link>
                 </Button>
             )}
@@ -694,6 +701,7 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
                     setDeleteDialogOpen(open);
                     if (!open) {
                         setSelectedAssignment(null);
+                        setDeleteError(null);
                     }
                 }}
                 title="Delete Assignment"
@@ -701,6 +709,7 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
                 itemName={selectedAssignment ? `${selectedAssignment.driver.name} ↔ ${selectedAssignment.truck.plate}` : undefined}
                 onConfirm={handleDeleteConfirm}
                 isLoading={isDeleting}
+                errorMessage={deleteError}
             />
         </>
     );

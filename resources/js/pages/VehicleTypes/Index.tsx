@@ -140,6 +140,7 @@ export default function VehicleTypesIndex({ vehicleTypes, metrics, filters, perP
     const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
     const [selectedVehicleType, setSelectedVehicleType] = React.useState<VehicleType | null>(null);
     const [isDeleting, setIsDeleting] = React.useState(false);
+    const [deleteError, setDeleteError] = React.useState<string | null>(null);
 
     const isDataReady = Array.isArray(vehicleTypes?.data);
     const { isLoading: isTableLoading } = useListingLoading({
@@ -230,6 +231,7 @@ export default function VehicleTypesIndex({ vehicleTypes, metrics, filters, perP
     const handleDeleteClick = (vehicleType: VehicleType) => {
         setSelectedVehicleType(vehicleType);
         setDeleteDialogOpen(true);
+        setDeleteError(null);
     };
 
     const handleDeleteConfirm = () => {
@@ -245,6 +247,7 @@ export default function VehicleTypesIndex({ vehicleTypes, metrics, filters, perP
                 setDeleteDialogOpen(false);
                 setSelectedVehicleType(null);
                 setIsDeleting(false);
+                setDeleteError(null);
                 toast({
                     title: 'Vehicle type removed',
                     description: 'The vehicle type was deleted successfully.',
@@ -253,21 +256,25 @@ export default function VehicleTypesIndex({ vehicleTypes, metrics, filters, perP
             onError: (errors) => {
                 setIsDeleting(false);
 
-                const fallback = 'Failed to delete vehicle type. Please try again.';
+                const fallback = 'Failed to delete vehicle type. Please review the requirements and try again.';
                 if (errors && typeof errors === 'object') {
-                    const errorMessages = Object.values(errors)
+                    const messages = Object.values(errors)
                         .flatMap((value) => (Array.isArray(value) ? value : [value]))
-                        .filter(Boolean)
+                        .filter((value) => Boolean(value))
                         .join('\n');
 
+                    setDeleteError(messages || fallback);
+
                     toast({
-                        title: 'Delete failed',
-                        description: errorMessages || fallback,
+                        title: '❌ Delete Failed',
+                        description: messages || fallback,
                         variant: 'destructive',
                     });
                 } else {
+                    setDeleteError(fallback);
+
                     toast({
-                        title: 'Delete failed',
+                        title: '❌ Delete Failed',
                         description: fallback,
                         variant: 'destructive',
                     });
@@ -591,6 +598,7 @@ export default function VehicleTypesIndex({ vehicleTypes, metrics, filters, perP
                     setDeleteDialogOpen(open);
                     if (!open) {
                         setSelectedVehicleType(null);
+                        setDeleteError(null);
                     }
                 }}
                 title="Delete Vehicle Type"
@@ -598,6 +606,7 @@ export default function VehicleTypesIndex({ vehicleTypes, metrics, filters, perP
                 itemName={selectedVehicleType?.name || undefined}
                 onConfirm={handleDeleteConfirm}
                 isLoading={isDeleting}
+                errorMessage={deleteError}
             />
         </>
     );

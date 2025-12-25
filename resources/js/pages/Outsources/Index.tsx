@@ -181,7 +181,7 @@ export default function OutsourcesIndex({
     const [isDeleting, setIsDeleting] = useState(false);
 
     const availablePerPageOptions = useMemo(
-        () => (perPageOptions?.length ? perPageOptions : [10, 15, 25, 50]),
+        () => (perPageOptions?.length ? perPageOptions : [15, 25, 50, 100]),
         [perPageOptions],
     );
 
@@ -391,18 +391,27 @@ export default function OutsourcesIndex({
                 setDeleteDialogOpen(false);
                 setSelectedOutsource(null);
                 setIsDeleting(false);
+                toast({
+                    title: '✅ Vendor Deleted',
+                    description: `${selectedOutsource.name} has been removed successfully.`,
+                });
             },
             onError: (errors) => {
                 setIsDeleting(false);
+                const fallback = 'Failed to delete vendor. Please try again.';
                 if (errors && typeof errors === 'object') {
                     const messages = Object.values(errors).flat().join('\n');
-                    if (messages) {
-                        toast({
-                            title: 'Delete failed',
-                            description: messages,
-                            variant: 'destructive',
-                        });
-                    }
+                    toast({
+                        title: '❌ Delete Failed',
+                        description: messages || fallback,
+                        variant: 'destructive',
+                    });
+                } else {
+                    toast({
+                        title: '❌ Delete Failed',
+                        description: fallback,
+                        variant: 'destructive',
+                    });
                 }
             },
         });

@@ -224,7 +224,7 @@ export default function MaintenanceCreate({ trucks, maintenanceTypes, mechanics,
             preserveScroll: true,
             onSuccess: () => {
                 toast({
-                    title: 'Maintenance scheduled',
+                    title: '✅ Maintenance Record Created',
                     description: 'The maintenance task has been created successfully.',
                 });
                 setFrontendErrors({});
@@ -233,7 +233,7 @@ export default function MaintenanceCreate({ trucks, maintenanceTypes, mechanics,
             },
             onError: () => {
                 toast({
-                    title: 'Schedule failed',
+                    title: '❌ Schedule Failed',
                     description: 'Unable to save maintenance. Review the errors and retry.',
                     variant: 'destructive',
                 });

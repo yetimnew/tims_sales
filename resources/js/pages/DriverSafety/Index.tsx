@@ -228,6 +228,7 @@ export default function DriverSafetyIndex({
     const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
     const [selectedRecord, setSelectedRecord] = React.useState<SafetyRecord | null>(null);
     const [isDeleting, setIsDeleting] = React.useState(false);
+    const [deleteError, setDeleteError] = React.useState<string | null>(null);
 
     const isDataReady = Array.isArray(safetyRecords?.data);
     const { isLoading: isTableLoading } = useListingLoading({
@@ -360,6 +361,7 @@ export default function DriverSafetyIndex({
     const handleDeleteClick = (record: SafetyRecord) => {
         setSelectedRecord(record);
         setDeleteDialogOpen(true);
+        setDeleteError(null);
     };
 
     const handleDeleteConfirm = () => {
@@ -375,6 +377,7 @@ export default function DriverSafetyIndex({
                 setDeleteDialogOpen(false);
                 setSelectedRecord(null);
                 setIsDeleting(false);
+                setDeleteError(null);
                 toast({
                     title: 'Safety record deleted',
                     description: 'The driver safety record was removed successfully.',
@@ -383,21 +386,25 @@ export default function DriverSafetyIndex({
             onError: (errors) => {
                 setIsDeleting(false);
 
-                const fallback = 'Failed to delete safety record. Please try again.';
+                const fallback = 'Failed to delete safety record. Please review the requirements and try again.';
                 if (errors && typeof errors === 'object') {
-                    const errorMessages = Object.values(errors)
+                    const messages = Object.values(errors)
                         .flatMap((value) => (Array.isArray(value) ? value : [value]))
-                        .filter(Boolean)
+                        .filter((value) => Boolean(value))
                         .join('\n');
 
+                    setDeleteError(messages || fallback);
+
                     toast({
-                        title: 'Delete failed',
-                        description: errorMessages || fallback,
+                        title: '❌ Delete Failed',
+                        description: messages || fallback,
                         variant: 'destructive',
                     });
                 } else {
+                    setDeleteError(fallback);
+
                     toast({
-                        title: 'Delete failed',
+                        title: '❌ Delete Failed',
                         description: fallback,
                         variant: 'destructive',
                     });
@@ -412,7 +419,7 @@ export default function DriverSafetyIndex({
                 <Button asChild>
                     <Link href="/driver-safety/create">
                         <Plus className="mr-2 h-4 w-4" />
-                        New Safety Record
+                        Add Safety Record
                     </Link>
                 </Button>
             )}
@@ -773,7 +780,7 @@ export default function DriverSafetyIndex({
                     setDeleteDialogOpen(open);
                     if (!open) {
                         setSelectedRecord(null);
-                        setIsDeleting(false);
+                        setDeleteError(null);
                     }
                 }}
                 title="Delete Safety Record"
@@ -785,6 +792,7 @@ export default function DriverSafetyIndex({
                 }
                 onConfirm={handleDeleteConfirm}
                 isLoading={isDeleting}
+                errorMessage={deleteError}
             />
         </>
     );

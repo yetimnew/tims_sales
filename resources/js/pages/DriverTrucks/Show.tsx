@@ -443,9 +443,14 @@ export default function Show({ driverTruck, performances, dateDifference, activi
     const handleDeleteConfirm = () => {
         setIsDeleting(true);
         router.delete(`/driver-trucks/${driverTruck.id}`, {
+            preserveScroll: true,
             onSuccess: () => {
                 setDeleteDialogOpen(false);
                 setIsDeleting(false);
+                toast({
+                    title: '✅ Assignment Deleted',
+                    description: 'The driver-truck assignment has been removed successfully.',
+                });
             },
             onError: (errors) => {
                 setIsDeleting(false);
@@ -455,13 +460,19 @@ export default function Show({ driverTruck, performances, dateDifference, activi
                         .flatMap((value) => (Array.isArray(value) ? value : [value]))
                         .filter((message): message is string => Boolean(message && message.length));
 
-                    if (errorMessages.length > 0) {
-                        toast({
-                            title: '❌ Delete Failed',
-                            description: errorMessages.join('\n'),
-                            variant: 'destructive',
-                        });
-                    }
+                    toast({
+                        title: '❌ Delete Failed',
+                        description: errorMessages.length > 0 
+                            ? errorMessages.join('\n')
+                            : 'Unable to delete this assignment. Please resolve any blocking records first.',
+                        variant: 'destructive',
+                    });
+                } else {
+                    toast({
+                        title: '❌ Delete Failed',
+                        description: 'An unexpected error occurred while deleting the assignment. Please try again.',
+                        variant: 'destructive',
+                    });
                 }
             },
         });

@@ -211,7 +211,7 @@ export default function UsersIndex({ users, filters, roleOptions, statusOptions,
     const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>(filters?.direction ?? 'asc');
 
     const availablePerPageOptions = React.useMemo(
-        () => (perPageOptions?.length ? perPageOptions : [10, 15, 25, 50]),
+        () => (perPageOptions?.length ? perPageOptions : [15, 25, 50, 100]),
         [perPageOptions],
     );
 
@@ -360,22 +360,21 @@ export default function UsersIndex({ users, filters, roleOptions, statusOptions,
         router.delete(`/users/${selectedUser.id}`, {
             preserveScroll: true,
             onSuccess: () => {
-                toast({
-                    title: 'User deleted',
-                    description: `${name} has been removed.`,
-                });
                 setDeleteDialogOpen(false);
                 setSelectedUser(null);
+                setIsDeleting(false);
+                toast({
+                    title: '✅ User Deleted',
+                    description: `${name} has been removed successfully.`,
+                });
             },
             onError: () => {
+                setIsDeleting(false);
                 toast({
-                    title: 'Unable to delete user',
+                    title: '❌ Delete Failed',
                     description: 'Please try again or contact support if the issue persists.',
                     variant: 'destructive',
                 });
-            },
-            onFinish: () => {
-                setIsDeleting(false);
             },
         });
     };

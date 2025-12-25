@@ -13,7 +13,8 @@ import { validateDriverTruck } from '@/lib/validation';
 import { type BreadcrumbItem } from '@/types';
 import { Link, useForm } from '@inertiajs/react';
 import { cn } from '@/lib/utils';
-import { ArrowLeft, Calendar, CheckCircle, Info, Save, Share2 } from 'lucide-react';
+import { ArrowLeft, Calendar, CheckCircle, Info, Save, Share2, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { type FormEventHandler } from 'react';
 import { parseISO } from 'date-fns';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -266,6 +267,15 @@ export default function DriverTrucksCreate({ trucks, drivers, error }: Props) {
                 </>
             }
         >
+            {(Object.keys(errors).length > 0 || Object.keys(frontendErrors).length > 0) && (
+                <div className="px-6 pt-6">
+                    <Alert variant="destructive">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>Please resolve the highlighted fields before submitting the form.</AlertDescription>
+                    </Alert>
+                </div>
+            )}
+
             <form
                 ref={scrollContainerRef}
                 onSubmit={submit}

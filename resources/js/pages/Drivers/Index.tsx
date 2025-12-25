@@ -104,11 +104,11 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
     const { hasPermission } = usePermissions();
     const canViewDriverDetails = hasPermission('drivers.show');
     const [searchTerm, setSearchTerm] = React.useState(filters?.search ?? '');
-    const [selectedStatus, setSelectedStatus] = React.useState(() => (filters?.status ?? 'active'));
+    const [selectedStatus, setSelectedStatus] = React.useState(() => (filters?.status ?? 'all'));
     const [selectedGender, setSelectedGender] = React.useState(filters?.sex ?? 'all');
     const [sortColumn, setSortColumn] = React.useState<string>(filters?.sort ?? 'name');
     const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>(filters?.direction ?? 'asc');
-    const availablePerPageOptions = React.useMemo(() => (perPageOptions?.length ? perPageOptions : [10, 15, 25, 50]), [perPageOptions]);
+    const availablePerPageOptions = React.useMemo(() => (perPageOptions?.length ? perPageOptions : [15, 25, 50, 100]), [perPageOptions]);
 
     const statusSegments = React.useMemo(() => {
         const segments: Array<{ value: string; label: string }> = [];
@@ -140,12 +140,13 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
             return candidate;
         }
 
-        return availablePerPageOptions[0] ?? 10;
+        return availablePerPageOptions[0] ?? 15;
     }, [filters?.per_page, availablePerPageOptions]);
     const [perPage, setPerPage] = React.useState<string>(() => String(resolvedPerPage));
     const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
     const [selectedDriver, setSelectedDriver] = React.useState<DriverData | null>(null);
     const [isDeleting, setIsDeleting] = React.useState(false);
+    const [deleteError, setDeleteError] = React.useState<string | null>(null);
 
     const isDataReady = Array.isArray(drivers?.data);
     const { isLoading: isTableLoading } = useListingLoading({
@@ -266,6 +267,7 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
     const handleDeleteClick = (driver: DriverData) => {
         setSelectedDriver(driver);
         setDeleteDialogOpen(true);
+        setDeleteError(null);
     };
 
     const handleDeleteConfirm = () => {
@@ -280,18 +282,34 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
                 setDeleteDialogOpen(false);
                 setSelectedDriver(null);
                 setIsDeleting(false);
+                setDeleteError(null);
             },
             onError: (errors) => {
                 setIsDeleting(false);
+
                 if (errors && typeof errors === 'object') {
-                    const errorMessages = Object.values(errors).flat().join('\n');
-                    if (errorMessages) {
-                        toast({
-                            title: '❌ Delete Failed',
-                            description: errorMessages,
-                            variant: 'destructive',
-                        });
-                    }
+                    const messages = Object.values(errors)
+                        .flatMap((value) => (Array.isArray(value) ? value : [value]))
+                        .filter((value) => Boolean(value))
+                        .join('\n');
+
+                    const fallback = 'Failed to delete driver. Please review the requirements and try again.';
+                    setDeleteError(messages || fallback);
+
+                    toast({
+                        title: '❌ Delete Failed',
+                        description: messages || fallback,
+                        variant: 'destructive',
+                    });
+                } else {
+                    const fallback = 'An unexpected error occurred while deleting the driver. Please try again.';
+                    setDeleteError(fallback);
+
+                    toast({
+                        title: '❌ Delete Failed',
+                        description: fallback,
+                        variant: 'destructive',
+                    });
                 }
             },
         });
@@ -656,6 +674,7 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
                     setDeleteDialogOpen(open);
                     if (!open) {
                         setSelectedDriver(null);
+                        setDeleteError(null);
                     }
                 }}
                 title="Delete Driver"
@@ -663,6 +682,7 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
                 itemName={selectedDriver?.name}
                 onConfirm={handleDeleteConfirm}
                 isLoading={isDeleting}
+                errorMessage={deleteError}
             />
         </>
     );

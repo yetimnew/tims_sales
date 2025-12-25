@@ -15,6 +15,8 @@ class DriverTruckGradingSetting extends Model
         'efficiency_weight',
         'consistency_weight',
         'peer_sample_size',
+        'min_trips',
+        'min_days_assigned',
         'grade_thresholds',
         'updated_by',
     ];
@@ -24,6 +26,8 @@ class DriverTruckGradingSetting extends Model
         'efficiency_weight' => 'integer',
         'consistency_weight' => 'integer',
         'peer_sample_size' => 'integer',
+        'min_trips' => 'integer',
+        'min_days_assigned' => 'integer',
         'grade_thresholds' => 'array',
         'updated_by' => 'integer',
     ];

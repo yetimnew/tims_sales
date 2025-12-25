@@ -5,12 +5,13 @@ namespace App\Http\Controllers;
 use App\Models\DailyTruckStatus;
 use App\Models\Driver;
 use App\Models\DriverSafetyRecord;
-use App\Models\FuelRecord;
+use App\Models\InsuranceRecord;
 use App\Models\Operation;
 use App\Models\Performance;
 use App\Models\Truck;
 use App\Models\TruckFinancialRecord;
 use App\Models\VehicleMaintenanceRecord;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -100,12 +101,79 @@ class DashboardController extends Controller
         $fleetUtilisation = $totalTrucks > 0 ? ($trucksUtilizedLast30 / $totalTrucks) * 100 : 0.0;
         $driverAvailability = $totalDrivers > 0 ? ($activeDrivers / $totalDrivers) * 100 : 0.0;
 
-        $statusBreakdown = Performance::selectRaw('LOWER(COALESCE(satus, "unknown")) as status')
-            ->selectRaw('COUNT(*) as count')
+        $statusReferenceDate = $today->copy()->endOfDay();
+        $statusRows = Performance::query()
             ->whereBetween('DateDispach', [$start30, $today])
-            ->groupBy('status')
-            ->orderByDesc('count')
+            ->select(['id', 'satus', 'is_returned', 'DateDispach', 'load_phase'])
             ->get();
+
+        $statusCounts = $statusRows
+            ->map(fn (Performance $performance) => $this->determineNetworkStatusBucket($performance, $statusReferenceDate))
+            ->filter()
+            ->countBy();
+
+        $statusDefinitions = [
+            'completed' => ['label' => 'Completed', 'color' => '#10b981'],
+            'in_transit' => ['label' => 'In transit (≤7d)', 'color' => '#6366f1'],
+            'awaiting_return' => ['label' => 'Awaiting return (8-14d)', 'color' => '#f59e0b'],
+            'overdue' => ['label' => 'Overdue (>14d)', 'color' => '#ef4444'],
+            'pending' => ['label' => 'Pending dispatch', 'color' => '#0ea5e9'],
+            'cancelled' => ['label' => 'Cancelled', 'color' => '#6b7280'],
+            'failed' => ['label' => 'Failed', 'color' => '#db2777'],
+            'unknown' => ['label' => 'Unknown', 'color' => '#94a3b8'],
+        ];
+
+        $totalStatusCount = (int) $statusCounts->sum();
+
+        $statusBreakdownData = collect($statusDefinitions)
+            ->map(function (array $definition, string $bucket) use ($statusCounts, $totalStatusCount) {
+                $count = (int) ($statusCounts->get($bucket) ?? 0);
+
+                return [
+                    'status' => $bucket,
+                    'label' => $definition['label'],
+                    'color' => $definition['color'],
+                    'count' => $count,
+                    'share' => $totalStatusCount > 0 ? round(($count / $totalStatusCount) * 100, 1) : 0.0,
+                ];
+            })
+            ->filter(fn (array $entry) => $entry['count'] > 0)
+            ->sortByDesc('count')
+            ->values()
+            ->all();
+
+        $loadPhaseDefinitions = [
+            'main' => ['label' => 'Main load trips', 'color' => '#4338ca'],
+            'return' => ['label' => 'Return load trips', 'color' => '#0ea5e9'],
+            'unspecified' => ['label' => 'Unspecified phase', 'color' => '#94a3b8'],
+        ];
+
+        $phaseCounts = $statusRows
+            ->map(static function (Performance $performance) {
+                $phase = Str::of((string) ($performance->load_phase ?? ''))->trim()->lower()->value();
+
+                return in_array($phase, ['main', 'return'], true) ? $phase : 'unspecified';
+            })
+            ->countBy();
+
+        $totalPhaseCount = (int) $phaseCounts->sum();
+
+        $loadPhaseBreakdown = collect($loadPhaseDefinitions)
+            ->map(function (array $definition, string $key) use ($phaseCounts, $totalPhaseCount) {
+                $count = (int) ($phaseCounts->get($key) ?? 0);
+
+                return [
+                    'phase' => $key,
+                    'label' => $definition['label'],
+                    'color' => $definition['color'],
+                    'count' => $count,
+                    'share' => $totalPhaseCount > 0 ? round(($count / $totalPhaseCount) * 100, 1) : 0.0,
+                ];
+            })
+            ->filter(fn (array $entry) => $entry['count'] > 0)
+            ->sortByDesc('count')
+            ->values()
+            ->all();
 
         $corridorVolumes = Performance::query()
             ->leftJoin('places as origins', 'performances.orgion_id', '=', 'origins.id')
@@ -135,13 +203,13 @@ class DashboardController extends Controller
         $revenueLast30 = Performance::query()
             ->leftJoin('operations', 'performances.operation_id', '=', 'operations.id')
             ->whereBetween('performances.DateDispach', [$start30, $today])
-            ->selectRaw('SUM(COALESCE(performances.CargoVolumMT, 0) * COALESCE(operations.tariff, 0)) as revenue')
+            ->selectRaw('SUM(COALESCE(performances.tonkm, 0) * COALESCE(operations.tariff, 0)) as revenue')
             ->value('revenue') ?? 0.0;
 
         $revenuePrev30 = Performance::query()
             ->leftJoin('operations', 'performances.operation_id', '=', 'operations.id')
             ->whereBetween('performances.DateDispach', [$previousStart30, $previousEnd30])
-            ->selectRaw('SUM(COALESCE(performances.CargoVolumMT, 0) * COALESCE(operations.tariff, 0)) as revenue')
+            ->selectRaw('SUM(COALESCE(performances.tonkm, 0) * COALESCE(operations.tariff, 0)) as revenue')
             ->value('revenue') ?? 0.0;
 
         $operatingCostLast30 = Performance::whereBetween('DateDispach', [$start30, $today])
@@ -177,6 +245,54 @@ class DashboardController extends Controller
             ->values()
             ->all();
 
+        if (empty($financialTrend)) {
+            $financialTrend = Performance::query()
+                ->leftJoin('operations', 'performances.operation_id', '=', 'operations.id')
+                ->whereBetween('performances.DateDispach', [$start180, $today])
+                ->selectRaw("DATE_FORMAT(performances.DateDispach, '%Y-%m') as period")
+                ->selectRaw('SUM(COALESCE(performances.tonkm, 0) * COALESCE(operations.tariff, 0)) as revenue')
+                ->selectRaw('SUM(COALESCE(performances.fuelInBirr, 0) + COALESCE(performances.perdiem, 0) + COALESCE(performances.workOnGoing, 0) + COALESCE(performances.other, 0)) as cost')
+                ->groupBy('period')
+                ->orderBy('period')
+                ->get()
+                ->map(fn ($row) => [
+                    'period' => $row->period,
+                    'revenue' => (float) $row->revenue,
+                    'cost' => (float) $row->cost,
+                    'net' => (float) $row->revenue - (float) $row->cost,
+                ])
+                ->values()
+                ->all();
+        }
+
+        $financialTrend = collect($financialTrend)
+            ->mapWithKeys(fn ($row) => [
+                $row['period'] => [
+                    'revenue' => (float) ($row['revenue'] ?? 0.0),
+                    'cost' => (float) ($row['cost'] ?? 0.0),
+                    'net' => (float) ($row['net'] ?? (($row['revenue'] ?? 0.0) - ($row['cost'] ?? 0.0))),
+                ],
+            ]);
+
+        $financialTrend = collect(range(0, 5))
+            ->map(fn ($index) => $today->copy()->subMonths(5 - $index)->format('Y-m'))
+            ->map(function (string $period) use ($financialTrend) {
+                $entry = $financialTrend->get($period, ['revenue' => 0.0, 'cost' => 0.0, 'net' => 0.0]);
+
+                $revenue = (float) ($entry['revenue'] ?? 0.0);
+                $cost = (float) ($entry['cost'] ?? 0.0);
+                $net = (float) ($entry['net'] ?? ($revenue - $cost));
+
+                return [
+                    'period' => $period,
+                    'revenue' => $revenue,
+                    'cost' => $cost,
+                    'net' => $net,
+                ];
+            })
+            ->values()
+            ->all();
+
         $costBreakdownRow = TruckFinancialRecord::query()
             ->where('record_date', '>=', $start30)
             ->selectRaw('SUM(COALESCE(fuel_cost, 0)) as fuel')
@@ -187,38 +303,81 @@ class DashboardController extends Controller
             ->selectRaw('SUM(COALESCE(other_costs, 0)) as other')
             ->first();
 
-        $costBreakdown = [
-            ['label' => 'Fuel', 'value' => (float) ($costBreakdownRow->fuel ?? 0.0)],
-            ['label' => 'Maintenance', 'value' => (float) ($costBreakdownRow->maintenance ?? 0.0)],
-            ['label' => 'Drivers', 'value' => (float) ($costBreakdownRow->drivers ?? 0.0)],
-            ['label' => 'Insurance', 'value' => (float) ($costBreakdownRow->insurance ?? 0.0)],
-            ['label' => 'Depreciation', 'value' => (float) ($costBreakdownRow->depreciation ?? 0.0)],
-            ['label' => 'Other', 'value' => (float) ($costBreakdownRow->other ?? 0.0)],
-        ];
+        $costBreakdownCollection = collect([
+            'Fuel' => (float) ($costBreakdownRow?->fuel ?? 0.0),
+            'Maintenance' => (float) ($costBreakdownRow?->maintenance ?? 0.0),
+            'Drivers' => (float) ($costBreakdownRow?->drivers ?? 0.0),
+            'Insurance' => (float) ($costBreakdownRow?->insurance ?? 0.0),
+            'Depreciation' => (float) ($costBreakdownRow?->depreciation ?? 0.0),
+            'Other' => (float) ($costBreakdownRow?->other ?? 0.0),
+        ])->filter(fn (float $value): bool => $value > 0.01);
 
-        $fuelSummaryRow = FuelRecord::query()
-            ->whereBetween('fuel_date', [$start30, $today])
-            ->selectRaw('SUM(COALESCE(total_cost, 0)) as total_cost')
-            ->selectRaw('SUM(COALESCE(fuel_quantity_liters, 0)) as volume')
+        if ($costBreakdownCollection->isEmpty()) {
+            $performanceCostRow = Performance::query()
+                ->whereBetween('DateDispach', [$start30, $today])
+                ->selectRaw('SUM(COALESCE(fuelInBirr, 0)) as fuel')
+                ->selectRaw('SUM(COALESCE(perdiem, 0)) as drivers')
+                ->selectRaw('SUM(COALESCE(workOnGoing, 0)) as maintenance')
+                ->selectRaw('SUM(COALESCE(other, 0)) as other')
+                ->first();
+
+            $insuranceCostLast30 = $this->calculateInsuranceCostForWindow($start30->copy(), $today->copy());
+
+            $costBreakdownCollection = collect([
+                'Fuel' => (float) ($performanceCostRow?->fuel ?? 0.0),
+                'Maintenance' => (float) ($performanceCostRow?->maintenance ?? 0.0),
+                'Drivers' => (float) ($performanceCostRow?->drivers ?? 0.0),
+                'Insurance' => $insuranceCostLast30,
+                'Depreciation' => 0.0,
+                'Other' => (float) ($performanceCostRow?->other ?? 0.0),
+            ])->filter(fn (float $value): bool => $value > 0.01);
+        }
+
+        $costBreakdown = $costBreakdownCollection
+            ->sortDesc()
+            ->map(fn (float $value, string $label): array => [
+                'label' => $label,
+                'value' => round($value, 2),
+            ])
+            ->values()
+            ->all();
+
+        $fuelSummaryRow = Performance::query()
+            ->whereBetween('DateDispach', [$start30, $today])
+            ->selectRaw('SUM(COALESCE(fuelInBirr, 0)) as total_cost')
+            ->selectRaw('SUM(COALESCE(fuelInLitter, 0)) as total_volume')
             ->first();
 
         $fuelTotalCost30 = (float) ($fuelSummaryRow->total_cost ?? 0.0);
-        $fuelVolume30 = (float) ($fuelSummaryRow->volume ?? 0.0);
+        $fuelVolume30 = (float) ($fuelSummaryRow->total_volume ?? 0.0);
         $avgFuelPrice30 = $fuelVolume30 > 0 ? $fuelTotalCost30 / $fuelVolume30 : null;
 
-        $fuelTrend = FuelRecord::query()
-            ->where('fuel_date', '>=', $start180)
-            ->selectRaw("DATE_FORMAT(fuel_date, '%Y-%m') as period")
-            ->selectRaw('SUM(COALESCE(total_cost, 0)) as total_cost')
-            ->selectRaw('SUM(COALESCE(fuel_quantity_liters, 0)) as volume')
+        $fuelTrendByPeriod = Performance::query()
+            ->whereBetween('DateDispach', [$start180, $today])
+            ->selectRaw("DATE_FORMAT(DateDispach, '%Y-%m') as period")
+            ->selectRaw('SUM(COALESCE(fuelInBirr, 0)) as total_cost')
+            ->selectRaw('SUM(COALESCE(fuelInLitter, 0)) as total_volume')
             ->groupBy('period')
             ->orderBy('period')
             ->get()
-            ->map(fn ($row) => [
-                'period' => $row->period,
-                'cost' => (float) $row->total_cost,
-                'volume' => (float) $row->volume,
-            ])
+            ->mapWithKeys(fn ($row) => [
+                $row->period => [
+                    'cost' => (float) $row->total_cost,
+                    'volume' => (float) $row->total_volume,
+                ],
+            ]);
+
+        $fuelTrend = collect(range(0, 5))
+            ->map(fn ($index) => $today->copy()->subMonths(5 - $index)->format('Y-m'))
+            ->map(function (string $period) use ($fuelTrendByPeriod) {
+                $entry = $fuelTrendByPeriod->get($period, ['cost' => 0.0, 'volume' => 0.0]);
+
+                return [
+                    'period' => $period,
+                    'cost' => (float) ($entry['cost'] ?? 0.0),
+                    'volume' => (float) ($entry['volume'] ?? 0.0),
+                ];
+            })
             ->values()
             ->all();
 
@@ -362,11 +521,6 @@ class DashboardController extends Controller
             'tonkm' => (float) $row->tonkm,
         ])->values()->all();
 
-        $statusBreakdownData = $statusBreakdown->map(fn ($row) => [
-            'status' => $row->status,
-            'count' => (int) $row->count,
-        ])->values()->all();
-
         $corridorVolumesData = $corridorVolumes->map(fn ($row) => [
             'origin' => $row->origin,
             'destination' => $row->destination,
@@ -433,6 +587,7 @@ class DashboardController extends Controller
         $networkOverview = [
             'dailyTrend' => $dailyPerformanceData,
             'statusBreakdown' => $statusBreakdownData,
+            'loadPhaseBreakdown' => $loadPhaseBreakdown,
             'corridors' => $corridorVolumesData,
         ];
 
@@ -689,5 +844,97 @@ class DashboardController extends Controller
             'recentUpdates' => $recentUpdates,
             'notes' => $noteHighlights,
         ];
+    }
+
+    /**
+     * Categorise performance records into dashboard status buckets.
+     */
+    private function determineNetworkStatusBucket(Performance $performance, Carbon $referenceDate): string
+    {
+        $normalizedStatus = Str::of((string) ($performance->satus ?? ''))->trim()->lower();
+        $statusValue = $normalizedStatus->value();
+
+        if ($performance->is_returned) {
+            return 'completed';
+        }
+
+        if ($statusValue !== '') {
+            if (in_array($statusValue, ['cancelled', 'canceled', 'void', 'aborted'], true)) {
+                return 'cancelled';
+            }
+
+            if (in_array($statusValue, ['failed', 'failure'], true)) {
+                return 'failed';
+            }
+
+            if (in_array($statusValue, ['completed', 'complete', 'done', 'returned'], true)) {
+                return 'completed';
+            }
+
+            if (in_array($statusValue, ['pending', 'scheduled', 'queued', 'inactive'], true)) {
+                return 'pending';
+            }
+        }
+
+        $dispatchDate = $performance->DateDispach;
+
+        if ($dispatchDate === null) {
+            return $statusValue === '' ? 'unknown' : 'overdue';
+        }
+
+        if ($dispatchDate->isFuture()) {
+            return 'pending';
+        }
+
+        $daysSinceDispatch = $dispatchDate->diffInDays($referenceDate);
+
+        if ($daysSinceDispatch <= 7) {
+            return 'in_transit';
+        }
+
+        if ($daysSinceDispatch <= 14) {
+            return 'awaiting_return';
+        }
+
+        return 'overdue';
+    }
+
+    private function calculateInsuranceCostForWindow(Carbon $start, Carbon $end): float
+    {
+        if ($end->lt($start)) {
+            return 0.0;
+        }
+
+        return InsuranceRecord::query()
+            ->where(function ($query) use ($start, $end) {
+                $query->whereBetween('start_date', [$start, $end])
+                    ->orWhereBetween('end_date', [$start, $end])
+                    ->orWhere(function ($subQuery) use ($start, $end) {
+                        $subQuery->where('start_date', '<=', $start)
+                            ->where('end_date', '>=', $end);
+                    });
+            })
+            ->get()
+            ->sum(function (InsuranceRecord $record) use ($start, $end): float {
+                $policyStart = $record->start_date?->copy() ?? $start->copy();
+                $policyEnd = $record->end_date?->copy() ?? $end->copy();
+
+                if ($policyEnd->lt($start) || $policyStart->gt($end)) {
+                    return 0.0;
+                }
+
+                $overlapStart = $policyStart->greaterThan($start) ? $policyStart : $start->copy();
+                $overlapEnd = $policyEnd->lessThan($end) ? $policyEnd : $end->copy();
+
+                if ($overlapEnd->lt($overlapStart)) {
+                    return 0.0;
+                }
+
+                $policyDurationDays = max($policyStart->diffInDays($policyEnd) + 1, 1);
+                $dailyPremium = (float) ($record->premium_amount ?? 0.0) / $policyDurationDays;
+                $overlapDays = $overlapStart->diffInDays($overlapEnd) + 1;
+
+                return $dailyPremium * $overlapDays;
+            });
     }
 }
