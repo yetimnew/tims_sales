@@ -1,6 +1,5 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { TableCell, TableRow } from '@/components/ui/table';
 import ListPageLayout from '@/components/layouts/list-page-layout';
 import { ListingStatsHeader } from '@/components/listing/stats-header';
@@ -16,7 +15,6 @@ import { useListingLoading } from '@/hooks/use-listing-loading';
 import { toast } from '@/hooks/use-toast';
 import { Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import * as React from 'react';
 import {
@@ -143,19 +141,6 @@ const COLUMN_DEFINITIONS: Array<{
     { id: 'toll_road', label: 'Toll Road', align: 'center' },
     { id: 'restricted_for_heavy_vehicles', label: 'Heavy Vehicle', align: 'center' },
     { id: 'created_at', label: 'Created', sortKey: 'created_at' },
-];
-
-const ROUTE_TYPE_OPTIONS = [
-    { label: 'All routes', value: 'all' },
-    { label: 'Primary', value: 'primary' },
-    { label: 'Secondary', value: 'secondary' },
-    { label: 'Alternative', value: 'alternative' },
-];
-
-const BOOLEAN_OPTIONS = [
-    { label: 'All', value: 'all' },
-    { label: 'Yes', value: 'true' },
-    { label: 'No', value: 'false' },
 ];
 
 const formatNumberValue = (value?: number | string | null, fractionDigits = 0): string => {
@@ -286,6 +271,15 @@ const resolveRegionLabel = (place?: PlaceSummary | null): string => {
     return region ?? '—';
 };
 
+const normalizeOptionalString = (value?: string | null): string | undefined => {
+    if (typeof value !== 'string') {
+        return undefined;
+    }
+
+    const trimmed = value.trim();
+    return trimmed === '' ? undefined : trimmed;
+};
+
 export default function DistancesIndex({ distances, metrics, filters, perPageOptions }: DistancesIndexProps) {
     const { hasPermission } = usePermissions();
     const canViewDistance = hasPermission('distances.show');
@@ -294,16 +288,19 @@ export default function DistancesIndex({ distances, metrics, filters, perPageOpt
     const canDeleteDistance = hasPermission('distances.destroy');
 
     const [searchTerm, setSearchTerm] = React.useState(filters?.search ?? '');
-    const [selectedRouteType, setSelectedRouteType] = React.useState(filters?.routeType ?? 'all');
-    const [selectedTollRoad, setSelectedTollRoad] = React.useState(filters?.tollRoad ?? 'all');
-    const [selectedHeavyRestriction, setSelectedHeavyRestriction] = React.useState(filters?.heavyVehicleRestricted ?? 'all');
-    const [distanceMin, setDistanceMin] = React.useState(filters?.distanceMin ?? '');
-    const [distanceMax, setDistanceMax] = React.useState(filters?.distanceMax ?? '');
-    const [timeMin, setTimeMin] = React.useState(filters?.timeMin ?? '');
-    const [timeMax, setTimeMax] = React.useState(filters?.timeMax ?? '');
-    const [regionQuery, setRegionQuery] = React.useState(filters?.region ?? '');
     const [sortColumn, setSortColumn] = React.useState<string>(filters?.sort ?? 'distance_km');
     const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>(filters?.direction ?? 'asc');
+
+    const filterRouteType = filters?.routeType && filters.routeType !== 'all' ? filters.routeType : undefined;
+    const filterTollRoad = filters?.tollRoad && filters.tollRoad !== 'all' ? filters.tollRoad : undefined;
+    const filterHeavyRestriction = filters?.heavyVehicleRestricted && filters.heavyVehicleRestricted !== 'all'
+        ? filters.heavyVehicleRestricted
+        : undefined;
+    const filterDistanceMin = normalizeOptionalString(filters?.distanceMin);
+    const filterDistanceMax = normalizeOptionalString(filters?.distanceMax);
+    const filterTimeMin = normalizeOptionalString(filters?.timeMin);
+    const filterTimeMax = normalizeOptionalString(filters?.timeMax);
+    const filterRegion = normalizeOptionalString(filters?.region);
 
     const availablePerPageOptions = React.useMemo(
         () => (perPageOptions?.length ? perPageOptions : [15, 25, 50, 100]),
