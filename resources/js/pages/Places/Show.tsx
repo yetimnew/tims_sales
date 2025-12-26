@@ -76,8 +76,6 @@ interface PlacesShowProps {
   activityLogs: ActivityLog[]
 }
 
-const breadcrumbs: BreadcrumbItem[] = [{ title: 'Places', href: '/places' }]
-
 const getStatusBadgeStyles = (status: string) =>
   status === 'active'
     ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200'
@@ -117,6 +115,13 @@ export default function PlacesShow({ place, activityLogs }: PlacesShowProps) {
   const { hasPermission } = usePermissions()
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const breadcrumbs = useMemo<BreadcrumbItem[]>(
+    () => [
+      { title: 'Places', href: '/places' },
+      { title: place.name || `Place ${place.id}`, href: `/places/${place.id}` },
+    ],
+    [place.id, place.name],
+  )
 
   const activityLogRows = useMemo(
     () =>

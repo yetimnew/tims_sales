@@ -1,4 +1,5 @@
-import { useForm } from '@inertiajs/react'
+import { Head, useForm } from '@inertiajs/react'
+import { useMemo } from 'react'
 import { AlertCircle, ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -8,6 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
 import AppLayout from '@/layouts/app-layout'
+import type { BreadcrumbItem } from '@/types'
 
 interface Place {
   id: number
@@ -58,8 +60,23 @@ export default function DistancesEdit({ distance, places }: DistancesEditProps) 
     })
   }
 
+  const breadcrumbs = useMemo<BreadcrumbItem[]>(
+    () => [
+      { title: 'Distances', href: '/distances' },
+      {
+        title: `${distance.fromPlace?.name ?? 'Origin'} → ${distance.toPlace?.name ?? 'Destination'}`,
+        href: `/distances/${distance.id}`,
+      },
+      { title: 'Edit', href: `/distances/${distance.id}/edit` },
+    ],
+    [distance.id, distance.fromPlace?.name, distance.toPlace?.name],
+  )
+
+  const distanceTitle = `${distance.fromPlace?.name ?? 'Origin'} → ${distance.toPlace?.name ?? 'Destination'}`
+
   return (
-    <AppLayout>
+    <AppLayout breadcrumbs={breadcrumbs}>
+      <Head title={`Edit Distance: ${distanceTitle}`} />
       <div className="space-y-6">
         <div className="flex items-center space-x-4">
           <Button variant="ghost" size="sm" onClick={() => window.history.back()}>

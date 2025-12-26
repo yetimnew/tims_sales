@@ -14,16 +14,21 @@ import AppLayout from '@/layouts/app-layout'
 import { type BreadcrumbItem } from '@/types'
 import { validateUser, type ValidationErrors } from '@/lib/validation'
 import { evaluatePasswordStrength } from '@/lib/password-strength'
+import { index as usersIndexRoute, create as createUserRoute } from '@/routes/users'
 
 const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Users',
-        href: '/users',
-    },
-    {
-        title: 'Create',
-        href: '/users/create',
-    },
+  {
+    title: 'User management',
+    href: usersIndexRoute().url,
+  },
+  {
+    title: 'Users',
+    href: usersIndexRoute().url,
+  },
+  {
+    title: 'Create',
+    href: createUserRoute().url,
+  },
 ];
 
 interface Role {

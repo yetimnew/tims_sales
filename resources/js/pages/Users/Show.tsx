@@ -25,11 +25,7 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { useToast } from '@/hooks/use-toast';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-
-const breadcrumbs: BreadcrumbItem[] = [
-  { title: 'Users', href: '/users' },
-  { title: 'Details', href: '#' },
-];
+import { index as usersIndexRoute, show as showUserRoute } from '@/routes/users';
 
 const roleBadgePalette: Record<string, string> = {
     admin: 'border-indigo-200 bg-indigo-50 text-indigo-700 dark:border-indigo-900 dark:bg-indigo-950/40 dark:text-indigo-200',
@@ -103,6 +99,15 @@ export default function UsersShow({ user, activityLogs }: UsersShowProps) {
     const { toast } = useToast();
     const { hasPermission } = usePermissions();
     const [deleteConfirmation, setDeleteConfirmation] = useState<{ id: number; name: string } | null>(null);
+
+    const breadcrumbs = useMemo<BreadcrumbItem[]>(
+        () => [
+            { title: 'User management', href: usersIndexRoute().url },
+            { title: 'Users', href: usersIndexRoute().url },
+            { title: user.name, href: showUserRoute(user.id).url },
+        ],
+        [user.id, user.name],
+    );
 
     const timelineEntries = useMemo(
         () =>

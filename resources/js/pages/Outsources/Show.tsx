@@ -68,13 +68,6 @@ interface OutsourcesShowProps {
     recentPerformances: RecentPerformance[];
 }
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Outsourcing',
-        href: '/outsources',
-    },
-];
-
 const formatCurrency = (value: number | null | undefined) => {
     if (value === null || value === undefined || Number.isNaN(value)) {
         return '—';
@@ -179,6 +172,13 @@ const getTripStatusClasses = (status: string | null | undefined) => {
 };
 
 export default function OutsourcesShow({ outsource, metrics, recentPerformances }: OutsourcesShowProps) {
+    const breadcrumbs = useMemo<BreadcrumbItem[]>(
+        () => [
+            { title: 'Outsourcing', href: '/outsources' },
+            { title: outsource.name || `Vendor ${outsource.id}`, href: `/outsources/${outsource.id}` },
+        ],
+        [outsource.id, outsource.name],
+    );
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const { hasPermission } = usePermissions();

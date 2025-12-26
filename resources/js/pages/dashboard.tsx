@@ -143,7 +143,7 @@ interface DashboardProps {
             completed30d: number;
             averageTurnaroundDays: number | null;
             trend: Array<{ period: string; completed: number; scheduled: number }>;
-            upcoming: Array<{ id: number; truck: string; scheduledDate: string | null; daysUntil: number | null; status: string | null }>;
+            upcoming: Array<{ id: number; truck: string; scheduledDate: string | null; daysUntil: number | null; scheduledRelative: string | null; status: string | null }>;
         };
     };
     safetyOverview: {
@@ -630,174 +630,6 @@ export default function Dashboard({
                 </section>
 
                 <section className="space-y-6">
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between border-b border-slate-200/50 dark:border-slate-800/50 pb-6">
-                        <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-indigo-700 shadow-md">
-                                <BarChart3 className="h-5 w-5 text-white" />
-                            </div>
-                            <div>
-                                <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Key Performance Metrics</h2>
-                                <p className="mt-0.5 text-sm text-slate-600 dark:text-slate-400">30-day performance snapshot for management review</p>
-                            </div>
-                        </div>
-                        <div className="inline-flex items-center gap-2 rounded-lg bg-white dark:bg-slate-800 px-4 py-2 border border-slate-200 dark:border-slate-700 shadow-sm">
-                            <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></div>
-                            <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                                Live • {new Date().toLocaleDateString()}
-                            </span>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        {executiveSummary.metrics.map((metric, index) => {
-                            const Icon = METRIC_ICONS[metric.key] ?? TrendingUp;
-                            const displayValue = metric.unit === '%' ? formatPercent(metric.value) : formatNumber(metric.value);
-                            const iconGradients = [
-                                'from-indigo-600 to-indigo-700',
-                                'from-emerald-600 to-teal-600',
-                                'from-amber-600 to-orange-600',
-                                'from-rose-600 to-pink-600',
-                            ];
-
-                            return (
-                                <Card
-                                    key={metric.key}
-                                    className="relative overflow-hidden border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 hover:border-slate-300 dark:hover:border-slate-600"
-                                >
-                                    <CardHeader className="pb-3 pt-5 px-5">
-                                        <div className="flex items-start justify-between gap-3">
-                                            <CardTitle className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
-                                                {metric.label}
-                                            </CardTitle>
-                                            <div className={cn('flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br shadow-sm', iconGradients[index % iconGradients.length])}>
-                                                <Icon className="h-4 w-4 text-white" />
-                                            </div>
-                                        </div>
-                                    </CardHeader>
-                                    <CardContent className="px-5 pb-5 pt-1">
-                                        <div className="space-y-2">
-                                            <div className="flex items-baseline gap-2">
-                                                <span className="text-3xl font-bold text-slate-900 dark:text-white leading-none">{displayValue}</span>
-                                                {metric.unit && metric.unit !== '%' && (
-                                                    <span className="text-xs font-medium text-slate-500 dark:text-slate-400">{metric.unit}</span>
-                                                )}
-                                            </div>
-                                            <div className="text-xs">
-                                                {renderTrendIndicator(metric.change)}
-                                            </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            );
-                        })}
-                    </div>
-
-                    <div className="grid gap-6 lg:grid-cols-3">
-                        <Card className="lg:col-span-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-all duration-300 rounded-xl">
-                            <CardHeader className="flex flex-col gap-3 bg-gradient-to-r from-slate-50 to-slate-100/50 dark:from-slate-800/40 dark:to-slate-700/40 border-b border-slate-200/40 dark:border-slate-700/40">
-                                <div className="flex items-center gap-2">
-                                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-600 to-indigo-700 shadow-sm">
-                                        <Truck className="h-5 w-5 text-white" />
-                                    </div>
-                                    <div>
-                                        <CardTitle className="text-lg font-bold text-slate-900 dark:text-white">Fleet & Workforce Status</CardTitle>
-                                        <CardDescription className="text-sm text-slate-600 dark:text-slate-400">Real-time availability metrics across trucks and drivers.</CardDescription>
-                                    </div>
-                                </div>
-                            </CardHeader>
-                            <CardContent className="grid gap-8 lg:grid-cols-2 pt-8">
-                                <div className="space-y-6">
-                                    <div className="flex items-center gap-4">
-                                        <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-100 to-indigo-50 dark:from-indigo-950/50 dark:to-indigo-900/30">
-                                            <Gauge className="h-7 w-7 text-indigo-600 dark:text-indigo-400" />
-                                        </div>
-                                        <div>
-                                            <p className="text-sm text-muted-foreground font-medium">Fleet availability</p>
-                                            <div className="flex items-baseline gap-2 mt-1">
-                                                <span className="text-3xl font-black text-slate-900 dark:text-white">{formatPercent(executiveSummary.fleet.fleetAvailability)}</span>
-                                                <span className="text-xs text-muted-foreground font-semibold">{integerFormatter.format(executiveSummary.fleet.activeTrucks)} / {integerFormatter.format(executiveSummary.fleet.totalTrucks)} trucks</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <div className="h-3 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
-                                            <div className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-blue-500" style={{ width: getProgressWidth(executiveSummary.fleet.fleetAvailability) }} />
-                                        </div>
-                                        <p className="text-xs text-muted-foreground">Operational readiness</p>
-                                    </div>
-                                    <div className="flex items-center gap-4 p-4 rounded-xl bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200/50 dark:border-blue-800/50">
-                                        <Truck className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-                                        <div>
-                                            <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">Active assignments (30d)</p>
-                                            <p className="text-2xl font-black text-blue-700 dark:text-blue-300">{integerFormatter.format(executiveSummary.fleet.utilizedAssignments30d)}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="space-y-6">
-                                    <div className="flex items-center gap-4">
-                                        <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-amber-100 to-amber-50 dark:from-amber-950/50 dark:to-amber-900/30">
-                                            <Users className="h-7 w-7 text-amber-600 dark:text-amber-400" />
-                                        </div>
-                                        <div>
-                                            <p className="text-sm text-muted-foreground font-medium">Driver availability</p>
-                                            <div className="flex items-baseline gap-2 mt-1">
-                                                <span className="text-3xl font-black text-slate-900 dark:text-white">{formatPercent(executiveSummary.drivers.availability)}</span>
-                                                <span className="text-xs text-muted-foreground font-semibold">{integerFormatter.format(executiveSummary.drivers.active)} / {integerFormatter.format(executiveSummary.drivers.total)} drivers</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <div className="h-3 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
-                                            <div className="h-full rounded-full bg-gradient-to-r from-amber-500 to-orange-500" style={{ width: getProgressWidth(executiveSummary.drivers.availability) }} />
-                                        </div>
-                                        <p className="text-xs text-muted-foreground">Workforce allocation</p>
-                                    </div>
-                                    <div className="flex items-center gap-4 p-4 rounded-xl bg-rose-50/50 dark:bg-rose-950/20 border border-rose-200/50 dark:border-rose-800/50">
-                                        <ClipboardList className="h-6 w-6 text-rose-600 dark:text-rose-400" />
-                                        <div>
-                                            <p className="text-sm font-semibold text-rose-900 dark:text-rose-100">Open operations</p>
-                                            <p className="text-2xl font-black text-rose-700 dark:text-rose-300">{integerFormatter.format(executiveSummary.operations.open)}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                        <Card className="border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-all duration-300 rounded-xl">
-                            <CardHeader className="bg-gradient-to-r from-slate-50 to-slate-100/50 dark:from-slate-800/40 dark:to-slate-700/40 border-b border-slate-200/40 dark:border-slate-700/40">
-                                <div className="flex items-center gap-2">
-                                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-600 to-teal-600 shadow-sm">
-                                        <TrendingUp className="h-5 w-5 text-white" />
-                                    </div>
-                                    <div>
-                                        <CardTitle className="text-lg font-bold text-slate-900 dark:text-white">Performance Trends</CardTitle>
-                                        <CardDescription className="text-sm text-slate-600 dark:text-slate-400">30-day change analysis</CardDescription>
-                                    </div>
-                                </div>
-                            </CardHeader>
-                            <CardContent className="space-y-5 pt-6">
-                                {['tonnage', 'avgDailyTonnage', 'returnRate', 'avgCycle'].map(key => {
-                                    const metric = executiveSummary.metrics.find(item => item.key === key);
-                                    if (!metric) {
-                                        return null;
-                                    }
-
-                                    return (
-                                        <div key={metric.key} className="flex items-center justify-between p-3 rounded-xl bg-slate-50/50 dark:bg-slate-800/30 border border-slate-200/40 dark:border-slate-700/40 hover:border-indigo-200/50 dark:hover:border-indigo-700/50 transition-colors">
-                                            <div>
-                                                <p className="text-sm font-semibold text-slate-900 dark:text-white">{metric.label}</p>
-                                                <p className="text-xs text-muted-foreground">{metric.unit || 'Value'}</p>
-                                            </div>
-                                            {renderTrendIndicator(metric.change)}
-                                        </div>
-                                    );
-                                })}
-                            </CardContent>
-                        </Card>
-                    </div>
-                </section>
-                )}
-
-                <section className="space-y-6">
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between border-b border-slate-200/50 dark:border-slate-800/50 pb-4">
                         <div className="flex items-center gap-3">
                             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 shadow-md">
@@ -834,74 +666,6 @@ export default function Dashboard({
                                             <Line yAxisId="productivity" type="monotone" name="Ton-km (000s)" dataKey="tonkmThousands" stroke="#f97316" strokeWidth={2} dot={false} />
                                         </ComposedChart>
                                     </ResponsiveContainer>
-                                )}
-                            </CardContent>
-                        </Card>
-
-                        <Card className="border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-all duration-200 rounded-xl">
-                            <CardHeader className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-                                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">Status Mix</CardTitle>
-                                <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Share of performance status for the last 30 days.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="pt-6">
-                                {networkOverview.statusBreakdown.length === 0 ? (
-                                    renderEmptyState('Status mix unavailable – log new performances to populate.')
-                                ) : (
-                                    <div className="grid gap-6 md:grid-cols-[1.35fr_1fr] md:items-center">
-                                        <ResponsiveContainer width="100%" height={320}>
-                                            <PieChart>
-                                                <Pie
-                                                    data={networkOverview.statusBreakdown}
-                                                    dataKey="count"
-                                                    nameKey="label"
-                                                    innerRadius={75}
-                                                    outerRadius={120}
-                                                    paddingAngle={2}
-                                                >
-                                                    {networkOverview.statusBreakdown.map(item => (
-                                                        <Cell key={item.status} fill={item.color} />
-                                                    ))}
-                                                </Pie>
-                                                <Tooltip
-                                                    formatter={(value: unknown, _name: string, context) => {
-                                                        const payload = context?.payload as typeof networkOverview.statusBreakdown[number] | undefined;
-                                                        const formattedCount = typeof value === 'number' ? integerFormatter.format(value) : value;
-                                                        const shareLabel = payload ? `${numberFormatter.format(payload.share)}% share` : '';
-                                                        return [`${formattedCount} trips`, shareLabel];
-                                                    }}
-                                                    labelFormatter={(label: string) => label}
-                                                />
-                                            </PieChart>
-                                        </ResponsiveContainer>
-
-                                        <div className="space-y-4">
-                                            <div>
-                                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Tracked trips</p>
-                                                <p className="text-2xl font-semibold text-slate-900 dark:text-white">
-                                                    {integerFormatter.format(statusBreakdownTotal)}
-                                                </p>
-                                            </div>
-                                            <ul className="space-y-3">
-                                                {networkOverview.statusBreakdown.map(item => (
-                                                    <li key={item.status} className="flex items-center justify-between gap-3">
-                                                        <div className="flex items-center gap-2">
-                                                            <span
-                                                                aria-hidden
-                                                                className="inline-flex h-2.5 w-2.5 rounded-full"
-                                                                style={{ backgroundColor: item.color }}
-                                                            />
-                                                            <span className="text-sm font-medium text-slate-800 dark:text-slate-100">
-                                                                {item.label}
-                                                            </span>
-                                                        </div>
-                                                        <span className="text-sm text-slate-600 dark:text-slate-300">
-                                                            {numberFormatter.format(item.share)}% · {integerFormatter.format(item.count)}
-                                                        </span>
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                    </div>
                                 )}
                             </CardContent>
                         </Card>
@@ -1099,6 +863,57 @@ export default function Dashboard({
                                 </div>
                             </CardContent>
                         </Card>
+
+                        <Card className="border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-all duration-300 rounded-xl">
+                            <CardHeader className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+                                <div className="flex items-center justify-between gap-2">
+                                    <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">Status Breakdown</CardTitle>
+                                    <Badge className="bg-indigo-600 text-white border-0 text-xs font-semibold">
+                                        {statusSummaryDateLabel ?? 'Pending'}
+                                    </Badge>
+                                </div>
+                                <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Today's operational status distribution</CardDescription>
+                            </CardHeader>
+                            <CardContent className="pt-6">
+                                {hasLatestStatusData ? (
+                                    <div className="space-y-3">
+                                        {statusSummary.statusBreakdown.slice(0, 6).map((entry) => {
+                                            const share = totalStatusEntries > 0 ? (entry.count / totalStatusEntries) * 100 : 0;
+                                            const statusColors: Record<string, { bg: string; bar: string }> = {
+                                                'active': { bg: 'bg-emerald-50/50 dark:bg-emerald-950/30', bar: 'bg-emerald-500' },
+                                                'maintenance': { bg: 'bg-orange-50/50 dark:bg-orange-950/30', bar: 'bg-orange-500' },
+                                                'pending': { bg: 'bg-slate-50/50 dark:bg-slate-800/30', bar: 'bg-slate-500' },
+                                                'returned': { bg: 'bg-blue-50/50 dark:bg-blue-950/30', bar: 'bg-blue-500' },
+                                            };
+                                            const colors = statusColors[entry.status.toLowerCase()] || { bg: 'bg-indigo-50/50 dark:bg-indigo-950/30', bar: 'bg-indigo-500' };
+
+                                            return (
+                                                <div key={entry.status} className="space-y-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 p-4 transition-all duration-200 hover:border-slate-300 dark:hover:border-slate-600 hover:shadow-sm">
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <div>
+                                                            <p className="text-sm font-semibold text-slate-900 dark:text-white">{entry.label}</p>
+                                                            <p className="text-xs text-slate-600 dark:text-slate-400">{integerFormatter.format(entry.count)} entries</p>
+                                                        </div>
+                                                        <span className="text-lg font-bold text-slate-900 dark:text-white">{share.toFixed(1)}%</span>
+                                                    </div>
+                                                    <div className="h-2 w-full rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                                                        <div
+                                                            className={cn('h-full rounded-full transition-all duration-500', colors.bar)}
+                                                            style={{ width: `${Math.min(share, 100)}%` }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <div className="flex h-full min-h-[12rem] items-center justify-center text-sm text-muted-foreground">
+                                        No truck status updates yet.
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+
                     </div>
 
                     <Card className="border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-all duration-200 rounded-xl">
@@ -1240,23 +1055,33 @@ export default function Dashboard({
                                         <p className="text-sm text-muted-foreground">No upcoming maintenance within the planning horizon.</p>
                                     ) : (
                                         <div className="grid gap-3">
-                                            {assetOverview.maintenance.upcoming.map(item => (
-                                                <div key={item.id} className="flex items-center justify-between rounded-lg border px-3 py-2">
-                                                    <div className="flex items-center gap-3">
-                                                        <ShieldCheck className="h-5 w-5 text-indigo-500" />
-                                                        <div>
-                                                            <p className="text-sm font-medium">Truck {item.truck}</p>
-                                                            <p className="text-xs text-muted-foreground">Scheduled {item.scheduledDate ? dateFormatter.format(new Date(item.scheduledDate)) : 'TBC'}</p>
+                                            {assetOverview.maintenance.upcoming.map(item => {
+                                                const daysUntil = item.daysUntil ?? null;
+                                                const relativeLabel = item.scheduledRelative
+                                                    ?? (daysUntil === null
+                                                        ? 'Not scheduled'
+                                                        : daysUntil > 0
+                                                            ? `in ${daysUntil} day${daysUntil === 1 ? '' : 's'}`
+                                                            : daysUntil === 0
+                                                                ? 'Today'
+                                                                : `${Math.abs(daysUntil)} day${Math.abs(daysUntil) === 1 ? '' : 's'} overdue`);
+
+                                                return (
+                                                    <div key={item.id} className="flex items-center justify-between rounded-lg border px-3 py-2">
+                                                        <div className="flex items-center gap-3">
+                                                            <ShieldCheck className="h-5 w-5 text-indigo-500" />
+                                                            <div>
+                                                                <p className="text-sm font-medium">Truck {item.truck}</p>
+                                                                <p className="text-xs text-muted-foreground">Scheduled {item.scheduledDate ? dateFormatter.format(new Date(item.scheduledDate)) : 'TBC'}</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-right text-sm">
+                                                            <p className="font-medium">{relativeLabel}</p>
+                                                            <p className="text-xs text-muted-foreground capitalize">{item.status ?? 'scheduled'}</p>
                                                         </div>
                                                     </div>
-                                                    <div className="text-right text-sm">
-                                                        <p className="font-medium">
-                                                            {item.daysUntil === null ? '—' : item.daysUntil > 0 ? `${item.daysUntil} days` : item.daysUntil === 0 ? 'Today' : `${Math.abs(item.daysUntil)} overdue`}
-                                                        </p>
-                                                        <p className="text-xs text-muted-foreground capitalize">{item.status ?? 'scheduled'}</p>
-                                                    </div>
-                                                </div>
-                                            ))}
+                                                );
+                                            })}
                                         </div>
                                     )}
                                 </div>
@@ -1351,27 +1176,6 @@ export default function Dashboard({
                         </Card>
                     </div>
 
-                    <Card className="border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-all duration-200 rounded-xl">
-                        <CardHeader className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-                            <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">Top Incident Themes</CardTitle>
-                            <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Most frequent incident types in the last ninety days.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="pt-6">
-                            {safetyOverview.topIncidentTypes.length === 0 ? (
-                                <p className="text-sm text-muted-foreground">No incident categories to display.</p>
-                            ) : (
-                                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                                    {safetyOverview.topIncidentTypes.map(item => (
-                                        <div key={item.type} className="rounded-lg border p-3">
-                                            <p className="text-sm font-medium capitalize">{item.type.replaceAll('_', ' ')}</p>
-                                            <p className="text-xs text-muted-foreground">Occurrences</p>
-                                            <p className="text-xl font-semibold">{integerFormatter.format(item.count)}</p>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
                 </section>
 
                 <section className="space-y-6">
@@ -1465,59 +1269,6 @@ export default function Dashboard({
                     </Card>
                 </section>
 
-                {statusSummary && (
-                    <section className="max-w-2xl">
-                        <Card className="border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-all duration-300 rounded-xl">
-                            <CardHeader className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-                                <div className="flex items-center justify-between gap-2">
-                                    <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">Status Breakdown</CardTitle>
-                                    <Badge className="bg-indigo-600 text-white border-0 text-xs font-semibold">
-                                        {statusSummaryDateLabel ?? 'Pending'}
-                                    </Badge>
-                                </div>
-                                <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Today's operational status distribution</CardDescription>
-                            </CardHeader>
-                            <CardContent className="pt-6">
-                                {hasLatestStatusData ? (
-                                    <div className="space-y-3">
-                                        {statusSummary.statusBreakdown.slice(0, 6).map((entry) => {
-                                            const share = totalStatusEntries > 0 ? (entry.count / totalStatusEntries) * 100 : 0;
-                                            const statusColors: Record<string, { bg: string; bar: string }> = {
-                                                'active': { bg: 'bg-emerald-50/50 dark:bg-emerald-950/30', bar: 'bg-emerald-500' },
-                                                'maintenance': { bg: 'bg-orange-50/50 dark:bg-orange-950/30', bar: 'bg-orange-500' },
-                                                'pending': { bg: 'bg-slate-50/50 dark:bg-slate-800/30', bar: 'bg-slate-500' },
-                                                'returned': { bg: 'bg-blue-50/50 dark:bg-blue-950/30', bar: 'bg-blue-500' },
-                                            };
-                                            const colors = statusColors[entry.status.toLowerCase()] || { bg: 'bg-indigo-50/50 dark:bg-indigo-950/30', bar: 'bg-indigo-500' };
-
-                                            return (
-                                                <div key={entry.status} className="space-y-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 p-4 transition-all duration-200 hover:border-slate-300 dark:hover:border-slate-600 hover:shadow-sm">
-                                                    <div className="flex items-center justify-between gap-2">
-                                                        <div>
-                                                            <p className="text-sm font-semibold text-slate-900 dark:text-white">{entry.label}</p>
-                                                            <p className="text-xs text-slate-600 dark:text-slate-400">{integerFormatter.format(entry.count)} entries</p>
-                                                        </div>
-                                                        <span className="text-lg font-bold text-slate-900 dark:text-white">{share.toFixed(1)}%</span>
-                                                    </div>
-                                                    <div className="h-2 w-full rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
-                                                        <div
-                                                            className={cn('h-full rounded-full transition-all duration-500', colors.bar)}
-                                                            style={{ width: `${Math.min(share, 100)}%` }}
-                                                        />
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                ) : (
-                                    <div className="flex h-full min-h-[12rem] items-center justify-center text-sm text-muted-foreground">
-                                        No truck status updates yet.
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
-                    </section>
-                )}
             </div>
         </AppLayout>
     );

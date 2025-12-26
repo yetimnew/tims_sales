@@ -7,6 +7,7 @@ import { ReportMultiSelectFilter } from './report-multi-select-filter';
 import { ReportDateRangePicker } from './report-date-range-picker';
 import type { ReportSelectionOption } from './types';
 import { BarChart3, Building2, ChevronDown, ChevronUp, Filter, MapPin, PackageCheck, RefreshCcw, Truck, User } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { LucideIcon } from 'lucide-react';
 
 interface FilterTextOverrides {
@@ -41,22 +42,26 @@ interface ReportFiltersDialogProps {
     destinationOptions?: ReportSelectionOption[];
     statusOptions?: ReportSelectionOption[];
     providerOptions?: ReportSelectionOption[];
+    loadPhaseOptions?: ReportSelectionOption[];
     selectedDrivers?: number[];
     selectedTrucks?: number[];
     selectedOperations?: number[];
     selectedDestinations?: number[];
+    selectedLoadPhase?: string | null;
     selectedStatuses?: Array<number | string>;
     selectedProviders?: Array<number | string>;
     onDriversChange?: (ids: number[]) => void;
     onTrucksChange?: (ids: number[]) => void;
     onOperationsChange?: (ids: number[]) => void;
     onDestinationsChange?: (ids: number[]) => void;
+    onLoadPhaseChange?: (id: string | null) => void;
     onStatusesChange?: (ids: Array<number | string>) => void;
     onProvidersChange?: (ids: Array<number | string>) => void;
     showDriverFilter?: boolean;
     showTruckFilter?: boolean;
     showOperationFilter?: boolean;
     showDestinationFilter?: boolean;
+    showLoadPhaseFilter?: boolean;
     showStatusFilter?: boolean;
     showProviderFilter?: boolean;
     dateError?: string | null;
@@ -64,6 +69,7 @@ interface ReportFiltersDialogProps {
     truckFilterText?: FilterTextOverrides;
     operationFilterText?: FilterTextOverrides;
     destinationFilterText?: FilterTextOverrides;
+    loadPhaseFilterText?: FilterTextOverrides;
     statusFilterText?: FilterTextOverrides;
     providerFilterText?: FilterTextOverrides;
     showDateRange?: boolean;
@@ -97,22 +103,26 @@ export function ReportFiltersDialog({
     destinationOptions,
     statusOptions,
     providerOptions,
+    loadPhaseOptions,
     selectedDrivers,
     selectedTrucks,
     selectedOperations,
     selectedDestinations,
+    selectedLoadPhase,
     selectedStatuses,
     selectedProviders,
     onDriversChange,
     onTrucksChange,
     onOperationsChange,
     onDestinationsChange,
+    onLoadPhaseChange,
     onStatusesChange,
     onProvidersChange,
     showDriverFilter,
     showTruckFilter,
     showOperationFilter,
     showDestinationFilter,
+    showLoadPhaseFilter,
     showStatusFilter,
     showProviderFilter,
     dateError,
@@ -120,6 +130,7 @@ export function ReportFiltersDialog({
     truckFilterText,
     operationFilterText,
     destinationFilterText,
+    loadPhaseFilterText,
     statusFilterText,
     providerFilterText,
     showDateRange = true,
@@ -136,11 +147,13 @@ export function ReportFiltersDialog({
     const destinationOptionsList = destinationOptions ?? [];
     const statusOptionsList = statusOptions ?? [];
     const providerOptionsList = providerOptions ?? [];
+    const loadPhaseOptionsList = loadPhaseOptions ?? [];
 
     const selectedDriverIds = selectedDrivers ?? [];
     const selectedTruckIds = selectedTrucks ?? [];
     const selectedOperationIds = selectedOperations ?? [];
     const selectedDestinationIds = selectedDestinations ?? [];
+    const selectedLoadPhaseId = selectedLoadPhase ?? 'all';
     const selectedStatusIds = selectedStatuses ?? [];
     const selectedProviderIds = selectedProviders ?? [];
 
@@ -160,6 +173,15 @@ export function ReportFiltersDialog({
         onDestinationsChange?.(ids.map((value) => Number(value)));
     };
 
+    const handleLoadPhaseChange = (value: string) => {
+        if (value === 'all') {
+            onLoadPhaseChange?.(null);
+            return;
+        }
+
+        onLoadPhaseChange?.(value);
+    };
+
     const handleStatusesChange = (ids: Array<number | string>) => {
         onStatusesChange?.(ids);
     };
@@ -175,6 +197,7 @@ export function ReportFiltersDialog({
     const shouldShowTruck = showTruckFilter ?? truckOptionsList.length > 0;
     const shouldShowOperation = showOperationFilter ?? operationOptionsList.length > 0;
     const shouldShowDestination = showDestinationFilter ?? destinationOptionsList.length > 0;
+    const shouldShowLoadPhase = showLoadPhaseFilter ?? loadPhaseOptionsList.length > 0;
     const shouldShowStatus = showStatusFilter ?? statusOptionsList.length > 0;
     const shouldShowProvider = showProviderFilter ?? providerOptionsList.length > 0;
 
@@ -220,6 +243,17 @@ export function ReportFiltersDialog({
         emptyMessage: 'No destinations found.',
         icon: MapPin,
         ...(destinationFilterText ?? {}),
+    };
+
+    const loadPhaseText = {
+        label: 'Load phase',
+        triggerLabelWhenAll: 'All load phases',
+        summaryLabelWhenAll: 'All load phases included',
+        heading: 'Load phase',
+        searchPlaceholder: 'Search load phase...',
+        emptyMessage: 'No phases found.',
+        icon: MapPin,
+        ...(loadPhaseFilterText ?? {}),
     };
 
     const statusText = {
@@ -304,6 +338,33 @@ export function ReportFiltersDialog({
                 selectedIds={selectedDestinationIds as Array<number | string>}
                 onChange={handleDestinationsChange}
             />
+        ) : null,
+        shouldShowLoadPhase ? (
+            <div key="load-phase" className="flex flex-col gap-3">
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{loadPhaseText.label ?? 'Load phase'}</span>
+                <Select value={selectedLoadPhaseId} onValueChange={handleLoadPhaseChange}>
+                    <SelectTrigger className="w-full justify-between">
+                        <SelectValue placeholder={loadPhaseText.triggerLabelWhenAll ?? 'All load phases'} />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">{loadPhaseText.triggerLabelWhenAll ?? 'All load phases'}</SelectItem>
+                        {loadPhaseOptionsList.map((option) => (
+                            <SelectItem key={option.id} value={String(option.id)}>{option.label}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+                <div className="flex flex-wrap gap-2">
+                    {selectedLoadPhaseId === 'all' ? (
+                        <Badge variant="outline" className="border-dashed text-muted-foreground">
+                            {loadPhaseText.summaryLabelWhenAll ?? 'All load phases included'}
+                        </Badge>
+                    ) : (
+                        <Badge variant="secondary" className="bg-slate-100 text-slate-700">
+                            {loadPhaseOptionsList.find((option) => option.id === selectedLoadPhaseId)?.label ?? selectedLoadPhaseId}
+                        </Badge>
+                    )}
+                </div>
+            </div>
         ) : null,
         shouldShowStatus ? (
             <ReportMultiSelectFilter
@@ -410,7 +471,7 @@ export function ReportFiltersDialog({
                                 ) : null}
                             </div>
                         )}
-                        
+
                         {/* Filters Section */}
                         {filterSections.length > 0 ? (
                             <div>
@@ -430,17 +491,17 @@ export function ReportFiltersDialog({
                     </div>
                 </div>
                 <DialogFooter className="flex items-center justify-between gap-4 pt-6 border-t border-slate-200 dark:border-slate-800 sm:justify-between">
-                    <Button 
-                        type="button" 
-                        variant="ghost" 
+                    <Button
+                        type="button"
+                        variant="ghost"
                         onClick={onReset}
                         className="text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
                     >
                         <RefreshCcw className="h-4 w-4 mr-2" />
                         Reset All
                     </Button>
-                    <Button 
-                        type="button" 
+                    <Button
+                        type="button"
                         onClick={onApply}
                         className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all duration-200 min-w-[160px]"
                     >

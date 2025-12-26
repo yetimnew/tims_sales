@@ -59,22 +59,19 @@ type OutsourceFormData = {
     status: string;
 };
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Outsourcing',
-        href: '/outsources',
-    },
-    {
-        title: 'Edit',
-        href: '#',
-    },
-];
-
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function OutsourcesEdit({ outsource, statusOptions, serviceTypeOptions }: OutsourcesEditProps) {
     const { hasPermission } = usePermissions();
     const { toast } = useToast();
+    const breadcrumbs = useMemo<BreadcrumbItem[]>(
+        () => [
+            { title: 'Outsourcing', href: '/outsources' },
+            { title: outsource.name || `Vendor ${outsource.id}`, href: `/outsources/${outsource.id}` },
+            { title: 'Edit', href: `/outsources/${outsource.id}/edit` },
+        ],
+        [outsource.id, outsource.name],
+    );
 
     const resolvedStatusOptions = useMemo<Option[]>(
         () =>

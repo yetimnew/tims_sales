@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import * as React from 'react';
 import { ArrowUpDown, FileDown, Layers, Search, Shield } from 'lucide-react';
+import { index as usersIndexRoute } from '@/routes/users';
 
 type ColumnKey = 'name' | 'module' | 'action' | 'guard' | 'created_at';
 
@@ -61,8 +62,12 @@ interface PermissionsIndexProps {
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
+        title: 'User management',
+        href: usersIndexRoute().url,
+    },
+    {
         title: 'Permissions',
-        href: '/permissions',
+        href: '#',
     },
 ];
 

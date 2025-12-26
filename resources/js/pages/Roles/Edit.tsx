@@ -36,6 +36,8 @@ import {
   type PermissionRecord,
 } from '@/lib/permission-dependencies';
 import { type BreadcrumbItem } from '@/types';
+import { index as usersIndexRoute } from '@/routes/users';
+import { index as rolesIndexRoute, show as showRoleRoute, edit as editRoleRoute } from '@/routes/roles';
 
 type Permission = PermissionRecord;
 
@@ -56,11 +58,6 @@ interface RoleEditProps {
   role: Role;
   permissions: Record<string, Permission[]>;
 }
-
-const breadcrumbs: BreadcrumbItem[] = [
-  { title: 'Roles', href: '/roles' },
-  { title: 'Edit', href: '#' },
-];
 
 const formatModuleLabel = (value: string): string => {
   const normalized = value.replace(/\./g, ' / ').replace(/[_-]/g, ' ');
@@ -84,6 +81,16 @@ export default function RolesEdit({ role, permissions }: RoleEditProps) {
     description: role.description ?? '',
     permissions: role.permissions.map((permission) => permission.id).sort((first, second) => first - second),
   });
+
+  const breadcrumbs = useMemo<BreadcrumbItem[]>(
+    () => [
+      { title: 'User management', href: usersIndexRoute().url },
+      { title: 'Roles', href: rolesIndexRoute().url },
+      { title: role.name, href: showRoleRoute(role.id).url },
+      { title: 'Edit', href: editRoleRoute(role.id).url },
+    ],
+    [role.id, role.name],
+  );
 
   useEffect(() => {
     const container = formRef.current;

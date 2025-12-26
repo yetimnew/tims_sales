@@ -1102,8 +1102,8 @@ export default function PerformancesShow({ performance, activityLogs, operationI
                                                                 label: 'Tonnage Share',
                                                                 value: tonnageShareValue,
                                                                 benchmark: tonnageShareBenchmark,
-                                                                benchmarkLabel: 'Operation completion',
-                                                                tooltip: 'Share of delivered tonnage vs planned operation tonnage',
+                                                                benchmarkLabel: 'Contract completion progress',
+                                                                tooltip: 'Share of delivered tonnage within the operation total tonnage',
                                                             },
                                                             {
                                                                 label: 'Distance Share',
@@ -1124,7 +1124,7 @@ export default function PerformancesShow({ performance, activityLogs, operationI
                                                                 value: performanceShare?.plannedContribution,
                                                                 benchmark: planContributionBenchmark,
                                                                 benchmarkLabel: 'Ton-km completion',
-                                                                tooltip: 'Contribution towards planned ton-km output',
+                                                                tooltip: 'Share of planned ton-km delivered by this FO',
                                                             },
                                                         ].map((item) => {
                                                             const { diff, baseline } = calculateShareVariance(item.value, item.benchmark);

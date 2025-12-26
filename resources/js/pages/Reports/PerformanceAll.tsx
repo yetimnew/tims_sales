@@ -27,12 +27,15 @@ interface OperationOption {
     customer?: string | null;
 }
 
-type DestinationOption = OptionBase;
-
 type DriverOption = OptionBase;
 
 interface TruckOption extends OptionBase {
     plate: string;
+}
+
+interface LoadPhaseOption {
+    id: string;
+    label: string;
 }
 
 
@@ -42,7 +45,7 @@ interface Filters {
     driver_ids?: number[];
     truck_ids?: number[];
     operation_ids?: number[];
-    destination_ids?: number[];
+    load_phase?: string | null;
     per_page?: number;
 }
 
@@ -77,7 +80,7 @@ interface PerformanceAllProps {
         drivers: DriverOption[];
         trucks: TruckOption[];
         operations: OperationOption[];
-        destinations: DestinationOption[];
+        loadPhases: LoadPhaseOption[];
     };
 }
 
@@ -96,12 +99,12 @@ export default function PerformanceAll({ filters, performances, summary, perPage
     const driverSource = options?.drivers;
     const truckSource = options?.trucks;
     const operationSource = options?.operations;
-    const destinationSource = options?.destinations;
+    const loadPhaseSource = options?.loadPhases;
 
     const driverOptions = useMemo<DriverOption[]>(() => (Array.isArray(driverSource) ? driverSource : []), [driverSource]);
     const truckOptions = useMemo<TruckOption[]>(() => (Array.isArray(truckSource) ? truckSource : []), [truckSource]);
     const operationOptions = useMemo<OperationOption[]>(() => (Array.isArray(operationSource) ? operationSource : []), [operationSource]);
-    const destinationOptions = useMemo<DestinationOption[]>(() => (Array.isArray(destinationSource) ? destinationSource : []), [destinationSource]);
+    const loadPhaseOptions = useMemo<LoadPhaseOption[]>(() => (Array.isArray(loadPhaseSource) ? loadPhaseSource : []), [loadPhaseSource]);
 
     const safeRows = useMemo<ReportDispatchRow[]>(() => (Array.isArray(performances?.data) ? performances.data : []), [performances]);
     const availablePerPageOptions = useMemo(() => (perPageOptions && perPageOptions.length > 0 ? perPageOptions : [10, 25, 50, 100, 200]), [perPageOptions]);
@@ -137,14 +140,13 @@ export default function PerformanceAll({ filters, performances, summary, perPage
         [operationOptions],
     );
 
-    const destinationSelectionOptions = useMemo<ReportSelectionOption[]>(
+    const loadPhaseSelectionOptions = useMemo<ReportSelectionOption[]>(
         () =>
-            destinationOptions.map((option) => ({
+            loadPhaseOptions.map((option) => ({
                 id: option.id,
-                label: option.name ?? '—',
-                badge: option.status ?? undefined,
+                label: option.label,
             })),
-        [destinationOptions],
+        [loadPhaseOptions],
     );
 
     const [from, setFrom] = useState(filters?.from ?? '');
@@ -153,7 +155,7 @@ export default function PerformanceAll({ filters, performances, summary, perPage
     const [selectedDrivers, setSelectedDrivers] = useState<number[]>(filters?.driver_ids ?? []);
     const [selectedTrucks, setSelectedTrucks] = useState<number[]>(filters?.truck_ids ?? []);
     const [selectedOperations, setSelectedOperations] = useState<number[]>(filters?.operation_ids ?? []);
-    const [selectedDestinations, setSelectedDestinations] = useState<number[]>(filters?.destination_ids ?? []);
+    const [selectedLoadPhase, setSelectedLoadPhase] = useState<string>(filters?.load_phase ?? 'all');
 
     const [filtersOpen, setFiltersOpen] = useState(false);
     const [dateError, setDateError] = useState<string | null>(null);
@@ -166,10 +168,10 @@ export default function PerformanceAll({ filters, performances, summary, perPage
         if (selectedDrivers.length > 0) count += 1;
         if (selectedTrucks.length > 0) count += 1;
         if (selectedOperations.length > 0) count += 1;
-        if (selectedDestinations.length > 0) count += 1;
+        if (selectedLoadPhase !== 'all') count += 1;
 
         return count;
-    }, [from, to, perPage, selectedDrivers, selectedTrucks, selectedOperations, selectedDestinations, filters?.from, filters?.to, filters?.per_page]);
+    }, [from, to, perPage, selectedDrivers, selectedTrucks, selectedOperations, selectedLoadPhase, filters?.from, filters?.to, filters?.per_page, filters?.load_phase]);
 
     const summaryItems = useMemo<ReportSummaryItem[]>(
         () => [
@@ -251,7 +253,7 @@ export default function PerformanceAll({ filters, performances, summary, perPage
         if (selectedDrivers.length > 0) params.driver_ids = selectedDrivers;
         if (selectedTrucks.length > 0) params.truck_ids = selectedTrucks;
         if (selectedOperations.length > 0) params.operation_ids = selectedOperations;
-        if (selectedDestinations.length > 0) params.destination_ids = selectedDestinations;
+        if (selectedLoadPhase !== 'all') params.load_phase = selectedLoadPhase;
 
         router.get('/reports/performance-all', params, {
             preserveState: true,
@@ -266,7 +268,7 @@ export default function PerformanceAll({ filters, performances, summary, perPage
         setSelectedDrivers(filters?.driver_ids ?? []);
         setSelectedTrucks(filters?.truck_ids ?? []);
         setSelectedOperations(filters?.operation_ids ?? []);
-        setSelectedDestinations(filters?.destination_ids ?? []);
+        setSelectedLoadPhase(filters?.load_phase ?? 'all');
         setFiltersOpen(false);
         setDateError(null);
         router.get('/reports/performance-all', {}, { preserveState: false, preserveScroll: false });
@@ -284,7 +286,7 @@ export default function PerformanceAll({ filters, performances, summary, perPage
         if (selectedDrivers.length > 0) params.driver_ids = selectedDrivers;
         if (selectedTrucks.length > 0) params.truck_ids = selectedTrucks;
         if (selectedOperations.length > 0) params.operation_ids = selectedOperations;
-        if (selectedDestinations.length > 0) params.destination_ids = selectedDestinations;
+        if (selectedLoadPhase !== 'all') params.load_phase = selectedLoadPhase;
 
         router.get('/reports/performance-all', params, {
             preserveState: true,
@@ -310,7 +312,7 @@ export default function PerformanceAll({ filters, performances, summary, perPage
         if (selectedDrivers.length > 0) toParamsArray('driver_ids', selectedDrivers, params);
         if (selectedTrucks.length > 0) toParamsArray('truck_ids', selectedTrucks, params);
         if (selectedOperations.length > 0) toParamsArray('operation_ids', selectedOperations, params);
-        if (selectedDestinations.length > 0) toParamsArray('destination_ids', selectedDestinations, params);
+        if (selectedLoadPhase !== 'all') params.set('load_phase', selectedLoadPhase);
 
         const query = params.toString();
         const url = `/reports/performance-all/export/${format}${query ? `?${query}` : ''}`;
@@ -322,8 +324,12 @@ export default function PerformanceAll({ filters, performances, summary, perPage
     const appliedDriverCount = filters?.driver_ids?.length ?? 0;
     const appliedTruckCount = filters?.truck_ids?.length ?? 0;
     const appliedOperationCount = filters?.operation_ids?.length ?? 0;
-    const appliedDestinationCount = filters?.destination_ids?.length ?? 0;
+    const appliedLoadPhase = filters?.load_phase ?? null;
     const summaryMargin = summary?.margin_percent ?? null;
+
+    const appliedLoadPhaseLabel = appliedLoadPhase
+        ? loadPhaseSelectionOptions.find((option) => option.id === appliedLoadPhase)?.label ?? appliedLoadPhase
+        : 'All load phases';
 
     const filterBadges = useMemo(
         () => [
@@ -332,9 +338,9 @@ export default function PerformanceAll({ filters, performances, summary, perPage
             appliedDriverCount > 0 ? `${appliedDriverCount} driver${appliedDriverCount > 1 ? 's' : ''}` : 'All drivers',
             appliedTruckCount > 0 ? `${appliedTruckCount} truck${appliedTruckCount > 1 ? 's' : ''}` : 'All trucks',
             appliedOperationCount > 0 ? `${appliedOperationCount} operation${appliedOperationCount > 1 ? 's' : ''}` : 'All operations',
-            appliedDestinationCount > 0 ? `${appliedDestinationCount} destination${appliedDestinationCount > 1 ? 's' : ''}` : 'All destinations',
+            appliedLoadPhaseLabel,
         ],
-        [appliedDestinationCount, appliedDriverCount, appliedFrom, appliedOperationCount, appliedTo, appliedTruckCount],
+        [appliedDriverCount, appliedFrom, appliedOperationCount, appliedTo, appliedTruckCount, appliedLoadPhaseLabel],
     );
 
     const handleDateChange = (field: 'from' | 'to', value: string) => {
@@ -377,15 +383,17 @@ export default function PerformanceAll({ filters, performances, summary, perPage
                                     driverOptions={driverSelectionOptions}
                                     truckOptions={truckSelectionOptions}
                                     operationOptions={operationSelectionOptions}
-                                    destinationOptions={destinationSelectionOptions}
+                                    loadPhaseOptions={loadPhaseSelectionOptions}
                                     selectedDrivers={selectedDrivers}
                                     selectedTrucks={selectedTrucks}
                                     selectedOperations={selectedOperations}
-                                    selectedDestinations={selectedDestinations}
+                                    selectedLoadPhase={selectedLoadPhase !== 'all' ? selectedLoadPhase : null}
                                     onDriversChange={setSelectedDrivers}
                                     onTrucksChange={setSelectedTrucks}
                                     onOperationsChange={setSelectedOperations}
-                                    onDestinationsChange={setSelectedDestinations}
+                                    onLoadPhaseChange={(value) => {
+                                        setSelectedLoadPhase(value ?? 'all');
+                                    }}
                                     dateError={dateError}
                                 />
                                 {canExport && (

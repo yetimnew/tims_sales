@@ -19,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import * as React from 'react';
+import { index as usersIndexRoute } from '@/routes/users';
 import {
     Users as UsersIcon,
     CheckCircle,
@@ -100,8 +101,12 @@ interface UsersIndexProps {
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
+        title: 'User management',
+        href: usersIndexRoute().url,
+    },
+    {
         title: 'Users',
-        href: '/users',
+        href: '#',
     },
 ];
 

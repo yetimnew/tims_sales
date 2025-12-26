@@ -126,11 +126,11 @@ export default function CargoTypesIndex({
     perPageOptions,
 }: CargoTypesIndexProps) {
     const { hasPermission } = usePermissions();
-    const canViewCargoType = hasPermission('cargo-types.show');
-    const canEditCargoType = hasPermission('cargo-types.edit');
-    const canDeleteCargoType = hasPermission('cargo-types.destroy');
-    const canCreateCargoType = hasPermission('cargo-types.create');
-    const canExportCargoTypes = hasPermission('cargo-types.export');
+    const canViewCargoType = hasPermission('cargotypes.show');
+    const canEditCargoType = hasPermission('cargotypes.edit');
+    const canDeleteCargoType = hasPermission('cargotypes.destroy');
+    const canCreateCargoType = hasPermission('cargotypes.create');
+    const canExportCargoTypes = hasPermission('cargotypes.export');
 
     const [searchTerm, setSearchTerm] = React.useState(filters?.search ?? '');
     const [selectedCategory, setSelectedCategory] = React.useState(filters?.category ?? 'all');

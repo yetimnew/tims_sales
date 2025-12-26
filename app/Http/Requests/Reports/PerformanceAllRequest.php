@@ -37,8 +37,7 @@ class PerformanceAllRequest extends FormRequest
             'truck_ids.*' => ['integer', 'exists:trucks,id'],
             'operation_ids' => ['nullable', 'array'],
             'operation_ids.*' => ['integer', 'exists:operations,id'],
-            'destination_ids' => ['nullable', 'array'],
-            'destination_ids.*' => ['integer', 'exists:places,id'],
+            'load_phase' => ['nullable', 'string', 'in:main,return'],
             'limit' => ['nullable', 'integer', 'min:50', 'max:5000'],
             'format' => ['sometimes', 'in:csv,xlsx,pdf'],
         ];
@@ -49,7 +48,7 @@ class PerformanceAllRequest extends FormRequest
         $driverIds = $this->normaliseIds($this->input('driver_ids'));
         $truckIds = $this->normaliseIds($this->input('truck_ids'));
         $operationIds = $this->normaliseIds($this->input('operation_ids'));
-        $destinationIds = $this->normaliseIds($this->input('destination_ids'));
+        $loadPhase = $this->normaliseLoadPhase($this->input('load_phase'));
 
         $this->merge([
             'from' => $this->filled('from') ? $this->input('from') : null,
@@ -57,7 +56,7 @@ class PerformanceAllRequest extends FormRequest
             'driver_ids' => $driverIds,
             'truck_ids' => $truckIds,
             'operation_ids' => $operationIds,
-            'destination_ids' => $destinationIds,
+            'load_phase' => $loadPhase,
             'limit' => $this->filled('limit') ? (int) $this->input('limit') : null,
         ]);
     }
@@ -71,5 +70,16 @@ class PerformanceAllRequest extends FormRequest
             ->unique()
             ->values()
             ->all();
+    }
+
+    private function normaliseLoadPhase(mixed $value): ?string
+    {
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $phase = strtolower(trim($value));
+
+        return in_array($phase, ['main', 'return'], true) ? $phase : null;
     }
 }

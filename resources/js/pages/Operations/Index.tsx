@@ -1,6 +1,10 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { TableCell, TableRow } from '@/components/ui/table';
+import { Textarea } from '@/components/ui/textarea';
 import ListPageLayout from '@/components/layouts/list-page-layout';
 import { ListingStatsHeader } from '@/components/listing/stats-header';
 import { ListingFilterBar } from '@/components/listing/filter-bar';
@@ -12,7 +16,7 @@ import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialo
 import { usePermissions } from '@/hooks/use-permissions';
 import { useListingLoading } from '@/hooks/use-listing-loading';
 import { toast } from '@/hooks/use-toast';
-import { Link, router } from '@inertiajs/react';
+import { Link, router, useForm } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -29,6 +33,8 @@ import {
     Trash2,
     XCircle,
     ChevronRight,
+    Lock,
+    Unlock,
 } from 'lucide-react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -48,7 +54,6 @@ interface OperationData {
     operationid: string;
     customer?: OperationCustomer | null;
     description?: string | null;
-    status: string;
     volume?: number | null;
     km?: number | null;
     startdate?: string | null;
@@ -102,22 +107,22 @@ const COLUMN_DEFINITIONS: Array<{
     id:
         | 'operationid'
         | 'customer'
-        | 'status'
         | 'startdate'
         | 'volume'
         | 'km'
-        | 'tonnageProgress';
+        | 'tonnageProgress'
+        | 'closed';
     label: string;
     sortKey?: string;
     align?: 'center' | 'right';
 }> = [
     { id: 'operationid', label: 'Operation ID', sortKey: 'operationid' },
     { id: 'customer', label: 'Customer' },
-    { id: 'status', label: 'Status', sortKey: 'status', align: 'center' },
     { id: 'startdate', label: 'Start Date', sortKey: 'startdate' },
     { id: 'volume', label: 'Volume (MT)', sortKey: 'volume', align: 'right' },
     { id: 'km', label: 'Distance (KM)', sortKey: 'km', align: 'right' },
     { id: 'tonnageProgress', label: 'Uplift Progress' },
+    { id: 'closed', label: 'Closed', sortKey: 'closed', align: 'center' },
 ];
 
 const formatNumberValue = (value?: number | null, fractionDigits = 2): string => {
@@ -144,6 +149,19 @@ const formatDateValue = (value?: string | null): string => {
     }
 
     return parsed.toLocaleDateString();
+};
+
+const formatDateForInput = (value?: string | null): string => {
+    if (!value) {
+        return new Date().toISOString().slice(0, 10);
+    }
+
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+        return new Date().toISOString().slice(0, 10);
+    }
+
+    return parsed.toISOString().slice(0, 10);
 };
 
 const formatCount = (value?: number | null): string => {
@@ -188,22 +206,12 @@ const renderTonnageProgress = (operation: OperationData): React.ReactNode => {
     );
 };
 
-const getStatusBadge = (status: string): React.ReactNode => {
-    const normalized = status.toLowerCase();
-    if (normalized === 'active') {
-        return <Badge className="bg-emerald-600 text-white hover:bg-emerald-700">Active</Badge>;
-    }
-    if (normalized === 'inactive') {
-        return <Badge className="bg-amber-500 text-white hover:bg-amber-600">Inactive</Badge>;
-    }
-    if (normalized === 'closed') {
+const getClosedBadge = (closed?: boolean | null): React.ReactNode => {
+    if (closed) {
         return <Badge className="bg-slate-500 text-white hover:bg-slate-600">Closed</Badge>;
     }
-    if (normalized === 'open') {
-        return <Badge className="bg-blue-500 text-white hover:bg-blue-600">Open</Badge>;
-    }
 
-    return <Badge variant="outline">{status}</Badge>;
+    return <Badge className="bg-blue-500 text-white hover:bg-blue-600">Open</Badge>;
 };
 
 export default function OperationsIndex({
@@ -220,6 +228,8 @@ export default function OperationsIndex({
     const canViewOperation = hasPermission('operations.show');
     const canEditOperation = hasPermission('operations.edit');
     const canDeleteOperation = hasPermission('operations.destroy');
+    const canCloseOperation = hasPermission('operations.close');
+    const canReopenOperation = hasPermission('operations.reopen');
 
     const [searchTerm, setSearchTerm] = React.useState(filters?.search ?? '');
     const [selectedStatus, setSelectedStatus] = React.useState(filters?.status ?? 'all');
@@ -245,6 +255,19 @@ export default function OperationsIndex({
     const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
     const [selectedOperation, setSelectedOperation] = React.useState<OperationData | null>(null);
     const [isDeleting, setIsDeleting] = React.useState(false);
+    const [closeDialogOpen, setCloseDialogOpen] = React.useState(false);
+    const [operationToClose, setOperationToClose] = React.useState<OperationData | null>(null);
+    const [reopenDialogOpen, setReopenDialogOpen] = React.useState(false);
+    const [operationToReopen, setOperationToReopen] = React.useState<OperationData | null>(null);
+
+    const closeForm = useForm<{ closed_date: string; comment: string }>({
+        closed_date: '',
+        comment: '',
+    });
+
+    const reopenForm = useForm<{ comment: string }>({
+        comment: '',
+    });
 
     const isDataReady = Array.isArray(operations?.data);
     const { isLoading: isTableLoading } = useListingLoading({
@@ -412,6 +435,127 @@ export default function OperationsIndex({
         });
     };
 
+    const handleCloseOperationClick = (operation: OperationData) => {
+        setOperationToClose(operation);
+        closeForm.clearErrors();
+        closeForm.setData((current) => ({
+            ...current,
+            closed_date: formatDateForInput(operation.enddate),
+            comment: '',
+        }));
+        setCloseDialogOpen(true);
+    };
+
+    const handleCloseDialogChange = (open: boolean) => {
+        setCloseDialogOpen(open);
+        if (!open) {
+            setOperationToClose(null);
+            closeForm.reset();
+            closeForm.clearErrors();
+        }
+    };
+
+    const handleCloseSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+
+        if (!operationToClose) {
+            return;
+        }
+
+        closeForm.post(`/operations/${operationToClose.id}/close`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                toast({
+                    title: '✅ Operation Closed',
+                    description: `${operationToClose.operationid} marked as closed.`,
+                });
+                handleCloseDialogChange(false);
+            },
+            onError: (errors) => {
+                const fallback = 'Failed to close operation. Please review the form and try again.';
+
+                if (errors && typeof errors === 'object') {
+                    const errorMessages = Object.values(errors)
+                        .flatMap((value) => (Array.isArray(value) ? value : [value]))
+                        .filter(Boolean)
+                        .join('\n');
+
+                    toast({
+                        title: '❌ Close Failed',
+                        description: errorMessages || fallback,
+                        variant: 'destructive',
+                    });
+                } else {
+                    toast({
+                        title: '❌ Close Failed',
+                        description: fallback,
+                        variant: 'destructive',
+                    });
+                }
+            },
+        });
+    };
+
+    const handleReopenOperationClick = (operation: OperationData) => {
+        setOperationToReopen(operation);
+        reopenForm.clearErrors();
+        reopenForm.setData((current) => ({
+            ...current,
+            comment: '',
+        }));
+        setReopenDialogOpen(true);
+    };
+
+    const handleReopenDialogChange = (open: boolean) => {
+        setReopenDialogOpen(open);
+        if (!open) {
+            setOperationToReopen(null);
+            reopenForm.reset();
+            reopenForm.clearErrors();
+        }
+    };
+
+    const handleReopenSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+
+        if (!operationToReopen) {
+            return;
+        }
+
+        reopenForm.post(`/operations/${operationToReopen.id}/reopen`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                toast({
+                    title: '✅ Operation Reopened',
+                    description: `${operationToReopen.operationid} is active again.`,
+                });
+                handleReopenDialogChange(false);
+            },
+            onError: (errors) => {
+                const fallback = 'Failed to reopen operation. Please try again.';
+
+                if (errors && typeof errors === 'object') {
+                    const errorMessages = Object.values(errors)
+                        .flatMap((value) => (Array.isArray(value) ? value : [value]))
+                        .filter(Boolean)
+                        .join('\n');
+
+                    toast({
+                        title: '❌ Reopen Failed',
+                        description: errorMessages || fallback,
+                        variant: 'destructive',
+                    });
+                } else {
+                    toast({
+                        title: '❌ Reopen Failed',
+                        description: fallback,
+                        variant: 'destructive',
+                    });
+                }
+            },
+        });
+    };
+
     const statsDefinitions = [
         {
             id: 'total-operations',
@@ -515,11 +659,11 @@ export default function OperationsIndex({
                   <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
                   <TableCell className="font-medium">{operation.operationid}</TableCell>
                   <TableCell className="text-muted-foreground">{operation.customer?.name || '—'}</TableCell>
-                  <TableCell className="text-center">{getStatusBadge(operation.status)}</TableCell>
                   <TableCell className="text-muted-foreground">{formatDateValue(operation.startdate)}</TableCell>
                   <TableCell className="text-right font-medium">{formatNumberValue(operation.volume)}</TableCell>
                   <TableCell className="text-right text-muted-foreground">{formatNumberValue(operation.km)}</TableCell>
                   <TableCell>{renderTonnageProgress(operation)}</TableCell>
+                  <TableCell className="text-center">{getClosedBadge(operation.closed)}</TableCell>
                   <TableCell className="text-center">
                       <ListingRowActionsMenu
                           actions={[
@@ -532,6 +676,16 @@ export default function OperationsIndex({
                                   label: 'Edit',
                                   icon: <SquarePen className="h-4 w-4" />,
                                   href: `/operations/${operation.id}/edit`,
+                              },
+                              canCloseOperation && !operation.closed && {
+                                  label: 'Close',
+                                  icon: <Lock className="h-4 w-4" />,
+                                  onSelect: () => handleCloseOperationClick(operation),
+                              },
+                              canReopenOperation && operation.closed && {
+                                  label: 'Reopen',
+                                  icon: <Unlock className="h-4 w-4" />,
+                                  onSelect: () => handleReopenOperationClick(operation),
                               },
                               canDeleteOperation && {
                                   label: 'Delete',
@@ -584,10 +738,6 @@ export default function OperationsIndex({
             renderContent={(item) => (
                 <div className="space-y-3 text-sm text-muted-foreground">
                     <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Status</span>
-                        <span className="text-right text-slate-900 dark:text-slate-100">{item.record.status}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
                         <span className="font-medium text-slate-600 dark:text-slate-300">Start Date</span>
                         <span className="text-right text-slate-900 dark:text-slate-100">
                             {formatDateValue(item.record.startdate)}
@@ -624,6 +774,28 @@ export default function OperationsIndex({
                                 <SquarePen className="mr-2 h-4 w-4" />
                                 Edit
                             </Link>
+                        </Button>
+                    )}
+                    {canCloseOperation && !item.record.closed && (
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex-1 sm:flex-none"
+                            onClick={() => handleCloseOperationClick(item.record)}
+                        >
+                            <Lock className="mr-2 h-4 w-4" />
+                            Close
+                        </Button>
+                    )}
+                    {canReopenOperation && item.record.closed && (
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex-1 sm:flex-none"
+                            onClick={() => handleReopenOperationClick(item.record)}
+                        >
+                            <Unlock className="mr-2 h-4 w-4" />
+                            Reopen
                         </Button>
                     )}
                     {canDeleteOperation && (
@@ -765,6 +937,108 @@ export default function OperationsIndex({
                     )}
                 </div>
             </ListPageLayout>
+
+            <Dialog open={closeDialogOpen} onOpenChange={handleCloseDialogChange}>
+                <DialogContent className="sm:max-w-lg">
+                    <DialogHeader>
+                        <DialogTitle>Close Operation</DialogTitle>
+                        <DialogDescription>
+                            Provide the closure details for
+                            {' '}
+                            {operationToClose ? operationToClose.operationid : 'this operation'}.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <form onSubmit={handleCloseSubmit} className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="closed_date">Closed Date</Label>
+                            <Input
+                                id="closed_date"
+                                type="date"
+                                value={closeForm.data.closed_date}
+                                onChange={(event) => closeForm.setData('closed_date', event.target.value)}
+                                max={new Date().toISOString().slice(0, 10)}
+                                required
+                            />
+                            {closeForm.errors.closed_date && (
+                                <p className="text-sm text-destructive">{closeForm.errors.closed_date}</p>
+                            )}
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="closure-comment">Comment</Label>
+                            <Textarea
+                                id="closure-comment"
+                                value={closeForm.data.comment}
+                                onChange={(event) => closeForm.setData('comment', event.target.value)}
+                                placeholder="Summarise why this operation is closing"
+                                rows={4}
+                                required
+                            />
+                            {closeForm.errors.comment && (
+                                <p className="text-sm text-destructive">{closeForm.errors.comment}</p>
+                            )}
+                        </div>
+
+                        <DialogFooter className="gap-2">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => handleCloseDialogChange(false)}
+                                disabled={closeForm.processing}
+                            >
+                                Cancel
+                            </Button>
+                            <Button type="submit" disabled={closeForm.processing}>
+                                {closeForm.processing ? 'Closing...' : 'Close Operation'}
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={reopenDialogOpen} onOpenChange={handleReopenDialogChange}>
+                <DialogContent className="sm:max-w-lg">
+                    <DialogHeader>
+                        <DialogTitle>Reopen Operation</DialogTitle>
+                        <DialogDescription>
+                            Confirm that you want to reopen
+                            {' '}
+                            {operationToReopen ? operationToReopen.operationid : 'this operation'}.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <form onSubmit={handleReopenSubmit} className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="reopen-comment">Comment (optional)</Label>
+                            <Textarea
+                                id="reopen-comment"
+                                value={reopenForm.data.comment}
+                                onChange={(event) => reopenForm.setData('comment', event.target.value)}
+                                placeholder="Share context for reopening"
+                                rows={3}
+                            />
+                            {reopenForm.errors.comment && (
+                                <p className="text-sm text-destructive">{reopenForm.errors.comment}</p>
+                            )}
+                        </div>
+
+                        <DialogFooter className="gap-2">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => handleReopenDialogChange(false)}
+                                disabled={reopenForm.processing}
+                            >
+                                Cancel
+                            </Button>
+                            <Button type="submit" disabled={reopenForm.processing}>
+                                {reopenForm.processing ? 'Reopening...' : 'Reopen Operation'}
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
 
             <DeleteConfirmationDialog
                 open={deleteDialogOpen}

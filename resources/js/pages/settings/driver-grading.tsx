@@ -15,6 +15,7 @@ import { type BreadcrumbItem } from '@/types';
 import { Transition } from '@headlessui/react';
 import { Form, Head, Link, router } from '@inertiajs/react';
 import * as React from 'react';
+import { edit as profileSettingsRoute } from '@/routes/profile';
 import { edit as editSettingsRoute } from '@/routes/settings/driver-grading';
 import { driverGrading as driverGradingReport } from '@/routes/reports';
 import { Info, Loader2, RefreshCcw } from 'lucide-react';
@@ -165,6 +166,10 @@ type GradeThresholdSettings = Record<GradeLetter, number>;
 type GradeThresholdState = Record<GradeLetter, string>;
 
 const breadcrumbs: BreadcrumbItem[] = [
+    {
+        title: 'Settings',
+        href: profileSettingsRoute().url,
+    },
     {
         title: 'Driver grading',
         href: editSettingsRoute().url,

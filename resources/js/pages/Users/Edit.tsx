@@ -17,11 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { evaluatePasswordStrength } from '@/lib/password-strength';
 import { validateUser, type ValidationErrors } from '@/lib/validation';
 import { type BreadcrumbItem } from '@/types';
-
-const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Users', href: '/users' },
-    { title: 'Edit', href: '#' },
-];
+import { index as usersIndexRoute, show as showUserRoute, edit as editUserRoute } from '@/routes/users';
 
 interface Role {
     id: number;
@@ -79,6 +75,16 @@ export default function UsersEdit({ user, roles }: UserEditProps) {
         password_confirmation: '',
         role: user.roles?.[0]?.name ?? '',
     });
+
+    const breadcrumbs = useMemo<BreadcrumbItem[]>(
+        () => [
+            { title: 'User management', href: usersIndexRoute().url },
+            { title: 'Users', href: usersIndexRoute().url },
+            { title: user.name, href: showUserRoute(user.id).url },
+            { title: 'Edit', href: editUserRoute(user.id).url },
+        ],
+        [user.id, user.name],
+    );
 
     const passwordStrength = useMemo(() => evaluatePasswordStrength(data.password ?? ''), [data.password]);
 

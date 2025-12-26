@@ -446,9 +446,11 @@ class PerformanceController extends Controller
             $costShare = $operationTotalCost > 0
                 ? round(($performanceCost / $operationTotalCost) * 100, 2)
                 : null;
-            $plannedContribution = $operationPlannedVolume > 0
-                ? round(($performanceTonnage / $operationPlannedVolume) * 100, 2)
-                : null;
+            $plannedContribution = $operationPlannedTonKm > 0
+                ? round(($performanceTonKm / $operationPlannedTonKm) * 100, 2)
+                : ($operationPlannedVolume > 0
+                    ? round(($performanceTonnage / $operationPlannedVolume) * 100, 2)
+                    : null);
 
             $recentPerformances = (clone $operationPerformancesQuery)
                 ->select(['id', 'FOnumber', 'DateDispach', 'CargoVolumMT', 'DistanceWCargo', 'DistanceWOCargo', 'fuelInBirr', 'perdiem', 'other'])

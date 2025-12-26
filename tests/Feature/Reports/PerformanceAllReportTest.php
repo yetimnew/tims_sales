@@ -86,7 +86,8 @@ class PerformanceAllReportTest extends TestCase
                     )
                     ->has('highlights.top_drivers', 1)
                     ->has('options.drivers')
-                    ->has('options.trucks');
+                    ->has('options.trucks')
+                    ->has('options.loadPhases', 2);
 
                 $props = $page->toArray()['props'];
             });

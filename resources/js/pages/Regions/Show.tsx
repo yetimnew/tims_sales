@@ -73,8 +73,6 @@ interface RegionShowProps {
   activityLogs?: ActivityLog[]
 }
 
-const breadcrumbs: BreadcrumbItem[] = [{ title: 'Regions', href: '/regions' }]
-
 const getStatusBadgeStyles = (status: string) =>
   status === 'active'
     ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200'
@@ -114,6 +112,13 @@ export default function RegionsShow({ region, activityLogs = [] }: RegionShowPro
   const { hasPermission } = usePermissions()
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const breadcrumbs = useMemo<BreadcrumbItem[]>(
+    () => [
+      { title: 'Regions', href: '/regions' },
+      { title: region.name || `Region ${region.id}`, href: `/regions/${region.id}` },
+    ],
+    [region.id, region.name],
+  )
 
   const zones = region.zones ?? []
   const activeZones = zones.filter(zone => zone.status === 'active').length
@@ -144,10 +149,10 @@ export default function RegionsShow({ region, activityLogs = [] }: RegionShowPro
         const errorMessage = errors && typeof errors === 'object' && 'message' in errors
           ? String(errors.message)
           : 'Unable to delete the region. Try again later.'
-        toast({ 
-          title: '❌ Delete Failed', 
-          description: errorMessage, 
-          variant: 'destructive' 
+        toast({
+          title: '❌ Delete Failed',
+          description: errorMessage,
+          variant: 'destructive'
         })
         setIsDeleting(false)
       },

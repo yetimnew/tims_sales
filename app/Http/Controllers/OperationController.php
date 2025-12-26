@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Enums\CargoServiceType;
 use App\Enums\OperationDestinationScope;
+use App\Http\Requests\Operations\CloseOperationRequest;
+use App\Http\Requests\Operations\ReopenOperationRequest;
 use App\Http\Requests\Operations\StoreOperationRequest;
 use App\Http\Requests\Operations\UpdateOperationRequest;
 use App\Models\CargoType;
@@ -24,6 +26,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -41,7 +44,7 @@ class OperationController extends BaseResourceController
         $customerId = $request->input('customer');
         $closed = $request->input('closed');
         $sort = $request->input('sort', 'operationid');
-        $direction = strtolower((string) $request->input('direction', 'asc'));
+        $direction = strtolower((string) $request->input('direction', 'desc'));
         $perPageOptions = [15, 25, 50, 100];
         $perPageDefault = 15;
         $perPage = (int) $request->input('per_page', $perPageDefault);
@@ -51,7 +54,7 @@ class OperationController extends BaseResourceController
         }
 
         if (! in_array($direction, ['asc', 'desc'], true)) {
-            $direction = 'asc';
+            $direction = 'desc';
         }
 
         $allowedSorts = ['operationid', 'status', 'startdate', 'enddate', 'volume', 'km', 'tariff', 'closed', 'created_at'];
@@ -721,6 +724,25 @@ class OperationController extends BaseResourceController
     }
 
     /**
+     * Append the provided entry to the operation remark field.
+     */
+    private function appendRemark(Operation $operation, string $entry): string
+    {
+        $existing = trim((string) $operation->remark);
+        $formattedEntry = trim($entry);
+
+        if ($existing === '') {
+            return $formattedEntry;
+        }
+
+        if ($formattedEntry === '') {
+            return $existing;
+        }
+
+        return $existing.\PHP_EOL.\PHP_EOL.$formattedEntry;
+    }
+
+    /**
      * Remove the specified resource from storage.
      */
     public function destroy(Operation $operation)
@@ -901,6 +923,112 @@ class OperationController extends BaseResourceController
             ]);
 
             return back()->withErrors(['error' => 'Failed to deactivate operation. Please try again.']);
+        }
+    }
+
+    /**
+     * Close the specified operation.
+     */
+    public function close(CloseOperationRequest $request, Operation $operation)
+    {
+        try {
+            if ($operation->closed) {
+                return redirect()->route('operations.index')
+                    ->with('info', sprintf('Operation %s is already closed.', $operation->operationid));
+            }
+
+            $validated = $request->validated();
+            $closedDate = Carbon::parse($validated['closed_date'])->startOfDay();
+            $comment = trim((string) $validated['comment']);
+
+            $remarkEntry = sprintf(
+                '[Closed %s by %s] %s',
+                $closedDate->toDateString(),
+                Auth::user()?->name ?? 'System',
+                $comment
+            );
+
+            $operation->update([
+                'status' => 'inactive',
+                'closed' => true,
+                'enddate' => $closedDate->toDateString(),
+                'remark' => $this->appendRemark($operation, $remarkEntry),
+            ]);
+
+            Cache::forget('operations.status_options');
+            Cache::forget('operations.customer_options');
+            Cache::forget('reports.performance_all.operations');
+            Cache::forget('reports.outsource_performance.operations');
+
+            Log::info('Operation closed', [
+                'operation_id' => $operation->id,
+                'operationid' => $operation->operationid,
+                'user_id' => Auth::id(),
+                'closed_date' => $closedDate->toDateString(),
+            ]);
+
+            return redirect()->route('operations.index')
+                ->with('success', sprintf('Operation %s closed successfully.', $operation->operationid));
+
+        } catch (Exception $e) {
+            Log::error('Operation close failed', [
+                'operation_id' => $operation->id,
+                'error' => $e->getMessage(),
+                'user_id' => Auth::id(),
+            ]);
+
+            return back()->withErrors(['error' => 'Failed to close operation. Please try again.']);
+        }
+    }
+
+    /**
+     * Reopen the specified operation.
+     */
+    public function reopen(ReopenOperationRequest $request, Operation $operation)
+    {
+        try {
+            $validated = $request->validated();
+            $comment = isset($validated['comment']) ? trim((string) $validated['comment']) : '';
+            $attributes = [
+                'status' => 'active',
+                'closed' => false,
+                'enddate' => null,
+            ];
+
+            if ($comment !== '') {
+                $remarkEntry = sprintf(
+                    '[Reopened %s by %s] %s',
+                    Carbon::now()->toDateString(),
+                    Auth::user()?->name ?? 'System',
+                    $comment
+                );
+                $attributes['remark'] = $this->appendRemark($operation, $remarkEntry);
+            }
+
+            $operation->update($attributes);
+
+            Cache::forget('operations.status_options');
+            Cache::forget('operations.customer_options');
+            Cache::forget('reports.performance_all.operations');
+            Cache::forget('reports.outsource_performance.operations');
+
+            Log::info('Operation reopened', [
+                'operation_id' => $operation->id,
+                'operationid' => $operation->operationid,
+                'user_id' => Auth::id(),
+            ]);
+
+            return redirect()->route('operations.index')
+                ->with('success', sprintf('Operation %s reopened successfully.', $operation->operationid));
+
+        } catch (Exception $e) {
+            Log::error('Operation reopen failed', [
+                'operation_id' => $operation->id,
+                'error' => $e->getMessage(),
+                'user_id' => Auth::id(),
+            ]);
+
+            return back()->withErrors(['error' => 'Failed to reopen operation. Please try again.']);
         }
     }
 

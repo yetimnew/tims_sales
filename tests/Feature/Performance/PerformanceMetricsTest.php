@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Performance;
 
+use App\Models\Operation;
 use App\Models\Performance;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -100,5 +101,75 @@ class PerformanceMetricsTest extends TestCase
             );
 
         Carbon::setTestNow();
+    }
+
+    #[Test]
+    public function show_uses_ton_kilometers_for_planned_contribution_when_available(): void
+    {
+        $user = User::factory()->create();
+        $this->givePermissions($user, ['performances.show', 'performances.view-any']);
+
+        $operation = Operation::factory()->create([
+            'volume' => 100,
+            'km' => 200,
+            'tariff' => 10,
+        ]);
+
+        $performance = Performance::factory()
+            ->for($operation)
+            ->create([
+                'CargoVolumMT' => 10,
+                'DistanceWCargo' => 100,
+                'DistanceWOCargo' => 0,
+                'tonkm' => 2000,
+                'fuelInBirr' => 1000,
+                'perdiem' => 100,
+                'other' => 50,
+                'is_returned' => true,
+            ]);
+
+        $this->actingAs($user)
+            ->get(route('performances.show', $performance))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('Performances/Show')
+                ->where('operationInsights.performanceShare.plannedContribution', fn ($value) => is_numeric($value) && abs($value - 10.0) < 0.01)
+                ->where('operationInsights.economics.tonKmCompletionRate', fn ($value) => is_numeric($value) && abs($value - 10.0) < 0.01)
+            );
+    }
+
+    #[Test]
+    public function show_planned_contribution_falls_back_to_tonnage_when_ton_kilometer_plan_missing(): void
+    {
+        $user = User::factory()->create();
+        $this->givePermissions($user, ['performances.show', 'performances.view-any']);
+
+        $operation = Operation::factory()->create([
+            'volume' => 80,
+            'km' => 0,
+            'tariff' => 12,
+        ]);
+
+        $performance = Performance::factory()
+            ->for($operation)
+            ->create([
+                'CargoVolumMT' => 20,
+                'DistanceWCargo' => 50,
+                'DistanceWOCargo' => 0,
+                'tonkm' => null,
+                'fuelInBirr' => 800,
+                'perdiem' => 90,
+                'other' => 60,
+                'is_returned' => true,
+            ]);
+
+        $this->actingAs($user)
+            ->get(route('performances.show', $performance))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('Performances/Show')
+                ->where('operationInsights.performanceShare.plannedContribution', fn ($value) => is_numeric($value) && abs($value - 25.0) < 0.01)
+                ->where('operationInsights.economics.tonKmCompletionRate', null)
+            );
     }
 }

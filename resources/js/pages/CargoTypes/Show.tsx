@@ -273,9 +273,9 @@ export default function CargoTypesShow({ cargoType, activityLogs = [] }: CargoTy
                                 </div>
                             </div>
                         </div>
-                        {(hasPermission('cargo-types.edit') || hasPermission('cargo-types.destroy')) && (
+                        {(hasPermission('cargotypes.edit') || hasPermission('cargotypes.destroy')) && (
                             <div className="flex flex-wrap items-center gap-2">
-                                {hasPermission('cargo-types.edit') && (
+                                {hasPermission('cargotypes.edit') && (
                                     <Button asChild variant="outline" className="gap-2 border-blue-200 text-blue-600 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-200 dark:hover:bg-blue-950/40">
                                         <Link href={`/cargo-types/${cargoType.id}/edit`}>
                                             <SquarePen className="h-4 w-4" />
@@ -283,7 +283,7 @@ export default function CargoTypesShow({ cargoType, activityLogs = [] }: CargoTy
                                         </Link>
                                     </Button>
                                 )}
-                                {hasPermission('cargo-types.destroy') && (
+                                {hasPermission('cargotypes.destroy') && (
                                     <Button
                                         type="button"
                                         variant="outline"

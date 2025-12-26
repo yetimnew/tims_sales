@@ -76,8 +76,6 @@ interface WoredasShowProps {
   activityLogs?: ActivityLogEntry[]
 }
 
-const breadcrumbs: BreadcrumbItem[] = [{ title: 'Woredas', href: '/woredas' }]
-
 const statusBadgeClass = (status: string) =>
   status === 'active'
     ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200'
@@ -123,6 +121,13 @@ export default function WoredasShow({ woreda, activityLogs = [] }: WoredasShowPr
   const { toast } = useToast()
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const breadcrumbs = useMemo<BreadcrumbItem[]>(
+    () => [
+      { title: 'Woredas', href: '/woredas' },
+      { title: woreda.name || `Woreda ${woreda.id}`, href: `/woredas/${woreda.id}` },
+    ],
+    [woreda.id, woreda.name],
+  )
 
   const places = woreda.places ?? []
   const activityLogRows = useMemo(

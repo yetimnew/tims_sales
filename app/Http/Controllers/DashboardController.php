@@ -415,13 +415,18 @@ class DashboardController extends Controller
             ->orderBy('scheduled_date')
             ->limit(5)
             ->get()
-            ->map(fn ($record) => [
-                'id' => $record->id,
-                'truck' => $record->truck?->plate ?? 'Unassigned',
-                'scheduledDate' => optional($record->scheduled_date)?->toDateString(),
-                'daysUntil' => $record->days_until_scheduled,
-                'status' => $record->status,
-            ])
+            ->map(static function (VehicleMaintenanceRecord $record) {
+                $scheduledDate = $record->scheduled_date;
+
+                return [
+                    'id' => $record->id,
+                    'truck' => $record->truck?->plate ?? 'Unassigned',
+                    'scheduledDate' => $scheduledDate?->toDateString(),
+                    'daysUntil' => $scheduledDate ? Carbon::today()->diffInDays($scheduledDate, false) : null,
+                    'scheduledRelative' => $scheduledDate?->diffForHumans(null, false, false, 1),
+                    'status' => $record->status,
+                ];
+            })
             ->values()
             ->all();
 

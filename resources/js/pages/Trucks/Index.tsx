@@ -475,15 +475,6 @@ export default function TrucksIndex({
 
     const statsDefinitions = [
         {
-            id: 'total-trucks',
-            label: 'Total Trucks',
-            icon: <Truck className="h-3.5 w-3.5 text-blue-600" />,
-            className: 'min-w-[220px] flex-shrink-0',
-            value: truckCount.toLocaleString(),
-            description: 'All vehicles',
-            valueClassName: 'text-blue-600',
-        },
-        {
             id: 'active-trucks',
             label: 'Active',
             icon: <CheckCircle className="h-3.5 w-3.5 text-green-600" />,
@@ -501,15 +492,7 @@ export default function TrucksIndex({
             description: 'Total fleet value',
             valueClassName: 'text-purple-600',
         },
-        {
-            id: 'revenue',
-            label: `Revenue (${financialWindowDays}d)`,
-            icon: <TrendingUp className="h-3.5 w-3.5 text-emerald-600" />,
-            className: 'min-w-[220px] flex-shrink-0',
-            value: revenueDisplay,
-            description: tonKmPerBirrDisplay,
-            valueClassName: 'text-emerald-600',
-        },
+
         {
             id: 'driver-churn',
             label: `Driver Churn (${churnWindowDays}d)`,

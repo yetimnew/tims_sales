@@ -18,6 +18,7 @@ import { usePermissions } from '@/hooks/use-permissions';
 import * as React from 'react';
 import { AlertCircle, Check, CheckCircle2, ChevronDown, Filter, Trash2, Undo2 } from 'lucide-react';
 import { index as indexRoute } from '@/routes/notifications/preferences';
+import { index as usersIndexRoute } from '@/routes/users';
 
 interface NotificationTypeResource {
     id: number;
@@ -88,6 +89,10 @@ type FlashProps = {
 };
 
 const breadcrumbs: BreadcrumbItem[] = [
+    {
+        title: 'User management',
+        href: usersIndexRoute().url,
+    },
     {
         title: 'Notification assignments',
         href: indexRoute().url,

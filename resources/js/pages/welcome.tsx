@@ -18,7 +18,7 @@ const Welcome = (): JSX.Element => {
     return (
         <div className="relative h-screen w-full overflow-hidden bg-slate-950">
             <Head title="Welcome to TIMS" />
-            
+
             {/* Background Image with Overlay */}
             <div className="absolute inset-0">
                 <img
@@ -50,25 +50,25 @@ const Welcome = (): JSX.Element => {
                                 Transport Information Management System
                             </span>
                         </div>
-                        
+
                         <h1 className="text-6xl md:text-7xl font-extrabold text-white leading-tight mb-6">
                             Command Your
                             <span className="block bg-gradient-to-r from-sky-400 via-blue-400 to-indigo-400 bg-clip-text text-transparent">
                                 Fleet Operations
                             </span>
                         </h1>
-                        
+
                         <p className="text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed">
-                            Unified dispatch control, real-time fleet visibility, and executive intelligence 
+                            Unified dispatch control, real-time fleet visibility, and executive intelligence
                             for modern transport operations.
                         </p>
                     </div>
 
                     {/* CTA Button */}
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
-                        <Button 
-                            asChild 
-                            size="lg" 
+                        <Button
+                            asChild
+                            size="lg"
                             className="group relative px-8 py-6 text-lg font-semibold bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-500 hover:to-blue-500 text-white shadow-2xl shadow-sky-500/30 rounded-2xl transition-all duration-300 hover:scale-105 hover:shadow-sky-500/50"
                         >
                             <Link href={isAuthenticated ? dashboard.url() : login.url()}>
@@ -101,7 +101,7 @@ const Welcome = (): JSX.Element => {
                             <div
                                 key={feature}
                                 className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 border border-white/10 backdrop-blur-sm transition-all duration-300 hover:bg-white/10 hover:border-sky-500/30"
-                                style={{ 
+                                style={{
                                     animation: `fadeInUp 0.6s ease-out ${index * 0.1}s both`,
                                 }}
                             >
@@ -117,7 +117,7 @@ const Welcome = (): JSX.Element => {
             <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20">
                 <div className="px-6 py-3 rounded-full bg-slate-900/50 border border-slate-700/50 backdrop-blur-md">
                     <p className="text-xs text-slate-400 font-medium uppercase tracking-wider">
-                        Powered by {name || 'TIMS'} • Enterprise Fleet Management
+                        Powered by {name || 'TIMS'} • Yetimeshet Tadesse • 2025
                     </p>
                 </div>
             </div>

@@ -2,13 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\Reports\DailyStatusExport;
 use App\Exports\Reports\DriverPerformanceExport;
 use App\Exports\Reports\OutsourcePerformanceExport;
 use App\Exports\Reports\PerformanceAllExport;
 use App\Exports\Reports\TruckPerformanceExport;
-use App\Exports\Reports\DailyStatusExport;
 use App\Http\Requests\Reports\CostPerKilometerRequest;
 use App\Http\Requests\Reports\CustomerProfitabilityRequest;
+use App\Http\Requests\Reports\DailyStatusReportRequest;
 use App\Http\Requests\Reports\DriverSafetyReportRequest;
 use App\Http\Requests\Reports\FuelEfficiencyRequest;
 use App\Http\Requests\Reports\LoadFactorUtilizationRequest;
@@ -18,7 +19,6 @@ use App\Http\Requests\Reports\PerformanceAllRequest;
 use App\Http\Requests\Reports\PerformanceByDriverRequest;
 use App\Http\Requests\Reports\PerformanceByStatusRequest;
 use App\Http\Requests\Reports\PerformanceByTruckRequest;
-use App\Http\Requests\Reports\DailyStatusReportRequest;
 use App\Http\Requests\Reports\RouteProfitabilityRequest;
 use App\Http\Requests\Reports\TruckGradingReportRequest;
 use App\Models\Customer;
@@ -35,6 +35,7 @@ use App\Models\VehicleMaintenanceRecord;
 use App\Models\VehicleType;
 use App\Services\Reports\CostPerKilometerReport;
 use App\Services\Reports\CustomerProfitabilityReport;
+use App\Services\Reports\DailyStatusReport;
 use App\Services\Reports\DriverSafetyReport;
 use App\Services\Reports\DriverTruckGradingReport;
 use App\Services\Reports\FuelEfficiencyReport;
@@ -46,8 +47,6 @@ use App\Services\Reports\PerformanceByStatusReport;
 use App\Services\Reports\RouteProfitabilityReport;
 use App\Services\Reports\TruckGradingReport;
 use App\Services\Reports\TruckPerformanceReport;
-use App\Services\Reports\DailyStatusReport;
-use App\Jobs\WarmDailyStatusReportSnapshot;
 use App\Services\TruckAssignmentService;
 use Dompdf\Dompdf;
 use Dompdf\Options;
@@ -775,20 +774,10 @@ class ReportController extends Controller
                     ->values();
             });
 
-            // Cache destinations (1 hour) - changes when places are added/removed
-            $destinations = Cache::remember('reports.performance_all.destinations', 3600, function () {
-                return Place::query()
-                    ->select('id', 'name', 'status')
-                    ->orderBy('name')
-                    ->limit(300)
-                    ->get()
-                    ->map(static fn (Place $place) => [
-                        'id' => $place->id,
-                        'name' => $place->name,
-                        'status' => $place->status,
-                    ])
-                    ->values();
-            });
+            $loadPhases = collect([
+                ['id' => 'main', 'label' => 'Main trip'],
+                ['id' => 'return', 'label' => 'Return trip'],
+            ])->values();
 
             return Inertia::render('Reports/PerformanceAll', [
                 'filters' => [
@@ -797,7 +786,7 @@ class ReportController extends Controller
                     'driver_ids' => $result['filters']['driver_ids'],
                     'truck_ids' => $result['filters']['truck_ids'],
                     'operation_ids' => $result['filters']['operation_ids'],
-                    'destination_ids' => $result['filters']['destination_ids'],
+                    'load_phase' => $result['filters']['load_phase'],
                     'per_page' => $result['filters']['per_page'],
                 ],
                 'performances' => $paginator, // Inertia will automatically convert this
@@ -808,7 +797,7 @@ class ReportController extends Controller
                     'drivers' => $drivers,
                     'trucks' => $trucks,
                     'operations' => $operations,
-                    'destinations' => $destinations,
+                    'loadPhases' => $loadPhases,
                 ],
             ]);
         } catch (Exception $e) {
@@ -1749,7 +1738,6 @@ class ReportController extends Controller
             'Content-Disposition' => "attachment; filename=\"{$filename}\"",
         ]);
     }
-
 
     /**
      * Legacy-style: driver-truck attach/detach listing.

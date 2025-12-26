@@ -37,13 +37,9 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { Area, AreaChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis } from 'recharts';
 import { usePermissions } from '@/hooks/use-permissions';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { toast } from '@/hooks/use-toast';
-
-const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Operations', href: '/operations' },
-];
 
 interface User { id: number; name: string; }
 interface ActivityLog { id: number; description: string; event: string; created_at: string; causer?: User; }
@@ -162,6 +158,13 @@ export default function OperationsShow({ operation, activityLogs = [], performan
     const { hasPermission } = usePermissions();
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const breadcrumbs = useMemo<BreadcrumbItem[]>(
+        () => [
+            { title: 'Operations', href: '/operations' },
+            { title: operation.operationid || `Operation ${operation.id}`, href: `/operations/${operation.id}` },
+        ],
+        [operation.id, operation.operationid],
+    );
 
     const handleDelete = () => {
         setIsDeleting(true);
@@ -374,6 +377,7 @@ export default function OperationsShow({ operation, activityLogs = [], performan
 
     const startDate = operation.startdate ? new Date(operation.startdate) : null;
     const endDate = operation.enddate ? new Date(operation.enddate) : null;
+    const closedDate = operation.closed && operation.enddate ? new Date(operation.enddate) : null;
     const createdDate = operation.created_at ? new Date(operation.created_at) : null;
     const durationInDays = startDate && endDate
         ? Math.max(Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)), 0)
@@ -908,13 +912,24 @@ export default function OperationsShow({ operation, activityLogs = [], performan
             icon: CalendarDays,
             iconWrapperClass: 'border-blue-200 bg-blue-50 text-blue-600 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-200',
         },
-        {
-            label: 'Projected Completion',
-            value: formatDate(operation.enddate),
-            description: endDate ? 'Planned wrap-up window' : 'End date pending',
-            icon: Milestone,
-            iconWrapperClass: 'border-purple-200 bg-purple-50 text-purple-600 dark:border-purple-800 dark:bg-purple-900/30 dark:text-purple-200',
-        },
+        operation.closed && closedDate
+            ? {
+                label: 'Closed On',
+                value: formatDate(operation.enddate),
+                description: closedDate.toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                }),
+                icon: CheckCircle,
+                iconWrapperClass: 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200',
+            }
+            : {
+                label: 'Projected Completion',
+                value: formatDate(operation.enddate),
+                description: endDate ? 'Planned wrap-up window' : 'End date pending',
+                icon: Milestone,
+                iconWrapperClass: 'border-purple-200 bg-purple-50 text-purple-600 dark:border-purple-800 dark:bg-purple-900/30 dark:text-purple-200',
+            },
     ];
 
     const stakeholderSummary = relationshipMatrix.filter((item) => item.label !== 'Lifecycle Status');
@@ -1038,6 +1053,12 @@ export default function OperationsShow({ operation, activityLogs = [], performan
                                             <span className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-sm font-medium shadow-sm dark:bg-slate-900/50">
                                                 <Activity className="h-3.5 w-3.5 text-green-600 dark:text-green-300" />
                                                 Owner: {operation.user.name}
+                                            </span>
+                                        )}
+                                        {operation.closed && closedDate && (
+                                            <span className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-sm font-medium text-emerald-700 shadow-sm dark:bg-emerald-900/30 dark:text-emerald-200">
+                                                <Calendar className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-200" />
+                                                Closed on {formatDate(operation.enddate)}
                                             </span>
                                         )}
                                         <span className={`inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-sm font-medium shadow-sm dark:bg-slate-900/50 ${executionProfile.chipClass}`}>

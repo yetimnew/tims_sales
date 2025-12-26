@@ -14,6 +14,7 @@ import { type BreadcrumbItem } from '@/types';
 import { Transition } from '@headlessui/react';
 import { Form, Head, Link, router } from '@inertiajs/react';
 import * as React from 'react';
+import { edit as profileSettingsRoute } from '@/routes/profile';
 import { edit as editSettingsRoute } from '@/routes/settings/truck-grading';
 import { truckGrading as truckGradingReport } from '@/routes/reports';
 import { Loader2, RefreshCcw } from 'lucide-react';
@@ -160,6 +161,10 @@ type LatestCalculation = {
 } | null;
 
 const breadcrumbs: BreadcrumbItem[] = [
+    {
+        title: 'Settings',
+        href: profileSettingsRoute().url,
+    },
     {
         title: 'Truck grading',
         href: editSettingsRoute().url,

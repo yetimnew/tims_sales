@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { Head, Link, router, useForm } from '@inertiajs/react'
 import { ArrowLeft, MapPin, Route, Save, Navigation, AlertCircle } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -13,9 +13,15 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
 import { InteractiveMap } from '@/components/InteractiveMap'
 import AppLayout from '@/layouts/app-layout'
+import type { BreadcrumbItem } from '@/types'
 
 
-DistancesCreate.layout = (page: React.ReactNode) => <AppLayout children={page} />
+const breadcrumbs: BreadcrumbItem[] = [
+  { title: 'Distances', href: '/distances' },
+  { title: 'Create', href: '/distances/create' },
+]
+
+DistancesCreate.layout = (page: ReactNode) => <AppLayout breadcrumbs={breadcrumbs}>{page}</AppLayout>
 interface Place {
   id: number
   name: string

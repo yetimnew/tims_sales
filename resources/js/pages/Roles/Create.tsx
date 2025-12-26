@@ -36,6 +36,8 @@ import {
     type PermissionRecord,
 } from '@/lib/permission-dependencies';
 import { type BreadcrumbItem } from '@/types';
+import { index as usersIndexRoute } from '@/routes/users';
+import { index as rolesIndexRoute, create as createRoleRoute } from '@/routes/roles';
 
 type Permission = PermissionRecord;
 
@@ -50,8 +52,9 @@ interface RoleCreateProps {
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Roles', href: '/roles' },
-    { title: 'Create', href: '/roles/create' },
+    { title: 'User management', href: usersIndexRoute().url },
+    { title: 'Roles', href: rolesIndexRoute().url },
+    { title: 'Create', href: createRoleRoute().url },
 ];
 
 const formatModuleLabel = (value: string): string => {

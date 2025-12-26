@@ -409,6 +409,14 @@ Route::middleware(['auth'])->group(function () {
             ->middleware('can:operations.deactivate')
             ->name('operations.deactivate');
 
+        Route::post('operations/{operation}/close', [\App\Http\Controllers\OperationController::class, 'close'])
+            ->middleware('can:operations.close')
+            ->name('operations.close');
+
+        Route::post('operations/{operation}/reopen', [\App\Http\Controllers\OperationController::class, 'reopen'])
+            ->middleware('can:operations.reopen')
+            ->name('operations.reopen');
+
         Route::get('operations/available/list', [\App\Http\Controllers\OperationController::class, 'availableOperations'])
             ->middleware('can:operations.available')
             ->name('operations.available');

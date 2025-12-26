@@ -1,4 +1,5 @@
 import { Head, Link } from '@inertiajs/react'
+import { useMemo } from 'react'
 import {
   ArrowLeft,
   MapPin,
@@ -53,8 +54,6 @@ interface DistancesShowProps {
   distance: Distance
 }
 
-const breadcrumbs: BreadcrumbItem[] = [{ title: 'Distances', href: '/distances' }]
-
 const formatHierarchy = (hierarchy?: HierarchySummary | null) => {
   if (!hierarchy) return '—'
   const parts = [hierarchy.name, hierarchy.zone?.name, hierarchy.zone?.region?.name].filter(Boolean)
@@ -63,6 +62,16 @@ const formatHierarchy = (hierarchy?: HierarchySummary | null) => {
 
 export default function DistancesShow({ distance }: DistancesShowProps) {
   const { hasPermission } = usePermissions()
+  const breadcrumbs = useMemo<BreadcrumbItem[]>(
+    () => [
+      { title: 'Distances', href: '/distances' },
+      {
+        title: `${distance.from_place?.name ?? 'Origin'} → ${distance.to_place?.name ?? 'Destination'}`,
+        href: `/distances/${distance.id}`,
+      },
+    ],
+    [distance.id, distance.from_place?.name, distance.to_place?.name],
+  )
 
   const places = [
     {

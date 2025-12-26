@@ -14,6 +14,7 @@ import { type BreadcrumbItem } from '@/types';
 import { Transition } from '@headlessui/react';
 import { Form, Head, Link, router } from '@inertiajs/react';
 import * as React from 'react';
+import { edit as profileSettingsRoute } from '@/routes/profile';
 import { edit as driverTruckGradingRoute } from '@/routes/settings/driver-truck-grading';
 import { ArrowUpRight, Info, Activity, Loader2, RefreshCcw } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
@@ -166,6 +167,10 @@ const categoryLabels: Record<GradeCategoryKey, string> = {
 };
 
 const breadcrumbs: BreadcrumbItem[] = [
+    {
+        title: 'Settings',
+        href: profileSettingsRoute.url(),
+    },
     {
         title: 'Driver-truck grading',
         href: driverTruckGradingRoute.url(),

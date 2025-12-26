@@ -29,6 +29,7 @@ import {
     Search,
     ChevronRight,
 } from 'lucide-react';
+import { index as usersIndexRoute } from '@/routes/users';
 
 type ColumnKey = 'name' | 'permissions' | 'created_at';
 
@@ -79,8 +80,12 @@ interface RolesIndexProps {
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
+        title: 'User management',
+        href: usersIndexRoute().url,
+    },
+    {
         title: 'Roles',
-        href: '/roles',
+        href: '#',
     },
 ];
 

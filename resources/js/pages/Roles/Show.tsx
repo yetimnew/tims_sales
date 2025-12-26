@@ -22,11 +22,8 @@ import { useToast } from '@/hooks/use-toast';
 import { usePermissions } from '@/hooks/use-permissions';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-
-const breadcrumbs: BreadcrumbItem[] = [
-  { title: 'Roles', href: '/roles' },
-  { title: 'Details', href: '#' },
-];
+import { index as usersIndexRoute } from '@/routes/users';
+import { index as rolesIndexRoute, show as showRoleRoute } from '@/routes/roles';
 
 interface Permission {
     id: number;
@@ -82,6 +79,15 @@ export default function RolesShow({ role, activityLogs }: RolesShowProps) {
     const { hasPermission } = usePermissions();
     const [deleteConfirmation, setDeleteConfirmation] = useState<{ id: number; name: string } | null>(null);
     const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({});
+
+    const breadcrumbs = useMemo<BreadcrumbItem[]>(
+        () => [
+            { title: 'User management', href: usersIndexRoute().url },
+            { title: 'Roles', href: rolesIndexRoute().url },
+            { title: role.name, href: showRoleRoute(role.id).url },
+        ],
+        [role.id, role.name],
+    );
 
     const permissions = role.permissions ?? [];
     const users = role.users ?? [];

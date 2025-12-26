@@ -27,12 +27,12 @@ class PerformanceAllReport
         $driverIds = $this->normaliseIds($filters['driver_ids'] ?? []);
         $truckIds = $this->normaliseIds($filters['truck_ids'] ?? []);
         $operationIds = $this->normaliseIds($filters['operation_ids'] ?? []);
-        $destinationIds = $this->normaliseIds($filters['destination_ids'] ?? []);
+        $loadPhase = $this->normaliseLoadPhase($filters['load_phase'] ?? null);
         $isExport = $this->isExportRequest($filters);
         $perPage = $this->resolvePerPage($filters['per_page'] ?? null, $isExport);
 
-        $paginator = $this->fetchPaginatedRows($from, $to, $driverIds, $truckIds, $operationIds, $destinationIds, $perPage);
-        
+        $paginator = $this->fetchPaginatedRows($from, $to, $driverIds, $truckIds, $operationIds, $loadPhase, $perPage);
+
         // Get the collection for summary calculations
         $rows = $paginator->getCollection();
         $summary = $this->summarise($rows);
@@ -48,7 +48,7 @@ class PerformanceAllReport
                 'driver_ids' => $driverIds,
                 'truck_ids' => $truckIds,
                 'operation_ids' => $operationIds,
-                'destination_ids' => $destinationIds,
+                'load_phase' => $loadPhase,
                 'per_page' => $perPage,
             ],
         ];
@@ -108,13 +108,24 @@ class PerformanceAllReport
             ->all();
     }
 
+    private function normaliseLoadPhase(mixed $value): ?string
+    {
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $phase = strtolower(trim($value));
+
+        return in_array($phase, ['main', 'return'], true) ? $phase : null;
+    }
+
     private function fetchRows(
         CarbonInterface $from,
         CarbonInterface $to,
         array $driverIds,
         array $truckIds,
         array $operationIds,
-        array $destinationIds,
+        ?string $loadPhase,
         int $limit,
     ): Collection {
         $query = Performance::query()
@@ -144,8 +155,8 @@ class PerformanceAllReport
             $query->whereIn('operation_id', $operationIds);
         }
 
-        if (! empty($destinationIds)) {
-            $query->whereIn('destination_id', $destinationIds);
+        if ($loadPhase !== null) {
+            $query->where('load_phase', $loadPhase);
         }
 
         return $query
@@ -218,7 +229,7 @@ class PerformanceAllReport
         array $driverIds,
         array $truckIds,
         array $operationIds,
-        array $destinationIds,
+        ?string $loadPhase,
         int $perPage,
     ) {
         $query = Performance::query()
@@ -248,8 +259,8 @@ class PerformanceAllReport
             $query->whereIn('operation_id', $operationIds);
         }
 
-        if (! empty($destinationIds)) {
-            $query->whereIn('destination_id', $destinationIds);
+        if ($loadPhase !== null) {
+            $query->where('load_phase', $loadPhase);
         }
 
         $paginator = $query->paginate($perPage);
