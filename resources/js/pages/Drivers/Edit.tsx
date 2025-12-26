@@ -164,10 +164,6 @@ export default function DriversEdit({ driver }: DriversEditProps) {
                 clearErrors();
                 setFrontendErrors({});
                 setIsDirty(false);
-                toast({
-                    title: '✅ Driver Updated',
-                    description: `${data.name || data.driverid || driver.name || driver.driverid} has been updated successfully.`,
-                });
             },
         });
     };

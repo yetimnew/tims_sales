@@ -144,10 +144,6 @@ export default function DriversCreate() {
                 clearErrors();
                 setFrontendErrors({});
                 setIsDirty(false);
-                toast({
-                    title: '✅ Driver Created',
-                    description: 'The driver has been added to the workforce successfully.',
-                });
             },
         });
     };

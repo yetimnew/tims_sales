@@ -592,10 +592,6 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
             onSuccess: () => {
                 setDeleteDialogOpen(false);
                 setIsDeleting(false);
-                toast({
-                    title: '✅ Driver Deleted',
-                    description: `${driver.name} has been removed from the workforce.`,
-                });
             },
             onError: (errors) => {
                 setIsDeleting(false);

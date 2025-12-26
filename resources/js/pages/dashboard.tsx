@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 import AppLayout from '@/layouts/app-layout';
+import { usePermissions } from '@/hooks/use-permissions';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
 import {
@@ -452,11 +453,31 @@ export default function Dashboard({
     topCustomers,
     recentPerformances,
 }: DashboardProps) {
+    const { hasPermission } = usePermissions();
+    const canViewDashboard = hasPermission('dashboard.view');
     const [isVisible, setIsVisible] = React.useState(false);
 
     React.useEffect(() => {
         setIsVisible(true);
     }, []);
+
+    if (!canViewDashboard) {
+        return (
+            <AppLayout breadcrumbs={breadcrumbs}>
+                <Head title="Dashboard" />
+                <div className="flex flex-1 flex-col items-center justify-center gap-6 p-8 text-center">
+                    <img src="/images/dashboard-permission.svg" alt="Dashboard access restricted" className="h-60 w-auto max-w-full" />
+                    <div className="space-y-2">
+                        <h1 className="text-3xl font-semibold text-slate-900 dark:text-white">Dashboard Access Restricted</h1>
+                        <p className="text-sm text-slate-600 dark:text-slate-400 max-w-md">
+                            You need the dashboard permission to explore fleet and financial insights. Please contact an administrator if you
+                            believe this is a mistake.
+                        </p>
+                    </div>
+                </div>
+            </AppLayout>
+        );
+    }
 
     const statusSummary = latestTruckStatusSummary;
     const totalStatusEntries = statusSummary?.overview.totalEntries ?? 0;

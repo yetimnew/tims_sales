@@ -194,10 +194,6 @@ export default function DriverTrucksCreate({ trucks, drivers, error }: Props) {
                 clearErrors();
                 setFrontendErrors({});
                 setIsDirty(false);
-                toast({
-                    title: '✅ Assignment Created',
-                    description: 'Driver and truck have been paired successfully.',
-                });
             },
         });
     };

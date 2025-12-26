@@ -16,6 +16,11 @@ class CheckPermissionSeeder extends Seeder
 
     public function run(): void
     {
+        // ==================== DASHBOARD PERMISSIONS ====================
+        $dashboardPermissions = [
+            'dashboard.view',
+        ];
+
         // ==================== TRUCKS PERMISSIONS ====================
         $truckPermissions = [
             'trucks.view', 'trucks.show', 'trucks.create', 'trucks.store', 'trucks.edit',
@@ -232,6 +237,7 @@ class CheckPermissionSeeder extends Seeder
 
         // ==================== COMBINE ALL PERMISSIONS ====================
         $allPermissions = array_merge(
+            $dashboardPermissions,
             $truckPermissions,
             $driverTruckPermissions,
             $driverPermissions,
