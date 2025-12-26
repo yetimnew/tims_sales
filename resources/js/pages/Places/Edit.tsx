@@ -191,10 +191,6 @@ export default function PlacesEdit({ place, woredas }: PlacesEditProps) {
       onSuccess: () => {
         setFrontendErrors({})
         setIsDirty(false)
-        toast({
-          title: '✅ Place Updated',
-          description: 'Place details have been saved successfully.',
-        })
       },
     })
   }

@@ -75,6 +75,7 @@ class RegionController extends Controller
         if ($search === '' && empty($status)) {
             $metrics = Cache::remember($cacheKey, 3600, function () use ($metricsQuery) {
                 $metricsBaseQuery = clone $metricsQuery;
+
                 return [
                     'total' => (clone $metricsBaseQuery)->count(),
                     'active' => (clone $metricsBaseQuery)->where('status', 'active')->count(),
@@ -180,7 +181,11 @@ class RegionController extends Controller
                 'user_id' => Auth::id(),
             ]);
 
-            return back()->withErrors(['error' => 'Failed to create region. Please try again.']);
+            $errorMessage = 'Failed to create region. Please try again.';
+
+            return back()
+                ->withErrors(['error' => $errorMessage])
+                ->with('error', $errorMessage);
         }
     }
 
@@ -281,7 +286,11 @@ class RegionController extends Controller
                 'user_id' => Auth::id(),
             ]);
 
-            return back()->withErrors(['error' => 'Failed to update region. Please try again.']);
+            $errorMessage = 'Failed to update region. Please try again.';
+
+            return back()
+                ->withErrors(['error' => $errorMessage])
+                ->with('error', $errorMessage);
         }
     }
 
@@ -293,7 +302,11 @@ class RegionController extends Controller
         try {
             // Check if region is being used by zones
             if ($region->zones()->count() > 0) {
-                return back()->withErrors(['error' => 'Cannot delete region that has zones.']);
+                $errorMessage = 'Cannot delete region that has zones.';
+
+                return back()
+                    ->withErrors(['error' => $errorMessage])
+                    ->with('error', $errorMessage);
             }
 
             $regionId = $region->getKey();
@@ -322,7 +335,11 @@ class RegionController extends Controller
                 'user_id' => Auth::id(),
             ]);
 
-            return back()->withErrors(['error' => 'Failed to delete region. Please try again.']);
+            $errorMessage = 'Failed to delete region. Please try again.';
+
+            return back()
+                ->withErrors(['error' => $errorMessage])
+                ->with('error', $errorMessage);
         }
     }
 
@@ -347,7 +364,11 @@ class RegionController extends Controller
                 'user_id' => Auth::id(),
             ]);
 
-            return back()->withErrors(['error' => 'Failed to deactivate region. Please try again.']);
+            $errorMessage = 'Failed to deactivate region. Please try again.';
+
+            return back()
+                ->withErrors(['error' => $errorMessage])
+                ->with('error', $errorMessage);
         }
     }
 

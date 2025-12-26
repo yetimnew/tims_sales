@@ -146,7 +146,11 @@ class ZoneController extends Controller
                 'user_id' => Auth::id(),
             ]);
 
-            return back()->withErrors(['error' => 'Failed to create zone. Please try again.']);
+            $errorMessage = 'Failed to create zone. Please try again.';
+
+            return back()
+                ->withErrors(['error' => $errorMessage])
+                ->with('error', $errorMessage);
         }
     }
 
@@ -251,7 +255,11 @@ class ZoneController extends Controller
                 'user_id' => Auth::id(),
             ]);
 
-            return back()->withErrors(['error' => 'Failed to update zone. Please try again.']);
+            $errorMessage = 'Failed to update zone. Please try again.';
+
+            return back()
+                ->withErrors(['error' => $errorMessage])
+                ->with('error', $errorMessage);
         }
     }
 
@@ -263,7 +271,11 @@ class ZoneController extends Controller
         try {
             // Check if zone is being used by woredas
             if ($zone->woredas()->count() > 0) {
-                return back()->withErrors(['error' => 'Cannot delete zone that has woredas.']);
+                $errorMessage = 'Cannot delete zone that has woredas.';
+
+                return back()
+                    ->withErrors(['error' => $errorMessage])
+                    ->with('error', $errorMessage);
             }
 
             $zoneId = $zone->getKey();
@@ -293,7 +305,11 @@ class ZoneController extends Controller
                 'user_id' => Auth::id(),
             ]);
 
-            return back()->withErrors(['error' => 'Failed to delete zone. Please try again.']);
+            $errorMessage = 'Failed to delete zone. Please try again.';
+
+            return back()
+                ->withErrors(['error' => $errorMessage])
+                ->with('error', $errorMessage);
         }
     }
 
@@ -312,7 +328,11 @@ class ZoneController extends Controller
                 ->with('success', 'Zone deactivated successfully.');
 
         } catch (Exception $e) {
-            return back()->withErrors(['error' => 'Failed to deactivate zone. Please try again.']);
+            $errorMessage = 'Failed to deactivate zone. Please try again.';
+
+            return back()
+                ->withErrors(['error' => $errorMessage])
+                ->with('error', $errorMessage);
         }
     }
 

@@ -93,10 +93,10 @@ class DistanceController extends Controller
         // Cache metrics only when no filters applied (1 hour)
         $search = $request->get('search');
         $cacheKey = 'distances.metrics';
-        if (empty($search) && !$request->filled('distanceMin') && !$request->filled('distanceMax') && 
-            !$request->filled('timeMin') && !$request->filled('timeMax') && 
-            !$request->filled('routeType') && !$request->filled('tollRoad') && 
-            !$request->filled('heavyVehicleRestricted') && !$request->filled('region')) {
+        if (empty($search) && ! $request->filled('distanceMin') && ! $request->filled('distanceMax') &&
+            ! $request->filled('timeMin') && ! $request->filled('timeMax') &&
+            ! $request->filled('routeType') && ! $request->filled('tollRoad') &&
+            ! $request->filled('heavyVehicleRestricted') && ! $request->filled('region')) {
             $metrics = Cache::remember($cacheKey, 3600, function () use ($metricsQuery) {
                 return [
                     'averageSpeed' => round((float) (((clone $metricsQuery)->avg('average_speed_kmph')) ?? 0), 2),
@@ -204,7 +204,11 @@ class DistanceController extends Controller
                 'user_id' => Auth::id(),
             ]);
 
-            return back()->withErrors(['error' => 'Failed to create distance. Please try again.']);
+            $errorMessage = 'Failed to create distance. Please try again.';
+
+            return back()
+                ->withErrors(['error' => $errorMessage])
+                ->with('error', $errorMessage);
         }
     }
 
@@ -308,7 +312,11 @@ class DistanceController extends Controller
                 'user_id' => Auth::id(),
             ]);
 
-            return back()->withErrors(['error' => 'Failed to update distance. Please try again.']);
+            $errorMessage = 'Failed to update distance. Please try again.';
+
+            return back()
+                ->withErrors(['error' => $errorMessage])
+                ->with('error', $errorMessage);
         }
     }
 
@@ -344,7 +352,11 @@ class DistanceController extends Controller
                 'user_id' => Auth::id(),
             ]);
 
-            return back()->withErrors(['error' => 'Failed to delete distance. Please try again.']);
+            $errorMessage = 'Failed to delete distance. Please try again.';
+
+            return back()
+                ->withErrors(['error' => $errorMessage])
+                ->with('error', $errorMessage);
         }
     }
 
@@ -360,7 +372,11 @@ class DistanceController extends Controller
                 ->with('success', 'Distance deactivated successfully.');
 
         } catch (Exception $e) {
-            return back()->withErrors(['error' => 'Failed to deactivate distance. Please try again.']);
+            $errorMessage = 'Failed to deactivate distance. Please try again.';
+
+            return back()
+                ->withErrors(['error' => $errorMessage])
+                ->with('error', $errorMessage);
         }
     }
 

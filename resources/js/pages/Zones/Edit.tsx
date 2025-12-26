@@ -185,10 +185,6 @@ export default function ZonesEdit({ zone, regions }: ZonesEditProps) {
             onSuccess: () => {
                 setFrontendErrors({});
                 setIsDirty(false);
-                toast({
-                    title: '✅ Zone Updated',
-                    description: 'Zone details have been saved successfully.',
-                });
             },
         });
     };

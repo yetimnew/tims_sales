@@ -20,7 +20,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog'
 import { ActivityLogTable } from '@/components/activity-log-table'
-import { useToast } from '@/hooks/use-toast'
 import AppLayout from '@/layouts/app-layout'
 import type { BreadcrumbItem } from '@/types'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -118,7 +117,6 @@ const resolveActivityAction = (event?: string | null): 'created' | 'updated' | '
 }
 
 export default function WoredasShow({ woreda, activityLogs = [] }: WoredasShowProps) {
-  const { toast } = useToast()
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const breadcrumbs = useMemo<BreadcrumbItem[]>(
@@ -149,19 +147,9 @@ export default function WoredasShow({ woreda, activityLogs = [] }: WoredasShowPr
     router.delete(`/woredas/${woreda.id}`, {
       preserveScroll: true,
       onSuccess: () => {
-        toast({ title: '✅ Woreda Deleted', description: `${woreda.name} was removed successfully.` })
         setDeleteDialogOpen(false)
-        setIsDeleting(false)
       },
-      onError: (errors) => {
-        const errorMessage = errors && typeof errors === 'object' && 'message' in errors
-          ? String(errors.message)
-          : 'Unable to delete this woreda right now. Try again later.'
-        toast({
-          title: '❌ Delete Failed',
-          description: errorMessage,
-          variant: 'destructive',
-        })
+      onFinish: () => {
         setIsDeleting(false)
       },
     })

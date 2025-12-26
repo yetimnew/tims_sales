@@ -258,7 +258,11 @@ class PlaceController extends Controller
                 'user_id' => Auth::id(),
             ]);
 
-            return back()->withErrors(['error' => 'Failed to create place. Please try again.']);
+            $errorMessage = 'Failed to create place. Please try again.';
+
+            return back()
+                ->withErrors(['error' => $errorMessage])
+                ->with('error', $errorMessage);
         }
     }
 
@@ -366,7 +370,11 @@ class PlaceController extends Controller
                 'user_id' => Auth::id(),
             ]);
 
-            return back()->withErrors(['error' => 'Failed to update place. Please try again.']);
+            $errorMessage = 'Failed to update place. Please try again.';
+
+            return back()
+                ->withErrors(['error' => $errorMessage])
+                ->with('error', $errorMessage);
         }
     }
 
@@ -379,31 +387,43 @@ class PlaceController extends Controller
             // Check for related records that prevent deletion
 
             // Check if place is used as origin in performances
-            if ($place->originPerformances()->count() > 0) {
-                return back()->withErrors([
-                    'error' => 'You are not allowed to delete this place. It is used as origin in '.$place->originPerformances()->count().' performance record(s). Please remove all related performances first.',
-                ]);
+            $originUsageCount = $place->originPerformances()->count();
+            if ($originUsageCount > 0) {
+                $errorMessage = 'You are not allowed to delete this place. It is used as origin in '.$originUsageCount.' performance record(s). Please remove all related performances first.';
+
+                return back()
+                    ->withErrors(['error' => $errorMessage])
+                    ->with('error', $errorMessage);
             }
 
             // Check if place is used as destination in performances
-            if ($place->destinationPerformances()->count() > 0) {
-                return back()->withErrors([
-                    'error' => 'You are not allowed to delete this place. It is used as destination in '.$place->destinationPerformances()->count().' performance record(s). Please remove all related performances first.',
-                ]);
+            $destinationUsageCount = $place->destinationPerformances()->count();
+            if ($destinationUsageCount > 0) {
+                $errorMessage = 'You are not allowed to delete this place. It is used as destination in '.$destinationUsageCount.' performance record(s). Please remove all related performances first.';
+
+                return back()
+                    ->withErrors(['error' => $errorMessage])
+                    ->with('error', $errorMessage);
             }
 
             // Check if place is used as origin in distances
-            if ($place->fromDistances()->count() > 0) {
-                return back()->withErrors([
-                    'error' => 'You are not allowed to delete this place. It is used as origin in '.$place->fromDistances()->count().' distance record(s). Please remove all related distances first.',
-                ]);
+            $originDistanceCount = $place->fromDistances()->count();
+            if ($originDistanceCount > 0) {
+                $errorMessage = 'You are not allowed to delete this place. It is used as origin in '.$originDistanceCount.' distance record(s). Please remove all related distances first.';
+
+                return back()
+                    ->withErrors(['error' => $errorMessage])
+                    ->with('error', $errorMessage);
             }
 
             // Check if place is used as destination in distances
-            if ($place->toDistances()->count() > 0) {
-                return back()->withErrors([
-                    'error' => 'You are not allowed to delete this place. It is used as destination in '.$place->toDistances()->count().' distance record(s). Please remove all related distances first.',
-                ]);
+            $destinationDistanceCount = $place->toDistances()->count();
+            if ($destinationDistanceCount > 0) {
+                $errorMessage = 'You are not allowed to delete this place. It is used as destination in '.$destinationDistanceCount.' distance record(s). Please remove all related distances first.';
+
+                return back()
+                    ->withErrors(['error' => $errorMessage])
+                    ->with('error', $errorMessage);
             }
 
             $placeId = $place->getKey();
@@ -437,7 +457,11 @@ class PlaceController extends Controller
                 'user_id' => Auth::id(),
             ]);
 
-            return back()->withErrors(['error' => 'Failed to delete place. Please try again.']);
+            $errorMessage = 'Failed to delete place. Please try again.';
+
+            return back()
+                ->withErrors(['error' => $errorMessage])
+                ->with('error', $errorMessage);
         }
     }
 
@@ -453,7 +477,11 @@ class PlaceController extends Controller
                 ->with('success', 'Place deactivated successfully.');
 
         } catch (Exception $e) {
-            return back()->withErrors(['error' => 'Failed to deactivate place. Please try again.']);
+            $errorMessage = 'Failed to deactivate place. Please try again.';
+
+            return back()
+                ->withErrors(['error' => $errorMessage])
+                ->with('error', $errorMessage);
         }
     }
 

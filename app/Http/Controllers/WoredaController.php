@@ -146,7 +146,11 @@ class WoredaController extends Controller
                 'user_id' => Auth::id(),
             ]);
 
-            return back()->withErrors(['error' => 'Failed to create woreda. Please try again.']);
+            $errorMessage = 'Failed to create woreda. Please try again.';
+
+            return back()
+                ->withErrors(['error' => $errorMessage])
+                ->with('error', $errorMessage);
         }
     }
 
@@ -251,7 +255,11 @@ class WoredaController extends Controller
                 'user_id' => Auth::id(),
             ]);
 
-            return back()->withErrors(['error' => 'Failed to update woreda. Please try again.']);
+            $errorMessage = 'Failed to update woreda. Please try again.';
+
+            return back()
+                ->withErrors(['error' => $errorMessage])
+                ->with('error', $errorMessage);
         }
     }
 
@@ -263,7 +271,11 @@ class WoredaController extends Controller
         try {
             // Check if woreda is being used by places
             if ($woreda->places()->count() > 0) {
-                return back()->withErrors(['error' => 'Cannot delete woreda that has places.']);
+                $errorMessage = 'Cannot delete woreda that has places.';
+
+                return back()
+                    ->withErrors(['error' => $errorMessage])
+                    ->with('error', $errorMessage);
             }
 
             $woredaId = $woreda->getKey();
@@ -293,7 +305,11 @@ class WoredaController extends Controller
                 'user_id' => Auth::id(),
             ]);
 
-            return back()->withErrors(['error' => 'Failed to delete woreda. Please try again.']);
+            $errorMessage = 'Failed to delete woreda. Please try again.';
+
+            return back()
+                ->withErrors(['error' => $errorMessage])
+                ->with('error', $errorMessage);
         }
     }
 
@@ -309,7 +325,11 @@ class WoredaController extends Controller
                 ->with('success', 'Woreda deactivated successfully.');
 
         } catch (Exception $e) {
-            return back()->withErrors(['error' => 'Failed to deactivate woreda. Please try again.']);
+            $errorMessage = 'Failed to deactivate woreda. Please try again.';
+
+            return back()
+                ->withErrors(['error' => $errorMessage])
+                ->with('error', $errorMessage);
         }
     }
 

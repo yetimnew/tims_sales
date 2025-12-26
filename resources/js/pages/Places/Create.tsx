@@ -169,10 +169,6 @@ export default function PlacesCreate({ woredas }: PlacesCreateProps) {
         setFrontendErrors({})
         setIsDirty(false)
         reset()
-        toast({
-          title: '✅ Place Created',
-          description: 'The place has been registered successfully.',
-        })
       },
     })
   }

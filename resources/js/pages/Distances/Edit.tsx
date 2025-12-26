@@ -7,7 +7,6 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { useToast } from '@/hooks/use-toast'
 import AppLayout from '@/layouts/app-layout'
 import type { BreadcrumbItem } from '@/types'
 
@@ -32,7 +31,6 @@ interface DistancesEditProps {
 }
 
 export default function DistancesEdit({ distance, places }: DistancesEditProps) {
-  const { toast } = useToast()
   const { data, setData, put, processing, errors } = useForm({
     from_place_id: distance.from_place_id.toString(),
     to_place_id: distance.to_place_id.toString(),
@@ -44,19 +42,6 @@ export default function DistancesEdit({ distance, places }: DistancesEditProps) 
     e.preventDefault()
     put(`/distances/${distance.id}`, {
       preserveScroll: true,
-      onSuccess: () => {
-        toast({
-          title: '✅ Distance Updated',
-          description: 'Distance record has been saved successfully.',
-        })
-      },
-      onError: () => {
-        toast({
-          title: '❌ Update Failed',
-          description: 'Failed to update distance record.',
-          variant: 'destructive',
-        })
-      },
     })
   }
 

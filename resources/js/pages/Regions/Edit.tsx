@@ -179,10 +179,6 @@ export default function RegionsEdit({ region }: RegionEditProps) {
             onSuccess: () => {
                 setFrontendErrors({});
                 setIsDirty(false);
-                toast({
-                    title: '✅ Region Updated',
-                    description: 'Region details have been saved successfully.',
-                });
             },
         });
     };

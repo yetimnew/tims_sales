@@ -21,7 +21,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog'
 import { ActivityLogTable } from '@/components/activity-log-table'
-import { useToast } from '@/hooks/use-toast'
 import { usePermissions } from '@/hooks/use-permissions'
 import AppLayout from '@/layouts/app-layout'
 import type { BreadcrumbItem } from '@/types'
@@ -111,7 +110,6 @@ const formatDate = (value?: string | null) => {
 }
 
 export default function PlacesShow({ place, activityLogs }: PlacesShowProps) {
-  const { toast } = useToast()
   const { hasPermission } = usePermissions()
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -144,19 +142,9 @@ export default function PlacesShow({ place, activityLogs }: PlacesShowProps) {
     router.delete(`/places/${place.id}`, {
       preserveScroll: true,
       onSuccess: () => {
-        toast({ title: '✅ Place Deleted', description: `${place.name} was removed successfully.` })
         setDeleteDialogOpen(false)
-        setIsDeleting(false)
       },
-      onError: (errors) => {
-        const errorMessage = errors && typeof errors === 'object' && 'message' in errors
-          ? String(errors.message)
-          : 'Unable to delete the place. Try again later.'
-        toast({
-          title: '❌ Delete Failed',
-          description: errorMessage,
-          variant: 'destructive',
-        })
+      onFinish: () => {
         setIsDeleting(false)
       },
     })

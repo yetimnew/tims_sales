@@ -184,10 +184,6 @@ export default function WoredasEdit({ woreda, zones }: WoredasEditProps) {
       onSuccess: () => {
         setFrontendErrors({});
         setIsDirty(false);
-        toast({
-          title: '✅ Woreda Updated',
-          description: 'Woreda details have been saved successfully.',
-        });
       },
     });
   };

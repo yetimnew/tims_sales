@@ -12,7 +12,6 @@ import { ListingRowActionsMenu } from '@/components/listing/row-actions-menu';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useListingLoading } from '@/hooks/use-listing-loading';
-import { toast } from '@/hooks/use-toast';
 import { Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -48,8 +47,7 @@ type ColumnKey =
     | 'average_speed_kmph'
     | 'road_quality_index'
     | 'toll_road'
-    | 'restricted_for_heavy_vehicles'
-    | 'created_at';
+    | 'restricted_for_heavy_vehicles';
 
 interface RegionSummary {
     name?: string | null;
@@ -140,7 +138,6 @@ const COLUMN_DEFINITIONS: Array<{
     { id: 'road_quality_index', label: 'Road Quality', sortKey: 'road_quality_index', align: 'right' },
     { id: 'toll_road', label: 'Toll Road', align: 'center' },
     { id: 'restricted_for_heavy_vehicles', label: 'Heavy Vehicle', align: 'center' },
-    { id: 'created_at', label: 'Created', sortKey: 'created_at' },
 ];
 
 const formatNumberValue = (value?: number | string | null, fractionDigits = 0): string => {
@@ -170,23 +167,6 @@ const formatCount = (value?: number | string | null): string => {
     }
 
     return numeric.toLocaleString();
-};
-
-const formatDateValue = (value?: string | null): string => {
-    if (!value) {
-        return '—';
-    }
-
-    const parsed = new Date(value);
-    if (Number.isNaN(parsed.getTime())) {
-        return '—';
-    }
-
-    return parsed.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-    });
 };
 
 const formatDistanceValue = (value?: number | string | null): string => {
@@ -348,14 +328,6 @@ export default function DistancesIndex({ distances, metrics, filters, perPageOpt
     const handleNavigate = React.useCallback(
         (overrides: {
             search?: string;
-            routeType?: string;
-            tollRoad?: string;
-            heavyVehicleRestricted?: string;
-            distanceMin?: string;
-            distanceMax?: string;
-            timeMin?: string;
-            timeMax?: string;
-            region?: string;
             sort?: string;
             direction?: 'asc' | 'desc';
             page?: number;
@@ -365,35 +337,7 @@ export default function DistancesIndex({ distances, metrics, filters, perPageOpt
 
             const nextSearch = hasOverride('search')
                 ? overrides.search
-                : searchTerm.trim()
-                    ? searchTerm.trim()
-                    : undefined;
-
-            const nextRouteType = hasOverride('routeType')
-                ? overrides.routeType
-                : selectedRouteType !== 'all'
-                    ? selectedRouteType
-                    : undefined;
-
-            const nextTollRoad = hasOverride('tollRoad')
-                ? overrides.tollRoad
-                : selectedTollRoad !== 'all'
-                    ? selectedTollRoad
-                    : undefined;
-
-            const nextHeavyRestriction = hasOverride('heavyVehicleRestricted')
-                ? overrides.heavyVehicleRestricted
-                : selectedHeavyRestriction !== 'all'
-                    ? selectedHeavyRestriction
-                    : undefined;
-
-            const coerceOptionalInput = (value?: string) => (value && value.trim() !== '' ? value.trim() : undefined);
-
-            const nextDistanceMin = hasOverride('distanceMin') ? overrides.distanceMin : coerceOptionalInput(distanceMin);
-            const nextDistanceMax = hasOverride('distanceMax') ? overrides.distanceMax : coerceOptionalInput(distanceMax);
-            const nextTimeMin = hasOverride('timeMin') ? overrides.timeMin : coerceOptionalInput(timeMin);
-            const nextTimeMax = hasOverride('timeMax') ? overrides.timeMax : coerceOptionalInput(timeMax);
-            const nextRegion = hasOverride('region') ? overrides.region : coerceOptionalInput(regionQuery);
+                : normalizeOptionalString(searchTerm);
 
             const nextSort = hasOverride('sort') ? overrides.sort ?? sortColumn : sortColumn;
             const nextDirection = hasOverride('direction') ? overrides.direction ?? sortDirection : sortDirection;
@@ -402,14 +346,14 @@ export default function DistancesIndex({ distances, metrics, filters, perPageOpt
 
             const params: Record<string, string | number | undefined> = {
                 search: nextSearch,
-                routeType: nextRouteType,
-                tollRoad: nextTollRoad,
-                heavyVehicleRestricted: nextHeavyRestriction,
-                distanceMin: nextDistanceMin,
-                distanceMax: nextDistanceMax,
-                timeMin: nextTimeMin,
-                timeMax: nextTimeMax,
-                region: nextRegion,
+                routeType: filterRouteType,
+                tollRoad: filterTollRoad,
+                heavyVehicleRestricted: filterHeavyRestriction,
+                distanceMin: filterDistanceMin,
+                distanceMax: filterDistanceMax,
+                timeMin: filterTimeMin,
+                timeMax: filterTimeMax,
+                region: filterRegion,
                 sort: nextSort,
                 direction: nextDirection,
                 page: nextPage,
@@ -434,14 +378,14 @@ export default function DistancesIndex({ distances, metrics, filters, perPageOpt
         [
             perPage,
             searchTerm,
-            selectedRouteType,
-            selectedTollRoad,
-            selectedHeavyRestriction,
-            distanceMin,
-            distanceMax,
-            timeMin,
-            timeMax,
-            regionQuery,
+            filterRouteType,
+            filterTollRoad,
+            filterHeavyRestriction,
+            filterDistanceMin,
+            filterDistanceMax,
+            filterTimeMin,
+            filterTimeMax,
+            filterRegion,
             sortColumn,
             sortDirection,
         ],
@@ -452,35 +396,10 @@ export default function DistancesIndex({ distances, metrics, filters, perPageOpt
         handleNavigate({ search: value.trim() ? value.trim() : undefined, page: 1 });
     };
 
-    const handleRouteTypeChange = (value: string) => {
-        setSelectedRouteType(value);
-        handleNavigate({ routeType: value !== 'all' ? value : undefined, page: 1 });
-    };
-
-    const handleTollRoadChange = (value: string) => {
-        setSelectedTollRoad(value);
-        handleNavigate({ tollRoad: value !== 'all' ? value : undefined, page: 1 });
-    };
-
-    const handleHeavyRestrictionChange = (value: string) => {
-        setSelectedHeavyRestriction(value);
-        handleNavigate({ heavyVehicleRestricted: value !== 'all' ? value : undefined, page: 1 });
-    };
-
     const handlePerPageChange = (value: string) => {
         setPerPage(value);
         const numericValue = Number(value);
         handleNavigate({ per_page: Number.isNaN(numericValue) ? undefined : numericValue, page: 1 });
-    };
-
-    const handleRangeChange = (setter: (value: string) => void, key: 'distanceMin' | 'distanceMax' | 'timeMin' | 'timeMax', value: string) => {
-        setter(value);
-        handleNavigate({ [key]: value.trim() !== '' ? value : undefined, page: 1 });
-    };
-
-    const handleRegionChange = (value: string) => {
-        setRegionQuery(value);
-        handleNavigate({ region: value.trim() !== '' ? value : undefined, page: 1 });
     };
 
     const handleSort = React.useCallback(
@@ -511,34 +430,9 @@ export default function DistancesIndex({ distances, metrics, filters, perPageOpt
             onSuccess: () => {
                 setDeleteDialogOpen(false);
                 setSelectedDistance(null);
-                setIsDeleting(false);
-                toast({
-                    title: '✅ Distance Record Deleted',
-                    description: `Route ${routeLabel} has been removed successfully.`,
-                });
             },
-            onError: (errors) => {
+            onFinish: () => {
                 setIsDeleting(false);
-                const fallback = 'Unable to delete distance. Please try again.';
-
-                if (errors && typeof errors === 'object') {
-                    const errorMessages = Object.values(errors)
-                        .flatMap((value) => (Array.isArray(value) ? value : [value]))
-                        .filter(Boolean)
-                        .join('\n');
-
-                    toast({
-                        title: '❌ Delete Failed',
-                        description: errorMessages || fallback,
-                        variant: 'destructive',
-                    });
-                } else {
-                    toast({
-                        title: '❌ Delete Failed',
-                        description: fallback,
-                        variant: 'destructive',
-                    });
-                }
             },
         });
     };
@@ -665,8 +559,6 @@ export default function DistancesIndex({ distances, metrics, filters, perPageOpt
                 return getBooleanBadge(Boolean(distance.toll_road), 'Toll', 'No Toll');
             case 'restricted_for_heavy_vehicles':
                 return getBooleanBadge(Boolean(distance.restricted_for_heavy_vehicles), 'Restricted', 'Allowed');
-            case 'created_at':
-                return formatDateValue(distance.created_at);
             default:
                 return '—';
         }
@@ -757,7 +649,7 @@ export default function DistancesIndex({ distances, metrics, filters, perPageOpt
     );
 
     const mobileContent = isLoading ? (
-        <ListingLoadingPlaceholder showStats={false} filterItemCount={5} rowCount={4} />
+        <ListingLoadingPlaceholder showStats={false} filterItemCount={2} rowCount={4} />
     ) : (
         <ListingMobileItemList
             items={mobileItems}
@@ -856,89 +748,7 @@ export default function DistancesIndex({ distances, metrics, filters, perPageOpt
                     label: `${option} / page`,
                 })),
             }}
-        >
-            <Select value={selectedRouteType} onValueChange={handleRouteTypeChange}>
-                <SelectTrigger className="w-full min-w-[150px] sm:w-auto">
-                    <SelectValue placeholder="Route type" />
-                </SelectTrigger>
-                <SelectContent>
-                    {ROUTE_TYPE_OPTIONS.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                        </SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
-
-            <Select value={selectedTollRoad} onValueChange={handleTollRoadChange}>
-                <SelectTrigger className="w-full min-w-[120px] sm:w-auto">
-                    <SelectValue placeholder="Toll" />
-                </SelectTrigger>
-                <SelectContent>
-                    {BOOLEAN_OPTIONS.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                        </SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
-
-            <Select value={selectedHeavyRestriction} onValueChange={handleHeavyRestrictionChange}>
-                <SelectTrigger className="w-full min-w-[150px] sm:w-auto">
-                    <SelectValue placeholder="Heavy vehicle" />
-                </SelectTrigger>
-                <SelectContent>
-                    {BOOLEAN_OPTIONS.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                        </SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
-
-            <Input
-                className="w-28"
-                type="number"
-                inputMode="decimal"
-                placeholder="Min km"
-                value={distanceMin}
-                onChange={(event) => handleRangeChange(setDistanceMin, 'distanceMin', event.target.value)}
-            />
-
-            <Input
-                className="w-28"
-                type="number"
-                inputMode="decimal"
-                placeholder="Max km"
-                value={distanceMax}
-                onChange={(event) => handleRangeChange(setDistanceMax, 'distanceMax', event.target.value)}
-            />
-
-            <Input
-                className="w-28"
-                type="number"
-                inputMode="decimal"
-                placeholder="Min hrs"
-                value={timeMin}
-                onChange={(event) => handleRangeChange(setTimeMin, 'timeMin', event.target.value)}
-            />
-
-            <Input
-                className="w-28"
-                type="number"
-                inputMode="decimal"
-                placeholder="Max hrs"
-                value={timeMax}
-                onChange={(event) => handleRangeChange(setTimeMax, 'timeMax', event.target.value)}
-            />
-
-            <Input
-                className="w-40"
-                placeholder="Filter by region"
-                value={regionQuery}
-                onChange={(event) => handleRegionChange(event.target.value)}
-            />
-        </ListingFilterBar>
+        />
     );
 
     const headerActions = canCreateDistance ? (

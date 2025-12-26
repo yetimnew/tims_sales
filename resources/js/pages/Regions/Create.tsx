@@ -155,10 +155,6 @@ export default function RegionsCreate() {
                 setFrontendErrors({});
                 setIsDirty(false);
                 reset();
-                toast({
-                    title: '✅ Region Created',
-                    description: 'The region has been registered successfully.',
-                });
             },
         });
     };

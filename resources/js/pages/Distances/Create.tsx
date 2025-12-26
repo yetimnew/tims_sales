@@ -2,7 +2,6 @@ import { useMemo, useState, type ReactNode } from 'react'
 import { Head, Link, router, useForm } from '@inertiajs/react'
 import { ArrowLeft, MapPin, Route, Save, Navigation, AlertCircle } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { toast } from '@/hooks/use-toast'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -206,10 +205,6 @@ export default function DistancesCreate({ places }: DistancesCreateProps) {
         setRoutePoints([])
         setCalculatedDistance(0)
         setCalculatedTime(0)
-        toast({
-          title: '✅ Distance Record Created',
-          description: 'The route distance has been registered successfully.',
-        })
       },
     })
   }

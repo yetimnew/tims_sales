@@ -163,10 +163,6 @@ export default function ZonesCreate({ regions }: ZonesCreateProps) {
         setFrontendErrors({})
         setIsDirty(false)
         reset()
-        toast({
-          title: '✅ Zone Created',
-          description: 'The zone has been registered successfully.',
-        })
       },
     })
   }
