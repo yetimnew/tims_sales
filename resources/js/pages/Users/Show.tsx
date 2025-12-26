@@ -22,7 +22,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { usePermissions } from '@/hooks/use-permissions';
-import { useToast } from '@/hooks/use-toast';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { index as usersIndexRoute, show as showUserRoute } from '@/routes/users';
@@ -96,7 +95,6 @@ const formatDateTime = (value?: string | null): string => {
 };
 
 export default function UsersShow({ user, activityLogs }: UsersShowProps) {
-    const { toast } = useToast();
     const { hasPermission } = usePermissions();
     const [deleteConfirmation, setDeleteConfirmation] = useState<{ id: number; name: string } | null>(null);
 
@@ -133,11 +131,7 @@ export default function UsersShow({ user, activityLogs }: UsersShowProps) {
 
         router.delete(`/users/${deleteConfirmation.id}`, {
             onSuccess: () => {
-                toast({ title: 'Success', description: 'User deleted successfully.', variant: 'success' });
                 setDeleteConfirmation(null);
-            },
-            onError: () => {
-                toast({ title: 'Error', description: 'Failed to delete user.', variant: 'destructive' });
             },
         });
     };

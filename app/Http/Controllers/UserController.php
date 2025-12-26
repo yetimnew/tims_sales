@@ -228,7 +228,11 @@ class UserController extends BaseResourceController
                 'email' => $request->input('email'),
             ]);
 
-            return back()->withErrors(['error' => 'Failed to create user. Please try again.']);
+            $message = 'Failed to create user. Please try again.';
+
+            return back()
+                ->withErrors(['error' => $message])
+                ->with('error', $message);
         }
     }
 
@@ -316,7 +320,11 @@ class UserController extends BaseResourceController
                 'updated_by' => Auth::id(),
             ]);
 
-            return back()->withErrors(['error' => 'Failed to update user. Please try again.']);
+            $message = 'Failed to update user. Please try again.';
+
+            return back()
+                ->withErrors(['error' => $message])
+                ->with('error', $message);
         }
     }
 
@@ -328,7 +336,11 @@ class UserController extends BaseResourceController
         try {
             // Prevent deletion of the current user
             if ($user->id === Auth::id()) {
-                return back()->withErrors(['error' => 'You cannot delete your own account.']);
+                $message = 'You cannot delete your own account.';
+
+                return back()
+                    ->withErrors(['error' => $message])
+                    ->with('error', $message);
             }
 
             // Capture data before deletion for audit trail
@@ -362,7 +374,11 @@ class UserController extends BaseResourceController
                 'deleted_by' => Auth::id(),
             ]);
 
-            return back()->withErrors(['error' => 'Failed to delete user. Please try again.']);
+            $message = 'Failed to delete user. Please try again.';
+
+            return back()
+                ->withErrors(['error' => $message])
+                ->with('error', $message);
         }
     }
 

@@ -9,7 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import { useToast } from '@/hooks/use-toast'
 import AppLayout from '@/layouts/app-layout'
 import { type BreadcrumbItem } from '@/types'
 import { validateUser, type ValidationErrors } from '@/lib/validation'
@@ -74,7 +73,6 @@ interface UsersCreateProps {
 }
 
 export default function UsersCreate({ roles, notificationTypes }: UsersCreateProps) {
-  const { toast } = useToast()
   const [frontendErrors, setFrontendErrors] = useState<Record<string, string>>({})
   const { data, setData, post, processing, errors } = useForm<UserFormData>({
     name: '',
@@ -96,12 +94,6 @@ export default function UsersCreate({ roles, notificationTypes }: UsersCreatePro
   const [showPasswordConfirmation, setShowPasswordConfirmation] = useState(false)
 
   const isAdminRole = data.role === 'admin'
-
-  useEffect(() => {
-    if (Object.keys(errors).length > 0) {
-      toast({ title: 'Validation Error', description: 'Please fix the errors', variant: 'destructive' })
-    }
-  }, [errors])
 
   useEffect(() => {
     setData('notification_preferences', assignedNotifications.map(notification => ({
@@ -223,14 +215,11 @@ export default function UsersCreate({ roles, notificationTypes }: UsersCreatePro
       inAppEnabled: true,
       emailEnabled: true,
     })))
-
-    toast({ title: 'Notifications assigned', description: 'All notifications have been pre-selected for this user.', variant: 'default' })
-  }, [notificationTypes, toast])
+  }, [notificationTypes])
 
   const clearAllAssignedNotifications = useCallback(() => {
     setAssignedNotifications([])
-    toast({ title: 'Notifications cleared', description: 'All assigned notifications were removed.', variant: 'default' })
-  }, [toast])
+  }, [])
 
   const validateField = (field: string, value: string) => {
     const validationData = { ...data, [field]: value }
@@ -256,7 +245,6 @@ export default function UsersCreate({ roles, notificationTypes }: UsersCreatePro
 
     if (Object.keys(validationErrors).length > 0) {
       setFrontendErrors(validationErrors)
-      toast({ title: 'Validation Error', description: 'Please fix all errors', variant: 'destructive' })
       return
     }
 

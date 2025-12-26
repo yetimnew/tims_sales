@@ -11,7 +11,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { validateOutsource, type ValidationErrors } from '@/lib/validation';
-import { useToast } from '@/hooks/use-toast';
 import {
     AlertCircle,
     ArrowLeft,
@@ -77,8 +76,6 @@ export default function OutsourcesCreate({ statusOptions, serviceTypeOptions }: 
 
     const defaultStatus = resolvedStatusOptions[0]?.value ?? 'active';
 
-    const { toast } = useToast();
-
     const {
         data,
         setData,
@@ -120,24 +117,6 @@ export default function OutsourcesCreate({ statusOptions, serviceTypeOptions }: 
             container.removeEventListener('scroll', handleScroll);
         };
     }, []);
-
-    useEffect(() => {
-        if (Object.keys(errors).length === 0) {
-            return;
-        }
-
-        const backendMessages = Object.values(errors)
-            .flat()
-            .map(message => (Array.isArray(message) ? message.join(', ') : String(message)));
-
-        if (backendMessages.length > 0) {
-            toast({
-                variant: 'destructive',
-                title: 'Validation error',
-                description: backendMessages.join('\n'),
-            });
-        }
-    }, [errors, toast]);
 
     const setFieldError = useCallback((field: keyof OutsourceFormData | 'email' | 'status', message: string) => {
         setFrontendErrors(previous => {
@@ -221,11 +200,6 @@ export default function OutsourcesCreate({ statusOptions, serviceTypeOptions }: 
 
         if (Object.keys(validationResults).length > 0) {
             setFrontendErrors(validationResults);
-            toast({
-                variant: 'destructive',
-                title: 'Please review the form',
-                description: 'Some fields need your attention before submission.',
-            });
             return;
         }
 
@@ -238,10 +212,6 @@ export default function OutsourcesCreate({ statusOptions, serviceTypeOptions }: 
                 setIsDirty(false);
                 reset();
                 transform(data => data);
-                toast({
-                    title: '✅ Outsource Created',
-                    description: 'The vendor has been registered successfully.',
-                });
             },
             onError: () => {
                 transform(data => data);

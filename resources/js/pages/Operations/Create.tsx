@@ -11,7 +11,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { DatePicker } from '@/components/ui/date-picker';
 import { validateOperation, type ValidationErrors } from '@/lib/validation';
 import { cn } from '@/lib/utils';
-import { toast } from '@/hooks/use-toast';
 import {
     AlertCircle,
     ArrowLeft,
@@ -138,21 +137,6 @@ export default function OperationsCreate({ customers, regions, zones, woredas, p
     const scrollContainerRef = useRef<HTMLFormElement | null>(null);
 
     const hasErrors = useMemo(() => Object.keys(errors).length > 0 || Object.keys(frontendErrors).length > 0, [errors, frontendErrors]);
-
-    useEffect(() => {
-        const errorMessages = Object.values(errors)
-            .flatMap(message => (Array.isArray(message) ? message : message ? [message] : []))
-            .filter((message): message is string => Boolean(message))
-            .map(message => (typeof message === 'string' ? message : String(message)));
-
-        if (errorMessages.length > 0) {
-            toast({
-                title: '⚠️ Validation Error',
-                description: errorMessages.join(', '),
-                variant: 'destructive',
-            });
-        }
-    }, [errors]);
 
     useEffect(() => {
         const container = scrollContainerRef.current;
@@ -300,10 +284,6 @@ export default function OperationsCreate({ customers, regions, zones, woredas, p
                 setData('destination_scope', 'region');
                 setData('destination_id', '');
                 setFieldError('destination_id', '');
-                toast({
-                    title: '✅ Operation Created',
-                    description: 'The operation has been registered successfully.',
-                });
             },
         });
     };

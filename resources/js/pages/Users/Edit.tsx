@@ -13,7 +13,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useToast } from '@/hooks/use-toast';
 import { evaluatePasswordStrength } from '@/lib/password-strength';
 import { validateUser, type ValidationErrors } from '@/lib/validation';
 import { type BreadcrumbItem } from '@/types';
@@ -60,7 +59,6 @@ const formatDate = (value?: string | null): string => {
 };
 
 export default function UsersEdit({ user, roles }: UserEditProps) {
-    const { toast } = useToast();
     const [frontendErrors, setFrontendErrors] = useState<Record<string, string>>({});
     const formRef = useRef<HTMLFormElement | null>(null);
     const [showScrollTop, setShowScrollTop] = useState(false);
@@ -104,12 +102,6 @@ export default function UsersEdit({ user, roles }: UserEditProps) {
         return () => container.removeEventListener('scroll', handleScroll);
     }, []);
 
-    useEffect(() => {
-        if (Object.keys(errors).length > 0) {
-            toast({ title: 'Validation Error', description: 'Please fix the highlighted fields.', variant: 'destructive' });
-        }
-    }, [errors, toast]);
-
     const validateField = (field: keyof ValidationErrors, value: string) => {
         const validationData = { ...data, [field]: value };
         const fieldErrors = validateUser(validationData, true);
@@ -138,7 +130,6 @@ export default function UsersEdit({ user, roles }: UserEditProps) {
         const validationErrors = validateUser(data, true);
         if (Object.keys(validationErrors).length > 0) {
             setFrontendErrors(validationErrors);
-            toast({ title: 'Validation Error', description: 'Please resolve the form errors before saving.', variant: 'destructive' });
             return;
         }
 
@@ -156,7 +147,6 @@ export default function UsersEdit({ user, roles }: UserEditProps) {
         put(`/users/${user.id}`, payload, {
             onSuccess: () => {
                 setIsDirty(false);
-                toast({ title: 'User updated', description: 'Changes were saved successfully.', variant: 'success' });
             },
         });
     };

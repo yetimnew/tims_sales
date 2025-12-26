@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useToast } from '@/hooks/use-toast';
 import { ListingStatsHeader, type ListingStatDefinition } from '@/components/listing/stats-header';
 import { ListingFilterBar } from '@/components/listing/filter-bar';
 import { ListingTableShell, type ListingTableColumn } from '@/components/listing/data-table-shell';
@@ -168,7 +167,6 @@ export default function OutsourcesIndex({
     perPageOptions,
 }: OutsourceIndexProps) {
     const { hasPermission } = usePermissions();
-    const { toast } = useToast();
 
     const [searchTerm, setSearchTerm] = useState(filters?.search ?? '');
     const [selectedStatus, setSelectedStatus] = useState(filters?.status ?? 'all');
@@ -428,29 +426,9 @@ export default function OutsourcesIndex({
             onSuccess: () => {
                 setDeleteDialogOpen(false);
                 setSelectedOutsource(null);
-                setIsDeleting(false);
-                toast({
-                    title: '✅ Vendor Deleted',
-                    description: `${selectedOutsource.name} has been removed successfully.`,
-                });
             },
-            onError: (errors) => {
+            onFinish: () => {
                 setIsDeleting(false);
-                const fallback = 'Failed to delete vendor. Please try again.';
-                if (errors && typeof errors === 'object') {
-                    const messages = Object.values(errors).flat().join('\n');
-                    toast({
-                        title: '❌ Delete Failed',
-                        description: messages || fallback,
-                        variant: 'destructive',
-                    });
-                } else {
-                    toast({
-                        title: '❌ Delete Failed',
-                        description: fallback,
-                        variant: 'destructive',
-                    });
-                }
             },
         });
     };

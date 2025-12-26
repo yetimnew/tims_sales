@@ -120,7 +120,11 @@ class CustomerController extends BaseResourceController
                 'customer_name' => $request->input('name'),
             ]);
 
-            return back()->withErrors(['error' => 'Failed to create customer. Please try again.']);
+            $errorMessage = 'Failed to create customer. Please try again.';
+
+            return back()
+                ->withErrors(['error' => $errorMessage])
+                ->with('error', $errorMessage);
         }
     }
 
@@ -238,7 +242,11 @@ class CustomerController extends BaseResourceController
         } catch (Exception $e) {
             $this->logError('update', 'Customer', $e);
 
-            return back()->withErrors(['error' => 'Failed to update customer. Please try again.']);
+            $errorMessage = 'Failed to update customer. Please try again.';
+
+            return back()
+                ->withErrors(['error' => $errorMessage])
+                ->with('error', $errorMessage);
         }
     }
 
@@ -251,10 +259,13 @@ class CustomerController extends BaseResourceController
             // Check for related records that prevent deletion
 
             // Check if customer has operations
-            if ($customer->operations()->count() > 0) {
-                return back()->withErrors([
-                    'error' => 'You are not allowed to delete this customer. It has '.$customer->operations()->count().' operation(s). Please remove all operations first.',
-                ]);
+            $operationCount = $customer->operations()->count();
+            if ($operationCount > 0) {
+                $errorMessage = 'You are not allowed to delete this customer. It has '.$operationCount.' operation(s). Please remove all operations first.';
+
+                return back()
+                    ->withErrors(['error' => $errorMessage])
+                    ->with('error', $errorMessage);
             }
 
             // Capture data before deletion for audit trail
@@ -274,7 +285,11 @@ class CustomerController extends BaseResourceController
         } catch (Exception $e) {
             $this->logError('destroy', 'Customer', $e);
 
-            return back()->withErrors(['error' => 'Failed to delete customer. Please try again.']);
+            $errorMessage = 'Failed to delete customer. Please try again.';
+
+            return back()
+                ->withErrors(['error' => $errorMessage])
+                ->with('error', $errorMessage);
         }
     }
 
@@ -294,7 +309,11 @@ class CustomerController extends BaseResourceController
                 ->with('success', 'Customer deactivated successfully.');
 
         } catch (Exception $e) {
-            return back()->withErrors(['error' => 'Failed to deactivate customer. Please try again.']);
+            $errorMessage = 'Failed to deactivate customer. Please try again.';
+
+            return back()
+                ->withErrors(['error' => $errorMessage])
+                ->with('error', $errorMessage);
         }
     }
 

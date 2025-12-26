@@ -628,82 +628,133 @@ export default function PlacesIndex({ places, metrics, filters, statusOptions, p
                 </TableRow>
             );
 
-    const mobileItems = React.useMemo(
-        () =>
-            placeData.map((place, index) => ({
-                    <div className="flex items-center justify-between">
-                            onFinish: () => {
-                                setIsDeleting(false);
-                                toast({
-                                    title: '✅ Place Deleted',
-                                    description: `${name} has been removed successfully.`,
-                                });
-                            },
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Hub</span>
-                        <span className="text-right text-slate-900 dark:text-slate-100">
-                            {getHubBadge(item.record.is_logistics_hub)}
-                        </span>
+    // ✅ Mobile list items (DATA only)
+const mobileItems = React.useMemo(
+    () =>
+        placeData.map((place, index) => ({
+            id: place.id,
+            record: place,
+            index: rowOffset + index + 1,
+        })),
+    [placeData, rowOffset],
+);
+
+// ✅ Mobile content (JSX rendered here, not inside the object)
+const mobileContent = isLoading ? (
+    <ListingLoadingPlaceholder />
+) : (
+    <ListingMobileItemList
+        items={mobileItems}
+        renderHeader={(item) => (
+            <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs font-medium text-muted-foreground">#{item.index}</span>
+                        <span className="truncate text-base font-semibold">{item.record.name}</span>
                     </div>
-                    <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Population</span>
-                        <span className="text-right text-slate-900 dark:text-slate-100">
-                            {formatNumberValue(item.record.population)}
-                        </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Accessibility</span>
-                        <span className="text-right text-slate-900 dark:text-slate-100">
-                            {item.record.accessibility_score !== null && item.record.accessibility_score !== undefined
-                                ? formatNumberValue(item.record.accessibility_score, 1)
-                                : '—'}
-                        </span>
+
+                    <div className="mt-1 text-sm text-muted-foreground">
+                        {item.record.woreda?.name ?? '—'}
+                        {item.record.woreda?.zone?.name ? ` • ${item.record.woreda.zone.name}` : ''}
+                        {item.record.woreda?.zone?.region?.name ? `, ${item.record.woreda.zone.region.name}` : ''}
                     </div>
                 </div>
-            )}
-            renderFooter={(item) => (
-                <div className="flex w-full flex-wrap items-center justify-end gap-2">
-                    {canViewPlace && (
-                        <Button asChild size="sm" variant="outline" className="flex-1 sm:flex-auto">
-                            <Link href={`/places/${item.record.id}`}>
-                                <Eye className="mr-2 h-4 w-4" />
-                                View
-                            </Link>
-                        </Button>
-                    )}
-                    {canEditPlace && (
-                        <Button asChild size="sm" variant="secondary" className="flex-1 sm:flex-none">
-                            <Link href={`/places/${item.record.id}/edit`}>
-                                <Edit className="mr-2 h-4 w-4" />
-                                Edit
-                            </Link>
-                        </Button>
-                    )}
-                    {canDeletePlace && (
-                        <Button
-                            size="sm"
-                            variant="destructive"
-                            className="flex-1 sm:flex-none"
-                            onClick={() => handleDeleteClick(item.record)}
-                            disabled={isDeleting && selectedPlace?.id === item.record.id}
-                        >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
-                        </Button>
-                    )}
+
+                <div className="flex flex-col items-end gap-2">
+                    {getStatusBadge(item.record.status)}
+                    {getHubBadge(item.record.is_logistics_hub)}
                 </div>
-            )}
-            emptyState={(
-                <div className="py-8 text-center text-muted-foreground">
-                    No places found.
-                    {canCreatePlace && (
-                        <Link href="/places/create" className="ml-1 text-primary underline">
-                            Create one
+            </div>
+        )}
+        renderBody={(item) => (
+            <div className="mt-3 space-y-2 rounded-lg border bg-card p-3">
+                <div className="flex items-center justify-between">
+                    <span className="font-medium text-slate-600 dark:text-slate-300">Coordinates</span>
+                    <span className="text-right text-slate-900 dark:text-slate-100">
+                        {(() => {
+                            const lat = formatCoordinate(item.record.latitude);
+                            const lng = formatCoordinate(item.record.longitude);
+                            return lat && lng ? `${lat}, ${lng}` : '—';
+                        })()}
+                    </span>
+                </div>
+
+                <div className="flex items-center justify-between">
+                    <span className="font-medium text-slate-600 dark:text-slate-300">Population</span>
+                    <span className="text-right text-slate-900 dark:text-slate-100">
+                        {formatNumberValue(item.record.population)}
+                    </span>
+                </div>
+
+                <div className="flex items-center justify-between">
+                    <span className="font-medium text-slate-600 dark:text-slate-300">Accessibility</span>
+                    <span className="text-right text-slate-900 dark:text-slate-100">
+                        {item.record.accessibility_score !== null && item.record.accessibility_score !== undefined
+                            ? formatNumberValue(item.record.accessibility_score, 1)
+                            : '—'}
+                    </span>
+                </div>
+
+                <div className="flex items-center justify-between">
+                    <span className="font-medium text-slate-600 dark:text-slate-300">Origin Perf.</span>
+                    <span className="text-right text-slate-900 dark:text-slate-100">
+                        {formatNumberValue(item.record.origin_performances_count ?? 0)}
+                    </span>
+                </div>
+
+                <div className="flex items-center justify-between">
+                    <span className="font-medium text-slate-600 dark:text-slate-300">Destination Perf.</span>
+                    <span className="text-right text-slate-900 dark:text-slate-100">
+                        {formatNumberValue(item.record.destination_performances_count ?? 0)}
+                    </span>
+                </div>
+            </div>
+        )}
+        renderFooter={(item) => (
+            <div className="mt-3 flex w-full flex-wrap items-center justify-end gap-2">
+                {canViewPlace && (
+                    <Button asChild size="sm" variant="outline" className="flex-1 sm:flex-auto">
+                        <Link href={`/places/${item.record.id}`}>
+                            <Eye className="mr-2 h-4 w-4" />
+                            View
                         </Link>
-                    )}
-                </div>
-            )}
-        />
-    );
+                    </Button>
+                )}
+                {canEditPlace && (
+                    <Button asChild size="sm" variant="secondary" className="flex-1 sm:flex-none">
+                        <Link href={`/places/${item.record.id}/edit`}>
+                            <Edit className="mr-2 h-4 w-4" />
+                            Edit
+                        </Link>
+                    </Button>
+                )}
+                {canDeletePlace && (
+                    <Button
+                        size="sm"
+                        variant="destructive"
+                        className="flex-1 sm:flex-none"
+                        onClick={() => handleDeleteClick(item.record)}
+                        disabled={isDeleting && selectedPlace?.id === item.record.id}
+                    >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete
+                    </Button>
+                )}
+            </div>
+        )}
+        emptyState={
+            <div className="py-8 text-center text-muted-foreground">
+                No places found.
+                {canCreatePlace && (
+                    <Link href="/places/create" className="ml-1 text-primary underline">
+                        Create one
+                    </Link>
+                )}
+            </div>
+        }
+    />
+);
+
 
     const tableHeaderExtras = (
         <ListingFilterBar

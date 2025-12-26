@@ -234,7 +234,11 @@ class OutsourceController extends BaseResourceController
                 'name' => $request->input('name'),
             ]);
 
-            return back()->withErrors(['error' => 'Failed to create outsource. Please try again.']);
+            $message = 'Failed to create outsource. Please try again.';
+
+            return back()
+                ->withErrors(['error' => $message])
+                ->with('error', $message);
         }
     }
 
@@ -395,7 +399,11 @@ class OutsourceController extends BaseResourceController
                 'outsource_id' => $outsource->id,
             ]);
 
-            return back()->withErrors(['error' => 'Failed to update outsource. Please try again.']);
+            $message = 'Failed to update outsource. Please try again.';
+
+            return back()
+                ->withErrors(['error' => $message])
+                ->with('error', $message);
         }
     }
 
@@ -407,7 +415,11 @@ class OutsourceController extends BaseResourceController
         try {
             // Check if outsource is being used in performances
             if ($outsource->outsourcePerformances()->count() > 0) {
-                return back()->withErrors(['error' => 'Cannot delete outsource that has performances.']);
+                $message = 'Cannot delete outsource that has performances.';
+
+                return back()
+                    ->withErrors(['error' => $message])
+                    ->with('error', $message);
             }
 
             // Capture data before deletion for audit trail
@@ -434,7 +446,11 @@ class OutsourceController extends BaseResourceController
                 'outsource_id' => $outsource->id,
             ]);
 
-            return back()->withErrors(['error' => 'Failed to delete outsource. Please try again.']);
+            $message = 'Failed to delete outsource. Please try again.';
+
+            return back()
+                ->withErrors(['error' => $message])
+                ->with('error', $message);
         }
     }
 }

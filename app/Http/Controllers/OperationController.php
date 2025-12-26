@@ -357,7 +357,12 @@ class OperationController extends BaseResourceController
                 'operation_id' => $request->input('operationid'),
             ]);
 
-            return back()->withErrors(['error' => 'Failed to create operation. Please try again.'])->withInput();
+            $errorMessage = 'Failed to create operation. Please try again.';
+
+            return back()
+                ->withErrors(['error' => $errorMessage])
+                ->with('error', $errorMessage)
+                ->withInput();
         }
     }
 
@@ -682,7 +687,12 @@ class OperationController extends BaseResourceController
                 'operation_id' => $operation->id,
             ]);
 
-            return back()->withErrors(['error' => 'Failed to update operation. Please try again.'])->withInput();
+            $errorMessage = 'Failed to update operation. Please try again.';
+
+            return back()
+                ->withErrors(['error' => $errorMessage])
+                ->with('error', $errorMessage)
+                ->withInput();
         }
     }
 
@@ -751,17 +761,23 @@ class OperationController extends BaseResourceController
             // Check for related records that prevent deletion
 
             // Check if operation has performances
-            if ($operation->performances()->count() > 0) {
-                return back()->withErrors([
-                    'error' => 'You are not allowed to delete this operation. It has '.$operation->performances()->count().' performance record(s). Please remove all performance records first.',
-                ]);
+            $performanceCount = $operation->performances()->count();
+            if ($performanceCount > 0) {
+                $errorMessage = 'You are not allowed to delete this operation. It has '.$performanceCount.' performance record(s). Please remove all performance records first.';
+
+                return back()
+                    ->withErrors(['error' => $errorMessage])
+                    ->with('error', $errorMessage);
             }
 
             // Check if operation has outsource performances
-            if ($operation->outsourcePerformances()->count() > 0) {
-                return back()->withErrors([
-                    'error' => 'You are not allowed to delete this operation. It has '.$operation->outsourcePerformances()->count().' outsource performance record(s). Please remove all outsource performance records first.',
-                ]);
+            $outsourcePerformanceCount = $operation->outsourcePerformances()->count();
+            if ($outsourcePerformanceCount > 0) {
+                $errorMessage = 'You are not allowed to delete this operation. It has '.$outsourcePerformanceCount.' outsource performance record(s). Please remove all outsource performance records first.';
+
+                return back()
+                    ->withErrors(['error' => $errorMessage])
+                    ->with('error', $errorMessage);
             }
 
             $operation->delete();
@@ -783,7 +799,11 @@ class OperationController extends BaseResourceController
                 'user_id' => Auth::id(),
             ]);
 
-            return back()->withErrors(['error' => 'Failed to delete operation. Please try again.']);
+            $errorMessage = 'Failed to delete operation. Please try again.';
+
+            return back()
+                ->withErrors(['error' => $errorMessage])
+                ->with('error', $errorMessage);
         }
     }
 
@@ -922,7 +942,11 @@ class OperationController extends BaseResourceController
                 'user_id' => Auth::id(),
             ]);
 
-            return back()->withErrors(['error' => 'Failed to deactivate operation. Please try again.']);
+            $errorMessage = 'Failed to deactivate operation. Please try again.';
+
+            return back()
+                ->withErrors(['error' => $errorMessage])
+                ->with('error', $errorMessage);
         }
     }
 
@@ -977,7 +1001,11 @@ class OperationController extends BaseResourceController
                 'user_id' => Auth::id(),
             ]);
 
-            return back()->withErrors(['error' => 'Failed to close operation. Please try again.']);
+            $errorMessage = 'Failed to close operation. Please try again.';
+
+            return back()
+                ->withErrors(['error' => $errorMessage])
+                ->with('error', $errorMessage);
         }
     }
 
@@ -1028,7 +1056,11 @@ class OperationController extends BaseResourceController
                 'user_id' => Auth::id(),
             ]);
 
-            return back()->withErrors(['error' => 'Failed to reopen operation. Please try again.']);
+            $errorMessage = 'Failed to reopen operation. Please try again.';
+
+            return back()
+                ->withErrors(['error' => $errorMessage])
+                ->with('error', $errorMessage);
         }
     }
 

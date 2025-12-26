@@ -12,7 +12,6 @@ import { ListingRowActionsMenu } from '@/components/listing/row-actions-menu';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useListingLoading } from '@/hooks/use-listing-loading';
-import { toast } from '@/hooks/use-toast';
 import { Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -360,26 +359,14 @@ export default function UsersIndex({ users, filters, roleOptions, statusOptions,
         }
 
         setIsDeleting(true);
-        const name = selectedUser.name;
-
         router.delete(`/users/${selectedUser.id}`, {
             preserveScroll: true,
             onSuccess: () => {
                 setDeleteDialogOpen(false);
                 setSelectedUser(null);
-                setIsDeleting(false);
-                toast({
-                    title: '✅ User Deleted',
-                    description: `${name} has been removed successfully.`,
-                });
             },
-            onError: () => {
+            onFinish: () => {
                 setIsDeleting(false);
-                toast({
-                    title: '❌ Delete Failed',
-                    description: 'Please try again or contact support if the issue persists.',
-                    variant: 'destructive',
-                });
             },
         });
     };

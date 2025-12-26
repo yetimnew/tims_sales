@@ -11,7 +11,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
-import { useToast } from '@/hooks/use-toast';
 import { validateOutsource, type ValidationErrors } from '@/lib/validation';
 import {
     AlertCircle,
@@ -63,7 +62,6 @@ const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function OutsourcesEdit({ outsource, statusOptions, serviceTypeOptions }: OutsourcesEditProps) {
     const { hasPermission } = usePermissions();
-    const { toast } = useToast();
     const breadcrumbs = useMemo<BreadcrumbItem[]>(
         () => [
             { title: 'Outsourcing', href: '/outsources' },
@@ -134,24 +132,6 @@ export default function OutsourcesEdit({ outsource, statusOptions, serviceTypeOp
             container.removeEventListener('scroll', handleScroll);
         };
     }, []);
-
-    useEffect(() => {
-        if (Object.keys(errors).length === 0) {
-            return;
-        }
-
-        const backendMessages = Object.values(errors)
-            .flat()
-            .map(message => (Array.isArray(message) ? message.join(', ') : String(message)));
-
-        if (backendMessages.length > 0) {
-            toast({
-                variant: 'destructive',
-                title: 'Validation error',
-                description: backendMessages.join('\n'),
-            });
-        }
-    }, [errors, toast]);
 
     const setFieldError = useCallback((field: keyof OutsourceFormData | 'email' | 'status', message: string) => {
         setFrontendErrors(previous => {
@@ -235,11 +215,6 @@ export default function OutsourcesEdit({ outsource, statusOptions, serviceTypeOp
 
         if (Object.keys(validationResults).length > 0) {
             setFrontendErrors(validationResults);
-            toast({
-                variant: 'destructive',
-                title: 'Please review the form',
-                description: 'Some fields need your attention before saving.',
-            });
             return;
         }
 
@@ -250,10 +225,6 @@ export default function OutsourcesEdit({ outsource, statusOptions, serviceTypeOp
             onSuccess: () => {
                 setFrontendErrors({});
                 setIsDirty(false);
-                toast({
-                    title: '✅ Vendor Updated',
-                    description: 'The vendor record has been saved successfully.',
-                });
             },
             onError: () => {
                 transform(data => data);
@@ -286,22 +257,9 @@ export default function OutsourcesEdit({ outsource, statusOptions, serviceTypeOp
             preserveScroll: true,
             onSuccess: () => {
                 setDeleteDialogOpen(false);
-                setIsDeleting(false);
-                toast({
-                    title: '✅ Vendor Deleted',
-                    description: 'The vendor was deleted successfully.',
-                });
             },
-            onError: (errors) => {
+            onFinish: () => {
                 setIsDeleting(false);
-                const errorMessage = errors && typeof errors === 'object' && 'message' in errors
-                    ? String(errors.message)
-                    : 'Failed to delete vendor. Please try again.';
-                toast({
-                    title: '❌ Delete Failed',
-                    description: errorMessage,
-                    variant: 'destructive',
-                });
             },
         });
     };

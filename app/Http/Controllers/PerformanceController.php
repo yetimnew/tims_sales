@@ -890,7 +890,11 @@ class PerformanceController extends Controller
                 ->with('success', 'Performance deactivated successfully.');
 
         } catch (Exception $e) {
-            return back()->withErrors(['error' => 'Failed to deactivate performance. Please try again.']);
+            $errorMessage = 'Failed to deactivate performance. Please try again.';
+
+            return back()
+                ->withErrors(['error' => $errorMessage])
+                ->with('error', $errorMessage);
         }
     }
 
