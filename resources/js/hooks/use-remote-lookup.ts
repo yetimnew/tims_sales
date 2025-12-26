@@ -41,6 +41,11 @@ export function useRemoteLookup<T>({
     const [hasMore, setHasMore] = useState(false);
     const debouncedQuery = useDebouncedValue(query, debounceMs);
     const abortControllerRef = useRef<AbortController | null>(null);
+    const getIdRef = useRef(getId);
+
+    useEffect(() => {
+        getIdRef.current = getId;
+    }, [getId]);
 
     const normalizedSelectedIds = useMemo(() => {
         const normalized = selectedIds
@@ -105,7 +110,7 @@ export function useRemoteLookup<T>({
                 setCache(previous => {
                     const next = { ...previous };
                     data.forEach(item => {
-                        const key = String(getId(item));
+                        const key = String(getIdRef.current(item));
                         next[key] = item;
                     });
                     return next;
@@ -122,7 +127,7 @@ export function useRemoteLookup<T>({
                 setIsLoading(false);
             }
         }
-    }, [debouncedQuery, endpoint, getId, limit, normalizedSelectedIds]);
+    }, [debouncedQuery, endpoint, limit, normalizedSelectedIds]);
 
     // Fetch on mount and when dependencies change
     useEffect(() => {

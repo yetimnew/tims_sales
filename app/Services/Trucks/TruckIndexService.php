@@ -159,10 +159,13 @@ class TruckIndexService
 
         // Cache status options (1 hour) - rarely changes
         $statusOptions = Cache::remember('trucks.status_options', 3600, function () {
+            $allowedStatuses = ['active', 'inactive'];
+
             return Truck::query()
                 ->select('status')
                 ->distinct()
                 ->whereNotNull('status')
+                ->whereIn('status', $allowedStatuses)
                 ->orderBy('status')
                 ->get()
                 ->map(fn (Truck $truck): array => [

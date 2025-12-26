@@ -83,7 +83,7 @@ class CRUDIntegrationTest extends TestCase
         $updateData = [
             'plate' => 'UPDATED-456',
             'vehicletype_id' => $this->vehicleType->id,
-            'status' => 'maintenance',
+            'status' => 'inactive',
         ];
 
         $updateResponse = $this->actingAs($this->user)
@@ -93,7 +93,7 @@ class CRUDIntegrationTest extends TestCase
         $this->assertDatabaseHas('trucks', [
             'id' => $truck->id,
             'plate' => 'UPDATED-456',
-            'status' => 'maintenance',
+            'status' => 'inactive',
         ]);
 
         // DELETE

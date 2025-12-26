@@ -36,7 +36,7 @@ class TruckMetricsServiceTest extends TestCase
             ->count(2)
             ->for($vehicleType, 'vehicleType')
             ->state([
-                'status' => 'maintenance',
+                'status' => 'inactive',
                 'purchasePrice' => 2_000_000,
             ])
             ->create();
@@ -54,7 +54,7 @@ class TruckMetricsServiceTest extends TestCase
 
         $this->assertSame(6, $metrics['total']);
         $this->assertSame(3, $metrics['active']);
-        $this->assertSame(2, $metrics['maintenance']);
+        $this->assertSame(3, $metrics['inactive']);
         $this->assertEqualsWithDelta(7_500_000.0, $metrics['fleet_value'], 0.01);
 
         $utilization = $metrics['utilization'];
@@ -101,7 +101,7 @@ class TruckMetricsServiceTest extends TestCase
 
         Truck::factory()->for($vehicleType, 'vehicleType')->create([
             'plate' => 'XY987ZT',
-            'status' => 'maintenance',
+            'status' => 'inactive',
             'purchasePrice' => 200_000,
         ]);
 
@@ -111,7 +111,7 @@ class TruckMetricsServiceTest extends TestCase
 
         $this->assertSame(1, $metrics['total']);
         $this->assertSame(1, $metrics['active']);
-        $this->assertSame(0, $metrics['maintenance']);
+        $this->assertSame(0, $metrics['inactive']);
         $this->assertEqualsWithDelta(100_000.0, $metrics['fleet_value'], 0.01);
 
         $utilization = $metrics['utilization'];
@@ -147,7 +147,7 @@ class TruckMetricsServiceTest extends TestCase
         ]);
 
         Truck::factory()->for($typeB, 'vehicleType')->create([
-            'status' => 'maintenance',
+            'status' => 'inactive',
             'purchasePrice' => 400_000,
         ]);
 
@@ -158,7 +158,7 @@ class TruckMetricsServiceTest extends TestCase
 
         $this->assertSame(1, $metricsForTypeA['total']);
         $this->assertSame(1, $metricsForTypeA['active']);
-        $this->assertSame(0, $metricsForTypeA['maintenance']);
+        $this->assertSame(0, $metricsForTypeA['inactive']);
         $this->assertEqualsWithDelta(300_000.0, $metricsForTypeA['fleet_value'], 0.01);
 
         $utilizationTypeA = $metricsForTypeA['utilization'];
@@ -173,7 +173,7 @@ class TruckMetricsServiceTest extends TestCase
 
         $this->assertSame(1, $metricsForTypeB['total']);
         $this->assertSame(0, $metricsForTypeB['active']);
-        $this->assertSame(1, $metricsForTypeB['maintenance']);
+        $this->assertSame(1, $metricsForTypeB['inactive']);
         $this->assertEqualsWithDelta(400_000.0, $metricsForTypeB['fleet_value'], 0.01);
 
         $utilizationTypeB = $metricsForTypeB['utilization'];
@@ -197,7 +197,7 @@ class TruckMetricsServiceTest extends TestCase
         ]);
 
         Truck::factory()->for($vehicleType, 'vehicleType')->create([
-            'status' => 'maintenance',
+            'status' => 'inactive',
             'purchasePrice' => 125_000,
         ]);
 
@@ -207,7 +207,7 @@ class TruckMetricsServiceTest extends TestCase
 
         $this->assertSame(1, $metrics['total']);
         $this->assertSame(0, $metrics['active']);
-        $this->assertSame(1, $metrics['maintenance']);
+        $this->assertSame(1, $metrics['inactive']);
         $this->assertEqualsWithDelta(125_000.0, $metrics['fleet_value'], 0.01);
 
         $utilization = $metrics['utilization'];
@@ -250,7 +250,7 @@ class TruckMetricsServiceTest extends TestCase
             ]);
 
             $maintenanceTruck = Truck::factory()->for($vehicleType, 'vehicleType')->create([
-                'status' => 'maintenance',
+                'status' => 'inactive',
             ]);
 
             $serviceDates = [

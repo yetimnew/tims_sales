@@ -248,7 +248,6 @@ export default function TrucksCreate({ vehicleTypes }: TrucksCreateProps) {
                             </SelectTrigger>
                             <SelectContent className="z-50 bg-white shadow-lg dark:bg-slate-800">
                                 <SelectItem value="active" className="hover:bg-slate-100 focus:bg-slate-100 dark:hover:bg-slate-700 dark:focus:bg-slate-700">Active</SelectItem>
-                                <SelectItem value="maintenance" className="hover:bg-slate-100 focus:bg-slate-100 dark:hover:bg-slate-700 dark:focus:bg-slate-700">Maintenance</SelectItem>
                                 <SelectItem value="inactive" className="hover:bg-slate-100 focus:bg-slate-100 dark:hover:bg-slate-700 dark:focus:bg-slate-700">Inactive</SelectItem>
                             </SelectContent>
                         </Select>
@@ -327,6 +326,7 @@ export default function TrucksCreate({ vehicleTypes }: TrucksCreateProps) {
                         <DatePicker
                             value={data.productionDate ?? ''}
                             onChange={(next) => handleFieldChange('productionDate', next ?? '')}
+                            showClearButton={false}
                             className={cn(
                                 'w-full justify-start text-left h-11 border-slate-300 hover:border-slate-400 focus-visible:border-blue-500 focus-visible:ring-blue-500/20 dark:border-slate-600 dark:hover:border-slate-500',
                                 getFieldError('productionDate') ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500/20' : undefined,
@@ -338,6 +338,7 @@ export default function TrucksCreate({ vehicleTypes }: TrucksCreateProps) {
                             value={data.serviceStartDate ?? ''}
                             onChange={(next) => handleFieldChange('serviceStartDate', next ?? '')}
                             disabled={!data.productionDate}
+                            showClearButton={false}
                             className={cn(
                                 'w-full justify-start text-left h-11 border-slate-300 hover:border-slate-400 focus-visible:border-blue-500 focus-visible:ring-blue-500/20 dark:border-slate-600 dark:hover:border-slate-500',
                                 getFieldError('serviceStartDate') ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500/20' : undefined,

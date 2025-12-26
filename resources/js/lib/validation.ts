@@ -45,7 +45,7 @@ export const truckValidation = {
 
   status: (value: string) => {
     if (!value) return 'Status is required'
-    if (!['active', 'inactive', 'maintenance'].includes(value)) return 'Invalid status'
+    if (!['active', 'inactive'].includes(value)) return 'Invalid status'
     return ''
   },
 }

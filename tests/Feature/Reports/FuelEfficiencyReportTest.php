@@ -22,7 +22,7 @@ class FuelEfficiencyReportTest extends TestCase
         $report = app(FuelEfficiencyReport::class);
 
         $truckA = Truck::factory()->create(['plate' => 'ABC-123', 'status' => 'active']);
-        $truckB = Truck::factory()->create(['plate' => 'XYZ-987', 'status' => 'maintenance']);
+        $truckB = Truck::factory()->create(['plate' => 'XYZ-987', 'status' => 'inactive']);
 
         $driverA = Driver::factory()->create(['name' => 'Alice Carter']);
         $driverB = Driver::factory()->create(['name' => 'Brian Hall']);

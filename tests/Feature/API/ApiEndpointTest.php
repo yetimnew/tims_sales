@@ -489,7 +489,7 @@ class ApiEndpointTest extends TestCase
     {
         Truck::factory()->create(['status' => 'active']);
         Truck::factory()->create(['status' => 'inactive']);
-        Truck::factory()->create(['status' => 'maintenance']);
+        Truck::factory()->create(['status' => 'inactive']);
 
         $response = $this->actingAs($this->user)
             ->get(route('trucks.index', ['status' => 'active']));

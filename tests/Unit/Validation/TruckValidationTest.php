@@ -232,7 +232,7 @@ class TruckValidationTest extends TestCase
         $validData = [
             'plate' => 'UPD-123',
             'vehicletype_id' => $vehicleType->id,
-            'status' => 'maintenance',
+            'status' => 'inactive',
         ];
 
         $request = new UpdateTruckRequest;

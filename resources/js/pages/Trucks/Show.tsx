@@ -1422,8 +1422,6 @@ export default function TrucksShow({
         switch (status) {
             case 'active':
                 return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-            case 'maintenance':
-                return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
             case 'inactive':
                 return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
             default:
@@ -1633,7 +1631,6 @@ export default function TrucksShow({
                                                 <p className="text-sm font-medium text-muted-foreground">Status</p>
                                                 <Badge className={`mt-1 flex w-fit items-center gap-1 ${getStatusBadgeColor(truck.status)}`}>
                                                     {truck.status === 'active' && <CheckCircle className="h-3 w-3" />}
-                                                    {truck.status === 'maintenance' && <Wrench className="h-3 w-3" />}
                                                     {truck.status === 'inactive' && <XCircle className="h-3 w-3" />}
                                                     {truck.status ? truck.status.charAt(0).toUpperCase() + truck.status.slice(1) : 'Unknown'}
                                                 </Badge>
@@ -1993,7 +1990,6 @@ export default function TrucksShow({
                                                 <p className="text-sm font-medium text-blue-700 dark:text-blue-300">Current Status</p>
                                                 <Badge className={`mt-2 flex items-center gap-1 w-fit ${getStatusBadgeColor(truck.status)}`}>
                                                     {truck.status === 'active' && <CheckCircle className="h-3 w-3" />}
-                                                    {truck.status === 'maintenance' && <Wrench className="h-3 w-3" />}
                                                     {truck.status === 'inactive' && <XCircle className="h-3 w-3" />}
                                                     {truck.status ? truck.status.charAt(0).toUpperCase() + truck.status.slice(1) : 'Unknown'}
                                                 </Badge>

@@ -81,7 +81,7 @@ class ActivityLogTest extends TestCase
             ->put(route('trucks.update', $truck), [
                 'plate' => 'NEW-456',
                 'vehicletype_id' => $truck->vehicletype_id,
-                'status' => 'maintenance',
+                'status' => 'inactive',
             ]);
 
         $this->assertDatabaseHas('activity_log', [
@@ -205,7 +205,7 @@ class ActivityLogTest extends TestCase
             ->put(route('trucks.update', $truck), [
                 'plate' => 'NEW-456',
                 'vehicletype_id' => $truck->vehicletype_id,
-                'status' => 'maintenance',
+                'status' => 'inactive',
             ]);
 
         $activity = Activity::where('subject_type', Truck::class)
@@ -219,7 +219,7 @@ class ActivityLogTest extends TestCase
         $this->assertEquals('OLD-123', $properties['old']['plate']);
         $this->assertEquals('active', $properties['old']['status']);
         $this->assertEquals('NEW-456', $properties['attributes']['plate']);
-        $this->assertEquals('maintenance', $properties['attributes']['status']);
+        $this->assertEquals('inactive', $properties['attributes']['status']);
     }
 
     #[Test]

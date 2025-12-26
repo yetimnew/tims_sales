@@ -15,6 +15,7 @@ import {
   type NotificationItem,
 } from '@/lib/notification-utils'
 import { cn } from '@/lib/utils'
+import { feed as notificationsFeedRoute, index as notificationsIndexRoute, read as notificationsReadRoute, readAll as notificationsReadAllRoute } from '@/routes/notifications'
 
 const HEADER_FEED_LIMIT = 10
 const FALLBACK_POLL_INTERVAL = 45000
@@ -66,10 +67,13 @@ export default function NotificationBell() {
     abortRef.current = controller
 
     try {
-      const url = new URL(route('notifications.feed'), window.location.origin)
-      url.searchParams.set('per_page', HEADER_FEED_LIMIT.toString())
+      const feedUrl = notificationsFeedRoute.url({
+        query: {
+          per_page: HEADER_FEED_LIMIT.toString(),
+        },
+      })
 
-      const response = await fetch(url.toString(), {
+      const response = await fetch(feedUrl, {
         headers: {
           Accept: 'application/json',
         },
@@ -166,7 +170,7 @@ export default function NotificationBell() {
           <div className="px-3 pb-3">
             <button
               type="button"
-              onClick={() => router.post('/notifications/read-all', undefined, {
+              onClick={() => router.post(notificationsReadAllRoute.url(), undefined, {
                 onSuccess: refreshFeed,
               })}
               className="inline-flex items-center gap-2 rounded-md bg-neutral-900 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-neutral-800 dark:bg-neutral-700 dark:hover:bg-neutral-600"
@@ -211,7 +215,7 @@ export default function NotificationBell() {
                   {unread && (
                     <button
                       type="button"
-                      onClick={() => router.post(`/notifications/${notification.id}/read`, undefined, {
+                      onClick={() => router.post(notificationsReadRoute.url(notification.id), undefined, {
                         onSuccess: refreshFeed,
                       })}
                       className="shrink-0 rounded-md border border-neutral-200 px-2 py-1 text-[11px] font-semibold text-neutral-600 transition hover:border-neutral-300 hover:text-neutral-900 dark:border-neutral-700 dark:text-neutral-300 dark:hover:border-neutral-600 dark:hover:text-white"
@@ -227,7 +231,7 @@ export default function NotificationBell() {
         )}
         <DropdownMenuSeparator />
         <div className="flex items-center justify-end px-3 py-2">
-          <Link href="/notifications" className="text-xs font-medium text-blue-600 transition hover:text-blue-700 hover:underline">
+          <Link href={notificationsIndexRoute.url()} className="text-xs font-medium text-blue-600 transition hover:text-blue-700 hover:underline">
             View all
           </Link>
         </div>

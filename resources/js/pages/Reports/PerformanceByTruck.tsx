@@ -100,11 +100,7 @@ const getStatusBadgeClass = (status: string): string => {
         return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-200';
     }
 
-    if (normalized === 'maintenance') {
-        return 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-200';
-    }
-
-    if (normalized === 'inactive') {
+    if (normalized === 'inactive' || normalized === 'maintenance') {
         return 'bg-slate-200 text-slate-700 dark:bg-slate-800/80 dark:text-slate-200';
     }
 

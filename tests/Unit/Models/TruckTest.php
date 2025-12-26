@@ -189,7 +189,7 @@ class TruckTest extends TestCase
     {
         Truck::factory()->create(['status' => 'active']);
         Truck::factory()->create(['status' => 'inactive']);
-        Truck::factory()->create(['status' => 'maintenance']);
+        Truck::factory()->create(['status' => 'inactive']);
 
         $activeTrucks = Truck::where('status', 'active')->get();
 
