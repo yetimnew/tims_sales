@@ -498,7 +498,6 @@ Route::middleware('auth')->group(function () {
 
         Route::resource('zones', ZoneController::class)
             ->middleware([
-                'index' => 'can:zones.view',
                 'show' => 'can:zones.show',
                 'create' => 'can:zones.create',
                 'store' => 'can:zones.store',
