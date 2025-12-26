@@ -490,7 +490,11 @@ class MaintenanceController extends BaseResourceController
                 'maintenance_type_id' => $request->input('maintenance_type_id'),
             ]);
 
-            return back()->withErrors(['error' => 'Failed to schedule maintenance. Please try again.']);
+            $errorMessage = 'Failed to schedule maintenance. Please try again.';
+
+            return back()
+                ->withErrors(['error' => $errorMessage])
+                ->with('error', $errorMessage);
         }
     }
 
@@ -522,7 +526,11 @@ class MaintenanceController extends BaseResourceController
         } catch (Exception $e) {
             $this->logError('update', 'Maintenance', $e);
 
-            return back()->withErrors(['error' => 'Failed to update maintenance record. Please try again.']);
+            $errorMessage = 'Failed to update maintenance record. Please try again.';
+
+            return back()
+                ->withErrors(['error' => $errorMessage])
+                ->with('error', $errorMessage);
         }
     }
 
@@ -544,7 +552,11 @@ class MaintenanceController extends BaseResourceController
         } catch (Exception $e) {
             $this->logError('complete', 'Maintenance', $e);
 
-            return back()->withErrors(['error' => 'Failed to complete maintenance. Please try again.']);
+            $errorMessage = 'Failed to complete maintenance. Please try again.';
+
+            return back()
+                ->withErrors(['error' => $errorMessage])
+                ->with('error', $errorMessage);
         }
     }
 
@@ -573,7 +585,11 @@ class MaintenanceController extends BaseResourceController
         } catch (Exception $e) {
             $this->logError('destroy', 'Maintenance', $e);
 
-            return back()->withErrors(['error' => 'Failed to delete maintenance record. Please try again.']);
+            $errorMessage = 'Failed to delete maintenance record. Please try again.';
+
+            return back()
+                ->withErrors(['error' => $errorMessage])
+                ->with('error', $errorMessage);
         }
     }
 

@@ -110,7 +110,11 @@ class VehicleTypeController extends Controller
                 ->with('success', 'Vehicle type created successfully.');
 
         } catch (Exception $e) {
-            return back()->withErrors(['error' => 'Failed to create vehicle type. Please try again.']);
+            $errorMessage = 'Failed to create vehicle type. Please try again.';
+
+            return back()
+                ->withErrors(['error' => $errorMessage])
+                ->with('error', $errorMessage);
         }
     }
 
@@ -206,7 +210,11 @@ class VehicleTypeController extends Controller
                 ->with('success', 'Vehicle type updated successfully.');
 
         } catch (Exception $e) {
-            return back()->withErrors(['error' => 'Failed to update vehicle type. Please try again.']);
+            $errorMessage = 'Failed to update vehicle type. Please try again.';
+
+            return back()
+                ->withErrors(['error' => $errorMessage])
+                ->with('error', $errorMessage);
         }
     }
 
@@ -224,9 +232,11 @@ class VehicleTypeController extends Controller
             }
 
             if (! empty($blockers)) {
-                return back()->withErrors([
-                    'error' => $blockers,
-                ]);
+                $errorMessage = implode(' ', $blockers);
+
+                return back()
+                    ->withErrors(['error' => $blockers])
+                    ->with('error', $errorMessage);
             }
 
             $vehicleTypeId = $vehicletype->getKey();
@@ -245,7 +255,11 @@ class VehicleTypeController extends Controller
                 ->with('success', 'Vehicle type deleted successfully.');
 
         } catch (Exception $e) {
-            return back()->withErrors(['error' => 'Failed to delete vehicle type. Please try again.']);
+            $errorMessage = 'Failed to delete vehicle type. Please try again.';
+
+            return back()
+                ->withErrors(['error' => $errorMessage])
+                ->with('error', $errorMessage);
         }
     }
 

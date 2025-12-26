@@ -149,7 +149,11 @@ class TruckController extends Controller
                 ->with('success', sprintf('Truck %s created successfully.', $truck->plate));
 
         } catch (Exception $e) {
-            return back()->withErrors(['error' => 'Failed to create truck. Please try again.']);
+            $errorMessage = 'Failed to create truck. Please try again.';
+
+            return back()
+                ->withErrors(['error' => $errorMessage])
+                ->with('error', $errorMessage);
         }
     }
 
@@ -622,7 +626,11 @@ class TruckController extends Controller
                 ->with('success', sprintf('Truck %s updated successfully.', $truck->plate));
 
         } catch (Exception $e) {
-            return back()->withErrors(['error' => 'Failed to update truck. Please try again.']);
+            $errorMessage = 'Failed to update truck. Please try again.';
+
+            return back()
+                ->withErrors(['error' => $errorMessage])
+                ->with('error', $errorMessage);
         }
     }
 
@@ -635,9 +643,11 @@ class TruckController extends Controller
             $blockers = $this->truckDeletionGuard->blockers($truck);
 
             if (! empty($blockers)) {
-                return back()->withErrors([
-                    'error' => $blockers,
-                ]);
+                $errorMessage = implode(' ', $blockers);
+
+                return back()
+                    ->withErrors(['error' => $blockers])
+                    ->with('error', $errorMessage);
             }
 
             $attributes = $this->normalizeAttributes($truck->toArray());
@@ -666,7 +676,11 @@ class TruckController extends Controller
         } catch (Exception $e) {
             report($e);
 
-            return back()->withErrors(['error' => 'Failed to delete truck. Please try again.']);
+            $errorMessage = 'Failed to delete truck. Please try again.';
+
+            return back()
+                ->withErrors(['error' => $errorMessage])
+                ->with('error', $errorMessage);
         }
     }
 

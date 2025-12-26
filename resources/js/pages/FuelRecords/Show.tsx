@@ -6,7 +6,6 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ActivityLogTable } from '@/components/activity-log-table';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
-import { toast } from '@/hooks/use-toast';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { usePermissions } from '@/hooks/use-permissions';
@@ -231,18 +230,8 @@ export default function FuelRecordsShow({ fuelRecord, activityLogs = [] }: FuelR
                 setDeleteDialogOpen(false);
                 setIsDeleting(false);
             },
-            onError: (errors) => {
+            onError: () => {
                 setIsDeleting(false);
-                if (errors && typeof errors === 'object') {
-                    const errorMessages = Object.values(errors).flat().join('\n');
-                    if (errorMessages) {
-                        toast({
-                            title: '❌ Delete Failed',
-                            description: errorMessages,
-                            variant: 'destructive',
-                        });
-                    }
-                }
             },
         });
     };

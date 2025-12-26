@@ -12,7 +12,6 @@ import { ListingRowActionsMenu } from '@/components/listing/row-actions-menu';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useListingLoading } from '@/hooks/use-listing-loading';
 import { Link, router } from '@inertiajs/react';
-import { toast } from '@/hooks/use-toast';
 import { type BreadcrumbItem } from '@/types';
 import {
     Plus,
@@ -435,21 +434,9 @@ export default function TrucksIndex({
 
                     const fallback = 'Failed to delete truck. Please review the requirements and try again.';
                     setDeleteError(messages || fallback);
-
-                    toast({
-                        title: '❌ Delete Failed',
-                        description: messages || fallback,
-                        variant: 'destructive',
-                    });
                 } else {
                     const fallback = 'An unexpected error occurred while deleting the truck. Please try again.';
                     setDeleteError(fallback);
-
-                    toast({
-                        title: '❌ Delete Failed',
-                        description: fallback,
-                        variant: 'destructive',
-                    });
                 }
             },
         });

@@ -7,7 +7,6 @@ import { Settings, Edit, Trash2, Truck, ArrowLeft, Activity, ChevronRight, Calen
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { ActivityLogTable } from '@/components/activity-log-table';
 import { useMemo, useState } from 'react';
-import { toast } from '@/hooks/use-toast';
 import { DetailHeader } from '@/components/detail/detail-header';
 import { DetailSummaryGrid } from '@/components/detail/detail-summary-grid';
 import { DetailSectionCard } from '@/components/detail/detail-section-card';
@@ -116,31 +115,9 @@ export default function VehicleTypesShow({ vehicleType, activityLogs = [] }: Veh
             onSuccess: () => {
                 setDeleteDialogOpen(false);
                 setIsDeleting(false);
-                toast({
-                    title: '✅ Vehicle Type Deleted',
-                    description: `${vehicleType.name} has been removed from the fleet classifications.`,
-                });
             },
-            onError: (errors) => {
+            onError: () => {
                 setIsDeleting(false);
-                if (errors && typeof errors === 'object') {
-                    const errorMessages = Object.values(errors)
-                        .flat()
-                        .filter((message): message is string => typeof message === 'string')
-                        .join('\n');
-
-                    toast({
-                        title: '❌ Delete Failed',
-                        description: errorMessages || 'Unable to delete this vehicle type. Please resolve any blocking records first.',
-                        variant: 'destructive',
-                    });
-                } else {
-                    toast({
-                        title: '❌ Delete Failed',
-                        description: 'An unexpected error occurred while deleting the vehicle type. Please try again.',
-                        variant: 'destructive',
-                    });
-                }
             },
         });
     };

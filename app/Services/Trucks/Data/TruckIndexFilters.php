@@ -26,9 +26,9 @@ class TruckIndexFilters
         $search = trim((string) $request->input('search', ''));
         $search = $search !== '' ? $search : null;
 
-        $statusInput = $request->has('status') ? (string) $request->input('status') : 'active';
-        $rawStatus = trim($statusInput);
-        $status = $rawStatus !== '' ? $rawStatus : 'active';
+        $statusInput = $request->has('status') ? (string) $request->input('status') : null;
+        $rawStatus = $statusInput !== null ? trim($statusInput) : null;
+        $status = $rawStatus !== '' ? $rawStatus : null;
 
         $vehicleTypeInput = $request->input('vehicle_type');
         $vehicleTypeId = ($vehicleTypeInput !== null && $vehicleTypeInput !== '') ? (int) $vehicleTypeInput : null;

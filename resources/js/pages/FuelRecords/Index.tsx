@@ -9,7 +9,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { InertiaPagination } from '@/components/ui/pagination';
 import { usePermissions } from '@/hooks/use-permissions';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
-import { toast } from '@/hooks/use-toast';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 
@@ -175,18 +174,8 @@ export default function FuelRecordsIndex({ fuelRecords, statistics, filters }: F
                 setSelectedFuelRecord(null);
                 setIsDeleting(false);
             },
-            onError: (errors) => {
+            onError: () => {
                 setIsDeleting(false);
-                if (errors && typeof errors === 'object') {
-                    const errorMessages = Object.values(errors).flat().join('\n');
-                    if (errorMessages) {
-                        toast({
-                            title: '❌ Delete Failed',
-                            description: errorMessages,
-                            variant: 'destructive',
-                        });
-                    }
-                }
             },
         });
     };

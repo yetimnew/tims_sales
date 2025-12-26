@@ -232,10 +232,6 @@ export default function FuelRecordsCreate({ driverTrucks }: FuelRecordsCreatePro
                 setIsDirty(false);
                 setFrontendErrors({});
                 clearErrors();
-                toast({
-                    title: '✅ Fuel Record Created',
-                    description: 'The fuel record has been saved successfully.',
-                });
                 reset();
                 formRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
             },

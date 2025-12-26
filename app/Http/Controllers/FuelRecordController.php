@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Driver;
 use App\Models\FuelRecord;
 use App\Models\Truck;
-use App\Models\Driver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -41,7 +41,7 @@ class FuelRecordController extends Controller
 
         // Validate sort column to prevent SQL injection
         $allowedSorts = ['fuel_date', 'fuel_quantity_liters', 'total_cost', 'fuel_station', 'fuel_type', 'created_at'];
-        if (!in_array($sort, $allowedSorts)) {
+        if (! in_array($sort, $allowedSorts)) {
             $sort = 'fuel_date';
         }
 
@@ -121,9 +121,11 @@ class FuelRecordController extends Controller
         // Calculate total cost if not provided or verify it matches calculation
         $calculatedTotal = $validated['fuel_quantity_liters'] * $validated['fuel_price_per_liter'];
         if (abs($validated['total_cost'] - $calculatedTotal) > 0.01) {
-            return back()->withErrors([
-                'total_cost' => 'Total cost does not match the calculation (quantity × price per liter).'
-            ]);
+            $errorMessage = 'Total cost does not match the calculation (quantity × price per liter).';
+
+            return back()
+                ->withErrors(['total_cost' => $errorMessage])
+                ->with('error', $errorMessage);
         }
 
         $validated['user_id'] = Auth::id();
@@ -142,7 +144,11 @@ class FuelRecordController extends Controller
             return redirect()->route('fuel-records.index')
                 ->with('success', 'Fuel record created successfully.');
         } catch (\Exception $e) {
-            return back()->withErrors(['error' => 'Failed to create fuel record. Please try again.']);
+            $errorMessage = 'Failed to create fuel record. Please try again.';
+
+            return back()
+                ->withErrors(['error' => $errorMessage])
+                ->with('error', $errorMessage);
         }
     }
 
@@ -204,16 +210,18 @@ class FuelRecordController extends Controller
             'fuel_station' => 'required|string|max:255',
             'fuel_type' => 'required|in:diesel,petrol,gas',
             'odometer_reading' => 'nullable|integer|min:0|max:9999999',
-            'receipt_number' => 'nullable|string|max:255|unique:fuel_records,receipt_number,' . $fuelRecord->id,
+            'receipt_number' => 'nullable|string|max:255|unique:fuel_records,receipt_number,'.$fuelRecord->id,
             'notes' => 'nullable|string|max:1000',
         ]);
 
         // Calculate total cost if not provided or verify it matches calculation
         $calculatedTotal = $validated['fuel_quantity_liters'] * $validated['fuel_price_per_liter'];
         if (abs($validated['total_cost'] - $calculatedTotal) > 0.01) {
-            return back()->withErrors([
-                'total_cost' => 'Total cost does not match the calculation (quantity × price per liter).'
-            ]);
+            $errorMessage = 'Total cost does not match the calculation (quantity × price per liter).';
+
+            return back()
+                ->withErrors(['total_cost' => $errorMessage])
+                ->with('error', $errorMessage);
         }
 
         try {
@@ -230,7 +238,11 @@ class FuelRecordController extends Controller
             return redirect()->route('fuel-records.index')
                 ->with('success', 'Fuel record updated successfully.');
         } catch (\Exception $e) {
-            return back()->withErrors(['error' => 'Failed to update fuel record. Please try again.']);
+            $errorMessage = 'Failed to update fuel record. Please try again.';
+
+            return back()
+                ->withErrors(['error' => $errorMessage])
+                ->with('error', $errorMessage);
         }
     }
 
@@ -253,7 +265,11 @@ class FuelRecordController extends Controller
             return redirect()->route('fuel-records.index')
                 ->with('success', 'Fuel record deleted successfully.');
         } catch (\Exception $e) {
-            return back()->withErrors(['error' => 'Failed to delete fuel record. Please try again.']);
+            $errorMessage = 'Failed to delete fuel record. Please try again.';
+
+            return back()
+                ->withErrors(['error' => $errorMessage])
+                ->with('error', $errorMessage);
         }
     }
 
@@ -293,7 +309,7 @@ class FuelRecordController extends Controller
         $csvData = "Date,Truck Plate,Driver,Fuel Station,Fuel Type,Quantity (L),Price/Liter,Total Cost,Odometer Reading,Receipt Number,Notes\n";
         foreach ($fuelRecords as $record) {
             $csvData .= sprintf(
-                '"%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s"' . "\n",
+                '"%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s"'."\n",
                 $record->fuel_date?->format('Y-m-d') ?? '',
                 $record->driverTruck?->truck?->plate ?? '',
                 $record->driverTruck?->driver?->name ?? '',
@@ -315,10 +331,10 @@ class FuelRecordController extends Controller
                 ->log('exported fuel records to CSV');
         }
 
-        $filename = 'fuel-records-' . now()->format('Y-m-d-H-i-s') . '.csv';
+        $filename = 'fuel-records-'.now()->format('Y-m-d-H-i-s').'.csv';
 
         return response($csvData)
             ->header('Content-Type', 'text/csv')
-            ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
+            ->header('Content-Disposition', 'attachment; filename="'.$filename.'"');
     }
 }

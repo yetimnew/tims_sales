@@ -11,7 +11,6 @@ import { ListingPaginationFooter } from '@/components/listing/pagination-footer'
 import { ListingRowActionsMenu } from '@/components/listing/row-actions-menu';
 import { useListingLoading } from '@/hooks/use-listing-loading';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { toast } from '@/hooks/use-toast';
 import { Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import * as React from 'react';
@@ -371,23 +370,9 @@ export default function MaintenanceIndex({ maintenanceRecords, metrics, filters,
                 setDeleteDialogOpen(false);
                 setRecordToDelete(null);
                 setIsDeleting(false);
-                toast({
-                    title: '✅ Maintenance Record Deleted',
-                    description: 'The maintenance record has been removed successfully.',
-                });
             },
-            onError: (errors) => {
+            onError: () => {
                 setIsDeleting(false);
-                const messages = Object.values(errors as Record<string, unknown>)
-                    .flatMap((value) => (Array.isArray(value) ? value : [value]))
-                    .filter(Boolean)
-                    .join('\n');
-
-                toast({
-                    title: '❌ Delete Failed',
-                    description: messages || 'Unable to delete this maintenance record. Please try again.',
-                    variant: 'destructive',
-                });
             },
             onFinish: () => {
                 setIsDeleting(false);

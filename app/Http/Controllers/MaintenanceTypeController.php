@@ -345,10 +345,14 @@ class MaintenanceTypeController extends Controller
     public function destroy(MaintenanceType $maintenanceType)
     {
         try {
-            if ($maintenanceType->maintenanceRecords()->count() > 0) {
-                return back()->withErrors([
-                    'error' => 'You are not allowed to delete this maintenance type. It has '.$maintenanceType->maintenanceRecords()->count().' maintenance record(s) associated with it. Please reassign or delete all maintenance records first.',
-                ]);
+            $recordCount = $maintenanceType->maintenanceRecords()->count();
+
+            if ($recordCount > 0) {
+                $errorMessage = 'You are not allowed to delete this maintenance type. It has '.$recordCount.' maintenance record(s) associated with it. Please reassign or delete all maintenance records first.';
+
+                return back()
+                    ->withErrors(['error' => $errorMessage])
+                    ->with('error', $errorMessage);
             }
 
             if (Auth::check()) {
@@ -373,7 +377,11 @@ class MaintenanceTypeController extends Controller
             return redirect()->route('maintenance-types.index')
                 ->with('success', 'Maintenance type deleted successfully.');
         } catch (\Exception $e) {
-            return back()->withErrors(['error' => 'Failed to delete maintenance type. Please try again.']);
+            $errorMessage = 'Failed to delete maintenance type. Please try again.';
+
+            return back()
+                ->withErrors(['error' => $errorMessage])
+                ->with('error', $errorMessage);
         }
     }
 

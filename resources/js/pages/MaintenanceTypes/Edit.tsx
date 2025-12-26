@@ -151,10 +151,6 @@ export default function MaintenanceTypesEdit({ maintenanceType }: MaintenanceTyp
         put(`/maintenance-types/${maintenanceType.id}`, {
             preserveScroll: true,
             onSuccess: () => {
-                toast({
-                    title: '✅ Maintenance Type Updated',
-                    description: `${data.name} has been updated successfully.`,
-                });
                 initialDataRef.current = { ...data };
                 setFrontendErrors({});
                 setIsDirty(false);

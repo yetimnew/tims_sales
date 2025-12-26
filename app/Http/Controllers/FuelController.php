@@ -110,10 +110,13 @@ class FuelController extends BaseResourceController
         } catch (Exception $e) {
             $this->logError('store', 'FuelRecord', $e, [
                 'created_by' => Auth::id(),
-                'driver_truck_id' => $request->input('driver_truck_id'),
             ]);
 
-            return back()->withErrors(['error' => 'Failed to create fuel record. Please try again.']);
+            $errorMessage = 'Failed to create fuel record. Please try again.';
+
+            return back()
+                ->withErrors(['error' => $errorMessage])
+                ->with('error', $errorMessage);
         }
     }
 
@@ -228,7 +231,11 @@ class FuelController extends BaseResourceController
         } catch (Exception $e) {
             $this->logError('update', 'FuelRecord', $e);
 
-            return back()->withErrors(['error' => 'Failed to update fuel record. Please try again.']);
+            $errorMessage = 'Failed to update fuel record. Please try again.';
+
+            return back()
+                ->withErrors(['error' => $errorMessage])
+                ->with('error', $errorMessage);
         }
     }
 
@@ -254,12 +261,16 @@ class FuelController extends BaseResourceController
             event(new FuelRecordDeleted($fuelRecordId, $receiptNumber, $attributes, Auth::user()));
 
             return redirect()->route('fuel.index')
-                ->with('success', sprintf('Fuel record %s deleted successfully.', $receiptNumber ?? 'Unknown'));
+                ->with('success', 'Fuel record deleted successfully.');
 
         } catch (Exception $e) {
             $this->logError('destroy', 'FuelRecord', $e);
 
-            return back()->withErrors(['error' => 'Failed to delete fuel record. Please try again.']);
+            $errorMessage = 'Failed to delete fuel record. Please try again.';
+
+            return back()
+                ->withErrors(['error' => $errorMessage])
+                ->with('error', $errorMessage);
         }
     }
 

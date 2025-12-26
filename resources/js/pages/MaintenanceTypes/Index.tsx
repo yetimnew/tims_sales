@@ -14,7 +14,6 @@ import { ListingPaginationFooter } from '@/components/listing/pagination-footer'
 import { ListingRowActionsMenu } from '@/components/listing/row-actions-menu';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useListingLoading } from '@/hooks/use-listing-loading';
-import { toast } from '@/hooks/use-toast';
 import { Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import {
@@ -575,24 +574,9 @@ export default function MaintenanceTypesIndex({
             onSuccess: () => {
                 setDeleteDialogOpen(false);
                 setSelectedMaintenanceType(null);
-                toast({
-                    title: '✅ Deleted',
-                    description: 'Maintenance type has been successfully deleted.',
-                });
             },
-            onError: (errors) => {
-                const messages = Object.values(errors as Record<string, unknown>)
-                    .flatMap((value) => (Array.isArray(value) ? value : [value]))
-                    .filter(Boolean)
-                    .join('\n');
-
-                if (messages) {
-                    toast({
-                        title: '❌ Delete Failed',
-                        description: messages,
-                        variant: 'destructive',
-                    });
-                }
+            onError: () => {
+                // Errors surface via flash messaging to ensure consistency across the app.
             },
             onFinish: () => {
                 setIsDeleting(false);
@@ -866,30 +850,13 @@ export default function MaintenanceTypesIndex({
 
         const selectionCount = selectedIds.length;
 
-        const onError = (errors: unknown) => {
-            if (errors && typeof errors === 'object') {
-                const messages = Object.values(errors as Record<string, unknown>)
-                    .flatMap((value) => (Array.isArray(value) ? value : [value]))
-                    .filter(Boolean)
-                    .join('\n');
-
-                if (messages) {
-                    toast({
-                        title: '❌ Bulk Action Failed',
-                        description: messages,
-                        variant: 'destructive',
-                    });
-                }
-            }
+        const onError = () => {
+            // Flash messaging handles user feedback for bulk actions.
         };
 
         const onSuccess = () => {
             setBulkActionDialogOpen(false);
             setSelectedIds([]);
-            toast({
-                title: '✅ Bulk Action Completed',
-                description: `Successfully ${bulkActionType}d ${selectionCount} maintenance type(s).`,
-            });
         };
 
         const onFinish = () => {

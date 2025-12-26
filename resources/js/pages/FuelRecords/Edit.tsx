@@ -268,10 +268,6 @@ export default function FuelRecordsEdit({ fuelRecord, driverTrucks }: FuelRecord
         put(`/fuel-records/${fuelRecord.id}`, {
             preserveScroll: true,
             onSuccess: () => {
-                toast({
-                    title: '✅ Fuel Record Updated',
-                    description: 'The fuel record has been updated successfully.',
-                });
                 const nextDefaults: FuelFormData = { ...data };
                 initialDataRef.current = { ...nextDefaults };
                 setDefaults(nextDefaults);

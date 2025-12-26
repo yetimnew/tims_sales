@@ -135,10 +135,6 @@ export default function TrucksCreate({ vehicleTypes }: TrucksCreateProps) {
                 clearErrors();
                 setFrontendErrors({});
                 setIsDirty(false);
-                toast({
-                    title: '✅ Truck Created',
-                    description: 'The truck has been added to the fleet successfully.',
-                });
             },
         });
     };
