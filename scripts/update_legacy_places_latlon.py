@@ -43,18 +43,104 @@ REGION_PRIORITY_NAMES: Dict[str, List[str]] = {
     "TIGRAY": ["Mekelle, Ethiopia", "Tigray Region, Ethiopia"],
 }
 
-ZONE_PRIORITY_NAMES: Dict[str, List[str]] = {
-    "ARSI": ["Asella, Ethiopia"],
-    "EAST SHEWA": ["Adama, Ethiopia"],
-    "WEST SHEWA": ["Ambo, Ethiopia"],
-    "SHEKA": ["Masha, Ethiopia"],
-    "SIDAMA": ["Hawassa, Ethiopia"],
-    "BORENA": ["Yabelo, Ethiopia"],
-    "GAMO GOFA": ["Arba Minch, Ethiopia"],
-    "HADIYA": ["Hosaena, Ethiopia"],
+ZONE_PRIORITY_NAMES: Dict[str, List[str]] = {}
+
+RAW_ZONE_ADMIN_CENTER_OVERRIDES: Dict[str, str] = {
+    "A/MENCHI": "Mizan Aman",
+    "ADDISE ABABA": "Addis Ababa",
+    "AFDER": "Hargele",
+    "AFDERA": "Afdera",
+    "AFEDIRA": "Afdera",
+    "AGNEWAK": "Gambela",
+    "ARSI": "Asella",
+    "AWSI RASU": "Asayita",
+    "BALE": "Robe",
+    "BALY": "Robe",
+    "BORENA": "Yabelo",
+    "BUNA BEDLY": "Bedele",
+    "CENTI": "Bonga",
+    "CENTIRAL ETHI": "Bonga",
+    "CENTRAL GONDER": "Gondar",
+    "CENTRAL TIGRAI": "Axum",
+    "CENTRAL TIGRAY": "Axum",
+    "DUBT": "Semera",
+    "E/SHWA": "Adama",
+    "E/WOLGA": "Nekemte",
+    "EAST GOJAM": "Debre Markos",
+    "EASTERN TIGRAY": "Adigrat",
+    "FAFAN": "Jijiga",
+    "FAFEM": "Jijiga",
+    "FANTI RASU": "Teru",
+    "FINFINE ZURIA": "Addis Ababa",
+    "GABBI RASU": "Awash",
+    "GAMO GOFA": "Arba Minch",
+    "GOFA": "Sawla",
+    "GURAGE": "Welkite",
+    "HADIYA": "Hosaena",
+    "HARER": "Harar",
+    "HARI RASU": "Yallo",
+    "HARO GUDERU": "Shambu",
+    "HAWI GUDERU": "Shambu",
+    "HORO GUDURU": "Shambu",
+    "HUMERA": "Humera",
+    "ILUBABOR": "Metu",
+    "JARAR": "Degehabur",
+    "JIMMA": "Jimma",
+    "JIMA": "Jimma",
+    "KALBATI RASU": "Semera",
+    "KEFA & KONTA": "Bonga",
+    "KEFFA": "Bonga",
+    "KELEM WELLEGA": "Dembidolo",
+    "KIBLATI RASU": "Semera",
+    "KORAHEY": "Kebri Dehar",
+    "LIBEN": "Filtu",
+    "MEKELE": "Mekelle",
+    "METEKEL": "Gilgel Beles",
+    "MITSEBRI": "May Tsebri",
+    "NORTH GONDER": "Gondar",
+    "NORTH WESTERN TIGRAI": "Shire",
+    "NORTH WOLLO": "Woldiya",
+    "OMO KURAZ": "Kangaton",
+    "OROMIA": "Kemise",
+    "RAYA": "Maychew",
+    "S/SHWA": "Batu",
+    "S/WOLLO": "Dessie",
+    "SHAPEL": "Gode",
+    "SHEKA": "Masha",
+    "SHKA": "Masha",
+    "SHINILE": "Shinile",
+    "SIDAMA": "Hawassa",
+    "SILTIY": "Worabe",
+    "SITI": "Shinile",
+    "SOUTH GONDER": "Debre Tabor",
+    "SOUTH OMO": "Jinka",
+    "SOUTH TEGERAYE": "Maychew",
+    "SOUTH WEST SHEWA": "Waliso",
+    "SOUTH WEST TIGRAY": "May Tsebri",
+    "SOUTH WOLLO": "Dessie",
+    "W/ARISI": "Shashamane",
+    "W/ARSI": "Shashamane",
+    "W/GUJI": "Bule Hora",
+    "W/HARER": "Chiro",
+    "W/SHWA": "Ambo",
+    "W/TEGRAYE": "Shire",
+    "W/WOLGA": "Gimbi",
+    "WAG HEMERA": "Sekota",
+    "WEAST WOLEGA": "Gimbi",
+    "WEST GOJAM": "Finote Selam",
+    "WEST GONDER": "Metema",
+    "WOLAYTA": "Sodo",
+    "WORETA": "Woreta",
+    "YANGUDI RASU": "Weranso",
+    "ZONE 1": "Asayita",
+    "ZONE 2": "Semera",
+    "ZONE 3": "Awash",
+    "ZONE 14": "Addis Ababa",
 }
 
 WOREDA_PRIORITY_NAMES: Dict[str, List[str]] = {}
+
+RAW_WOREDA_ADMIN_CENTER_OVERRIDES: Dict[str, str] = {}
 
 REGION_ALIAS_CANDIDATES: Dict[str, List[str]] = {
     "Cental": ["Addis Ababa, Ethiopia", "Addise Ababa, Ethiopia"],
@@ -137,6 +223,25 @@ def normalize_key(value: str) -> str:
 def to_title_words(value: str) -> str:
     words = re.split(r"[\s/,-]+", value)
     return " ".join(word.capitalize() for word in words if word)
+
+
+ZONE_ADMIN_CENTER_OVERRIDES: Dict[str, str] = {
+    normalize_key(key): value
+    for key, value in RAW_ZONE_ADMIN_CENTER_OVERRIDES.items()
+}
+
+for override_key, center in ZONE_ADMIN_CENTER_OVERRIDES.items():
+    ZONE_PRIORITY_NAMES[override_key] = [f"{center}, Ethiopia", center]
+
+PLACE_CENTER_KEYWORDS: Tuple[str, ...] = ("capital", "center", "town", "city", "head")
+
+WOREDA_ADMIN_CENTER_OVERRIDES: Dict[str, str] = {
+    normalize_key(key): value
+    for key, value in RAW_WOREDA_ADMIN_CENTER_OVERRIDES.items()
+}
+
+for override_key, center in WOREDA_ADMIN_CENTER_OVERRIDES.items():
+    WOREDA_PRIORITY_NAMES[override_key] = [f"{center}, Ethiopia", center]
 
 
 def build_variants(label: str) -> List[str]:
@@ -231,7 +336,7 @@ def ordered_region(entry: dict) -> dict:
 
 def ordered_zone(entry: dict) -> dict:
     ordered: dict = {}
-    for key in ["legacy_id", "name", "region_legacy_id", "comment", "status", "latitude", "longitude"]:
+    for key in ["legacy_id", "name", "region_legacy_id", "comment", "administrative_center", "status", "latitude", "longitude"]:
         if key in entry:
             ordered[key] = entry[key]
     for key, value in entry.items():
@@ -242,7 +347,7 @@ def ordered_zone(entry: dict) -> dict:
 
 def ordered_woreda(entry: dict) -> dict:
     ordered: dict = {}
-    for key in ["legacy_id", "name", "zone_legacy_id", "comment", "status", "latitude", "longitude"]:
+    for key in ["legacy_id", "name", "zone_legacy_id", "comment", "administrative_center", "status", "latitude", "longitude"]:
         if key in entry:
             ordered[key] = entry[key]
     for key, value in entry.items():
@@ -295,6 +400,227 @@ def average_coords(points: Iterable[Tuple[float, float]]) -> Optional[Tuple[floa
         return None
     return sum(latitudes) / len(latitudes), sum(longitudes) / len(longitudes)
 
+def squared_distance(origin: Tuple[float, float], target: Tuple[float, float]) -> float:
+    return (origin[0] - target[0]) ** 2 + (origin[1] - target[1]) ** 2
+
+
+def apply_zone_admin_overrides(zones: List[dict]) -> int:
+    applied = 0
+    for entry in zones:
+        name = format_name(entry.get("name"))
+        if not name:
+            continue
+        override = ZONE_ADMIN_CENTER_OVERRIDES.get(normalize_key(name))
+        if override is None:
+            continue
+        if entry.get("administrative_center") == override:
+            continue
+        entry["administrative_center"] = override
+        applied += 1
+    return applied
+
+
+def apply_woreda_admin_overrides(woredas: List[dict]) -> int:
+    applied = 0
+    for entry in woredas:
+        name = format_name(entry.get("name"))
+        if not name:
+            continue
+        override = WOREDA_ADMIN_CENTER_OVERRIDES.get(normalize_key(name))
+        if override is None:
+            continue
+        if entry.get("administrative_center") == override:
+            continue
+        entry["administrative_center"] = override
+        applied += 1
+    return applied
+
+
+def assign_zone_administrative_centers(
+    zones: List[dict],
+    woredas: List[dict],
+    places: List[dict],
+) -> Counter:
+    woreda_to_zone = {
+        int(woreda.get("legacy_id", 0)): int(woreda.get("zone_legacy_id", 0))
+        for woreda in woredas
+        if woreda.get("zone_legacy_id") is not None
+    }
+
+    zone_places: Dict[int, List[dict]] = defaultdict(list)
+    for place in places:
+        woreda_legacy_id = int(place.get("woreda_legacy_id", 0))
+        zone_legacy_id = woreda_to_zone.get(woreda_legacy_id)
+        if not zone_legacy_id:
+            continue
+        lat = place.get("latitude")
+        lon = place.get("longitude")
+        if lat is None or lon is None:
+            continue
+        zone_places[zone_legacy_id].append(place)
+
+    stats: Counter = Counter()
+
+    for zone in zones:
+        name = format_name(zone.get("name"))
+        if not name:
+            continue
+        if format_name(zone.get("administrative_center")):
+            continue
+
+        legacy_id = int(zone.get("legacy_id", 0))
+        candidates = zone_places.get(legacy_id, [])
+        if not candidates:
+            continue
+
+        normalized_zone_name = normalize_key(name)
+
+        # Exact place name match to the zone name.
+        for place in candidates:
+            place_name = format_name(place.get("name"))
+            if place_name and normalize_key(place_name) == normalized_zone_name:
+                zone["administrative_center"] = place_name
+                stats["direct"] += 1
+                break
+
+        if format_name(zone.get("administrative_center")):
+            continue
+
+        # Look for hints in the place comment.
+        for place in candidates:
+            comment = place.get("comment")
+            if not comment:
+                continue
+            lowered = comment.lower()
+            if any(keyword in lowered for keyword in PLACE_CENTER_KEYWORDS):
+                place_name = format_name(place.get("name"))
+                if place_name:
+                    zone["administrative_center"] = place_name
+                    stats["comment"] += 1
+                    break
+
+        if format_name(zone.get("administrative_center")):
+            continue
+
+        zone_lat = zone.get("latitude")
+        zone_lon = zone.get("longitude")
+        if zone_lat is None or zone_lon is None:
+            continue
+
+        zone_point = (float(zone_lat), float(zone_lon))
+        best_place: Optional[dict] = None
+        best_distance: Optional[float] = None
+
+        for place in candidates:
+            place_lat = place.get("latitude")
+            place_lon = place.get("longitude")
+            if place_lat is None or place_lon is None:
+                continue
+            target_point = (float(place_lat), float(place_lon))
+            distance = squared_distance(zone_point, target_point)
+            if best_distance is None or distance < best_distance:
+                best_distance = distance
+                best_place = place
+
+        if best_place is None:
+            continue
+
+        place_name = format_name(best_place.get("name"))
+        if not place_name:
+            continue
+
+        zone["administrative_center"] = place_name
+        stats["proximity"] += 1
+
+    stats["total"] = stats.get("direct", 0) + stats.get("comment", 0) + stats.get("proximity", 0)
+    return stats
+
+
+def assign_woreda_administrative_centers(woredas: List[dict], places: List[dict]) -> Counter:
+    places_by_woreda: Dict[int, List[dict]] = defaultdict(list)
+    for place in places:
+        lat = place.get("latitude")
+        lon = place.get("longitude")
+        if lat is None or lon is None:
+            continue
+        woreda_legacy_id = int(place.get("woreda_legacy_id", 0))
+        if woreda_legacy_id:
+            places_by_woreda[woreda_legacy_id].append(place)
+
+    stats: Counter = Counter()
+
+    for woreda in woredas:
+        name = format_name(woreda.get("name"))
+        if not name:
+            continue
+        if format_name(woreda.get("administrative_center")):
+            continue
+
+        legacy_id = int(woreda.get("legacy_id", 0))
+        candidates = places_by_woreda.get(legacy_id, [])
+        if not candidates:
+            continue
+
+        normalized_woreda_name = normalize_key(name)
+
+        for place in candidates:
+            place_name = format_name(place.get("name"))
+            if place_name and normalize_key(place_name) == normalized_woreda_name:
+                woreda["administrative_center"] = place_name
+                stats["direct"] += 1
+                break
+
+        if format_name(woreda.get("administrative_center")):
+            continue
+
+        for place in candidates:
+            comment = place.get("comment")
+            if not comment:
+                continue
+            lowered = comment.lower()
+            if any(keyword in lowered for keyword in PLACE_CENTER_KEYWORDS):
+                place_name = format_name(place.get("name"))
+                if place_name:
+                    woreda["administrative_center"] = place_name
+                    stats["comment"] += 1
+                    break
+
+        if format_name(woreda.get("administrative_center")):
+            continue
+
+        woreda_lat = woreda.get("latitude")
+        woreda_lon = woreda.get("longitude")
+        if woreda_lat is None or woreda_lon is None:
+            continue
+
+        woreda_point = (float(woreda_lat), float(woreda_lon))
+        best_place: Optional[dict] = None
+        best_distance: Optional[float] = None
+
+        for place in candidates:
+            place_lat = place.get("latitude")
+            place_lon = place.get("longitude")
+            if place_lat is None or place_lon is None:
+                continue
+            target_point = (float(place_lat), float(place_lon))
+            distance = squared_distance(woreda_point, target_point)
+            if best_distance is None or distance < best_distance:
+                best_distance = distance
+                best_place = place
+
+        if best_place is None:
+            continue
+
+        place_name = format_name(best_place.get("name"))
+        if not place_name:
+            continue
+
+        woreda["administrative_center"] = place_name
+        stats["proximity"] += 1
+
+    stats["total"] = stats.get("direct", 0) + stats.get("comment", 0) + stats.get("proximity", 0)
+    return stats
+
 
 def find_coordinates(candidates: List[Tuple[str, str]], lookup: Dict[str, Tuple[float, float]]):
     checked: set[str] = set()
@@ -335,6 +661,10 @@ def build_zone_candidates(entry: dict, regions_by_legacy: Dict[int, dict]) -> Li
     region_name = format_name(region_entry.get("name")) if region_entry else None
     candidates: List[Tuple[str, str]] = []
 
+    admin_center = format_name(entry.get("administrative_center"))
+    if admin_center:
+        candidates.append((admin_center, "admin-center"))
+
     if name:
         normalized = normalize_key(name)
         for preferred in ZONE_PRIORITY_NAMES.get(normalized, []):
@@ -362,6 +692,10 @@ def build_woreda_candidates(entry: dict, zones_by_legacy: Dict[int, dict], regio
     region_name = format_name(region_entry.get("name")) if region_entry else None
 
     candidates: List[Tuple[str, str]] = []
+
+    admin_center = format_name(entry.get("administrative_center"))
+    if admin_center:
+        candidates.append((admin_center, "admin-center"))
 
     if name:
         normalized = normalize_key(name)
@@ -661,6 +995,9 @@ def main() -> None:
     zones_by_legacy = {int(item.get("legacy_id", 0)): item for item in zones}
     woredas_by_legacy = {int(item.get("legacy_id", 0)): item for item in woredas}
 
+    zone_overrides_applied = apply_zone_admin_overrides(zones)
+    woreda_overrides_applied = apply_woreda_admin_overrides(woredas)
+
     region_coords, region_stats, region_missing = enrich_regions(regions, lookup)
     zone_coords, zone_stats, zone_missing = enrich_zones(zones, regions_by_legacy, lookup)
     woreda_coords, woreda_stats, woreda_missing = enrich_woredas(woredas, zones_by_legacy, regions_by_legacy, lookup)
@@ -691,6 +1028,9 @@ def main() -> None:
             if item.get("latitude") is not None and item.get("longitude") is not None
         }
 
+    zone_admin_stats = assign_zone_administrative_centers(zones, woredas, places)
+    woreda_admin_stats = assign_woreda_administrative_centers(woredas, places)
+
     save_json(REGIONS_PATH, [ordered_region(entry) for entry in regions])
     save_json(ZONES_PATH, [ordered_zone(entry) for entry in zones])
     save_json(WOREDAS_PATH, [ordered_woreda(entry) for entry in woredas])
@@ -707,6 +1047,13 @@ def main() -> None:
         print(f"  {level}: {count}")
     if zone_missing:
         print(f"  missing: {len(zone_missing)}")
+    if zone_overrides_applied:
+        print(f"  admin overrides: {zone_overrides_applied}")
+    if zone_admin_stats.get("total"):
+        print("  admin inferred:")
+        for key in ("direct", "comment", "proximity"):
+            if zone_admin_stats.get(key):
+                print(f"    {key}: {zone_admin_stats[key]}")
 
     print("Woreda matches:")
     for level, count in woreda_stats.most_common():
@@ -715,6 +1062,13 @@ def main() -> None:
         print(f"  missing: {len(woreda_missing)}")
     if woreda_updates:
         print(f"  updated from places: {woreda_updates}")
+    if woreda_overrides_applied:
+        print(f"  admin overrides: {woreda_overrides_applied}")
+    if woreda_admin_stats.get("total"):
+        print("  admin inferred:")
+        for key in ("direct", "comment", "proximity"):
+            if woreda_admin_stats.get(key):
+                print(f"    {key}: {woreda_admin_stats[key]}")
 
     print("Place matches:")
     for level, count in place_stats.most_common():

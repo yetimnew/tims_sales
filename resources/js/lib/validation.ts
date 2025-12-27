@@ -73,8 +73,10 @@ export const driverValidation = {
   mobile: (value: string) => {
     if (!value) return ''
     if (value.length > 20) return 'Mobile number cannot exceed 20 characters'
-    const phoneRegex = /^[0-9\s\-\+\(\)]+$/
-    if (!phoneRegex.test(value)) return 'Invalid phone number format'
+    const ethiopianCarrierPattern = /^(?:\+251|251|0)(?:9\d{8}|7\d{8})$/
+    if (!ethiopianCarrierPattern.test(value)) {
+      return 'Mobile number must be a valid Ethiopian Ethio Telecom or Safaricom number'
+    }
     return ''
   },
 
@@ -91,8 +93,11 @@ export const driverValidation = {
     if (!value) return ''
     const date = new Date(value)
     if (Number.isNaN(date.getTime())) return 'Birth date must be a valid date'
-    const todayStr = new Date().toISOString().slice(0, 10)
-    if (value >= todayStr) return 'Birth date must be before today'
+    const adultCutoff = new Date()
+    adultCutoff.setHours(0, 0, 0, 0)
+    adultCutoff.setFullYear(adultCutoff.getFullYear() - 18)
+    const adultCutoffStr = adultCutoff.toISOString().slice(0, 10)
+    if (value > adultCutoffStr) return 'Birth date must show the driver is at least 18 years old'
     if (value <= '1900-01-01') return 'Birth date must be after January 1, 1900'
     return ''
   },
@@ -825,6 +830,20 @@ export const woredaValidation = {
     if (value.length > 2000) return 'Road quality notes cannot exceed 2,000 characters'
     return ''
   },
+
+    boundary_geojson: (value: string) => {
+      if (!value) return ''
+      try {
+        const parsed = JSON.parse(value)
+        if (parsed === null || typeof parsed !== 'object') {
+          return 'Boundary GeoJSON must be a valid GeoJSON object'
+        }
+      } catch (error) {
+        return 'Boundary GeoJSON must be valid JSON'
+      }
+
+      return ''
+    },
 }
 
 // ==================== PLACE VALIDATION ====================
@@ -1300,6 +1319,7 @@ export function validatePlace(data: any): ValidationErrors {
   if (data.description !== undefined) errors.description = placeValidation.description(data.description)
   if (data.infrastructure_notes !== undefined) errors.infrastructure_notes = placeValidation.infrastructure_notes(data.infrastructure_notes)
   if (data.road_quality_notes !== undefined) errors.road_quality_notes = placeValidation.road_quality_notes(data.road_quality_notes)
+    if (data.boundary_geojson !== undefined) errors.boundary_geojson = placeValidation.boundary_geojson(data.boundary_geojson)
   Object.keys(errors).forEach(key => { if (!errors[key]) delete errors[key] })
   return errors
 }

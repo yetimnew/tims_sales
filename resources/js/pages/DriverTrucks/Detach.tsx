@@ -331,6 +331,7 @@ export default function Detach({ driverTruck }: Props) {
                                             fromDate={minDetachmentDate}
                                             toDate={maxDetachmentDate}
                                             placeholder="Select detachment date"
+                                            showClearButton={false}
                                             className={cn(
                                                 'h-11 w-full justify-start rounded-md border border-slate-300 bg-white text-left hover:border-slate-400 focus-visible:border-blue-500 focus-visible:ring-blue-500/20 dark:border-slate-600 dark:bg-slate-900/60 dark:hover:border-slate-500',
                                                 errors.date_detach

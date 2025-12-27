@@ -238,7 +238,14 @@ class PlaceController extends Controller
                 'description' => 'nullable|string|max:1000',
                 'infrastructure_notes' => 'nullable|string|max:2000',
                 'road_quality_notes' => 'nullable|string|max:2000',
+                'boundary_geojson' => 'nullable|json',
             ]);
+
+            if ($request->has('boundary_geojson')) {
+                $validated['boundary_geojson'] = $request->filled('boundary_geojson')
+                    ? json_decode((string) $request->string('boundary_geojson')->toString(), true)
+                    : null;
+            }
 
             $place = Place::create($validated);
 
@@ -271,7 +278,38 @@ class PlaceController extends Controller
      */
     public function show(Place $place): Response
     {
-        $place->load(['woreda.zone.region']);
+        $place->load([
+            'woreda' => function ($query) {
+                $query->select([
+                    'id',
+                    'name',
+                    'status',
+                    'boundary_geojson',
+                    'latitude',
+                    'longitude',
+                    'zone_id',
+                ])->with([
+                    'zone' => function ($zoneQuery) {
+                        $zoneQuery->select([
+                            'id',
+                            'name',
+                            'status',
+                            'boundary_geojson',
+                            'region_id',
+                        ])->with([
+                            'region' => static function ($regionQuery) {
+                                $regionQuery->select([
+                                    'id',
+                                    'name',
+                                    'status',
+                                    'boundary_geojson',
+                                ]);
+                            },
+                        ]);
+                    },
+                ]);
+            },
+        ]);
 
         $activityLogs = Activity::forSubject($place)
             ->with('causer')
@@ -325,7 +363,14 @@ class PlaceController extends Controller
                 'description' => 'nullable|string|max:1000',
                 'infrastructure_notes' => 'nullable|string|max:2000',
                 'road_quality_notes' => 'nullable|string|max:2000',
+                'boundary_geojson' => 'nullable|json',
             ]);
+
+            if ($request->has('boundary_geojson')) {
+                $validated['boundary_geojson'] = $request->filled('boundary_geojson')
+                    ? json_decode((string) $request->string('boundary_geojson')->toString(), true)
+                    : null;
+            }
 
             $original = $place->getOriginal();
             $place->fill($validated);

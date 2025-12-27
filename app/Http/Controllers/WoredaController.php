@@ -122,7 +122,14 @@ class WoredaController extends Controller
                 'accessibility_score' => 'nullable|numeric|min:0|max:100',
                 'infrastructure_notes' => 'nullable|string|max:2000',
                 'road_quality_notes' => 'nullable|string|max:2000',
+                'boundary_geojson' => 'nullable|json',
             ]);
+
+            if ($request->has('boundary_geojson')) {
+                $validated['boundary_geojson'] = $request->filled('boundary_geojson')
+                    ? json_decode((string) $request->string('boundary_geojson')->toString(), true)
+                    : null;
+            }
 
             $woreda = Woreda::create($validated);
 
@@ -159,7 +166,11 @@ class WoredaController extends Controller
      */
     public function show(Woreda $woreda): Response
     {
-        $woreda->load(['zone', 'places']);
+        $woreda->load([
+            'zone:id,name,status,boundary_geojson,region_id',
+            'zone.region:id,name,status,boundary_geojson',
+            'places:id,woreda_id,name,status,is_logistics_hub',
+        ]);
 
         $activityLogs = Activity::forSubject($woreda)
             ->with('causer')
@@ -214,7 +225,14 @@ class WoredaController extends Controller
                 'accessibility_score' => 'nullable|numeric|min:0|max:100',
                 'infrastructure_notes' => 'nullable|string|max:2000',
                 'road_quality_notes' => 'nullable|string|max:2000',
+                'boundary_geojson' => 'nullable|json',
             ]);
+
+            if ($request->has('boundary_geojson')) {
+                $validated['boundary_geojson'] = $request->filled('boundary_geojson')
+                    ? json_decode((string) $request->string('boundary_geojson')->toString(), true)
+                    : null;
+            }
 
             $original = $woreda->getOriginal();
             $woreda->fill($validated);

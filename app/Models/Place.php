@@ -8,12 +8,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class Place extends Model
 {
-    use HasFactory, SoftDeletes, LogsActivity, ClearsCacheOnModelEvents;
+    use ClearsCacheOnModelEvents, HasFactory, LogsActivity, SoftDeletes;
 
     protected $fillable = [
         'name',
@@ -29,6 +29,7 @@ class Place extends Model
         'description',
         'infrastructure_notes',
         'road_quality_notes',
+        'boundary_geojson',
     ];
 
     protected $casts = [
@@ -39,6 +40,7 @@ class Place extends Model
         'is_logistics_hub' => 'boolean',
         'accessibility_score' => 'decimal:2',
         'status' => 'string',
+        'boundary_geojson' => 'array',
     ];
 
     /**
@@ -114,7 +116,7 @@ class Place extends Model
     public function scopeWithinBounds($query, $lat1, $lon1, $lat2, $lon2)
     {
         return $query->whereBetween('latitude', [min($lat1, $lat2), max($lat1, $lat2)])
-                    ->whereBetween('longitude', [min($lon1, $lon2), max($lon1, $lon2)]);
+            ->whereBetween('longitude', [min($lon1, $lon2), max($lon1, $lon2)]);
     }
 
     /**
@@ -136,13 +138,11 @@ class Place extends Model
                 'accessibility_score',
                 'description',
                 'infrastructure_notes',
-                'road_quality_notes'
+                'road_quality_notes',
+                'boundary_geojson',
             ])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs()
             ->useLogName('places');
     }
 }
-
-
-

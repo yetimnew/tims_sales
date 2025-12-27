@@ -435,6 +435,7 @@ export default function DriverTrucksCreate({ trucks, drivers, error }: Props) {
                             fromDate={minDate}
                             toDate={maxDate}
                             disabledDays={[{ before: minDate }, { after: maxDate }]}
+                            showClearButton={false}
                             className={cn(
                                 'w-full justify-start text-left h-11 border-slate-300 hover:border-slate-400 focus-visible:border-blue-500 focus-visible:ring-blue-500/20 dark:border-slate-600 dark:hover:border-slate-500',
                                 getFieldError('date_recived') ? 'border-red-500 focus-visible:border-red-500' : undefined,

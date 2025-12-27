@@ -57,6 +57,29 @@ class WoredaControllerTest extends TestCase
     }
 
     #[Test]
+    public function it_saves_coordinates_when_woreda_is_created(): void
+    {
+        $zone = Zone::factory()->create();
+
+        $response = $this->actingAs($this->user)
+            ->post(route('woredas.store'), [
+                'name' => 'Coordinate Woreda',
+                'code' => 'CW-01',
+                'zone_id' => $zone->id,
+                'status' => 'active',
+                'latitude' => '6.543210',
+                'longitude' => '37.123456',
+            ]);
+
+        $response->assertRedirect(route('woredas.index'));
+
+        $woreda = Woreda::query()->where('code', 'CW-01')->firstOrFail();
+
+        self::assertEqualsWithDelta(6.54321, (float) $woreda->latitude, 0.00001);
+        self::assertEqualsWithDelta(37.123456, (float) $woreda->longitude, 0.000001);
+    }
+
+    #[Test]
     public function it_dispatches_event_when_woreda_is_updated(): void
     {
         Event::fake([
@@ -82,6 +105,32 @@ class WoredaControllerTest extends TestCase
         Event::assertDispatched(WoredaUpdated::class, function (WoredaUpdated $event): bool {
             return $event->changes['administrative_center']['new'] === 'New Center';
         });
+    }
+
+    #[Test]
+    public function it_updates_coordinates_when_woreda_is_updated(): void
+    {
+        $woreda = Woreda::factory()->create([
+            'latitude' => 5.123456,
+            'longitude' => 36.654321,
+        ]);
+
+        $response = $this->actingAs($this->user)
+            ->put(route('woredas.update', $woreda), [
+                'name' => $woreda->name,
+                'code' => $woreda->code,
+                'zone_id' => $woreda->zone_id,
+                'status' => $woreda->status,
+                'latitude' => '9.876543',
+                'longitude' => '35.456789',
+            ]);
+
+        $response->assertRedirect(route('woredas.index'));
+
+        $woreda->refresh();
+
+        self::assertEqualsWithDelta(9.876543, (float) $woreda->latitude, 0.000001);
+        self::assertEqualsWithDelta(35.456789, (float) $woreda->longitude, 0.000001);
     }
 
     #[Test]

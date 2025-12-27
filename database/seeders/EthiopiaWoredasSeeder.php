@@ -72,6 +72,7 @@ class EthiopiaWoredasSeeder extends Seeder
             $status = (int) ($woreda['status'] ?? 1) === 1 ? 'active' : 'inactive';
             $latitude = $woreda['latitude'] ?? null;
             $longitude = $woreda['longitude'] ?? null;
+            $administrativeCenter = $woreda['administrative_center'] ?? null;
 
             $payload = array_merge($defaults, [
                 'name' => (string) $name,
@@ -81,6 +82,9 @@ class EthiopiaWoredasSeeder extends Seeder
                 'status' => $status,
                 'latitude' => $latitude === null ? null : (float) $latitude,
                 'longitude' => $longitude === null ? null : (float) $longitude,
+                'administrative_center' => $administrativeCenter === null
+                    ? null
+                    : (string) Str::of($administrativeCenter)->trim()->squish(),
             ]);
 
             Woreda::query()->updateOrCreate([

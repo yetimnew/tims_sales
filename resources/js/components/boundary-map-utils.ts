@@ -23,7 +23,7 @@ export type GeoJsonInput =
   | null
   | undefined
 
-export type BoundaryLevel = 'region' | 'zone' | 'woreda'
+export type BoundaryLevel = 'region' | 'zone' | 'woreda' | 'place'
 
 export type NormalizedFeature = GeoJsonFeature & {
   properties: {

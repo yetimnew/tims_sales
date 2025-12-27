@@ -85,6 +85,7 @@ class EthiopiaZonesSeeder extends Seeder
             $status = (int) ($zone['status'] ?? 1) === 1 ? 'active' : 'inactive';
             $latitude = $zone['latitude'] ?? null;
             $longitude = $zone['longitude'] ?? null;
+            $administrativeCenter = $zone['administrative_center'] ?? null;
 
             $payload = array_merge($defaults, [
                 'name' => (string) $name,
@@ -94,6 +95,9 @@ class EthiopiaZonesSeeder extends Seeder
                 'status' => $status,
                 'latitude' => $latitude === null ? null : (float) $latitude,
                 'longitude' => $longitude === null ? null : (float) $longitude,
+                'administrative_center' => $administrativeCenter === null
+                    ? null
+                    : (string) Str::of($administrativeCenter)->trim()->squish(),
             ]);
 
             Zone::query()->updateOrCreate([

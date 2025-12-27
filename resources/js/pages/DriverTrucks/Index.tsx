@@ -462,9 +462,6 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
                       <TableCell>
                           <div className="flex flex-col items-start gap-1">
                               {getAttachmentBadge(assignment.is_attached)}
-                              <span className="text-xs text-muted-foreground">
-                                  {assignment.is_attached ? 'Attached' : 'Detached'}
-                              </span>
                               {assignment.date_detach && (
                                   <span className="text-xs text-muted-foreground">
                                       Detached: {formatDate(assignment.date_detach)}
@@ -559,9 +556,6 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
                                 </span>
                             </div>
                         )}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                        Status: {item.assignment.is_attached ? 'Attached' : 'Detached'}
                     </div>
                 </div>
             )}

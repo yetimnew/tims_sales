@@ -25,7 +25,7 @@ class DriverFactory extends Factory
             'woreda' => $this->faker->citySuffix(),
             'kebele' => $this->faker->numerify('##'),
             'housenumber' => $this->faker->numerify('###'),
-            'mobile' => $this->faker->phoneNumber(),
+            'mobile' => $this->faker->randomElement(['+2519', '+2517', '09', '07', '2519', '2517']).$this->faker->numerify('########'),
             'hireddate' => $this->faker->dateTimeBetween('-10 years', 'now'),
             'status' => $this->faker->randomElement(['active', 'inactive', 'suspended']),
         ];

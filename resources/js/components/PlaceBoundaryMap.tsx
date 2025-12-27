@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from 'react'
-import { MapContainer, TileLayer, GeoJSON, useMap, CircleMarker, Popup } from 'react-leaflet'
+import { MapContainer, TileLayer, GeoJSON, CircleMarker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import {
@@ -8,67 +8,75 @@ import {
   parseCoordinate,
   type GeoJsonInput,
   type NormalizedFeature,
-  type BoundaryLevel,
 } from '@/components/boundary-map-utils'
 
-interface RegionBoundaryInfo {
+interface RegionSummary {
   name: string
+  status?: 'active' | 'inactive'
+  boundary_geojson?: GeoJsonInput
+}
+
+interface ZoneSummary {
+  id: number
+  name: string
+  status?: 'active' | 'inactive'
+  boundary_geojson?: GeoJsonInput
+  region?: RegionSummary | null
+}
+
+interface WoredaSummary {
+  id: number
+  name: string
+  status?: 'active' | 'inactive'
+  boundary_geojson?: GeoJsonInput
+  latitude?: number | string | null
+  longitude?: number | string | null
+  zone?: ZoneSummary | null
+}
+
+interface PlaceDetail {
+  id: number
+  name: string
+  status?: 'active' | 'inactive'
   boundary_geojson?: GeoJsonInput
   latitude?: number | string | null
   longitude?: number | string | null
 }
 
-interface WoredaBoundaryInfo {
-  id: number
-  name: string
-  status?: 'active' | 'inactive'
-  boundary_geojson?: GeoJsonInput
-}
-
-interface ZoneBoundaryInfo {
-  id: number
-  name: string
-  status?: 'active' | 'inactive'
-  boundary_geojson?: GeoJsonInput
-  woredas?: WoredaBoundaryInfo[]
-}
-
-interface RegionBoundaryMapProps {
-  region: RegionBoundaryInfo
-  zones: ZoneBoundaryInfo[]
+interface PlaceBoundaryMapProps {
+  place: PlaceDetail
+  woreda?: WoredaSummary | null
   height?: string
 }
 
-const levelStyles: Record<BoundaryLevel, L.PathOptions> = {
+const levelStyles: Record<'region' | 'zone' | 'woreda' | 'place', L.PathOptions> = {
   region: {
-    color: '#2563eb',
-    weight: 2,
-    fillColor: '#60a5fa',
-    fillOpacity: 0.08,
+    color: '#1f2937',
+    dashArray: '2 6',
+    weight: 1.25,
+    fillColor: '#bfdbfe',
+    fillOpacity: 0.03,
   },
   zone: {
     color: '#16a34a',
-    dashArray: '6 4',
-    weight: 1.5,
+    dashArray: '4 6',
+    weight: 1.25,
     fillColor: '#bbf7d0',
     fillOpacity: 0.05,
   },
   woreda: {
     color: '#f97316',
-    dashArray: '4 6',
-    weight: 1,
+    weight: 1.5,
     fillColor: '#fed7aa',
-    fillOpacity: 0.04,
+    fillOpacity: 0.08,
   },
   place: {
     color: '#c026d3',
     weight: 2,
-    dashArray: '2 4',
     fillColor: '#f5d0fe',
-    fillOpacity: 0.12,
+    fillOpacity: 0.14,
   },
 }
-
 
 function MapBounds({ features }: { features: NormalizedFeature[] }) {
   const map = useMap()
@@ -97,46 +105,52 @@ function MapCenter({ coordinate }: { coordinate: [number, number] | null }) {
       return
     }
 
-    map.setView(coordinate, Math.max(map.getZoom(), 7))
+    map.setView(coordinate, Math.max(map.getZoom(), 12))
   }, [coordinate, map])
 
   return null
 }
 
-export function RegionBoundaryMap({ region, zones, height = '420px' }: RegionBoundaryMapProps) {
+export function PlaceBoundaryMap({ place, woreda, height = '320px' }: PlaceBoundaryMapProps) {
   const features = useMemo(() => {
     const collection: NormalizedFeature[] = []
 
+    if (woreda?.zone?.region?.boundary_geojson) {
+      collection.push(
+        ...extractFeatures(woreda.zone.region.boundary_geojson, 'region', woreda.zone.region.name, undefined, woreda.zone.region.status)
+      )
+    }
+
+    if (woreda?.zone?.boundary_geojson) {
+      collection.push(
+        ...extractFeatures(woreda.zone.boundary_geojson, 'zone', woreda.zone.name, woreda.zone.id, woreda.zone.status)
+      )
+    }
+
+    if (woreda?.boundary_geojson) {
+      collection.push(
+        ...extractFeatures(woreda.boundary_geojson, 'woreda', woreda.name, woreda.id, woreda.status)
+      )
+    }
+
     collection.push(
-      ...extractFeatures(region.boundary_geojson, 'region', region.name)
+      ...extractFeatures(place.boundary_geojson, 'place', place.name, place.id, place.status)
     )
 
-    zones.forEach(zone => {
-      collection.push(
-        ...extractFeatures(zone.boundary_geojson, 'zone', zone.name, zone.id, zone.status)
-      )
-
-      zone.woredas?.forEach(woreda => {
-        collection.push(
-          ...extractFeatures(woreda.boundary_geojson, 'woreda', woreda.name, woreda.id, woreda.status)
-        )
-      })
-    })
-
     return collection
-  }, [region.boundary_geojson, region.name, zones])
+  }, [place.boundary_geojson, place.id, place.name, place.status, woreda?.boundary_geojson, woreda?.id, woreda?.name, woreda?.status, woreda?.zone?.boundary_geojson, woreda?.zone?.id, woreda?.zone?.name, woreda?.zone?.status, woreda?.zone?.region?.boundary_geojson, woreda?.zone?.region?.name, woreda?.zone?.region?.status])
 
   const hasBoundaries = features.length > 0
-  const latitude = parseCoordinate(region.latitude)
-  const longitude = parseCoordinate(region.longitude)
-  const regionCoordinate = latitude !== null && longitude !== null ? [latitude, longitude] as [number, number] : null
+  const latitude = parseCoordinate(place.latitude)
+  const longitude = parseCoordinate(place.longitude)
+  const coordinate = latitude !== null && longitude !== null ? [latitude, longitude] as [number, number] : null
 
-  if (!hasBoundaries && !regionCoordinate) {
+  if (!hasBoundaries && !coordinate) {
     return (
-      <div className="flex h-64 items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50 text-center dark:border-slate-700 dark:bg-slate-900/40">
+      <div className="flex h-56 items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50 text-center dark:border-slate-700 dark:bg-slate-900/40">
         <div>
           <p className="text-sm font-medium text-foreground">No geospatial data available</p>
-          <p className="mt-1 text-sm text-muted-foreground">Provide boundary GeoJSON or latitude/longitude to visualize the region.</p>
+          <p className="mt-1 text-sm text-muted-foreground">Provide boundary GeoJSON or latitude/longitude to visualize the place.</p>
         </div>
       </div>
     )
@@ -145,8 +159,8 @@ export function RegionBoundaryMap({ region, zones, height = '420px' }: RegionBou
   return (
     <div className="overflow-hidden rounded-lg border">
       <MapContainer
-        center={regionCoordinate ?? defaultCenter}
-        zoom={hasBoundaries ? 6 : 8}
+        center={coordinate ?? defaultCenter}
+        zoom={hasBoundaries ? 11 : 13}
         style={{ height, width: '100%' }}
       >
         <TileLayer
@@ -155,22 +169,23 @@ export function RegionBoundaryMap({ region, zones, height = '420px' }: RegionBou
         />
 
         {hasBoundaries && <MapBounds features={features} />}
-        {!hasBoundaries && regionCoordinate && <MapCenter coordinate={regionCoordinate} />}
+        {!hasBoundaries && coordinate && <MapCenter coordinate={coordinate} />}
 
         {features.map((feature, index) => (
           <GeoJSON
             key={`${feature.properties.level}-${feature.properties.sourceId ?? feature.properties.name}-${index}`}
             data={feature as any}
-            style={() => levelStyles[feature.properties.level]}
+            style={() => levelStyles[feature.properties.level as keyof typeof levelStyles]}
             onEachFeature={(geoFeature, layer) => {
               const properties = geoFeature.properties as NormalizedFeature['properties'] | undefined
               const name = properties?.name ?? 'Boundary'
               const status = properties?.status ? `Status: ${properties.status}` : null
+
               layer.bindPopup(
                 [
                   `<strong>${name}</strong>`,
                   status,
-                  `Layer: ${properties?.level ?? 'region'}`,
+                  `Layer: ${properties?.level ?? 'place'}`,
                 ]
                   .filter(Boolean)
                   .join('<br />'),
@@ -179,14 +194,14 @@ export function RegionBoundaryMap({ region, zones, height = '420px' }: RegionBou
           />
         ))}
 
-        {regionCoordinate && (
+        {coordinate && (
           <CircleMarker
-            center={regionCoordinate}
+            center={coordinate}
             radius={6}
-            pathOptions={{ color: '#1d4ed8', weight: 2, fillOpacity: 0.4, fillColor: '#3b82f6' }}
+            pathOptions={{ color: '#86198f', weight: 2, fillOpacity: 0.5, fillColor: '#d946ef' }}
           >
             <Popup>
-              <strong>{region.name}</strong>
+              <strong>{place.name}</strong>
               <br />
               Lat: {latitude !== null ? latitude.toFixed(5) : 'N/A'}
               <br />

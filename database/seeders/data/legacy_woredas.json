@@ -4,6 +4,7 @@
     "name": "BALY",
     "zone_legacy_id": 5,
     "comment": "de",
+    "administrative_center": "BELY",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -13,6 +14,7 @@
     "name": "W/SHWA",
     "zone_legacy_id": 6,
     "comment": "de",
+    "administrative_center": "SEBETA/SEBETA",
     "status": 1,
     "latitude": 9.9937611,
     "longitude": 39.900869
@@ -22,6 +24,7 @@
     "name": "BORENA",
     "zone_legacy_id": 7,
     "comment": "DE",
+    "administrative_center": "ALYE/TASHO",
     "status": 1,
     "latitude": 4.892569,
     "longitude": 38.094989
@@ -40,6 +43,7 @@
     "name": "GAMBYLA",
     "zone_legacy_id": 11,
     "comment": "de",
+    "administrative_center": "CHIDA",
     "status": 1,
     "latitude": 7.8102647,
     "longitude": 34.1822172
@@ -49,6 +53,7 @@
     "name": "JIMA",
     "zone_legacy_id": 12,
     "comment": "de",
+    "administrative_center": "KOYSHA",
     "status": 1,
     "latitude": 10.1387506,
     "longitude": 37.8902217
@@ -58,6 +63,7 @@
     "name": "W/GUJI",
     "zone_legacy_id": 51,
     "comment": "de",
+    "administrative_center": "Fincc wuha",
     "status": 1,
     "latitude": 8.9901969,
     "longitude": 35.8239985
@@ -67,6 +73,7 @@
     "name": "E/HARERE",
     "zone_legacy_id": 54,
     "comment": "de",
+    "administrative_center": "HARER/HARER",
     "status": 1,
     "latitude": 9.56667,
     "longitude": 38.63333
@@ -76,6 +83,7 @@
     "name": "W/ARSI",
     "zone_legacy_id": 26,
     "comment": "de",
+    "administrative_center": "MENESIBO/WERKA",
     "status": 1,
     "latitude": 7.3533442,
     "longitude": 38.6756595
@@ -85,6 +93,7 @@
     "name": "AMARO",
     "zone_legacy_id": 17,
     "comment": "de",
+    "administrative_center": "kilo",
     "status": 1,
     "latitude": 6.36667,
     "longitude": 36.86667
@@ -94,6 +103,7 @@
     "name": "ADDISE ABABA",
     "zone_legacy_id": 58,
     "comment": null,
+    "administrative_center": "Addis Abeba",
     "status": 0,
     "latitude": 7.0736751,
     "longitude": 38.4887239
@@ -103,6 +113,7 @@
     "name": "HADEYA",
     "zone_legacy_id": 1,
     "comment": "de",
+    "administrative_center": "BONOSHA",
     "status": 1,
     "latitude": 11.5,
     "longitude": 38.5
@@ -112,6 +123,7 @@
     "name": "SIDAMA",
     "zone_legacy_id": 1,
     "comment": "DE",
+    "administrative_center": "KACHABO",
     "status": 1,
     "latitude": 6.6507504,
     "longitude": 38.4796794
@@ -130,6 +142,7 @@
     "name": "AFARE",
     "zone_legacy_id": 49,
     "comment": "DE",
+    "administrative_center": "GALAFI",
     "status": 1,
     "latitude": 11.7060147,
     "longitude": 41.0081961
@@ -139,6 +152,7 @@
     "name": "ARSI",
     "zone_legacy_id": 26,
     "comment": "DE",
+    "administrative_center": "SHASHMENE",
     "status": 1,
     "latitude": 8.0101011,
     "longitude": 39.6716774
@@ -148,6 +162,7 @@
     "name": "AMARA",
     "zone_legacy_id": 76,
     "comment": "DE",
+    "administrative_center": "QOARA/QOARA",
     "status": 1,
     "latitude": 11.5,
     "longitude": 38.5
@@ -157,6 +172,7 @@
     "name": "HAWI GUDERU",
     "zone_legacy_id": 1,
     "comment": "DE",
+    "administrative_center": "HALOGOBA",
     "status": 1,
     "latitude": 11.5,
     "longitude": 38.5
@@ -175,6 +191,7 @@
     "name": "W/HARER",
     "zone_legacy_id": 1,
     "comment": "DE",
+    "administrative_center": "WUBE",
     "status": 1,
     "latitude": 9.3118397,
     "longitude": 42.1284445
@@ -184,6 +201,7 @@
     "name": "W/WOLGA",
     "zone_legacy_id": 1,
     "comment": "DE",
+    "administrative_center": "KILTU KARA",
     "status": 1,
     "latitude": 11.5,
     "longitude": 38.5
@@ -193,6 +211,7 @@
     "name": "BENSHANGUL",
     "zone_legacy_id": 52,
     "comment": "DE",
+    "administrative_center": "BELONJ GANFO/KAMASH",
     "status": 1,
     "latitude": 10.3778251,
     "longitude": 35.5084442
@@ -202,6 +221,7 @@
     "name": "JARAR",
     "zone_legacy_id": 44,
     "comment": "DE",
+    "administrative_center": "DIG/LAKU",
     "status": 1,
     "latitude": 8.0735213,
     "longitude": 44.0954224
@@ -211,6 +231,7 @@
     "name": "WORETA",
     "zone_legacy_id": 1,
     "comment": "DE",
+    "administrative_center": "WORETA",
     "status": 1,
     "latitude": 11.5,
     "longitude": 38.5
@@ -220,6 +241,7 @@
     "name": "WOLAYTA",
     "zone_legacy_id": 39,
     "comment": "DE",
+    "administrative_center": "WOLAYTA",
     "status": 1,
     "latitude": 6.864163,
     "longitude": 37.762762
@@ -229,6 +251,7 @@
     "name": "SHEKA",
     "zone_legacy_id": 1,
     "comment": "DE",
+    "administrative_center": "D/BENCHI/DEBREWORK",
     "status": 1,
     "latitude": 7.5073076,
     "longitude": 35.3585049
@@ -238,6 +261,7 @@
     "name": "GURAGE",
     "zone_legacy_id": 1,
     "comment": "DE",
+    "administrative_center": "MARIKO/KOSH",
     "status": 1,
     "latitude": 7.5829546,
     "longitude": 37.861302
@@ -247,6 +271,7 @@
     "name": "S/OMO",
     "zone_legacy_id": 1,
     "comment": "DE",
+    "administrative_center": "SELEGN",
     "status": 1,
     "latitude": 13.3917079,
     "longitude": 39.1996716
@@ -256,6 +281,7 @@
     "name": "DIREDAWA",
     "zone_legacy_id": 44,
     "comment": "de",
+    "administrative_center": "DERIDWA/DERIDWA",
     "status": 1,
     "latitude": 9.5942885,
     "longitude": 41.8617959
@@ -265,6 +291,7 @@
     "name": "SHKA",
     "zone_legacy_id": 1,
     "comment": "DE",
+    "administrative_center": "YEKI/TYPI",
     "status": 1,
     "latitude": 11.5,
     "longitude": 38.5
@@ -274,6 +301,7 @@
     "name": "S.OMO",
     "zone_legacy_id": 1,
     "comment": "DE",
+    "administrative_center": "DERASHE/GIEDOLY",
     "status": 1,
     "latitude": 13.3917079,
     "longitude": 39.1996716
@@ -283,6 +311,7 @@
     "name": "soma.",
     "zone_legacy_id": 1,
     "comment": "de",
+    "administrative_center": "SEWINA/KELELECHA",
     "status": 1,
     "latitude": 6.0093447,
     "longitude": 37.5390525
@@ -292,6 +321,7 @@
     "name": "KONOBA",
     "zone_legacy_id": 59,
     "comment": "de",
+    "administrative_center": "KONOBA",
     "status": 1,
     "latitude": 11.7108206,
     "longitude": 41.0330866
@@ -301,6 +331,7 @@
     "name": "FIVE",
     "zone_legacy_id": 1,
     "comment": "de",
+    "administrative_center": "AFTUNA",
     "status": 1,
     "latitude": 9.1082427,
     "longitude": 38.8443547
@@ -319,6 +350,7 @@
     "name": "MOYALE",
     "zone_legacy_id": 7,
     "comment": "de",
+    "administrative_center": "MOYALE",
     "status": 1,
     "latitude": 3.5241898,
     "longitude": 39.0512683
@@ -328,6 +360,7 @@
     "name": "GOLA",
     "zone_legacy_id": 7,
     "comment": "DE",
+    "administrative_center": "ERDARE",
     "status": 1,
     "latitude": 9.31,
     "longitude": 41.72583
@@ -337,6 +370,7 @@
     "name": "GUCHI",
     "zone_legacy_id": 7,
     "comment": null,
+    "administrative_center": "GUCHI",
     "status": 1,
     "latitude": 4.892569,
     "longitude": 38.094989
@@ -346,6 +380,7 @@
     "name": "MIYO",
     "zone_legacy_id": 7,
     "comment": "DE",
+    "administrative_center": "MIYO",
     "status": 1,
     "latitude": 3.778251,
     "longitude": 38.6278714
@@ -355,6 +390,7 @@
     "name": "NENSBO",
     "zone_legacy_id": 15,
     "comment": "DE",
+    "administrative_center": "MELKA DENBI",
     "status": 1,
     "latitude": 7.3533442,
     "longitude": 38.6756595
@@ -364,6 +400,7 @@
     "name": "YABELO",
     "zone_legacy_id": 7,
     "comment": null,
+    "administrative_center": "harawayu",
     "status": 1,
     "latitude": 4.892569,
     "longitude": 38.094989
@@ -373,6 +410,7 @@
     "name": "DILO",
     "zone_legacy_id": 7,
     "comment": null,
+    "administrative_center": "DILO",
     "status": 1,
     "latitude": 9.28333,
     "longitude": 38.65
@@ -382,6 +420,7 @@
     "name": "JARSO",
     "zone_legacy_id": 14,
     "comment": "DE",
+    "administrative_center": "EAIJRSA GURO",
     "status": 1,
     "latitude": 9.1096616,
     "longitude": 37.3728362
@@ -391,6 +430,7 @@
     "name": "CHINAGSEN",
     "zone_legacy_id": 14,
     "comment": null,
+    "administrative_center": "CHINAGSEN",
     "status": 1,
     "latitude": 9.56667,
     "longitude": 38.63333
@@ -400,6 +440,7 @@
     "name": "ODA BULTU",
     "zone_legacy_id": 14,
     "comment": null,
+    "administrative_center": "BURKA",
     "status": 1,
     "latitude": 9.56667,
     "longitude": 38.63333
@@ -418,6 +459,7 @@
     "name": "BOKH",
     "zone_legacy_id": 14,
     "comment": null,
+    "administrative_center": "Bokh",
     "status": 1,
     "latitude": 7.3584051,
     "longitude": 46.6081511
@@ -427,6 +469,7 @@
     "name": "MILE",
     "zone_legacy_id": 67,
     "comment": "DE",
+    "administrative_center": "MILE",
     "status": 1,
     "latitude": 8.26667,
     "longitude": 36.88333
@@ -436,6 +479,7 @@
     "name": "GOMELYE",
     "zone_legacy_id": 13,
     "comment": null,
+    "administrative_center": "GOMELYE",
     "status": 1,
     "latitude": 8.9901969,
     "longitude": 35.8239985
@@ -445,6 +489,7 @@
     "name": "GOLA ODA",
     "zone_legacy_id": 14,
     "comment": null,
+    "administrative_center": "BURKA",
     "status": 1,
     "latitude": 9.56667,
     "longitude": 38.63333
@@ -454,6 +499,7 @@
     "name": "MEYU MULUK",
     "zone_legacy_id": 14,
     "comment": null,
+    "administrative_center": "ROGY",
     "status": 1,
     "latitude": 9.56667,
     "longitude": 38.63333
@@ -472,6 +518,7 @@
     "name": "GOMBISO BORDEDIE",
     "zone_legacy_id": 14,
     "comment": null,
+    "administrative_center": "QORA",
     "status": 1,
     "latitude": 9.56667,
     "longitude": 38.63333
@@ -481,6 +528,7 @@
     "name": "QUMBI",
     "zone_legacy_id": 14,
     "comment": null,
+    "administrative_center": "HAREGUTE",
     "status": 1,
     "latitude": 9.56667,
     "longitude": 38.63333
@@ -490,6 +538,7 @@
     "name": "GURSUME",
     "zone_legacy_id": 14,
     "comment": null,
+    "administrative_center": "FEGNBIRA",
     "status": 1,
     "latitude": 9.56667,
     "longitude": 38.63333
@@ -499,6 +548,7 @@
     "name": "ALYE",
     "zone_legacy_id": 14,
     "comment": null,
+    "administrative_center": "TASHO-E/HARERE",
     "status": 1,
     "latitude": 9.56667,
     "longitude": 38.63333
@@ -508,6 +558,7 @@
     "name": "FEDISE",
     "zone_legacy_id": 14,
     "comment": null,
+    "administrative_center": "FECHIATU",
     "status": 1,
     "latitude": 9.56667,
     "longitude": 38.63333
@@ -526,6 +577,7 @@
     "name": "GURO MUTI",
     "zone_legacy_id": 14,
     "comment": null,
+    "administrative_center": "GURO MUTI",
     "status": 1,
     "latitude": 9.56667,
     "longitude": 38.63333
@@ -535,6 +587,7 @@
     "name": "TULU",
     "zone_legacy_id": 14,
     "comment": null,
+    "administrative_center": "GUJI",
     "status": 1,
     "latitude": 5.5501401,
     "longitude": 39.2030529
@@ -544,6 +597,7 @@
     "name": "BIRBISA KAJWA",
     "zone_legacy_id": 13,
     "comment": null,
+    "administrative_center": "EAILDMA",
     "status": 1,
     "latitude": 8.9901969,
     "longitude": 35.8239985
@@ -553,6 +607,7 @@
     "name": "DEGDA DAWA",
     "zone_legacy_id": 13,
     "comment": null,
+    "administrative_center": "HIMAKISHO",
     "status": 1,
     "latitude": 8.9901969,
     "longitude": 35.8239985
@@ -562,6 +617,7 @@
     "name": "DELOMENA",
     "zone_legacy_id": 13,
     "comment": null,
+    "administrative_center": "MENA",
     "status": 1,
     "latitude": 8.9901969,
     "longitude": 35.8239985
@@ -571,6 +627,7 @@
     "name": "DIGDAWA",
     "zone_legacy_id": 13,
     "comment": null,
+    "administrative_center": "CHIMY",
     "status": 1,
     "latitude": 8.9901969,
     "longitude": 35.8239985
@@ -580,6 +637,7 @@
     "name": "GOMYOLADO",
     "zone_legacy_id": 13,
     "comment": null,
+    "administrative_center": "A/MEN",
     "status": 1,
     "latitude": 8.9901969,
     "longitude": 35.8239985
@@ -589,6 +647,7 @@
     "name": "GUMIEILADY",
     "zone_legacy_id": 13,
     "comment": null,
+    "administrative_center": "KORATI",
     "status": 1,
     "latitude": 8.9901969,
     "longitude": 35.8239985
@@ -598,6 +657,7 @@
     "name": "GUMY EAILDA",
     "zone_legacy_id": 13,
     "comment": null,
+    "administrative_center": "MELKA GUBA",
     "status": 1,
     "latitude": 8.9901969,
     "longitude": 35.8239985
@@ -607,6 +667,7 @@
     "name": "HAMBELA WAMENA",
     "zone_legacy_id": 13,
     "comment": null,
+    "administrative_center": "DIMTU",
     "status": 1,
     "latitude": 8.9901969,
     "longitude": 35.8239985
@@ -616,6 +677,7 @@
     "name": "KERCHIA",
     "zone_legacy_id": 13,
     "comment": null,
+    "administrative_center": "ELA FERDA",
     "status": 1,
     "latitude": 8.9901969,
     "longitude": 35.8239985
@@ -625,6 +687,7 @@
     "name": "LIBEN",
     "zone_legacy_id": 13,
     "comment": null,
+    "administrative_center": "LIBEN",
     "status": 1,
     "latitude": 4.5484468,
     "longitude": 40.7091252
@@ -634,6 +697,7 @@
     "name": "MELKASODA",
     "zone_legacy_id": 13,
     "comment": null,
+    "administrative_center": "MELKASODA",
     "status": 1,
     "latitude": 5.6410472,
     "longitude": 38.2380738
@@ -643,6 +707,7 @@
     "name": "NEGLY TOWN",
     "zone_legacy_id": 13,
     "comment": null,
+    "administrative_center": "NEGLY TOWN",
     "status": 1,
     "latitude": 8.9901969,
     "longitude": 35.8239985
@@ -652,6 +717,7 @@
     "name": "SORO BEGUDO",
     "zone_legacy_id": 13,
     "comment": null,
+    "administrative_center": "BERKUDA",
     "status": 1,
     "latitude": 8.9901969,
     "longitude": 35.8239985
@@ -661,6 +727,7 @@
     "name": "WADERA",
     "zone_legacy_id": 13,
     "comment": null,
+    "administrative_center": "WADERA",
     "status": 1,
     "latitude": 5.7773139,
     "longitude": 39.3105652
@@ -670,6 +737,7 @@
     "name": "ADOLA SHAKISO",
     "zone_legacy_id": 45,
     "comment": null,
+    "administrative_center": "TERO KAYAD",
     "status": 1,
     "latitude": 8.9901969,
     "longitude": 35.8239985
@@ -679,6 +747,7 @@
     "name": "DEGDA DAWA 2",
     "zone_legacy_id": 45,
     "comment": null,
+    "administrative_center": "BURKA ARBECHO",
     "status": 1,
     "latitude": 8.9901969,
     "longitude": 35.8239985
@@ -688,6 +757,7 @@
     "name": "DOLOMENA",
     "zone_legacy_id": 45,
     "comment": null,
+    "administrative_center": "MELKAMANA",
     "status": 1,
     "latitude": 6.4126517,
     "longitude": 39.8483743
@@ -706,6 +776,7 @@
     "name": "GOME ELDA",
     "zone_legacy_id": 45,
     "comment": null,
+    "administrative_center": "MELKA GUBA",
     "status": 1,
     "latitude": 8.9901969,
     "longitude": 35.8239985
@@ -715,6 +786,7 @@
     "name": "GORODELO",
     "zone_legacy_id": 45,
     "comment": null,
+    "administrative_center": "DUKO",
     "status": 1,
     "latitude": 8.9901969,
     "longitude": 35.8239985
@@ -724,6 +796,7 @@
     "name": "GUME EAILDA",
     "zone_legacy_id": 45,
     "comment": null,
+    "administrative_center": "BULBULA",
     "status": 1,
     "latitude": 8.9901969,
     "longitude": 35.8239985
@@ -733,6 +806,7 @@
     "name": "GUME EALDA",
     "zone_legacy_id": 45,
     "comment": null,
+    "administrative_center": "MELKA GUBA",
     "status": 1,
     "latitude": 8.9901969,
     "longitude": 35.8239985
@@ -742,6 +816,7 @@
     "name": "LIBEN/ E",
     "zone_legacy_id": 45,
     "comment": null,
+    "administrative_center": "NEGELE",
     "status": 1,
     "latitude": 11.697058,
     "longitude": 36.9415489
@@ -751,6 +826,7 @@
     "name": "MELKASODA /E",
     "zone_legacy_id": 45,
     "comment": null,
+    "administrative_center": "HALOMEDEDA",
     "status": 1,
     "latitude": 8.9901969,
     "longitude": 35.8239985
@@ -760,6 +836,7 @@
     "name": "NEGELE/E",
     "zone_legacy_id": 45,
     "comment": null,
+    "administrative_center": "NEGELE-LIBEN",
     "status": 1,
     "latitude": 5.3328174,
     "longitude": 39.5806628
@@ -769,6 +846,7 @@
     "name": "SABA BORU",
     "zone_legacy_id": 45,
     "comment": "DE",
+    "administrative_center": "DARME",
     "status": 1,
     "latitude": 8.9901969,
     "longitude": 35.8239985
@@ -778,6 +856,7 @@
     "name": "WADERA/E",
     "zone_legacy_id": 45,
     "comment": null,
+    "administrative_center": "BERMA LELISA",
     "status": 1,
     "latitude": 5.7773139,
     "longitude": 39.3105652
@@ -787,6 +866,7 @@
     "name": "YABYLO",
     "zone_legacy_id": 7,
     "comment": null,
+    "administrative_center": "YABYLO",
     "status": 1,
     "latitude": 4.892569,
     "longitude": 38.094989
@@ -796,6 +876,7 @@
     "name": "DUBTI",
     "zone_legacy_id": 67,
     "comment": "DE",
+    "administrative_center": "DUBTI CENTER",
     "status": 1,
     "latitude": 11.7368315,
     "longitude": 41.0840355
@@ -805,6 +886,7 @@
     "name": "ADELELA",
     "zone_legacy_id": 49,
     "comment": null,
+    "administrative_center": "ADELELA",
     "status": 1,
     "latitude": 11.7108206,
     "longitude": 41.0330866
@@ -814,6 +896,7 @@
     "name": "AFAMBO",
     "zone_legacy_id": 67,
     "comment": "DE",
+    "administrative_center": "AFAMBO",
     "status": 1,
     "latitude": 11.5201706,
     "longitude": 41.5826072
@@ -823,6 +906,7 @@
     "name": "ASAYTA",
     "zone_legacy_id": 67,
     "comment": "DE",
+    "administrative_center": "ASAYTA",
     "status": 1,
     "latitude": 11.5736657,
     "longitude": 41.4329676
@@ -832,6 +916,7 @@
     "name": "BELONJ GANFO",
     "zone_legacy_id": 49,
     "comment": null,
+    "administrative_center": "ANEGER SHNKORA",
     "status": 1,
     "latitude": 11.7108206,
     "longitude": 41.0330866
@@ -841,6 +926,7 @@
     "name": "BARAHLE",
     "zone_legacy_id": 49,
     "comment": null,
+    "administrative_center": "MLIFTO",
     "status": 1,
     "latitude": 13.8629006,
     "longitude": 40.0214271
@@ -850,6 +936,7 @@
     "name": "BOLBLI",
     "zone_legacy_id": 49,
     "comment": null,
+    "administrative_center": "BOLBLI",
     "status": 1,
     "latitude": 11.7108206,
     "longitude": 41.0330866
@@ -859,6 +946,7 @@
     "name": "BURE",
     "zone_legacy_id": 49,
     "comment": null,
+    "administrative_center": "TIYFE",
     "status": 1,
     "latitude": 10.7129931,
     "longitude": 37.0668819
@@ -868,6 +956,7 @@
     "name": "DALOL",
     "zone_legacy_id": 49,
     "comment": null,
+    "administrative_center": "DALOL",
     "status": 1,
     "latitude": 9.55462,
     "longitude": 41.8735623
@@ -877,6 +966,7 @@
     "name": "HAROLIMU",
     "zone_legacy_id": 49,
     "comment": null,
+    "administrative_center": "HARO",
     "status": 1,
     "latitude": 9.8446132,
     "longitude": 36.3130139
@@ -895,6 +985,7 @@
     "name": "MILLE",
     "zone_legacy_id": 49,
     "comment": null,
+    "administrative_center": "MILLE",
     "status": 1,
     "latitude": 11.6033898,
     "longitude": 40.3529395
@@ -904,6 +995,7 @@
     "name": "SERGETE",
     "zone_legacy_id": 49,
     "comment": null,
+    "administrative_center": "SERGETE",
     "status": 1,
     "latitude": 11.7108206,
     "longitude": 41.0330866
@@ -913,6 +1005,7 @@
     "name": "AFDERA",
     "zone_legacy_id": 49,
     "comment": null,
+    "administrative_center": "ALI GENDA",
     "status": 1,
     "latitude": 13.2876191,
     "longitude": 41.4334728
@@ -931,6 +1024,7 @@
     "name": "KORI",
     "zone_legacy_id": 67,
     "comment": "DE",
+    "administrative_center": "ADAR",
     "status": 1,
     "latitude": 9.2626075,
     "longitude": 39.3247575
@@ -940,6 +1034,7 @@
     "name": "CHIFRA",
     "zone_legacy_id": 67,
     "comment": "DE",
+    "administrative_center": "CHIFRA",
     "status": 1,
     "latitude": 11.6033251,
     "longitude": 40.0162457
@@ -949,6 +1044,7 @@
     "name": "ABABOKSA",
     "zone_legacy_id": 49,
     "comment": null,
+    "administrative_center": "ABABOKSA",
     "status": 1,
     "latitude": 11.7108206,
     "longitude": 41.0330866
@@ -958,6 +1054,7 @@
     "name": "GEWANE",
     "zone_legacy_id": 59,
     "comment": "DE",
+    "administrative_center": "GEWANE",
     "status": 1,
     "latitude": 10.159228,
     "longitude": 40.661596
@@ -967,6 +1064,7 @@
     "name": "DIRE - BORENA",
     "zone_legacy_id": 7,
     "comment": null,
+    "administrative_center": "MEGA",
     "status": 1,
     "latitude": 4.9466635,
     "longitude": 37.292503
@@ -976,6 +1074,7 @@
     "name": "HAWIGUDINA",
     "zone_legacy_id": 31,
     "comment": null,
+    "administrative_center": "TIO",
     "status": 1,
     "latitude": 9.3118397,
     "longitude": 42.1284445
@@ -985,6 +1084,7 @@
     "name": "UBAQORECHA",
     "zone_legacy_id": 31,
     "comment": null,
+    "administrative_center": "KMUNA",
     "status": 1,
     "latitude": 9.3118397,
     "longitude": 42.1284445
@@ -994,6 +1094,7 @@
     "name": "GUMBI BORDEDY",
     "zone_legacy_id": 31,
     "comment": null,
+    "administrative_center": "BORDADY",
     "status": 1,
     "latitude": 9.3118397,
     "longitude": 42.1284445
@@ -1003,6 +1104,7 @@
     "name": "HABRU",
     "zone_legacy_id": 31,
     "comment": null,
+    "administrative_center": "GELMSO",
     "status": 1,
     "latitude": 11.6,
     "longitude": 39.76667
@@ -1012,6 +1114,7 @@
     "name": "TIULO",
     "zone_legacy_id": 31,
     "comment": null,
+    "administrative_center": "HIRNA",
     "status": 1,
     "latitude": 8.5594998,
     "longitude": 41.5433662
@@ -1021,6 +1124,7 @@
     "name": "MEYU MULUK/w",
     "zone_legacy_id": 31,
     "comment": null,
+    "administrative_center": "ALISO",
     "status": 1,
     "latitude": 9.3118397,
     "longitude": 42.1284445
@@ -1030,6 +1134,7 @@
     "name": "ODA BULTU/W",
     "zone_legacy_id": 31,
     "comment": null,
+    "administrative_center": "HARO ADI",
     "status": 1,
     "latitude": 9.3118397,
     "longitude": 42.1284445
@@ -1039,6 +1144,7 @@
     "name": "DAROLEBU",
     "zone_legacy_id": 31,
     "comment": null,
+    "administrative_center": "GADULO",
     "status": 1,
     "latitude": 9.3118397,
     "longitude": 42.1284445
@@ -1048,6 +1154,7 @@
     "name": "A/MENCHI",
     "zone_legacy_id": 50,
     "comment": null,
+    "administrative_center": "A/MENCHI",
     "status": 1,
     "latitude": 6.7089081,
     "longitude": 35.6841753
@@ -1066,6 +1173,7 @@
     "name": "AMURU/B",
     "zone_legacy_id": 5,
     "comment": null,
+    "administrative_center": "ABORA,GOLTEBO",
     "status": 1,
     "latitude": 9.98333,
     "longitude": 36.96667
@@ -1075,6 +1183,7 @@
     "name": "BERBERI",
     "zone_legacy_id": 5,
     "comment": null,
+    "administrative_center": "BERBRYE",
     "status": 1,
     "latitude": 7.08333,
     "longitude": 40.8
@@ -1093,6 +1202,7 @@
     "name": "DAWA KACHAN",
     "zone_legacy_id": 5,
     "comment": null,
+    "administrative_center": "HAR AGA",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -1102,6 +1212,7 @@
     "name": "DAWA SERER",
     "zone_legacy_id": 5,
     "comment": null,
+    "administrative_center": "BERIDIMTU",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -1111,6 +1222,7 @@
     "name": "DEBR BENCH",
     "zone_legacy_id": 5,
     "comment": null,
+    "administrative_center": "DEBREWORK",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -1120,6 +1232,7 @@
     "name": "DELO MENA",
     "zone_legacy_id": 5,
     "comment": null,
+    "administrative_center": "NANIEYDERA",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -1129,6 +1242,7 @@
     "name": "ELWAYE",
     "zone_legacy_id": 5,
     "comment": null,
+    "administrative_center": "Elwaye",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -1147,6 +1261,7 @@
     "name": "GINIER",
     "zone_legacy_id": 5,
     "comment": null,
+    "administrative_center": "DUSI",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -1156,6 +1271,7 @@
     "name": "GOLELECHA",
     "zone_legacy_id": 5,
     "comment": null,
+    "administrative_center": "BULALA",
     "status": 1,
     "latitude": 8.2477545,
     "longitude": 39.5774888
@@ -1165,6 +1281,7 @@
     "name": "GORADAMOLY",
     "zone_legacy_id": 5,
     "comment": null,
+    "administrative_center": "JEBERIEL",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -1174,6 +1291,7 @@
     "name": "GORO",
     "zone_legacy_id": 5,
     "comment": null,
+    "administrative_center": "MELKABUTA",
     "status": 1,
     "latitude": 6.991394,
     "longitude": 40.479935
@@ -1183,6 +1301,7 @@
     "name": "HARENA BULUKE",
     "zone_legacy_id": 5,
     "comment": null,
+    "administrative_center": "KARBGALE",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -1192,6 +1311,7 @@
     "name": "LEGE HIDA",
     "zone_legacy_id": 5,
     "comment": null,
+    "administrative_center": "ADOLY",
     "status": 1,
     "latitude": 7.93333,
     "longitude": 41.06666
@@ -1201,6 +1321,7 @@
     "name": "MEDA WELABU",
     "zone_legacy_id": 5,
     "comment": null,
+    "administrative_center": "ODA",
     "status": 1,
     "latitude": 5.78333,
     "longitude": 39.68333
@@ -1210,6 +1331,7 @@
     "name": "RAYTU",
     "zone_legacy_id": 5,
     "comment": null,
+    "administrative_center": "DH/BALA",
     "status": 1,
     "latitude": 6.8385373,
     "longitude": 40.401446
@@ -1219,6 +1341,7 @@
     "name": "SEWEYNA",
     "zone_legacy_id": 5,
     "comment": null,
+    "administrative_center": "HADA",
     "status": 1,
     "latitude": 7.4563631,
     "longitude": 40.9779601
@@ -1228,6 +1351,7 @@
     "name": "HAROLIMU/W",
     "zone_legacy_id": 33,
     "comment": null,
+    "administrative_center": "SEGRO",
     "status": 1,
     "latitude": 9.8446132,
     "longitude": 36.3130139
@@ -1237,6 +1361,7 @@
     "name": "GITO GIDA",
     "zone_legacy_id": 33,
     "comment": null,
+    "administrative_center": "KINAF",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -1246,6 +1371,7 @@
     "name": "HARO LIMU",
     "zone_legacy_id": 33,
     "comment": null,
+    "administrative_center": "SUGE",
     "status": 1,
     "latitude": 9.8446132,
     "longitude": 36.3130139
@@ -1255,6 +1381,7 @@
     "name": "SASIGA",
     "zone_legacy_id": 33,
     "comment": null,
+    "administrative_center": "BRYDA",
     "status": 1,
     "latitude": 9.1719874,
     "longitude": 36.4635265
@@ -1264,6 +1391,7 @@
     "name": "DIGA",
     "zone_legacy_id": 32,
     "comment": null,
+    "administrative_center": "JITU",
     "status": 1,
     "latitude": 8.93333,
     "longitude": 36.58333
@@ -1273,6 +1401,7 @@
     "name": "DRGA",
     "zone_legacy_id": 33,
     "comment": null,
+    "administrative_center": "DIMTU",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -1282,6 +1411,7 @@
     "name": "HARO LIMU/W",
     "zone_legacy_id": 39,
     "comment": null,
+    "administrative_center": "ARKUMBI 8",
     "status": 1,
     "latitude": 9.8446132,
     "longitude": 36.3130139
@@ -1291,6 +1421,7 @@
     "name": "LETASIBU",
     "zone_legacy_id": 33,
     "comment": null,
+    "administrative_center": "LETASIBU",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -1300,6 +1431,7 @@
     "name": "MENASIBU",
     "zone_legacy_id": 33,
     "comment": null,
+    "administrative_center": "MENASIBU",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -1309,6 +1441,7 @@
     "name": "BUJIBERMEJI",
     "zone_legacy_id": 33,
     "comment": null,
+    "administrative_center": "BUJIBERMEJI",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -1318,6 +1451,7 @@
     "name": "TELTELY",
     "zone_legacy_id": 33,
     "comment": null,
+    "administrative_center": "TELTELY",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -1327,6 +1461,7 @@
     "name": "NEJO",
     "zone_legacy_id": 33,
     "comment": null,
+    "administrative_center": "NEJO",
     "status": 1,
     "latitude": 9.5038669,
     "longitude": 35.5064141
@@ -1336,6 +1471,7 @@
     "name": "GIMBI",
     "zone_legacy_id": 33,
     "comment": null,
+    "administrative_center": "GIMBI",
     "status": 1,
     "latitude": 8.8061916,
     "longitude": 37.7881259
@@ -1345,6 +1481,7 @@
     "name": "JANE AMORA",
     "zone_legacy_id": 94,
     "comment": null,
+    "administrative_center": "MEKAN BERHAN",
     "status": 1,
     "latitude": 11.5,
     "longitude": 38.5
@@ -1354,6 +1491,7 @@
     "name": "SAR MEDER",
     "zone_legacy_id": 94,
     "comment": null,
+    "administrative_center": "MERTIO MARIYAM",
     "status": 1,
     "latitude": 11.5,
     "longitude": 38.5
@@ -1363,6 +1501,7 @@
     "name": "BAHR DAR",
     "zone_legacy_id": 24,
     "comment": null,
+    "administrative_center": "BAHR DAR",
     "status": 1,
     "latitude": 11.5965167,
     "longitude": 37.385498
@@ -1372,6 +1511,7 @@
     "name": "ANELYMO",
     "zone_legacy_id": 20,
     "comment": null,
+    "administrative_center": "FONKO",
     "status": 1,
     "latitude": 6.7089081,
     "longitude": 35.6841753
@@ -1381,6 +1521,7 @@
     "name": "HADYA",
     "zone_legacy_id": 20,
     "comment": null,
+    "administrative_center": "SHNASHA",
     "status": 1,
     "latitude": 6.7089081,
     "longitude": 35.6841753
@@ -1390,6 +1531,7 @@
     "name": "ODABULTU",
     "zone_legacy_id": 20,
     "comment": null,
+    "administrative_center": "BEDYSA",
     "status": 1,
     "latitude": 6.7089081,
     "longitude": 35.6841753
@@ -1399,6 +1541,7 @@
     "name": "CHIABY GAMEBYLTU",
     "zone_legacy_id": 21,
     "comment": null,
+    "administrative_center": "cheby",
     "status": 1,
     "latitude": 6.6507504,
     "longitude": 38.4796794
@@ -1408,6 +1551,7 @@
     "name": "BORENA ZURYA",
     "zone_legacy_id": 21,
     "comment": null,
+    "administrative_center": "MELGANO QWADO",
     "status": 1,
     "latitude": 6.6507504,
     "longitude": 38.4796794
@@ -1417,6 +1561,7 @@
     "name": "YEKI",
     "zone_legacy_id": 21,
     "comment": null,
+    "administrative_center": "FEDI KEBELE",
     "status": 1,
     "latitude": 7.2,
     "longitude": 35.35
@@ -1426,6 +1571,7 @@
     "name": "SHEYCHA",
     "zone_legacy_id": 50,
     "comment": null,
+    "administrative_center": "SHEYCHA",
     "status": 1,
     "latitude": 6.7089081,
     "longitude": 35.6841753
@@ -1435,6 +1581,7 @@
     "name": "BURA",
     "zone_legacy_id": 21,
     "comment": null,
+    "administrative_center": "BURA",
     "status": 1,
     "latitude": 6.6617797,
     "longitude": 38.8736248
@@ -1444,6 +1591,7 @@
     "name": "WERABE",
     "zone_legacy_id": 22,
     "comment": null,
+    "administrative_center": "WERABE",
     "status": 1,
     "latitude": 6.7089081,
     "longitude": 35.6841753
@@ -1453,6 +1601,7 @@
     "name": "HALBORG",
     "zone_legacy_id": 22,
     "comment": null,
+    "administrative_center": "KURATY",
     "status": 1,
     "latitude": 6.7089081,
     "longitude": 35.6841753
@@ -1462,6 +1611,7 @@
     "name": "MELKOZA",
     "zone_legacy_id": 25,
     "comment": null,
+    "administrative_center": "MELKOZA",
     "status": 1,
     "latitude": 6.0095303,
     "longitude": 37.5354187
@@ -1471,6 +1621,7 @@
     "name": "HARENABULK",
     "zone_legacy_id": 25,
     "comment": null,
+    "administrative_center": "SHEWIT",
     "status": 1,
     "latitude": 6.0095303,
     "longitude": 37.5354187
@@ -1480,6 +1631,7 @@
     "name": "SHASHMENE",
     "zone_legacy_id": 26,
     "comment": null,
+    "administrative_center": "CHIBE DIDA",
     "status": 1,
     "latitude": 8.0101011,
     "longitude": 39.6716774
@@ -1489,6 +1641,7 @@
     "name": "HANKELO WABY",
     "zone_legacy_id": 5,
     "comment": null,
+    "administrative_center": "MECHITU",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -1498,6 +1651,7 @@
     "name": "SERU",
     "zone_legacy_id": 26,
     "comment": null,
+    "administrative_center": "ABAS",
     "status": 1,
     "latitude": 7.675615,
     "longitude": 40.201359
@@ -1507,6 +1661,7 @@
     "name": "ACHIOMENE",
     "zone_legacy_id": 28,
     "comment": null,
+    "administrative_center": "GENDI KETILY",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -1516,6 +1671,7 @@
     "name": "AMURU/GU",
     "zone_legacy_id": 28,
     "comment": null,
+    "administrative_center": "AWALILU",
     "status": 1,
     "latitude": 9.98333,
     "longitude": 36.96667
@@ -1525,6 +1681,7 @@
     "name": "MEKO",
     "zone_legacy_id": 8,
     "comment": null,
+    "administrative_center": "GASI",
     "status": 1,
     "latitude": 8.68333,
     "longitude": 36.03333
@@ -1534,6 +1691,7 @@
     "name": "MOJO",
     "zone_legacy_id": 9,
     "comment": null,
+    "administrative_center": "MOJO",
     "status": 1,
     "latitude": 8.5869874,
     "longitude": 39.125
@@ -1543,6 +1701,7 @@
     "name": "ADAMA",
     "zone_legacy_id": 9,
     "comment": null,
+    "administrative_center": "ADAMA",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -1552,6 +1711,7 @@
     "name": "DELOMENA/E",
     "zone_legacy_id": 9,
     "comment": null,
+    "administrative_center": "BARAK",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -1561,6 +1721,7 @@
     "name": "ADAME TULU",
     "zone_legacy_id": 9,
     "comment": null,
+    "administrative_center": "DIDICHA",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -1570,6 +1731,7 @@
     "name": "DICHA",
     "zone_legacy_id": 9,
     "comment": null,
+    "administrative_center": "DICHA",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -1579,6 +1741,7 @@
     "name": "BATU",
     "zone_legacy_id": 9,
     "comment": null,
+    "administrative_center": "BATU",
     "status": 1,
     "latitude": 7.9358063,
     "longitude": 38.7164929
@@ -1588,6 +1751,7 @@
     "name": "LEGEHIDA",
     "zone_legacy_id": 9,
     "comment": null,
+    "administrative_center": "BEHIMA",
     "status": 1,
     "latitude": 7.93333,
     "longitude": 41.06666
@@ -1597,6 +1761,7 @@
     "name": "GALAFI",
     "zone_legacy_id": 9,
     "comment": null,
+    "administrative_center": "adobi",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -1606,6 +1771,7 @@
     "name": "DEBLUKE",
     "zone_legacy_id": 7,
     "comment": null,
+    "administrative_center": "DEBLUKE",
     "status": 1,
     "latitude": 4.892569,
     "longitude": 38.094989
@@ -1615,6 +1781,7 @@
     "name": "merab sero",
     "zone_legacy_id": 20,
     "comment": null,
+    "administrative_center": "jacho",
     "status": 1,
     "latitude": 6.7089081,
     "longitude": 35.6841753
@@ -1624,6 +1791,7 @@
     "name": "EAILWAYE",
     "zone_legacy_id": 7,
     "comment": null,
+    "administrative_center": "HIDI ALI",
     "status": 1,
     "latitude": 4.892569,
     "longitude": 38.094989
@@ -1633,6 +1801,7 @@
     "name": "ARIRO",
     "zone_legacy_id": 7,
     "comment": null,
+    "administrative_center": "ARIRO",
     "status": 1,
     "latitude": 9.91667,
     "longitude": 38.03333
@@ -1642,6 +1811,7 @@
     "name": "DUBLUK",
     "zone_legacy_id": 7,
     "comment": null,
+    "administrative_center": "dokole",
     "status": 1,
     "latitude": 4.892569,
     "longitude": 38.094989
@@ -1651,6 +1821,7 @@
     "name": "JIMA/J",
     "zone_legacy_id": 12,
     "comment": null,
+    "administrative_center": "JIMMA",
     "status": 1,
     "latitude": 10.1387506,
     "longitude": 37.8902217
@@ -1660,6 +1831,7 @@
     "name": "Bulehora",
     "zone_legacy_id": 7,
     "comment": null,
+    "administrative_center": "BULEHORA",
     "status": 1,
     "latitude": 4.892569,
     "longitude": 38.094989
@@ -1669,6 +1841,7 @@
     "name": "BISHANE GURACHA",
     "zone_legacy_id": 26,
     "comment": "DE",
+    "administrative_center": "BISHANE GURACHA",
     "status": 1,
     "latitude": 8.0101011,
     "longitude": 39.6716774
@@ -1678,6 +1851,7 @@
     "name": "PAWI",
     "zone_legacy_id": 74,
     "comment": null,
+    "administrative_center": "PAWI",
     "status": 1,
     "latitude": 11.3250129,
     "longitude": 36.4088012
@@ -1687,6 +1861,7 @@
     "name": "DASE",
     "zone_legacy_id": 7,
     "comment": null,
+    "administrative_center": "DASE",
     "status": 1,
     "latitude": 11.1248684,
     "longitude": 39.6338354
@@ -1696,6 +1871,7 @@
     "name": "TELTELY/B",
     "zone_legacy_id": 7,
     "comment": null,
+    "administrative_center": "MILAMI",
     "status": 1,
     "latitude": 4.8704114,
     "longitude": 38.182518
@@ -1705,6 +1881,7 @@
     "name": "GUJI",
     "zone_legacy_id": 51,
     "comment": "DE",
+    "administrative_center": "NEGELE-BORENA",
     "status": 1,
     "latitude": 5.5501401,
     "longitude": 39.2030529
@@ -1714,6 +1891,7 @@
     "name": "DERA/W",
     "zone_legacy_id": 6,
     "comment": null,
+    "administrative_center": "GUNDO MESKELE",
     "status": 1,
     "latitude": 7.3173933,
     "longitude": 36.0347545
@@ -1723,6 +1901,7 @@
     "name": "WACHLYE",
     "zone_legacy_id": 7,
     "comment": null,
+    "administrative_center": "WACHLYE MEGALA",
     "status": 1,
     "latitude": 4.892569,
     "longitude": 38.094989
@@ -1732,6 +1911,7 @@
     "name": "MEKOYE",
     "zone_legacy_id": 11,
     "comment": null,
+    "administrative_center": "YEGNENGE",
     "status": 1,
     "latitude": 7.8102647,
     "longitude": 34.1822172
@@ -1741,6 +1921,7 @@
     "name": "LARE",
     "zone_legacy_id": 11,
     "comment": null,
+    "administrative_center": "KORGNGE",
     "status": 1,
     "latitude": 7.8102647,
     "longitude": 34.1822172
@@ -1750,6 +1931,7 @@
     "name": "JIKAWA",
     "zone_legacy_id": 11,
     "comment": null,
+    "administrative_center": "JIKAWA",
     "status": 1,
     "latitude": 7.8102647,
     "longitude": 34.1822172
@@ -1759,6 +1941,7 @@
     "name": "BIRO",
     "zone_legacy_id": 43,
     "comment": "de",
+    "administrative_center": "GABISA",
     "status": 1,
     "latitude": 6.15,
     "longitude": 35.3
@@ -1768,6 +1951,7 @@
     "name": "BOKH/D",
     "zone_legacy_id": 35,
     "comment": null,
+    "administrative_center": "BADARMURUK",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -1777,6 +1961,7 @@
     "name": "GALHAMUR",
     "zone_legacy_id": 100,
     "comment": "de",
+    "administrative_center": "GALHAMUR",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -1786,6 +1971,7 @@
     "name": "WACHILE",
     "zone_legacy_id": 7,
     "comment": null,
+    "administrative_center": "WACHILYE MEGALA",
     "status": 1,
     "latitude": 4.5451005,
     "longitude": 39.0611862
@@ -1795,6 +1981,7 @@
     "name": "ARGOBA",
     "zone_legacy_id": 59,
     "comment": "de",
+    "administrative_center": "ARGOBA",
     "status": 1,
     "latitude": 9.3102649,
     "longitude": 42.1416354
@@ -1804,6 +1991,7 @@
     "name": "AWARE",
     "zone_legacy_id": 36,
     "comment": null,
+    "administrative_center": "AWARE",
     "status": 1,
     "latitude": 9.0270604,
     "longitude": 38.7754628
@@ -1813,6 +2001,7 @@
     "name": "BOLWNJI GANFO",
     "zone_legacy_id": 52,
     "comment": null,
+    "administrative_center": "SOGY",
     "status": 1,
     "latitude": 10.3778251,
     "longitude": 35.5084442
@@ -1822,6 +2011,7 @@
     "name": "MESKAN",
     "zone_legacy_id": 41,
     "comment": null,
+    "administrative_center": "KOSH",
     "status": 1,
     "latitude": 7.5829546,
     "longitude": 37.861302
@@ -1831,6 +2021,7 @@
     "name": "DIGA/J",
     "zone_legacy_id": 36,
     "comment": null,
+    "administrative_center": "ANANO",
     "status": 1,
     "latitude": 8.93333,
     "longitude": 36.58333
@@ -1840,6 +2031,7 @@
     "name": "BOKH/J",
     "zone_legacy_id": 36,
     "comment": null,
+    "administrative_center": "MIRKAN",
     "status": 1,
     "latitude": 8.0735213,
     "longitude": 44.0954224
@@ -1849,6 +2041,7 @@
     "name": "DASENCH",
     "zone_legacy_id": 43,
     "comment": null,
+    "administrative_center": "DARELYE",
     "status": 1,
     "latitude": 13.3917079,
     "longitude": 39.1996716
@@ -1858,6 +2051,7 @@
     "name": "HAMER",
     "zone_legacy_id": 43,
     "comment": null,
+    "administrative_center": "TURME (ARBA MENCHI)",
     "status": 1,
     "latitude": 6.0611436,
     "longitude": 36.5884155
@@ -1867,6 +2061,7 @@
     "name": "YANGATOM",
     "zone_legacy_id": 43,
     "comment": null,
+    "administrative_center": "KANGATON",
     "status": 1,
     "latitude": 13.3917079,
     "longitude": 39.1996716
@@ -1876,6 +2071,7 @@
     "name": "ABEDO GORO",
     "zone_legacy_id": 53,
     "comment": "DE",
+    "administrative_center": "DERI GEFERSA",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -1885,6 +2081,7 @@
     "name": "EILU GELANA",
     "zone_legacy_id": 45,
     "comment": "DE",
+    "administrative_center": "LE/LIOJI",
     "status": 1,
     "latitude": 8.9901969,
     "longitude": 35.8239985
@@ -1894,6 +2091,7 @@
     "name": "BARGDO,",
     "zone_legacy_id": 13,
     "comment": "DE",
+    "administrative_center": "W/BOKESE",
     "status": 1,
     "latitude": 8.9901969,
     "longitude": 35.8239985
@@ -1903,6 +2101,7 @@
     "name": "DANON",
     "zone_legacy_id": 88,
     "comment": "DE",
+    "administrative_center": "DANON",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -1912,6 +2111,7 @@
     "name": "DULSA",
     "zone_legacy_id": 49,
     "comment": null,
+    "administrative_center": "DURIFETI",
     "status": 1,
     "latitude": 11.7108206,
     "longitude": 41.0330866
@@ -1921,6 +2121,7 @@
     "name": "EIBANTU",
     "zone_legacy_id": 45,
     "comment": null,
+    "administrative_center": "ZADI",
     "status": 1,
     "latitude": 8.9901969,
     "longitude": 35.8239985
@@ -1930,6 +2131,7 @@
     "name": "EAILIDARE",
     "zone_legacy_id": 49,
     "comment": "DE",
+    "administrative_center": "DOBI,DICHOTO",
     "status": 1,
     "latitude": 11.7108206,
     "longitude": 41.0330866
@@ -1939,6 +2141,7 @@
     "name": "HADELELA",
     "zone_legacy_id": 49,
     "comment": null,
+    "administrative_center": "ENAENTO",
     "status": 1,
     "latitude": 10.250993,
     "longitude": 40.0022785
@@ -1948,6 +2151,7 @@
     "name": "GOLINA",
     "zone_legacy_id": 49,
     "comment": null,
+    "administrative_center": "GOLINA",
     "status": 1,
     "latitude": 11.7108206,
     "longitude": 41.0330866
@@ -1957,6 +2161,7 @@
     "name": "TULUWAYU",
     "zone_legacy_id": 7,
     "comment": "DE",
+    "administrative_center": "BUYA",
     "status": 1,
     "latitude": 4.892569,
     "longitude": 38.094989
@@ -1966,6 +2171,7 @@
     "name": "MEASO",
     "zone_legacy_id": 54,
     "comment": "DE",
+    "administrative_center": "MEASO",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -1975,6 +2181,7 @@
     "name": "DELERELA",
     "zone_legacy_id": 43,
     "comment": "DE",
+    "administrative_center": "DOOKE",
     "status": 1,
     "latitude": 13.3917079,
     "longitude": 39.1996716
@@ -1984,6 +2191,7 @@
     "name": "BOTER TIOLAYE",
     "zone_legacy_id": 12,
     "comment": "DE",
+    "administrative_center": "TIOLYE",
     "status": 1,
     "latitude": 10.1387506,
     "longitude": 37.8902217
@@ -1993,6 +2201,7 @@
     "name": "ADI ALI",
     "zone_legacy_id": 7,
     "comment": "DE",
+    "administrative_center": "BADYA",
     "status": 1,
     "latitude": 4.892569,
     "longitude": 38.094989
@@ -2002,6 +2211,7 @@
     "name": "GEBALIGA",
     "zone_legacy_id": 46,
     "comment": "de",
+    "administrative_center": "ABAYE VHIOMON",
     "status": 1,
     "latitude": 6.7089081,
     "longitude": 35.6841753
@@ -2011,6 +2221,7 @@
     "name": "BILDEM",
     "zone_legacy_id": 7,
     "comment": "DE",
+    "administrative_center": "KELAGU",
     "status": 1,
     "latitude": 4.892569,
     "longitude": 38.094989
@@ -2020,6 +2231,7 @@
     "name": "GANGATOM",
     "zone_legacy_id": 7,
     "comment": "DE",
+    "administrative_center": "LAYBR",
     "status": 1,
     "latitude": 4.892569,
     "longitude": 38.094989
@@ -2029,6 +2241,7 @@
     "name": "KUMBA",
     "zone_legacy_id": 43,
     "comment": "DE",
+    "administrative_center": "GERESE",
     "status": 1,
     "latitude": 13.3917079,
     "longitude": 39.1996716
@@ -2038,6 +2251,7 @@
     "name": "DULECHA",
     "zone_legacy_id": 59,
     "comment": "DE",
+    "administrative_center": "DULECHA",
     "status": 1,
     "latitude": 9.5458896,
     "longitude": 39.9561643
@@ -2047,6 +2261,7 @@
     "name": "META WELKITE",
     "zone_legacy_id": 6,
     "comment": null,
+    "administrative_center": "WELKITE",
     "status": 1,
     "latitude": 9.9937611,
     "longitude": 39.900869
@@ -2056,6 +2271,7 @@
     "name": "KERSA",
     "zone_legacy_id": 12,
     "comment": "DE",
+    "administrative_center": "KERSA/JIMA",
     "status": 1,
     "latitude": 9.455,
     "longitude": 41.86639
@@ -2065,6 +2281,7 @@
     "name": "DOBA",
     "zone_legacy_id": 54,
     "comment": null,
+    "administrative_center": "DOBA",
     "status": 1,
     "latitude": 9.2857119,
     "longitude": 41.0914119
@@ -2074,6 +2291,7 @@
     "name": "BORI",
     "zone_legacy_id": 43,
     "comment": "DE",
+    "administrative_center": "ABLEGOLA",
     "status": 1,
     "latitude": 13.3917079,
     "longitude": 39.1996716
@@ -2083,6 +2301,7 @@
     "name": "SHNKOLY",
     "zone_legacy_id": 5,
     "comment": "de",
+    "administrative_center": "TIMUGA",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -2092,6 +2311,7 @@
     "name": "QUMBI BOREDEDE",
     "zone_legacy_id": 14,
     "comment": "de",
+    "administrative_center": "QURQURA",
     "status": 1,
     "latitude": 9.56667,
     "longitude": 38.63333
@@ -2110,6 +2330,7 @@
     "name": "CHOLE",
     "zone_legacy_id": 26,
     "comment": "DE",
+    "administrative_center": "CHOLE",
     "status": 1,
     "latitude": 8.2490388,
     "longitude": 39.8921496
@@ -2119,6 +2340,7 @@
     "name": "JEJU",
     "zone_legacy_id": 26,
     "comment": "DE",
+    "administrative_center": "DAGUDO",
     "status": 1,
     "latitude": 8.41667,
     "longitude": 39.63333
@@ -2128,6 +2350,7 @@
     "name": "LIDO HATIOSA",
     "zone_legacy_id": 26,
     "comment": "DE",
+    "administrative_center": "CHANGE",
     "status": 1,
     "latitude": 8.0101011,
     "longitude": 39.6716774
@@ -2137,6 +2360,7 @@
     "name": "ZIWAY DUGDA",
     "zone_legacy_id": 26,
     "comment": "DE",
+    "administrative_center": "OGOLCHA",
     "status": 1,
     "latitude": 8.0101011,
     "longitude": 39.6716774
@@ -2146,6 +2370,7 @@
     "name": "HITOSA",
     "zone_legacy_id": 26,
     "comment": "DE",
+    "administrative_center": "ITAYA",
     "status": 1,
     "latitude": 8.0101011,
     "longitude": 39.6716774
@@ -2155,6 +2380,7 @@
     "name": "ROBE",
     "zone_legacy_id": 26,
     "comment": "DE",
+    "administrative_center": "ROBE",
     "status": 1,
     "latitude": 7.1242676,
     "longitude": 40.0080973
@@ -2164,6 +2390,7 @@
     "name": "SUDE",
     "zone_legacy_id": 26,
     "comment": "DE",
+    "administrative_center": "ALEME GENA",
     "status": 1,
     "latitude": 7.9,
     "longitude": 39.73333
@@ -2173,6 +2400,7 @@
     "name": "SHIRKA",
     "zone_legacy_id": 26,
     "comment": "DE",
+    "administrative_center": "TERETA",
     "status": 1,
     "latitude": 8.0101011,
     "longitude": 39.6716774
@@ -2182,6 +2410,7 @@
     "name": "DODOLA",
     "zone_legacy_id": 15,
     "comment": "DE",
+    "administrative_center": "EDO",
     "status": 1,
     "latitude": 6.9751165,
     "longitude": 39.1812984
@@ -2191,6 +2420,7 @@
     "name": "ADABA",
     "zone_legacy_id": 15,
     "comment": "DE",
+    "administrative_center": "FURUMA",
     "status": 1,
     "latitude": 7.0072505,
     "longitude": 39.3917175
@@ -2200,6 +2430,7 @@
     "name": "KOFELE",
     "zone_legacy_id": 15,
     "comment": "DE",
+    "administrative_center": "KOFELE",
     "status": 1,
     "latitude": 9.75,
     "longitude": 36.38333
@@ -2209,6 +2440,7 @@
     "name": "METEKEL",
     "zone_legacy_id": 33,
     "comment": "DE",
+    "administrative_center": "OBULTU",
     "status": 1,
     "latitude": 10.9630277,
     "longitude": 35.7838685
@@ -2218,6 +2450,7 @@
     "name": "MANDURA",
     "zone_legacy_id": 10,
     "comment": null,
+    "administrative_center": "MANDURA",
     "status": 1,
     "latitude": 11.0977098,
     "longitude": 36.4213791
@@ -2227,6 +2460,7 @@
     "name": "DANGURA",
     "zone_legacy_id": 33,
     "comment": "DE",
+    "administrative_center": "MANBUK",
     "status": 1,
     "latitude": 12.8723313,
     "longitude": 37.0864609
@@ -2236,6 +2470,7 @@
     "name": "KAMASHE",
     "zone_legacy_id": 52,
     "comment": "DE",
+    "administrative_center": "KAMASHE",
     "status": 1,
     "latitude": 10.3778251,
     "longitude": 35.5084442
@@ -2245,6 +2480,7 @@
     "name": "MAO KOMO SW",
     "zone_legacy_id": 52,
     "comment": "DE",
+    "administrative_center": "TONGO",
     "status": 1,
     "latitude": 10.3778251,
     "longitude": 35.5084442
@@ -2254,6 +2490,7 @@
     "name": "SEBABORU",
     "zone_legacy_id": 51,
     "comment": "DE",
+    "administrative_center": "DERESEF",
     "status": 1,
     "latitude": 5.5501401,
     "longitude": 39.2030529
@@ -2263,6 +2500,7 @@
     "name": "BAAREY",
     "zone_legacy_id": 88,
     "comment": "DE",
+    "administrative_center": "DANAADIIN",
     "status": 1,
     "latitude": 5.0713506,
     "longitude": 42.379473
@@ -2272,6 +2510,7 @@
     "name": "GORO BEKEKE",
     "zone_legacy_id": 95,
     "comment": "DE",
+    "administrative_center": "KEBELE 02",
     "status": 1,
     "latitude": 4.5484468,
     "longitude": 40.7091252
@@ -2281,6 +2520,7 @@
     "name": "ELKERE",
     "zone_legacy_id": 49,
     "comment": null,
+    "administrative_center": "TOWLEY",
     "status": 1,
     "latitude": 5.8427044,
     "longitude": 42.0987161
@@ -2290,6 +2530,7 @@
     "name": "GODGOD",
     "zone_legacy_id": 88,
     "comment": "de",
+    "administrative_center": "KUSRAWADE",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -2299,6 +2540,7 @@
     "name": "TSELEMET",
     "zone_legacy_id": 94,
     "comment": "DE",
+    "administrative_center": "FEYELE WUHA",
     "status": 1,
     "latitude": 11.5,
     "longitude": 38.5
@@ -2308,6 +2550,7 @@
     "name": "BURKA DIMTU",
     "zone_legacy_id": 31,
     "comment": null,
+    "administrative_center": "TEYIFE",
     "status": 1,
     "latitude": 9.3118397,
     "longitude": 42.1284445
@@ -2317,6 +2560,7 @@
     "name": "GIDA AYANA/",
     "zone_legacy_id": 32,
     "comment": "DE",
+    "administrative_center": "MENDER 10",
     "status": 1,
     "latitude": 9.8779077,
     "longitude": 36.6205474
@@ -2326,6 +2570,7 @@
     "name": "biji",
     "zone_legacy_id": 33,
     "comment": "DE",
+    "administrative_center": "dermuji",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -2335,6 +2580,7 @@
     "name": "AWURA",
     "zone_legacy_id": 82,
     "comment": "DE",
+    "administrative_center": "DABAL",
     "status": 1,
     "latitude": 10.3789734,
     "longitude": 38.1198114
@@ -2344,6 +2590,7 @@
     "name": "BIDO",
     "zone_legacy_id": 33,
     "comment": "DE",
+    "administrative_center": "BODONTA",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -2353,6 +2600,7 @@
     "name": "ONE",
     "zone_legacy_id": 43,
     "comment": "DE",
+    "administrative_center": "SEHULA",
     "status": 1,
     "latitude": 8.91667,
     "longitude": 39.66667
@@ -2362,6 +2610,7 @@
     "name": "KONSO",
     "zone_legacy_id": 43,
     "comment": "DE",
+    "administrative_center": "GUMALE",
     "status": 1,
     "latitude": 5.3398227,
     "longitude": 37.442368
@@ -2371,6 +2620,7 @@
     "name": "MAWOLE",
     "zone_legacy_id": 43,
     "comment": "DE",
+    "administrative_center": "KAJAMILE",
     "status": 1,
     "latitude": 13.3917079,
     "longitude": 39.1996716
@@ -2380,6 +2630,7 @@
     "name": "GORAYE",
     "zone_legacy_id": 9,
     "comment": "DE",
+    "administrative_center": "AREBELE",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -2389,6 +2640,7 @@
     "name": "FIK",
     "zone_legacy_id": 44,
     "comment": null,
+    "administrative_center": "HARADIGED",
     "status": 1,
     "latitude": 8.1384237,
     "longitude": 42.2945585
@@ -2398,6 +2650,7 @@
     "name": "Erer",
     "zone_legacy_id": 55,
     "comment": null,
+    "administrative_center": "maraye/m/mariham",
     "status": 1,
     "latitude": 8.4392817,
     "longitude": 42.1142323
@@ -2407,6 +2660,7 @@
     "name": "SHINILE",
     "zone_legacy_id": 56,
     "comment": null,
+    "administrative_center": "SHINILE",
     "status": 1,
     "latitude": 10.2122931,
     "longitude": 41.9276455
@@ -2416,6 +2670,7 @@
     "name": "Dollo",
     "zone_legacy_id": 5,
     "comment": null,
+    "administrative_center": "M/gagle",
     "status": 1,
     "latitude": 7.2147778,
     "longitude": 45.9356289
@@ -2425,6 +2680,7 @@
     "name": "DILECHA",
     "zone_legacy_id": 67,
     "comment": "DE",
+    "administrative_center": "AYLALI",
     "status": 1,
     "latitude": 11.7108206,
     "longitude": 41.0330866
@@ -2434,6 +2690,7 @@
     "name": "AMIBARA",
     "zone_legacy_id": 59,
     "comment": "DE",
+    "administrative_center": "AMIBARA",
     "status": 1,
     "latitude": 9.3325652,
     "longitude": 40.1820611
@@ -2452,6 +2709,7 @@
     "name": "DIRE",
     "zone_legacy_id": 7,
     "comment": null,
+    "administrative_center": "SOMER",
     "status": 1,
     "latitude": 9.182287,
     "longitude": 38.9235706
@@ -2470,6 +2728,7 @@
     "name": "DILLO",
     "zone_legacy_id": 7,
     "comment": "DE",
+    "administrative_center": "Arbele",
     "status": 1,
     "latitude": 4.2610008,
     "longitude": 37.7015292
@@ -2479,6 +2738,7 @@
     "name": "AWASH FENTALE",
     "zone_legacy_id": 59,
     "comment": "DE",
+    "administrative_center": "BOLYTA",
     "status": 1,
     "latitude": 11.5372344,
     "longitude": 40.9688199
@@ -2488,6 +2748,7 @@
     "name": "GELAALO",
     "zone_legacy_id": 59,
     "comment": "DE",
+    "administrative_center": "GELAALO",
     "status": 1,
     "latitude": 11.7108206,
     "longitude": 41.0330866
@@ -2497,6 +2758,7 @@
     "name": "FENTELE",
     "zone_legacy_id": 59,
     "comment": "DE",
+    "administrative_center": "METEHARA",
     "status": 1,
     "latitude": 11.7108206,
     "longitude": 41.0330866
@@ -2506,6 +2768,7 @@
     "name": "ADDAAR",
     "zone_legacy_id": 67,
     "comment": "de",
+    "administrative_center": "ELLLI-WUHA",
     "status": 1,
     "latitude": 11.7108206,
     "longitude": 41.0330866
@@ -2515,6 +2778,7 @@
     "name": "DAWA",
     "zone_legacy_id": 7,
     "comment": null,
+    "administrative_center": "MELEB",
     "status": 1,
     "latitude": 4.7172806,
     "longitude": 40.4804349
@@ -2524,6 +2788,7 @@
     "name": "EJEREY",
     "zone_legacy_id": 7,
     "comment": "DE",
+    "administrative_center": "EJEREY",
     "status": 1,
     "latitude": 4.892569,
     "longitude": 38.094989
@@ -2533,6 +2798,7 @@
     "name": "GUBA LAFTO",
     "zone_legacy_id": 62,
     "comment": null,
+    "administrative_center": "WOLDIA",
     "status": 1,
     "latitude": 11.8379079,
     "longitude": 39.2155604
@@ -2542,6 +2808,7 @@
     "name": "WOLDIYA",
     "zone_legacy_id": 62,
     "comment": "DE",
+    "administrative_center": "WOLDIYA",
     "status": 1,
     "latitude": 11.8342096,
     "longitude": 39.6056115
@@ -2551,6 +2818,7 @@
     "name": "GONDER",
     "zone_legacy_id": 76,
     "comment": null,
+    "administrative_center": "GONDER",
     "status": 1,
     "latitude": 12.610368,
     "longitude": 37.466766
@@ -2560,6 +2828,7 @@
     "name": "CENTER",
     "zone_legacy_id": 1,
     "comment": "DE",
+    "administrative_center": "DIJIBOUTI",
     "status": 1,
     "latitude": 11.5872085,
     "longitude": 37.3842848
@@ -2569,6 +2838,7 @@
     "name": "ADI REMTS",
     "zone_legacy_id": 64,
     "comment": "DEDE",
+    "administrative_center": "ADI REMTS",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -2578,6 +2848,7 @@
     "name": "MEKELE",
     "zone_legacy_id": 65,
     "comment": "DE",
+    "administrative_center": "MEKELE",
     "status": 1,
     "latitude": 13.4966644,
     "longitude": 39.4768259
@@ -2587,6 +2858,7 @@
     "name": "D/ZEYTE",
     "zone_legacy_id": 9,
     "comment": "DE",
+    "administrative_center": "D/ZEYTE",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -2596,6 +2868,7 @@
     "name": "E/GUJI",
     "zone_legacy_id": 45,
     "comment": null,
+    "administrative_center": "SIMANTO",
     "status": 1,
     "latitude": 8.9901969,
     "longitude": 35.8239985
@@ -2605,6 +2878,7 @@
     "name": "GERENI",
     "zone_legacy_id": 67,
     "comment": "DE",
+    "administrative_center": "MEGENTA",
     "status": 1,
     "latitude": 11.7108206,
     "longitude": 41.0330866
@@ -2614,6 +2888,7 @@
     "name": "ELIDAR",
     "zone_legacy_id": 67,
     "comment": "DE",
+    "administrative_center": "ELIDAR",
     "status": 1,
     "latitude": 11.7108206,
     "longitude": 41.0330866
@@ -2623,6 +2898,7 @@
     "name": "HANRUKA",
     "zone_legacy_id": 59,
     "comment": "DE",
+    "administrative_center": "HANRUKA",
     "status": 1,
     "latitude": 11.7108206,
     "longitude": 41.0330866
@@ -2632,6 +2908,7 @@
     "name": "HUMERA",
     "zone_legacy_id": 69,
     "comment": null,
+    "administrative_center": "HUMERA",
     "status": 1,
     "latitude": 14.2876868,
     "longitude": 36.6088415
@@ -2641,6 +2918,7 @@
     "name": "MIKADRA",
     "zone_legacy_id": 68,
     "comment": "DE",
+    "administrative_center": "MIKADRA",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -2650,6 +2928,7 @@
     "name": "MITSEBRI",
     "zone_legacy_id": 70,
     "comment": "DE",
+    "administrative_center": "MITSEBRI",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -2668,6 +2947,7 @@
     "name": "DIBATE",
     "zone_legacy_id": 71,
     "comment": "DE",
+    "administrative_center": "DIBATE",
     "status": 1,
     "latitude": 10.7745003,
     "longitude": 36.26338
@@ -2677,6 +2957,7 @@
     "name": "BULLEN",
     "zone_legacy_id": 71,
     "comment": "DE",
+    "administrative_center": "BULLEN 01",
     "status": 1,
     "latitude": 10.7745003,
     "longitude": 36.26338
@@ -2686,6 +2967,7 @@
     "name": "ERBETE",
     "zone_legacy_id": 72,
     "comment": "DE",
+    "administrative_center": "EREBTI",
     "status": 1,
     "latitude": 11.7108206,
     "longitude": 41.0330866
@@ -2695,6 +2977,7 @@
     "name": "ADOLA",
     "zone_legacy_id": 51,
     "comment": "DE",
+    "administrative_center": "XIROO / CHIRO",
     "status": 1,
     "latitude": 11.8,
     "longitude": 41.7
@@ -2704,6 +2987,7 @@
     "name": "AGA WAYU",
     "zone_legacy_id": 51,
     "comment": "DE",
+    "administrative_center": "HAYADIMA",
     "status": 1,
     "latitude": 5.5501401,
     "longitude": 39.2030529
@@ -2731,6 +3015,7 @@
     "name": "FOGERA",
     "zone_legacy_id": 1,
     "comment": null,
+    "administrative_center": "WORETA CENTER",
     "status": 1,
     "latitude": 11.9492305,
     "longitude": 37.5859406
@@ -2740,6 +3025,7 @@
     "name": "KALU",
     "zone_legacy_id": 80,
     "comment": null,
+    "administrative_center": "KOMBOLCHA",
     "status": 1,
     "latitude": 7.41667,
     "longitude": 41.38333
@@ -2749,6 +3035,7 @@
     "name": "METEMA",
     "zone_legacy_id": 81,
     "comment": null,
+    "administrative_center": "METEMA/MEKA",
     "status": 1,
     "latitude": 12.5460334,
     "longitude": 37.410935
@@ -2758,6 +3045,7 @@
     "name": "awsi rasu",
     "zone_legacy_id": 67,
     "comment": null,
+    "administrative_center": "GRAWAR",
     "status": 1,
     "latitude": 11.7108206,
     "longitude": 41.0330866
@@ -2767,6 +3055,7 @@
     "name": "ASOSA",
     "zone_legacy_id": 52,
     "comment": "DE",
+    "administrative_center": "ASOSA",
     "status": 1,
     "latitude": 10.0646352,
     "longitude": 34.5437024
@@ -2785,6 +3074,7 @@
     "name": "RAYAZEBO",
     "zone_legacy_id": 85,
     "comment": "DE",
+    "administrative_center": "MEHONE",
     "status": 1,
     "latitude": 8.5384711,
     "longitude": 37.9713899
@@ -2794,6 +3084,7 @@
     "name": "ADEGRATE",
     "zone_legacy_id": 83,
     "comment": "DE",
+    "administrative_center": "ADEGRATE",
     "status": 1,
     "latitude": 8.5427504,
     "longitude": 39.2800502
@@ -2803,6 +3094,7 @@
     "name": "SHERA",
     "zone_legacy_id": 84,
     "comment": "DE",
+    "administrative_center": "SHERA",
     "status": 1,
     "latitude": 9.0307658,
     "longitude": 38.7359022
@@ -2812,6 +3104,7 @@
     "name": "ADWA",
     "zone_legacy_id": 86,
     "comment": "DE",
+    "administrative_center": "ADWA",
     "status": 1,
     "latitude": 10.0608392,
     "longitude": 40.8333567
@@ -2821,6 +3114,7 @@
     "name": "AXUME",
     "zone_legacy_id": 86,
     "comment": "DE",
+    "administrative_center": "AXUME",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -2830,6 +3124,7 @@
     "name": "KELTAWLALO",
     "zone_legacy_id": 83,
     "comment": "DE",
+    "administrative_center": "WEKURO",
     "status": 1,
     "latitude": 8.5427504,
     "longitude": 39.2800502
@@ -2839,6 +3134,7 @@
     "name": "MYCHAW",
     "zone_legacy_id": 85,
     "comment": "DE",
+    "administrative_center": "MYCHAW",
     "status": 1,
     "latitude": 8.5384711,
     "longitude": 37.9713899
@@ -2848,6 +3144,7 @@
     "name": "ABIADEY",
     "zone_legacy_id": 86,
     "comment": "DE",
+    "administrative_center": "ABIADEY",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -2857,6 +3154,7 @@
     "name": "ADEDARO",
     "zone_legacy_id": 86,
     "comment": null,
+    "administrative_center": "ADEDARO",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -2866,6 +3164,7 @@
     "name": "SHERARO",
     "zone_legacy_id": 84,
     "comment": "DE",
+    "administrative_center": "SHERARO",
     "status": 1,
     "latitude": 14.3930614,
     "longitude": 37.7713978
@@ -2875,6 +3174,7 @@
     "name": "BENJI MAJI",
     "zone_legacy_id": 21,
     "comment": null,
+    "administrative_center": "BENJI MAJI",
     "status": 1,
     "latitude": 6.6507504,
     "longitude": 38.4796794
@@ -2884,6 +3184,7 @@
     "name": "GUBA",
     "zone_legacy_id": 52,
     "comment": null,
+    "administrative_center": "GUBA",
     "status": 1,
     "latitude": 11.51667,
     "longitude": 39.75
@@ -2893,6 +3194,7 @@
     "name": "WEMBERA",
     "zone_legacy_id": 74,
     "comment": "DE",
+    "administrative_center": "DEBREZEYT",
     "status": 1,
     "latitude": 10.58333,
     "longitude": 35.8
@@ -2902,6 +3204,7 @@
     "name": "DEBATE",
     "zone_legacy_id": 74,
     "comment": null,
+    "administrative_center": "DEBATE",
     "status": 1,
     "latitude": 10.9630277,
     "longitude": 35.7838685
@@ -2911,6 +3214,7 @@
     "name": "JEGJEGA",
     "zone_legacy_id": 87,
     "comment": "DE",
+    "administrative_center": "JEGJEGA",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -2920,6 +3224,7 @@
     "name": "ELKARI",
     "zone_legacy_id": 100,
     "comment": "DE",
+    "administrative_center": "ADAMO",
     "status": 1,
     "latitude": 7.353759,
     "longitude": 43.5040464
@@ -2929,6 +3234,7 @@
     "name": "BIDU",
     "zone_legacy_id": 82,
     "comment": "de",
+    "administrative_center": "BIDU",
     "status": 1,
     "latitude": 9.3,
     "longitude": 38.43333
@@ -2947,6 +3253,7 @@
     "name": "Aleta Chuko",
     "zone_legacy_id": 89,
     "comment": "de",
+    "administrative_center": "ALETA CHUKO",
     "status": 1,
     "latitude": 11.7260015,
     "longitude": 40.978725
@@ -2956,6 +3263,7 @@
     "name": "HULA",
     "zone_legacy_id": 89,
     "comment": "DE",
+    "administrative_center": "HULA",
     "status": 1,
     "latitude": 6.48333,
     "longitude": 38.51667
@@ -2965,6 +3273,7 @@
     "name": "TULA CITY",
     "zone_legacy_id": 90,
     "comment": null,
+    "administrative_center": "TULA",
     "status": 1,
     "latitude": 7.0481029,
     "longitude": 38.47861
@@ -2974,6 +3283,7 @@
     "name": "LOKA ABAYA",
     "zone_legacy_id": 89,
     "comment": "DE",
+    "administrative_center": "HANTATE",
     "status": 1,
     "latitude": 11.7260015,
     "longitude": 40.978725
@@ -2983,6 +3293,7 @@
     "name": "SHEBDINO",
     "zone_legacy_id": 89,
     "comment": "DE",
+    "administrative_center": "LEKU",
     "status": 1,
     "latitude": 11.7260015,
     "longitude": 40.978725
@@ -2992,6 +3303,7 @@
     "name": "WONSHO",
     "zone_legacy_id": 89,
     "comment": "DE",
+    "administrative_center": "BOKASO",
     "status": 1,
     "latitude": 11.7260015,
     "longitude": 40.978725
@@ -3001,6 +3313,7 @@
     "name": "BONA ZURIA",
     "zone_legacy_id": 89,
     "comment": "DE",
+    "administrative_center": "BONA 01",
     "status": 1,
     "latitude": 6.528747,
     "longitude": 38.7121031
@@ -3010,6 +3323,7 @@
     "name": "ARBE GONA",
     "zone_legacy_id": 89,
     "comment": "DE",
+    "administrative_center": "YAYE",
     "status": 1,
     "latitude": 6.6887419,
     "longitude": 38.7164581
@@ -3019,6 +3333,7 @@
     "name": "BORCHA",
     "zone_legacy_id": 89,
     "comment": "DE",
+    "administrative_center": "YIRBA",
     "status": 1,
     "latitude": 11.7260015,
     "longitude": 40.978725
@@ -3028,6 +3343,7 @@
     "name": "DALE",
     "zone_legacy_id": 89,
     "comment": "DE",
+    "administrative_center": "YIRGALEM",
     "status": 1,
     "latitude": 9.33333,
     "longitude": 35.51667
@@ -3037,6 +3353,7 @@
     "name": "HAWASSA ZURIYA",
     "zone_legacy_id": 89,
     "comment": null,
+    "administrative_center": "DORE BAFENO",
     "status": 1,
     "latitude": 11.7260015,
     "longitude": 40.978725
@@ -3046,6 +3363,7 @@
     "name": "HAWELA",
     "zone_legacy_id": 89,
     "comment": null,
+    "administrative_center": "HAWILA",
     "status": 1,
     "latitude": 11.7260015,
     "longitude": 40.978725
@@ -3055,6 +3373,7 @@
     "name": "GORCHE",
     "zone_legacy_id": 89,
     "comment": "DE",
+    "administrative_center": "GORCHE",
     "status": 1,
     "latitude": 6.8769685,
     "longitude": 38.5831153
@@ -3064,6 +3383,7 @@
     "name": "KILALU",
     "zone_legacy_id": 67,
     "comment": "DE",
+    "administrative_center": "KILALU",
     "status": 1,
     "latitude": 11.7108206,
     "longitude": 41.0330866
@@ -3073,6 +3393,7 @@
     "name": "YANGUDI",
     "zone_legacy_id": 91,
     "comment": "DE",
+    "administrative_center": "YANGUDI",
     "status": 1,
     "latitude": 10.953845,
     "longitude": 40.7470623
@@ -3082,6 +3403,7 @@
     "name": "DEBRE-BIRHAN",
     "zone_legacy_id": 92,
     "comment": "DE",
+    "administrative_center": "DEBRE-BIRHAN",
     "status": 1,
     "latitude": 9.6752117,
     "longitude": 39.5324899
@@ -3091,6 +3413,7 @@
     "name": "ANTSOLIYA",
     "zone_legacy_id": 92,
     "comment": "DE",
+    "administrative_center": "MEKOY",
     "status": 1,
     "latitude": 11.5,
     "longitude": 38.5
@@ -3100,6 +3423,7 @@
     "name": "ATAYE CITY",
     "zone_legacy_id": 92,
     "comment": "DE",
+    "administrative_center": "BERGI",
     "status": 1,
     "latitude": 11.5,
     "longitude": 38.5
@@ -3109,6 +3433,7 @@
     "name": "EFRATANA GIBNIM",
     "zone_legacy_id": 92,
     "comment": "DE",
+    "administrative_center": "MEHAL MEDA",
     "status": 1,
     "latitude": 11.5,
     "longitude": 38.5
@@ -3118,6 +3443,7 @@
     "name": "SHEWA ROBIT",
     "zone_legacy_id": 92,
     "comment": "DE",
+    "administrative_center": "SHEWA ROBIT",
     "status": 1,
     "latitude": 9.9918518,
     "longitude": 39.9021171
@@ -3127,6 +3453,7 @@
     "name": "zata",
     "zone_legacy_id": 57,
     "comment": "de",
+    "administrative_center": "zata",
     "status": 1,
     "latitude": 14.2122933,
     "longitude": 39.0775913
@@ -3136,6 +3463,7 @@
     "name": "GOMOLLE",
     "zone_legacy_id": 7,
     "comment": "DE",
+    "administrative_center": "KELA QUFA",
     "status": 1,
     "latitude": 4.892569,
     "longitude": 38.094989
@@ -3145,6 +3473,7 @@
     "name": "LOGIYA",
     "zone_legacy_id": 49,
     "comment": "DE",
+    "administrative_center": "LOGIYA",
     "status": 1,
     "latitude": 11.8023689,
     "longitude": 39.6850226
@@ -3154,6 +3483,7 @@
     "name": "YALO",
     "zone_legacy_id": 82,
     "comment": "DE",
+    "administrative_center": "YALO",
     "status": 1,
     "latitude": 6.955671,
     "longitude": 37.3401726
@@ -3172,6 +3502,7 @@
     "name": "NEKEMT",
     "zone_legacy_id": 93,
     "comment": "DE",
+    "administrative_center": "NEKEMT",
     "status": 1,
     "latitude": 9.0906779,
     "longitude": 36.5480371
@@ -3181,6 +3512,7 @@
     "name": "OFLA",
     "zone_legacy_id": 57,
     "comment": "DE",
+    "administrative_center": "OFLA",
     "status": 1,
     "latitude": 12.5088236,
     "longitude": 39.5196616
@@ -3199,6 +3531,7 @@
     "name": "ANFILO",
     "zone_legacy_id": 96,
     "comment": "DE",
+    "administrative_center": "ANFILO",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -3208,6 +3541,7 @@
     "name": "TERU",
     "zone_legacy_id": 82,
     "comment": "DE",
+    "administrative_center": "NAMA ARA",
     "status": 1,
     "latitude": 12.4,
     "longitude": 40.3
@@ -3217,6 +3551,7 @@
     "name": "TELALAK",
     "zone_legacy_id": 82,
     "comment": "DE",
+    "administrative_center": "TELALAK",
     "status": 1,
     "latitude": 11.7108206,
     "longitude": 41.0330866
@@ -3226,6 +3561,7 @@
     "name": "Dese",
     "zone_legacy_id": 80,
     "comment": "DE",
+    "administrative_center": "Dese",
     "status": 1,
     "latitude": 11.122604,
     "longitude": 39.634982
@@ -3235,6 +3571,7 @@
     "name": "SEDE-MUJA",
     "zone_legacy_id": 57,
     "comment": "DE",
+    "administrative_center": "ADEDA",
     "status": 1,
     "latitude": 11.8379079,
     "longitude": 39.2155604
@@ -3244,6 +3581,7 @@
     "name": "DAHINA",
     "zone_legacy_id": 57,
     "comment": "DE",
+    "administrative_center": "CHILA",
     "status": 1,
     "latitude": 11.8379079,
     "longitude": 39.2155604
@@ -3253,6 +3591,7 @@
     "name": "T/GAYINT",
     "zone_legacy_id": 57,
     "comment": "DE",
+    "administrative_center": "ARBGEBEYA",
     "status": 1,
     "latitude": 11.85,
     "longitude": 38.36667
@@ -3262,6 +3601,7 @@
     "name": "L/GAYINT",
     "zone_legacy_id": 57,
     "comment": "DE",
+    "administrative_center": "NIFASMEWCHA",
     "status": 1,
     "latitude": 11.85,
     "longitude": 38.36667
@@ -3271,6 +3611,7 @@
     "name": "SIMADA",
     "zone_legacy_id": 57,
     "comment": "DE",
+    "administrative_center": "WEGIDA",
     "status": 1,
     "latitude": 11.8379079,
     "longitude": 39.2155604
@@ -3280,6 +3621,7 @@
     "name": "DAWINT",
     "zone_legacy_id": 57,
     "comment": "DE",
+    "administrative_center": "DAWINT",
     "status": 1,
     "latitude": 11.8379079,
     "longitude": 39.2155604
@@ -3289,6 +3631,7 @@
     "name": "HABRO",
     "zone_legacy_id": 57,
     "comment": "DE",
+    "administrative_center": "GIRANA",
     "status": 1,
     "latitude": 8.86667,
     "longitude": 40.51667
@@ -3298,6 +3641,7 @@
     "name": "SALA",
     "zone_legacy_id": 57,
     "comment": "DE",
+    "administrative_center": "FEFA DELDIY",
     "status": 1,
     "latitude": 3.950234,
     "longitude": 41.3016281
@@ -3307,6 +3651,7 @@
     "name": "DAWI",
     "zone_legacy_id": 49,
     "comment": "DE",
+    "administrative_center": "WAYTU",
     "status": 1,
     "latitude": 8.9607077,
     "longitude": 38.7640974
@@ -3316,6 +3661,7 @@
     "name": "MEKET",
     "zone_legacy_id": 62,
     "comment": "DE",
+    "administrative_center": "MEKET",
     "status": 1,
     "latitude": 11.7678252,
     "longitude": 38.7358355
@@ -3334,6 +3680,7 @@
     "name": "MUJA",
     "zone_legacy_id": 57,
     "comment": "DE",
+    "administrative_center": "MUJA",
     "status": 1,
     "latitude": 12.0094354,
     "longitude": 39.2912291
@@ -3343,6 +3690,7 @@
     "name": "MEKANESELAM",
     "zone_legacy_id": 6,
     "comment": "DE",
+    "administrative_center": "MEKANESELAM",
     "status": 1,
     "latitude": 9.9937611,
     "longitude": 39.900869
@@ -3352,6 +3700,7 @@
     "name": "GIDA AYANA",
     "zone_legacy_id": 32,
     "comment": "DE",
+    "administrative_center": "LELESTU HANGER",
     "status": 1,
     "latitude": 9.8779077,
     "longitude": 36.6205474
@@ -3361,6 +3710,7 @@
     "name": "SIBU SIRE",
     "zone_legacy_id": 32,
     "comment": "DE",
+    "administrative_center": "SIRE",
     "status": 1,
     "latitude": 9.1494264,
     "longitude": 36.8249758
@@ -3370,6 +3720,7 @@
     "name": "NUNU KUMBA",
     "zone_legacy_id": 32,
     "comment": "DE",
+    "administrative_center": "NUNU KUMBA",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -3379,6 +3730,7 @@
     "name": "WAYU TUKA",
     "zone_legacy_id": 32,
     "comment": "DE",
+    "administrative_center": "WAYU TUKA",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -3388,6 +3740,7 @@
     "name": "GOBU SAYO",
     "zone_legacy_id": 32,
     "comment": "DE",
+    "administrative_center": "GOBU SAYO",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -3397,6 +3750,7 @@
     "name": "LEKA DULECHA",
     "zone_legacy_id": 32,
     "comment": "DE",
+    "administrative_center": "LEKA DULECHA",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -3406,6 +3760,7 @@
     "name": "GUTO GIDA",
     "zone_legacy_id": 32,
     "comment": "DE",
+    "administrative_center": "KENEF",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -3415,6 +3770,7 @@
     "name": "KIREMU",
     "zone_legacy_id": 32,
     "comment": "DE",
+    "administrative_center": "KIREMU",
     "status": 1,
     "latitude": 9.959482,
     "longitude": 36.866774
@@ -3442,6 +3798,7 @@
     "name": "LIMU",
     "zone_legacy_id": 32,
     "comment": "DE",
+    "administrative_center": "GELELA",
     "status": 1,
     "latitude": 8.18333,
     "longitude": 35.58333
@@ -3451,6 +3808,7 @@
     "name": "DEWA CHEFA",
     "zone_legacy_id": 97,
     "comment": "DE",
+    "administrative_center": "KEMISIE",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -3469,6 +3827,7 @@
     "name": "JILLE TIMUGA",
     "zone_legacy_id": 97,
     "comment": "DE",
+    "administrative_center": "BETE",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -3478,6 +3837,7 @@
     "name": "ARTUMA FURSIE",
     "zone_legacy_id": 97,
     "comment": "DE",
+    "administrative_center": "CHEFA ROBI",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -3496,6 +3856,7 @@
     "name": "BATI CITY ADM",
     "zone_legacy_id": 97,
     "comment": "DE",
+    "administrative_center": "BATI",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -3514,6 +3875,7 @@
     "name": "KELALA",
     "zone_legacy_id": 57,
     "comment": "DE",
+    "administrative_center": "KELALA",
     "status": 1,
     "latitude": 9.78333,
     "longitude": 36.26667
@@ -3523,6 +3885,7 @@
     "name": "Lasta",
     "zone_legacy_id": 62,
     "comment": null,
+    "administrative_center": "Lalibela",
     "status": 1,
     "latitude": 12.0344129,
     "longitude": 39.0431018
@@ -3532,6 +3895,7 @@
     "name": "Dawunt",
     "zone_legacy_id": 62,
     "comment": null,
+    "administrative_center": "Gashena",
     "status": 1,
     "latitude": 11.8379079,
     "longitude": 39.2155604
@@ -3541,6 +3905,7 @@
     "name": "Wore illu",
     "zone_legacy_id": 80,
     "comment": null,
+    "administrative_center": "Wore illu",
     "status": 1,
     "latitude": 10.9342833,
     "longitude": 39.2021182
@@ -3550,6 +3915,7 @@
     "name": "Akesta",
     "zone_legacy_id": 80,
     "comment": null,
+    "administrative_center": "Akesta",
     "status": 1,
     "latitude": 10.8704797,
     "longitude": 39.1776894
@@ -3559,6 +3925,7 @@
     "name": "DELANTA",
     "zone_legacy_id": 80,
     "comment": null,
+    "administrative_center": "DELANTA",
     "status": 1,
     "latitude": 10.9342833,
     "longitude": 39.2021182
@@ -3568,6 +3935,7 @@
     "name": "Mekidella",
     "zone_legacy_id": 80,
     "comment": null,
+    "administrative_center": "Mekidela",
     "status": 1,
     "latitude": 10.9342833,
     "longitude": 39.2021182
@@ -3577,6 +3945,7 @@
     "name": "Tenta",
     "zone_legacy_id": 80,
     "comment": null,
+    "administrative_center": "Tenta",
     "status": 1,
     "latitude": 11.31667,
     "longitude": 39.25
@@ -3586,6 +3955,7 @@
     "name": "Sahila",
     "zone_legacy_id": 80,
     "comment": "The Exact woreda ande zone is not knoun of sahila (\u1233\u1205\u120b)",
+    "administrative_center": "Sahila",
     "status": 1,
     "latitude": 12.9160826,
     "longitude": 38.5048289
@@ -3595,6 +3965,7 @@
     "name": "Jamma",
     "zone_legacy_id": 80,
     "comment": null,
+    "administrative_center": "Jamma",
     "status": 1,
     "latitude": 9.9374575,
     "longitude": 38.8653659
@@ -3604,6 +3975,7 @@
     "name": "Kelela",
     "zone_legacy_id": 80,
     "comment": null,
+    "administrative_center": "Kelela",
     "status": 1,
     "latitude": 10.58333,
     "longitude": 39.0
@@ -3613,6 +3985,7 @@
     "name": "KALO",
     "zone_legacy_id": 98,
     "comment": "DE",
+    "administrative_center": "GERBA/WALO",
     "status": 1,
     "latitude": 4.25,
     "longitude": 40.63333
@@ -3622,6 +3995,7 @@
     "name": "GAMA",
     "zone_legacy_id": 98,
     "comment": "DE",
+    "administrative_center": "DEGOLO",
     "status": 1,
     "latitude": 9.33333,
     "longitude": 42.7
@@ -3631,6 +4005,7 @@
     "name": "Sekota",
     "zone_legacy_id": 57,
     "comment": "Woreda is not  confirm",
+    "administrative_center": "SEKOTA",
     "status": 1,
     "latitude": 12.6254708,
     "longitude": 39.0348591
@@ -3640,6 +4015,7 @@
     "name": "Ayna",
     "zone_legacy_id": 62,
     "comment": null,
+    "administrative_center": "Bugina",
     "status": 1,
     "latitude": 11.8379079,
     "longitude": 39.2155604
@@ -3649,6 +4025,7 @@
     "name": "Ebenat",
     "zone_legacy_id": 1,
     "comment": null,
+    "administrative_center": "Ebenat",
     "status": 1,
     "latitude": 12.1240732,
     "longitude": 38.0502347
@@ -3658,6 +4035,7 @@
     "name": "GAZGIBLA",
     "zone_legacy_id": 99,
     "comment": "DE",
+    "administrative_center": "HAMUSIT",
     "status": 1,
     "latitude": 12.4118963,
     "longitude": 39.0143766
@@ -3667,6 +4045,7 @@
     "name": "ABERGELE",
     "zone_legacy_id": 99,
     "comment": "DE",
+    "administrative_center": "KOZEBA",
     "status": 1,
     "latitude": 13.0439609,
     "longitude": 38.9849055
@@ -3676,6 +4055,7 @@
     "name": "TSAGBJI",
     "zone_legacy_id": 99,
     "comment": "DE",
+    "administrative_center": "TEKEZE",
     "status": 1,
     "latitude": 12.0344129,
     "longitude": 39.0431018
@@ -3685,6 +4065,7 @@
     "name": "MENZEMAMA",
     "zone_legacy_id": 92,
     "comment": "DE",
+    "administrative_center": "MOLALE",
     "status": 1,
     "latitude": 11.5,
     "longitude": 38.5
@@ -3703,6 +4084,7 @@
     "name": "EAST BELESE",
     "zone_legacy_id": 76,
     "comment": "DE",
+    "administrative_center": "TAYMEN",
     "status": 1,
     "latitude": 11.5,
     "longitude": 38.5
@@ -3712,6 +4094,7 @@
     "name": "ZEQOALA",
     "zone_legacy_id": 101,
     "comment": "DE",
+    "administrative_center": "TSITSIQA",
     "status": 1,
     "latitude": 11.5,
     "longitude": 38.5
@@ -3721,6 +4104,7 @@
     "name": "SEMUROBI",
     "zone_legacy_id": 49,
     "comment": "DE",
+    "administrative_center": "SEMUROBI",
     "status": 1,
     "latitude": 11.7108206,
     "longitude": 41.0330866
@@ -3730,6 +4114,7 @@
     "name": "SOUTH WOLLO",
     "zone_legacy_id": 80,
     "comment": "DE",
+    "administrative_center": "JARA/WOLLO",
     "status": 1,
     "latitude": 10.9342833,
     "longitude": 39.2021182
@@ -3739,6 +4124,7 @@
     "name": "DEDESA",
     "zone_legacy_id": 12,
     "comment": "DE",
+    "administrative_center": "DENBI",
     "status": 1,
     "latitude": 9.0246602,
     "longitude": 36.1613257
@@ -3748,6 +4134,7 @@
     "name": "ODA SHAKISO",
     "zone_legacy_id": 51,
     "comment": "DE",
+    "administrative_center": "ODA SHAKISO",
     "status": 1,
     "latitude": 5.5501401,
     "longitude": 39.2030529
@@ -3757,6 +4144,7 @@
     "name": "DALIFAGE",
     "zone_legacy_id": 88,
     "comment": "DE",
+    "administrative_center": "DALIFAGE",
     "status": 1,
     "latitude": 10.6271669,
     "longitude": 40.3131509
@@ -3766,6 +4154,7 @@
     "name": "HAYKE",
     "zone_legacy_id": 102,
     "comment": "DE",
+    "administrative_center": "JARI",
     "status": 1,
     "latitude": 8.4305,
     "longitude": 38.9719365
@@ -3775,6 +4164,7 @@
     "name": "DEWE",
     "zone_legacy_id": 103,
     "comment": "DE",
+    "administrative_center": "WEAYTU",
     "status": 1,
     "latitude": 10.8085861,
     "longitude": 40.1791555
@@ -3793,6 +4183,7 @@
     "name": "DAYE",
     "zone_legacy_id": 21,
     "comment": "DE",
+    "administrative_center": "DAYE",
     "status": 1,
     "latitude": 6.63333,
     "longitude": 38.7
@@ -3802,6 +4193,7 @@
     "name": "CHIRA",
     "zone_legacy_id": 21,
     "comment": "DE",
+    "administrative_center": "CHIRA",
     "status": 1,
     "latitude": 6.6507504,
     "longitude": 38.4796794
@@ -3811,6 +4203,7 @@
     "name": "FAFEM",
     "zone_legacy_id": 104,
     "comment": "DE",
+    "administrative_center": "FAFEM",
     "status": 1,
     "latitude": 9.135,
     "longitude": 42.66222
@@ -3820,6 +4213,7 @@
     "name": "ADAR",
     "zone_legacy_id": 89,
     "comment": "DE",
+    "administrative_center": "KASAGITA",
     "status": 1,
     "latitude": 11.7260015,
     "longitude": 40.978725
@@ -3829,6 +4223,7 @@
     "name": "MEGALE",
     "zone_legacy_id": 105,
     "comment": "DE",
+    "administrative_center": "TONESA",
     "status": 1,
     "latitude": 11.5949663,
     "longitude": 37.3882251
@@ -3838,6 +4233,7 @@
     "name": "ADOLA REDI",
     "zone_legacy_id": 51,
     "comment": "DE",
+    "administrative_center": "ADOLA REDI",
     "status": 1,
     "latitude": 5.5501401,
     "longitude": 39.2030529
@@ -3847,6 +4243,7 @@
     "name": "DIREDEWA",
     "zone_legacy_id": 86,
     "comment": "DE",
+    "administrative_center": "JELDESA",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -3856,6 +4253,7 @@
     "name": "kelemwelega",
     "zone_legacy_id": 97,
     "comment": "de",
+    "administrative_center": "hawagelan",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -3865,6 +4263,7 @@
     "name": "GIRJA",
     "zone_legacy_id": 21,
     "comment": "DE",
+    "administrative_center": "HARFAMA-GUJI",
     "status": 1,
     "latitude": 6.2481607,
     "longitude": 38.9345062
@@ -3874,6 +4273,7 @@
     "name": "HIDA",
     "zone_legacy_id": 82,
     "comment": "DE",
+    "administrative_center": "HIDA-HIDA",
     "status": 1,
     "latitude": 11.93333,
     "longitude": 39.98333
@@ -3883,6 +4283,7 @@
     "name": "DEMBA GOFA",
     "zone_legacy_id": 106,
     "comment": "DE",
+    "administrative_center": "SAWULA",
     "status": 1,
     "latitude": 6.0095303,
     "longitude": 37.5354187
@@ -3892,6 +4293,7 @@
     "name": "ZALA",
     "zone_legacy_id": 106,
     "comment": "DE",
+    "administrative_center": "GALEMA",
     "status": 1,
     "latitude": 13.665489,
     "longitude": 39.103533
@@ -3901,6 +4303,7 @@
     "name": "GOBA DEBER TSHAYE",
     "zone_legacy_id": 106,
     "comment": "DE",
+    "administrative_center": "BETO",
     "status": 1,
     "latitude": 6.0095303,
     "longitude": 37.5354187
@@ -3910,6 +4313,7 @@
     "name": "GEZE GOFA",
     "zone_legacy_id": 106,
     "comment": "DE",
+    "administrative_center": "BULKI",
     "status": 1,
     "latitude": 6.0095303,
     "longitude": 37.5354187
@@ -3919,6 +4323,7 @@
     "name": "AWASH",
     "zone_legacy_id": 59,
     "comment": "DE",
+    "administrative_center": "AWASH-AWASH",
     "status": 1,
     "latitude": 9.9749582,
     "longitude": 40.3904199
@@ -3928,6 +4333,7 @@
     "name": "BEGI",
     "zone_legacy_id": 107,
     "comment": "DE",
+    "administrative_center": "BEGI TOWEN",
     "status": 1,
     "latitude": 9.3507839,
     "longitude": 34.530416
@@ -3937,6 +4343,7 @@
     "name": "BOJI DIRMEJI",
     "zone_legacy_id": 107,
     "comment": "DE",
+    "administrative_center": "BILA",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -3946,6 +4353,7 @@
     "name": "GUDETU KONDOLE",
     "zone_legacy_id": 107,
     "comment": "DE",
+    "administrative_center": "G/DEFNO",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -3955,6 +4363,7 @@
     "name": "GULISO",
     "zone_legacy_id": 107,
     "comment": "DE",
+    "administrative_center": "GULISO TWON",
     "status": 1,
     "latitude": 9.3486123,
     "longitude": 35.5857433
@@ -3964,6 +4373,7 @@
     "name": "MANA SIBU",
     "zone_legacy_id": 107,
     "comment": "DE",
+    "administrative_center": "MENDI",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -3991,6 +4401,7 @@
     "name": "AFEDEM",
     "zone_legacy_id": 108,
     "comment": "DE",
+    "administrative_center": "DANLYAHILY",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -4000,6 +4411,7 @@
     "name": "MAYSO",
     "zone_legacy_id": 108,
     "comment": "DE",
+    "administrative_center": "MULI",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -4009,6 +4421,7 @@
     "name": "GOTA BIKI",
     "zone_legacy_id": 108,
     "comment": "DE",
+    "administrative_center": "GOTA BIKI TOWEN",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -4018,6 +4431,7 @@
     "name": "GABLALU",
     "zone_legacy_id": 108,
     "comment": "DE",
+    "administrative_center": "XAARSO",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -4027,6 +4441,7 @@
     "name": "JIREDEGA JARTI",
     "zone_legacy_id": 109,
     "comment": "DE",
+    "administrative_center": "SHAMBU",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -4036,6 +4451,7 @@
     "name": "Jor",
     "zone_legacy_id": 110,
     "comment": "DE",
+    "administrative_center": "OUTAWA",
     "status": 1,
     "latitude": 10.0597806,
     "longitude": 34.5427386
@@ -4045,6 +4461,7 @@
     "name": "KOTEBE",
     "zone_legacy_id": 111,
     "comment": "DE",
+    "administrative_center": "KOTEBE",
     "status": 1,
     "latitude": 9.0371282,
     "longitude": 38.8398518
@@ -4054,6 +4471,7 @@
     "name": "AXUM",
     "zone_legacy_id": 113,
     "comment": "DE",
+    "administrative_center": "SELEKELAKA",
     "status": 1,
     "latitude": 14.1220982,
     "longitude": 38.7321749
@@ -4063,6 +4481,7 @@
     "name": "SHERE",
     "zone_legacy_id": 112,
     "comment": "DE",
+    "administrative_center": "SHERE",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -4072,6 +4491,7 @@
     "name": "BERBERA",
     "zone_legacy_id": 108,
     "comment": "de",
+    "administrative_center": "BERBERA",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -4081,6 +4501,7 @@
     "name": "KOREM",
     "zone_legacy_id": 114,
     "comment": "DE",
+    "administrative_center": "KOREM",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -4090,6 +4511,7 @@
     "name": "ADEWA",
     "zone_legacy_id": 112,
     "comment": "DE",
+    "administrative_center": "Adewa",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -4099,6 +4521,7 @@
     "name": "EWA",
     "zone_legacy_id": 115,
     "comment": "DE",
+    "administrative_center": "ALEALE SUBULA",
     "status": 1,
     "latitude": 11.7108206,
     "longitude": 41.0330866
@@ -4108,6 +4531,7 @@
     "name": "E/SHEWA",
     "zone_legacy_id": 9,
     "comment": "DE",
+    "administrative_center": "MEKI",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -4117,6 +4541,7 @@
     "name": "BALE",
     "zone_legacy_id": 116,
     "comment": "DE",
+    "administrative_center": "GINIR",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -4126,6 +4551,7 @@
     "name": "BERO",
     "zone_legacy_id": 43,
     "comment": "DE",
+    "administrative_center": "BERO-VOLA",
     "status": 1,
     "latitude": 13.3917079,
     "longitude": 39.1996716
@@ -4135,6 +4561,7 @@
     "name": "DIRE-BAKAKSA",
     "zone_legacy_id": 95,
     "comment": "DE",
+    "administrative_center": "GIFTS",
     "status": 1,
     "latitude": 4.5484468,
     "longitude": 40.7091252
@@ -4144,6 +4571,7 @@
     "name": "GORO BOKOKSA",
     "zone_legacy_id": 95,
     "comment": "DE",
+    "administrative_center": "GORO BOKOKSA 01",
     "status": 1,
     "latitude": 4.5484468,
     "longitude": 40.7091252
@@ -4153,6 +4581,7 @@
     "name": "Danod",
     "zone_legacy_id": 100,
     "comment": null,
+    "administrative_center": "Ccelmoge",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -4162,6 +4591,7 @@
     "name": "Galxamur",
     "zone_legacy_id": 100,
     "comment": null,
+    "administrative_center": "Qoriley",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -4171,6 +4601,7 @@
     "name": "Dawwe",
     "zone_legacy_id": 117,
     "comment": null,
+    "administrative_center": "Dawwe",
     "status": 1,
     "latitude": 11.7108206,
     "longitude": 41.0330866
@@ -4180,6 +4611,7 @@
     "name": "Omo Kuraz",
     "zone_legacy_id": 97,
     "comment": null,
+    "administrative_center": "omo kuraz",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -4189,6 +4621,7 @@
     "name": "ADDISE ABABA",
     "zone_legacy_id": 58,
     "comment": null,
+    "administrative_center": "Addise Ababa",
     "status": 1,
     "latitude": 7.0736751,
     "longitude": 38.4887239
@@ -4198,6 +4631,7 @@
     "name": "Elkeri",
     "zone_legacy_id": 88,
     "comment": null,
+    "administrative_center": "Jijiga-Elkeri",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -4207,6 +4641,7 @@
     "name": "Barey",
     "zone_legacy_id": 88,
     "comment": null,
+    "administrative_center": "Jijiga-Barey",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -4216,6 +4651,7 @@
     "name": "Hargele",
     "zone_legacy_id": 88,
     "comment": null,
+    "administrative_center": "hargale",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -4225,6 +4661,7 @@
     "name": "West Imay",
     "zone_legacy_id": 88,
     "comment": null,
+    "administrative_center": "west imay",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -4234,6 +4671,7 @@
     "name": "Mubarek",
     "zone_legacy_id": 118,
     "comment": null,
+    "administrative_center": "mubarek",
     "status": 1,
     "latitude": 4.7172806,
     "longitude": 40.4804349
@@ -4243,6 +4681,7 @@
     "name": "Qadhadhuma",
     "zone_legacy_id": 118,
     "comment": null,
+    "administrative_center": "qadha dhuma",
     "status": 1,
     "latitude": 4.7172806,
     "longitude": 40.4804349
@@ -4252,6 +4691,7 @@
     "name": "Hudet",
     "zone_legacy_id": 118,
     "comment": null,
+    "administrative_center": "Hudet",
     "status": 1,
     "latitude": 4.7172806,
     "longitude": 40.4804349
@@ -4261,6 +4701,7 @@
     "name": "Guradhamole",
     "zone_legacy_id": 95,
     "comment": null,
+    "administrative_center": "guradhamole",
     "status": 1,
     "latitude": 4.5484468,
     "longitude": 40.7091252
@@ -4270,6 +4711,7 @@
     "name": "QERSADULE",
     "zone_legacy_id": 95,
     "comment": null,
+    "administrative_center": "quarsadula",
     "status": 1,
     "latitude": 4.5484468,
     "longitude": 40.7091252
@@ -4279,6 +4721,7 @@
     "name": "Gode",
     "zone_legacy_id": 119,
     "comment": null,
+    "administrative_center": "Jijiga-Gode",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -4288,6 +4731,7 @@
     "name": "Adadle",
     "zone_legacy_id": 119,
     "comment": null,
+    "administrative_center": "Adadle",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -4297,6 +4741,7 @@
     "name": "East Imay",
     "zone_legacy_id": 119,
     "comment": null,
+    "administrative_center": "East Imay",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -4306,6 +4751,7 @@
     "name": "Garbo",
     "zone_legacy_id": 120,
     "comment": null,
+    "administrative_center": "garbo",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -4315,6 +4761,7 @@
     "name": "Dhuxun",
     "zone_legacy_id": 120,
     "comment": null,
+    "administrative_center": "dhuxun",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -4324,6 +4771,7 @@
     "name": "xararey",
     "zone_legacy_id": 120,
     "comment": null,
+    "administrative_center": "xararey",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -4333,6 +4781,7 @@
     "name": "Kalafo",
     "zone_legacy_id": 119,
     "comment": null,
+    "administrative_center": "kalafo",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -4342,6 +4791,7 @@
     "name": "Harguka",
     "zone_legacy_id": 82,
     "comment": null,
+    "administrative_center": "Kelatbuty",
     "status": 1,
     "latitude": 11.7108206,
     "longitude": 41.0330866
@@ -4360,6 +4810,7 @@
     "name": "Arebote",
     "zone_legacy_id": 82,
     "comment": null,
+    "administrative_center": "Arebot center",
     "status": 1,
     "latitude": 11.7108206,
     "longitude": 41.0330866
@@ -4369,6 +4820,7 @@
     "name": "Uwa",
     "zone_legacy_id": 115,
     "comment": null,
+    "administrative_center": "Alale subla",
     "status": 1,
     "latitude": 11.7108206,
     "longitude": 41.0330866
@@ -4378,6 +4830,7 @@
     "name": "Eledar",
     "zone_legacy_id": 82,
     "comment": null,
+    "administrative_center": "MUDODANA",
     "status": 1,
     "latitude": 11.7108206,
     "longitude": 41.0330866
@@ -4387,6 +4840,7 @@
     "name": "Gursum",
     "zone_legacy_id": 122,
     "comment": null,
+    "administrative_center": "Gursum-jijiga",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -4396,6 +4850,7 @@
     "name": "Tuliguled",
     "zone_legacy_id": 122,
     "comment": null,
+    "administrative_center": "Tulguled -Jijiga",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -4405,6 +4860,7 @@
     "name": "Gadadimo",
     "zone_legacy_id": 118,
     "comment": "DE",
+    "administrative_center": "Gedadimo-Moyale hub",
     "status": 1,
     "latitude": 4.7172806,
     "longitude": 40.4804349
@@ -4414,6 +4870,7 @@
     "name": "MERHAWI",
     "zone_legacy_id": 125,
     "comment": "DE",
+    "administrative_center": "MERHAWI",
     "status": 1,
     "latitude": 11.5,
     "longitude": 38.5
@@ -4423,6 +4880,7 @@
     "name": "HAMUSIT",
     "zone_legacy_id": 1,
     "comment": "de",
+    "administrative_center": "HAMUSIT/HAMUSIT",
     "status": 1,
     "latitude": 11.5,
     "longitude": 38.5
@@ -4441,6 +4899,7 @@
     "name": "MEDA WALABU",
     "zone_legacy_id": 97,
     "comment": "DE",
+    "administrative_center": "MEDA WALABU",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -4459,6 +4918,7 @@
     "name": "FILTU",
     "zone_legacy_id": 95,
     "comment": null,
+    "administrative_center": "FILTU",
     "status": 1,
     "latitude": 4.5484468,
     "longitude": 40.7091252
@@ -4468,6 +4928,7 @@
     "name": "BOQOLMAAYO",
     "zone_legacy_id": 95,
     "comment": null,
+    "administrative_center": "BOQOLMAAYO",
     "status": 1,
     "latitude": 4.5484468,
     "longitude": 40.7091252
@@ -4477,6 +4938,7 @@
     "name": "DOLLO ADO",
     "zone_legacy_id": 95,
     "comment": null,
+    "administrative_center": "DOLLO ADO",
     "status": 1,
     "latitude": 4.5484468,
     "longitude": 40.7091252
@@ -4486,6 +4948,7 @@
     "name": "KARSA DULE",
     "zone_legacy_id": 95,
     "comment": null,
+    "administrative_center": "KARSA DULE",
     "status": 1,
     "latitude": 4.5484468,
     "longitude": 40.7091252
@@ -4495,6 +4958,7 @@
     "name": "WEST GOJAM",
     "zone_legacy_id": 125,
     "comment": null,
+    "administrative_center": "ADET",
     "status": 1,
     "latitude": 11.5,
     "longitude": 38.5
@@ -4504,6 +4968,7 @@
     "name": "DJIBOUTI",
     "zone_legacy_id": 127,
     "comment": "FOR DJIBOUTI OPERATIONS",
+    "administrative_center": "DJIBOUTI",
     "status": 1,
     "latitude": 9.145,
     "longitude": 40.489673
@@ -4513,6 +4978,7 @@
     "name": "GIRJA-GUJI",
     "zone_legacy_id": 51,
     "comment": "DE",
+    "administrative_center": "GIRJA",
     "status": 1,
     "latitude": 6.2481607,
     "longitude": 38.9345062
@@ -4522,6 +4988,7 @@
     "name": "ABIDA",
     "zone_legacy_id": 128,
     "comment": "DE",
+    "administrative_center": "ABIDA CENTER",
     "status": 1,
     "latitude": 11.7108206,
     "longitude": 41.0330866
@@ -4531,6 +4998,7 @@
     "name": "BABILE",
     "zone_legacy_id": 122,
     "comment": "DE",
+    "administrative_center": "KALOJI HUB",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -4540,6 +5008,7 @@
     "name": "MUSTAHIL",
     "zone_legacy_id": 119,
     "comment": "DE",
+    "administrative_center": "GODE - MUSTAHIL",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -4549,6 +5018,7 @@
     "name": "QALAAFO",
     "zone_legacy_id": 119,
     "comment": "DE",
+    "administrative_center": "GODE - QALAAFO",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -4558,6 +5028,7 @@
     "name": "ELELE",
     "zone_legacy_id": 119,
     "comment": "DE",
+    "administrative_center": "GODE - ELELE",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -4567,6 +5038,7 @@
     "name": "DANAN",
     "zone_legacy_id": 119,
     "comment": "DE",
+    "administrative_center": "GODE - DANAN",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -4576,6 +5048,7 @@
     "name": "FERFER",
     "zone_legacy_id": 119,
     "comment": "de",
+    "administrative_center": "FERFER",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -4585,6 +5058,7 @@
     "name": "EMEY BERI",
     "zone_legacy_id": 119,
     "comment": "DE",
+    "administrative_center": "GODE - EMEY BERI",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -4594,6 +5068,7 @@
     "name": "ABA QARO",
     "zone_legacy_id": 119,
     "comment": "DE",
+    "administrative_center": "GODE - ABA QARO",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -4603,6 +5078,7 @@
     "name": "QUBI",
     "zone_legacy_id": 55,
     "comment": "DE",
+    "administrative_center": "FIK - QUBI",
     "status": 1,
     "latitude": 8.4392817,
     "longitude": 42.1142323
@@ -4612,6 +5088,7 @@
     "name": "LEGE - HIDA",
     "zone_legacy_id": 55,
     "comment": "DE",
+    "administrative_center": "FIK LEGEHIDA",
     "status": 1,
     "latitude": 7.93333,
     "longitude": 41.06666
@@ -4621,6 +5098,7 @@
     "name": "BEERCANO",
     "zone_legacy_id": 119,
     "comment": "DE",
+    "administrative_center": "GODE - BEERCANO",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -4630,6 +5108,7 @@
     "name": "CADADLE",
     "zone_legacy_id": 119,
     "comment": "DE",
+    "administrative_center": "GODE - ADELE",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -4639,6 +5118,7 @@
     "name": "XAMARO",
     "zone_legacy_id": 55,
     "comment": "DE",
+    "administrative_center": "FIK - XAMARO",
     "status": 1,
     "latitude": 8.4392817,
     "longitude": 42.1142323
@@ -4648,6 +5128,7 @@
     "name": "FIIQ",
     "zone_legacy_id": 55,
     "comment": "DE",
+    "administrative_center": "FIIK HUB",
     "status": 1,
     "latitude": 8.4392817,
     "longitude": 42.1142323
@@ -4657,6 +5138,7 @@
     "name": "SALAHAD",
     "zone_legacy_id": 55,
     "comment": "DE",
+    "administrative_center": "SALAHAD",
     "status": 1,
     "latitude": 8.4392817,
     "longitude": 42.1142323
@@ -4666,6 +5148,7 @@
     "name": "WANGEY",
     "zone_legacy_id": 55,
     "comment": "DE",
+    "administrative_center": "FIK - WANGEY",
     "status": 1,
     "latitude": 8.4392817,
     "longitude": 42.1142323
@@ -4675,6 +5158,7 @@
     "name": "YAXOOB",
     "zone_legacy_id": 55,
     "comment": "DE",
+    "administrative_center": "FIK - YAXOOB",
     "status": 1,
     "latitude": 8.4392817,
     "longitude": 42.1142323
@@ -4684,6 +5168,7 @@
     "name": "DHUTUN",
     "zone_legacy_id": 120,
     "comment": "DE",
+    "administrative_center": "ELWAYE - DHUTUN",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -4693,6 +5178,7 @@
     "name": "DOOLOWBAY",
     "zone_legacy_id": 88,
     "comment": "DE",
+    "administrative_center": "HARGELE HUB",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -4702,6 +5188,7 @@
     "name": "KOHLE",
     "zone_legacy_id": 88,
     "comment": "DE",
+    "administrative_center": "HARGELE - KOHLE",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -4711,6 +5198,7 @@
     "name": "CELKARI",
     "zone_legacy_id": 88,
     "comment": "DE",
+    "administrative_center": "HARGELE - CELKARI",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -4720,6 +5208,7 @@
     "name": "CEELWAYNE",
     "zone_legacy_id": 120,
     "comment": "DE",
+    "administrative_center": "ELWAYNE - NOGOB",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -4729,6 +5218,7 @@
     "name": "HORSHAGAX",
     "zone_legacy_id": 120,
     "comment": "DE",
+    "administrative_center": "ELWAYNE - HORSHAGAX/ NOGOB",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -4738,6 +5228,7 @@
     "name": "CAAYUUN",
     "zone_legacy_id": 120,
     "comment": "DE",
+    "administrative_center": "ELWAYNE - CAAYUUN",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -4747,6 +5238,7 @@
     "name": "SAGAG",
     "zone_legacy_id": 120,
     "comment": "DE",
+    "administrative_center": "ELWAYNE - SAGAG",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -4756,6 +5248,7 @@
     "name": "WEST EMAY",
     "zone_legacy_id": 88,
     "comment": "DE",
+    "administrative_center": "HARGELE - EMAY",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -4765,6 +5258,7 @@
     "name": "JARATI",
     "zone_legacy_id": 88,
     "comment": "DE",
+    "administrative_center": "HARGELE - JARATI",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -4774,6 +5268,7 @@
     "name": "YOOCLE",
     "zone_legacy_id": 36,
     "comment": "DE",
+    "administrative_center": "DAGAHABUR - YOOCLE",
     "status": 1,
     "latitude": 8.0735213,
     "longitude": 44.0954224
@@ -4783,6 +5278,7 @@
     "name": "BIRQOD",
     "zone_legacy_id": 36,
     "comment": "DE",
+    "administrative_center": "DAGAHABUR - BIRQOD",
     "status": 1,
     "latitude": 8.0735213,
     "longitude": 44.0954224
@@ -4792,6 +5288,7 @@
     "name": "ARARSO",
     "zone_legacy_id": 36,
     "comment": "DE",
+    "administrative_center": "DAGAHABUR - ARARSO",
     "status": 1,
     "latitude": 8.0735213,
     "longitude": 44.0954224
@@ -4801,6 +5298,7 @@
     "name": "DAGAHABUR",
     "zone_legacy_id": 36,
     "comment": "DE",
+    "administrative_center": "DAGAHABUR",
     "status": 1,
     "latitude": 8.0735213,
     "longitude": 44.0954224
@@ -4810,6 +5308,7 @@
     "name": "GURADAMOLE",
     "zone_legacy_id": 95,
     "comment": "DE",
+    "administrative_center": "DOLLO ADO - GURADAMOLE",
     "status": 1,
     "latitude": 4.5484468,
     "longitude": 40.7091252
@@ -4819,6 +5318,7 @@
     "name": "ERRER",
     "zone_legacy_id": 129,
     "comment": "DE",
+    "administrative_center": "SHINILE - ERRER",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -4828,6 +5328,7 @@
     "name": "GOROBOKOKSA/ LIBAN",
     "zone_legacy_id": 95,
     "comment": "DE",
+    "administrative_center": "DOLLO ADO - GORO",
     "status": 1,
     "latitude": 4.5484468,
     "longitude": 40.7091252
@@ -4837,6 +5338,7 @@
     "name": "GUNAGAD",
     "zone_legacy_id": 36,
     "comment": "DE",
+    "administrative_center": "DAGAHABUR - GUANAGAD",
     "status": 1,
     "latitude": 8.0735213,
     "longitude": 44.0954224
@@ -4846,6 +5348,7 @@
     "name": "DHANGAMADOW",
     "zone_legacy_id": 36,
     "comment": "DE",
+    "administrative_center": "DAGAHAMUR - DHANGAMADOW",
     "status": 1,
     "latitude": 8.0735213,
     "longitude": 44.0954224
@@ -4855,6 +5358,7 @@
     "name": "DAROOR",
     "zone_legacy_id": 36,
     "comment": "DE",
+    "administrative_center": "DAROOR",
     "status": 1,
     "latitude": 8.0735213,
     "longitude": 44.0954224
@@ -4864,6 +5368,7 @@
     "name": "EMAY",
     "zone_legacy_id": 55,
     "comment": "DE",
+    "administrative_center": "FIK - EMAY",
     "status": 1,
     "latitude": 8.4392817,
     "longitude": 42.1142323
@@ -4873,6 +5378,7 @@
     "name": "MAYA MULUQA",
     "zone_legacy_id": 55,
     "comment": "DE",
+    "administrative_center": "FIK - MULUQA",
     "status": 1,
     "latitude": 8.4392817,
     "longitude": 42.1142323
@@ -4882,6 +5388,7 @@
     "name": "DHUNYAR",
     "zone_legacy_id": 129,
     "comment": "DE",
+    "administrative_center": "SHINILE - DHUNYAR",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -4891,6 +5398,7 @@
     "name": "DEBREMARKOS",
     "zone_legacy_id": 130,
     "comment": "DE",
+    "administrative_center": "DEBREMARKOS",
     "status": 1,
     "latitude": 11.5,
     "longitude": 38.5
@@ -4900,6 +5408,7 @@
     "name": "GASHAAMO",
     "zone_legacy_id": 36,
     "comment": "DE",
+    "administrative_center": "DAGAHABUR - GASHAAMO",
     "status": 1,
     "latitude": 8.0735213,
     "longitude": 44.0954224
@@ -4909,6 +5418,7 @@
     "name": "AWBARE",
     "zone_legacy_id": 122,
     "comment": "DE",
+    "administrative_center": "JIGJIGA - AWBARE",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -4918,6 +5428,7 @@
     "name": "GOLIJANO",
     "zone_legacy_id": 122,
     "comment": "DE",
+    "administrative_center": "JIGJIGA - GOLIJANO",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -4927,6 +5438,7 @@
     "name": "WAJALE",
     "zone_legacy_id": 122,
     "comment": "DE",
+    "administrative_center": "JIGJIGA - WAJALE",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -4936,6 +5448,7 @@
     "name": "GALAADI",
     "zone_legacy_id": 100,
     "comment": null,
+    "administrative_center": "WARDHER - GALAADI",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -4945,6 +5458,7 @@
     "name": "LAHEL YUCUB",
     "zone_legacy_id": 100,
     "comment": null,
+    "administrative_center": "WARDHER - LAHEL",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -4954,6 +5468,7 @@
     "name": "GAXAMUR",
     "zone_legacy_id": 100,
     "comment": null,
+    "administrative_center": "WARDHER - GAXAMUR",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -4963,6 +5478,7 @@
     "name": "BOOKH",
     "zone_legacy_id": 100,
     "comment": null,
+    "administrative_center": "WARDHER - BOOKH",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -4972,6 +5488,7 @@
     "name": "DANOOD",
     "zone_legacy_id": 100,
     "comment": "DE",
+    "administrative_center": "WARDHER - DANOOD",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -4981,6 +5498,7 @@
     "name": "WARDER",
     "zone_legacy_id": 100,
     "comment": null,
+    "administrative_center": "WARDHER - WARDER",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -4990,6 +5508,7 @@
     "name": "DARATOOLE",
     "zone_legacy_id": 100,
     "comment": null,
+    "administrative_center": "WARDHER - DARATOOLE",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -4999,6 +5518,7 @@
     "name": "MOYALE - SOMALI",
     "zone_legacy_id": 118,
     "comment": null,
+    "administrative_center": "MOYALE - SOMALI",
     "status": 1,
     "latitude": 4.7172806,
     "longitude": 40.4804349
@@ -5008,6 +5528,7 @@
     "name": "KEBRIDAHAR",
     "zone_legacy_id": 131,
     "comment": "DE",
+    "administrative_center": "KEBRIDAHAR",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -5017,6 +5538,7 @@
     "name": "SHILABO",
     "zone_legacy_id": 131,
     "comment": null,
+    "administrative_center": "KEBRIDAHAR - SHILABO",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -5026,6 +5548,7 @@
     "name": "MARSIN",
     "zone_legacy_id": 131,
     "comment": null,
+    "administrative_center": "MARSIN",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -5035,6 +5558,7 @@
     "name": "SHAYKOSH",
     "zone_legacy_id": 131,
     "comment": null,
+    "administrative_center": "KEBRIDAHAR - SHAYKOSH",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -5044,6 +5568,7 @@
     "name": "DHOBAWEYIN",
     "zone_legacy_id": 131,
     "comment": null,
+    "administrative_center": "KEBRIDAHAR - DHOBAWEYIN",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -5053,6 +5578,7 @@
     "name": "HILOOLEY",
     "zone_legacy_id": 131,
     "comment": null,
+    "administrative_center": "KEBRIDAHAR - HILOLEY",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -5062,6 +5588,7 @@
     "name": "BOODALEY",
     "zone_legacy_id": 131,
     "comment": null,
+    "administrative_center": "KEBRIDAHAR - BOODALEY",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -5071,6 +5598,7 @@
     "name": "ELOGADEEN",
     "zone_legacy_id": 131,
     "comment": null,
+    "administrative_center": "KEBRIDAHAR - ELOGADEEN",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -5080,6 +5608,7 @@
     "name": "KUDUNBUR",
     "zone_legacy_id": 131,
     "comment": null,
+    "administrative_center": "KEBRIDAHAR - KUDUNBUR",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -5089,6 +5618,7 @@
     "name": "LASDHANKAYRE",
     "zone_legacy_id": 131,
     "comment": null,
+    "administrative_center": "KEBRIDAHAR - LASDHANKAYRE",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -5098,6 +5628,7 @@
     "name": "QADIM",
     "zone_legacy_id": 118,
     "comment": null,
+    "administrative_center": "QADIM - SOMALI",
     "status": 1,
     "latitude": 4.7172806,
     "longitude": 40.4804349
@@ -5107,6 +5638,7 @@
     "name": "RASO",
     "zone_legacy_id": 88,
     "comment": "DE",
+    "administrative_center": "HARGELE - RASO",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -5116,6 +5648,7 @@
     "name": "QABRIBAYAH",
     "zone_legacy_id": 122,
     "comment": null,
+    "administrative_center": "JIGJIGA - QABRIBAYAH",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -5125,6 +5658,7 @@
     "name": "LAGAHIDA",
     "zone_legacy_id": 132,
     "comment": "DE",
+    "administrative_center": "FIK - LAGAHIDA",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -5134,6 +5668,7 @@
     "name": "DHAKA SUUFTI",
     "zone_legacy_id": 95,
     "comment": "DE",
+    "administrative_center": "DOLLO ADO - DHAKASUFTI",
     "status": 1,
     "latitude": 4.5484468,
     "longitude": 40.7091252
@@ -5143,6 +5678,7 @@
     "name": "BIZET",
     "zone_legacy_id": 133,
     "comment": "DE",
+    "administrative_center": "BIZET",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -5152,6 +5688,7 @@
     "name": "GUME ELDALO",
     "zone_legacy_id": 126,
     "comment": "DE",
+    "administrative_center": "ARDA MADHERA",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -5161,6 +5698,7 @@
     "name": "BEDELE",
     "zone_legacy_id": 135,
     "comment": null,
+    "administrative_center": "BEDELE",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -5170,6 +5708,7 @@
     "name": "EROB",
     "zone_legacy_id": 133,
     "comment": "DE",
+    "administrative_center": "DEWAHAN - IN ABALA",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -5179,6 +5718,7 @@
     "name": "ENDERTA",
     "zone_legacy_id": 136,
     "comment": "DE",
+    "administrative_center": "QWIHA",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -5188,6 +5728,7 @@
     "name": "EMBA SIENETI",
     "zone_legacy_id": 86,
     "comment": "DE",
+    "administrative_center": "NEBELET IN ABALA",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -5197,6 +5738,7 @@
     "name": "ADET - TIGRAI",
     "zone_legacy_id": 86,
     "comment": null,
+    "administrative_center": "LEMUMA",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -5206,6 +5748,7 @@
     "name": "SAMRI",
     "zone_legacy_id": 136,
     "comment": "DE",
+    "administrative_center": "SAMRI IN ABALA",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -5215,6 +5758,7 @@
     "name": "CHILA",
     "zone_legacy_id": 86,
     "comment": "DE",
+    "administrative_center": "CHILA IN ABALA",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -5224,6 +5768,7 @@
     "name": "EDAGA HAMUS",
     "zone_legacy_id": 133,
     "comment": "DE",
+    "administrative_center": "EDAGA HAMUS - IN ABALA",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -5233,6 +5778,7 @@
     "name": "KEYHE TEKLI",
     "zone_legacy_id": 86,
     "comment": "DE",
+    "administrative_center": "WORKAMBA IN ABALA",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -5242,6 +5788,7 @@
     "name": "AMBA ALAJE",
     "zone_legacy_id": 136,
     "comment": "DE",
+    "administrative_center": "ALAJE IN ABALA",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -5251,6 +5798,7 @@
     "name": "HAHAYLE",
     "zone_legacy_id": 86,
     "comment": "DE",
+    "administrative_center": "FERESMAY IN ABALA",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -5260,6 +5808,7 @@
     "name": "TSEADA AMBA",
     "zone_legacy_id": 133,
     "comment": "DE",
+    "administrative_center": "FREWEYNI IN ABALA",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -5269,6 +5818,7 @@
     "name": "LAELAY TSELEMT",
     "zone_legacy_id": 138,
     "comment": "DE",
+    "administrative_center": "YECHILA TOWN - IN ABALA",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -5287,6 +5837,7 @@
     "name": "ELLELE",
     "zone_legacy_id": 119,
     "comment": "DE",
+    "administrative_center": "ADEHAN",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -5296,6 +5847,7 @@
     "name": "BERCAANO",
     "zone_legacy_id": 119,
     "comment": "DE",
+    "administrative_center": "DUDUN - BERCAANO",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -5305,6 +5857,7 @@
     "name": "DENAN",
     "zone_legacy_id": 56,
     "comment": "DE",
+    "administrative_center": "BULKA SHINILE",
     "status": 1,
     "latitude": 10.2122931,
     "longitude": 41.9276455
@@ -5314,6 +5867,7 @@
     "name": "KELAFO",
     "zone_legacy_id": 56,
     "comment": "DE",
+    "administrative_center": "LUKDERYLE",
     "status": 1,
     "latitude": 10.2122931,
     "longitude": 41.9276455
@@ -5323,6 +5877,7 @@
     "name": "Cayuun",
     "zone_legacy_id": 139,
     "comment": "DE",
+    "administrative_center": "Cayuun 01",
     "status": 1,
     "latitude": 9.5942885,
     "longitude": 41.8617959
@@ -5332,6 +5887,7 @@
     "name": "Boqol maayso",
     "zone_legacy_id": 95,
     "comment": "DE",
+    "administrative_center": "Koobe",
     "status": 1,
     "latitude": 4.5484468,
     "longitude": 40.7091252
@@ -5341,6 +5897,7 @@
     "name": "WEST WELABU",
     "zone_legacy_id": 126,
     "comment": "DE",
+    "administrative_center": "WEST WELABU",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -5350,6 +5907,7 @@
     "name": "NESTDER",
     "zone_legacy_id": 86,
     "comment": "DE",
+    "administrative_center": "DEGO IN ABALA",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -5359,6 +5917,7 @@
     "name": "HAWZEN",
     "zone_legacy_id": 133,
     "comment": "de",
+    "administrative_center": "HAWZEN IN ABALA",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -5368,6 +5927,7 @@
     "name": "RHANDA ARBET",
     "zone_legacy_id": 86,
     "comment": null,
+    "administrative_center": "RAMA IN ABALA",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -5377,6 +5937,7 @@
     "name": "TANQUA MELASH",
     "zone_legacy_id": 86,
     "comment": "DE",
+    "administrative_center": "AGBI IN ABALA",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -5386,6 +5947,7 @@
     "name": "TAHETAY MAYCHEW",
     "zone_legacy_id": 86,
     "comment": "DE",
+    "administrative_center": "WUKRO MARYA IN ABALA",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -5395,6 +5957,7 @@
     "name": "AKOBO",
     "zone_legacy_id": 140,
     "comment": "DE",
+    "administrative_center": "METAR",
     "status": 1,
     "latitude": 7.8102647,
     "longitude": 34.1822172
@@ -5404,6 +5967,7 @@
     "name": "GERALTA",
     "zone_legacy_id": 133,
     "comment": "DE",
+    "administrative_center": "TSIGEREDA",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -5413,6 +5977,7 @@
     "name": "EGELA",
     "zone_legacy_id": 86,
     "comment": "DE",
+    "administrative_center": "GEREHA SENAY IN ABALA",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -5422,6 +5987,7 @@
     "name": "BORA",
     "zone_legacy_id": 114,
     "comment": "DE",
+    "administrative_center": "BORA IN ABALA",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -5431,6 +5997,7 @@
     "name": "SELEWA",
     "zone_legacy_id": 114,
     "comment": "DE",
+    "administrative_center": "SELEWA",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -5440,6 +6007,7 @@
     "name": "ATSBI ENDESELASSIE",
     "zone_legacy_id": 133,
     "comment": "DE",
+    "administrative_center": "ATSBI TOWN IN ABALA",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -5449,6 +6017,7 @@
     "name": "SAHARTI",
     "zone_legacy_id": 136,
     "comment": "DE",
+    "administrative_center": "GEJET IN ABALA",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -5458,6 +6027,7 @@
     "name": "MAY KENETAL",
     "zone_legacy_id": 86,
     "comment": "DE",
+    "administrative_center": "Maykentan Segira",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -5467,6 +6037,7 @@
     "name": "AHSEA",
     "zone_legacy_id": 86,
     "comment": "DE",
+    "administrative_center": "AHSEA IN ABALA",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -5476,6 +6047,7 @@
     "name": "GOLJANO",
     "zone_legacy_id": 122,
     "comment": "DE",
+    "administrative_center": "GOLJANO",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -5485,6 +6057,7 @@
     "name": "Lasdhankyre",
     "zone_legacy_id": 131,
     "comment": "de",
+    "administrative_center": "Loo'jiid",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -5494,6 +6067,7 @@
     "name": "DAYMEED",
     "zone_legacy_id": 129,
     "comment": "DE",
+    "administrative_center": "QARAF",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -5503,6 +6077,7 @@
     "name": "NEQSEGE",
     "zone_legacy_id": 114,
     "comment": "DE",
+    "administrative_center": "NEQSEGE",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -5512,6 +6087,7 @@
     "name": "WAJIRAT",
     "zone_legacy_id": 136,
     "comment": "DE",
+    "administrative_center": "BERESTBA",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -5521,6 +6097,7 @@
     "name": "SAMRE",
     "zone_legacy_id": 136,
     "comment": "DE",
+    "administrative_center": "SAMRE",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -5530,6 +6107,7 @@
     "name": "TSR WEMBERTA",
     "zone_legacy_id": 133,
     "comment": "DE",
+    "administrative_center": "AGLATS",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -5539,6 +6117,7 @@
     "name": "DEBRE ZEYIT/BISHOFTU",
     "zone_legacy_id": 9,
     "comment": "DE",
+    "administrative_center": "DEBREZEYIT/BISHOFTU",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -5548,6 +6127,7 @@
     "name": "WOLISO",
     "zone_legacy_id": 141,
     "comment": "DE",
+    "administrative_center": "WOLISO",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -5557,6 +6137,7 @@
     "name": "AFDEM",
     "zone_legacy_id": 129,
     "comment": "DE",
+    "administrative_center": "AFDEM TOWN",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -5566,6 +6147,7 @@
     "name": "BICILBUR",
     "zone_legacy_id": 36,
     "comment": "DE",
+    "administrative_center": "bileilbur town",
     "status": 1,
     "latitude": 8.0735213,
     "longitude": 44.0954224
@@ -5575,6 +6157,7 @@
     "name": "GELAN GUDA",
     "zone_legacy_id": 142,
     "comment": "DE",
+    "administrative_center": "ALEMGENA",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -5584,6 +6167,7 @@
     "name": "JANAMORA",
     "zone_legacy_id": 94,
     "comment": null,
+    "administrative_center": "JANAMORA",
     "status": 1,
     "latitude": 11.5,
     "longitude": 38.5
@@ -5593,6 +6177,7 @@
     "name": "ALAJE",
     "zone_legacy_id": 114,
     "comment": "DE",
+    "administrative_center": "ADISHEHU",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -5602,6 +6187,7 @@
     "name": "ARBA MINCH",
     "zone_legacy_id": 143,
     "comment": "DE",
+    "administrative_center": "ARBA MINCH",
     "status": 1,
     "latitude": 6.7089081,
     "longitude": 35.6841753
@@ -5611,6 +6197,7 @@
     "name": "IMAY BARI",
     "zone_legacy_id": 119,
     "comment": "DE",
+    "administrative_center": "DIIREY",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -5620,6 +6207,7 @@
     "name": "SHABALAY",
     "zone_legacy_id": 122,
     "comment": "DE",
+    "administrative_center": "DAADHI",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -5629,6 +6217,7 @@
     "name": "HARSHIN",
     "zone_legacy_id": 122,
     "comment": "DE",
+    "administrative_center": "HARSHIN TOWN",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -5638,6 +6227,7 @@
     "name": "HARAWA",
     "zone_legacy_id": 122,
     "comment": "DE",
+    "administrative_center": "GOGTI",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -5647,6 +6237,7 @@
     "name": "QOOXLE",
     "zone_legacy_id": 88,
     "comment": "DE",
+    "administrative_center": "LABIILE",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -5656,6 +6247,7 @@
     "name": "IMAY GALBEED",
     "zone_legacy_id": 88,
     "comment": "DE",
+    "administrative_center": "DHALAY",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -5665,6 +6257,7 @@
     "name": "MULA",
     "zone_legacy_id": 122,
     "comment": "DE",
+    "administrative_center": "MULA TOWN",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -5674,6 +6267,7 @@
     "name": "Wardher",
     "zone_legacy_id": 100,
     "comment": null,
+    "administrative_center": "Robda,ay",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -5683,6 +6277,7 @@
     "name": "G/ELDALO",
     "zone_legacy_id": 126,
     "comment": null,
+    "administrative_center": "G/ELDALO",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -5692,6 +6287,7 @@
     "name": "Salaxad",
     "zone_legacy_id": 55,
     "comment": "de",
+    "administrative_center": "Shankoor",
     "status": 1,
     "latitude": 8.4392817,
     "longitude": 42.1142323
@@ -5701,6 +6297,7 @@
     "name": "Dhobowain",
     "zone_legacy_id": 131,
     "comment": "DE",
+    "administrative_center": "Dambaska",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -5710,6 +6307,7 @@
     "name": "MAA ISO",
     "zone_legacy_id": 129,
     "comment": null,
+    "administrative_center": "Maa iso idp",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -5719,6 +6317,7 @@
     "name": "Galadi",
     "zone_legacy_id": 100,
     "comment": "DE",
+    "administrative_center": "Galadi idp",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -5728,6 +6327,7 @@
     "name": "Gura Bekeksa",
     "zone_legacy_id": 95,
     "comment": "DE",
+    "administrative_center": "Warguduud",
     "status": 1,
     "latitude": 4.5484468,
     "longitude": 40.7091252
@@ -5737,6 +6337,7 @@
     "name": "El-Ogaden",
     "zone_legacy_id": 131,
     "comment": "DE",
+    "administrative_center": "Dalwadaan",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -5746,6 +6347,7 @@
     "name": "Sheikosh",
     "zone_legacy_id": 131,
     "comment": "DE",
+    "administrative_center": "Waji-waji",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -5755,6 +6357,7 @@
     "name": "Dunyar",
     "zone_legacy_id": 129,
     "comment": null,
+    "administrative_center": "Dunyar IDP",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -5764,6 +6367,7 @@
     "name": "DAMBAL",
     "zone_legacy_id": 129,
     "comment": null,
+    "administrative_center": "Arab",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -5773,6 +6377,7 @@
     "name": "DIG",
     "zone_legacy_id": 36,
     "comment": null,
+    "administrative_center": "Dig IDP 01 & 02",
     "status": 1,
     "latitude": 8.0735213,
     "longitude": 44.0954224
@@ -5782,6 +6387,7 @@
     "name": "Hadhagaala",
     "zone_legacy_id": 129,
     "comment": "DE",
+    "administrative_center": "geedwain",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -5791,6 +6397,7 @@
     "name": "Lah-Yub",
     "zone_legacy_id": 100,
     "comment": "DE",
+    "administrative_center": "NETKUCELIYE",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -5800,6 +6407,7 @@
     "name": "AKSUM",
     "zone_legacy_id": 86,
     "comment": null,
+    "administrative_center": "AKSUM",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -5809,6 +6417,7 @@
     "name": "METTU",
     "zone_legacy_id": 135,
     "comment": "DE",
+    "administrative_center": "METTU",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -5818,6 +6427,7 @@
     "name": "GADHAMOLE",
     "zone_legacy_id": 95,
     "comment": "DE",
+    "administrative_center": "SAMAYO",
     "status": 1,
     "latitude": 4.5484468,
     "longitude": 40.7091252
@@ -5827,6 +6437,7 @@
     "name": "BILCILBUUR",
     "zone_legacy_id": 36,
     "comment": "DE",
+    "administrative_center": "GOSOLOLEY",
     "status": 1,
     "latitude": 8.0735213,
     "longitude": 44.0954224
@@ -5836,6 +6447,7 @@
     "name": "BODALAY",
     "zone_legacy_id": 131,
     "comment": "DE",
+    "administrative_center": "GALADID",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -5845,6 +6457,7 @@
     "name": "Ayun",
     "zone_legacy_id": 139,
     "comment": "DE",
+    "administrative_center": "Ayun Town",
     "status": 1,
     "latitude": 9.5942885,
     "longitude": 41.8617959
@@ -5854,6 +6467,7 @@
     "name": "Dhuhun",
     "zone_legacy_id": 120,
     "comment": "DE",
+    "administrative_center": "Dawadid",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -5863,6 +6477,7 @@
     "name": "YOXOB",
     "zone_legacy_id": 55,
     "comment": "de",
+    "administrative_center": "YOXOOB 01",
     "status": 1,
     "latitude": 8.4392817,
     "longitude": 42.1142323
@@ -5872,6 +6487,7 @@
     "name": "Mayumulqe",
     "zone_legacy_id": 55,
     "comment": "DE",
+    "administrative_center": "Mayumuluqa 01",
     "status": 1,
     "latitude": 8.4392817,
     "longitude": 42.1142323
@@ -5881,6 +6497,7 @@
     "name": "Qadaqaara",
     "zone_legacy_id": 67,
     "comment": "De",
+    "administrative_center": "Qadayiu",
     "status": 1,
     "latitude": 11.7108206,
     "longitude": 41.0330866
@@ -5890,6 +6507,7 @@
     "name": "Qeeli Daqaara",
     "zone_legacy_id": 67,
     "comment": "De",
+    "administrative_center": "Qeeliaqa",
     "status": 1,
     "latitude": 11.7108206,
     "longitude": 41.0330866
@@ -5899,6 +6517,7 @@
     "name": "ADADO",
     "zone_legacy_id": 82,
     "comment": "DE",
+    "administrative_center": "ADADO CENTER",
     "status": 1,
     "latitude": 11.7108206,
     "longitude": 41.0330866
@@ -5908,6 +6527,7 @@
     "name": "AYSHA",
     "zone_legacy_id": 129,
     "comment": "DE",
+    "administrative_center": "BIYO DIILAY",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -5917,6 +6537,7 @@
     "name": "GODEY",
     "zone_legacy_id": 119,
     "comment": "DE",
+    "administrative_center": "WARSAYSO",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -5926,6 +6547,7 @@
     "name": "DHAGAXBUUR",
     "zone_legacy_id": 36,
     "comment": "DE",
+    "administrative_center": "WAJICAD",
     "status": 1,
     "latitude": 8.0735213,
     "longitude": 44.0954224
@@ -5935,6 +6557,7 @@
     "name": "RAYA CHERCHER",
     "zone_legacy_id": 85,
     "comment": "DE",
+    "administrative_center": "BALA",
     "status": 1,
     "latitude": 8.5384711,
     "longitude": 37.9713899
@@ -5944,6 +6567,7 @@
     "name": "AB ALA",
     "zone_legacy_id": 144,
     "comment": "DE",
+    "administrative_center": "GUBBE",
     "status": 1,
     "latitude": 11.7108206,
     "longitude": 41.0330866
@@ -5953,6 +6577,7 @@
     "name": "ELWEYNE",
     "zone_legacy_id": 120,
     "comment": "DE",
+    "administrative_center": "BANGOROYO",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -5962,6 +6587,7 @@
     "name": "HARAREY",
     "zone_legacy_id": 139,
     "comment": "DE",
+    "administrative_center": "XAGAAL",
     "status": 1,
     "latitude": 9.5942885,
     "longitude": 41.8617959
@@ -5971,6 +6597,7 @@
     "name": "HADELE HELA",
     "zone_legacy_id": 117,
     "comment": "DE",
+    "administrative_center": "BOHOLI",
     "status": 1,
     "latitude": 11.7108206,
     "longitude": 41.0330866
@@ -5980,6 +6607,7 @@
     "name": "Entalo",
     "zone_legacy_id": 136,
     "comment": null,
+    "administrative_center": "Hawanie",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -5989,6 +6617,7 @@
     "name": "E/Senayte",
     "zone_legacy_id": 146,
     "comment": null,
+    "administrative_center": "K/Nebelit",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -5998,6 +6627,7 @@
     "name": "Samera",
     "zone_legacy_id": 147,
     "comment": null,
+    "administrative_center": "samira",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -6007,6 +6637,7 @@
     "name": "Aofla",
     "zone_legacy_id": 147,
     "comment": null,
+    "administrative_center": "Filla",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -6016,6 +6647,7 @@
     "name": "T/Milash",
     "zone_legacy_id": 146,
     "comment": null,
+    "administrative_center": "Ejeby",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -6025,6 +6657,7 @@
     "name": "Raya Azebo",
     "zone_legacy_id": 1,
     "comment": null,
+    "administrative_center": "Mehony",
     "status": 1,
     "latitude": 11.5,
     "longitude": 38.5
@@ -6034,6 +6667,7 @@
     "name": "Tenben",
     "zone_legacy_id": 147,
     "comment": null,
+    "administrative_center": "Hagere SAlw",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -6043,6 +6677,7 @@
     "name": "WIJART",
     "zone_legacy_id": 136,
     "comment": "de",
+    "administrative_center": "ADI KEYAH",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -6052,6 +6687,7 @@
     "name": "Dasenech",
     "zone_legacy_id": 148,
     "comment": null,
+    "administrative_center": "Aresumay",
     "status": 1,
     "latitude": 6.7089081,
     "longitude": 35.6841753
@@ -6061,6 +6697,7 @@
     "name": "gnagatom",
     "zone_legacy_id": 148,
     "comment": null,
+    "administrative_center": "gnagatom",
     "status": 1,
     "latitude": 6.7089081,
     "longitude": 35.6841753
@@ -6070,6 +6707,7 @@
     "name": "Hamere",
     "zone_legacy_id": 148,
     "comment": null,
+    "administrative_center": "libemuket",
     "status": 1,
     "latitude": 6.7089081,
     "longitude": 35.6841753
@@ -6079,6 +6717,7 @@
     "name": "D-BAY",
     "zone_legacy_id": 49,
     "comment": "DE",
+    "administrative_center": "LAAQEY",
     "status": 1,
     "latitude": 11.7108206,
     "longitude": 41.0330866
@@ -6088,6 +6727,7 @@
     "name": "Kilete Awlo",
     "zone_legacy_id": 64,
     "comment": null,
+    "administrative_center": "Wukiro",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -6097,6 +6737,7 @@
     "name": "Ahfrom",
     "zone_legacy_id": 146,
     "comment": null,
+    "administrative_center": "Enchito",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -6106,6 +6747,7 @@
     "name": "G/Mekida",
     "zone_legacy_id": 133,
     "comment": null,
+    "administrative_center": "Fajy",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -6115,6 +6757,7 @@
     "name": "G/Hafeshum",
     "zone_legacy_id": 146,
     "comment": null,
+    "administrative_center": "Kokebe-Tsibha",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -6124,6 +6767,7 @@
     "name": "tseya wender",
     "zone_legacy_id": 114,
     "comment": null,
+    "administrative_center": "Hayk Mesaher",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -6133,6 +6777,7 @@
     "name": "k/awlas 10",
     "zone_legacy_id": 133,
     "comment": null,
+    "administrative_center": "Abraham Alsebera",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -6160,6 +6805,7 @@
     "name": "adarkay",
     "zone_legacy_id": 94,
     "comment": null,
+    "administrative_center": "Adi Arkay",
     "status": 1,
     "latitude": 11.5,
     "longitude": 38.5
@@ -6178,6 +6824,7 @@
     "name": "tsral/wenber",
     "zone_legacy_id": 133,
     "comment": null,
+    "administrative_center": "Haykme Sahel",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -6187,6 +6834,7 @@
     "name": "Sera wenbe",
     "zone_legacy_id": 133,
     "comment": null,
+    "administrative_center": "Agla",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -6196,6 +6844,7 @@
     "name": "SHAKISO",
     "zone_legacy_id": 51,
     "comment": "DE",
+    "administrative_center": "SHAKISO",
     "status": 1,
     "latitude": 5.5501401,
     "longitude": 39.2030529
@@ -6340,6 +6989,7 @@
     "name": "Ogela",
     "zone_legacy_id": 133,
     "comment": null,
+    "administrative_center": "Ogela",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -6349,6 +6999,7 @@
     "name": "Endaba Tsahima",
     "zone_legacy_id": 86,
     "comment": null,
+    "administrative_center": "Arrena",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -6358,6 +7009,7 @@
     "name": "Kolla Temben",
     "zone_legacy_id": 146,
     "comment": null,
+    "administrative_center": "guya",
     "status": 1,
     "latitude": 13.881273,
     "longitude": 39.127495
@@ -6367,6 +7019,7 @@
     "name": "TERCHA",
     "zone_legacy_id": 150,
     "comment": null,
+    "administrative_center": "TERCHA",
     "status": 1,
     "latitude": 6.7089081,
     "longitude": 35.6841753
@@ -6376,6 +7029,7 @@
     "name": "HOSSANA",
     "zone_legacy_id": 151,
     "comment": null,
+    "administrative_center": "HOSSANA",
     "status": 1,
     "latitude": 6.7089081,
     "longitude": 35.6841753
@@ -6385,6 +7039,7 @@
     "name": "JIMMA",
     "zone_legacy_id": 152,
     "comment": null,
+    "administrative_center": "LIMU GENET",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -6394,6 +7049,7 @@
     "name": "KONTA",
     "zone_legacy_id": 150,
     "comment": null,
+    "administrative_center": "KARAT",
     "status": 1,
     "latitude": 6.7089081,
     "longitude": 35.6841753
@@ -6403,6 +7059,7 @@
     "name": "YIRGACHEFE",
     "zone_legacy_id": 151,
     "comment": null,
+    "administrative_center": "YIRGACHEFE/DILA",
     "status": 1,
     "latitude": 6.7089081,
     "longitude": 35.6841753
@@ -6430,6 +7087,7 @@
     "name": "Sawula",
     "zone_legacy_id": 106,
     "comment": null,
+    "administrative_center": "Bulky",
     "status": 1,
     "latitude": 6.0095303,
     "longitude": 37.5354187
@@ -6439,6 +7097,7 @@
     "name": "DILLA",
     "zone_legacy_id": 151,
     "comment": null,
+    "administrative_center": "DILLA",
     "status": 1,
     "latitude": 6.7089081,
     "longitude": 35.6841753
@@ -6448,6 +7107,7 @@
     "name": "DOLOBAY",
     "zone_legacy_id": 88,
     "comment": null,
+    "administrative_center": "ALLAN",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -6457,6 +7117,7 @@
     "name": "HAMERO",
     "zone_legacy_id": 55,
     "comment": null,
+    "administrative_center": "KEBELE 1",
     "status": 1,
     "latitude": 8.4392817,
     "longitude": 42.1142323
@@ -6466,6 +7127,7 @@
     "name": "Bonga",
     "zone_legacy_id": 150,
     "comment": null,
+    "administrative_center": "bonga town",
     "status": 1,
     "latitude": 7.2667,
     "longitude": 36.2333
@@ -6475,6 +7137,7 @@
     "name": "HAROREYS",
     "zone_legacy_id": 122,
     "comment": null,
+    "administrative_center": "HARORAYS",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -6484,6 +7147,7 @@
     "name": "SHABEELEY",
     "zone_legacy_id": 122,
     "comment": null,
+    "administrative_center": "SHABEELEY",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -6493,6 +7157,7 @@
     "name": "KORAN/MULLA",
     "zone_legacy_id": 122,
     "comment": null,
+    "administrative_center": "DULQORAX",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -6520,6 +7185,7 @@
     "name": "IMEY GALBED",
     "zone_legacy_id": 88,
     "comment": null,
+    "administrative_center": "BURDA-XOOR",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -6529,6 +7195,7 @@
     "name": "BOKOLMAYO",
     "zone_legacy_id": 95,
     "comment": null,
+    "administrative_center": "KEBE 01",
     "status": 1,
     "latitude": 4.5484468,
     "longitude": 40.7091252
@@ -6547,6 +7214,7 @@
     "name": "ALABA",
     "zone_legacy_id": 26,
     "comment": "de",
+    "administrative_center": "HALABA",
     "status": 1,
     "latitude": 8.0101011,
     "longitude": 39.6716774
@@ -6556,6 +7224,7 @@
     "name": "JINKA",
     "zone_legacy_id": 151,
     "comment": null,
+    "administrative_center": "JINKA",
     "status": 1,
     "latitude": 6.7089081,
     "longitude": 35.6841753
@@ -6565,6 +7234,7 @@
     "name": "GUBE",
     "zone_legacy_id": 72,
     "comment": null,
+    "administrative_center": "gube",
     "status": 1,
     "latitude": 11.7108206,
     "longitude": 41.0330866
@@ -6574,6 +7244,7 @@
     "name": "wesama",
     "zone_legacy_id": 144,
     "comment": null,
+    "administrative_center": "WESAMA",
     "status": 1,
     "latitude": 11.7108206,
     "longitude": 41.0330866
@@ -6583,6 +7254,7 @@
     "name": "KEBRIBEYAH",
     "zone_legacy_id": 122,
     "comment": null,
+    "administrative_center": "FADAYGA",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -6592,6 +7264,7 @@
     "name": "DANNO",
     "zone_legacy_id": 107,
     "comment": null,
+    "administrative_center": "DANNO",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -6601,6 +7274,7 @@
     "name": "INDODE",
     "zone_legacy_id": 58,
     "comment": null,
+    "administrative_center": "INDODE",
     "status": 1,
     "latitude": 7.0736751,
     "longitude": 38.4887239
@@ -6610,6 +7284,7 @@
     "name": "DHANAAN",
     "zone_legacy_id": 119,
     "comment": null,
+    "administrative_center": "DHANAAN TOWN",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -6619,6 +7294,7 @@
     "name": "BIKI",
     "zone_legacy_id": 129,
     "comment": null,
+    "administrative_center": "KITS",
     "status": 1,
     "latitude": 7.2629844,
     "longitude": 43.5360531
@@ -6628,6 +7304,7 @@
     "name": "ILLU",
     "zone_legacy_id": 16,
     "comment": null,
+    "administrative_center": "TEJI",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
@@ -6637,6 +7314,7 @@
     "name": "HOLOTA",
     "zone_legacy_id": 6,
     "comment": null,
+    "administrative_center": "HOLOTA",
     "status": 1,
     "latitude": 9.9937611,
     "longitude": 39.900869
@@ -6646,6 +7324,7 @@
     "name": "DEGEHAMED",
     "zone_legacy_id": 36,
     "comment": null,
+    "administrative_center": "OONDHERE",
     "status": 1,
     "latitude": 8.0735213,
     "longitude": 44.0954224
@@ -6655,6 +7334,7 @@
     "name": "FINFINE ZURIYA",
     "zone_legacy_id": 77,
     "comment": null,
+    "administrative_center": "TATEK",
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461

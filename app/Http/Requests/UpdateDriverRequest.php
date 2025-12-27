@@ -19,16 +19,27 @@ class UpdateDriverRequest extends FormRequest
      */
     public function rules(): array
     {
+        $adultCutoffDate = now()->subYears(18)->toDateString();
+
         return [
             'driverid' => 'required|string|max:255|unique:drivers,driverid,'.$this->driver->id,
             'name' => 'required|string|max:255',
             'sex' => 'required|string|in:male,female',
-            'birthdate' => 'nullable|date|before:today',
+            'birthdate' => [
+                'nullable',
+                'date',
+                "before_or_equal:{$adultCutoffDate}",
+            ],
             'zone' => 'nullable|string|max:255',
             'woreda' => 'nullable|string|max:255',
             'kebele' => 'nullable|string|max:255',
             'housenumber' => 'nullable|string|max:255',
-            'mobile' => 'nullable|string|max:20|regex:/^[0-9+]{10,13}$/',
+            'mobile' => [
+                'nullable',
+                'string',
+                'max:20',
+                'regex:/^(?:\\+251|251|0)(?:9\\d{8}|7\\d{8})$/',
+            ],
             'hireddate' => 'nullable|date|before_or_equal:today',
             'status' => 'required|string|in:active,inactive',
         ];
@@ -44,8 +55,8 @@ class UpdateDriverRequest extends FormRequest
             'driverid.required' => 'Driver ID is required.',
             'name.required' => 'Driver name is required.',
             'sex.in' => 'Gender must be either male or female.',
-            'birthdate.before' => 'Birth date must be before today.',
-            'mobile.regex' => 'Mobile number must be a valid Ethiopian phone number.',
+            'birthdate.before_or_equal' => 'Birth date must show the driver is at least 18 years old.',
+            'mobile.regex' => 'Mobile number must be a valid Ethiopian Ethio Telecom or Safaricom number.',
             'hireddate.before_or_equal' => 'Hired date cannot be in the future.',
             'status.in' => 'Status must be either active or inactive.',
         ];

@@ -700,60 +700,59 @@ export default function Dashboard({
                                 {networkOverview.loadPhaseBreakdown.length === 0 ? (
                                     renderEmptyState('Load phase data unavailable – capture trips with load phase details to populate.')
                                 ) : (
-                                    <div className="grid gap-6 md:grid-cols-[1.35fr_1fr] md:items-center">
-                                        <ResponsiveContainer width="100%" height={320}>
-                                            <PieChart>
-                                                <Pie
-                                                    data={networkOverview.loadPhaseBreakdown}
-                                                    dataKey="count"
-                                                    nameKey="label"
-                                                    innerRadius={75}
-                                                    outerRadius={120}
-                                                    paddingAngle={2}
-                                                >
-                                                    {networkOverview.loadPhaseBreakdown.map(item => (
-                                                        <Cell key={item.phase} fill={item.color} />
-                                                    ))}
-                                                </Pie>
-                                                <Tooltip
-                                                    formatter={(value: unknown, _name: string, context) => {
-                                                        const payload = context?.payload as typeof networkOverview.loadPhaseBreakdown[number] | undefined;
-                                                        const formattedCount = typeof value === 'number' ? integerFormatter.format(value) : value;
-                                                        const shareLabel = payload ? `${numberFormatter.format(payload.share)}% share` : '';
-                                                        return [`${formattedCount} trips`, shareLabel];
-                                                    }}
-                                                    labelFormatter={(label: string) => label}
-                                                />
-                                            </PieChart>
-                                        </ResponsiveContainer>
+                                    <div className="flex flex-col gap-6">
+                                        <div className="text-center">
+                                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Captured trips</p>
+                                            <p className="text-2xl font-semibold text-slate-900 dark:text-white">
+                                                {integerFormatter.format(loadPhaseTotal)}
+                                            </p>
+                                        </div>
 
-                                        <div className="space-y-4">
-                                            <div>
-                                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Captured trips</p>
-                                                <p className="text-2xl font-semibold text-slate-900 dark:text-white">
-                                                    {integerFormatter.format(loadPhaseTotal)}
-                                                </p>
-                                            </div>
-                                            <ul className="space-y-3">
-                                                {networkOverview.loadPhaseBreakdown.map(item => (
-                                                    <li key={item.phase} className="flex items-center justify-between gap-3">
-                                                        <div className="flex items-center gap-2">
-                                                            <span
-                                                                aria-hidden
-                                                                className="inline-flex h-2.5 w-2.5 rounded-full"
-                                                                style={{ backgroundColor: item.color }}
-                                                            />
-                                                            <span className="text-sm font-medium text-slate-800 dark:text-slate-100">
-                                                                {item.label}
-                                                            </span>
-                                                        </div>
-                                                        <span className="text-sm text-slate-600 dark:text-slate-300">
+                                        <div className="mx-auto w-full max-w-[360px]">
+                                            <ResponsiveContainer width="100%" height={320}>
+                                                <PieChart>
+                                                    <Pie
+                                                        data={networkOverview.loadPhaseBreakdown}
+                                                        dataKey="count"
+                                                        nameKey="label"
+                                                        innerRadius={75}
+                                                        outerRadius={120}
+                                                        paddingAngle={2}
+                                                    >
+                                                        {networkOverview.loadPhaseBreakdown.map(item => (
+                                                            <Cell key={item.phase} fill={item.color} />
+                                                        ))}
+                                                    </Pie>
+                                                    <Tooltip
+                                                        formatter={(value: unknown, _name: string, context) => {
+                                                            const payload = context?.payload as typeof networkOverview.loadPhaseBreakdown[number] | undefined;
+                                                            const formattedCount = typeof value === 'number' ? integerFormatter.format(value) : value;
+                                                            const shareLabel = payload ? `${numberFormatter.format(payload.share)}% share` : '';
+                                                            return [`${formattedCount} trips`, shareLabel];
+                                                        }}
+                                                        labelFormatter={(label: string) => label}
+                                                    />
+                                                </PieChart>
+                                            </ResponsiveContainer>
+                                        </div>
+
+                                        <ul className="flex flex-wrap items-center justify-center gap-x-6 gap-y-4 border-t border-slate-200/60 pt-4 text-sm dark:border-slate-700/60">
+                                            {networkOverview.loadPhaseBreakdown.map(item => (
+                                                <li key={item.phase} className="flex items-center gap-3">
+                                                    <span
+                                                        aria-hidden
+                                                        className="inline-flex h-2.5 w-2.5 rounded-full"
+                                                        style={{ backgroundColor: item.color }}
+                                                    />
+                                                    <div className="flex flex-col">
+                                                        <span className="font-medium text-slate-800 dark:text-slate-100">{item.label}</span>
+                                                        <span className="text-slate-600 dark:text-slate-300">
                                                             {numberFormatter.format(item.share)}% · {integerFormatter.format(item.count)}
                                                         </span>
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        </div>
+                                                    </div>
+                                                </li>
+                                            ))}
+                                        </ul>
                                     </div>
                                 )}
                             </CardContent>

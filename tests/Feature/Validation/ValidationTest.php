@@ -104,15 +104,15 @@ class ValidationTest extends TestCase
         // Test valid data
         $validData = [
             'name' => 'John Doe',
-            'driver_id' => 'DRV001',
-            'mobile' => '+251911234567',
-            'sex' => 'Male',
+            'driverid' => 'DRV001',
+            'mobile' => '+251712345678',
+            'sex' => 'male',
             'birthdate' => '1990-05-15',
-            'hired_date' => '2020-01-01',
-            'zone_id' => $zone->id,
-            'woreda_id' => $woreda->id,
+            'hireddate' => '2020-01-01',
+            'zone' => $zone->name,
+            'woreda' => $woreda->name,
             'kebele' => '01',
-            'house_number' => '123',
+            'housenumber' => '123',
             'status' => 'active',
         ];
 
@@ -122,19 +122,40 @@ class ValidationTest extends TestCase
         $response->assertRedirect(route('drivers.index'));
         $this->assertDatabaseHas('drivers', ['name' => 'John Doe']);
 
+        $safaricomValidData = [
+            'name' => 'Safaricom Driver',
+            'driverid' => 'DRV002',
+            'mobile' => '0712345678',
+            'sex' => 'female',
+            'birthdate' => '1992-07-20',
+            'hireddate' => '2021-06-15',
+            'zone' => $zone->name,
+            'woreda' => $woreda->name,
+            'kebele' => '02',
+            'housenumber' => '321',
+            'status' => 'active',
+        ];
+
+        $response = $this->actingAs($this->user)
+            ->post(route('drivers.store'), $safaricomValidData);
+
+        $response->assertRedirect(route('drivers.index'));
+        $this->assertDatabaseHas('drivers', ['driverid' => 'DRV002', 'mobile' => '0712345678']);
+
         // Test invalid data
         $invalidData = [
             'name' => '', // Empty name
-            'driver_id' => '', // Empty driver ID
-            'mobile' => 'invalid_mobile', // Invalid mobile format
+            'driverid' => '', // Empty driver ID
+            'mobile' => '0612345678', // Invalid carrier prefix
             'sex' => 'invalid_sex', // Invalid sex
+            'birthdate' => Carbon::now()->subYears(18)->addDay()->toDateString(), // Younger than 18
             'status' => 'invalid_status', // Invalid status
         ];
 
         $response = $this->actingAs($this->user)
             ->post(route('drivers.store'), $invalidData);
 
-        $response->assertSessionHasErrors(['name', 'driver_id', 'mobile', 'sex', 'status']);
+        $response->assertSessionHasErrors(['name', 'driverid', 'mobile', 'sex', 'birthdate', 'status']);
     }
 
     #[Test]

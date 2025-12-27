@@ -24,19 +24,32 @@ import { ActivityLogTable } from '@/components/activity-log-table'
 import { usePermissions } from '@/hooks/use-permissions'
 import AppLayout from '@/layouts/app-layout'
 import type { BreadcrumbItem } from '@/types'
-import { InteractiveMap } from '@/components/InteractiveMap'
+import { PlaceBoundaryMap } from '@/components/PlaceBoundaryMap'
+import type { GeoJsonInput } from '@/components/boundary-map-utils'
+
+interface RegionSummary {
+  id: number
+  name: string
+  status?: 'active' | 'inactive'
+  boundary_geojson?: GeoJsonInput
+}
+
+interface ZoneSummary {
+  id: number
+  name: string
+  status?: 'active' | 'inactive'
+  boundary_geojson?: GeoJsonInput
+  region?: RegionSummary | null
+}
 
 interface Woreda {
   id: number
   name: string
-  zone: {
-    id: number
-    name: string
-    region: {
-      id: number
-      name: string
-    }
-  }
+  status?: 'active' | 'inactive'
+  boundary_geojson?: GeoJsonInput
+  latitude?: number | string | null
+  longitude?: number | string | null
+  zone?: ZoneSummary | null
 }
 
 interface Place {
@@ -55,6 +68,7 @@ interface Place {
   description?: string | null
   infrastructure_notes?: string | null
   road_quality_notes?: string | null
+  boundary_geojson?: GeoJsonInput
   created_at: string
   updated_at: string
 }
@@ -155,21 +169,39 @@ export default function PlacesShow({ place, activityLogs }: PlacesShowProps) {
   const parsedLongitude = place.longitude === null || place.longitude === undefined ? null : Number(place.longitude)
   const coordinatesProvided = parsedLatitude !== null && !Number.isNaN(parsedLatitude) && parsedLongitude !== null && !Number.isNaN(parsedLongitude)
   const coordinateLabel = `${formatCoordinate(place.latitude)} / ${formatCoordinate(place.longitude)}`
-  const mapPlace = coordinatesProvided
+  const mapPlaceData = {
+    id: place.id,
+    name: place.name,
+    status: place.status,
+    boundary_geojson: place.boundary_geojson,
+    latitude: place.latitude,
+    longitude: place.longitude,
+  }
+
+  const mapWoredaData = place.woreda
     ? {
-        id: place.id,
-        name: place.name,
-        latitude: parsedLatitude as number,
-        longitude: parsedLongitude as number,
-        woreda: {
-          name: place.woreda.name,
-          zone: {
-            name: place.woreda.zone.name,
-            region: {
-              name: place.woreda.zone.region.name,
-            },
-          },
-        },
+        id: place.woreda.id,
+        name: place.woreda.name,
+        status: place.woreda.status,
+        boundary_geojson: place.woreda.boundary_geojson,
+        latitude: place.woreda.latitude,
+        longitude: place.woreda.longitude,
+        zone: place.woreda.zone
+          ? {
+              id: place.woreda.zone.id,
+              name: place.woreda.zone.name,
+              status: place.woreda.zone.status,
+              boundary_geojson: place.woreda.zone.boundary_geojson,
+              region: place.woreda.zone.region
+                ? {
+                    id: place.woreda.zone.region.id,
+                    name: place.woreda.zone.region.name,
+                    status: place.woreda.zone.region.status,
+                    boundary_geojson: place.woreda.zone.region.boundary_geojson,
+                  }
+                : null,
+            }
+          : null,
       }
     : null
 
@@ -265,22 +297,7 @@ export default function PlacesShow({ place, activityLogs }: PlacesShowProps) {
                 <CardDescription>Geospatial context for this place</CardDescription>
               </CardHeader>
               <CardContent>
-                {mapPlace ? (
-                  <InteractiveMap
-                    places={[mapPlace]}
-                    selectedFromPlace={mapPlace}
-                    showRouteDrawing={false}
-                    readOnly
-                    height="360px"
-                  />
-                ) : (
-                  <div className="flex h-64 items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50 text-center dark:border-slate-700 dark:bg-slate-900/40">
-                    <div>
-                      <MapPin className="mx-auto mb-3 h-10 w-10 text-slate-400" />
-                      <p className="text-sm text-muted-foreground">Map unavailable - coordinates not captured for this place yet.</p>
-                    </div>
-                  </div>
-                )}
+                  <PlaceBoundaryMap place={mapPlaceData} woreda={mapWoredaData} height="360px" />
               </CardContent>
             </Card>
 
