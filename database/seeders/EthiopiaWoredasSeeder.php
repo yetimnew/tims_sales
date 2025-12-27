@@ -47,8 +47,6 @@ class EthiopiaWoredasSeeder extends Seeder
                 return [(int) $matches[1] => $zone];
             });
 
-        Woreda::query()->forceDelete();
-
         foreach ($woredaDataset as $woreda) {
             $legacyId = (int) ($woreda['legacy_id'] ?? 0);
             $zoneLegacyId = $woreda['zone_legacy_id'] ?? null;
@@ -72,6 +70,8 @@ class EthiopiaWoredasSeeder extends Seeder
             $comment = $woreda['comment'] ?? null;
             $description = $comment === null ? null : (string) Str::of($comment)->trim()->squish();
             $status = (int) ($woreda['status'] ?? 1) === 1 ? 'active' : 'inactive';
+            $latitude = $woreda['latitude'] ?? null;
+            $longitude = $woreda['longitude'] ?? null;
 
             $payload = array_merge($defaults, [
                 'name' => (string) $name,
@@ -79,9 +79,13 @@ class EthiopiaWoredasSeeder extends Seeder
                 'zone_id' => $zone->id,
                 'description' => $description,
                 'status' => $status,
+                'latitude' => $latitude === null ? null : (float) $latitude,
+                'longitude' => $longitude === null ? null : (float) $longitude,
             ]);
 
-            Woreda::create($payload);
+            Woreda::query()->updateOrCreate([
+                'code' => sprintf('LEGACY_WOREDA_%d', $legacyId),
+            ], $payload);
         }
     }
 }

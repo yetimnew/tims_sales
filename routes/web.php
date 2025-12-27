@@ -384,15 +384,13 @@ Route::middleware('auth')->group(function () {
 
         // Cargo management
         Route::resource('cargo-types', CargoTypeController::class)
-            ->middleware([
-                'index' => 'can:cargotypes.view',
-                'show' => 'can:cargotypes.show',
-                'create' => 'can:cargotypes.create',
-                'store' => 'can:cargotypes.store',
-                'edit' => 'can:cargotypes.edit',
-                'update' => 'can:cargotypes.update',
-                'destroy' => 'can:cargotypes.destroy',
-            ]);
+            ->middlewareFor('index', 'can:cargotypes.view')
+            ->middlewareFor('show', 'can:cargotypes.show')
+            ->middlewareFor('create', 'can:cargotypes.create')
+            ->middlewareFor('store', 'can:cargotypes.store')
+            ->middlewareFor('edit', 'can:cargotypes.edit')
+            ->middlewareFor('update', 'can:cargotypes.update')
+            ->middlewareFor('destroy', 'can:cargotypes.destroy');
 
         Route::get('cargo-types/statistics', [CargoTypeController::class, 'statistics'])
             ->middleware('can:cargotypes.view')
@@ -489,15 +487,13 @@ Route::middleware('auth')->group(function () {
 
         // Geographic management
         Route::resource('regions', RegionController::class)
-            ->middleware([
-                'index' => 'can:regions.view',
-                'show' => 'can:regions.show',
-                'create' => 'can:regions.create',
-                'store' => 'can:regions.store',
-                'edit' => 'can:regions.edit',
-                'update' => 'can:regions.update',
-                'destroy' => 'can:regions.destroy',
-            ]);
+            ->middlewareFor('index', 'can:regions.view')
+            ->middlewareFor('show', 'can:regions.show')
+            ->middlewareFor('create', 'can:regions.create')
+            ->middlewareFor('store', 'can:regions.store')
+            ->middlewareFor('edit', 'can:regions.edit')
+            ->middlewareFor('update', 'can:regions.update')
+            ->middlewareFor('destroy', 'can:regions.destroy');
 
         Route::post('regions/{region}/deactivate', [RegionController::class, 'deactivate'])
             ->middleware('can:regions.deactivate')
@@ -508,14 +504,12 @@ Route::middleware('auth')->group(function () {
             ->name('regions.active');
 
         Route::resource('zones', ZoneController::class)
-            ->middleware([
-                'show' => 'can:zones.show',
-                'create' => 'can:zones.create',
-                'store' => 'can:zones.store',
-                'edit' => 'can:zones.edit',
-                'update' => 'can:zones.update',
-                'destroy' => 'can:zones.destroy',
-            ]);
+            ->middlewareFor('show', 'can:zones.show')
+            ->middlewareFor('create', 'can:zones.create')
+            ->middlewareFor('store', 'can:zones.store')
+            ->middlewareFor('edit', 'can:zones.edit')
+            ->middlewareFor('update', 'can:zones.update')
+            ->middlewareFor('destroy', 'can:zones.destroy');
 
         Route::post('zones/{zone}/deactivate', [ZoneController::class, 'deactivate'])
             ->middleware('can:zones.deactivate')
@@ -526,15 +520,13 @@ Route::middleware('auth')->group(function () {
             ->name('zones.active');
 
         Route::resource('woredas', WoredaController::class)
-            ->middleware([
-                'index' => 'can:woredas.view',
-                'show' => 'can:woredas.show',
-                'create' => 'can:woredas.create',
-                'store' => 'can:woredas.store',
-                'edit' => 'can:woredas.edit',
-                'update' => 'can:woredas.update',
-                'destroy' => 'can:woredas.destroy',
-            ]);
+            ->middlewareFor('index', 'can:woredas.view')
+            ->middlewareFor('show', 'can:woredas.show')
+            ->middlewareFor('create', 'can:woredas.create')
+            ->middlewareFor('store', 'can:woredas.store')
+            ->middlewareFor('edit', 'can:woredas.edit')
+            ->middlewareFor('update', 'can:woredas.update')
+            ->middlewareFor('destroy', 'can:woredas.destroy');
 
         Route::post('woredas/{woreda}/deactivate', [WoredaController::class, 'deactivate'])
             ->middleware('can:woredas.deactivate')
@@ -549,15 +541,13 @@ Route::middleware('auth')->group(function () {
             ->name('places.search');
 
         Route::resource('places', PlaceController::class)
-            ->middleware([
-                'index' => 'can:places.view',
-                'show' => 'can:places.show',
-                'create' => 'can:places.create',
-                'store' => 'can:places.store',
-                'edit' => 'can:places.edit',
-                'update' => 'can:places.update',
-                'destroy' => 'can:places.destroy',
-            ]);
+            ->middlewareFor('index', 'can:places.view')
+            ->middlewareFor('show', 'can:places.show')
+            ->middlewareFor('create', 'can:places.create')
+            ->middlewareFor('store', 'can:places.store')
+            ->middlewareFor('edit', 'can:places.edit')
+            ->middlewareFor('update', 'can:places.update')
+            ->middlewareFor('destroy', 'can:places.destroy');
 
         Route::post('places/{place}/deactivate', [PlaceController::class, 'deactivate'])
             ->middleware('can:places.deactivate')
@@ -568,15 +558,13 @@ Route::middleware('auth')->group(function () {
             ->name('places.active');
 
         Route::resource('distances', DistanceController::class)
-            ->middleware([
-                'index' => 'can:distances.view',
-                'show' => 'can:distances.show',
-                'create' => 'can:distances.create',
-                'store' => 'can:distances.store',
-                'edit' => 'can:distances.edit',
-                'update' => 'can:distances.update',
-                'destroy' => 'can:distances.destroy',
-            ]);
+            ->middlewareFor('index', 'can:distances.view')
+            ->middlewareFor('show', 'can:distances.show')
+            ->middlewareFor('create', 'can:distances.create')
+            ->middlewareFor('store', 'can:distances.store')
+            ->middlewareFor('edit', 'can:distances.edit')
+            ->middlewareFor('update', 'can:distances.update')
+            ->middlewareFor('destroy', 'can:distances.destroy');
 
         Route::post('distances/{distance}/deactivate', [DistanceController::class, 'deactivate'])
             ->middleware('can:distances.deactivate')

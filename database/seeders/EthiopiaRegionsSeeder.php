@@ -36,8 +36,6 @@ class EthiopiaRegionsSeeder extends Seeder
 
         $regionDataset = collect(json_decode(File::get($dataPath), true, 512, JSON_THROW_ON_ERROR));
 
-        Region::query()->forceDelete();
-
         foreach ($regionDataset as $region) {
             $legacyId = (int) ($region['legacy_id'] ?? 0);
             $name = Str::of($region['name'] ?? '')->trim()->squish();
@@ -50,14 +48,21 @@ class EthiopiaRegionsSeeder extends Seeder
             $description = $region['description'] ?? null;
             $status = (int) ($region['status'] ?? 1) === 1 ? 'active' : 'inactive';
 
+            $latitude = $region['latitude'] ?? null;
+            $longitude = $region['longitude'] ?? null;
+
             $payload = array_merge($defaults, [
                 'name' => (string) $name,
                 'code' => (string) $code,
                 'description' => $description === null ? null : (string) Str::of($description)->trim()->squish(),
                 'status' => $status,
+                'latitude' => $latitude === null ? null : (float) $latitude,
+                'longitude' => $longitude === null ? null : (float) $longitude,
             ]);
 
-            Region::create($payload);
+            Region::query()->updateOrCreate([
+                'code' => (string) $code,
+            ], $payload);
         }
     }
 }

@@ -122,7 +122,14 @@ class ZoneController extends Controller
                 'accessibility_score' => 'nullable|numeric|min:0|max:100',
                 'infrastructure_notes' => 'nullable|string|max:2000',
                 'climate_profile' => 'nullable|string|max:2000',
+                'boundary_geojson' => 'nullable|json',
             ]);
+
+            if ($request->has('boundary_geojson')) {
+                $validated['boundary_geojson'] = $request->filled('boundary_geojson')
+                    ? json_decode((string) $request->string('boundary_geojson')->toString(), true)
+                    : null;
+            }
 
             $zone = Zone::create($validated);
 
@@ -159,7 +166,10 @@ class ZoneController extends Controller
      */
     public function show(Zone $zone): Response
     {
-        $zone->load(['region', 'woredas']);
+        $zone->load([
+            'region:id,name,status,boundary_geojson',
+            'woredas:id,zone_id,name,status,population,boundary_geojson',
+        ]);
 
         $activityLogs = Activity::forSubject($zone)
             ->with('causer')
@@ -214,7 +224,14 @@ class ZoneController extends Controller
                 'accessibility_score' => 'nullable|numeric|min:0|max:100',
                 'infrastructure_notes' => 'nullable|string|max:2000',
                 'climate_profile' => 'nullable|string|max:2000',
+                'boundary_geojson' => 'nullable|json',
             ]);
+
+            if ($request->has('boundary_geojson')) {
+                $validated['boundary_geojson'] = $request->filled('boundary_geojson')
+                    ? json_decode((string) $request->string('boundary_geojson')->toString(), true)
+                    : null;
+            }
 
             $original = $zone->getOriginal();
             $zone->fill($validated);

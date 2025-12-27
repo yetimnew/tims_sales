@@ -24,6 +24,7 @@ import { ActivityLogTable } from '@/components/activity-log-table'
 import { usePermissions } from '@/hooks/use-permissions'
 import AppLayout from '@/layouts/app-layout'
 import type { BreadcrumbItem } from '@/types'
+import { InteractiveMap } from '@/components/InteractiveMap'
 
 interface Woreda {
   id: number
@@ -150,8 +151,27 @@ export default function PlacesShow({ place, activityLogs }: PlacesShowProps) {
     })
   }
 
-  const coordinatesProvided = place.latitude !== null && place.latitude !== undefined && place.longitude !== null && place.longitude !== undefined
+  const parsedLatitude = place.latitude === null || place.latitude === undefined ? null : Number(place.latitude)
+  const parsedLongitude = place.longitude === null || place.longitude === undefined ? null : Number(place.longitude)
+  const coordinatesProvided = parsedLatitude !== null && !Number.isNaN(parsedLatitude) && parsedLongitude !== null && !Number.isNaN(parsedLongitude)
   const coordinateLabel = `${formatCoordinate(place.latitude)} / ${formatCoordinate(place.longitude)}`
+  const mapPlace = coordinatesProvided
+    ? {
+        id: place.id,
+        name: place.name,
+        latitude: parsedLatitude as number,
+        longitude: parsedLongitude as number,
+        woreda: {
+          name: place.woreda.name,
+          zone: {
+            name: place.woreda.zone.name,
+            region: {
+              name: place.woreda.zone.region.name,
+            },
+          },
+        },
+      }
+    : null
 
   return (
     <AppLayout breadcrumbs={breadcrumbs}>
@@ -236,6 +256,34 @@ export default function PlacesShow({ place, activityLogs }: PlacesShowProps) {
 
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr),20rem] lg:items-start">
           <div className="space-y-6">
+            <Card className="shadow-lg border-0">
+              <CardHeader className="border-b bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/20 dark:to-indigo-950/20">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <MapPin className="h-5 w-5 text-purple-600" />
+                  Location Overview Map
+                </CardTitle>
+                <CardDescription>Geospatial context for this place</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {mapPlace ? (
+                  <InteractiveMap
+                    places={[mapPlace]}
+                    selectedFromPlace={mapPlace}
+                    showRouteDrawing={false}
+                    readOnly
+                    height="360px"
+                  />
+                ) : (
+                  <div className="flex h-64 items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50 text-center dark:border-slate-700 dark:bg-slate-900/40">
+                    <div>
+                      <MapPin className="mx-auto mb-3 h-10 w-10 text-slate-400" />
+                      <p className="text-sm text-muted-foreground">Map unavailable - coordinates not captured for this place yet.</p>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
             <Card className="shadow-lg border-0 bg-gradient-to-br from-background to-muted/20">
               <CardHeader className="border-b bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/20 dark:to-indigo-950/20">
                 <CardTitle className="flex items-center gap-2 text-lg">

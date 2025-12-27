@@ -4,5179 +4,6659 @@
     "name": "BALY",
     "zone_legacy_id": 5,
     "comment": "de",
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 6,
     "name": "W/SHWA",
     "zone_legacy_id": 6,
     "comment": "de",
-    "status": 1
+    "status": 1,
+    "latitude": 9.9937611,
+    "longitude": 39.900869
   },
   {
     "legacy_id": 7,
     "name": "BORENA",
     "zone_legacy_id": 7,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 4.892569,
+    "longitude": 38.094989
   },
   {
     "legacy_id": 10,
     "name": "MEKO/GASI",
     "zone_legacy_id": 1,
     "comment": "de",
-    "status": 1
+    "status": 1,
+    "latitude": 11.5,
+    "longitude": 38.5
   },
   {
     "legacy_id": 11,
     "name": "GAMBYLA",
     "zone_legacy_id": 11,
     "comment": "de",
-    "status": 1
+    "status": 1,
+    "latitude": 7.8102647,
+    "longitude": 34.1822172
   },
   {
     "legacy_id": 12,
     "name": "JIMA",
     "zone_legacy_id": 12,
     "comment": "de",
-    "status": 1
+    "status": 1,
+    "latitude": 10.1387506,
+    "longitude": 37.8902217
   },
   {
     "legacy_id": 13,
     "name": "W/GUJI",
     "zone_legacy_id": 51,
     "comment": "de",
-    "status": 1
+    "status": 1,
+    "latitude": 8.9901969,
+    "longitude": 35.8239985
   },
   {
     "legacy_id": 14,
     "name": "E/HARERE",
     "zone_legacy_id": 54,
     "comment": "de",
-    "status": 1
+    "status": 1,
+    "latitude": 9.56667,
+    "longitude": 38.63333
   },
   {
     "legacy_id": 15,
     "name": "W/ARSI",
     "zone_legacy_id": 26,
     "comment": "de",
-    "status": 1
+    "status": 1,
+    "latitude": 7.3533442,
+    "longitude": 38.6756595
   },
   {
     "legacy_id": 17,
     "name": "AMARO",
     "zone_legacy_id": 17,
     "comment": "de",
-    "status": 1
+    "status": 1,
+    "latitude": 6.36667,
+    "longitude": 36.86667
   },
   {
     "legacy_id": 18,
     "name": "ADDISE ABABA",
     "zone_legacy_id": 58,
     "comment": null,
-    "status": 0
+    "status": 0,
+    "latitude": 7.0736751,
+    "longitude": 38.4887239
   },
   {
     "legacy_id": 20,
     "name": "HADEYA",
     "zone_legacy_id": 1,
     "comment": "de",
-    "status": 1
+    "status": 1,
+    "latitude": 11.5,
+    "longitude": 38.5
   },
   {
     "legacy_id": 21,
     "name": "SIDAMA",
     "zone_legacy_id": 1,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 6.6507504,
+    "longitude": 38.4796794
   },
   {
     "legacy_id": 22,
     "name": "SILTIY",
     "zone_legacy_id": 1,
     "comment": "de",
-    "status": 1
+    "status": 1,
+    "latitude": 11.5,
+    "longitude": 38.5
   },
   {
     "legacy_id": 23,
     "name": "AFARE",
     "zone_legacy_id": 49,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.7060147,
+    "longitude": 41.0081961
   },
   {
     "legacy_id": 26,
     "name": "ARSI",
     "zone_legacy_id": 26,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.0101011,
+    "longitude": 39.6716774
   },
   {
     "legacy_id": 27,
     "name": "AMARA",
     "zone_legacy_id": 76,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.5,
+    "longitude": 38.5
   },
   {
     "legacy_id": 28,
     "name": "HAWI GUDERU",
     "zone_legacy_id": 1,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.5,
+    "longitude": 38.5
   },
   {
     "legacy_id": 29,
     "name": "HADEYA",
     "zone_legacy_id": 1,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.5,
+    "longitude": 38.5
   },
   {
     "legacy_id": 31,
     "name": "W/HARER",
     "zone_legacy_id": 1,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 9.3118397,
+    "longitude": 42.1284445
   },
   {
     "legacy_id": 33,
     "name": "W/WOLGA",
     "zone_legacy_id": 1,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.5,
+    "longitude": 38.5
   },
   {
     "legacy_id": 34,
     "name": "BENSHANGUL",
     "zone_legacy_id": 52,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 10.3778251,
+    "longitude": 35.5084442
   },
   {
     "legacy_id": 36,
     "name": "JARAR",
     "zone_legacy_id": 44,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.0735213,
+    "longitude": 44.0954224
   },
   {
     "legacy_id": 37,
     "name": "WORETA",
     "zone_legacy_id": 1,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.5,
+    "longitude": 38.5
   },
   {
     "legacy_id": 39,
     "name": "WOLAYTA",
     "zone_legacy_id": 39,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 6.864163,
+    "longitude": 37.762762
   },
   {
     "legacy_id": 40,
     "name": "SHEKA",
     "zone_legacy_id": 1,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.5073076,
+    "longitude": 35.3585049
   },
   {
     "legacy_id": 41,
     "name": "GURAGE",
     "zone_legacy_id": 1,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.5829546,
+    "longitude": 37.861302
   },
   {
     "legacy_id": 43,
     "name": "S/OMO",
     "zone_legacy_id": 1,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 13.3917079,
+    "longitude": 39.1996716
   },
   {
     "legacy_id": 44,
     "name": "DIREDAWA",
     "zone_legacy_id": 44,
     "comment": "de",
-    "status": 1
+    "status": 1,
+    "latitude": 9.5942885,
+    "longitude": 41.8617959
   },
   {
     "legacy_id": 47,
     "name": "SHKA",
     "zone_legacy_id": 1,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.5,
+    "longitude": 38.5
   },
   {
     "legacy_id": 48,
     "name": "S.OMO",
     "zone_legacy_id": 1,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 13.3917079,
+    "longitude": 39.1996716
   },
   {
     "legacy_id": 49,
     "name": "soma.",
     "zone_legacy_id": 1,
     "comment": "de",
-    "status": 1
+    "status": 1,
+    "latitude": 6.0093447,
+    "longitude": 37.5390525
   },
   {
     "legacy_id": 52,
     "name": "KONOBA",
     "zone_legacy_id": 59,
     "comment": "de",
-    "status": 1
+    "status": 1,
+    "latitude": 11.7108206,
+    "longitude": 41.0330866
   },
   {
     "legacy_id": 53,
     "name": "FIVE",
     "zone_legacy_id": 1,
     "comment": "de",
-    "status": 1
+    "status": 1,
+    "latitude": 9.1082427,
+    "longitude": 38.8443547
   },
   {
     "legacy_id": 54,
     "name": "SHKA BENCH",
     "zone_legacy_id": 1,
     "comment": "de",
-    "status": 1
+    "status": 1,
+    "latitude": 11.5,
+    "longitude": 38.5
   },
   {
     "legacy_id": 55,
     "name": "MOYALE",
     "zone_legacy_id": 7,
     "comment": "de",
-    "status": 1
+    "status": 1,
+    "latitude": 3.5241898,
+    "longitude": 39.0512683
   },
   {
     "legacy_id": 56,
     "name": "GOLA",
     "zone_legacy_id": 7,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 9.31,
+    "longitude": 41.72583
   },
   {
     "legacy_id": 58,
     "name": "GUCHI",
     "zone_legacy_id": 7,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 4.892569,
+    "longitude": 38.094989
   },
   {
     "legacy_id": 59,
     "name": "MIYO",
     "zone_legacy_id": 7,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 3.778251,
+    "longitude": 38.6278714
   },
   {
     "legacy_id": 60,
     "name": "NENSBO",
     "zone_legacy_id": 15,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.3533442,
+    "longitude": 38.6756595
   },
   {
     "legacy_id": 61,
     "name": "YABELO",
     "zone_legacy_id": 7,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 4.892569,
+    "longitude": 38.094989
   },
   {
     "legacy_id": 62,
     "name": "DILO",
     "zone_legacy_id": 7,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 9.28333,
+    "longitude": 38.65
   },
   {
     "legacy_id": 63,
     "name": "JARSO",
     "zone_legacy_id": 14,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 9.1096616,
+    "longitude": 37.3728362
   },
   {
     "legacy_id": 64,
     "name": "CHINAGSEN",
     "zone_legacy_id": 14,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 9.56667,
+    "longitude": 38.63333
   },
   {
     "legacy_id": 65,
     "name": "ODA BULTU",
     "zone_legacy_id": 14,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 9.56667,
+    "longitude": 38.63333
   },
   {
     "legacy_id": 66,
     "name": "GOLO ODA",
     "zone_legacy_id": 14,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 9.56667,
+    "longitude": 38.63333
   },
   {
     "legacy_id": 67,
     "name": "BOKH",
     "zone_legacy_id": 14,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.3584051,
+    "longitude": 46.6081511
   },
   {
     "legacy_id": 69,
     "name": "MILE",
     "zone_legacy_id": 67,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.26667,
+    "longitude": 36.88333
   },
   {
     "legacy_id": 70,
     "name": "GOMELYE",
     "zone_legacy_id": 13,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.9901969,
+    "longitude": 35.8239985
   },
   {
     "legacy_id": 71,
     "name": "GOLA ODA",
     "zone_legacy_id": 14,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 9.56667,
+    "longitude": 38.63333
   },
   {
     "legacy_id": 72,
     "name": "MEYU MULUK",
     "zone_legacy_id": 14,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 9.56667,
+    "longitude": 38.63333
   },
   {
     "legacy_id": 74,
     "name": "ANANO",
     "zone_legacy_id": 14,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 9.56667,
+    "longitude": 38.63333
   },
   {
     "legacy_id": 75,
     "name": "GOMBISO BORDEDIE",
     "zone_legacy_id": 14,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 9.56667,
+    "longitude": 38.63333
   },
   {
     "legacy_id": 76,
     "name": "QUMBI",
     "zone_legacy_id": 14,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 9.56667,
+    "longitude": 38.63333
   },
   {
     "legacy_id": 77,
     "name": "GURSUME",
     "zone_legacy_id": 14,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 9.56667,
+    "longitude": 38.63333
   },
   {
     "legacy_id": 78,
     "name": "ALYE",
     "zone_legacy_id": 14,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 9.56667,
+    "longitude": 38.63333
   },
   {
     "legacy_id": 79,
     "name": "FEDISE",
     "zone_legacy_id": 14,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 9.56667,
+    "longitude": 38.63333
   },
   {
     "legacy_id": 80,
     "name": "GURO MUT",
     "zone_legacy_id": 14,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 9.56667,
+    "longitude": 38.63333
   },
   {
     "legacy_id": 81,
     "name": "GURO MUTI",
     "zone_legacy_id": 14,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 9.56667,
+    "longitude": 38.63333
   },
   {
     "legacy_id": 82,
     "name": "TULU",
     "zone_legacy_id": 14,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 5.5501401,
+    "longitude": 39.2030529
   },
   {
     "legacy_id": 83,
     "name": "BIRBISA KAJWA",
     "zone_legacy_id": 13,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.9901969,
+    "longitude": 35.8239985
   },
   {
     "legacy_id": 84,
     "name": "DEGDA DAWA",
     "zone_legacy_id": 13,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.9901969,
+    "longitude": 35.8239985
   },
   {
     "legacy_id": 85,
     "name": "DELOMENA",
     "zone_legacy_id": 13,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.9901969,
+    "longitude": 35.8239985
   },
   {
     "legacy_id": 86,
     "name": "DIGDAWA",
     "zone_legacy_id": 13,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.9901969,
+    "longitude": 35.8239985
   },
   {
     "legacy_id": 87,
     "name": "GOMYOLADO",
     "zone_legacy_id": 13,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.9901969,
+    "longitude": 35.8239985
   },
   {
     "legacy_id": 88,
     "name": "GUMIEILADY",
     "zone_legacy_id": 13,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.9901969,
+    "longitude": 35.8239985
   },
   {
     "legacy_id": 89,
     "name": "GUMY EAILDA",
     "zone_legacy_id": 13,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.9901969,
+    "longitude": 35.8239985
   },
   {
     "legacy_id": 90,
     "name": "HAMBELA WAMENA",
     "zone_legacy_id": 13,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.9901969,
+    "longitude": 35.8239985
   },
   {
     "legacy_id": 91,
     "name": "KERCHIA",
     "zone_legacy_id": 13,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.9901969,
+    "longitude": 35.8239985
   },
   {
     "legacy_id": 92,
     "name": "LIBEN",
     "zone_legacy_id": 13,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 4.5484468,
+    "longitude": 40.7091252
   },
   {
     "legacy_id": 93,
     "name": "MELKASODA",
     "zone_legacy_id": 13,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 5.6410472,
+    "longitude": 38.2380738
   },
   {
     "legacy_id": 94,
     "name": "NEGLY TOWN",
     "zone_legacy_id": 13,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.9901969,
+    "longitude": 35.8239985
   },
   {
     "legacy_id": 95,
     "name": "SORO BEGUDO",
     "zone_legacy_id": 13,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.9901969,
+    "longitude": 35.8239985
   },
   {
     "legacy_id": 96,
     "name": "WADERA",
     "zone_legacy_id": 13,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 5.7773139,
+    "longitude": 39.3105652
   },
   {
     "legacy_id": 97,
     "name": "ADOLA SHAKISO",
     "zone_legacy_id": 45,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.9901969,
+    "longitude": 35.8239985
   },
   {
     "legacy_id": 99,
     "name": "DEGDA DAWA 2",
     "zone_legacy_id": 45,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.9901969,
+    "longitude": 35.8239985
   },
   {
     "legacy_id": 100,
     "name": "DOLOMENA",
     "zone_legacy_id": 45,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 6.4126517,
+    "longitude": 39.8483743
   },
   {
     "legacy_id": 101,
     "name": "GOMEAY LIYALO",
     "zone_legacy_id": 45,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.9901969,
+    "longitude": 35.8239985
   },
   {
     "legacy_id": 102,
     "name": "GOME ELDA",
     "zone_legacy_id": 45,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.9901969,
+    "longitude": 35.8239985
   },
   {
     "legacy_id": 103,
     "name": "GORODELO",
     "zone_legacy_id": 45,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.9901969,
+    "longitude": 35.8239985
   },
   {
     "legacy_id": 104,
     "name": "GUME EAILDA",
     "zone_legacy_id": 45,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.9901969,
+    "longitude": 35.8239985
   },
   {
     "legacy_id": 105,
     "name": "GUME EALDA",
     "zone_legacy_id": 45,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.9901969,
+    "longitude": 35.8239985
   },
   {
     "legacy_id": 106,
     "name": "LIBEN/ E",
     "zone_legacy_id": 45,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 11.697058,
+    "longitude": 36.9415489
   },
   {
     "legacy_id": 107,
     "name": "MELKASODA /E",
     "zone_legacy_id": 45,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.9901969,
+    "longitude": 35.8239985
   },
   {
     "legacy_id": 108,
     "name": "NEGELE/E",
     "zone_legacy_id": 45,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 5.3328174,
+    "longitude": 39.5806628
   },
   {
     "legacy_id": 109,
     "name": "SABA BORU",
     "zone_legacy_id": 45,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.9901969,
+    "longitude": 35.8239985
   },
   {
     "legacy_id": 110,
     "name": "WADERA/E",
     "zone_legacy_id": 45,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 5.7773139,
+    "longitude": 39.3105652
   },
   {
     "legacy_id": 111,
     "name": "YABYLO",
     "zone_legacy_id": 7,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 4.892569,
+    "longitude": 38.094989
   },
   {
     "legacy_id": 112,
     "name": "DUBTI",
     "zone_legacy_id": 67,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.7368315,
+    "longitude": 41.0840355
   },
   {
     "legacy_id": 113,
     "name": "ADELELA",
     "zone_legacy_id": 49,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 11.7108206,
+    "longitude": 41.0330866
   },
   {
     "legacy_id": 114,
     "name": "AFAMBO",
     "zone_legacy_id": 67,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.5201706,
+    "longitude": 41.5826072
   },
   {
     "legacy_id": 115,
     "name": "ASAYTA",
     "zone_legacy_id": 67,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.5736657,
+    "longitude": 41.4329676
   },
   {
     "legacy_id": 117,
     "name": "BELONJ GANFO",
     "zone_legacy_id": 49,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 11.7108206,
+    "longitude": 41.0330866
   },
   {
     "legacy_id": 118,
     "name": "BARAHLE",
     "zone_legacy_id": 49,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 13.8629006,
+    "longitude": 40.0214271
   },
   {
     "legacy_id": 119,
     "name": "BOLBLI",
     "zone_legacy_id": 49,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 11.7108206,
+    "longitude": 41.0330866
   },
   {
     "legacy_id": 120,
     "name": "BURE",
     "zone_legacy_id": 49,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 10.7129931,
+    "longitude": 37.0668819
   },
   {
     "legacy_id": 122,
     "name": "DALOL",
     "zone_legacy_id": 49,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 9.55462,
+    "longitude": 41.8735623
   },
   {
     "legacy_id": 124,
     "name": "HAROLIMU",
     "zone_legacy_id": 49,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 9.8446132,
+    "longitude": 36.3130139
   },
   {
     "legacy_id": 125,
     "name": "MESKA",
     "zone_legacy_id": 49,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 11.7108206,
+    "longitude": 41.0330866
   },
   {
     "legacy_id": 126,
     "name": "MILLE",
     "zone_legacy_id": 49,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 11.6033898,
+    "longitude": 40.3529395
   },
   {
     "legacy_id": 127,
     "name": "SERGETE",
     "zone_legacy_id": 49,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 11.7108206,
+    "longitude": 41.0330866
   },
   {
     "legacy_id": 128,
     "name": "AFDERA",
     "zone_legacy_id": 49,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 13.2876191,
+    "longitude": 41.4334728
   },
   {
     "legacy_id": 129,
     "name": "BOKH/A",
     "zone_legacy_id": 35,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 130,
     "name": "KORI",
     "zone_legacy_id": 67,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 9.2626075,
+    "longitude": 39.3247575
   },
   {
     "legacy_id": 131,
     "name": "CHIFRA",
     "zone_legacy_id": 67,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.6033251,
+    "longitude": 40.0162457
   },
   {
     "legacy_id": 132,
     "name": "ABABOKSA",
     "zone_legacy_id": 49,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 11.7108206,
+    "longitude": 41.0330866
   },
   {
     "legacy_id": 133,
     "name": "GEWANE",
     "zone_legacy_id": 59,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 10.159228,
+    "longitude": 40.661596
   },
   {
     "legacy_id": 134,
     "name": "DIRE - BORENA",
     "zone_legacy_id": 7,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 4.9466635,
+    "longitude": 37.292503
   },
   {
     "legacy_id": 135,
     "name": "HAWIGUDINA",
     "zone_legacy_id": 31,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 9.3118397,
+    "longitude": 42.1284445
   },
   {
     "legacy_id": 136,
     "name": "UBAQORECHA",
     "zone_legacy_id": 31,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 9.3118397,
+    "longitude": 42.1284445
   },
   {
     "legacy_id": 137,
     "name": "GUMBI BORDEDY",
     "zone_legacy_id": 31,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 9.3118397,
+    "longitude": 42.1284445
   },
   {
     "legacy_id": 138,
     "name": "HABRU",
     "zone_legacy_id": 31,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 11.6,
+    "longitude": 39.76667
   },
   {
     "legacy_id": 139,
     "name": "TIULO",
     "zone_legacy_id": 31,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.5594998,
+    "longitude": 41.5433662
   },
   {
     "legacy_id": 140,
     "name": "MEYU MULUK/w",
     "zone_legacy_id": 31,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 9.3118397,
+    "longitude": 42.1284445
   },
   {
     "legacy_id": 141,
     "name": "ODA BULTU/W",
     "zone_legacy_id": 31,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 9.3118397,
+    "longitude": 42.1284445
   },
   {
     "legacy_id": 142,
     "name": "DAROLEBU",
     "zone_legacy_id": 31,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 9.3118397,
+    "longitude": 42.1284445
   },
   {
     "legacy_id": 143,
     "name": "A/MENCHI",
     "zone_legacy_id": 50,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 6.7089081,
+    "longitude": 35.6841753
   },
   {
     "legacy_id": 144,
     "name": "DERA",
     "zone_legacy_id": 5,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.3173933,
+    "longitude": 36.0347545
   },
   {
     "legacy_id": 145,
     "name": "AMURU/B",
     "zone_legacy_id": 5,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 9.98333,
+    "longitude": 36.96667
   },
   {
     "legacy_id": 146,
     "name": "BERBERI",
     "zone_legacy_id": 5,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.08333,
+    "longitude": 40.8
   },
   {
     "legacy_id": 147,
     "name": "DABUKO BENCHE",
     "zone_legacy_id": 5,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 148,
     "name": "DAWA KACHAN",
     "zone_legacy_id": 5,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 149,
     "name": "DAWA SERER",
     "zone_legacy_id": 5,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 150,
     "name": "DEBR BENCH",
     "zone_legacy_id": 5,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 151,
     "name": "DELO MENA",
     "zone_legacy_id": 5,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 152,
     "name": "ELWAYE",
     "zone_legacy_id": 5,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 153,
     "name": "GERAR JAESO",
     "zone_legacy_id": 5,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 154,
     "name": "GINIER",
     "zone_legacy_id": 5,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 155,
     "name": "GOLELECHA",
     "zone_legacy_id": 5,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.2477545,
+    "longitude": 39.5774888
   },
   {
     "legacy_id": 156,
     "name": "GORADAMOLY",
     "zone_legacy_id": 5,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 157,
     "name": "GORO",
     "zone_legacy_id": 5,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 6.991394,
+    "longitude": 40.479935
   },
   {
     "legacy_id": 158,
     "name": "HARENA BULUKE",
     "zone_legacy_id": 5,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 159,
     "name": "LEGE HIDA",
     "zone_legacy_id": 5,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.93333,
+    "longitude": 41.06666
   },
   {
     "legacy_id": 160,
     "name": "MEDA WELABU",
     "zone_legacy_id": 5,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 5.78333,
+    "longitude": 39.68333
   },
   {
     "legacy_id": 161,
     "name": "RAYTU",
     "zone_legacy_id": 5,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 6.8385373,
+    "longitude": 40.401446
   },
   {
     "legacy_id": 162,
     "name": "SEWEYNA",
     "zone_legacy_id": 5,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.4563631,
+    "longitude": 40.9779601
   },
   {
     "legacy_id": 163,
     "name": "HAROLIMU/W",
     "zone_legacy_id": 33,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 9.8446132,
+    "longitude": 36.3130139
   },
   {
     "legacy_id": 164,
     "name": "GITO GIDA",
     "zone_legacy_id": 33,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 165,
     "name": "HARO LIMU",
     "zone_legacy_id": 33,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 9.8446132,
+    "longitude": 36.3130139
   },
   {
     "legacy_id": 166,
     "name": "SASIGA",
     "zone_legacy_id": 33,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 9.1719874,
+    "longitude": 36.4635265
   },
   {
     "legacy_id": 167,
     "name": "DIGA",
     "zone_legacy_id": 32,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.93333,
+    "longitude": 36.58333
   },
   {
     "legacy_id": 168,
     "name": "DRGA",
     "zone_legacy_id": 33,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 169,
     "name": "HARO LIMU/W",
     "zone_legacy_id": 39,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 9.8446132,
+    "longitude": 36.3130139
   },
   {
     "legacy_id": 170,
     "name": "LETASIBU",
     "zone_legacy_id": 33,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 171,
     "name": "MENASIBU",
     "zone_legacy_id": 33,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 172,
     "name": "BUJIBERMEJI",
     "zone_legacy_id": 33,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 173,
     "name": "TELTELY",
     "zone_legacy_id": 33,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 174,
     "name": "NEJO",
     "zone_legacy_id": 33,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 9.5038669,
+    "longitude": 35.5064141
   },
   {
     "legacy_id": 175,
     "name": "GIMBI",
     "zone_legacy_id": 33,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.8061916,
+    "longitude": 37.7881259
   },
   {
     "legacy_id": 176,
     "name": "JANE AMORA",
     "zone_legacy_id": 94,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 11.5,
+    "longitude": 38.5
   },
   {
     "legacy_id": 177,
     "name": "SAR MEDER",
     "zone_legacy_id": 94,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 11.5,
+    "longitude": 38.5
   },
   {
     "legacy_id": 178,
     "name": "BAHR DAR",
     "zone_legacy_id": 24,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 11.5965167,
+    "longitude": 37.385498
   },
   {
     "legacy_id": 179,
     "name": "ANELYMO",
     "zone_legacy_id": 20,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 6.7089081,
+    "longitude": 35.6841753
   },
   {
     "legacy_id": 180,
     "name": "HADYA",
     "zone_legacy_id": 20,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 6.7089081,
+    "longitude": 35.6841753
   },
   {
     "legacy_id": 181,
     "name": "ODABULTU",
     "zone_legacy_id": 20,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 6.7089081,
+    "longitude": 35.6841753
   },
   {
     "legacy_id": 182,
     "name": "CHIABY GAMEBYLTU",
     "zone_legacy_id": 21,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 6.6507504,
+    "longitude": 38.4796794
   },
   {
     "legacy_id": 183,
     "name": "BORENA ZURYA",
     "zone_legacy_id": 21,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 6.6507504,
+    "longitude": 38.4796794
   },
   {
     "legacy_id": 184,
     "name": "YEKI",
     "zone_legacy_id": 21,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.2,
+    "longitude": 35.35
   },
   {
     "legacy_id": 185,
     "name": "SHEYCHA",
     "zone_legacy_id": 50,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 6.7089081,
+    "longitude": 35.6841753
   },
   {
     "legacy_id": 186,
     "name": "BURA",
     "zone_legacy_id": 21,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 6.6617797,
+    "longitude": 38.8736248
   },
   {
     "legacy_id": 187,
     "name": "WERABE",
     "zone_legacy_id": 22,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 6.7089081,
+    "longitude": 35.6841753
   },
   {
     "legacy_id": 188,
     "name": "HALBORG",
     "zone_legacy_id": 22,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 6.7089081,
+    "longitude": 35.6841753
   },
   {
     "legacy_id": 189,
     "name": "MELKOZA",
     "zone_legacy_id": 25,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 6.0095303,
+    "longitude": 37.5354187
   },
   {
     "legacy_id": 190,
     "name": "HARENABULK",
     "zone_legacy_id": 25,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 6.0095303,
+    "longitude": 37.5354187
   },
   {
     "legacy_id": 191,
     "name": "SHASHMENE",
     "zone_legacy_id": 26,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.0101011,
+    "longitude": 39.6716774
   },
   {
     "legacy_id": 192,
     "name": "HANKELO WABY",
     "zone_legacy_id": 5,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 194,
     "name": "SERU",
     "zone_legacy_id": 26,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.675615,
+    "longitude": 40.201359
   },
   {
     "legacy_id": 195,
     "name": "ACHIOMENE",
     "zone_legacy_id": 28,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 196,
     "name": "AMURU/GU",
     "zone_legacy_id": 28,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 9.98333,
+    "longitude": 36.96667
   },
   {
     "legacy_id": 197,
     "name": "MEKO",
     "zone_legacy_id": 8,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.68333,
+    "longitude": 36.03333
   },
   {
     "legacy_id": 198,
     "name": "MOJO",
     "zone_legacy_id": 9,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.5869874,
+    "longitude": 39.125
   },
   {
     "legacy_id": 200,
     "name": "ADAMA",
     "zone_legacy_id": 9,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 201,
     "name": "DELOMENA/E",
     "zone_legacy_id": 9,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 202,
     "name": "ADAME TULU",
     "zone_legacy_id": 9,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 203,
     "name": "DICHA",
     "zone_legacy_id": 9,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 204,
     "name": "BATU",
     "zone_legacy_id": 9,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.9358063,
+    "longitude": 38.7164929
   },
   {
     "legacy_id": 205,
     "name": "LEGEHIDA",
     "zone_legacy_id": 9,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.93333,
+    "longitude": 41.06666
   },
   {
     "legacy_id": 206,
     "name": "GALAFI",
     "zone_legacy_id": 9,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 207,
     "name": "DEBLUKE",
     "zone_legacy_id": 7,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 4.892569,
+    "longitude": 38.094989
   },
   {
     "legacy_id": 208,
     "name": "merab sero",
     "zone_legacy_id": 20,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 6.7089081,
+    "longitude": 35.6841753
   },
   {
     "legacy_id": 210,
     "name": "EAILWAYE",
     "zone_legacy_id": 7,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 4.892569,
+    "longitude": 38.094989
   },
   {
     "legacy_id": 211,
     "name": "ARIRO",
     "zone_legacy_id": 7,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 9.91667,
+    "longitude": 38.03333
   },
   {
     "legacy_id": 212,
     "name": "DUBLUK",
     "zone_legacy_id": 7,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 4.892569,
+    "longitude": 38.094989
   },
   {
     "legacy_id": 213,
     "name": "JIMA/J",
     "zone_legacy_id": 12,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 10.1387506,
+    "longitude": 37.8902217
   },
   {
     "legacy_id": 215,
     "name": "Bulehora",
     "zone_legacy_id": 7,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 4.892569,
+    "longitude": 38.094989
   },
   {
     "legacy_id": 216,
     "name": "BISHANE GURACHA",
     "zone_legacy_id": 26,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.0101011,
+    "longitude": 39.6716774
   },
   {
     "legacy_id": 217,
     "name": "PAWI",
     "zone_legacy_id": 74,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 11.3250129,
+    "longitude": 36.4088012
   },
   {
     "legacy_id": 218,
     "name": "DASE",
     "zone_legacy_id": 7,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 11.1248684,
+    "longitude": 39.6338354
   },
   {
     "legacy_id": 219,
     "name": "TELTELY/B",
     "zone_legacy_id": 7,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 4.8704114,
+    "longitude": 38.182518
   },
   {
     "legacy_id": 220,
     "name": "GUJI",
     "zone_legacy_id": 51,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 5.5501401,
+    "longitude": 39.2030529
   },
   {
     "legacy_id": 221,
     "name": "DERA/W",
     "zone_legacy_id": 6,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.3173933,
+    "longitude": 36.0347545
   },
   {
     "legacy_id": 222,
     "name": "WACHLYE",
     "zone_legacy_id": 7,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 4.892569,
+    "longitude": 38.094989
   },
   {
     "legacy_id": 223,
     "name": "MEKOYE",
     "zone_legacy_id": 11,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.8102647,
+    "longitude": 34.1822172
   },
   {
     "legacy_id": 224,
     "name": "LARE",
     "zone_legacy_id": 11,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.8102647,
+    "longitude": 34.1822172
   },
   {
     "legacy_id": 225,
     "name": "JIKAWA",
     "zone_legacy_id": 11,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.8102647,
+    "longitude": 34.1822172
   },
   {
     "legacy_id": 226,
     "name": "BIRO",
     "zone_legacy_id": 43,
     "comment": "de",
-    "status": 1
+    "status": 1,
+    "latitude": 6.15,
+    "longitude": 35.3
   },
   {
     "legacy_id": 227,
     "name": "BOKH/D",
     "zone_legacy_id": 35,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 228,
     "name": "GALHAMUR",
     "zone_legacy_id": 100,
     "comment": "de",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 229,
     "name": "WACHILE",
     "zone_legacy_id": 7,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 4.5451005,
+    "longitude": 39.0611862
   },
   {
     "legacy_id": 230,
     "name": "ARGOBA",
     "zone_legacy_id": 59,
     "comment": "de",
-    "status": 1
+    "status": 1,
+    "latitude": 9.3102649,
+    "longitude": 42.1416354
   },
   {
     "legacy_id": 231,
     "name": "AWARE",
     "zone_legacy_id": 36,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 9.0270604,
+    "longitude": 38.7754628
   },
   {
     "legacy_id": 232,
     "name": "BOLWNJI GANFO",
     "zone_legacy_id": 52,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 10.3778251,
+    "longitude": 35.5084442
   },
   {
     "legacy_id": 233,
     "name": "MESKAN",
     "zone_legacy_id": 41,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.5829546,
+    "longitude": 37.861302
   },
   {
     "legacy_id": 234,
     "name": "DIGA/J",
     "zone_legacy_id": 36,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.93333,
+    "longitude": 36.58333
   },
   {
     "legacy_id": 235,
     "name": "BOKH/J",
     "zone_legacy_id": 36,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.0735213,
+    "longitude": 44.0954224
   },
   {
     "legacy_id": 236,
     "name": "DASENCH",
     "zone_legacy_id": 43,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 13.3917079,
+    "longitude": 39.1996716
   },
   {
     "legacy_id": 237,
     "name": "HAMER",
     "zone_legacy_id": 43,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 6.0611436,
+    "longitude": 36.5884155
   },
   {
     "legacy_id": 238,
     "name": "YANGATOM",
     "zone_legacy_id": 43,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 13.3917079,
+    "longitude": 39.1996716
   },
   {
     "legacy_id": 239,
     "name": "ABEDO GORO",
     "zone_legacy_id": 53,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 240,
     "name": "EILU GELANA",
     "zone_legacy_id": 45,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.9901969,
+    "longitude": 35.8239985
   },
   {
     "legacy_id": 241,
     "name": "BARGDO,",
     "zone_legacy_id": 13,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.9901969,
+    "longitude": 35.8239985
   },
   {
     "legacy_id": 242,
     "name": "DANON",
     "zone_legacy_id": 88,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 243,
     "name": "DULSA",
     "zone_legacy_id": 49,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 11.7108206,
+    "longitude": 41.0330866
   },
   {
     "legacy_id": 244,
     "name": "EIBANTU",
     "zone_legacy_id": 45,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.9901969,
+    "longitude": 35.8239985
   },
   {
     "legacy_id": 245,
     "name": "EAILIDARE",
     "zone_legacy_id": 49,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.7108206,
+    "longitude": 41.0330866
   },
   {
     "legacy_id": 246,
     "name": "HADELELA",
     "zone_legacy_id": 49,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 10.250993,
+    "longitude": 40.0022785
   },
   {
     "legacy_id": 247,
     "name": "GOLINA",
     "zone_legacy_id": 49,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 11.7108206,
+    "longitude": 41.0330866
   },
   {
     "legacy_id": 248,
     "name": "TULUWAYU",
     "zone_legacy_id": 7,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 4.892569,
+    "longitude": 38.094989
   },
   {
     "legacy_id": 249,
     "name": "MEASO",
     "zone_legacy_id": 54,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 250,
     "name": "DELERELA",
     "zone_legacy_id": 43,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 13.3917079,
+    "longitude": 39.1996716
   },
   {
     "legacy_id": 251,
     "name": "BOTER TIOLAYE",
     "zone_legacy_id": 12,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 10.1387506,
+    "longitude": 37.8902217
   },
   {
     "legacy_id": 252,
     "name": "ADI ALI",
     "zone_legacy_id": 7,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 4.892569,
+    "longitude": 38.094989
   },
   {
     "legacy_id": 253,
     "name": "GEBALIGA",
     "zone_legacy_id": 46,
     "comment": "de",
-    "status": 1
+    "status": 1,
+    "latitude": 6.7089081,
+    "longitude": 35.6841753
   },
   {
     "legacy_id": 254,
     "name": "BILDEM",
     "zone_legacy_id": 7,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 4.892569,
+    "longitude": 38.094989
   },
   {
     "legacy_id": 255,
     "name": "GANGATOM",
     "zone_legacy_id": 7,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 4.892569,
+    "longitude": 38.094989
   },
   {
     "legacy_id": 256,
     "name": "KUMBA",
     "zone_legacy_id": 43,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 13.3917079,
+    "longitude": 39.1996716
   },
   {
     "legacy_id": 257,
     "name": "DULECHA",
     "zone_legacy_id": 59,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 9.5458896,
+    "longitude": 39.9561643
   },
   {
     "legacy_id": 258,
     "name": "META WELKITE",
     "zone_legacy_id": 6,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 9.9937611,
+    "longitude": 39.900869
   },
   {
     "legacy_id": 259,
     "name": "KERSA",
     "zone_legacy_id": 12,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 9.455,
+    "longitude": 41.86639
   },
   {
     "legacy_id": 260,
     "name": "DOBA",
     "zone_legacy_id": 54,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 9.2857119,
+    "longitude": 41.0914119
   },
   {
     "legacy_id": 261,
     "name": "BORI",
     "zone_legacy_id": 43,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 13.3917079,
+    "longitude": 39.1996716
   },
   {
     "legacy_id": 262,
     "name": "SHNKOLY",
     "zone_legacy_id": 5,
     "comment": "de",
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 263,
     "name": "QUMBI BOREDEDE",
     "zone_legacy_id": 14,
     "comment": "de",
-    "status": 1
+    "status": 1,
+    "latitude": 9.56667,
+    "longitude": 38.63333
   },
   {
     "legacy_id": 264,
     "name": "ASEKO",
     "zone_legacy_id": 26,
     "comment": "de",
-    "status": 1
+    "status": 1,
+    "latitude": 8.0101011,
+    "longitude": 39.6716774
   },
   {
     "legacy_id": 265,
     "name": "CHOLE",
     "zone_legacy_id": 26,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.2490388,
+    "longitude": 39.8921496
   },
   {
     "legacy_id": 266,
     "name": "JEJU",
     "zone_legacy_id": 26,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.41667,
+    "longitude": 39.63333
   },
   {
     "legacy_id": 267,
     "name": "LIDO HATIOSA",
     "zone_legacy_id": 26,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.0101011,
+    "longitude": 39.6716774
   },
   {
     "legacy_id": 268,
     "name": "ZIWAY DUGDA",
     "zone_legacy_id": 26,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.0101011,
+    "longitude": 39.6716774
   },
   {
     "legacy_id": 269,
     "name": "HITOSA",
     "zone_legacy_id": 26,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.0101011,
+    "longitude": 39.6716774
   },
   {
     "legacy_id": 270,
     "name": "ROBE",
     "zone_legacy_id": 26,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.1242676,
+    "longitude": 40.0080973
   },
   {
     "legacy_id": 271,
     "name": "SUDE",
     "zone_legacy_id": 26,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.9,
+    "longitude": 39.73333
   },
   {
     "legacy_id": 272,
     "name": "SHIRKA",
     "zone_legacy_id": 26,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.0101011,
+    "longitude": 39.6716774
   },
   {
     "legacy_id": 273,
     "name": "DODOLA",
     "zone_legacy_id": 15,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 6.9751165,
+    "longitude": 39.1812984
   },
   {
     "legacy_id": 274,
     "name": "ADABA",
     "zone_legacy_id": 15,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.0072505,
+    "longitude": 39.3917175
   },
   {
     "legacy_id": 275,
     "name": "KOFELE",
     "zone_legacy_id": 15,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 9.75,
+    "longitude": 36.38333
   },
   {
     "legacy_id": 276,
     "name": "METEKEL",
     "zone_legacy_id": 33,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 10.9630277,
+    "longitude": 35.7838685
   },
   {
     "legacy_id": 277,
     "name": "MANDURA",
     "zone_legacy_id": 10,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 11.0977098,
+    "longitude": 36.4213791
   },
   {
     "legacy_id": 278,
     "name": "DANGURA",
     "zone_legacy_id": 33,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 12.8723313,
+    "longitude": 37.0864609
   },
   {
     "legacy_id": 279,
     "name": "KAMASHE",
     "zone_legacy_id": 52,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 10.3778251,
+    "longitude": 35.5084442
   },
   {
     "legacy_id": 280,
     "name": "MAO KOMO SW",
     "zone_legacy_id": 52,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 10.3778251,
+    "longitude": 35.5084442
   },
   {
     "legacy_id": 281,
     "name": "SEBABORU",
     "zone_legacy_id": 51,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 5.5501401,
+    "longitude": 39.2030529
   },
   {
     "legacy_id": 282,
     "name": "BAAREY",
     "zone_legacy_id": 88,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 5.0713506,
+    "longitude": 42.379473
   },
   {
     "legacy_id": 283,
     "name": "GORO BEKEKE",
     "zone_legacy_id": 95,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 4.5484468,
+    "longitude": 40.7091252
   },
   {
     "legacy_id": 284,
     "name": "ELKERE",
     "zone_legacy_id": 49,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 5.8427044,
+    "longitude": 42.0987161
   },
   {
     "legacy_id": 285,
     "name": "GODGOD",
     "zone_legacy_id": 88,
     "comment": "de",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 286,
     "name": "TSELEMET",
     "zone_legacy_id": 94,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.5,
+    "longitude": 38.5
   },
   {
     "legacy_id": 287,
     "name": "BURKA DIMTU",
     "zone_legacy_id": 31,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 9.3118397,
+    "longitude": 42.1284445
   },
   {
     "legacy_id": 288,
     "name": "GIDA AYANA/",
     "zone_legacy_id": 32,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 9.8779077,
+    "longitude": 36.6205474
   },
   {
     "legacy_id": 289,
     "name": "biji",
     "zone_legacy_id": 33,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 290,
     "name": "AWURA",
     "zone_legacy_id": 82,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 10.3789734,
+    "longitude": 38.1198114
   },
   {
     "legacy_id": 291,
     "name": "BIDO",
     "zone_legacy_id": 33,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 292,
     "name": "ONE",
     "zone_legacy_id": 43,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.91667,
+    "longitude": 39.66667
   },
   {
     "legacy_id": 293,
     "name": "KONSO",
     "zone_legacy_id": 43,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 5.3398227,
+    "longitude": 37.442368
   },
   {
     "legacy_id": 294,
     "name": "MAWOLE",
     "zone_legacy_id": 43,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 13.3917079,
+    "longitude": 39.1996716
   },
   {
     "legacy_id": 295,
     "name": "GORAYE",
     "zone_legacy_id": 9,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 296,
     "name": "FIK",
     "zone_legacy_id": 44,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.1384237,
+    "longitude": 42.2945585
   },
   {
     "legacy_id": 297,
     "name": "Erer",
     "zone_legacy_id": 55,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.4392817,
+    "longitude": 42.1142323
   },
   {
     "legacy_id": 298,
     "name": "SHINILE",
     "zone_legacy_id": 56,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 10.2122931,
+    "longitude": 41.9276455
   },
   {
     "legacy_id": 299,
     "name": "Dollo",
     "zone_legacy_id": 5,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.2147778,
+    "longitude": 45.9356289
   },
   {
     "legacy_id": 300,
     "name": "DILECHA",
     "zone_legacy_id": 67,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.7108206,
+    "longitude": 41.0330866
   },
   {
     "legacy_id": 301,
     "name": "AMIBARA",
     "zone_legacy_id": 59,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 9.3325652,
+    "longitude": 40.1820611
   },
   {
     "legacy_id": 303,
     "name": "ELWOYE",
     "zone_legacy_id": 7,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 4.892569,
+    "longitude": 38.094989
   },
   {
     "legacy_id": 304,
     "name": "DIRE",
     "zone_legacy_id": 7,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 9.182287,
+    "longitude": 38.9235706
   },
   {
     "legacy_id": 305,
     "name": "ADAL",
     "zone_legacy_id": 67,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 9.58417,
+    "longitude": 42.29806
   },
   {
     "legacy_id": 306,
     "name": "DILLO",
     "zone_legacy_id": 7,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 4.2610008,
+    "longitude": 37.7015292
   },
   {
     "legacy_id": 308,
     "name": "AWASH FENTALE",
     "zone_legacy_id": 59,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.5372344,
+    "longitude": 40.9688199
   },
   {
     "legacy_id": 309,
     "name": "GELAALO",
     "zone_legacy_id": 59,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.7108206,
+    "longitude": 41.0330866
   },
   {
     "legacy_id": 310,
     "name": "FENTELE",
     "zone_legacy_id": 59,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.7108206,
+    "longitude": 41.0330866
   },
   {
     "legacy_id": 312,
     "name": "ADDAAR",
     "zone_legacy_id": 67,
     "comment": "de",
-    "status": 1
+    "status": 1,
+    "latitude": 11.7108206,
+    "longitude": 41.0330866
   },
   {
     "legacy_id": 313,
     "name": "DAWA",
     "zone_legacy_id": 7,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 4.7172806,
+    "longitude": 40.4804349
   },
   {
     "legacy_id": 314,
     "name": "EJEREY",
     "zone_legacy_id": 7,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 4.892569,
+    "longitude": 38.094989
   },
   {
     "legacy_id": 315,
     "name": "GUBA LAFTO",
     "zone_legacy_id": 62,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 11.8379079,
+    "longitude": 39.2155604
   },
   {
     "legacy_id": 316,
     "name": "WOLDIYA",
     "zone_legacy_id": 62,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.8342096,
+    "longitude": 39.6056115
   },
   {
     "legacy_id": 317,
     "name": "GONDER",
     "zone_legacy_id": 76,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 12.610368,
+    "longitude": 37.466766
   },
   {
     "legacy_id": 319,
     "name": "CENTER",
     "zone_legacy_id": 1,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.5872085,
+    "longitude": 37.3842848
   },
   {
     "legacy_id": 320,
     "name": "ADI REMTS",
     "zone_legacy_id": 64,
     "comment": "DEDE",
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 321,
     "name": "MEKELE",
     "zone_legacy_id": 65,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 13.4966644,
+    "longitude": 39.4768259
   },
   {
     "legacy_id": 322,
     "name": "D/ZEYTE",
     "zone_legacy_id": 9,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 324,
     "name": "E/GUJI",
     "zone_legacy_id": 45,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.9901969,
+    "longitude": 35.8239985
   },
   {
     "legacy_id": 325,
     "name": "GERENI",
     "zone_legacy_id": 67,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.7108206,
+    "longitude": 41.0330866
   },
   {
     "legacy_id": 326,
     "name": "ELIDAR",
     "zone_legacy_id": 67,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.7108206,
+    "longitude": 41.0330866
   },
   {
     "legacy_id": 327,
     "name": "HANRUKA",
     "zone_legacy_id": 59,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.7108206,
+    "longitude": 41.0330866
   },
   {
     "legacy_id": 328,
     "name": "HUMERA",
     "zone_legacy_id": 69,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 14.2876868,
+    "longitude": 36.6088415
   },
   {
     "legacy_id": 329,
     "name": "MIKADRA",
     "zone_legacy_id": 68,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 330,
     "name": "MITSEBRI",
     "zone_legacy_id": 70,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 331,
     "name": "METEKAL",
     "zone_legacy_id": 71,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 10.7745003,
+    "longitude": 36.26338
   },
   {
     "legacy_id": 332,
     "name": "DIBATE",
     "zone_legacy_id": 71,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 10.7745003,
+    "longitude": 36.26338
   },
   {
     "legacy_id": 333,
     "name": "BULLEN",
     "zone_legacy_id": 71,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 10.7745003,
+    "longitude": 36.26338
   },
   {
     "legacy_id": 334,
     "name": "ERBETE",
     "zone_legacy_id": 72,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.7108206,
+    "longitude": 41.0330866
   },
   {
     "legacy_id": 335,
     "name": "ADOLA",
     "zone_legacy_id": 51,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.8,
+    "longitude": 41.7
   },
   {
     "legacy_id": 336,
     "name": "AGA WAYU",
     "zone_legacy_id": 51,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 5.5501401,
+    "longitude": 39.2030529
   },
   {
     "legacy_id": 338,
     "name": "BULEN",
     "zone_legacy_id": 74,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 10.6033294,
+    "longitude": 36.0830015
   },
   {
     "legacy_id": 339,
     "name": "CHIRCHIRE",
     "zone_legacy_id": 75,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 12.05,
+    "longitude": 39.75
   },
   {
     "legacy_id": 340,
     "name": "FOGERA",
     "zone_legacy_id": 1,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 11.9492305,
+    "longitude": 37.5859406
   },
   {
     "legacy_id": 341,
     "name": "KALU",
     "zone_legacy_id": 80,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.41667,
+    "longitude": 41.38333
   },
   {
     "legacy_id": 342,
     "name": "METEMA",
     "zone_legacy_id": 81,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 12.5460334,
+    "longitude": 37.410935
   },
   {
     "legacy_id": 343,
     "name": "awsi rasu",
     "zone_legacy_id": 67,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 11.7108206,
+    "longitude": 41.0330866
   },
   {
     "legacy_id": 344,
     "name": "ASOSA",
     "zone_legacy_id": 52,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 10.0646352,
+    "longitude": 34.5437024
   },
   {
     "legacy_id": 345,
     "name": "CHARCHAR",
     "zone_legacy_id": 85,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.5489774,
+    "longitude": 39.271245
   },
   {
     "legacy_id": 346,
     "name": "RAYAZEBO",
     "zone_legacy_id": 85,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.5384711,
+    "longitude": 37.9713899
   },
   {
     "legacy_id": 347,
     "name": "ADEGRATE",
     "zone_legacy_id": 83,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.5427504,
+    "longitude": 39.2800502
   },
   {
     "legacy_id": 348,
     "name": "SHERA",
     "zone_legacy_id": 84,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 9.0307658,
+    "longitude": 38.7359022
   },
   {
     "legacy_id": 349,
     "name": "ADWA",
     "zone_legacy_id": 86,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 10.0608392,
+    "longitude": 40.8333567
   },
   {
     "legacy_id": 350,
     "name": "AXUME",
     "zone_legacy_id": 86,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 351,
     "name": "KELTAWLALO",
     "zone_legacy_id": 83,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.5427504,
+    "longitude": 39.2800502
   },
   {
     "legacy_id": 352,
     "name": "MYCHAW",
     "zone_legacy_id": 85,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.5384711,
+    "longitude": 37.9713899
   },
   {
     "legacy_id": 353,
     "name": "ABIADEY",
     "zone_legacy_id": 86,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 354,
     "name": "ADEDARO",
     "zone_legacy_id": 86,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 355,
     "name": "SHERARO",
     "zone_legacy_id": 84,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 14.3930614,
+    "longitude": 37.7713978
   },
   {
     "legacy_id": 356,
     "name": "BENJI MAJI",
     "zone_legacy_id": 21,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 6.6507504,
+    "longitude": 38.4796794
   },
   {
     "legacy_id": 357,
     "name": "GUBA",
     "zone_legacy_id": 52,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 11.51667,
+    "longitude": 39.75
   },
   {
     "legacy_id": 358,
     "name": "WEMBERA",
     "zone_legacy_id": 74,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 10.58333,
+    "longitude": 35.8
   },
   {
     "legacy_id": 359,
     "name": "DEBATE",
     "zone_legacy_id": 74,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 10.9630277,
+    "longitude": 35.7838685
   },
   {
     "legacy_id": 360,
     "name": "JEGJEGA",
     "zone_legacy_id": 87,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 361,
     "name": "ELKARI",
     "zone_legacy_id": 100,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.353759,
+    "longitude": 43.5040464
   },
   {
     "legacy_id": 362,
     "name": "BIDU",
     "zone_legacy_id": 82,
     "comment": "de",
-    "status": 1
+    "status": 1,
+    "latitude": 9.3,
+    "longitude": 38.43333
   },
   {
     "legacy_id": 363,
     "name": "SEMEN SHEWA",
     "zone_legacy_id": 57,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.8379079,
+    "longitude": 39.2155604
   },
   {
     "legacy_id": 364,
     "name": "Aleta Chuko",
     "zone_legacy_id": 89,
     "comment": "de",
-    "status": 1
+    "status": 1,
+    "latitude": 11.7260015,
+    "longitude": 40.978725
   },
   {
     "legacy_id": 365,
     "name": "HULA",
     "zone_legacy_id": 89,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 6.48333,
+    "longitude": 38.51667
   },
   {
     "legacy_id": 366,
     "name": "TULA CITY",
     "zone_legacy_id": 90,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.0481029,
+    "longitude": 38.47861
   },
   {
     "legacy_id": 367,
     "name": "LOKA ABAYA",
     "zone_legacy_id": 89,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.7260015,
+    "longitude": 40.978725
   },
   {
     "legacy_id": 368,
     "name": "SHEBDINO",
     "zone_legacy_id": 89,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.7260015,
+    "longitude": 40.978725
   },
   {
     "legacy_id": 369,
     "name": "WONSHO",
     "zone_legacy_id": 89,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.7260015,
+    "longitude": 40.978725
   },
   {
     "legacy_id": 370,
     "name": "BONA ZURIA",
     "zone_legacy_id": 89,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 6.528747,
+    "longitude": 38.7121031
   },
   {
     "legacy_id": 371,
     "name": "ARBE GONA",
     "zone_legacy_id": 89,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 6.6887419,
+    "longitude": 38.7164581
   },
   {
     "legacy_id": 372,
     "name": "BORCHA",
     "zone_legacy_id": 89,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.7260015,
+    "longitude": 40.978725
   },
   {
     "legacy_id": 373,
     "name": "DALE",
     "zone_legacy_id": 89,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 9.33333,
+    "longitude": 35.51667
   },
   {
     "legacy_id": 374,
     "name": "HAWASSA ZURIYA",
     "zone_legacy_id": 89,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 11.7260015,
+    "longitude": 40.978725
   },
   {
     "legacy_id": 375,
     "name": "HAWELA",
     "zone_legacy_id": 89,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 11.7260015,
+    "longitude": 40.978725
   },
   {
     "legacy_id": 376,
     "name": "GORCHE",
     "zone_legacy_id": 89,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 6.8769685,
+    "longitude": 38.5831153
   },
   {
     "legacy_id": 377,
     "name": "KILALU",
     "zone_legacy_id": 67,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.7108206,
+    "longitude": 41.0330866
   },
   {
     "legacy_id": 378,
     "name": "YANGUDI",
     "zone_legacy_id": 91,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 10.953845,
+    "longitude": 40.7470623
   },
   {
     "legacy_id": 379,
     "name": "DEBRE-BIRHAN",
     "zone_legacy_id": 92,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 9.6752117,
+    "longitude": 39.5324899
   },
   {
     "legacy_id": 380,
     "name": "ANTSOLIYA",
     "zone_legacy_id": 92,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.5,
+    "longitude": 38.5
   },
   {
     "legacy_id": 381,
     "name": "ATAYE CITY",
     "zone_legacy_id": 92,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.5,
+    "longitude": 38.5
   },
   {
     "legacy_id": 382,
     "name": "EFRATANA GIBNIM",
     "zone_legacy_id": 92,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.5,
+    "longitude": 38.5
   },
   {
     "legacy_id": 383,
     "name": "SHEWA ROBIT",
     "zone_legacy_id": 92,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 9.9918518,
+    "longitude": 39.9021171
   },
   {
     "legacy_id": 384,
     "name": "zata",
     "zone_legacy_id": 57,
     "comment": "de",
-    "status": 1
+    "status": 1,
+    "latitude": 14.2122933,
+    "longitude": 39.0775913
   },
   {
     "legacy_id": 385,
     "name": "GOMOLLE",
     "zone_legacy_id": 7,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 4.892569,
+    "longitude": 38.094989
   },
   {
     "legacy_id": 386,
     "name": "LOGIYA",
     "zone_legacy_id": 49,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.8023689,
+    "longitude": 39.6850226
   },
   {
     "legacy_id": 387,
     "name": "YALO",
     "zone_legacy_id": 82,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 6.955671,
+    "longitude": 37.3401726
   },
   {
     "legacy_id": 389,
     "name": "TSELEMT",
     "zone_legacy_id": 57,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.8379079,
+    "longitude": 39.2155604
   },
   {
     "legacy_id": 390,
     "name": "NEKEMT",
     "zone_legacy_id": 93,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 9.0906779,
+    "longitude": 36.5480371
   },
   {
     "legacy_id": 391,
     "name": "OFLA",
     "zone_legacy_id": 57,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 12.5088236,
+    "longitude": 39.5196616
   },
   {
     "legacy_id": 392,
     "name": "J/BAKASA",
     "zone_legacy_id": 43,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 13.3917079,
+    "longitude": 39.1996716
   },
   {
     "legacy_id": 393,
     "name": "ANFILO",
     "zone_legacy_id": 96,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 394,
     "name": "TERU",
     "zone_legacy_id": 82,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 12.4,
+    "longitude": 40.3
   },
   {
     "legacy_id": 395,
     "name": "TELALAK",
     "zone_legacy_id": 82,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.7108206,
+    "longitude": 41.0330866
   },
   {
     "legacy_id": 396,
     "name": "Dese",
     "zone_legacy_id": 80,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.122604,
+    "longitude": 39.634982
   },
   {
     "legacy_id": 397,
     "name": "SEDE-MUJA",
     "zone_legacy_id": 57,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.8379079,
+    "longitude": 39.2155604
   },
   {
     "legacy_id": 398,
     "name": "DAHINA",
     "zone_legacy_id": 57,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.8379079,
+    "longitude": 39.2155604
   },
   {
     "legacy_id": 399,
     "name": "T/GAYINT",
     "zone_legacy_id": 57,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.85,
+    "longitude": 38.36667
   },
   {
     "legacy_id": 400,
     "name": "L/GAYINT",
     "zone_legacy_id": 57,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.85,
+    "longitude": 38.36667
   },
   {
     "legacy_id": 401,
     "name": "SIMADA",
     "zone_legacy_id": 57,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.8379079,
+    "longitude": 39.2155604
   },
   {
     "legacy_id": 402,
     "name": "DAWINT",
     "zone_legacy_id": 57,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.8379079,
+    "longitude": 39.2155604
   },
   {
     "legacy_id": 403,
     "name": "HABRO",
     "zone_legacy_id": 57,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.86667,
+    "longitude": 40.51667
   },
   {
     "legacy_id": 404,
     "name": "SALA",
     "zone_legacy_id": 57,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 3.950234,
+    "longitude": 41.3016281
   },
   {
     "legacy_id": 405,
     "name": "DAWI",
     "zone_legacy_id": 49,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.9607077,
+    "longitude": 38.7640974
   },
   {
     "legacy_id": 406,
     "name": "MEKET",
     "zone_legacy_id": 62,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.7678252,
+    "longitude": 38.7358355
   },
   {
     "legacy_id": 407,
     "name": "GUBALAFTO",
     "zone_legacy_id": 57,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.8379079,
+    "longitude": 39.2155604
   },
   {
     "legacy_id": 408,
     "name": "MUJA",
     "zone_legacy_id": 57,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 12.0094354,
+    "longitude": 39.2912291
   },
   {
     "legacy_id": 409,
     "name": "MEKANESELAM",
     "zone_legacy_id": 6,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 9.9937611,
+    "longitude": 39.900869
   },
   {
     "legacy_id": 410,
     "name": "GIDA AYANA",
     "zone_legacy_id": 32,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 9.8779077,
+    "longitude": 36.6205474
   },
   {
     "legacy_id": 411,
     "name": "SIBU SIRE",
     "zone_legacy_id": 32,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 9.1494264,
+    "longitude": 36.8249758
   },
   {
     "legacy_id": 412,
     "name": "NUNU KUMBA",
     "zone_legacy_id": 32,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 413,
     "name": "WAYU TUKA",
     "zone_legacy_id": 32,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 414,
     "name": "GOBU SAYO",
     "zone_legacy_id": 32,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 415,
     "name": "LEKA DULECHA",
     "zone_legacy_id": 32,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 416,
     "name": "GUTO GIDA",
     "zone_legacy_id": 32,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 417,
     "name": "KIREMU",
     "zone_legacy_id": 32,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 9.959482,
+    "longitude": 36.866774
   },
   {
     "legacy_id": 418,
     "name": "SAISGA",
     "zone_legacy_id": 32,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 419,
     "name": "LBANTU",
     "zone_legacy_id": 32,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 420,
     "name": "LIMU",
     "zone_legacy_id": 32,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.18333,
+    "longitude": 35.58333
   },
   {
     "legacy_id": 421,
     "name": "DEWA CHEFA",
     "zone_legacy_id": 97,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 422,
     "name": "BATI ZURIA",
     "zone_legacy_id": 97,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 423,
     "name": "JILLE TIMUGA",
     "zone_legacy_id": 97,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 424,
     "name": "ARTUMA FURSIE",
     "zone_legacy_id": 97,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 425,
     "name": "DEWA HEREWA",
     "zone_legacy_id": 97,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 426,
     "name": "BATI CITY ADM",
     "zone_legacy_id": 97,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 427,
     "name": "KEMISIE CITY",
     "zone_legacy_id": 97,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 428,
     "name": "KELALA",
     "zone_legacy_id": 57,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 9.78333,
+    "longitude": 36.26667
   },
   {
     "legacy_id": 429,
     "name": "Lasta",
     "zone_legacy_id": 62,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 12.0344129,
+    "longitude": 39.0431018
   },
   {
     "legacy_id": 430,
     "name": "Dawunt",
     "zone_legacy_id": 62,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 11.8379079,
+    "longitude": 39.2155604
   },
   {
     "legacy_id": 431,
     "name": "Wore illu",
     "zone_legacy_id": 80,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 10.9342833,
+    "longitude": 39.2021182
   },
   {
     "legacy_id": 432,
     "name": "Akesta",
     "zone_legacy_id": 80,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 10.8704797,
+    "longitude": 39.1776894
   },
   {
     "legacy_id": 433,
     "name": "DELANTA",
     "zone_legacy_id": 80,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 10.9342833,
+    "longitude": 39.2021182
   },
   {
     "legacy_id": 434,
     "name": "Mekidella",
     "zone_legacy_id": 80,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 10.9342833,
+    "longitude": 39.2021182
   },
   {
     "legacy_id": 435,
     "name": "Tenta",
     "zone_legacy_id": 80,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 11.31667,
+    "longitude": 39.25
   },
   {
     "legacy_id": 436,
     "name": "Sahila",
     "zone_legacy_id": 80,
-    "comment": "The Exact woreda ande zone is not knoun of sahila (ሳህላ)",
-    "status": 1
+    "comment": "The Exact woreda ande zone is not knoun of sahila (\u1233\u1205\u120b)",
+    "status": 1,
+    "latitude": 12.9160826,
+    "longitude": 38.5048289
   },
   {
     "legacy_id": 437,
     "name": "Jamma",
     "zone_legacy_id": 80,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 9.9374575,
+    "longitude": 38.8653659
   },
   {
     "legacy_id": 438,
     "name": "Kelela",
     "zone_legacy_id": 80,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 10.58333,
+    "longitude": 39.0
   },
   {
     "legacy_id": 439,
     "name": "KALO",
     "zone_legacy_id": 98,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 4.25,
+    "longitude": 40.63333
   },
   {
     "legacy_id": 440,
     "name": "GAMA",
     "zone_legacy_id": 98,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 9.33333,
+    "longitude": 42.7
   },
   {
     "legacy_id": 441,
     "name": "Sekota",
     "zone_legacy_id": 57,
     "comment": "Woreda is not  confirm",
-    "status": 1
+    "status": 1,
+    "latitude": 12.6254708,
+    "longitude": 39.0348591
   },
   {
     "legacy_id": 442,
     "name": "Ayna",
     "zone_legacy_id": 62,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 11.8379079,
+    "longitude": 39.2155604
   },
   {
     "legacy_id": 443,
     "name": "Ebenat",
     "zone_legacy_id": 1,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 12.1240732,
+    "longitude": 38.0502347
   },
   {
     "legacy_id": 444,
     "name": "GAZGIBLA",
     "zone_legacy_id": 99,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 12.4118963,
+    "longitude": 39.0143766
   },
   {
     "legacy_id": 445,
     "name": "ABERGELE",
     "zone_legacy_id": 99,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 13.0439609,
+    "longitude": 38.9849055
   },
   {
     "legacy_id": 446,
     "name": "TSAGBJI",
     "zone_legacy_id": 99,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 12.0344129,
+    "longitude": 39.0431018
   },
   {
     "legacy_id": 447,
     "name": "MENZEMAMA",
     "zone_legacy_id": 92,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.5,
+    "longitude": 38.5
   },
   {
     "legacy_id": 448,
     "name": "MENZE GARA",
     "zone_legacy_id": 92,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.5,
+    "longitude": 38.5
   },
   {
     "legacy_id": 450,
     "name": "EAST BELESE",
     "zone_legacy_id": 76,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.5,
+    "longitude": 38.5
   },
   {
     "legacy_id": 451,
     "name": "ZEQOALA",
     "zone_legacy_id": 101,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.5,
+    "longitude": 38.5
   },
   {
     "legacy_id": 452,
     "name": "SEMUROBI",
     "zone_legacy_id": 49,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.7108206,
+    "longitude": 41.0330866
   },
   {
     "legacy_id": 453,
     "name": "SOUTH WOLLO",
     "zone_legacy_id": 80,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 10.9342833,
+    "longitude": 39.2021182
   },
   {
     "legacy_id": 454,
     "name": "DEDESA",
     "zone_legacy_id": 12,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 9.0246602,
+    "longitude": 36.1613257
   },
   {
     "legacy_id": 455,
     "name": "ODA SHAKISO",
     "zone_legacy_id": 51,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 5.5501401,
+    "longitude": 39.2030529
   },
   {
     "legacy_id": 456,
     "name": "DALIFAGE",
     "zone_legacy_id": 88,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 10.6271669,
+    "longitude": 40.3131509
   },
   {
     "legacy_id": 457,
     "name": "HAYKE",
     "zone_legacy_id": 102,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.4305,
+    "longitude": 38.9719365
   },
   {
     "legacy_id": 458,
     "name": "DEWE",
     "zone_legacy_id": 103,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 10.8085861,
+    "longitude": 40.1791555
   },
   {
     "legacy_id": 459,
     "name": "JARA",
     "zone_legacy_id": 102,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.3679396,
+    "longitude": 40.498317
   },
   {
     "legacy_id": 460,
     "name": "DAYE",
     "zone_legacy_id": 21,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 6.63333,
+    "longitude": 38.7
   },
   {
     "legacy_id": 461,
     "name": "CHIRA",
     "zone_legacy_id": 21,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 6.6507504,
+    "longitude": 38.4796794
   },
   {
     "legacy_id": 462,
     "name": "FAFEM",
     "zone_legacy_id": 104,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 9.135,
+    "longitude": 42.66222
   },
   {
     "legacy_id": 463,
     "name": "ADAR",
     "zone_legacy_id": 89,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.7260015,
+    "longitude": 40.978725
   },
   {
     "legacy_id": 464,
     "name": "MEGALE",
     "zone_legacy_id": 105,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.5949663,
+    "longitude": 37.3882251
   },
   {
     "legacy_id": 465,
     "name": "ADOLA REDI",
     "zone_legacy_id": 51,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 5.5501401,
+    "longitude": 39.2030529
   },
   {
     "legacy_id": 466,
     "name": "DIREDEWA",
     "zone_legacy_id": 86,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 467,
     "name": "kelemwelega",
     "zone_legacy_id": 97,
     "comment": "de",
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 468,
     "name": "GIRJA",
     "zone_legacy_id": 21,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 6.2481607,
+    "longitude": 38.9345062
   },
   {
     "legacy_id": 469,
     "name": "HIDA",
     "zone_legacy_id": 82,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.93333,
+    "longitude": 39.98333
   },
   {
     "legacy_id": 470,
     "name": "DEMBA GOFA",
     "zone_legacy_id": 106,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 6.0095303,
+    "longitude": 37.5354187
   },
   {
     "legacy_id": 471,
     "name": "ZALA",
     "zone_legacy_id": 106,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 13.665489,
+    "longitude": 39.103533
   },
   {
     "legacy_id": 472,
     "name": "GOBA DEBER TSHAYE",
     "zone_legacy_id": 106,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 6.0095303,
+    "longitude": 37.5354187
   },
   {
     "legacy_id": 473,
     "name": "GEZE GOFA",
     "zone_legacy_id": 106,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 6.0095303,
+    "longitude": 37.5354187
   },
   {
     "legacy_id": 474,
     "name": "AWASH",
     "zone_legacy_id": 59,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 9.9749582,
+    "longitude": 40.3904199
   },
   {
     "legacy_id": 475,
     "name": "BEGI",
     "zone_legacy_id": 107,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 9.3507839,
+    "longitude": 34.530416
   },
   {
     "legacy_id": 476,
     "name": "BOJI DIRMEJI",
     "zone_legacy_id": 107,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 477,
     "name": "GUDETU KONDOLE",
     "zone_legacy_id": 107,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 478,
     "name": "GULISO",
     "zone_legacy_id": 107,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 9.3486123,
+    "longitude": 35.5857433
   },
   {
     "legacy_id": 479,
     "name": "MANA SIBU",
     "zone_legacy_id": 107,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 480,
     "name": "GOBU SEYO",
     "zone_legacy_id": 32,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 9.1616258,
+    "longitude": 36.9676681
   },
   {
     "legacy_id": 481,
     "name": "IBANTU",
     "zone_legacy_id": 32,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 482,
     "name": "AFEDEM",
     "zone_legacy_id": 108,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 483,
     "name": "MAYSO",
     "zone_legacy_id": 108,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 484,
     "name": "GOTA BIKI",
     "zone_legacy_id": 108,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 485,
     "name": "GABLALU",
     "zone_legacy_id": 108,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 486,
     "name": "JIREDEGA JARTI",
     "zone_legacy_id": 109,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 487,
     "name": "Jor",
     "zone_legacy_id": 110,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 10.0597806,
+    "longitude": 34.5427386
   },
   {
     "legacy_id": 488,
     "name": "KOTEBE",
     "zone_legacy_id": 111,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 9.0371282,
+    "longitude": 38.8398518
   },
   {
     "legacy_id": 489,
     "name": "AXUM",
     "zone_legacy_id": 113,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 14.1220982,
+    "longitude": 38.7321749
   },
   {
     "legacy_id": 490,
     "name": "SHERE",
     "zone_legacy_id": 112,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 491,
     "name": "BERBERA",
     "zone_legacy_id": 108,
     "comment": "de",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 492,
     "name": "KOREM",
     "zone_legacy_id": 114,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 493,
     "name": "ADEWA",
     "zone_legacy_id": 112,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 494,
     "name": "EWA",
     "zone_legacy_id": 115,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.7108206,
+    "longitude": 41.0330866
   },
   {
     "legacy_id": 495,
     "name": "E/SHEWA",
     "zone_legacy_id": 9,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 496,
     "name": "BALE",
     "zone_legacy_id": 116,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 497,
     "name": "BERO",
     "zone_legacy_id": 43,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 13.3917079,
+    "longitude": 39.1996716
   },
   {
     "legacy_id": 498,
     "name": "DIRE-BAKAKSA",
     "zone_legacy_id": 95,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 4.5484468,
+    "longitude": 40.7091252
   },
   {
     "legacy_id": 499,
     "name": "GORO BOKOKSA",
     "zone_legacy_id": 95,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 4.5484468,
+    "longitude": 40.7091252
   },
   {
     "legacy_id": 500,
     "name": "Danod",
     "zone_legacy_id": 100,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 501,
     "name": "Galxamur",
     "zone_legacy_id": 100,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 502,
     "name": "Dawwe",
     "zone_legacy_id": 117,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 11.7108206,
+    "longitude": 41.0330866
   },
   {
     "legacy_id": 503,
     "name": "Omo Kuraz",
     "zone_legacy_id": 97,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 504,
     "name": "ADDISE ABABA",
     "zone_legacy_id": 58,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.0736751,
+    "longitude": 38.4887239
   },
   {
     "legacy_id": 505,
     "name": "Elkeri",
     "zone_legacy_id": 88,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 506,
     "name": "Barey",
     "zone_legacy_id": 88,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 507,
     "name": "Hargele",
     "zone_legacy_id": 88,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 508,
     "name": "West Imay",
     "zone_legacy_id": 88,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 509,
     "name": "Mubarek",
     "zone_legacy_id": 118,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 4.7172806,
+    "longitude": 40.4804349
   },
   {
     "legacy_id": 510,
     "name": "Qadhadhuma",
     "zone_legacy_id": 118,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 4.7172806,
+    "longitude": 40.4804349
   },
   {
     "legacy_id": 511,
     "name": "Hudet",
     "zone_legacy_id": 118,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 4.7172806,
+    "longitude": 40.4804349
   },
   {
     "legacy_id": 512,
     "name": "Guradhamole",
     "zone_legacy_id": 95,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 4.5484468,
+    "longitude": 40.7091252
   },
   {
     "legacy_id": 513,
     "name": "QERSADULE",
     "zone_legacy_id": 95,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 4.5484468,
+    "longitude": 40.7091252
   },
   {
     "legacy_id": 514,
     "name": "Gode",
     "zone_legacy_id": 119,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 515,
     "name": "Adadle",
     "zone_legacy_id": 119,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 516,
     "name": "East Imay",
     "zone_legacy_id": 119,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 517,
     "name": "Garbo",
     "zone_legacy_id": 120,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 518,
     "name": "Dhuxun",
     "zone_legacy_id": 120,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 519,
     "name": "xararey",
     "zone_legacy_id": 120,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 520,
     "name": "Kalafo",
     "zone_legacy_id": 119,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 521,
     "name": "Harguka",
     "zone_legacy_id": 82,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 11.7108206,
+    "longitude": 41.0330866
   },
   {
     "legacy_id": 522,
     "name": "Areketi",
     "zone_legacy_id": 82,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 11.7108206,
+    "longitude": 41.0330866
   },
   {
     "legacy_id": 523,
     "name": "Arebote",
     "zone_legacy_id": 82,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 11.7108206,
+    "longitude": 41.0330866
   },
   {
     "legacy_id": 524,
     "name": "Uwa",
     "zone_legacy_id": 115,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 11.7108206,
+    "longitude": 41.0330866
   },
   {
     "legacy_id": 525,
     "name": "Eledar",
     "zone_legacy_id": 82,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 11.7108206,
+    "longitude": 41.0330866
   },
   {
     "legacy_id": 526,
     "name": "Gursum",
     "zone_legacy_id": 122,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 527,
     "name": "Tuliguled",
     "zone_legacy_id": 122,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 528,
     "name": "Gadadimo",
     "zone_legacy_id": 118,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 4.7172806,
+    "longitude": 40.4804349
   },
   {
     "legacy_id": 529,
     "name": "MERHAWI",
     "zone_legacy_id": 125,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.5,
+    "longitude": 38.5
   },
   {
     "legacy_id": 530,
     "name": "HAMUSIT",
     "zone_legacy_id": 1,
     "comment": "de",
-    "status": 1
+    "status": 1,
+    "latitude": 11.5,
+    "longitude": 38.5
   },
   {
     "legacy_id": 531,
     "name": "Mekidela",
     "zone_legacy_id": 57,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.8379079,
+    "longitude": 39.2155604
   },
   {
     "legacy_id": 532,
     "name": "MEDA WALABU",
     "zone_legacy_id": 97,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 533,
     "name": "DULELSSA",
     "zone_legacy_id": 59,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.7108206,
+    "longitude": 41.0330866
   },
   {
     "legacy_id": 534,
     "name": "FILTU",
     "zone_legacy_id": 95,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 4.5484468,
+    "longitude": 40.7091252
   },
   {
     "legacy_id": 535,
     "name": "BOQOLMAAYO",
     "zone_legacy_id": 95,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 4.5484468,
+    "longitude": 40.7091252
   },
   {
     "legacy_id": 536,
     "name": "DOLLO ADO",
     "zone_legacy_id": 95,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 4.5484468,
+    "longitude": 40.7091252
   },
   {
     "legacy_id": 537,
     "name": "KARSA DULE",
     "zone_legacy_id": 95,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 4.5484468,
+    "longitude": 40.7091252
   },
   {
     "legacy_id": 538,
     "name": "WEST GOJAM",
     "zone_legacy_id": 125,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 11.5,
+    "longitude": 38.5
   },
   {
     "legacy_id": 539,
     "name": "DJIBOUTI",
     "zone_legacy_id": 127,
     "comment": "FOR DJIBOUTI OPERATIONS",
-    "status": 1
+    "status": 1,
+    "latitude": 9.145,
+    "longitude": 40.489673
   },
   {
     "legacy_id": 540,
     "name": "GIRJA-GUJI",
     "zone_legacy_id": 51,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 6.2481607,
+    "longitude": 38.9345062
   },
   {
     "legacy_id": 541,
     "name": "ABIDA",
     "zone_legacy_id": 128,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.7108206,
+    "longitude": 41.0330866
   },
   {
     "legacy_id": 542,
     "name": "BABILE",
     "zone_legacy_id": 122,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 543,
     "name": "MUSTAHIL",
     "zone_legacy_id": 119,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 544,
     "name": "QALAAFO",
     "zone_legacy_id": 119,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 545,
     "name": "ELELE",
     "zone_legacy_id": 119,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 546,
     "name": "DANAN",
     "zone_legacy_id": 119,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 548,
     "name": "FERFER",
     "zone_legacy_id": 119,
     "comment": "de",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 549,
     "name": "EMEY BERI",
     "zone_legacy_id": 119,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 550,
     "name": "ABA QARO",
     "zone_legacy_id": 119,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 551,
     "name": "QUBI",
     "zone_legacy_id": 55,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.4392817,
+    "longitude": 42.1142323
   },
   {
     "legacy_id": 552,
     "name": "LEGE - HIDA",
     "zone_legacy_id": 55,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.93333,
+    "longitude": 41.06666
   },
   {
     "legacy_id": 553,
     "name": "BEERCANO",
     "zone_legacy_id": 119,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 554,
     "name": "CADADLE",
     "zone_legacy_id": 119,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 555,
     "name": "XAMARO",
     "zone_legacy_id": 55,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.4392817,
+    "longitude": 42.1142323
   },
   {
     "legacy_id": 556,
     "name": "FIIQ",
     "zone_legacy_id": 55,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.4392817,
+    "longitude": 42.1142323
   },
   {
     "legacy_id": 557,
     "name": "SALAHAD",
     "zone_legacy_id": 55,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.4392817,
+    "longitude": 42.1142323
   },
   {
     "legacy_id": 559,
     "name": "WANGEY",
     "zone_legacy_id": 55,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.4392817,
+    "longitude": 42.1142323
   },
   {
     "legacy_id": 560,
     "name": "YAXOOB",
     "zone_legacy_id": 55,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.4392817,
+    "longitude": 42.1142323
   },
   {
     "legacy_id": 561,
     "name": "DHUTUN",
     "zone_legacy_id": 120,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 562,
     "name": "DOOLOWBAY",
     "zone_legacy_id": 88,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 563,
     "name": "KOHLE",
     "zone_legacy_id": 88,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 564,
     "name": "CELKARI",
     "zone_legacy_id": 88,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 565,
     "name": "CEELWAYNE",
     "zone_legacy_id": 120,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 566,
     "name": "HORSHAGAX",
     "zone_legacy_id": 120,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 567,
     "name": "CAAYUUN",
     "zone_legacy_id": 120,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 568,
     "name": "SAGAG",
     "zone_legacy_id": 120,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 569,
     "name": "WEST EMAY",
     "zone_legacy_id": 88,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 570,
     "name": "JARATI",
     "zone_legacy_id": 88,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 571,
     "name": "YOOCLE",
     "zone_legacy_id": 36,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.0735213,
+    "longitude": 44.0954224
   },
   {
     "legacy_id": 572,
     "name": "BIRQOD",
     "zone_legacy_id": 36,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.0735213,
+    "longitude": 44.0954224
   },
   {
     "legacy_id": 573,
     "name": "ARARSO",
     "zone_legacy_id": 36,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.0735213,
+    "longitude": 44.0954224
   },
   {
     "legacy_id": 574,
     "name": "DAGAHABUR",
     "zone_legacy_id": 36,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.0735213,
+    "longitude": 44.0954224
   },
   {
     "legacy_id": 575,
     "name": "GURADAMOLE",
     "zone_legacy_id": 95,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 4.5484468,
+    "longitude": 40.7091252
   },
   {
     "legacy_id": 576,
     "name": "ERRER",
     "zone_legacy_id": 129,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 577,
     "name": "GOROBOKOKSA/ LIBAN",
     "zone_legacy_id": 95,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 4.5484468,
+    "longitude": 40.7091252
   },
   {
     "legacy_id": 578,
     "name": "GUNAGAD",
     "zone_legacy_id": 36,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.0735213,
+    "longitude": 44.0954224
   },
   {
     "legacy_id": 579,
     "name": "DHANGAMADOW",
     "zone_legacy_id": 36,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.0735213,
+    "longitude": 44.0954224
   },
   {
     "legacy_id": 580,
     "name": "DAROOR",
     "zone_legacy_id": 36,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.0735213,
+    "longitude": 44.0954224
   },
   {
     "legacy_id": 581,
     "name": "EMAY",
     "zone_legacy_id": 55,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.4392817,
+    "longitude": 42.1142323
   },
   {
     "legacy_id": 582,
     "name": "MAYA MULUQA",
     "zone_legacy_id": 55,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.4392817,
+    "longitude": 42.1142323
   },
   {
     "legacy_id": 583,
     "name": "DHUNYAR",
     "zone_legacy_id": 129,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 584,
     "name": "DEBREMARKOS",
     "zone_legacy_id": 130,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.5,
+    "longitude": 38.5
   },
   {
     "legacy_id": 585,
     "name": "GASHAAMO",
     "zone_legacy_id": 36,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.0735213,
+    "longitude": 44.0954224
   },
   {
     "legacy_id": 586,
     "name": "AWBARE",
     "zone_legacy_id": 122,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 587,
     "name": "GOLIJANO",
     "zone_legacy_id": 122,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 588,
     "name": "WAJALE",
     "zone_legacy_id": 122,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 589,
     "name": "GALAADI",
     "zone_legacy_id": 100,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 590,
     "name": "LAHEL YUCUB",
     "zone_legacy_id": 100,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 591,
     "name": "GAXAMUR",
     "zone_legacy_id": 100,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 592,
     "name": "BOOKH",
     "zone_legacy_id": 100,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 593,
     "name": "DANOOD",
     "zone_legacy_id": 100,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 594,
     "name": "WARDER",
     "zone_legacy_id": 100,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 595,
     "name": "DARATOOLE",
     "zone_legacy_id": 100,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 596,
     "name": "MOYALE - SOMALI",
     "zone_legacy_id": 118,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 4.7172806,
+    "longitude": 40.4804349
   },
   {
     "legacy_id": 597,
     "name": "KEBRIDAHAR",
     "zone_legacy_id": 131,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 598,
     "name": "SHILABO",
     "zone_legacy_id": 131,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 599,
     "name": "MARSIN",
     "zone_legacy_id": 131,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 600,
     "name": "SHAYKOSH",
     "zone_legacy_id": 131,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 601,
     "name": "DHOBAWEYIN",
     "zone_legacy_id": 131,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 602,
     "name": "HILOOLEY",
     "zone_legacy_id": 131,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 603,
     "name": "BOODALEY",
     "zone_legacy_id": 131,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 604,
     "name": "ELOGADEEN",
     "zone_legacy_id": 131,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 605,
     "name": "KUDUNBUR",
     "zone_legacy_id": 131,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 606,
     "name": "LASDHANKAYRE",
     "zone_legacy_id": 131,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 607,
     "name": "QADIM",
     "zone_legacy_id": 118,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 4.7172806,
+    "longitude": 40.4804349
   },
   {
     "legacy_id": 608,
     "name": "RASO",
     "zone_legacy_id": 88,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 609,
     "name": "QABRIBAYAH",
     "zone_legacy_id": 122,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 610,
     "name": "LAGAHIDA",
     "zone_legacy_id": 132,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 611,
     "name": "DHAKA SUUFTI",
     "zone_legacy_id": 95,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 4.5484468,
+    "longitude": 40.7091252
   },
   {
     "legacy_id": 613,
     "name": "BIZET",
     "zone_legacy_id": 133,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 614,
     "name": "GUME ELDALO",
     "zone_legacy_id": 126,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 615,
     "name": "BEDELE",
     "zone_legacy_id": 135,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 616,
     "name": "EROB",
     "zone_legacy_id": 133,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 617,
     "name": "ENDERTA",
     "zone_legacy_id": 136,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 618,
     "name": "EMBA SIENETI",
     "zone_legacy_id": 86,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 619,
     "name": "ADET - TIGRAI",
     "zone_legacy_id": 86,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 620,
     "name": "SAMRI",
     "zone_legacy_id": 136,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 621,
     "name": "CHILA",
     "zone_legacy_id": 86,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 622,
     "name": "EDAGA HAMUS",
     "zone_legacy_id": 133,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 623,
     "name": "KEYHE TEKLI",
     "zone_legacy_id": 86,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 624,
     "name": "AMBA ALAJE",
     "zone_legacy_id": 136,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 625,
     "name": "HAHAYLE",
     "zone_legacy_id": 86,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 626,
     "name": "TSEADA AMBA",
     "zone_legacy_id": 133,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 627,
     "name": "LAELAY TSELEMT",
     "zone_legacy_id": 138,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 628,
     "name": "IMY-BARI",
     "zone_legacy_id": 119,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 629,
     "name": "ELLELE",
     "zone_legacy_id": 119,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 630,
     "name": "BERCAANO",
     "zone_legacy_id": 119,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 631,
     "name": "DENAN",
     "zone_legacy_id": 56,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 10.2122931,
+    "longitude": 41.9276455
   },
   {
     "legacy_id": 632,
     "name": "KELAFO",
     "zone_legacy_id": 56,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 10.2122931,
+    "longitude": 41.9276455
   },
   {
     "legacy_id": 633,
     "name": "Cayuun",
     "zone_legacy_id": 139,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 9.5942885,
+    "longitude": 41.8617959
   },
   {
     "legacy_id": 634,
     "name": "Boqol maayso",
     "zone_legacy_id": 95,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 4.5484468,
+    "longitude": 40.7091252
   },
   {
     "legacy_id": 635,
     "name": "WEST WELABU",
     "zone_legacy_id": 126,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 636,
     "name": "NESTDER",
     "zone_legacy_id": 86,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 637,
     "name": "HAWZEN",
     "zone_legacy_id": 133,
     "comment": "de",
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 638,
     "name": "RHANDA ARBET",
     "zone_legacy_id": 86,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 639,
     "name": "TANQUA MELASH",
     "zone_legacy_id": 86,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 640,
     "name": "TAHETAY MAYCHEW",
     "zone_legacy_id": 86,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 641,
     "name": "AKOBO",
     "zone_legacy_id": 140,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.8102647,
+    "longitude": 34.1822172
   },
   {
     "legacy_id": 642,
     "name": "GERALTA",
     "zone_legacy_id": 133,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 643,
     "name": "EGELA",
     "zone_legacy_id": 86,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 644,
     "name": "BORA",
     "zone_legacy_id": 114,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 645,
     "name": "SELEWA",
     "zone_legacy_id": 114,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 646,
     "name": "ATSBI ENDESELASSIE",
     "zone_legacy_id": 133,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 647,
     "name": "SAHARTI",
     "zone_legacy_id": 136,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 648,
     "name": "MAY KENETAL",
     "zone_legacy_id": 86,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 649,
     "name": "AHSEA",
     "zone_legacy_id": 86,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 650,
     "name": "GOLJANO",
     "zone_legacy_id": 122,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 651,
     "name": "Lasdhankyre",
     "zone_legacy_id": 131,
     "comment": "de",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 652,
     "name": "DAYMEED",
     "zone_legacy_id": 129,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 653,
     "name": "NEQSEGE",
     "zone_legacy_id": 114,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 654,
     "name": "WAJIRAT",
     "zone_legacy_id": 136,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 655,
     "name": "SAMRE",
     "zone_legacy_id": 136,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 656,
     "name": "TSR WEMBERTA",
     "zone_legacy_id": 133,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 657,
     "name": "DEBRE ZEYIT/BISHOFTU",
     "zone_legacy_id": 9,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 658,
     "name": "WOLISO",
     "zone_legacy_id": 141,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 659,
     "name": "AFDEM",
     "zone_legacy_id": 129,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 660,
     "name": "BICILBUR",
     "zone_legacy_id": 36,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.0735213,
+    "longitude": 44.0954224
   },
   {
     "legacy_id": 661,
     "name": "GELAN GUDA",
     "zone_legacy_id": 142,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 662,
     "name": "JANAMORA",
     "zone_legacy_id": 94,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 11.5,
+    "longitude": 38.5
   },
   {
     "legacy_id": 663,
     "name": "ALAJE",
     "zone_legacy_id": 114,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 664,
     "name": "ARBA MINCH",
     "zone_legacy_id": 143,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 6.7089081,
+    "longitude": 35.6841753
   },
   {
     "legacy_id": 665,
     "name": "IMAY BARI",
     "zone_legacy_id": 119,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 666,
     "name": "SHABALAY",
     "zone_legacy_id": 122,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 667,
     "name": "HARSHIN",
     "zone_legacy_id": 122,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 668,
     "name": "HARAWA",
     "zone_legacy_id": 122,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 669,
     "name": "QOOXLE",
     "zone_legacy_id": 88,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 670,
     "name": "IMAY GALBEED",
     "zone_legacy_id": 88,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 672,
     "name": "MULA",
     "zone_legacy_id": 122,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 673,
     "name": "Wardher",
     "zone_legacy_id": 100,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 674,
     "name": "G/ELDALO",
     "zone_legacy_id": 126,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 675,
     "name": "Salaxad",
     "zone_legacy_id": 55,
     "comment": "de",
-    "status": 1
+    "status": 1,
+    "latitude": 8.4392817,
+    "longitude": 42.1142323
   },
   {
     "legacy_id": 676,
     "name": "Dhobowain",
     "zone_legacy_id": 131,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 677,
     "name": "MAA ISO",
     "zone_legacy_id": 129,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 678,
     "name": "Galadi",
     "zone_legacy_id": 100,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 679,
     "name": "Gura Bekeksa",
     "zone_legacy_id": 95,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 4.5484468,
+    "longitude": 40.7091252
   },
   {
     "legacy_id": 680,
     "name": "El-Ogaden",
     "zone_legacy_id": 131,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 681,
     "name": "Sheikosh",
     "zone_legacy_id": 131,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 682,
     "name": "Dunyar",
     "zone_legacy_id": 129,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 683,
     "name": "DAMBAL",
     "zone_legacy_id": 129,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 684,
     "name": "DIG",
     "zone_legacy_id": 36,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.0735213,
+    "longitude": 44.0954224
   },
   {
     "legacy_id": 685,
     "name": "Hadhagaala",
     "zone_legacy_id": 129,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 686,
     "name": "Lah-Yub",
     "zone_legacy_id": 100,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 687,
     "name": "AKSUM",
     "zone_legacy_id": 86,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 688,
     "name": "METTU",
     "zone_legacy_id": 135,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 689,
     "name": "GADHAMOLE",
     "zone_legacy_id": 95,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 4.5484468,
+    "longitude": 40.7091252
   },
   {
     "legacy_id": 690,
     "name": "BILCILBUUR",
     "zone_legacy_id": 36,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.0735213,
+    "longitude": 44.0954224
   },
   {
     "legacy_id": 691,
     "name": "BODALAY",
     "zone_legacy_id": 131,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 692,
     "name": "Ayun",
     "zone_legacy_id": 139,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 9.5942885,
+    "longitude": 41.8617959
   },
   {
     "legacy_id": 693,
     "name": "Dhuhun",
     "zone_legacy_id": 120,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 694,
     "name": "YOXOB",
     "zone_legacy_id": 55,
     "comment": "de",
-    "status": 1
+    "status": 1,
+    "latitude": 8.4392817,
+    "longitude": 42.1142323
   },
   {
     "legacy_id": 695,
     "name": "Mayumulqe",
     "zone_legacy_id": 55,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.4392817,
+    "longitude": 42.1142323
   },
   {
     "legacy_id": 696,
     "name": "Qadaqaara",
     "zone_legacy_id": 67,
     "comment": "De",
-    "status": 1
+    "status": 1,
+    "latitude": 11.7108206,
+    "longitude": 41.0330866
   },
   {
     "legacy_id": 697,
     "name": "Qeeli Daqaara",
     "zone_legacy_id": 67,
     "comment": "De",
-    "status": 1
+    "status": 1,
+    "latitude": 11.7108206,
+    "longitude": 41.0330866
   },
   {
     "legacy_id": 698,
     "name": "ADADO",
     "zone_legacy_id": 82,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.7108206,
+    "longitude": 41.0330866
   },
   {
     "legacy_id": 699,
     "name": "AYSHA",
     "zone_legacy_id": 129,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 700,
     "name": "GODEY",
     "zone_legacy_id": 119,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 701,
     "name": "DHAGAXBUUR",
     "zone_legacy_id": 36,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.0735213,
+    "longitude": 44.0954224
   },
   {
     "legacy_id": 702,
     "name": "RAYA CHERCHER",
     "zone_legacy_id": 85,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.5384711,
+    "longitude": 37.9713899
   },
   {
     "legacy_id": 703,
     "name": "AB ALA",
     "zone_legacy_id": 144,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.7108206,
+    "longitude": 41.0330866
   },
   {
     "legacy_id": 704,
     "name": "ELWEYNE",
     "zone_legacy_id": 120,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 705,
     "name": "HARAREY",
     "zone_legacy_id": 139,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 9.5942885,
+    "longitude": 41.8617959
   },
   {
     "legacy_id": 706,
     "name": "HADELE HELA",
     "zone_legacy_id": 117,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.7108206,
+    "longitude": 41.0330866
   },
   {
     "legacy_id": 707,
     "name": "Entalo",
     "zone_legacy_id": 136,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 708,
     "name": "E/Senayte",
     "zone_legacy_id": 146,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 709,
     "name": "Samera",
     "zone_legacy_id": 147,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 710,
     "name": "Aofla",
     "zone_legacy_id": 147,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 711,
     "name": "T/Milash",
     "zone_legacy_id": 146,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 712,
     "name": "Raya Azebo",
     "zone_legacy_id": 1,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 11.5,
+    "longitude": 38.5
   },
   {
     "legacy_id": 713,
     "name": "Tenben",
     "zone_legacy_id": 147,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 714,
     "name": "WIJART",
     "zone_legacy_id": 136,
     "comment": "de",
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 715,
     "name": "Dasenech",
     "zone_legacy_id": 148,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 6.7089081,
+    "longitude": 35.6841753
   },
   {
     "legacy_id": 716,
     "name": "gnagatom",
     "zone_legacy_id": 148,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 6.7089081,
+    "longitude": 35.6841753
   },
   {
     "legacy_id": 717,
     "name": "Hamere",
     "zone_legacy_id": 148,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 6.7089081,
+    "longitude": 35.6841753
   },
   {
     "legacy_id": 718,
     "name": "D-BAY",
     "zone_legacy_id": 49,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.7108206,
+    "longitude": 41.0330866
   },
   {
     "legacy_id": 719,
     "name": "Kilete Awlo",
     "zone_legacy_id": 64,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 720,
     "name": "Ahfrom",
     "zone_legacy_id": 146,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 721,
     "name": "G/Mekida",
     "zone_legacy_id": 133,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 722,
     "name": "G/Hafeshum",
     "zone_legacy_id": 146,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 723,
     "name": "tseya wender",
     "zone_legacy_id": 114,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 724,
     "name": "k/awlas 10",
     "zone_legacy_id": 133,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 725,
     "name": "Raye Azebo",
     "zone_legacy_id": 114,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 726,
     "name": "raya chcechy",
     "zone_legacy_id": 114,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 727,
     "name": "adarkay",
     "zone_legacy_id": 94,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 11.5,
+    "longitude": 38.5
   },
   {
     "legacy_id": 728,
     "name": "tselmt",
     "zone_legacy_id": 1,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 11.5,
+    "longitude": 38.5
   },
   {
     "legacy_id": 729,
     "name": "tsral/wenber",
     "zone_legacy_id": 133,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 730,
     "name": "Sera wenbe",
     "zone_legacy_id": 133,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 731,
     "name": "SHAKISO",
     "zone_legacy_id": 51,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 5.5501401,
+    "longitude": 39.2030529
   },
   {
     "legacy_id": 732,
     "name": "Maykenetan",
     "zone_legacy_id": 146,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 733,
     "name": "Leharity",
     "zone_legacy_id": 145,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 734,
     "name": "20 Adi Wojerat",
     "zone_legacy_id": 145,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 735,
     "name": "Hintalo",
     "zone_legacy_id": 145,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 736,
     "name": "South Temben",
     "zone_legacy_id": 145,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 737,
     "name": "Atseby",
     "zone_legacy_id": 133,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 738,
     "name": "Ganta Afeshum",
     "zone_legacy_id": 133,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 739,
     "name": "Gulo Meheda",
     "zone_legacy_id": 133,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 740,
     "name": "Gere Alta",
     "zone_legacy_id": 133,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 741,
     "name": "Kilete Awulalo",
     "zone_legacy_id": 133,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 742,
     "name": "Ts/wonberta",
     "zone_legacy_id": 133,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 743,
     "name": "A/Yechila",
     "zone_legacy_id": 146,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 744,
     "name": "Rama Adi Arbae",
     "zone_legacy_id": 146,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 745,
     "name": "keyh Tekily",
     "zone_legacy_id": 86,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 746,
     "name": "key",
     "zone_legacy_id": 86,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 747,
     "name": "Ogela",
     "zone_legacy_id": 133,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 748,
     "name": "Endaba Tsahima",
     "zone_legacy_id": 86,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 749,
     "name": "Kolla Temben",
     "zone_legacy_id": 146,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 13.881273,
+    "longitude": 39.127495
   },
   {
     "legacy_id": 750,
     "name": "TERCHA",
     "zone_legacy_id": 150,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 6.7089081,
+    "longitude": 35.6841753
   },
   {
     "legacy_id": 751,
     "name": "HOSSANA",
     "zone_legacy_id": 151,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 6.7089081,
+    "longitude": 35.6841753
   },
   {
     "legacy_id": 752,
     "name": "JIMMA",
     "zone_legacy_id": 152,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 753,
     "name": "KONTA",
     "zone_legacy_id": 150,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 6.7089081,
+    "longitude": 35.6841753
   },
   {
     "legacy_id": 754,
     "name": "YIRGACHEFE",
     "zone_legacy_id": 151,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 6.7089081,
+    "longitude": 35.6841753
   },
   {
     "legacy_id": 755,
     "name": "Belky",
     "zone_legacy_id": 106,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 6.0095303,
+    "longitude": 37.5354187
   },
   {
     "legacy_id": 756,
     "name": "Gezey Belky",
     "zone_legacy_id": 106,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 6.0095303,
+    "longitude": 37.5354187
   },
   {
     "legacy_id": 757,
     "name": "Sawula",
     "zone_legacy_id": 106,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 6.0095303,
+    "longitude": 37.5354187
   },
   {
     "legacy_id": 758,
     "name": "DILLA",
     "zone_legacy_id": 151,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 6.7089081,
+    "longitude": 35.6841753
   },
   {
     "legacy_id": 759,
     "name": "DOLOBAY",
     "zone_legacy_id": 88,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 760,
     "name": "HAMERO",
     "zone_legacy_id": 55,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.4392817,
+    "longitude": 42.1142323
   },
   {
     "legacy_id": 761,
     "name": "Bonga",
     "zone_legacy_id": 150,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.2667,
+    "longitude": 36.2333
   },
   {
     "legacy_id": 762,
     "name": "HAROREYS",
     "zone_legacy_id": 122,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 763,
     "name": "SHABEELEY",
     "zone_legacy_id": 122,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 764,
     "name": "KORAN/MULLA",
     "zone_legacy_id": 122,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 765,
     "name": "dhoboweyn",
     "zone_legacy_id": 108,
     "comment": "de",
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 766,
     "name": "BEERCADEYE",
     "zone_legacy_id": 104,
     "comment": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 9.135,
+    "longitude": 42.66222
   },
   {
     "legacy_id": 767,
     "name": "IMEY GALBED",
     "zone_legacy_id": 88,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 768,
     "name": "BOKOLMAYO",
     "zone_legacy_id": 95,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 4.5484468,
+    "longitude": 40.7091252
   },
   {
     "legacy_id": 769,
     "name": "Hadhagala",
     "zone_legacy_id": 82,
     "comment": "de",
-    "status": 1
+    "status": 1,
+    "latitude": 11.7108206,
+    "longitude": 41.0330866
   },
   {
     "legacy_id": 770,
     "name": "ALABA",
     "zone_legacy_id": 26,
     "comment": "de",
-    "status": 1
+    "status": 1,
+    "latitude": 8.0101011,
+    "longitude": 39.6716774
   },
   {
     "legacy_id": 771,
     "name": "JINKA",
     "zone_legacy_id": 151,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 6.7089081,
+    "longitude": 35.6841753
   },
   {
     "legacy_id": 772,
     "name": "GUBE",
     "zone_legacy_id": 72,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 11.7108206,
+    "longitude": 41.0330866
   },
   {
     "legacy_id": 773,
     "name": "wesama",
     "zone_legacy_id": 144,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 11.7108206,
+    "longitude": 41.0330866
   },
   {
     "legacy_id": 774,
     "name": "KEBRIBEYAH",
     "zone_legacy_id": 122,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 775,
     "name": "DANNO",
     "zone_legacy_id": 107,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 776,
     "name": "INDODE",
     "zone_legacy_id": 58,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.0736751,
+    "longitude": 38.4887239
   },
   {
     "legacy_id": 777,
     "name": "DHANAAN",
     "zone_legacy_id": 119,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 778,
     "name": "BIKI",
     "zone_legacy_id": 129,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.2629844,
+    "longitude": 43.5360531
   },
   {
     "legacy_id": 779,
     "name": "ILLU",
     "zone_legacy_id": 16,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 780,
     "name": "HOLOTA",
     "zone_legacy_id": 6,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 9.9937611,
+    "longitude": 39.900869
   },
   {
     "legacy_id": 781,
     "name": "DEGEHAMED",
     "zone_legacy_id": 36,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.0735213,
+    "longitude": 44.0954224
   },
   {
     "legacy_id": 782,
     "name": "FINFINE ZURIYA",
     "zone_legacy_id": 77,
     "comment": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   }
 ]

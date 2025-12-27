@@ -57,6 +57,29 @@ class ZoneControllerTest extends TestCase
     }
 
     #[Test]
+    public function it_saves_coordinates_when_zone_is_created(): void
+    {
+        $region = Region::factory()->create();
+
+        $response = $this->actingAs($this->user)
+            ->post(route('zones.store'), [
+                'name' => 'Coordinate Zone',
+                'code' => 'CZ-001',
+                'region_id' => $region->id,
+                'status' => 'active',
+                'latitude' => '7.123456',
+                'longitude' => '38.654321',
+            ]);
+
+        $response->assertRedirect(route('zones.index'));
+
+        $zone = Zone::query()->where('code', 'CZ-001')->firstOrFail();
+
+        self::assertEqualsWithDelta(7.123456, (float) $zone->latitude, 0.000001);
+        self::assertEqualsWithDelta(38.654321, (float) $zone->longitude, 0.000001);
+    }
+
+    #[Test]
     public function it_dispatches_event_when_zone_is_updated(): void
     {
         Event::fake([
@@ -82,6 +105,32 @@ class ZoneControllerTest extends TestCase
         Event::assertDispatched(ZoneUpdated::class, function (ZoneUpdated $event): bool {
             return $event->changes['status']['new'] === 'inactive';
         });
+    }
+
+    #[Test]
+    public function it_updates_coordinates_when_zone_is_updated(): void
+    {
+        $zone = Zone::factory()->create([
+            'latitude' => 6.111111,
+            'longitude' => 39.222222,
+        ]);
+
+        $response = $this->actingAs($this->user)
+            ->put(route('zones.update', $zone), [
+                'name' => $zone->name,
+                'code' => $zone->code,
+                'region_id' => $zone->region_id,
+                'status' => $zone->status,
+                'latitude' => '8.765432',
+                'longitude' => '37.654321',
+            ]);
+
+        $response->assertRedirect(route('zones.index'));
+
+        $zone->refresh();
+
+        self::assertEqualsWithDelta(8.765432, (float) $zone->latitude, 0.000001);
+        self::assertEqualsWithDelta(37.654321, (float) $zone->longitude, 0.000001);
     }
 
     #[Test]

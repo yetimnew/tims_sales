@@ -20,15 +20,27 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog'
 import { ActivityLogTable } from '@/components/activity-log-table'
+import { RegionBoundaryMap } from '@/components/RegionBoundaryMap'
 import { usePermissions } from '@/hooks/use-permissions'
 import AppLayout from '@/layouts/app-layout'
 import type { BreadcrumbItem } from '@/types'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
+type GeoJsonInput = Record<string, unknown> | null | undefined
+
+interface WoredaSummary {
+  id: number
+  name: string
+  status?: 'active' | 'inactive'
+  boundary_geojson?: GeoJsonInput
+}
+
 interface ZoneSummary {
   id: number
   name: string
   status?: 'active' | 'inactive'
+  boundary_geojson?: GeoJsonInput
+  woredas?: WoredaSummary[]
 }
 
 interface Region {
@@ -50,6 +62,7 @@ interface Region {
   created_at: string
   updated_at: string
   zones?: ZoneSummary[]
+  boundary_geojson?: GeoJsonInput
 }
 
 interface ActivityLog {
@@ -244,6 +257,27 @@ export default function RegionsShow({ region, activityLogs = [] }: RegionShowPro
           <TabsContent value="overview" className="flex-1 space-y-6 overflow-y-auto">
             <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,1fr),20rem] lg:items-start">
               <div className="space-y-6">
+                <Card className="shadow-lg border-0">
+                  <CardHeader className="border-b bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Globe className="h-5 w-5 text-blue-600" />
+                      Boundary Map
+                    </CardTitle>
+                    <CardDescription>Geospatial extent of the region with nested administrative layers</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <RegionBoundaryMap
+                      region={{
+                        name: region.name,
+                        boundary_geojson: region.boundary_geojson,
+                        latitude: region.latitude,
+                        longitude: region.longitude,
+                      }}
+                      zones={zones}
+                    />
+                  </CardContent>
+                </Card>
+
                 <Card className="shadow-lg border-0 bg-gradient-to-br from-background to-muted/20">
                   <CardHeader className="border-b bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20">
                     <CardTitle className="flex items-center gap-2 text-lg">

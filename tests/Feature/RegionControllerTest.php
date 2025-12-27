@@ -24,6 +24,7 @@ class RegionControllerTest extends TestCase
 
         $this->user = User::factory()->create();
         $this->givePermissions($this->user, [
+            'regions.view',
             'regions.store',
             'regions.update',
             'regions.destroy',
@@ -37,16 +38,25 @@ class RegionControllerTest extends TestCase
             RegionCreated::class,
         ]);
 
+        self::assertTrue($this->user->can('regions.store'));
+
         $response = $this->actingAs($this->user)
             ->post(route('regions.store'), [
                 'name' => 'Central Region',
                 'code' => 'CR',
                 'status' => 'active',
                 'description' => 'Central territory operations hub.',
+                'latitude' => '8.980603',
+                'longitude' => '38.757761',
             ]);
 
         $response->assertRedirect(route('regions.index'));
         $response->assertSessionHas('success', 'Region created successfully.');
+
+        $region = Region::where('name', 'Central Region')->first();
+        self::assertNotNull($region);
+        self::assertSame(8.980603, (float) $region->latitude);
+        self::assertSame(38.757761, (float) $region->longitude);
 
         Event::assertDispatched(RegionCreated::class, function (RegionCreated $event): bool {
             return $event->region->name === 'Central Region';
@@ -64,6 +74,8 @@ class RegionControllerTest extends TestCase
             'name' => 'North Region',
             'code' => 'NR',
             'population' => 1500000,
+            'latitude' => 8.75632,
+            'longitude' => 38.12345,
         ]);
 
         $response = $this->actingAs($this->user)
@@ -72,10 +84,16 @@ class RegionControllerTest extends TestCase
                 'code' => 'NR',
                 'status' => 'active',
                 'population' => 1750000,
+                'latitude' => '9.123456',
+                'longitude' => '39.654321',
             ]);
 
         $response->assertRedirect(route('regions.index'));
         $response->assertSessionHas('success', 'Region updated successfully.');
+
+        $region->refresh();
+        self::assertSame(9.123456, (float) $region->latitude);
+        self::assertSame(39.654321, (float) $region->longitude);
 
         Event::assertDispatched(RegionUpdated::class, function (RegionUpdated $event): bool {
             return $event->changes['population']['new'] === 1750000;

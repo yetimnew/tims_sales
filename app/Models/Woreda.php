@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Woreda extends Model
 {
-    use HasFactory, SoftDeletes, ClearsCacheOnModelEvents;
+    use ClearsCacheOnModelEvents, HasFactory, SoftDeletes;
 
     protected $fillable = [
         'name',
@@ -28,6 +28,7 @@ class Woreda extends Model
         'accessibility_score',
         'infrastructure_notes',
         'road_quality_notes',
+        'boundary_geojson',
     ];
 
     protected $casts = [
@@ -38,6 +39,7 @@ class Woreda extends Model
         'longitude' => 'decimal:7',
         'elevation_m' => 'decimal:2',
         'accessibility_score' => 'decimal:2',
+        'boundary_geojson' => 'array',
     ];
 
     /**
@@ -83,6 +85,3 @@ class Woreda extends Model
         });
     }
 }
-
-
-

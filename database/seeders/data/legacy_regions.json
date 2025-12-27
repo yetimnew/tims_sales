@@ -4,139 +4,179 @@
     "name": "Cental",
     "code": "CEN",
     "description": "the central part of the countryy",
-    "status": 1
+    "status": 1,
+    "latitude": 8.9806,
+    "longitude": 38.7578
   },
   {
     "legacy_id": 2,
     "name": "OROMIA",
     "code": "ORO",
     "description": null,
-    "status": 1
+    "status": 1,
+    "latitude": 8.5410261,
+    "longitude": 39.2705461
   },
   {
     "legacy_id": 3,
     "name": "SNNPR",
     "code": "SNN",
     "description": "it includes all southern cities",
-    "status": 1
+    "status": 1,
+    "latitude": 7.06205,
+    "longitude": 38.47635
   },
   {
     "legacy_id": 11,
     "name": "GAMBYLA",
     "code": "GAM",
     "description": "de",
-    "status": 1
+    "status": 1,
+    "latitude": 8.25,
+    "longitude": 34.5833
   },
   {
     "legacy_id": 19,
     "name": "ADDISABEBA",
     "code": "ADB",
     "description": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 8.9806,
+    "longitude": 38.7578
   },
   {
     "legacy_id": 23,
     "name": "AFAR",
     "code": "AFA",
     "description": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.7207,
+    "longitude": 41.059
   },
   {
     "legacy_id": 27,
     "name": "AMARA",
     "code": "AMA",
     "description": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 11.5,
+    "longitude": 38.5
   },
   {
     "legacy_id": 42,
     "name": "BENESHANGUL",
     "code": "BEN",
     "description": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 10.0667,
+    "longitude": 34.5333
   },
   {
     "legacy_id": 44,
     "name": "DIREDAWA",
     "code": "DIR",
     "description": "de",
-    "status": 1
+    "status": 1,
+    "latitude": 9.5931,
+    "longitude": 41.8664
   },
   {
     "legacy_id": 48,
     "name": "SOMALI",
     "code": "SOM",
     "description": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 9.3508,
+    "longitude": 42.7999
   },
   {
     "legacy_id": 55,
     "name": "TIGRAY",
     "code": "TIG",
     "description": null,
-    "status": 1
+    "status": 1,
+    "latitude": 13.4967,
+    "longitude": 39.4767
   },
   {
     "legacy_id": 56,
     "name": "HARERI",
     "code": "HAR",
     "description": null,
-    "status": 1
+    "status": 1,
+    "latitude": 9.3128887,
+    "longitude": 42.1071088
   },
   {
     "legacy_id": 57,
     "name": "SIDAMA",
     "code": "SID",
     "description": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.06205,
+    "longitude": 38.47635
   },
   {
     "legacy_id": 58,
     "name": "Addis Abeba",
     "code": "ADA",
     "description": "CENTER",
-    "status": 1
+    "status": 1,
+    "latitude": 7.0736751,
+    "longitude": 38.4887239
   },
   {
     "legacy_id": 59,
     "name": "AMHARA",
     "code": "AMH",
     "description": null,
-    "status": 1
+    "status": 1,
+    "latitude": 11.5,
+    "longitude": 38.5
   },
   {
     "legacy_id": 60,
     "name": "ADDISE ABABA",
     "code": "ADD",
     "description": "CENTER",
-    "status": 1
+    "status": 1,
+    "latitude": 8.9806,
+    "longitude": 38.7578
   },
   {
     "legacy_id": 62,
     "name": "BENSHANGUL GUMUZ",
     "code": "BGU",
     "description": null,
-    "status": 1
+    "status": 1,
+    "latitude": 10.0667,
+    "longitude": 34.5333
   },
   {
     "legacy_id": 63,
     "name": "BORENA",
     "code": "BOR",
     "description": "DE",
-    "status": 1
+    "status": 1,
+    "latitude": 4.892569,
+    "longitude": 38.094989
   },
   {
     "legacy_id": 64,
     "name": "DJIBOUTI",
     "code": "DJI",
     "description": "FOR DJIBOUTI OPERATIONS",
-    "status": 1
+    "status": 1,
+    "latitude": 9.145,
+    "longitude": 40.489673
   },
   {
     "legacy_id": 65,
     "name": "SOUTH WEST",
     "code": "SOW",
     "description": null,
-    "status": 1
+    "status": 1,
+    "latitude": 7.2667,
+    "longitude": 36.2333
   }
 ]

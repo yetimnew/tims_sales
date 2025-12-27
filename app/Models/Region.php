@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Region extends Model
 {
-    use HasFactory, SoftDeletes, ClearsCacheOnModelEvents;
+    use ClearsCacheOnModelEvents, HasFactory, SoftDeletes;
 
     protected $fillable = [
         'name',
@@ -27,6 +27,7 @@ class Region extends Model
         'last_surveyed_at',
         'infrastructure_notes',
         'climate_profile',
+        'boundary_geojson',
     ];
 
     protected $casts = [
@@ -38,6 +39,7 @@ class Region extends Model
         'elevation_m' => 'decimal:2',
         'accessibility_score' => 'decimal:2',
         'last_surveyed_at' => 'date',
+        'boundary_geojson' => 'array',
     ];
 
     /**
@@ -75,6 +77,3 @@ class Region extends Model
         });
     }
 }
-
-
-

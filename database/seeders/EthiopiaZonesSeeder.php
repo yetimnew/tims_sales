@@ -59,8 +59,6 @@ class EthiopiaZonesSeeder extends Seeder
             ->get()
             ->keyBy(static fn (Region $region): string => Str::upper($region->code));
 
-        Zone::query()->forceDelete();
-
         foreach ($zoneDataset as $zone) {
             $legacyId = (int) ($zone['legacy_id'] ?? 0);
             $regionLegacyId = $zone['region_legacy_id'] ?? null;
@@ -85,6 +83,8 @@ class EthiopiaZonesSeeder extends Seeder
             $comment = $zone['comment'] ?? null;
             $description = $comment === null ? null : (string) Str::of($comment)->trim()->squish();
             $status = (int) ($zone['status'] ?? 1) === 1 ? 'active' : 'inactive';
+            $latitude = $zone['latitude'] ?? null;
+            $longitude = $zone['longitude'] ?? null;
 
             $payload = array_merge($defaults, [
                 'name' => (string) $name,
@@ -92,9 +92,13 @@ class EthiopiaZonesSeeder extends Seeder
                 'region_id' => $region->id,
                 'description' => $description,
                 'status' => $status,
+                'latitude' => $latitude === null ? null : (float) $latitude,
+                'longitude' => $longitude === null ? null : (float) $longitude,
             ]);
 
-            Zone::create($payload);
+            Zone::query()->updateOrCreate([
+                'code' => sprintf('LEGACY_ZONE_%d', $legacyId),
+            ], $payload);
         }
     }
 }

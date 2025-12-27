@@ -155,9 +155,16 @@ class RegionController extends Controller
             'last_surveyed_at' => 'nullable|date',
             'infrastructure_notes' => 'nullable|string|max:2000',
             'climate_profile' => 'nullable|string|max:2000',
+            'boundary_geojson' => 'nullable|json',
         ]);
 
         $validated['status'] = $validated['status'] ?? 'active';
+
+        if ($request->has('boundary_geojson')) {
+            $validated['boundary_geojson'] = $request->filled('boundary_geojson')
+                ? json_decode((string) $request->string('boundary_geojson')->toString(), true)
+                : null;
+        }
 
         try {
             $region = Region::create($validated);
@@ -194,7 +201,14 @@ class RegionController extends Controller
      */
     public function show(Region $region): Response
     {
-        $region->load(['zones']);
+        $region->load([
+            'zones' => static function ($query): void {
+                $query->select('id', 'region_id', 'name', 'status', 'boundary_geojson')
+                    ->with(['woredas' => static function ($woredaQuery): void {
+                        $woredaQuery->select('id', 'zone_id', 'name', 'status', 'boundary_geojson');
+                    }]);
+            },
+        ]);
 
         $activityLogs = Activity::forSubject($region)
             ->with('causer')
@@ -242,9 +256,16 @@ class RegionController extends Controller
             'last_surveyed_at' => 'nullable|date',
             'infrastructure_notes' => 'nullable|string|max:2000',
             'climate_profile' => 'nullable|string|max:2000',
+            'boundary_geojson' => 'nullable|json',
         ]);
 
         $validated['status'] = $validated['status'] ?? $region->status ?? 'active';
+
+        if ($request->has('boundary_geojson')) {
+            $validated['boundary_geojson'] = $request->filled('boundary_geojson')
+                ? json_decode((string) $request->string('boundary_geojson')->toString(), true)
+                : null;
+        }
 
         try {
             $original = $region->getOriginal();
