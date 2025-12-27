@@ -383,12 +383,23 @@ Route::middleware('auth')->group(function () {
             ->name('driver-safety.drivers-with-issues');
 
         // Cargo management
-        Route::resource('cargo-types', CargoTypeController::class);
+        Route::resource('cargo-types', CargoTypeController::class)
+            ->middleware([
+                'index' => 'can:cargotypes.view',
+                'show' => 'can:cargotypes.show',
+                'create' => 'can:cargotypes.create',
+                'store' => 'can:cargotypes.store',
+                'edit' => 'can:cargotypes.edit',
+                'update' => 'can:cargotypes.update',
+                'destroy' => 'can:cargotypes.destroy',
+            ]);
 
         Route::get('cargo-types/statistics', [CargoTypeController::class, 'statistics'])
+            ->middleware('can:cargotypes.view')
             ->name('cargo-types.statistics');
 
         Route::get('cargo-types/by-category', [CargoTypeController::class, 'byCategory'])
+            ->middleware('can:cargotypes.view')
             ->name('cargo-types.by-category');
 
         // Operations

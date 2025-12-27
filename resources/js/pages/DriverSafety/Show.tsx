@@ -22,7 +22,7 @@ import {
     Users,
 } from 'lucide-react';
 import { usePermissions } from '@/hooks/use-permissions';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { ActivityLogTable } from '@/components/activity-log-table';
@@ -163,6 +163,7 @@ export default function DriverSafetyShow({ driverSafety, activityLogs = [] }: Dr
     const { toast } = useToast();
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const lastDeleteToast = useRef<string | null>(null);
 
     const severityLabel = driverSafety.severity
         ? driverSafety.severity.charAt(0).toUpperCase() + driverSafety.severity.slice(1)
@@ -186,16 +187,21 @@ export default function DriverSafetyShow({ driverSafety, activityLogs = [] }: Dr
     }, [activityLogs]);
 
     const handleDelete = () => {
+        lastDeleteToast.current = null;
         setIsDeleting(true);
         router.delete(`/driver-safety/${driverSafety.id}`, {
             preserveScroll: true,
             onSuccess: () => {
                 setDeleteDialogOpen(false);
                 setIsDeleting(false);
-                toast({
-                    title: 'Safety record deleted',
-                    description: 'The incident has been removed successfully.',
-                });
+                const successMessage = 'The incident has been removed successfully.';
+                if (lastDeleteToast.current !== successMessage) {
+                    toast({
+                        title: 'Safety record deleted',
+                        description: successMessage,
+                    });
+                    lastDeleteToast.current = successMessage;
+                }
             },
             onError: (errors) => {
                 setIsDeleting(false);
@@ -205,11 +211,14 @@ export default function DriverSafetyShow({ driverSafety, activityLogs = [] }: Dr
                         .filter((value): value is string => typeof value === 'string')
                         .join('\n')
                     : 'We could not delete this safety record. Please review any blockers and try again.';
-                toast({
-                    title: 'Delete failed',
-                    description,
-                    variant: 'destructive',
-                });
+                if (lastDeleteToast.current !== description) {
+                    toast({
+                        title: 'Delete failed',
+                        description,
+                        variant: 'destructive',
+                    });
+                    lastDeleteToast.current = description;
+                }
             },
         });
     };

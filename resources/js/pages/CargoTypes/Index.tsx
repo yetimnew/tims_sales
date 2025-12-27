@@ -2,6 +2,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { TableCell, TableRow } from '@/components/ui/table';
 import ListPageLayout from '@/components/layouts/list-page-layout';
+import AppLayout from '@/layouts/app-layout';
 import { ListingStatsHeader } from '@/components/listing/stats-header';
 import { ListingFilterBar } from '@/components/listing/filter-bar';
 import { ListingTableShell } from '@/components/listing/data-table-shell';
@@ -11,8 +12,7 @@ import { ListingRowActionsMenu } from '@/components/listing/row-actions-menu';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useListingLoading } from '@/hooks/use-listing-loading';
-import { toast } from '@/hooks/use-toast';
-import { Link, router } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -126,11 +126,34 @@ export default function CargoTypesIndex({
     perPageOptions,
 }: CargoTypesIndexProps) {
     const { hasPermission } = usePermissions();
+    const canViewCargoTypes = hasPermission('cargotypes.view');
     const canViewCargoType = hasPermission('cargotypes.show');
     const canEditCargoType = hasPermission('cargotypes.edit');
     const canDeleteCargoType = hasPermission('cargotypes.destroy');
     const canCreateCargoType = hasPermission('cargotypes.create');
     const canExportCargoTypes = hasPermission('cargotypes.export');
+
+    if (!canViewCargoTypes) {
+        return (
+            <AppLayout breadcrumbs={breadcrumbs}>
+                <Head title="Cargo Types" />
+                <div className="flex flex-1 flex-col items-center justify-center gap-6 p-8 text-center">
+                    <img
+                        src="/images/dashboard-permission.svg"
+                        alt="Cargo type access restricted"
+                        className="h-60 w-auto max-w-full"
+                    />
+                    <div className="space-y-2">
+                        <h1 className="text-3xl font-semibold text-slate-900 dark:text-white">Cargo Types Access Restricted</h1>
+                        <p className="mx-auto max-w-md text-sm text-slate-600 dark:text-slate-400">
+                            You need the cargo types permission to view and manage cargo type records. Contact an administrator if
+                            you believe you should have access.
+                        </p>
+                    </div>
+                </div>
+            </AppLayout>
+        );
+    }
 
     const [searchTerm, setSearchTerm] = React.useState(filters?.search ?? '');
     const [selectedCategory, setSelectedCategory] = React.useState(filters?.category ?? 'all');
@@ -297,10 +320,6 @@ export default function CargoTypesIndex({
                 setSelectedType(null);
                 setIsDeleting(false);
                 setDeleteError(null);
-                toast({
-                    title: 'Cargo type deleted',
-                    description: 'The cargo type was removed successfully.',
-                });
             },
             onError: (errors) => {
                 setIsDeleting(false);
@@ -313,20 +332,8 @@ export default function CargoTypesIndex({
                         .join('\n');
 
                     setDeleteError(messages || fallback);
-
-                    toast({
-                        title: '❌ Delete Failed',
-                        description: messages || fallback,
-                        variant: 'destructive',
-                    });
                 } else {
                     setDeleteError(fallback);
-
-                    toast({
-                        title: '❌ Delete Failed',
-                        description: fallback,
-                        variant: 'destructive',
-                    });
                 }
             },
         });

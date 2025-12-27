@@ -11,7 +11,6 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { toast } from '@/hooks/use-toast';
 import { validateCargoType } from '@/lib/validation';
 import { type BreadcrumbItem } from '@/types';
 import { Link, useForm } from '@inertiajs/react';
@@ -91,20 +90,6 @@ export default function CargoTypesCreate({ categories }: CargoTypeCreateProps) {
             setData('category', defaultCategory);
         }
     }, [defaultCategory, data.category, setData]);
-
-    useEffect(() => {
-        const errorMessages = Object.values(errors)
-            .map((message) => (typeof message === 'string' ? message : String(message)))
-            .filter(Boolean);
-
-        if (errorMessages.length > 0) {
-            toast({
-                title: '⚠️ Validation Error',
-                description: errorMessages.join(', '),
-                variant: 'destructive',
-            });
-        }
-    }, [errors]);
 
     const backendErrors = useMemo(
         () =>
@@ -201,11 +186,6 @@ export default function CargoTypesCreate({ categories }: CargoTypeCreateProps) {
 
         if (Object.values(combinedErrors).some(Boolean)) {
             setFrontendErrors(combinedErrors);
-            toast({
-                title: '⚠️ Validation Error',
-                description: 'Please resolve the highlighted issues before saving.',
-                variant: 'destructive',
-            });
             return;
         }
 
@@ -215,10 +195,6 @@ export default function CargoTypesCreate({ categories }: CargoTypeCreateProps) {
                 setFrontendErrors({});
                 setIsDirty(false);
                 clearErrors();
-                toast({
-                    title: '✅ Cargo Type Registered',
-                    description: 'The cargo classification has been saved.',
-                });
                 reset();
                 formRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
             },

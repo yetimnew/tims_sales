@@ -17,9 +17,8 @@ import {
     Trash2,
 } from 'lucide-react';
 import { usePermissions } from '@/hooks/use-permissions';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
-import { useToast } from '@/hooks/use-toast';
 import { ActivityLogTable } from '@/components/activity-log-table';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -127,9 +126,10 @@ const getCategoryBadgeClasses = (category: string) => {
 
 export default function CargoTypesShow({ cargoType, activityLogs = [] }: CargoTypesShowProps) {
     const { hasPermission } = usePermissions();
-    const { toast } = useToast();
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [deleteError, setDeleteError] = useState<string | null>(null);
+    const lastDeleteError = useRef<string | null>(null);
 
     const activityLogRows = useMemo(() => {
         return (activityLogs ?? []).map((log) => ({
@@ -147,15 +147,16 @@ export default function CargoTypesShow({ cargoType, activityLogs = [] }: CargoTy
 
     const handleDelete = () => {
         setIsDeleting(true);
+        setDeleteError(null);
+        lastDeleteError.current = null;
+
         router.delete(`/cargo-types/${cargoType.id}`, {
             preserveScroll: true,
             onSuccess: () => {
                 setDeleteDialogOpen(false);
                 setIsDeleting(false);
-                toast({
-                    title: 'Cargo type deleted',
-                    description: 'The cargo classification has been removed.',
-                });
+                setDeleteError(null);
+                lastDeleteError.current = null;
             },
             onError: (errors) => {
                 setIsDeleting(false);
@@ -165,13 +166,21 @@ export default function CargoTypesShow({ cargoType, activityLogs = [] }: CargoTy
                         .filter((value): value is string => typeof value === 'string')
                         .join('\n')
                     : 'Unable to delete this cargo type. Please review any blockers and try again.';
-                toast({
-                    title: 'Delete failed',
-                    description,
-                    variant: 'destructive',
-                });
+
+                if (lastDeleteError.current !== description) {
+                    setDeleteError(description);
+                    lastDeleteError.current = description;
+                }
             },
         });
+    };
+
+    const handleDialogChange = (open: boolean) => {
+        setDeleteDialogOpen(open);
+        if (!open) {
+            setDeleteError(null);
+            lastDeleteError.current = null;
+        }
     };
 
     const weightDisplay = formatWeight(cargoType.weight_per_cubic_meter);
@@ -384,12 +393,13 @@ export default function CargoTypesShow({ cargoType, activityLogs = [] }: CargoTy
 
             <DeleteConfirmationDialog
                 open={deleteDialogOpen}
-                onOpenChange={setDeleteDialogOpen}
+                onOpenChange={handleDialogChange}
                 title="Delete Cargo Type"
                 description={`Are you sure you want to delete \"${cargoType.name}\"? This action cannot be undone.`}
                 itemName={cargoType.name}
                 onConfirm={handleDelete}
                 isLoading={isDeleting}
+                errorMessage={deleteError}
             />
         </AppLayout>
     );

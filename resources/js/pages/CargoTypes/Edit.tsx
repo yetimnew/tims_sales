@@ -11,7 +11,6 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { toast } from '@/hooks/use-toast';
 import { validateCargoType } from '@/lib/validation';
 import { type BreadcrumbItem } from '@/types';
 import { Link, useForm } from '@inertiajs/react';
@@ -129,20 +128,6 @@ export default function CargoTypesEdit({ cargoType, categories }: CargoTypesEdit
         }
     }, [data.category, categoryOptions, setData]);
 
-    useEffect(() => {
-        const messages = Object.values(errors)
-            .map((value) => (typeof value === 'string' ? value : Array.isArray(value) ? value.join(', ') : ''))
-            .filter(Boolean);
-
-        if (messages.length > 0) {
-            toast({
-                title: 'Validation error',
-                description: messages.join(', '),
-                variant: 'destructive',
-            });
-        }
-    }, [errors]);
-
     const backendErrors = useMemo<FieldErrorMap>(
         () =>
             Object.entries(errors).reduce<FieldErrorMap>((acc, [field, value]) => {
@@ -250,11 +235,6 @@ export default function CargoTypesEdit({ cargoType, categories }: CargoTypesEdit
 
         if (Object.values(combinedErrors).some(Boolean)) {
             setFrontendErrors(combinedErrors);
-            toast({
-                title: 'Validation error',
-                description: 'Please resolve the highlighted issues before saving.',
-                variant: 'destructive',
-            });
             return;
         }
 
@@ -264,10 +244,6 @@ export default function CargoTypesEdit({ cargoType, categories }: CargoTypesEdit
                 initialValuesRef.current = { ...data };
                 setFrontendErrors({});
                 setIsDirty(false);
-                toast({
-                    title: 'Cargo type updated',
-                    description: `${cargoType.name} has been refreshed with the latest details.`,
-                });
             },
             onError: (pageErrors) => {
                 setFrontendErrors((previous) => ({ ...previous, ...(pageErrors as FieldErrorMap) }));

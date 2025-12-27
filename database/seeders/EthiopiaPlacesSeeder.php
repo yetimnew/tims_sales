@@ -46,8 +46,6 @@ class EthiopiaPlacesSeeder extends Seeder
                 return [(int) $matches[1] => $woreda];
             });
 
-        Place::query()->forceDelete();
-
         foreach ($placeDataset as $place) {
             $legacyId = (int) ($place['legacy_id'] ?? 0);
             $woredaLegacyId = $place['woreda_legacy_id'] ?? null;
@@ -74,15 +72,24 @@ class EthiopiaPlacesSeeder extends Seeder
             $description = $comment === null ? null : (string) Str::of($comment)->trim()->squish();
             $status = (int) ($place['status'] ?? 1) === 1 ? 'active' : 'inactive';
 
+            $latitude = $place['latitude'] ?? null;
+            $longitude = $place['longitude'] ?? null;
+
+            $placeCode = sprintf('LEGACY_PLACE_%d', $legacyId);
+
             $payload = array_merge($defaults, [
                 'name' => (string) $name,
-                'code' => sprintf('LEGACY_PLACE_%d', $legacyId),
+                'code' => $placeCode,
                 'woreda_id' => $woreda->id,
                 'status' => $status,
                 'description' => $description,
+                'latitude' => $latitude === null ? null : (float) $latitude,
+                'longitude' => $longitude === null ? null : (float) $longitude,
             ]);
 
-            Place::create($payload);
+            Place::query()->updateOrCreate([
+                'code' => $placeCode,
+            ], $payload);
         }
     }
 }

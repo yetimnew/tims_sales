@@ -242,6 +242,7 @@ export default function DriverSafetyEdit({ driverSafety, drivers }: DriverSafety
 
     const initialDataRef = useRef<DriverSafetyFormData>(initialFormData);
     const formRef = useRef<HTMLFormElement | null>(null);
+    const lastErrorToast = useRef<string | null>(null);
 
     const { data, setData, setDefaults, put, processing, errors, clearErrors } = useForm<DriverSafetyFormData>(initialFormData);
 
@@ -282,13 +283,22 @@ export default function DriverSafetyEdit({ driverSafety, drivers }: DriverSafety
             .map((message) => (typeof message === 'string' ? message : String(message)))
             .filter(Boolean);
 
-        if (errorMessages.length > 0) {
-            toast({
-                title: '⚠️ Validation Error',
-                description: errorMessages.join(', '),
-                variant: 'destructive',
-            });
+        if (errorMessages.length === 0) {
+            lastErrorToast.current = null;
+            return;
         }
+
+        const combinedMessage = errorMessages.join(', ');
+        if (combinedMessage === lastErrorToast.current) {
+            return;
+        }
+
+        lastErrorToast.current = combinedMessage;
+        toast({
+            title: '⚠️ Validation Error',
+            description: combinedMessage,
+            variant: 'destructive',
+        });
     }, [errors]);
 
     const backendErrors = useMemo(
