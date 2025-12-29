@@ -69,7 +69,7 @@ interface SafetyRecord {
     incident_type: string;
     severity: string;
     description: string;
-    damage_cost?: number;
+    damage_cost?: number | string | null;
     location?: string;
     resolution?: string;
     created_at: string;
@@ -117,9 +117,15 @@ const formatDateTime = (value?: string | null) => {
     });
 };
 
-const formatCurrency = (value?: number | null) => {
-    if (typeof value !== 'number' || Number.isNaN(value)) {
-        return 'ETB 0.00';
+const formatCurrency = (value?: number | string | null) => {
+    if (value === null || value === undefined || value === '') {
+        return 'ETB 0.00';
+    }
+
+    const numeric = typeof value === 'string' ? Number.parseFloat(value) : value;
+
+    if (Number.isNaN(numeric) || !Number.isFinite(numeric)) {
+        return 'ETB 0.00';
     }
 
     return new Intl.NumberFormat('en-US', {
@@ -127,7 +133,7 @@ const formatCurrency = (value?: number | null) => {
         currency: 'ETB',
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
-    }).format(value);
+    }).format(numeric);
 };
 
 const getSeverityBadgeClass = (severity: string) => {
@@ -226,31 +232,33 @@ export default function DriverSafetyShow({ driverSafety, activityLogs = [] }: Dr
     const detailTiles = [
         {
             title: 'Incident Type',
-            icon: <AlertTriangle className="h-4 w-4 text-rose-600" />,
-            content: (
-                <Badge className={`border ${getIncidentTypeBadgeClass(driverSafety.incident_type ?? '')}`}>
-                    {incidentLabel}
-                </Badge>
-            ),
+            helper: 'Primary classification',
+            value: incidentLabel,
+            icon: AlertTriangle,
+            accentClass: 'bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-300',
+            badgeClass: getIncidentTypeBadgeClass(driverSafety.incident_type ?? ''),
         },
         {
             title: 'Severity',
-            icon: <ShieldAlert className="h-4 w-4 text-amber-600" />,
-            content: (
-                <Badge className={`border ${getSeverityBadgeClass(driverSafety.severity ?? '')}`}>
-                    {severityLabel}
-                </Badge>
-            ),
+            helper: 'Operational impact',
+            value: severityLabel,
+            icon: ShieldAlert,
+            accentClass: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-200',
+            badgeClass: getSeverityBadgeClass(driverSafety.severity ?? ''),
         },
         {
             title: 'Damage Cost',
-            icon: <DollarSign className="h-4 w-4 text-purple-600" />,
-            content: <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">{formatCurrency(driverSafety.damage_cost)}</span>,
+            helper: 'Estimated repairs & claims',
+            value: formatCurrency(driverSafety.damage_cost),
+            icon: DollarSign,
+            accentClass: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-200',
         },
         {
             title: 'Recorded On',
-            icon: <CalendarDays className="h-4 w-4 text-blue-600" />,
-            content: <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">{formatDate(driverSafety.incident_date)}</span>,
+            helper: 'Incident date',
+            value: formatDate(driverSafety.incident_date),
+            icon: CalendarDays,
+            accentClass: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-200',
         },
     ];
 
@@ -335,19 +343,41 @@ export default function DriverSafetyShow({ driverSafety, activityLogs = [] }: Dr
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                    {detailTiles.map((tile) => (
-                        <Card key={tile.title} className="border border-slate-200/70 shadow-sm transition hover:border-rose-200 hover:shadow-md dark:border-slate-800/70 dark:hover:border-rose-700/60">
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 px-4 py-3">
-                                <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                                    {tile.title}
-                                </CardTitle>
-                                {tile.icon}
-                            </CardHeader>
-                            <CardContent className="px-4 pb-4 pt-0">
-                                {tile.content}
-                            </CardContent>
-                        </Card>
-                    ))}
+                    {detailTiles.map((tile) => {
+                        const Icon = tile.icon;
+                        return (
+                            <Card
+                                key={tile.title}
+                                className="relative overflow-hidden border border-slate-200/70 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-rose-300/70 hover:shadow-lg dark:border-slate-800/70 dark:hover:border-rose-700/60"
+                            >
+                                <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/60 via-transparent to-rose-50/40 dark:from-slate-900/30 dark:via-transparent dark:to-rose-950/30" />
+                                <CardHeader className="relative flex flex-col space-y-3 px-5 py-4">
+                                    <div className="flex items-start justify-between">
+                                        <div>
+                                            <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                                {tile.title}
+                                            </CardTitle>
+                                            <p className="text-xs text-muted-foreground/80">{tile.helper}</p>
+                                        </div>
+                                        <span className={`grid h-10 w-10 place-items-center rounded-full border border-white/40 shadow-sm ${tile.accentClass}`}>
+                                            <Icon className="h-5 w-5" />
+                                        </span>
+                                    </div>
+                                    <div>
+                                        {tile.badgeClass ? (
+                                            <Badge className={`border px-3 py-1 text-sm font-semibold ${tile.badgeClass}`}>
+                                                {tile.value}
+                                            </Badge>
+                                        ) : (
+                                            <p className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
+                                                {tile.value}
+                                            </p>
+                                        )}
+                                    </div>
+                                </CardHeader>
+                            </Card>
+                        );
+                    })}
                 </div>
 
                 <div className="grid gap-6 lg:grid-cols-3">

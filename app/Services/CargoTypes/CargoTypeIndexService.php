@@ -18,9 +18,9 @@ class CargoTypeIndexService
 
     private const DEFAULT_PER_PAGE = 15;
 
-    private const DEFAULT_SORT = 'name';
+    private const DEFAULT_SORT = 'created_at';
 
-    private const DEFAULT_DIRECTION = 'asc';
+    private const DEFAULT_DIRECTION = 'desc';
 
     /**
      * @var array<int, string>

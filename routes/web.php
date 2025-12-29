@@ -722,6 +722,10 @@ Route::middleware('auth')->group(function () {
             ->middleware('can:reports.route-profitability.view')
             ->name('reports.route-profitability');
 
+        Route::get('reports/route-profitability/export/{format}', [ReportController::class, 'routeProfitabilityExport'])
+            ->middleware('can:reports.route-profitability.export')
+            ->name('reports.route-profitability.export');
+
         Route::get('reports/load-factor-utilization', [ReportController::class, 'loadFactorUtilization'])
             ->middleware('can:reports.load-factor-utilization.view')
             ->name('reports.load-factor-utilization');

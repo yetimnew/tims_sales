@@ -22,7 +22,8 @@ class DriverPerformanceController extends Controller
     public function index(): Response
     {
         $performanceRecords = DriverPerformanceRecord::with(['driver', 'truck'])
-            ->orderBy('record_date', 'desc')
+            ->orderByDesc('created_at')
+            ->orderByDesc('record_date')
             ->paginate(15);
 
         // Cache statistics for 5 minutes - they change frequently but don't need real-time accuracy

@@ -18,7 +18,7 @@ class DriverSafetyIndexService
 
     private const DEFAULT_PER_PAGE = 15;
 
-    private const DEFAULT_SORT = 'incident_date';
+    private const DEFAULT_SORT = 'created_at';
 
     private const DEFAULT_DIRECTION = 'desc';
 

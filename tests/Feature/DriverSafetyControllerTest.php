@@ -10,6 +10,7 @@ use App\Models\DriverSafetyRecord;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
+use Inertia\Testing\AssertableInertia as Assert;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -25,10 +26,31 @@ class DriverSafetyControllerTest extends TestCase
 
         $this->user = User::factory()->create();
         $this->givePermissions($this->user, [
+            'driver-safety.view',
             'driver-safety.store',
             'driver-safety.update',
             'driver-safety.destroy',
         ]);
+    }
+
+    #[Test]
+    public function it_lists_driver_safety_records_newest_first(): void
+    {
+        $olderRecord = DriverSafetyRecord::factory()->create(['created_at' => now()->subWeeks(2)]);
+        $newerRecord = DriverSafetyRecord::factory()->create(['created_at' => now()->subWeek()]);
+        $latestRecord = DriverSafetyRecord::factory()->create(['created_at' => now()]);
+
+        $response = $this->actingAs($this->user)
+            ->get(route('driver-safety.index'));
+
+        $response->assertStatus(200)
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('DriverSafety/Index')
+                ->has('safetyRecords.data', 3)
+                ->where('safetyRecords.data.0.id', $latestRecord->id)
+                ->where('safetyRecords.data.1.id', $newerRecord->id)
+                ->where('safetyRecords.data.2.id', $olderRecord->id)
+            );
     }
 
     #[Test]

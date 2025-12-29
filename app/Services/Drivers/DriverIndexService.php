@@ -17,7 +17,7 @@ class DriverIndexService
 
     private const DEFAULT_PER_PAGE = 15;
 
-    private const DEFAULT_SORT = 'name';
+    private const DEFAULT_SORT = 'created_at';
 
     /**
      * @var array<int, string>
@@ -134,7 +134,7 @@ class DriverIndexService
             self::DEFAULT_PER_PAGE,
             self::ALLOWED_SORTS,
             self::DEFAULT_SORT,
-            'asc'
+            'desc'
         );
     }
 

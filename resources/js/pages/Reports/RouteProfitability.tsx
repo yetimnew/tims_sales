@@ -6,15 +6,25 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ReportFiltersDialog } from '@/components/reports/report-filters-dialog';
 import { ReportSummaryGrid, type ReportSummaryItem } from '@/components/reports/report-summary-grid';
+import type { ReportSelectionOption } from '@/components/reports/types';
 import { formatCurrency, formatDecimal, formatInteger, formatPercentage, getMarginChipClass } from '@/components/reports/formatters';
-import { RefreshCcw, Route, TrendingUp, TrendingDown, MapPin, Package, DollarSign, BarChart3 } from 'lucide-react';
+import { Download, FileDigit, FileSpreadsheet, FileType2, RefreshCcw, Route, TrendingUp, TrendingDown, MapPin, Package, DollarSign, BarChart3, SlidersHorizontal } from 'lucide-react';
 import { usePermissions } from '@/hooks/use-permissions';
 
 interface PlaceOption {
     id: number;
     name: string;
     code?: string | null;
+}
+
+interface CustomerOption {
+    id: number;
+    name: string;
 }
 
 interface RouteRow {
@@ -63,6 +73,16 @@ interface Filters {
     to?: string | null;
     origin_ids?: number[];
     destination_ids?: number[];
+    customer_ids?: number[];
+    min_trips?: number | null;
+    min_margin_percent?: number | null;
+    min_profit_per_km?: number | null;
+    sort?: string | null;
+}
+
+interface SortOption {
+    id: string;
+    label: string;
 }
 
 interface RouteProfitabilityProps {
@@ -71,6 +91,8 @@ interface RouteProfitabilityProps {
     summary: Summary;
     options: {
         places: PlaceOption[];
+        customers: CustomerOption[];
+        sorts: SortOption[];
     };
 }
 
@@ -85,15 +107,52 @@ const toParamsArray = (key: string, values: number[], params: URLSearchParams) =
 
 export default function RouteProfitability({ filters, rows = [], summary, options }: RouteProfitabilityProps) {
     const { hasPermission } = usePermissions();
+    const canExport = hasPermission('reports.route-profitability.export');
+
     const [filtersOpen, setFiltersOpen] = useState(false);
     const [from, setFrom] = useState(filters?.from ?? '');
     const [to, setTo] = useState(filters?.to ?? '');
     const [selectedOrigins, setSelectedOrigins] = useState<number[]>(filters?.origin_ids ?? []);
     const [selectedDestinations, setSelectedDestinations] = useState<number[]>(filters?.destination_ids ?? []);
+    const [selectedCustomers, setSelectedCustomers] = useState<number[]>(filters?.customer_ids ?? []);
+
+    const sortSource = options?.sorts ?? [];
+    const initialMinTrips = filters?.min_trips ? String(filters.min_trips) : '';
+    const initialMinMargin = typeof filters?.min_margin_percent === 'number' ? String(filters.min_margin_percent) : '';
+    const initialMinProfitPerKm =
+        typeof filters?.min_profit_per_km === 'number' ? String(filters.min_profit_per_km) : '';
+    const initialSort = filters?.sort ?? (sortSource[0]?.id ?? 'profit_desc');
+
+    const [minTrips, setMinTrips] = useState<string>(initialMinTrips);
+    const [minMarginPercent, setMinMarginPercent] = useState<string>(initialMinMargin);
+    const [minProfitPerKm, setMinProfitPerKm] = useState<string>(initialMinProfitPerKm);
+    const [selectedSort, setSelectedSort] = useState<string>(initialSort);
     const [dateError, setDateError] = useState<string | null>(null);
 
     const placeSource = options?.places;
     const placeOptions = useMemo<PlaceOption[]>(() => (Array.isArray(placeSource) ? placeSource : []), [placeSource]);
+    const customerSource = options?.customers;
+    const customerOptions = useMemo<CustomerOption[]>(() => (Array.isArray(customerSource) ? customerSource : []), [customerSource]);
+    const sortOptions = useMemo<SortOption[]>(() => (Array.isArray(sortSource) ? sortSource : []), [sortSource]);
+
+    const placeSelectionOptions = useMemo<ReportSelectionOption[]>(
+        () =>
+            placeOptions.map((place) => ({
+                id: place.id,
+                label: place.name,
+                description: place.code ?? undefined,
+            })),
+        [placeOptions],
+    );
+
+    const customerSelectionOptions = useMemo<ReportSelectionOption[]>(
+        () =>
+            customerOptions.map((customer) => ({
+                id: customer.id,
+                label: customer.name,
+            })),
+        [customerOptions],
+    );
 
     const safeRows = useMemo<RouteRow[]>(() => (Array.isArray(rows) ? rows : []), [rows]);
 
@@ -123,6 +182,16 @@ export default function RouteProfitability({ filters, rows = [], summary, option
         [],
     );
 
+    const parseNumeric = useCallback((value: string): number | null => {
+        if (value.trim() === '') {
+            return null;
+        }
+
+        const numeric = Number(value);
+
+        return Number.isFinite(numeric) ? numeric : null;
+    }, []);
+
     const handleApplyFilters = () => {
         if (!validateDateRange(from, to)) {
             setFiltersOpen(true);
@@ -134,10 +203,20 @@ export default function RouteProfitability({ filters, rows = [], summary, option
         const params: Record<string, unknown> = {
             from,
             to,
+            sort: selectedSort,
         };
 
         if (selectedOrigins.length > 0) params.origin_ids = selectedOrigins;
         if (selectedDestinations.length > 0) params.destination_ids = selectedDestinations;
+        if (selectedCustomers.length > 0) params.customer_ids = selectedCustomers;
+
+        const minTripsValue = parseNumeric(minTrips);
+        const minMarginValue = parseNumeric(minMarginPercent);
+        const minProfitPerKmValue = parseNumeric(minProfitPerKm);
+
+        if (minTripsValue !== null) params.min_trips = minTripsValue;
+        if (minMarginValue !== null) params.min_margin_percent = minMarginValue;
+        if (minProfitPerKmValue !== null) params.min_profit_per_km = minProfitPerKmValue;
 
         router.get('/reports/route-profitability', params, {
             preserveState: true,
@@ -150,6 +229,11 @@ export default function RouteProfitability({ filters, rows = [], summary, option
         setTo(filters?.to ?? '');
         setSelectedOrigins(filters?.origin_ids ?? []);
         setSelectedDestinations(filters?.destination_ids ?? []);
+        setSelectedCustomers(filters?.customer_ids ?? []);
+        setMinTrips(initialMinTrips);
+        setMinMarginPercent(initialMinMargin);
+        setMinProfitPerKm(initialMinProfitPerKm);
+        setSelectedSort(initialSort);
         setFiltersOpen(false);
         setDateError(null);
         router.get('/reports/route-profitability', {}, { preserveState: false, preserveScroll: true });
@@ -164,6 +248,38 @@ export default function RouteProfitability({ filters, rows = [], summary, option
 
         setTo(value);
         validateDateRange(from, value);
+    };
+
+    const handleExport = (format: 'csv' | 'xlsx' | 'pdf') => {
+        if (!validateDateRange(from, to)) {
+            setFiltersOpen(true);
+            return;
+        }
+
+        if (!canExport) {
+            return;
+        }
+
+        const params = new URLSearchParams();
+
+        if (from) params.set('from', from);
+        if (to) params.set('to', to);
+        if (selectedSort) params.set('sort', selectedSort);
+
+        if (selectedOrigins.length > 0) toParamsArray('origin_ids', selectedOrigins, params);
+        if (selectedDestinations.length > 0) toParamsArray('destination_ids', selectedDestinations, params);
+        if (selectedCustomers.length > 0) toParamsArray('customer_ids', selectedCustomers, params);
+        const minTripsValue = parseNumeric(minTrips);
+        const minMarginValue = parseNumeric(minMarginPercent);
+        const minProfitPerKmValue = parseNumeric(minProfitPerKm);
+
+        if (minTripsValue !== null) params.set('min_trips', String(minTripsValue));
+        if (minMarginValue !== null) params.set('min_margin_percent', String(minMarginValue));
+        if (minProfitPerKmValue !== null) params.set('min_profit_per_km', String(minProfitPerKmValue));
+
+        const query = params.toString();
+        const url = `/reports/route-profitability/export/${format}${query ? `?${query}` : ''}`;
+        window.location.href = url;
     };
 
     const summaryItems = useMemo<ReportSummaryItem[]>(
@@ -216,10 +332,90 @@ export default function RouteProfitability({ filters, rows = [], summary, option
 
     const activeFilterCount = useMemo(() => {
         let count = 0;
-        if (selectedOrigins.length > 0) count++;
-        if (selectedDestinations.length > 0) count++;
+
+        if (from && from !== (filters?.from ?? '')) count += 1;
+        if (to && to !== (filters?.to ?? '')) count += 1;
+        if (selectedOrigins.length > 0) count += 1;
+        if (selectedDestinations.length > 0) count += 1;
+        if (selectedCustomers.length > 0) count += 1;
+        if (minTrips.trim() !== '' && minTrips !== initialMinTrips) count += 1;
+        if (minMarginPercent.trim() !== '' && minMarginPercent !== initialMinMargin) count += 1;
+        if (minProfitPerKm.trim() !== '' && minProfitPerKm !== initialMinProfitPerKm) count += 1;
+        if (selectedSort !== initialSort) count += 1;
+
         return count;
-    }, [selectedOrigins.length, selectedDestinations.length]);
+    }, [
+        filters?.from,
+        filters?.to,
+        from,
+        to,
+        selectedOrigins,
+        selectedDestinations,
+        selectedCustomers,
+        minTrips,
+        minMarginPercent,
+        minProfitPerKm,
+        selectedSort,
+        initialMinTrips,
+        initialMinMargin,
+        initialMinProfitPerKm,
+        initialSort,
+    ]);
+
+    const filterBadges = useMemo(() => {
+        const badges: string[] = [];
+
+        badges.push(`From ${from || '—'}`);
+        badges.push(`To ${to || '—'}`);
+
+        badges.push(
+            selectedOrigins.length > 0
+                ? `${selectedOrigins.length} origin${selectedOrigins.length > 1 ? 's' : ''}`
+                : 'All origins',
+        );
+
+        badges.push(
+            selectedDestinations.length > 0
+                ? `${selectedDestinations.length} destination${selectedDestinations.length > 1 ? 's' : ''}`
+                : 'All destinations',
+        );
+
+        badges.push(
+            selectedCustomers.length > 0
+                ? `${selectedCustomers.length} customer${selectedCustomers.length > 1 ? 's' : ''}`
+                : 'All customers',
+        );
+
+        const minTripsValue = parseNumeric(minTrips);
+        badges.push(minTripsValue !== null ? `Min trips ≥ ${minTripsValue}` : 'No trip threshold');
+
+        const minMarginValue = parseNumeric(minMarginPercent);
+        badges.push(minMarginValue !== null ? `Margin ≥ ${minMarginValue}%` : 'No margin threshold');
+
+        const minProfitPerKmValue = parseNumeric(minProfitPerKm);
+        badges.push(
+            minProfitPerKmValue !== null
+                ? `Profit/KM ≥ ${formatCurrency(minProfitPerKmValue)}`
+                : 'No profit/KM threshold',
+        );
+
+        const sortLabel = sortOptions.find((option) => option.id === selectedSort)?.label ?? 'Profit (High to Low)';
+        badges.push(`Sorted by ${sortLabel}`);
+
+        return badges;
+    }, [
+        from,
+        to,
+        selectedOrigins,
+        selectedDestinations,
+        selectedCustomers,
+        minTrips,
+        minMarginPercent,
+        minProfitPerKm,
+        selectedSort,
+        sortOptions,
+        parseNumeric,
+    ]);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -232,31 +428,116 @@ export default function RouteProfitability({ filters, rows = [], summary, option
                                 <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">Route Intelligence</p>
                                 <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-50">Route Profitability Matrix</h1>
                                 <p className="max-w-3xl text-sm text-slate-600 dark:text-slate-300">
-                                    Analyse profitability by origin-destination route pairs. Identify high-performing routes, optimize pricing, and discover opportunities to improve underperforming corridors.
+                                    Analyse profitability by origin-destination route pairs. Identify high-performing routes, optimise pricing, and discover opportunities to improve underperforming corridors.
                                 </p>
                             </div>
                             <div className="flex flex-wrap items-center gap-2">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-xs font-medium text-slate-600 dark:text-slate-400">From</span>
-                                    <input
-                                        type="date"
-                                        value={from}
-                                        onChange={(e) => handleDateChange('from', e.target.value)}
-                                        className="h-9 rounded-md border border-slate-300 bg-white px-3 text-sm dark:border-slate-600 dark:bg-slate-800"
-                                    />
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-xs font-medium text-slate-600 dark:text-slate-400">To</span>
-                                    <input
-                                        type="date"
-                                        value={to}
-                                        onChange={(e) => handleDateChange('to', e.target.value)}
-                                        className="h-9 rounded-md border border-slate-300 bg-white px-3 text-sm dark:border-slate-600 dark:bg-slate-800"
-                                    />
-                                </div>
-                                {dateError && (
-                                    <span className="text-xs text-rose-600 dark:text-rose-400">{dateError}</span>
-                                )}
+                                <ReportFiltersDialog
+                                    open={filtersOpen}
+                                    onOpenChange={setFiltersOpen}
+                                    activeFilterCount={activeFilterCount}
+                                    from={from}
+                                    to={to}
+                                    onDateChange={handleDateChange}
+                                    onReset={handleReset}
+                                    onApply={handleApplyFilters}
+                                    originOptions={placeSelectionOptions}
+                                    destinationOptions={placeSelectionOptions}
+                                    customerOptions={customerSelectionOptions}
+                                    selectedOrigins={selectedOrigins}
+                                    selectedDestinations={selectedDestinations}
+                                    selectedCustomers={selectedCustomers}
+                                    onOriginsChange={setSelectedOrigins}
+                                    onDestinationsChange={setSelectedDestinations}
+                                    onCustomersChange={setSelectedCustomers}
+                                    dateError={dateError}
+                                    extraFilters={(
+                                        <div className="space-y-6">
+                                            <div className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                                                <SlidersHorizontal className="h-4 w-4" />
+                                                Advanced thresholds
+                                            </div>
+                                            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+                                                <div className="flex flex-col gap-2">
+                                                    <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Minimum trips</span>
+                                                    <Input
+                                                        type="number"
+                                                        min={0}
+                                                        value={minTrips}
+                                                        onChange={(event) => setMinTrips(event.target.value)}
+                                                        placeholder="e.g. 5"
+                                                        className="bg-white dark:bg-slate-950 shadow-sm"
+                                                    />
+                                                    <p className="text-xs text-slate-500 dark:text-slate-400">Only include routes with dispatch counts above this value.</p>
+                                                </div>
+                                                <div className="flex flex-col gap-2">
+                                                    <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Minimum margin %</span>
+                                                    <Input
+                                                        type="number"
+                                                        step="0.1"
+                                                        value={minMarginPercent}
+                                                        onChange={(event) => setMinMarginPercent(event.target.value)}
+                                                        placeholder="e.g. 12.5"
+                                                        className="bg-white dark:bg-slate-950 shadow-sm"
+                                                    />
+                                                    <p className="text-xs text-slate-500 dark:text-slate-400">Filter out routes below the selected profitability margin.</p>
+                                                </div>
+                                                <div className="flex flex-col gap-2">
+                                                    <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Minimum profit per KM</span>
+                                                    <Input
+                                                        type="number"
+                                                        step="0.01"
+                                                        value={minProfitPerKm}
+                                                        onChange={(event) => setMinProfitPerKm(event.target.value)}
+                                                        placeholder="e.g. 2.75"
+                                                        className="bg-white dark:bg-slate-950 shadow-sm"
+                                                    />
+                                                    <p className="text-xs text-slate-500 dark:text-slate-400">Focus on corridors that meet your profit-per-kilometre goals.</p>
+                                                </div>
+                                                <div className="flex flex-col gap-2">
+                                                    <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Sort results</span>
+                                                    <Select value={selectedSort} onValueChange={setSelectedSort}>
+                                                        <SelectTrigger className="justify-between bg-white dark:bg-slate-950">
+                                                            <SelectValue placeholder="Sort by" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            {sortOptions.map((option) => (
+                                                                <SelectItem key={option.id} value={option.id}>
+                                                                    {option.label}
+                                                                </SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <p className="text-xs text-slate-500 dark:text-slate-400">Organise the matrix around the metric that matters most right now.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                />
+                                {canExport ? (
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button type="button" variant="secondary" className="gap-2">
+                                                <Download className="h-4 w-4" />
+                                                Export
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end" className="w-44">
+                                            <DropdownMenuItem onSelect={() => handleExport('csv')} className="gap-2">
+                                                <FileDigit className="h-4 w-4 text-amber-500" />
+                                                CSV
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onSelect={() => handleExport('xlsx')} className="gap-2">
+                                                <FileSpreadsheet className="h-4 w-4 text-emerald-500" />
+                                                Excel
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onSelect={() => handleExport('pdf')} className="gap-2">
+                                                <FileType2 className="h-4 w-4 text-rose-500" />
+                                                PDF
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                ) : null}
                                 <Button type="button" variant="outline" className="gap-2" onClick={handleReset}>
                                     <RefreshCcw className="h-4 w-4" />
                                     Reset
@@ -275,6 +556,13 @@ export default function RouteProfitability({ filters, rows = [], summary, option
                             <div className="space-y-1">
                                 <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50">Route Performance Matrix</CardTitle>
                                 <CardDescription className="text-sm">Profitability metrics grouped by origin-destination pairs, sorted by profit.</CardDescription>
+                                <div className="mt-4 flex flex-wrap gap-2 text-xs text-slate-500 dark:text-slate-400">
+                                    {filterBadges.map((badge) => (
+                                        <Badge key={badge} variant="outline" className="border-dashed">
+                                            {badge}
+                                        </Badge>
+                                    ))}
+                                </div>
                             </div>
                         </CardHeader>
                         <CardContent className="p-0">

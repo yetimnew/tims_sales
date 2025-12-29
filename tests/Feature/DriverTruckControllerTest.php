@@ -13,6 +13,7 @@ use App\Models\Truck;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
+use Inertia\Testing\AssertableInertia as Assert;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -27,7 +28,27 @@ class DriverTruckControllerTest extends TestCase
         parent::setUp();
 
         $this->user = User::factory()->create();
-        $this->givePermissions($this->user, ['driver-trucks.destroy']);
+        $this->givePermissions($this->user, ['driver-trucks.view', 'driver-trucks.destroy']);
+    }
+
+    #[Test]
+    public function it_lists_driver_truck_assignments_newest_first(): void
+    {
+        $olderAssignment = DriverTruck::factory()->create(['created_at' => now()->subDays(5)]);
+        $newerAssignment = DriverTruck::factory()->create(['created_at' => now()->subDays(2)]);
+        $latestAssignment = DriverTruck::factory()->create(['created_at' => now()]);
+
+        $response = $this->actingAs($this->user)
+            ->get(route('driver-trucks.index'));
+
+        $response->assertStatus(200)
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('DriverTrucks/Index')
+                ->has('driverTrucks.data', 3)
+                ->where('driverTrucks.data.0.id', $latestAssignment->id)
+                ->where('driverTrucks.data.1.id', $newerAssignment->id)
+                ->where('driverTrucks.data.2.id', $olderAssignment->id)
+            );
     }
 
     #[Test]

@@ -18,6 +18,7 @@ use App\Models\VehicleType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Support\Carbon;
+use Inertia\Testing\AssertableInertia as Assert;
 use PHPUnit\Framework\Attributes\Test;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -164,6 +165,38 @@ class TruckControllerTest extends TestCase
                 ->has('trucks.data', 2)
                 ->where('trucks.data.0.plate', 'AA-1111')
                 ->where('trucks.data.1.plate', 'ZZ-9999')
+            );
+    }
+
+    #[Test]
+    public function it_lists_trucks_newest_first(): void
+    {
+        $olderTruck = Truck::factory()->create([
+            'vehicletype_id' => $this->vehicleType->id,
+            'status' => 'active',
+            'created_at' => now()->subDays(3),
+        ]);
+        $newerTruck = Truck::factory()->create([
+            'vehicletype_id' => $this->vehicleType->id,
+            'status' => 'active',
+            'created_at' => now()->subDay(),
+        ]);
+        $latestTruck = Truck::factory()->create([
+            'vehicletype_id' => $this->vehicleType->id,
+            'status' => 'active',
+            'created_at' => now(),
+        ]);
+
+        $response = $this->actingAs($this->user)
+            ->get(route('trucks.index'));
+
+        $response->assertStatus(200)
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Trucks/Index')
+                ->has('trucks.data', 3)
+                ->where('trucks.data.0.id', $latestTruck->id)
+                ->where('trucks.data.1.id', $newerTruck->id)
+                ->where('trucks.data.2.id', $olderTruck->id)
             );
     }
 

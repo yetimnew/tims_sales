@@ -1156,6 +1156,32 @@ class ReportController extends Controller
         return $data->values();
     }
 
+    private function routeProfitabilityRowsWithTotals(Collection $rows, array $summary): Collection
+    {
+        $data = collect($rows->all());
+
+        $data->push([
+            'origin_name' => 'TOTALS',
+            'destination_name' => null,
+            'trips' => $summary['total_trips'],
+            'tonnage' => $summary['total_tonnage'],
+            'ton_km' => $summary['total_ton_km'],
+            'distance_wc' => $summary['total_distance_with_cargo'],
+            'distance_wo' => $summary['total_distance_without_cargo'],
+            'distance_total' => $summary['total_distance'],
+            'avg_distance' => null,
+            'revenue' => $summary['total_revenue'],
+            'expense' => $summary['total_expense'],
+            'profit' => $summary['total_profit'],
+            'margin_percent' => $summary['overall_margin_percent'],
+            'revenue_per_km' => null,
+            'cost_per_km' => null,
+            'profit_per_km' => null,
+        ]);
+
+        return $data->values();
+    }
+
     private function exportAllCsv(Collection $rows, string $from, string $to, string $filename)
     {
         $headings = [
@@ -1242,6 +1268,94 @@ class ReportController extends Controller
 
         $dompdf = new Dompdf($options);
         $html = view('reports.performance_all_pdf', [
+            'rows' => $rows->all(),
+            'summary' => $summary,
+            'from' => $from,
+            'to' => $to,
+        ])->render();
+
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'landscape');
+        $dompdf->render();
+
+        return HttpResponse::make($dompdf->output(), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ]);
+    }
+
+    private function exportRouteProfitabilityCsv(Collection $rows, string $from, string $to, string $filename)
+    {
+        $headings = [
+            'Origin',
+            'Destination',
+            'Trips',
+            'Tonnage (MT)',
+            'Ton-KM',
+            'Distance With Cargo (KM)',
+            'Distance Without Cargo (KM)',
+            'Total Distance (KM)',
+            'Average Distance (KM)',
+            'Revenue',
+            'Expense',
+            'Profit',
+            'Margin %',
+            'Revenue per KM',
+            'Cost per KM',
+            'Profit per KM',
+        ];
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+
+        return HttpResponse::streamDownload(static function () use ($rows, $headings, $from, $to) {
+            $handle = fopen('php://output', 'w');
+
+            fputcsv($handle, ['Route Profitability Report']);
+            fputcsv($handle, ["Reporting window: {$from} to {$to}"]);
+            fputcsv($handle, []);
+            fputcsv($handle, $headings);
+
+            foreach ($rows as $row) {
+                fputcsv($handle, [
+                    $row['origin_name'],
+                    $row['destination_name'] ?? '—',
+                    $row['trips'],
+                    $row['tonnage'],
+                    $row['ton_km'],
+                    $row['distance_wc'],
+                    $row['distance_wo'],
+                    $row['distance_total'],
+                    $row['avg_distance'] ?? null,
+                    $row['revenue'],
+                    $row['expense'],
+                    $row['profit'],
+                    $row['margin_percent'],
+                    $row['revenue_per_km'],
+                    $row['cost_per_km'],
+                    $row['profit_per_km'],
+                ]);
+            }
+
+            fclose($handle);
+        }, $filename, $headers);
+    }
+
+    private function exportRouteProfitabilityExcel(Collection $rows, string $filename)
+    {
+        return Excel::download(new RouteProfitabilityExport($rows), $filename);
+    }
+
+    private function exportRouteProfitabilityPdf(Collection $rows, array $summary, string $from, string $to, string $filename)
+    {
+        $options = new Options;
+        $options->set('isRemoteEnabled', true);
+        $options->set('defaultFont', 'DejaVu Sans');
+
+        $dompdf = new Dompdf($options);
+        $html = view('reports.route_profitability_pdf', [
             'rows' => $rows->all(),
             'summary' => $summary,
             'from' => $from,
@@ -1874,6 +1988,7 @@ class ReportController extends Controller
                 : collect($result['rows'])->values()->all();
 
             $summary = $result['summary'];
+            $filters = $result['filters'];
 
             // Cache place options (1 hour) - changes when places are added/removed
             $places = Cache::remember('reports.route_profitability.place_options', 3600, function () {
@@ -1889,22 +2004,103 @@ class ReportController extends Controller
                     ->values();
             });
 
+            // Cache customer options (1 hour) - changes when customers are added/removed
+            $customers = Cache::remember('reports.route_profitability.customer_options', 3600, function () {
+                return Customer::query()
+                    ->select('id', 'name')
+                    ->orderBy('name')
+                    ->get()
+                    ->map(static fn (Customer $customer) => [
+                        'id' => $customer->id,
+                        'name' => $customer->name ?? '—',
+                    ])
+                    ->values();
+            });
+
+            $sortOptions = collect([
+                ['id' => 'profit_desc', 'label' => 'Profit (High to Low)'],
+                ['id' => 'profit_asc', 'label' => 'Profit (Low to High)'],
+                ['id' => 'margin_desc', 'label' => 'Margin % (High to Low)'],
+                ['id' => 'margin_asc', 'label' => 'Margin % (Low to High)'],
+                ['id' => 'trips_desc', 'label' => 'Trips (High to Low)'],
+                ['id' => 'trips_asc', 'label' => 'Trips (Low to High)'],
+                ['id' => 'revenue_desc', 'label' => 'Revenue (High to Low)'],
+                ['id' => 'revenue_asc', 'label' => 'Revenue (Low to High)'],
+                ['id' => 'profit_per_km_desc', 'label' => 'Profit per KM (High to Low)'],
+                ['id' => 'profit_per_km_asc', 'label' => 'Profit per KM (Low to High)'],
+                ['id' => 'distance_desc', 'label' => 'Distance (High to Low)'],
+                ['id' => 'distance_asc', 'label' => 'Distance (Low to High)'],
+            ])->values();
+
             return Inertia::render('Reports/RouteProfitability', [
                 'filters' => [
                     'from' => $result['resolved_from'],
                     'to' => $result['resolved_to'],
-                    'origin_ids' => $result['filters']['origin_ids'],
-                    'destination_ids' => $result['filters']['destination_ids'],
+                    'origin_ids' => $filters['origin_ids'],
+                    'destination_ids' => $filters['destination_ids'],
+                    'customer_ids' => $filters['customer_ids'],
+                    'min_trips' => $filters['min_trips'],
+                    'min_margin_percent' => $filters['min_margin_percent'],
+                    'min_profit_per_km' => $filters['min_profit_per_km'],
+                    'sort' => $filters['sort'],
                 ],
                 'rows' => $rows,
                 'summary' => $summary,
                 'options' => [
                     'places' => $places,
+                    'customers' => $customers,
+                    'sorts' => $sortOptions,
                 ],
             ]);
         } catch (Exception $e) {
             return back()->withErrors(['error' => 'Failed to load route profitability report.']);
         }
+    }
+
+    public function routeProfitabilityExport(RouteProfitabilityRequest $request, string $format)
+    {
+        $format = strtolower($format);
+
+        if (! in_array($format, ['csv', 'xlsx', 'pdf'], true)) {
+            abort(404);
+        }
+
+        $validated = $request->validated();
+        if (! isset($validated['sort'])) {
+            $validated['sort'] = $request->input('sort', 'profit_desc');
+        }
+
+        $result = $this->routeProfitabilityReport->build($validated);
+
+        $rows = $result['rows'] instanceof Collection
+            ? $result['rows']->values()
+            : collect($result['rows'])->values();
+
+        $summary = $result['summary'];
+        $from = $result['resolved_from'];
+        $to = $result['resolved_to'];
+        $filename = 'route_profitability_'.now()->format('Y-m-d_H-i-s');
+
+        return match ($format) {
+            'csv' => $this->exportRouteProfitabilityCsv(
+                $this->routeProfitabilityRowsWithTotals($rows, $summary),
+                $from,
+                $to,
+                $filename.'.csv'
+            ),
+            'xlsx' => $this->exportRouteProfitabilityExcel(
+                $this->routeProfitabilityRowsWithTotals($rows, $summary),
+                $filename.'.xlsx'
+            ),
+            'pdf' => $this->exportRouteProfitabilityPdf(
+                $rows,
+                $summary,
+                $from,
+                $to,
+                $filename.'.pdf'
+            ),
+            default => abort(404),
+        };
     }
 
     /**

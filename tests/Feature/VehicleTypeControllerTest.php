@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\VehicleType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
+use Inertia\Testing\AssertableInertia as Assert;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -24,10 +25,31 @@ class VehicleTypeControllerTest extends TestCase
 
         $this->user = User::factory()->create();
         $this->givePermissions($this->user, [
+            'vehicletypes.view',
             'vehicletypes.store',
             'vehicletypes.update',
             'vehicletypes.destroy',
         ]);
+    }
+
+    #[Test]
+    public function it_lists_vehicle_types_newest_first(): void
+    {
+        $olderType = VehicleType::factory()->create(['created_at' => now()->subWeeks(2)]);
+        $newerType = VehicleType::factory()->create(['created_at' => now()->subDays(3)]);
+        $latestType = VehicleType::factory()->create(['created_at' => now()]);
+
+        $response = $this->actingAs($this->user)
+            ->get(route('vehicletypes.index'));
+
+        $response->assertStatus(200)
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('VehicleTypes/Index')
+                ->has('vehicleTypes.data', 3)
+                ->where('vehicleTypes.data.0.id', $latestType->id)
+                ->where('vehicleTypes.data.1.id', $newerType->id)
+                ->where('vehicleTypes.data.2.id', $olderType->id)
+            );
     }
 
     #[Test]

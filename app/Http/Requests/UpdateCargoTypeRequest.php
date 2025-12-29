@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Enums\CargoCategory;
+use App\Models\CargoType;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -21,12 +22,23 @@ class UpdateCargoTypeRequest extends FormRequest
      */
     public function rules(): array
     {
+        $routeCargoType = $this->route('cargo_type');
+        $cargoTypeId = $routeCargoType instanceof CargoType
+            ? $routeCargoType->getKey()
+            : (is_numeric($routeCargoType) ? (int) $routeCargoType : null);
+
+        $uniqueNameRule = Rule::unique('cargo_types', 'name');
+
+        if ($cargoTypeId !== null) {
+            $uniqueNameRule = $uniqueNameRule->ignore($cargoTypeId);
+        }
+
         return [
             'name' => [
                 'required',
                 'string',
                 'max:255',
-                Rule::unique('cargo_types')->ignore($this->route('cargoType')),
+                $uniqueNameRule,
             ],
             'category' => ['required', Rule::enum(CargoCategory::class)],
             'weight_per_cubic_meter' => 'nullable|numeric|min:0|max:9999.99',

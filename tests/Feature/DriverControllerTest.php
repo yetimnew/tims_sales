@@ -55,7 +55,7 @@ class DriverControllerTest extends TestCase
     #[Test]
     public function it_can_display_drivers_index_page()
     {
-        Driver::factory()->count(5)->create();
+        Driver::factory()->count(5)->create(['status' => 'active']);
 
         $response = $this->actingAs($this->user)
             ->get(route('drivers.index'));
@@ -87,8 +87,8 @@ class DriverControllerTest extends TestCase
     #[Test]
     public function it_can_sort_drivers_by_name()
     {
-        Driver::factory()->create(['name' => 'Zoe Wilson']);
-        Driver::factory()->create(['name' => 'Alice Brown']);
+        Driver::factory()->create(['name' => 'Zoe Wilson', 'status' => 'active']);
+        Driver::factory()->create(['name' => 'Alice Brown', 'status' => 'active']);
 
         $response = $this->actingAs($this->user)
             ->get(route('drivers.index', ['sort' => 'name', 'direction' => 'asc']));
@@ -99,6 +99,35 @@ class DriverControllerTest extends TestCase
                 ->has('drivers.data', 2)
                 ->where('drivers.data.0.name', 'Alice Brown')
                 ->where('drivers.data.1.name', 'Zoe Wilson')
+            );
+    }
+
+    #[Test]
+    public function it_lists_drivers_newest_first(): void
+    {
+        $olderDriver = Driver::factory()->create([
+            'created_at' => now()->subDays(2),
+            'status' => 'active',
+        ]);
+        $newerDriver = Driver::factory()->create([
+            'created_at' => now()->subDay(),
+            'status' => 'active',
+        ]);
+        $latestDriver = Driver::factory()->create([
+            'created_at' => now(),
+            'status' => 'active',
+        ]);
+
+        $response = $this->actingAs($this->user)
+            ->get(route('drivers.index'));
+
+        $response->assertStatus(200)
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Drivers/Index')
+                ->has('drivers.data', 3)
+                ->where('drivers.data.0.id', $latestDriver->id)
+                ->where('drivers.data.1.id', $newerDriver->id)
+                ->where('drivers.data.2.id', $olderDriver->id)
             );
     }
 
@@ -144,7 +173,7 @@ class DriverControllerTest extends TestCase
         $response = $this->actingAs($this->user)
             ->post(route('drivers.store'), []);
 
-        $response->assertSessionHasErrors(['error']);
+        $response->assertSessionHasErrors(['driverid', 'name', 'sex', 'status']);
     }
 
     #[Test]
@@ -385,8 +414,8 @@ class DriverControllerTest extends TestCase
     #[Test]
     public function it_can_filter_drivers_by_zone()
     {
-        Driver::factory()->create(['zone' => 'Zone One']);
-        Driver::factory()->create(['zone' => 'Zone Two']);
+        Driver::factory()->create(['zone' => 'Zone One', 'status' => 'active']);
+        Driver::factory()->create(['zone' => 'Zone Two', 'status' => 'active']);
 
         $response = $this->actingAs($this->user)
             ->get(route('drivers.index', ['search' => 'Zone One']));

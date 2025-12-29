@@ -18,9 +18,16 @@ class RouteProfitabilityReport
         [$from, $to] = $this->resolveDateRange($filters);
         $originIds = $this->normaliseIds($filters['origin_ids'] ?? []);
         $destinationIds = $this->normaliseIds($filters['destination_ids'] ?? []);
+        $customerIds = $this->normaliseIds($filters['customer_ids'] ?? []);
+        $minTrips = $this->normaliseInt($filters['min_trips'] ?? null);
+        $minMarginPercent = $this->normaliseFloat($filters['min_margin_percent'] ?? null);
+        $minProfitPerKm = $this->normaliseFloat($filters['min_profit_per_km'] ?? null);
+        $sort = $this->resolveSort($filters['sort'] ?? 'profit_desc');
 
-        $rows = $this->fetchRows($from, $to, $originIds, $destinationIds);
+        $rows = $this->fetchRows($from, $to, $originIds, $destinationIds, $customerIds);
         $routeData = $this->groupByRoute($rows);
+        $routeData = $this->applyRouteFilters($routeData, $minTrips, $minMarginPercent, $minProfitPerKm);
+        $routeData = $this->sortRoutes($routeData, $sort);
         $summary = $this->summarise($routeData);
 
         return [
@@ -31,6 +38,11 @@ class RouteProfitabilityReport
             'filters' => [
                 'origin_ids' => $originIds,
                 'destination_ids' => $destinationIds,
+                'customer_ids' => $customerIds,
+                'min_trips' => $minTrips,
+                'min_margin_percent' => $minMarginPercent,
+                'min_profit_per_km' => $minProfitPerKm,
+                'sort' => $sort,
             ],
         ];
     }
@@ -66,6 +78,7 @@ class RouteProfitabilityReport
         CarbonInterface $to,
         array $originIds,
         array $destinationIds,
+        array $customerIds,
     ): Collection {
         $query = Performance::query()
             ->with([
@@ -83,6 +96,12 @@ class RouteProfitabilityReport
 
         if (!empty($destinationIds)) {
             $query->whereIn('destination_id', $destinationIds);
+        }
+
+        if (!empty($customerIds)) {
+            $query->whereHas('operation', static function ($operation) use ($customerIds) {
+                $operation->whereIn('customer_id', $customerIds);
+            });
         }
 
         return $query->get();
@@ -161,9 +180,69 @@ class RouteProfitabilityReport
                 ];
             })
             ->filter(static fn (array $route) => $route['trips'] > 0)
-            ->values()
-            ->sortByDesc('profit')
             ->values();
+    }
+
+    private function applyRouteFilters(Collection $routes, ?int $minTrips, ?float $minMarginPercent, ?float $minProfitPerKm): Collection
+    {
+        return $routes->filter(function (array $route) use ($minTrips, $minMarginPercent, $minProfitPerKm) {
+            if ($minTrips !== null && $route['trips'] < $minTrips) {
+                return false;
+            }
+
+            if ($minMarginPercent !== null) {
+                $margin = $route['margin_percent'];
+
+                if ($margin === null || $margin < $minMarginPercent) {
+                    return false;
+                }
+            }
+
+            if ($minProfitPerKm !== null) {
+                $profitPerKm = $route['profit_per_km'];
+
+                if ($profitPerKm < $minProfitPerKm) {
+                    return false;
+                }
+            }
+
+            return true;
+        })->values();
+    }
+
+    private function sortRoutes(Collection $routes, string $sort): Collection
+    {
+        return match ($sort) {
+            'profit_asc' => $this->sortNumeric($routes, 'profit', 'asc'),
+            'margin_desc' => $this->sortNumeric($routes, 'margin_percent', 'desc'),
+            'margin_asc' => $this->sortNumeric($routes, 'margin_percent', 'asc'),
+            'trips_desc' => $this->sortNumeric($routes, 'trips', 'desc'),
+            'trips_asc' => $this->sortNumeric($routes, 'trips', 'asc'),
+            'revenue_desc' => $this->sortNumeric($routes, 'revenue', 'desc'),
+            'revenue_asc' => $this->sortNumeric($routes, 'revenue', 'asc'),
+            'profit_per_km_desc' => $this->sortNumeric($routes, 'profit_per_km', 'desc'),
+            'profit_per_km_asc' => $this->sortNumeric($routes, 'profit_per_km', 'asc'),
+            'distance_desc' => $this->sortNumeric($routes, 'distance_total', 'desc'),
+            'distance_asc' => $this->sortNumeric($routes, 'distance_total', 'asc'),
+            default => $this->sortNumeric($routes, 'profit', 'desc'),
+        };
+    }
+
+    private function sortNumeric(Collection $routes, string $key, string $direction = 'desc'): Collection
+    {
+        $callback = static function (array $route) use ($key, $direction) {
+            $value = $route[$key] ?? null;
+
+            if ($value === null) {
+                return $direction === 'asc' ? INF : -INF;
+            }
+
+            return $value;
+        };
+
+        return $direction === 'asc'
+            ? $routes->sortBy($callback)->values()
+            : $routes->sortByDesc($callback)->values();
     }
 
     private function summarise(Collection $routeData): array
@@ -178,6 +257,8 @@ class RouteProfitabilityReport
             'total_trips' => $totalTrips,
             'total_tonnage' => round($routeData->sum('tonnage'), 2),
             'total_ton_km' => round($routeData->sum('ton_km'), 2),
+            'total_distance_with_cargo' => round($routeData->sum('distance_wc'), 2),
+            'total_distance_without_cargo' => round($routeData->sum('distance_wo'), 2),
             'total_distance' => round($routeData->sum('distance_total'), 2),
             'total_revenue' => round($totalRevenue, 2),
             'total_expense' => round($totalExpense, 2),
@@ -186,6 +267,50 @@ class RouteProfitabilityReport
             'avg_revenue_per_route' => $routeData->count() > 0 ? round($totalRevenue / $routeData->count(), 2) : 0,
             'avg_profit_per_route' => $routeData->count() > 0 ? round($totalProfit / $routeData->count(), 2) : 0,
         ];
+    }
+
+    private function normaliseInt(mixed $value): ?int
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        $intValue = (int) $value;
+
+        return $intValue >= 0 ? $intValue : null;
+    }
+
+    private function normaliseFloat(mixed $value): ?float
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if (! is_numeric($value)) {
+            return null;
+        }
+
+        return (float) $value;
+    }
+
+    private function resolveSort(string $sort): string
+    {
+        $allowed = [
+            'profit_desc',
+            'profit_asc',
+            'margin_desc',
+            'margin_asc',
+            'trips_desc',
+            'trips_asc',
+            'revenue_desc',
+            'revenue_asc',
+            'profit_per_km_desc',
+            'profit_per_km_asc',
+            'distance_desc',
+            'distance_asc',
+        ];
+
+        return in_array($sort, $allowed, true) ? $sort : 'profit_desc';
     }
 }
 
