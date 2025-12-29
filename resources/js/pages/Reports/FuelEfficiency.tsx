@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Head, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { ListingPaginationFooter } from '@/components/listing/pagination-footer';
 import {
     Table,
     TableBody,
@@ -16,11 +17,12 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { ChevronLeft, ChevronRight, CircleDollarSign, Download, Droplet, FileDigit, FileSpreadsheet, FileType2, Gauge, Route, TrendingDown, Waypoints } from 'lucide-react';
+import { CircleDollarSign, Download, Droplet, FileDigit, FileSpreadsheet, FileType2, Gauge, Route, TrendingDown, Waypoints } from 'lucide-react';
 import { ReportFiltersDialog } from '@/components/reports/report-filters-dialog';
 import { ReportSummaryGrid, type ReportSummaryItem } from '@/components/reports/report-summary-grid';
 import type { ReportSelectionOption } from '@/components/reports/types';
 import { usePermissions } from '@/hooks/use-permissions';
+import { REPORT_DATE_RANGE_DESCRIPTION, useReportDateRange } from '@/components/reports/use-report-date-range';
 
 interface TruckOption {
     id: number;
@@ -32,6 +34,8 @@ interface FuelEfficiencyFilters {
     from?: string | null;
     to?: string | null;
     truck_ids?: number[];
+    per_page?: number | null;
+    page?: number | null;
 }
 
 interface FuelEfficiencyTotals {
@@ -100,11 +104,27 @@ interface FuelEfficiencyHighlights {
     highest_empty_distance_share: FuelEfficiencyBreakdownRow[];
 }
 
+interface FuelEfficiencyPaginationMeta {
+    current_page?: number | null;
+    last_page?: number | null;
+    per_page?: number | null;
+    total?: number | null;
+    from?: number | null;
+    to?: number | null;
+}
+
+interface FuelEfficiencyPagination {
+    meta?: FuelEfficiencyPaginationMeta | null;
+    links?: Array<{ url: string | null; label: string; active?: boolean }>;
+}
+
 interface FuelEfficiencyProps {
     filters: FuelEfficiencyFilters;
     totals: FuelEfficiencyTotals;
     summary: FuelEfficiencySummary;
     breakdown: FuelEfficiencyBreakdownRow[];
+    breakdown_paginator?: FuelEfficiencyPagination | null;
+    per_page_options?: number[];
     trend: FuelEfficiencyTrendRow[];
     highlights: FuelEfficiencyHighlights;
     trucks: TruckOption[];
@@ -152,6 +172,8 @@ export default function FuelEfficiency({
     totals,
     summary,
     breakdown = [],
+    breakdown_paginator: breakdownPaginator = null,
+    per_page_options: perPageOptionsProp = [],
     trend = [],
     highlights,
     trucks = [],
@@ -180,14 +202,48 @@ export default function FuelEfficiency({
             : [],
     }), [highlights]);
 
-    const perPageOptions = useMemo(() => [10, 25, 50], []);
-    const [perPage, setPerPage] = useState<number>(perPageOptions[1] ?? perPageOptions[0] ?? 25);
-    const [currentPage, setCurrentPage] = useState(1);
-    const [from, setFrom] = useState(filters?.from ?? '');
-    const [to, setTo] = useState(filters?.to ?? '');
+    const { from, to, dateError, handleDateChange, validateDateRange, resetDateRange } = useReportDateRange(filters?.from ?? '', filters?.to ?? '');
     const [selectedTrucks, setSelectedTrucks] = useState<number[]>(filters?.truck_ids ?? []);
     const [filtersOpen, setFiltersOpen] = useState(false);
-    const [dateError, setDateError] = useState<string | null>(null);
+
+    const breakdownPaginatorMeta = useMemo<FuelEfficiencyPaginationMeta | null>(
+        () => (breakdownPaginator && typeof breakdownPaginator === 'object' ? breakdownPaginator.meta ?? null : null),
+        [breakdownPaginator],
+    );
+
+    const breakdownPaginationLinks = useMemo(
+        () => (breakdownPaginator && Array.isArray(breakdownPaginator.links) ? breakdownPaginator.links : []),
+        [breakdownPaginator],
+    );
+
+    const perPageOptionsList = useMemo<number[]>(
+        () => (Array.isArray(perPageOptionsProp) && perPageOptionsProp.length > 0 ? perPageOptionsProp : [10, 25, 50, 100]),
+        [perPageOptionsProp],
+    );
+
+    const resolvedPerPage = useMemo<number>(() => {
+        const candidate = filters?.per_page ?? breakdownPaginatorMeta?.per_page ?? perPageOptionsList[1] ?? perPageOptionsList[0] ?? 25;
+
+        if (typeof candidate === 'number' && perPageOptionsList.includes(candidate)) {
+            return candidate;
+        }
+
+        return perPageOptionsList[0] ?? 25;
+    }, [filters?.per_page, breakdownPaginatorMeta?.per_page, perPageOptionsList]);
+
+    const [perPage, setPerPage] = useState<number>(resolvedPerPage);
+
+    useEffect(() => {
+        setPerPage(resolvedPerPage);
+    }, [resolvedPerPage]);
+
+    const defaultPerPage = perPageOptionsList[0] ?? 25;
+
+    const totalRows = breakdownPaginatorMeta?.total ?? safeBreakdown.length;
+    const pageRangeStart = breakdownPaginatorMeta?.from ?? (safeBreakdown.length > 0 ? 1 : 0);
+    const pageRangeEnd = breakdownPaginatorMeta?.to ?? safeBreakdown.length;
+    const currentPage = breakdownPaginatorMeta?.current_page ?? 1;
+    const totalPages = breakdownPaginatorMeta?.last_page ?? 1;
 
     const appliedFrom = filters?.from ?? '';
     const appliedTo = filters?.to ?? '';
@@ -244,42 +300,28 @@ export default function FuelEfficiency({
         [summary?.fleet_cost_per_km, summary?.fleet_efficiency_km_per_liter, totals?.total_cost, totals?.total_empty_distance_km, totals?.total_loaded_distance_km, totals?.total_liters],
     );
 
-    const totalRows = safeBreakdown.length;
-    const totalPages = Math.max(1, Math.ceil(totalRows / perPage));
-    const clampedPage = Math.min(currentPage, totalPages);
-    const paginatedBreakdown = useMemo(
-        () => safeBreakdown.slice((clampedPage - 1) * perPage, (clampedPage - 1) * perPage + perPage),
-        [safeBreakdown, clampedPage, perPage],
-    );
-    const pageRangeStart = totalRows > 0 ? (clampedPage - 1) * perPage + 1 : 0;
-    const pageRangeEnd = totalRows > 0 ? Math.min(pageRangeStart + perPage - 1, totalRows) : 0;
-
     const handlePerPageChange = (value: string) => {
         const parsed = Number(value);
 
-        if (!Number.isNaN(parsed) && parsed > 0 && parsed !== perPage) {
-            setPerPage(parsed);
-            setCurrentPage(1);
+        if (Number.isNaN(parsed) || parsed <= 0 || parsed === perPage) {
+            return;
         }
+
+        setPerPage(parsed);
+
+        const params: Record<string, unknown> = {};
+
+        if (from) params.from = from;
+        if (to) params.to = to;
+        if (selectedTrucks.length > 0) params.truck_ids = selectedTrucks;
+        params.per_page = parsed;
+        params.page = 1;
+
+        router.get('/reports/fuel-efficiency', params, {
+            preserveState: true,
+            preserveScroll: true,
+        });
     };
-
-    const goToPage = (page: number) => {
-        const next = Math.min(Math.max(page, 1), totalPages);
-
-        if (next !== currentPage) {
-            setCurrentPage(next);
-        }
-    };
-
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [safeBreakdown]);
-
-    useEffect(() => {
-        if (currentPage > totalPages) {
-            setCurrentPage(totalPages);
-        }
-    }, [currentPage, totalPages]);
 
     const activeFilterCount = useMemo(() => {
         let count = 0;
@@ -290,26 +332,6 @@ export default function FuelEfficiency({
 
         return count;
     }, [from, to, selectedTrucks, appliedFrom, appliedTo]);
-
-    const validateDateRange = useCallback(
-        (nextFrom: string, nextTo: string) => {
-            if (nextFrom && nextTo) {
-                const fromTimestamp = Date.parse(nextFrom);
-                const toTimestamp = Date.parse(nextTo);
-
-                if (!Number.isNaN(fromTimestamp) && !Number.isNaN(toTimestamp) && fromTimestamp > toTimestamp) {
-                    setDateError('Start date must be before or equal to the end date.');
-
-                    return false;
-                }
-            }
-
-            setDateError(null);
-
-            return true;
-        },
-        [],
-    );
 
     const handleApplyFilters = () => {
         if (!validateDateRange(from, to)) {
@@ -333,11 +355,9 @@ export default function FuelEfficiency({
     };
 
     const handleReset = () => {
-        setFrom(filters?.from ?? '');
-        setTo(filters?.to ?? '');
+        resetDateRange(filters?.from ?? '', filters?.to ?? '');
         setSelectedTrucks(filters?.truck_ids ?? []);
         setFiltersOpen(false);
-        setDateError(null);
 
         router.get('/reports/fuel-efficiency', {}, { preserveState: false, preserveScroll: true });
     };
@@ -364,17 +384,6 @@ export default function FuelEfficiency({
         window.location.href = url;
     };
 
-    const handleDateChange = (field: 'from' | 'to', value: string) => {
-        if (field === 'from') {
-            setFrom(value);
-            validateDateRange(value, to);
-            return;
-        }
-
-        setTo(value);
-        validateDateRange(from, value);
-    };
-
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Fuel Efficiency & Cost" />
@@ -397,6 +406,7 @@ export default function FuelEfficiency({
                                     from={from}
                                     to={to}
                                     onDateChange={handleDateChange}
+                                    dateRangeDescription={REPORT_DATE_RANGE_DESCRIPTION}
                                     onReset={handleReset}
                                     onApply={handleApplyFilters}
                                     truckOptions={truckSelectionOptions}

@@ -11,6 +11,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { ReportFiltersDialog } from '@/components/reports/report-filters-dialog';
 import { usePermissions } from '@/hooks/use-permissions';
 import { Activity, Download, FileDigit, FileSpreadsheet, FileType2, Flame, Globe, Map as MapIcon, MapPin, RefreshCcw, TrendingUp } from 'lucide-react';
+import { REPORT_DATE_RANGE_DESCRIPTION, useReportDateRange } from '@/components/reports/use-report-date-range';
 
 interface GeoRow {
     name: string;
@@ -46,30 +47,8 @@ export default function GeographyHeatmaps({ filters, regions, zones, woredas, pl
     const { hasPermission } = usePermissions();
     const canExport = hasPermission('reports.geography-heatmaps.export');
 
-    const [from, setFrom] = useState(filters?.from ?? '');
-    const [to, setTo] = useState(filters?.to ?? '');
+    const { from, to, dateError, handleDateChange, validateDateRange, resetDateRange } = useReportDateRange(filters?.from ?? '', filters?.to ?? '');
     const [filtersOpen, setFiltersOpen] = useState(false);
-    const [dateError, setDateError] = useState<string | null>(null);
-
-    const validateDateRange = useCallback(
-        (nextFrom: string, nextTo: string) => {
-            if (nextFrom && nextTo) {
-                const fromTimestamp = Date.parse(nextFrom);
-                const toTimestamp = Date.parse(nextTo);
-
-                if (!Number.isNaN(fromTimestamp) && !Number.isNaN(toTimestamp) && fromTimestamp > toTimestamp) {
-                    setDateError('Start date must be before or equal to the end date.');
-
-                    return false;
-                }
-            }
-
-            setDateError(null);
-
-            return true;
-        },
-        [],
-    );
 
     const activeFilterCount = useMemo(() => {
         let count = 0;
@@ -79,17 +58,6 @@ export default function GeographyHeatmaps({ filters, regions, zones, woredas, pl
 
         return count;
     }, [from, to, filters?.from, filters?.to]);
-
-    const handleDateChange = (field: 'from' | 'to', value: string) => {
-        if (field === 'from') {
-            setFrom(value);
-            validateDateRange(value, to);
-            return;
-        }
-
-        setTo(value);
-        validateDateRange(from, value);
-    };
 
     const appliedFrom = filters?.from ?? '';
     const appliedTo = filters?.to ?? '';
@@ -180,18 +148,16 @@ export default function GeographyHeatmaps({ filters, regions, zones, woredas, pl
     const setQuickRange = useCallback(
         (days: number) => {
             const { nextFrom, nextTo } = computeQuickRange(days);
-            setFrom(nextFrom);
-            setTo(nextTo);
+            resetDateRange(nextFrom, nextTo);
             validateDateRange(nextFrom, nextTo);
         },
-        [computeQuickRange, validateDateRange],
+        [computeQuickRange, resetDateRange, validateDateRange],
     );
 
     const applyQuickRange = useCallback(
         (days: number) => {
             const { nextFrom, nextTo } = computeQuickRange(days);
-            setFrom(nextFrom);
-            setTo(nextTo);
+            resetDateRange(nextFrom, nextTo);
 
             if (!validateDateRange(nextFrom, nextTo)) {
                 setFiltersOpen(true);
@@ -206,7 +172,7 @@ export default function GeographyHeatmaps({ filters, regions, zones, woredas, pl
                 { preserveState: true, preserveScroll: true },
             );
         },
-        [computeQuickRange, validateDateRange],
+        [computeQuickRange, resetDateRange, validateDateRange],
     );
 
     const handleApplyFilters = () => {
@@ -229,10 +195,8 @@ export default function GeographyHeatmaps({ filters, regions, zones, woredas, pl
         const originalFrom = filters?.from ?? '';
         const originalTo = filters?.to ?? '';
 
-        setFrom(originalFrom);
-        setTo(originalTo);
+        resetDateRange(originalFrom, originalTo);
         setFiltersOpen(false);
-        setDateError(null);
 
         router.get('/reports/geography-heatmaps', {}, { preserveState: false, preserveScroll: true });
     };
@@ -313,6 +277,7 @@ export default function GeographyHeatmaps({ filters, regions, zones, woredas, pl
                                     from={from}
                                     to={to}
                                     onDateChange={handleDateChange}
+                                    dateRangeDescription={REPORT_DATE_RANGE_DESCRIPTION}
                                     onReset={handleReset}
                                     onApply={handleApplyFilters}
                                     dateError={dateError}

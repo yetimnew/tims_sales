@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Head, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
@@ -11,6 +11,7 @@ import type { ReportSelectionOption } from '@/components/reports/types';
 import { formatCurrency, formatInteger } from '@/components/reports/formatters';
 import { AlertTriangle, CircleDollarSign, Download, Filter, ShieldAlert, Users } from 'lucide-react';
 import { usePermissions } from '@/hooks/use-permissions';
+import { REPORT_DATE_RANGE_DESCRIPTION, useReportDateRange } from '@/components/reports/use-report-date-range';
 
 interface DriverOption {
     id: number;
@@ -126,12 +127,10 @@ export default function DriverSafetyReport({
     const canExport = hasPermission('reports.driver-safety.export');
 
     const [filtersOpen, setFiltersOpen] = useState(false);
-    const [from, setFrom] = useState(filters?.from ?? '');
-    const [to, setTo] = useState(filters?.to ?? '');
+    const { from, to, dateError, handleDateChange, validateDateRange, resetDateRange } = useReportDateRange(filters?.from ?? '', filters?.to ?? '');
     const [selectedDrivers, setSelectedDrivers] = useState<number[]>(filters?.driver_ids ?? []);
     const [selectedIncidentTypes, setSelectedIncidentTypes] = useState<string[]>(filters?.incident_types ?? []);
     const [selectedSeverities, setSelectedSeverities] = useState<string[]>(filters?.severities ?? []);
-    const [dateError, setDateError] = useState<string | null>(null);
 
     const driverOptions: ReportSelectionOption[] = useMemo(
         () => (options?.drivers ?? []).map((driver) => ({ id: driver.id, label: driver.name ?? `Driver #${driver.id}` })),
@@ -159,26 +158,6 @@ export default function DriverSafetyReport({
 
         return count;
     }, [from, to, selectedDrivers, selectedIncidentTypes, selectedSeverities, filters?.from, filters?.to]);
-
-    const validateDateRange = useCallback(
-        (nextFrom: string, nextTo: string) => {
-            if (nextFrom && nextTo) {
-                const fromTimestamp = Date.parse(nextFrom);
-                const toTimestamp = Date.parse(nextTo);
-
-                if (!Number.isNaN(fromTimestamp) && !Number.isNaN(toTimestamp) && fromTimestamp > toTimestamp) {
-                    setDateError('Start date must be before or equal to the end date.');
-
-                    return false;
-                }
-            }
-
-            setDateError(null);
-
-            return true;
-        },
-        [],
-    );
 
     const handleApplyFilters = () => {
         if (!validateDateRange(from, to)) {
@@ -213,12 +192,10 @@ export default function DriverSafetyReport({
     };
 
     const handleResetFilters = () => {
-        setFrom(filters?.from ?? '');
-        setTo(filters?.to ?? '');
+        resetDateRange(filters?.from ?? '', filters?.to ?? '');
         setSelectedDrivers(filters?.driver_ids ?? []);
         setSelectedIncidentTypes(filters?.incident_types ?? []);
         setSelectedSeverities(filters?.severities ?? []);
-        setDateError(null);
         setFiltersOpen(false);
         router.get('/reports/driver-safety', {}, { preserveState: false, preserveScroll: true });
     };
@@ -229,6 +206,8 @@ export default function DriverSafetyReport({
         }
 
         if (!validateDateRange(from, to)) {
+            setFiltersOpen(true);
+
             return;
         }
 
@@ -548,16 +527,11 @@ export default function DriverSafetyReport({
                 activeFilterCount={activeFilterCount}
                 from={from}
                 to={to}
-                onDateChange={(field, value) => {
-                    if (field === 'from') {
-                        setFrom(value);
-                    } else {
-                        setTo(value);
-                    }
-                }}
+                onDateChange={handleDateChange}
                 onReset={handleResetFilters}
                 onApply={handleApplyFilters}
                 dateError={dateError}
+                dateRangeDescription={REPORT_DATE_RANGE_DESCRIPTION}
                 selectedDrivers={selectedDrivers}
                 onDriversChange={(ids) => setSelectedDrivers(ids)}
                 driverOptions={driverOptions}

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Head, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
@@ -13,6 +13,7 @@ import { formatCurrency, formatDecimal, formatInteger, formatPercentage, getFina
 import type { ReportSelectionOption } from '@/components/reports/types';
 import { CircleDollarSign, ClipboardList, Coins, Download, FileDigit, FileSpreadsheet, FileType2, PiggyBank, RefreshCcw, TrendingUp, Users } from 'lucide-react';
 import { usePermissions } from '@/hooks/use-permissions';
+import { REPORT_DATE_RANGE_DESCRIPTION, useReportDateRange } from '@/components/reports/use-report-date-range';
 
 interface CustomerOption {
     id: number;
@@ -132,11 +133,9 @@ export default function CustomerProfitability({ filters, rows = [], summary, tre
     const safeRows = useMemo(() => (Array.isArray(rows) ? rows : []), [rows]);
     const safeTrend = useMemo(() => (Array.isArray(trend) ? trend : []), [trend]);
 
-    const [from, setFrom] = useState(filters?.from ?? '');
-    const [to, setTo] = useState(filters?.to ?? '');
+    const { from, to, dateError, handleDateChange, validateDateRange, resetDateRange } = useReportDateRange(filters?.from ?? '', filters?.to ?? '');
     const [selectedCustomers, setSelectedCustomers] = useState<number[]>(filters?.customer_ids ?? []);
     const [filtersOpen, setFiltersOpen] = useState(false);
-    const [dateError, setDateError] = useState<string | null>(null);
 
     const customerSelectionOptions = useMemo<ReportSelectionOption[]>(
         () => customerOptions.map((option) => ({ id: option.id, label: option.name })),
@@ -161,26 +160,6 @@ export default function CustomerProfitability({ filters, rows = [], summary, tre
 
         return count;
     }, [from, to, selectedCustomers, filters?.from, filters?.to]);
-
-    const validateDateRange = useCallback(
-        (nextFrom: string, nextTo: string) => {
-            if (nextFrom && nextTo) {
-                const fromTimestamp = Date.parse(nextFrom);
-                const toTimestamp = Date.parse(nextTo);
-
-                if (!Number.isNaN(fromTimestamp) && !Number.isNaN(toTimestamp) && fromTimestamp > toTimestamp) {
-                    setDateError('Start date must be before or equal to the end date.');
-
-                    return false;
-                }
-            }
-
-            setDateError(null);
-
-            return true;
-        },
-        [],
-    );
 
     const handleApplyFilters = () => {
         if (!validateDateRange(from, to)) {
@@ -207,11 +186,9 @@ export default function CustomerProfitability({ filters, rows = [], summary, tre
     };
 
     const handleReset = () => {
-        setFrom(filters?.from ?? '');
-        setTo(filters?.to ?? '');
+        resetDateRange(filters?.from ?? '', filters?.to ?? '');
         setSelectedCustomers(filters?.customer_ids ?? []);
         setFiltersOpen(false);
-        setDateError(null);
         router.get('/reports/customer-profitability', {}, { preserveState: false, preserveScroll: true });
     };
 
@@ -235,17 +212,6 @@ export default function CustomerProfitability({ filters, rows = [], summary, tre
         const query = params.toString();
         const url = `/reports/customer-profitability/export/${format}${query ? `?${query}` : ''}`;
         window.location.href = url;
-    };
-
-    const handleDateChange = (field: 'from' | 'to', value: string) => {
-        if (field === 'from') {
-            setFrom(value);
-            validateDateRange(value, to);
-            return;
-        }
-
-        setTo(value);
-        validateDateRange(from, value);
     };
 
     const summaryItems = useMemo<ReportSummaryItem[]>(
@@ -353,6 +319,7 @@ export default function CustomerProfitability({ filters, rows = [], summary, tre
                                     from={from}
                                     to={to}
                                     onDateChange={handleDateChange}
+                                    dateRangeDescription={REPORT_DATE_RANGE_DESCRIPTION}
                                     onReset={handleReset}
                                     onApply={handleApplyFilters}
                                     showLimit={false}

@@ -108,6 +108,10 @@ export default function VehicleTypesCreate() {
                 setIsDirty(false);
                 setFrontendErrors({});
                 clearErrors();
+                toast({
+                    title: '✅ Vehicle Type Created',
+                    description: 'Vehicle type has been added successfully.',
+                });
             },
         });
     };

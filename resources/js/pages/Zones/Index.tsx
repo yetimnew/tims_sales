@@ -2,7 +2,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { TableCell, TableRow } from '@/components/ui/table';
 import ListPageLayout from '@/components/layouts/list-page-layout';
-import AppLayout from '@/layouts/app-layout';
 import { ListingStatsHeader } from '@/components/listing/stats-header';
 import { ListingFilterBar } from '@/components/listing/filter-bar';
 import { ListingTableShell } from '@/components/listing/data-table-shell';
@@ -13,7 +12,8 @@ import { ListingRowActionsMenu } from '@/components/listing/row-actions-menu';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useListingLoading } from '@/hooks/use-listing-loading';
-import { Head, Link, router } from '@inertiajs/react';
+import { toast } from '@/hooks/use-toast';
+import { Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -184,29 +184,10 @@ const getStatusBadge = (status?: string | null): React.ReactNode => {
 
 export default function ZonesIndex({ zones, metrics, filters, statusOptions, perPageOptions }: ZonesIndexProps) {
     const { hasPermission } = usePermissions();
-    const canViewZones = hasPermission('zones.view');
     const canViewZone = hasPermission('zones.show');
     const canCreateZone = hasPermission('zones.create');
     const canEditZone = hasPermission('zones.edit');
     const canDeleteZone = hasPermission('zones.destroy');
-
-    if (!canViewZones) {
-        return (
-            <AppLayout breadcrumbs={breadcrumbs}>
-                <Head title="Zones" />
-                <div className="flex flex-1 flex-col items-center justify-center gap-6 p-8 text-center">
-                    <img src="/images/dashboard-permission.svg" alt="Zone access restricted" className="h-60 w-auto max-w-full" />
-                    <div className="space-y-2">
-                        <h1 className="text-3xl font-semibold text-slate-900 dark:text-white">Zone Access Restricted</h1>
-                        <p className="mx-auto max-w-md text-sm text-slate-600 dark:text-slate-400">
-                            You need the zones permission to view and manage zone records. Contact an administrator if you believe you should have
-                            access.
-                        </p>
-                    </div>
-                </div>
-            </AppLayout>
-        );
-    }
 
     const [searchTerm, setSearchTerm] = React.useState(filters?.search ?? '');
     const [selectedStatus, setSelectedStatus] = React.useState(filters?.status ?? 'all');
@@ -354,9 +335,34 @@ export default function ZonesIndex({ zones, metrics, filters, statusOptions, per
             onSuccess: () => {
                 setDeleteDialogOpen(false);
                 setSelectedZone(null);
-            },
-            onFinish: () => {
                 setIsDeleting(false);
+                toast({
+                    title: '✅ Zone Deleted',
+                    description: `${selectedZone.name} has been removed successfully.`,
+                });
+            },
+            onError: (errors) => {
+                setIsDeleting(false);
+
+                const fallback = 'Failed to delete zone. Please try again.';
+                if (errors && typeof errors === 'object') {
+                    const errorMessages = Object.values(errors)
+                        .flatMap((value) => (Array.isArray(value) ? value : [value]))
+                        .filter(Boolean)
+                        .join('\n');
+
+                    toast({
+                        title: '❌ Delete Failed',
+                        description: errorMessages || fallback,
+                        variant: 'destructive',
+                    });
+                } else {
+                    toast({
+                        title: '❌ Delete Failed',
+                        description: fallback,
+                        variant: 'destructive',
+                    });
+                }
             },
         });
     };

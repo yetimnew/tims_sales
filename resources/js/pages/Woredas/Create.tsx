@@ -161,6 +161,10 @@ export default function WoredasCreate({ zones }: WoredasCreateProps) {
         setFrontendErrors({})
         setIsDirty(false)
         reset()
+        toast({
+          title: '✅ Woreda Created',
+          description: 'The woreda has been registered successfully.',
+        })
       },
     })
   }

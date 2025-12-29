@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { ActivityLogTable } from '@/components/activity-log-table';
+import { toast } from '@/hooks/use-toast';
 import { useState, type ReactNode } from 'react';
 
 interface ActivityLog {
@@ -93,9 +94,23 @@ export default function MaintenanceShow({ maintenance, activityLogs = [] }: Main
             onSuccess: () => {
                 setDeleteDialogOpen(false);
                 setIsDeleting(false);
+                toast({
+                    title: '✅ Maintenance Record Deleted',
+                    description: 'The maintenance record has been removed successfully.',
+                });
             },
-            onError: () => {
+            onError: (errors) => {
                 setIsDeleting(false);
+                const messages = Object.values(errors as Record<string, unknown>)
+                    .flatMap((value) => (Array.isArray(value) ? value : [value]))
+                    .filter(Boolean)
+                    .join('\n');
+
+                toast({
+                    title: '❌ Delete Failed',
+                    description: messages || 'Unable to delete this maintenance record. Please try again.',
+                    variant: 'destructive',
+                });
             },
         });
     };

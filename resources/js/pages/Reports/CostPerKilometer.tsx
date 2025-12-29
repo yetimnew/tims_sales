@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Head, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
@@ -15,6 +15,7 @@ import { RefreshCcw, DollarSign, TrendingDown, Route, BarChart3, Fuel, User, Wre
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { usePermissions } from '@/hooks/use-permissions';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, ComposedChart, Line } from 'recharts';
+import { REPORT_DATE_RANGE_DESCRIPTION, useReportDateRange } from '@/components/reports/use-report-date-range';
 
 interface TruckOption {
     id: number;
@@ -102,17 +103,15 @@ const toParamsArray = (key: string, values: number[], params: URLSearchParams) =
 export default function CostPerKilometer({ filters, rows = [], summary, options, comparison }: CostPerKilometerProps) {
     const { hasPermission } = usePermissions();
     const canExport = hasPermission('reports.cost-per-kilometer.export');
-    
+
     const [filtersOpen, setFiltersOpen] = useState(false);
-    const [from, setFrom] = useState(filters?.from ?? '');
-    const [to, setTo] = useState(filters?.to ?? '');
+    const { from, to, dateError, handleDateChange, validateDateRange, resetDateRange } = useReportDateRange(filters?.from ?? '', filters?.to ?? '');
     const [groupBy, setGroupBy] = useState(filters?.group_by ?? 'overall');
     const [selectedTrucks, setSelectedTrucks] = useState<number[]>(filters?.truck_ids ?? []);
     const [selectedDrivers, setSelectedDrivers] = useState<number[]>(filters?.driver_ids ?? []);
     const [compareEnabled, setCompareEnabled] = useState(false);
     const [compareFrom, setCompareFrom] = useState(filters?.compare_from ?? '');
     const [compareTo, setCompareTo] = useState(filters?.compare_to ?? '');
-    const [dateError, setDateError] = useState<string | null>(null);
 
     const truckSource = options?.trucks;
     const driverSource = options?.drivers;
@@ -139,32 +138,6 @@ export default function CostPerKilometer({ filters, rows = [], summary, options,
                 badge: option.status ?? undefined,
             })),
         [driverOptions],
-    );
-
-    const validateDateRange = useCallback(
-        (fromValue: string, toValue: string) => {
-            if (!fromValue || !toValue) {
-                setDateError(null);
-                return true;
-            }
-
-            const fromDate = new Date(fromValue);
-            const toDate = new Date(toValue);
-
-            if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
-                setDateError(null);
-                return true;
-            }
-
-            if (fromDate > toDate) {
-                setDateError('Start date must be before or equal to end date.');
-                return false;
-            }
-
-            setDateError(null);
-            return true;
-        },
-        [],
     );
 
     const handleApplyFilters = () => {
@@ -200,8 +173,7 @@ export default function CostPerKilometer({ filters, rows = [], summary, options,
     };
 
     const handleReset = () => {
-        setFrom(filters?.from ?? '');
-        setTo(filters?.to ?? '');
+        resetDateRange(filters?.from ?? '', filters?.to ?? '');
         setGroupBy(filters?.group_by ?? 'overall');
         setSelectedTrucks(filters?.truck_ids ?? []);
         setSelectedDrivers(filters?.driver_ids ?? []);
@@ -209,19 +181,7 @@ export default function CostPerKilometer({ filters, rows = [], summary, options,
         setCompareFrom('');
         setCompareTo('');
         setFiltersOpen(false);
-        setDateError(null);
         router.get('/reports/cost-per-kilometer', {}, { preserveState: false, preserveScroll: true });
-    };
-
-    const handleDateChange = (field: 'from' | 'to', value: string) => {
-        if (field === 'from') {
-            setFrom(value);
-            validateDateRange(value, to);
-            return;
-        }
-
-        setTo(value);
-        validateDateRange(from, value);
     };
 
     const handleExport = (format: 'csv' | 'xlsx' | 'pdf') => {
@@ -360,6 +320,7 @@ export default function CostPerKilometer({ filters, rows = [], summary, options,
                                     from={from}
                                     to={to}
                                     onDateChange={handleDateChange}
+                                    dateRangeDescription={REPORT_DATE_RANGE_DESCRIPTION}
                                     onReset={handleReset}
                                     onApply={handleApplyFilters}
                                     driverOptions={driverSelectionOptions}

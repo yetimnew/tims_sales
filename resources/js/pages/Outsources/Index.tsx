@@ -5,18 +5,20 @@ import { usePermissions } from '@/hooks/use-permissions';
 import ListPageLayout from '@/components/layouts/list-page-layout';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
 import { ListingStatsHeader, type ListingStatDefinition } from '@/components/listing/stats-header';
 import { ListingFilterBar } from '@/components/listing/filter-bar';
 import { ListingTableShell, type ListingTableColumn } from '@/components/listing/data-table-shell';
 import { ListingMobileItemList } from '@/components/listing/mobile-item-list';
+import { ListingLoadingPlaceholder } from '@/components/listing/loading-placeholder';
 import { ListingRowActionsMenu } from '@/components/listing/row-actions-menu';
 import { ListingPaginationFooter } from '@/components/listing/pagination-footer';
 import { useListingLoading } from '@/hooks/use-listing-loading';
 import { TableCell, TableRow } from '@/components/ui/table';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import {
     Building2,
     ClipboardList,
@@ -167,6 +169,7 @@ export default function OutsourcesIndex({
     perPageOptions,
 }: OutsourceIndexProps) {
     const { hasPermission } = usePermissions();
+    const { toast } = useToast();
 
     const [searchTerm, setSearchTerm] = useState(filters?.search ?? '');
     const [selectedStatus, setSelectedStatus] = useState(filters?.status ?? 'all');
@@ -196,39 +199,6 @@ export default function OutsourcesIndex({
     useEffect(() => {
         setPerPage(String(resolvedPerPage));
     }, [resolvedPerPage]);
-
-    const statusSegments = useMemo(() => {
-        const segments: Array<{ value: string; label: string }> = [];
-        const seen = new Set<string>();
-
-        const pushSegment = (value: string, label: string) => {
-            if (!value || seen.has(value)) {
-                return;
-            }
-
-            segments.push({ value, label });
-            seen.add(value);
-        };
-
-        const options = statusOptions ?? [];
-
-        pushSegment(
-            'active',
-            options.find((option) => option.value === 'active')?.label ?? 'Active',
-        );
-        pushSegment(
-            'inactive',
-            options.find((option) => option.value === 'inactive')?.label ?? 'Inactive',
-        );
-
-        options.forEach((option) => {
-            pushSegment(option.value, option.label);
-        });
-
-        pushSegment('all', 'All');
-
-        return segments;
-    }, [statusOptions]);
 
     const totalVendors = metrics?.totalVendors ?? outsources?.total ?? 0;
     const activeVendors = metrics?.activeVendors ?? 0;
@@ -301,8 +271,6 @@ export default function OutsourcesIndex({
         },
     ];
 
-    const statsSection = <ListingStatsHeader stats={statsDefinitions} orientation="row" />;
-
     const handleNavigate = useCallback(
         (overrides: Partial<{
             search?: string;
@@ -369,10 +337,6 @@ export default function OutsourcesIndex({
     };
 
     const handleStatusChange = (value: string) => {
-        if (!value) {
-            return;
-        }
-
         setSelectedStatus(value);
         handleNavigate({ status: value !== 'all' ? value : undefined, page: 1 });
     };
@@ -426,9 +390,29 @@ export default function OutsourcesIndex({
             onSuccess: () => {
                 setDeleteDialogOpen(false);
                 setSelectedOutsource(null);
-            },
-            onFinish: () => {
                 setIsDeleting(false);
+                toast({
+                    title: '✅ Vendor Deleted',
+                    description: `${selectedOutsource.name} has been removed successfully.`,
+                });
+            },
+            onError: (errors) => {
+                setIsDeleting(false);
+                const fallback = 'Failed to delete vendor. Please try again.';
+                if (errors && typeof errors === 'object') {
+                    const messages = Object.values(errors).flat().join('\n');
+                    toast({
+                        title: '❌ Delete Failed',
+                        description: messages || fallback,
+                        variant: 'destructive',
+                    });
+                } else {
+                    toast({
+                        title: '❌ Delete Failed',
+                        description: fallback,
+                        variant: 'destructive',
+                    });
+                }
             },
         });
     };
@@ -450,7 +434,7 @@ export default function OutsourcesIndex({
         <ListingFilterBar
             search={{
                 value: searchTerm,
-                placeholder: 'Search vendors...',
+                placeholder: 'Search vendors or contacts',
                 onChange: handleSearchChange,
                 icon: <Search className="h-4 w-4" />,
             }}
@@ -461,26 +445,21 @@ export default function OutsourcesIndex({
                 options: perPageSelectOptions,
             }}
         >
-            <ToggleGroup
-                type="single"
-                value={selectedStatus}
-                onValueChange={handleStatusChange}
-                variant="outline"
-                size="sm"
-                className="flex flex-wrap gap-px rounded-md"
-            >
-                {statusSegments.map((segment) => (
-                    <ToggleGroupItem
-                        key={segment.value}
-                        value={segment.value}
-                        className="px-3 py-1 text-sm font-medium capitalize data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
-                    >
-                        {segment.value === 'all' ? 'All' : segment.label}
-                    </ToggleGroupItem>
-                ))}
-            </ToggleGroup>
+            <Select value={selectedStatus} onValueChange={handleStatusChange}>
+                <SelectTrigger className="min-w-[150px]">
+                    <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">All statuses</SelectItem>
+                    {statusOptions?.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                        </SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
             <Select value={selectedServiceType} onValueChange={handleServiceTypeChange}>
-                <SelectTrigger className="w-full min-w-[180px] sm:w-auto">
+                <SelectTrigger className="min-w-[180px]">
                     <SelectValue placeholder="Service type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -695,16 +674,20 @@ export default function OutsourcesIndex({
                     )}
                 </div>
             )}
-            emptyState={(
-                <div className="py-8 text-center text-muted-foreground">
-                    No outsourcing vendors found.
-                    {hasPermission('outsources.create') && (
-                        <Link href="/outsources/create" className="ml-1 text-primary underline">
-                            Create one
-                        </Link>
-                    )}
-                </div>
-            )}
+            emptyState={
+                isLoading ? (
+                    <ListingLoadingPlaceholder showStats={false} filterItemCount={2} rowCount={4} className="p-4" />
+                ) : (
+                    <div className="py-8 text-center text-muted-foreground">
+                        No outsourcing vendors found.
+                        {hasPermission('outsources.create') && (
+                            <Link href="/outsources/create" className="ml-1 text-primary underline">
+                                Create one
+                            </Link>
+                        )}
+                    </div>
+                )
+            }
         />
     );
 
@@ -716,12 +699,12 @@ export default function OutsourcesIndex({
                 description={`Manage ${formatNumberValue(totalVendors)} outsourcing partner${totalVendors === 1 ? '' : 's'} and their performance footprint.`}
                 breadcrumbs={breadcrumbs}
                 actions={headerActions}
-                stats={statsSection}
+                stats={<ListingStatsHeader stats={statsDefinitions} orientation="row" />}
                 tableTitle="Vendor Directory"
                 tableDescription="Track vendor capabilities, contacts, and trip coverage"
                 tableHeaderExtras={tableHeaderExtras}
                 pagination={
-                    outsources?.links ? (
+                    !isLoading && outsources?.links ? (
                         <ListingPaginationFooter
                             className="mt-4"
                             links={outsources.links}
@@ -737,34 +720,21 @@ export default function OutsourcesIndex({
                     ) : null
                 }
             >
-                <div className="hidden md:block">
-                    <div className="relative">
-                        <ListingTableShell
-                            columns={tableColumns}
-                            sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSortToggle }}
-                        >
-                            {tableRows}
-                        </ListingTableShell>
-
-                        {isLoading && (
-                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
-                                <img src="/images/loading-spinner.svg" alt="Loading vendors" className="h-12 w-12" />
-                                <span className="text-sm text-muted-foreground">Loading vendors...</span>
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                <div className="relative space-y-3 p-2 md:hidden">
-                    {mobileList}
-
-                    {isLoading && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
-                            <img src="/images/loading-spinner.svg" alt="Loading vendors" className="h-10 w-10" />
-                            <span className="text-sm text-muted-foreground">Loading vendors...</span>
+                {isLoading ? (
+                    <ListingLoadingPlaceholder filterItemCount={3} rowCount={6} className="p-6" />
+                ) : (
+                    <>
+                        <div className="hidden md:block">
+                            <ListingTableShell
+                                columns={tableColumns}
+                                sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSortToggle }}
+                            >
+                                {tableRows}
+                            </ListingTableShell>
                         </div>
-                    )}
-                </div>
+                        <div className="p-2 md:hidden">{mobileList}</div>
+                    </>
+                )}
             </ListPageLayout>
 
             <DeleteConfirmationDialog

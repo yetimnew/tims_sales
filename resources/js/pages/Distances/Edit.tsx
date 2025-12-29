@@ -4,24 +4,16 @@ import { AlertCircle, ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { SearchableEntityCombobox } from '@/components/searchable-entity-combobox'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { useToast } from '@/hooks/use-toast'
 import AppLayout from '@/layouts/app-layout'
 import type { BreadcrumbItem } from '@/types'
 
 interface Place {
   id: number
   name: string
-  latitude?: number
-  longitude?: number
-  woreda?: {
-    name: string
-    zone?: {
-      name: string
-      region?: { name: string }
-    }
-  }
 }
 
 interface Distance {
@@ -39,24 +31,8 @@ interface DistancesEditProps {
   places: Place[]
 }
 
-const describePlace = (place: Place): string | null => {
-  const locality = [place.woreda?.name, place.woreda?.zone?.name, place.woreda?.zone?.region?.name]
-    .filter(Boolean)
-    .join(' • ')
-
-  return locality.length ? locality : null
-}
-
-const placeKeywords = (place: Place): Array<string | null | undefined> => [
-  place.name,
-  place.woreda?.name,
-  place.woreda?.zone?.name,
-  place.woreda?.zone?.region?.name,
-  place.latitude ? place.latitude.toString() : null,
-  place.longitude ? place.longitude.toString() : null,
-]
-
 export default function DistancesEdit({ distance, places }: DistancesEditProps) {
+  const { toast } = useToast()
   const { data, setData, put, processing, errors } = useForm({
     from_place_id: distance.from_place_id.toString(),
     to_place_id: distance.to_place_id.toString(),
@@ -68,6 +44,19 @@ export default function DistancesEdit({ distance, places }: DistancesEditProps) 
     e.preventDefault()
     put(`/distances/${distance.id}`, {
       preserveScroll: true,
+      onSuccess: () => {
+        toast({
+          title: '✅ Distance Updated',
+          description: 'Distance record has been saved successfully.',
+        })
+      },
+      onError: () => {
+        toast({
+          title: '❌ Update Failed',
+          description: 'Failed to update distance record.',
+          variant: 'destructive',
+        })
+      },
     })
   }
 
@@ -117,37 +106,51 @@ export default function DistancesEdit({ distance, places }: DistancesEditProps) 
                 </Alert>
               )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <SearchableEntityCombobox
-                  id="from_place_id"
-                  label="From Place"
-                  required
-                  value={data.from_place_id}
-                  items={places}
-                  getValue={(place) => place.id.toString()}
-                  getLabel={(place) => place.name}
-                  getDescription={describePlace}
-                  getKeywords={placeKeywords}
-                  placeholder="Select from place"
-                  searchPlaceholder="Search places..."
-                  onSelect={(value) => setData('from_place_id', value)}
-                  error={errors.from_place_id}
-                />
+                <div className="space-y-2">
+                  <Label htmlFor="from_place_id">From Place *</Label>
+                  <Select
+                    value={data.from_place_id}
+                    onValueChange={(value) => setData('from_place_id', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select from place" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {places.map((place) => (
+                        <SelectItem key={place.id} value={place.id.toString()}>
+                          {place.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.from_place_id && (
+                    <p className="text-sm text-destructive">{errors.from_place_id}</p>
+                  )}
+                </div>
 
-                <SearchableEntityCombobox
-                  id="to_place_id"
-                  label="To Place"
-                  required
-                  value={data.to_place_id}
-                  items={places}
-                  getValue={(place) => place.id.toString()}
-                  getLabel={(place) => place.name}
-                  getDescription={describePlace}
-                  getKeywords={placeKeywords}
-                  placeholder="Select to place"
-                  searchPlaceholder="Search places..."
-                  onSelect={(value) => setData('to_place_id', value)}
-                  error={errors.to_place_id}
-                />
+                <div className="space-y-2">
+                  <Label htmlFor="to_place_id">To Place *</Label>
+                  <Select
+                    value={data.to_place_id}
+                    onValueChange={(value) => setData('to_place_id', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select to place" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {places
+                        .filter((place) => place.id.toString() !== data.from_place_id)
+                        .map((place) => (
+                          <SelectItem key={place.id} value={place.id.toString()}>
+                            {place.name}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.to_place_id && (
+                    <p className="text-sm text-destructive">{errors.to_place_id}</p>
+                  )}
+                </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="distance_km">Distance (KM) *</Label>

@@ -223,9 +223,20 @@ export default function MaintenanceCreate({ trucks, maintenanceTypes, mechanics,
         post('/maintenance', {
             preserveScroll: true,
             onSuccess: () => {
+                toast({
+                    title: '✅ Maintenance Record Created',
+                    description: 'The maintenance task has been created successfully.',
+                });
                 setFrontendErrors({});
                 setIsDirty(false);
                 reset();
+            },
+            onError: () => {
+                toast({
+                    title: '❌ Schedule Failed',
+                    description: 'Unable to save maintenance. Review the errors and retry.',
+                    variant: 'destructive',
+                });
             },
         });
     };

@@ -20,25 +20,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog'
 import { ActivityLogTable } from '@/components/activity-log-table'
+import { useToast } from '@/hooks/use-toast'
 import AppLayout from '@/layouts/app-layout'
 import type { BreadcrumbItem } from '@/types'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { WoredaBoundaryMap } from '@/components/WoredaBoundaryMap'
-import type { GeoJsonInput } from '@/components/boundary-map-utils'
-
-interface RegionSummary {
-  id: number
-  name: string
-  status?: 'active' | 'inactive'
-  boundary_geojson?: GeoJsonInput
-}
 
 interface ZoneSummary {
   id: number
   name: string
   status?: 'active' | 'inactive'
-  boundary_geojson?: GeoJsonInput
-  region?: RegionSummary | null
 }
 
 interface PlaceSummary {
@@ -63,7 +53,6 @@ interface Woreda {
   accessibility_score?: number | string | null
   infrastructure_notes?: string | null
   road_quality_notes?: string | null
-  boundary_geojson?: GeoJsonInput
   created_at: string
   updated_at: string
   zone?: ZoneSummary | null
@@ -129,6 +118,7 @@ const resolveActivityAction = (event?: string | null): 'created' | 'updated' | '
 }
 
 export default function WoredasShow({ woreda, activityLogs = [] }: WoredasShowProps) {
+  const { toast } = useToast()
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const breadcrumbs = useMemo<BreadcrumbItem[]>(
@@ -159,9 +149,19 @@ export default function WoredasShow({ woreda, activityLogs = [] }: WoredasShowPr
     router.delete(`/woredas/${woreda.id}`, {
       preserveScroll: true,
       onSuccess: () => {
+        toast({ title: '✅ Woreda Deleted', description: `${woreda.name} was removed successfully.` })
         setDeleteDialogOpen(false)
+        setIsDeleting(false)
       },
-      onFinish: () => {
+      onError: (errors) => {
+        const errorMessage = errors && typeof errors === 'object' && 'message' in errors
+          ? String(errors.message)
+          : 'Unable to delete this woreda right now. Try again later.'
+        toast({
+          title: '❌ Delete Failed',
+          description: errorMessage,
+          variant: 'destructive',
+        })
         setIsDeleting(false)
       },
     })
@@ -301,44 +301,6 @@ export default function WoredasShow({ woreda, activityLogs = [] }: WoredasShowPr
 
             <div className="flex flex-col gap-6 lg:flex-row">
               <div className="flex-1 space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-lg">
-                      <MapPinned className="h-5 w-5" />
-                      Boundary Map
-                    </CardTitle>
-                    <CardDescription>Visualize the woreda footprint with zone and regional context</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <WoredaBoundaryMap
-                      woreda={{
-                        id: woreda.id,
-                        name: woreda.name,
-                        status: woreda.status,
-                        boundary_geojson: woreda.boundary_geojson,
-                        latitude: woreda.latitude,
-                        longitude: woreda.longitude,
-                      }}
-                      zone={woreda.zone
-                        ? {
-                            id: woreda.zone.id,
-                            name: woreda.zone.name,
-                            status: woreda.zone.status,
-                            boundary_geojson: woreda.zone.boundary_geojson,
-                            region: woreda.zone.region
-                              ? {
-                                  id: woreda.zone.region.id,
-                                  name: woreda.zone.region.name,
-                                  status: woreda.zone.region.status,
-                                  boundary_geojson: woreda.zone.region.boundary_geojson,
-                                }
-                              : null,
-                          }
-                        : null}
-                    />
-                  </CardContent>
-                </Card>
-
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-lg">

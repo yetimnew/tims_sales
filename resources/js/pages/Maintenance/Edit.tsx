@@ -371,8 +371,19 @@ export default function MaintenanceEdit({ maintenance, trucks, maintenanceTypes,
         put(`/maintenance/${maintenance.id}`, {
             preserveScroll: true,
             onSuccess: () => {
+                toast({
+                    title: '✅ Maintenance Record Updated',
+                    description: 'The maintenance record has been updated successfully.',
+                });
                 setFrontendErrors({});
                 setIsDirty(false);
+            },
+            onError: () => {
+                toast({
+                    title: 'Update failed',
+                    description: 'Unable to update maintenance. Review the errors and retry.',
+                    variant: 'destructive',
+                });
             },
         });
     };

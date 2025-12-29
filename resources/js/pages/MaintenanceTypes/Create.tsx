@@ -115,6 +115,10 @@ export default function MaintenanceTypesCreate() {
         post('/maintenance-types', {
             preserveScroll: true,
             onSuccess: () => {
+                toast({
+                    title: '✅ Maintenance Type Created',
+                    description: 'The maintenance type has been saved successfully.',
+                });
                 setFrontendErrors({});
                 setIsDirty(false);
             },

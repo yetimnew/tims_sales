@@ -12,6 +12,7 @@ import { ListingRowActionsMenu } from '@/components/listing/row-actions-menu';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useListingLoading } from '@/hooks/use-listing-loading';
+import { toast } from '@/hooks/use-toast';
 import { Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -339,9 +340,34 @@ export default function RegionsIndex({ regions, metrics, filters, statusOptions,
             onSuccess: () => {
                 setDeleteDialogOpen(false);
                 setSelectedRegion(null);
-            },
-            onFinish: () => {
                 setIsDeleting(false);
+                toast({
+                    title: '✅ Region Deleted',
+                    description: `${selectedRegion.name} has been removed successfully.`,
+                });
+            },
+            onError: (errors) => {
+                setIsDeleting(false);
+
+                const fallback = 'Failed to delete region. Please try again.';
+                if (errors && typeof errors === 'object') {
+                    const errorMessages = Object.values(errors)
+                        .flatMap((value) => (Array.isArray(value) ? value : [value]))
+                        .filter(Boolean)
+                        .join('\n');
+
+                    toast({
+                        title: '❌ Delete Failed',
+                        description: errorMessages || fallback,
+                        variant: 'destructive',
+                    });
+                } else {
+                    toast({
+                        title: '❌ Delete Failed',
+                        description: fallback,
+                        variant: 'destructive',
+                    });
+                }
             },
         });
     };

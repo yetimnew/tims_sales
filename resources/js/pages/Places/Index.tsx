@@ -401,6 +401,7 @@ export default function PlacesIndex({ places, metrics, filters, statusOptions, p
             return;
         }
 
+        const name = selectedPlace.name;
         setIsDeleting(true);
 
         router.delete(`/places/${selectedPlace.id}`, {
@@ -408,9 +409,34 @@ export default function PlacesIndex({ places, metrics, filters, statusOptions, p
             onSuccess: () => {
                 setDeleteDialogOpen(false);
                 setSelectedPlace(null);
-            },
-            onFinish: () => {
                 setIsDeleting(false);
+                toast({
+                    title: '✅ Place Deleted',
+                    description: `${name} has been removed successfully.`,
+                });
+            },
+            onError: (errors) => {
+                setIsDeleting(false);
+                const fallback = 'Failed to delete place. Please try again.';
+
+                if (errors && typeof errors === 'object') {
+                    const errorMessages = Object.values(errors)
+                        .flatMap((value) => (Array.isArray(value) ? value : [value]))
+                        .filter(Boolean)
+                        .join('\n');
+
+                    toast({
+                        title: '❌ Delete Failed',
+                        description: errorMessages || fallback,
+                        variant: 'destructive',
+                    });
+                } else {
+                    toast({
+                        title: '❌ Delete Failed',
+                        description: fallback,
+                        variant: 'destructive',
+                    });
+                }
             },
         });
     };
@@ -628,7 +654,6 @@ export default function PlacesIndex({ places, metrics, filters, statusOptions, p
                 </TableRow>
             );
 
-    // ✅ Mobile list items (DATA only)
     const mobileItems = React.useMemo(
         () =>
             placeData.map((place, index) => ({
@@ -639,54 +664,39 @@ export default function PlacesIndex({ places, metrics, filters, statusOptions, p
     );
 
     const mobileContent = isLoading ? (
-        <ListingLoadingPlaceholder />
+        <ListingLoadingPlaceholder showStats={false} filterItemCount={3} rowCount={4} />
     ) : (
         <ListingMobileItemList
             items={mobileItems}
             getKey={(item) => item.record.id}
             renderTitle={(item) => (
-                <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                            <span className="text-xs font-medium text-muted-foreground">#{item.position}</span>
-                            <span className="truncate text-base font-semibold">{item.record.name}</span>
-                        </div>
-                    </div>
-
-                    <div className="flex flex-col items-end gap-2">
-                        {getStatusBadge(item.record.status)}
-                        {getHubBadge(item.record.is_logistics_hub)}
-                    </div>
+                <div className="flex items-center gap-2">
+                    <span className="text-xs uppercase tracking-wide text-muted-foreground">#{item.position}</span>
+                    <span className="text-base font-semibold text-foreground">{item.record.name}</span>
+                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
                 </div>
             )}
-            renderSubtitle={(item) => {
-                const woredaName = item.record.woreda?.name;
-                const zoneName = item.record.woreda?.zone?.name;
-                const regionName = item.record.woreda?.zone?.region?.name;
-
-                const locality = [woredaName, zoneName].filter(Boolean).join(' • ');
-                return regionName ? `${locality ? `${locality}, ` : ''}${regionName}` : locality || '—';
-            }}
+            renderSubtitle={(item) => item.record.woreda?.name || 'No woreda assigned'}
             renderContent={(item) => (
-                <div className="mt-3 space-y-2 rounded-lg border bg-card p-3">
+                <div className="space-y-3 text-sm text-muted-foreground">
                     <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Coordinates</span>
+                        <span className="font-medium text-slate-600 dark:text-slate-300">Status</span>
                         <span className="text-right text-slate-900 dark:text-slate-100">
-                            {(() => {
-                                const lat = formatCoordinate(item.record.latitude);
-                                const lng = formatCoordinate(item.record.longitude);
-                                return lat && lng ? `${lat}, ${lng}` : '—';
-                            })()}
+                            {getStatusBadge(item.record.status)}
                         </span>
                     </div>
-
+                    <div className="flex items-center justify-between">
+                        <span className="font-medium text-slate-600 dark:text-slate-300">Hub</span>
+                        <span className="text-right text-slate-900 dark:text-slate-100">
+                            {getHubBadge(item.record.is_logistics_hub)}
+                        </span>
+                    </div>
                     <div className="flex items-center justify-between">
                         <span className="font-medium text-slate-600 dark:text-slate-300">Population</span>
                         <span className="text-right text-slate-900 dark:text-slate-100">
                             {formatNumberValue(item.record.population)}
                         </span>
                     </div>
-
                     <div className="flex items-center justify-between">
                         <span className="font-medium text-slate-600 dark:text-slate-300">Accessibility</span>
                         <span className="text-right text-slate-900 dark:text-slate-100">
@@ -695,24 +705,10 @@ export default function PlacesIndex({ places, metrics, filters, statusOptions, p
                                 : '—'}
                         </span>
                     </div>
-
-                    <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Origin Perf.</span>
-                        <span className="text-right text-slate-900 dark:text-slate-100">
-                            {formatNumberValue(item.record.origin_performances_count ?? 0)}
-                        </span>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Destination Perf.</span>
-                        <span className="text-right text-slate-900 dark:text-slate-100">
-                            {formatNumberValue(item.record.destination_performances_count ?? 0)}
-                        </span>
-                    </div>
                 </div>
             )}
             renderFooter={(item) => (
-                <div className="mt-3 flex w-full flex-wrap items-center justify-end gap-2">
+                <div className="flex w-full flex-wrap items-center justify-end gap-2">
                     {canViewPlace && (
                         <Button asChild size="sm" variant="outline" className="flex-1 sm:flex-auto">
                             <Link href={`/places/${item.record.id}`}>
@@ -743,7 +739,7 @@ export default function PlacesIndex({ places, metrics, filters, statusOptions, p
                     )}
                 </div>
             )}
-            emptyState={
+            emptyState={(
                 <div className="py-8 text-center text-muted-foreground">
                     No places found.
                     {canCreatePlace && (
@@ -752,10 +748,9 @@ export default function PlacesIndex({ places, metrics, filters, statusOptions, p
                         </Link>
                     )}
                 </div>
-            }
+            )}
         />
     );
-
 
     const tableHeaderExtras = (
         <ListingFilterBar

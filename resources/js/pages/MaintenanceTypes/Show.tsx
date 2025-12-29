@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AlertCircle, CheckCircle, XCircle, Settings, Edit, Trash2, History, BarChart3, Wrench, ArrowLeft, DollarSign, Calendar, Activity } from 'lucide-react';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { ActivityLogTable } from '@/components/activity-log-table';
+import { toast } from '@/hooks/use-toast';
 import { BreadcrumbItem } from '@/types';
 
 interface MaintenanceType {
@@ -52,9 +53,27 @@ export default function MaintenanceTypesShow({ maintenanceType, activityLogs = [
             onSuccess: () => {
                 setDeleteDialogOpen(false);
                 setIsDeleting(false);
+                toast({
+                    title: '✅ Maintenance Type Deleted',
+                    description: `${maintenanceType.name} has been removed successfully.`,
+                });
             },
-            onError: () => {
+            onError: (errors) => {
                 setIsDeleting(false);
+                if (errors && typeof errors === 'object') {
+                    const errorMessages = Object.values(errors).flat().join('\n');
+                    toast({
+                        title: '❌ Delete Failed',
+                        description: errorMessages || 'Unable to delete this maintenance type. Please try again.',
+                        variant: 'destructive',
+                    });
+                } else {
+                    toast({
+                        title: '❌ Delete Failed',
+                        description: 'An unexpected error occurred while deleting the maintenance type. Please try again.',
+                        variant: 'destructive',
+                    });
+                }
             },
         });
     };

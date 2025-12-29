@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Head, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
@@ -13,6 +13,7 @@ import { ReportFiltersDialog } from '@/components/reports/report-filters-dialog'
 import { ReportSummaryGrid, type ReportSummaryItem } from '@/components/reports/report-summary-grid';
 import { formatCurrency, formatDecimal, formatInteger, formatPercentage, getFinancialTone, getMarginChipClass } from '@/components/reports/formatters';
 import type { ReportSelectionOption } from '@/components/reports/types';
+import { REPORT_DATE_RANGE_DESCRIPTION, useReportDateRange } from '@/components/reports/use-report-date-range';
 
 interface TruckOption {
     id: number;
@@ -138,13 +139,18 @@ const convertIdsToStatuses = (ids: number[], universe: string[]): string[] => {
 export default function PerformanceByTruck({ filters, rows = [], summary, trucks, vehicleTypes, statuses }: PerformanceByTruckProps) {
     const { hasPermission } = usePermissions();
     const canExport = hasPermission('reports.performance-by-truck.export');
-    const [from, setFrom] = useState(filters?.from ?? '');
-    const [to, setTo] = useState(filters?.to ?? '');
+    const {
+        from,
+        to,
+        dateError,
+        validateDateRange,
+        handleDateChange: handleDateRangeChange,
+        resetDateRange,
+    } = useReportDateRange(filters?.from ?? '', filters?.to ?? '');
     const [selectedTrucks, setSelectedTrucks] = useState<number[]>(filters?.truck_ids ?? []);
     const [selectedVehicleTypes, setSelectedVehicleTypes] = useState<number[]>(filters?.vehicle_type_ids ?? []);
     const [selectedStatusIds, setSelectedStatusIds] = useState<number[]>(() => convertStatusesToIds(filters?.statuses, statuses));
     const [filtersOpen, setFiltersOpen] = useState(false);
-    const [dateError, setDateError] = useState<string | null>(null);
 
     const safeRows = Array.isArray(rows) ? rows : [];
 
@@ -180,26 +186,6 @@ export default function PerformanceByTruck({ filters, rows = [], summary, trucks
         return count;
     }, [from, to, selectedTrucks, selectedVehicleTypes, selectedStatusIds, filters?.from, filters?.to]);
 
-    const validateDateRange = useCallback(
-        (nextFrom: string, nextTo: string) => {
-            if (nextFrom && nextTo) {
-                const fromTimestamp = Date.parse(nextFrom);
-                const toTimestamp = Date.parse(nextTo);
-
-                if (!Number.isNaN(fromTimestamp) && !Number.isNaN(toTimestamp) && fromTimestamp > toTimestamp) {
-                    setDateError('Start date must be before or equal to the end date.');
-
-                    return false;
-                }
-            }
-
-            setDateError(null);
-
-            return true;
-        },
-        [],
-    );
-
     const handleApplyFilters = () => {
         if (!validateDateRange(from, to)) {
             setFiltersOpen(true);
@@ -233,13 +219,11 @@ export default function PerformanceByTruck({ filters, rows = [], summary, trucks
     };
 
     const handleReset = () => {
-        setFrom(filters?.from ?? '');
-        setTo(filters?.to ?? '');
+        resetDateRange(filters?.from ?? '', filters?.to ?? '');
         setSelectedTrucks(filters?.truck_ids ?? []);
         setSelectedVehicleTypes(filters?.vehicle_type_ids ?? []);
         setSelectedStatusIds(convertStatusesToIds(filters?.statuses, statuses));
         setFiltersOpen(false);
-        setDateError(null);
         router.get('/reports/performance-by-truck', {}, { preserveState: false, preserveScroll: true });
     };
 
@@ -332,17 +316,6 @@ export default function PerformanceByTruck({ filters, rows = [], summary, trucks
 
     const summaryMargin = summary?.margin_percent ?? null;
 
-    const handleDateChange = (field: 'from' | 'to', value: string) => {
-        if (field === 'from') {
-            setFrom(value);
-            validateDateRange(value, to);
-            return;
-        }
-
-        setTo(value);
-        validateDateRange(from, value);
-    };
-
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Performance by Truck" />
@@ -364,7 +337,8 @@ export default function PerformanceByTruck({ filters, rows = [], summary, trucks
                                     activeFilterCount={activeFilterCount}
                                     from={from}
                                     to={to}
-                                    onDateChange={handleDateChange}
+                                    onDateChange={handleDateRangeChange}
+                                    dateRangeDescription={REPORT_DATE_RANGE_DESCRIPTION}
                                     onReset={handleReset}
                                     onApply={handleApplyFilters}
                                     truckOptions={truckSelectionOptions}

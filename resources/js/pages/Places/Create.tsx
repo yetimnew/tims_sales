@@ -43,7 +43,6 @@ type PlaceFormData = {
   description: string
   infrastructure_notes: string
   road_quality_notes: string
-  boundary_geojson: string
 }
 
 interface PlacesCreateProps {
@@ -76,7 +75,6 @@ export default function PlacesCreate({ woredas }: PlacesCreateProps) {
     description: '',
     infrastructure_notes: '',
     road_quality_notes: '',
-      boundary_geojson: '',
   })
 
   const [frontendErrors, setFrontendErrors] = useState<ValidationErrors>({})
@@ -171,6 +169,10 @@ export default function PlacesCreate({ woredas }: PlacesCreateProps) {
         setFrontendErrors({})
         setIsDirty(false)
         reset()
+        toast({
+          title: '✅ Place Created',
+          description: 'The place has been registered successfully.',
+        })
       },
     })
   }
@@ -461,26 +463,6 @@ export default function PlacesCreate({ woredas }: PlacesCreateProps) {
                     )}
                   </div>
                 </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="boundary_geojson">Boundary GeoJSON</Label>
-                    <Textarea
-                      id="boundary_geojson"
-                      value={data.boundary_geojson}
-                      onChange={event => handleFieldChange('boundary_geojson', event.target.value)}
-                      placeholder='Paste GeoJSON Feature or FeatureCollection describing the place boundary'
-                      className={`min-h-[160px] font-mono text-xs ${getFieldError('boundary_geojson') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Optional — leave blank to rely on coordinates only.
-                    </p>
-                    {getFieldError('boundary_geojson') && (
-                      <p className="flex items-center gap-1 text-sm text-red-500">
-                        <AlertCircle className="h-3 w-3" />
-                        {getFieldError('boundary_geojson')}
-                      </p>
-                    )}
-                  </div>
               </section>
 
               <section className="space-y-4 rounded-xl border border-slate-200/60 bg-white/75 p-5 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/35">

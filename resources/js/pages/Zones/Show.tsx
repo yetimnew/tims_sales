@@ -18,18 +18,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog'
 import { ActivityLogTable } from '@/components/activity-log-table'
+import { useToast } from '@/hooks/use-toast'
 import { usePermissions } from '@/hooks/use-permissions'
 import AppLayout from '@/layouts/app-layout'
 import type { BreadcrumbItem } from '@/types'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { ZoneBoundaryMap } from '@/components/ZoneBoundaryMap'
-import type { GeoJsonInput } from '@/components/boundary-map-utils'
 
 interface RegionSummary {
   id: number
   name: string
   status?: 'active' | 'inactive'
-  boundary_geojson?: GeoJsonInput
 }
 
 interface WoredaSummary {
@@ -37,7 +35,6 @@ interface WoredaSummary {
   name: string
   status?: 'active' | 'inactive'
   population?: number | string | null
-  boundary_geojson?: GeoJsonInput
 }
 
 interface Zone {
@@ -55,7 +52,6 @@ interface Zone {
   accessibility_score?: number | string | null
   infrastructure_notes?: string | null
   climate_profile?: string | null
-  boundary_geojson?: GeoJsonInput
   created_at: string
   updated_at: string
   region?: RegionSummary | null
@@ -117,6 +113,7 @@ const formatDate = (value?: string | null) => {
 }
 
 export default function ZonesShow({ zone, activityLogs = [] }: ZoneShowProps) {
+  const { toast } = useToast()
   const { hasPermission } = usePermissions()
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -149,9 +146,19 @@ export default function ZonesShow({ zone, activityLogs = [] }: ZoneShowProps) {
     router.delete(`/zones/${zone.id}`, {
       preserveScroll: true,
       onSuccess: () => {
+        toast({ title: '✅ Zone Deleted', description: `${zone.name} was removed successfully.` })
         setDeleteDialogOpen(false)
+        setIsDeleting(false)
       },
-      onFinish: () => {
+      onError: (errors) => {
+        const errorMessage = errors && typeof errors === 'object' && 'message' in errors
+          ? String(errors.message)
+          : 'Unable to delete the zone. Try again later.'
+        toast({
+          title: '❌ Delete Failed',
+          description: errorMessage,
+          variant: 'destructive'
+        })
         setIsDeleting(false)
       },
     })
@@ -297,40 +304,6 @@ export default function ZonesShow({ zone, activityLogs = [] }: ZoneShowProps) {
 
             <div className="flex flex-col gap-6 lg:flex-row">
               <div className="flex-1 space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-lg">
-                      <Layers className="h-5 w-5" />
-                      Boundary Map
-                    </CardTitle>
-                    <CardDescription>Visualize the zone footprint with optional region and woreda overlays</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <ZoneBoundaryMap
-                      zone={{
-                        id: zone.id,
-                        name: zone.name,
-                        status: zone.status,
-                        boundary_geojson: zone.boundary_geojson,
-                        latitude: zone.latitude,
-                        longitude: zone.longitude,
-                      }}
-                      parentRegion={zone.region?.boundary_geojson
-                        ? {
-                            name: zone.region.name,
-                            boundary_geojson: zone.region.boundary_geojson,
-                          }
-                        : undefined}
-                      woredas={woredas.map(woreda => ({
-                        id: woreda.id,
-                        name: woreda.name,
-                        status: woreda.status,
-                        boundary_geojson: woreda.boundary_geojson,
-                      }))}
-                    />
-                  </CardContent>
-                </Card>
-
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-lg">

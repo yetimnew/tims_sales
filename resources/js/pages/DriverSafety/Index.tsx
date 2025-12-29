@@ -229,7 +229,6 @@ export default function DriverSafetyIndex({
     const [selectedRecord, setSelectedRecord] = React.useState<SafetyRecord | null>(null);
     const [isDeleting, setIsDeleting] = React.useState(false);
     const [deleteError, setDeleteError] = React.useState<string | null>(null);
-    const lastDeleteToast = React.useRef<string | null>(null);
 
     const isDataReady = Array.isArray(safetyRecords?.data);
     const { isLoading: isTableLoading } = useListingLoading({
@@ -360,7 +359,6 @@ export default function DriverSafetyIndex({
     );
 
     const handleDeleteClick = (record: SafetyRecord) => {
-        lastDeleteToast.current = null;
         setSelectedRecord(record);
         setDeleteDialogOpen(true);
         setDeleteError(null);
@@ -380,14 +378,10 @@ export default function DriverSafetyIndex({
                 setSelectedRecord(null);
                 setIsDeleting(false);
                 setDeleteError(null);
-                const successMessage = 'The driver safety record was removed successfully.';
-                if (lastDeleteToast.current !== successMessage) {
-                    toast({
-                        title: 'Safety record deleted',
-                        description: successMessage,
-                    });
-                    lastDeleteToast.current = successMessage;
-                }
+                toast({
+                    title: 'Safety record deleted',
+                    description: 'The driver safety record was removed successfully.',
+                });
             },
             onError: (errors) => {
                 setIsDeleting(false);
@@ -399,27 +393,21 @@ export default function DriverSafetyIndex({
                         .filter((value) => Boolean(value))
                         .join('\n');
 
-                    const message = messages || fallback;
-                    setDeleteError(message);
+                    setDeleteError(messages || fallback);
 
-                    if (lastDeleteToast.current !== message) {
-                        toast({
-                            title: '❌ Delete Failed',
-                            description: message,
-                            variant: 'destructive',
-                        });
-                        lastDeleteToast.current = message;
-                    }
+                    toast({
+                        title: '❌ Delete Failed',
+                        description: messages || fallback,
+                        variant: 'destructive',
+                    });
                 } else {
                     setDeleteError(fallback);
-                    if (lastDeleteToast.current !== fallback) {
-                        toast({
-                            title: '❌ Delete Failed',
-                            description: fallback,
-                            variant: 'destructive',
-                        });
-                        lastDeleteToast.current = fallback;
-                    }
+
+                    toast({
+                        title: '❌ Delete Failed',
+                        description: fallback,
+                        variant: 'destructive',
+                    });
                 }
             },
         });

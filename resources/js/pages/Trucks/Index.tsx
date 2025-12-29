@@ -12,6 +12,7 @@ import { ListingRowActionsMenu } from '@/components/listing/row-actions-menu';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useListingLoading } from '@/hooks/use-listing-loading';
 import { Link, router } from '@inertiajs/react';
+import { toast } from '@/hooks/use-toast';
 import { type BreadcrumbItem } from '@/types';
 import {
     Plus,
@@ -118,7 +119,7 @@ interface TrucksIndexProps {
     metrics?: {
         total: number;
         active: number;
-        inactive: number;
+        maintenance: number;
         fleet_value: number;
         utilization?: UtilizationMetrics | null;
         financial?: FinancialMetrics | null;
@@ -270,7 +271,7 @@ export default function TrucksIndex({
     const rowOffset = (currentPage - 1) * perPageCount;
 
     const activeCount = metrics?.active ?? 0;
-    const inactiveCount = metrics?.inactive ?? 0;
+    const maintenanceCount = metrics?.maintenance ?? 0;
     const fleetValue = metrics?.fleet_value ?? 0;
 
     const utilization = metrics?.utilization ?? null;
@@ -434,9 +435,21 @@ export default function TrucksIndex({
 
                     const fallback = 'Failed to delete truck. Please review the requirements and try again.';
                     setDeleteError(messages || fallback);
+
+                    toast({
+                        title: '❌ Delete Failed',
+                        description: messages || fallback,
+                        variant: 'destructive',
+                    });
                 } else {
                     const fallback = 'An unexpected error occurred while deleting the truck. Please try again.';
                     setDeleteError(fallback);
+
+                    toast({
+                        title: '❌ Delete Failed',
+                        description: fallback,
+                        variant: 'destructive',
+                    });
                 }
             },
         });
@@ -467,7 +480,7 @@ export default function TrucksIndex({
             icon: <CheckCircle className="h-3.5 w-3.5 text-green-600" />,
             className: 'min-w-[220px] flex-shrink-0',
             value: activeCount.toLocaleString(),
-            description: `${inactiveCount.toLocaleString()} inactive`,
+            description: `${maintenanceCount.toLocaleString()} in maintenance`,
             valueClassName: 'text-green-600',
         },
         {
@@ -525,6 +538,15 @@ export default function TrucksIndex({
                 <Badge className={`${baseClasses} bg-green-100 text-green-800 border-green-200 hover:bg-green-200`}>
                     <CheckCircle className="h-3 w-3" />
                     Active
+                </Badge>
+            );
+        }
+
+        if (status === 'maintenance') {
+            return (
+                <Badge className={`${baseClasses} bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200`}>
+                    <Wrench className="h-3 w-3" />
+                    Maintenance
                 </Badge>
             );
         }

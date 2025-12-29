@@ -117,6 +117,10 @@ export default function VehicleTypesEdit({ vehicleType }: VehicleTypesEditProps)
                 setFrontendErrors({});
                 setIsDirty(false);
                 clearErrors();
+                toast({
+                    title: '✅ Vehicle Type Updated',
+                    description: 'Vehicle type changes have been saved successfully.',
+                });
             },
         });
     };

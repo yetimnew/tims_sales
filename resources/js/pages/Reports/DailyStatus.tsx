@@ -13,6 +13,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Download, Filter, RefreshCcw, Truck, Users } from 'lucide-react';
 import { ListingPaginationFooter } from '@/components/listing/pagination-footer';
 import { usePermissions } from '@/hooks/use-permissions';
+import { REPORT_DATE_RANGE_DESCRIPTION, useReportDateRange } from '@/components/reports/use-report-date-range';
 
 interface StatusSummaryRow {
     status_id: number | null;
@@ -173,8 +174,7 @@ export default function DailyStatus({ filters, summary, statusSummary, daily, op
         [nullableStatusOptions],
     );
 
-    const [from, setFrom] = useState(filters?.from ?? '');
-    const [to, setTo] = useState(filters?.to ?? '');
+    const { from, to, dateError, handleDateChange, validateDateRange, resetDateRange } = useReportDateRange(filters?.from ?? '', filters?.to ?? '');
     const [perPage, setPerPage] = useState<number>(filters?.per_page ?? 7);
     const [selectedTrucks, setSelectedTrucks] = useState<number[]>(filters?.truck_ids ?? []);
     const [selectedStatuses, setSelectedStatuses] = useState<number[]>(filters?.status_ids ?? []);
@@ -193,6 +193,12 @@ export default function DailyStatus({ filters, summary, statusSummary, daily, op
     }, [filters?.from, filters?.to, filters?.per_page, from, to, perPage, selectedTrucks.length, selectedStatuses.length]);
 
     const handleApply = useCallback(() => {
+        if (!validateDateRange(from, to)) {
+            setFiltersOpen(true);
+
+            return;
+        }
+
         const params: Record<string, unknown> = {
             from,
             to,
@@ -213,21 +219,26 @@ export default function DailyStatus({ filters, summary, statusSummary, daily, op
             preserveState: true,
             preserveScroll: true,
         });
-    }, [from, to, perPage, selectedTrucks, selectedStatuses]);
+    }, [from, to, perPage, selectedTrucks, selectedStatuses, validateDateRange]);
 
     const handleReset = useCallback(() => {
-        setFrom(filters?.from ?? '');
-        setTo(filters?.to ?? '');
+        resetDateRange(filters?.from ?? '', filters?.to ?? '');
         setPerPage(filters?.per_page ?? 7);
         setSelectedTrucks(filters?.truck_ids ?? []);
         setSelectedStatuses(filters?.status_ids ?? []);
         setFiltersOpen(false);
 
         router.get('/reports/daily-status', {}, { preserveState: false, preserveScroll: true });
-    }, [filters]);
+    }, [filters, resetDateRange]);
 
     const handleExport = useCallback(
         (format: 'csv' | 'xlsx' | 'pdf') => {
+            if (!validateDateRange(from, to)) {
+                setFiltersOpen(true);
+
+                return;
+            }
+
             if (!canExport) {
                 return;
             }
@@ -245,7 +256,7 @@ export default function DailyStatus({ filters, summary, statusSummary, daily, op
             const url = `/reports/daily-status/export/${format}${query ? `?${query}` : ''}`;
             window.location.href = url;
         },
-        [canExport, from, to, perPage, selectedTrucks, selectedStatuses],
+        [canExport, from, to, perPage, selectedTrucks, selectedStatuses, validateDateRange],
     );
 
     const dailyRows = Array.isArray(daily?.data) ? daily.data : [];
@@ -275,15 +286,6 @@ export default function DailyStatus({ filters, summary, statusSummary, daily, op
         ],
         [summary],
     );
-
-    const handleDateChange = (field: 'from' | 'to', value: string) => {
-        if (field === 'from') {
-            setFrom(value);
-            return;
-        }
-
-        setTo(value);
-    };
 
     const handlePerPageChange = (value: string) => {
         const next = Number(value);
@@ -378,6 +380,7 @@ export default function DailyStatus({ filters, summary, statusSummary, daily, op
                                     from={from}
                                     to={to}
                                     onDateChange={handleDateChange}
+                                    dateError={dateError}
                                     limit={perPage}
                                     onLimitChange={(value) => setPerPage(value)}
                                     showLimit
@@ -389,7 +392,7 @@ export default function DailyStatus({ filters, summary, statusSummary, daily, op
                                     selectedStatuses={selectedStatuses}
                                     onTrucksChange={setSelectedTrucks}
                                     onStatusesChange={(ids) => setSelectedStatuses(ids.map((value) => Number(value)))}
-                                    dateRangeDescription="Choose the inclusive reporting window. Defaults to the last 7 days."
+                                    dateRangeDescription={REPORT_DATE_RANGE_DESCRIPTION}
                                 />
                                 <Button type="button" variant="outline" className="gap-2" onClick={handleReset}>
                                     <RefreshCcw className="h-4 w-4" />

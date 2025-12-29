@@ -27,6 +27,8 @@ class FuelEfficiencyRequest extends FormRequest
             'truck_ids.*' => ['integer', Rule::exists('trucks', 'id')],
             'truck_id' => ['nullable', 'integer', Rule::exists('trucks', 'id')],
             'format' => ['nullable', Rule::in(['csv', 'xlsx', 'pdf'])],
+            'per_page' => ['nullable', 'integer', Rule::in([10, 25, 50, 100])],
+            'page' => ['nullable', 'integer', 'min:1'],
         ];
     }
 
@@ -49,6 +51,8 @@ class FuelEfficiencyRequest extends FormRequest
 
         $this->merge([
             'truck_ids' => $truckIds,
+            'per_page' => $this->input('per_page') !== null ? (int) $this->input('per_page') : null,
+            'page' => $this->input('page') !== null ? max(1, (int) $this->input('page')) : null,
         ]);
     }
 }

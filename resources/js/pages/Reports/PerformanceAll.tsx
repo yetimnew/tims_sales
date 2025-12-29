@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Head, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
@@ -13,6 +13,7 @@ import type { ReportSelectionOption } from '@/components/reports/types';
 import { formatCurrency, formatDecimal, formatInteger, formatPercentage } from '@/components/reports/formatters';
 import { BarChart3, CircleDollarSign, ClipboardList, Download, FileDigit, FileSpreadsheet, FileType2, Flame, RefreshCcw, Route, TrendingUp } from 'lucide-react';
 import { usePermissions } from '@/hooks/use-permissions';
+import { REPORT_DATE_RANGE_DESCRIPTION, useReportDateRange } from '@/components/reports/use-report-date-range';
 
 interface OptionBase {
     id: number;
@@ -149,8 +150,14 @@ export default function PerformanceAll({ filters, performances, summary, perPage
         [loadPhaseOptions],
     );
 
-    const [from, setFrom] = useState(filters?.from ?? '');
-    const [to, setTo] = useState(filters?.to ?? '');
+    const {
+        from,
+        to,
+        dateError,
+        validateDateRange,
+        handleDateChange: handleDateRangeChange,
+        resetDateRange,
+    } = useReportDateRange(filters?.from ?? '', filters?.to ?? '');
     const [perPage, setPerPage] = useState<number>(filters?.per_page ?? availablePerPageOptions[2] ?? 50);
     const [selectedDrivers, setSelectedDrivers] = useState<number[]>(filters?.driver_ids ?? []);
     const [selectedTrucks, setSelectedTrucks] = useState<number[]>(filters?.truck_ids ?? []);
@@ -158,7 +165,6 @@ export default function PerformanceAll({ filters, performances, summary, perPage
     const [selectedLoadPhase, setSelectedLoadPhase] = useState<string>(filters?.load_phase ?? 'all');
 
     const [filtersOpen, setFiltersOpen] = useState(false);
-    const [dateError, setDateError] = useState<string | null>(null);
     const activeFilterCount = useMemo(() => {
         let count = 0;
 
@@ -215,26 +221,6 @@ export default function PerformanceAll({ filters, performances, summary, perPage
         [safeRows.length, summary],
     );
 
-    const validateDateRange = useCallback(
-        (nextFrom: string, nextTo: string) => {
-            if (nextFrom && nextTo) {
-                const fromTimestamp = Date.parse(nextFrom);
-                const toTimestamp = Date.parse(nextTo);
-
-                if (!Number.isNaN(fromTimestamp) && !Number.isNaN(toTimestamp) && fromTimestamp > toTimestamp) {
-                    setDateError('Start date must be before or equal to the end date.');
-
-                    return false;
-                }
-            }
-
-            setDateError(null);
-
-            return true;
-        },
-        [],
-    );
-
     const handleApplyFilters = () => {
         if (!validateDateRange(from, to)) {
             setFiltersOpen(true);
@@ -262,15 +248,13 @@ export default function PerformanceAll({ filters, performances, summary, perPage
     };
 
     const handleReset = () => {
-        setFrom(filters?.from ?? '');
-        setTo(filters?.to ?? '');
+        resetDateRange(filters?.from ?? '', filters?.to ?? '');
         setPerPage(availablePerPageOptions[2] ?? 50);
         setSelectedDrivers(filters?.driver_ids ?? []);
         setSelectedTrucks(filters?.truck_ids ?? []);
         setSelectedOperations(filters?.operation_ids ?? []);
         setSelectedLoadPhase(filters?.load_phase ?? 'all');
         setFiltersOpen(false);
-        setDateError(null);
         router.get('/reports/performance-all', {}, { preserveState: false, preserveScroll: false });
     };
 
@@ -343,17 +327,6 @@ export default function PerformanceAll({ filters, performances, summary, perPage
         [appliedDriverCount, appliedFrom, appliedOperationCount, appliedTo, appliedTruckCount, appliedLoadPhaseLabel],
     );
 
-    const handleDateChange = (field: 'from' | 'to', value: string) => {
-        if (field === 'from') {
-            setFrom(value);
-            validateDateRange(value, to);
-            return;
-        }
-
-        setTo(value);
-        validateDateRange(from, value);
-    };
-
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Performance (All)" />
@@ -375,7 +348,8 @@ export default function PerformanceAll({ filters, performances, summary, perPage
                                     activeFilterCount={activeFilterCount}
                                     from={from}
                                     to={to}
-                                    onDateChange={handleDateChange}
+                                    onDateChange={handleDateRangeChange}
+                                    dateRangeDescription={REPORT_DATE_RANGE_DESCRIPTION}
                                     limit={perPage}
                                     onLimitChange={setPerPage}
                                     onReset={handleReset}

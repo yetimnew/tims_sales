@@ -2,10 +2,10 @@ import { useMemo, useState, type ReactNode } from 'react'
 import { Head, Link, router, useForm } from '@inertiajs/react'
 import { ArrowLeft, MapPin, Route, Save, Navigation, AlertCircle } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { toast } from '@/hooks/use-toast'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { SearchableEntityCombobox } from '@/components/searchable-entity-combobox'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -42,23 +42,6 @@ interface DistancesCreateProps {
 
 type ValidatableField = 'from_place_id' | 'to_place_id' | 'distance_km' | 'estimated_time_hours'
 
-const describePlace = (place: Place): string | null => {
-  const locality = [place.woreda?.name, place.woreda?.zone?.name, place.woreda?.zone?.region?.name]
-    .filter(Boolean)
-    .join(' • ')
-
-  return locality.length ? locality : null
-}
-
-const placeKeywords = (place: Place): Array<string | null | undefined> => [
-  place.name,
-  place.woreda?.name,
-  place.woreda?.zone?.name,
-  place.woreda?.zone?.region?.name,
-  place.latitude ? place.latitude.toString() : null,
-  place.longitude ? place.longitude.toString() : null,
-]
-
 export default function DistancesCreate({ places }: DistancesCreateProps) {
   const placesWithCoordinates = useMemo(
     () => places.filter(place => place.latitude !== undefined && place.longitude !== undefined).length,
@@ -72,6 +55,10 @@ export default function DistancesCreate({ places }: DistancesCreateProps) {
   const [calculatedDistance, setCalculatedDistance] = useState<number>(0)
   const [calculatedTime, setCalculatedTime] = useState<number>(0)
   const [frontendErrors, setFrontendErrors] = useState<Record<string, string>>({})
+  const hasErrors = useMemo(
+    () => Object.keys(errors).length > 0 || Object.keys(frontendErrors).length > 0,
+    [errors, frontendErrors]
+  )
 
   const { data, setData, post, processing, errors, reset } = useForm({
     from_place_id: '',
@@ -87,11 +74,6 @@ export default function DistancesCreate({ places }: DistancesCreateProps) {
     restricted_for_heavy_vehicles: false,
     route_notes: '',
   })
-
-  const hasErrors = useMemo(
-    () => Object.keys(errors).length > 0 || Object.keys(frontendErrors).length > 0,
-    [errors, frontendErrors]
-  )
 
   const getFieldError = (field: keyof typeof data) => frontendErrors[field as string] || (errors[field] as string | undefined)
 
@@ -224,6 +206,10 @@ export default function DistancesCreate({ places }: DistancesCreateProps) {
         setRoutePoints([])
         setCalculatedDistance(0)
         setCalculatedTime(0)
+        toast({
+          title: '✅ Distance Record Created',
+          description: 'The route distance has been registered successfully.',
+        })
       },
     })
   }
@@ -336,37 +322,41 @@ export default function DistancesCreate({ places }: DistancesCreateProps) {
                   noValidate
                 >
                   <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                    <SearchableEntityCombobox
-                      id="from_place_id"
-                      label="From Place"
-                      required
-                      value={data.from_place_id}
-                      items={places}
-                      getValue={place => place.id.toString()}
-                      getLabel={place => place.name}
-                      getDescription={describePlace}
-                      getKeywords={placeKeywords}
-                      placeholder="Select from place"
-                      searchPlaceholder="Search places..."
-                      onSelect={handleFromPlaceChange}
-                      error={fromPlaceError}
-                    />
+                    <div className="space-y-2">
+                      <Label htmlFor="from_place_id">From Place *</Label>
+                      <Select value={data.from_place_id} onValueChange={handleFromPlaceChange}>
+                        <SelectTrigger id="from_place_id" className={fromPlaceError ? 'border-red-500' : ''}>
+                          <SelectValue placeholder="Select from place" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {places.map(place => (
+                            <SelectItem key={place.id} value={place.id.toString()}>
+                              {place.name} {place.latitude && place.longitude ? '📍' : ''}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {fromPlaceError && <p className="text-sm text-destructive">{fromPlaceError}</p>}
+                    </div>
 
-                    <SearchableEntityCombobox
-                      id="to_place_id"
-                      label="To Place"
-                      required
-                      value={data.to_place_id}
-                      items={places}
-                      getValue={place => place.id.toString()}
-                      getLabel={place => place.name}
-                      getDescription={describePlace}
-                      getKeywords={placeKeywords}
-                      placeholder="Select to place"
-                      searchPlaceholder="Search places..."
-                      onSelect={handleToPlaceChange}
-                      error={toPlaceError}
-                    />
+                    <div className="space-y-2">
+                      <Label htmlFor="to_place_id">To Place *</Label>
+                      <Select value={data.to_place_id} onValueChange={handleToPlaceChange}>
+                        <SelectTrigger id="to_place_id" className={toPlaceError ? 'border-red-500' : ''}>
+                          <SelectValue placeholder="Select to place" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {places
+                            .filter(place => place.id.toString() !== data.from_place_id)
+                            .map(place => (
+                              <SelectItem key={place.id} value={place.id.toString()}>
+                                {place.name} {place.latitude && place.longitude ? '📍' : ''}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                      {toPlaceError && <p className="text-sm text-destructive">{toPlaceError}</p>}
+                    </div>
 
                     <div className="space-y-2">
                       <Label htmlFor="distance_km">Distance (KM) *</Label>

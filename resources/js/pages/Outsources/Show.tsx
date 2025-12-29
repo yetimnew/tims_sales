@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Separator } from '@/components/ui/separator';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { usePermissions } from '@/hooks/use-permissions';
+import { toast } from '@/hooks/use-toast';
 import {
     Activity,
     ArrowLeft,
@@ -228,9 +229,22 @@ export default function OutsourcesShow({ outsource, metrics, recentPerformances 
             preserveScroll: true,
             onSuccess: () => {
                 setDeleteDialogOpen(false);
-            },
-            onFinish: () => {
                 setIsDeleting(false);
+                toast({
+                    title: '✅ Vendor Deleted',
+                    description: `${outsource.name} has been removed successfully.`,
+                });
+            },
+            onError: (errors) => {
+                setIsDeleting(false);
+                const errorMessage = errors && typeof errors === 'object' && 'message' in errors
+                    ? String(errors.message)
+                    : 'An unexpected error occurred while deleting the vendor.';
+                toast({
+                    title: '❌ Delete Failed',
+                    description: errorMessage,
+                    variant: 'destructive',
+                });
             },
         });
     };

@@ -15,6 +15,7 @@ import { ListingRowActionsMenu } from '@/components/listing/row-actions-menu';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useListingLoading } from '@/hooks/use-listing-loading';
+import { toast } from '@/hooks/use-toast';
 import { Link, router, useForm } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -402,9 +403,34 @@ export default function OperationsIndex({
             onSuccess: () => {
                 setDeleteDialogOpen(false);
                 setSelectedOperation(null);
-            },
-            onFinish: () => {
                 setIsDeleting(false);
+                toast({
+                    title: '✅ Operation Deleted',
+                    description: 'The operation was removed successfully.',
+                });
+            },
+            onError: (errors) => {
+                setIsDeleting(false);
+
+                const fallback = 'Failed to delete operation. Please try again.';
+                if (errors && typeof errors === 'object') {
+                    const errorMessages = Object.values(errors)
+                        .flatMap((value) => (Array.isArray(value) ? value : [value]))
+                        .filter(Boolean)
+                        .join('\n');
+
+                    toast({
+                        title: '❌ Delete Failed',
+                        description: errorMessages || fallback,
+                        variant: 'destructive',
+                    });
+                } else {
+                    toast({
+                        title: '❌ Delete Failed',
+                        description: fallback,
+                        variant: 'destructive',
+                    });
+                }
             },
         });
     };
@@ -439,7 +465,33 @@ export default function OperationsIndex({
         closeForm.post(`/operations/${operationToClose.id}/close`, {
             preserveScroll: true,
             onSuccess: () => {
+                toast({
+                    title: '✅ Operation Closed',
+                    description: `${operationToClose.operationid} marked as closed.`,
+                });
                 handleCloseDialogChange(false);
+            },
+            onError: (errors) => {
+                const fallback = 'Failed to close operation. Please review the form and try again.';
+
+                if (errors && typeof errors === 'object') {
+                    const errorMessages = Object.values(errors)
+                        .flatMap((value) => (Array.isArray(value) ? value : [value]))
+                        .filter(Boolean)
+                        .join('\n');
+
+                    toast({
+                        title: '❌ Close Failed',
+                        description: errorMessages || fallback,
+                        variant: 'destructive',
+                    });
+                } else {
+                    toast({
+                        title: '❌ Close Failed',
+                        description: fallback,
+                        variant: 'destructive',
+                    });
+                }
             },
         });
     };
@@ -473,7 +525,33 @@ export default function OperationsIndex({
         reopenForm.post(`/operations/${operationToReopen.id}/reopen`, {
             preserveScroll: true,
             onSuccess: () => {
+                toast({
+                    title: '✅ Operation Reopened',
+                    description: `${operationToReopen.operationid} is active again.`,
+                });
                 handleReopenDialogChange(false);
+            },
+            onError: (errors) => {
+                const fallback = 'Failed to reopen operation. Please try again.';
+
+                if (errors && typeof errors === 'object') {
+                    const errorMessages = Object.values(errors)
+                        .flatMap((value) => (Array.isArray(value) ? value : [value]))
+                        .filter(Boolean)
+                        .join('\n');
+
+                    toast({
+                        title: '❌ Reopen Failed',
+                        description: errorMessages || fallback,
+                        variant: 'destructive',
+                    });
+                } else {
+                    toast({
+                        title: '❌ Reopen Failed',
+                        description: fallback,
+                        variant: 'destructive',
+                    });
+                }
             },
         });
     };

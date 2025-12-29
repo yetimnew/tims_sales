@@ -9,6 +9,7 @@ import { DetailSummaryGrid } from '@/components/detail/detail-summary-grid';
 import { DetailSectionCard } from '@/components/detail/detail-section-card';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { toast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -1348,6 +1349,11 @@ export default function TrucksShow({
                 const fallback = 'Unable to deactivate this truck. Please try again.';
                 const message = messages || fallback;
                 setDeactivateError(message);
+                toast({
+                    title: 'Deactivate failed',
+                    description: message,
+                    variant: 'destructive',
+                });
             },
             onFinish: () => {
                 setIsDeactivating(false);
@@ -1367,6 +1373,10 @@ export default function TrucksShow({
                 setDeleteDialogOpen(false);
                 setIsDeleting(false);
                 setDeleteError(null);
+                toast({
+                    title: '✅ Truck Deleted',
+                    description: `${truck.plate} has been removed from the fleet.`,
+                });
             },
             onError: (errors) => {
                 setIsDeleting(false);
@@ -1378,9 +1388,20 @@ export default function TrucksShow({
 
                     const fallback = 'Unable to delete this truck. Please resolve any blocking records first.';
                     setDeleteError(messages || fallback);
+
+                    toast({
+                        title: '❌ Delete Failed',
+                        description: messages || fallback,
+                        variant: 'destructive',
+                    });
                 } else {
                     const fallback = 'An unexpected error occurred while deleting the truck. Please try again.';
                     setDeleteError(fallback);
+                    toast({
+                        title: '❌ Delete Failed',
+                        description: fallback,
+                        variant: 'destructive',
+                    });
                 }
             },
         });
@@ -1409,6 +1430,11 @@ export default function TrucksShow({
                 const fallback = 'Unable to activate this truck. Please try again.';
                 const message = messages || fallback;
                 setActivateError(message);
+                toast({
+                    title: 'Activate failed',
+                    description: message,
+                    variant: 'destructive',
+                });
             },
             onFinish: () => {
                 setIsActivating(false);
@@ -1422,6 +1448,8 @@ export default function TrucksShow({
         switch (status) {
             case 'active':
                 return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+            case 'maintenance':
+                return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
             case 'inactive':
                 return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
             default:
@@ -1631,6 +1659,7 @@ export default function TrucksShow({
                                                 <p className="text-sm font-medium text-muted-foreground">Status</p>
                                                 <Badge className={`mt-1 flex w-fit items-center gap-1 ${getStatusBadgeColor(truck.status)}`}>
                                                     {truck.status === 'active' && <CheckCircle className="h-3 w-3" />}
+                                                    {truck.status === 'maintenance' && <Wrench className="h-3 w-3" />}
                                                     {truck.status === 'inactive' && <XCircle className="h-3 w-3" />}
                                                     {truck.status ? truck.status.charAt(0).toUpperCase() + truck.status.slice(1) : 'Unknown'}
                                                 </Badge>
@@ -1990,6 +2019,7 @@ export default function TrucksShow({
                                                 <p className="text-sm font-medium text-blue-700 dark:text-blue-300">Current Status</p>
                                                 <Badge className={`mt-2 flex items-center gap-1 w-fit ${getStatusBadgeColor(truck.status)}`}>
                                                     {truck.status === 'active' && <CheckCircle className="h-3 w-3" />}
+                                                    {truck.status === 'maintenance' && <Wrench className="h-3 w-3" />}
                                                     {truck.status === 'inactive' && <XCircle className="h-3 w-3" />}
                                                     {truck.status ? truck.status.charAt(0).toUpperCase() + truck.status.slice(1) : 'Unknown'}
                                                 </Badge>

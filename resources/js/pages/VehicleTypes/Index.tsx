@@ -10,6 +10,7 @@ import { ListingRowActionsMenu } from '@/components/listing/row-actions-menu';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useListingLoading } from '@/hooks/use-listing-loading';
+import { toast } from '@/hooks/use-toast';
 import { Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import {
@@ -247,6 +248,10 @@ export default function VehicleTypesIndex({ vehicleTypes, metrics, filters, perP
                 setSelectedVehicleType(null);
                 setIsDeleting(false);
                 setDeleteError(null);
+                toast({
+                    title: 'Vehicle type removed',
+                    description: 'The vehicle type was deleted successfully.',
+                });
             },
             onError: (errors) => {
                 setIsDeleting(false);
@@ -259,8 +264,20 @@ export default function VehicleTypesIndex({ vehicleTypes, metrics, filters, perP
                         .join('\n');
 
                     setDeleteError(messages || fallback);
+
+                    toast({
+                        title: '❌ Delete Failed',
+                        description: messages || fallback,
+                        variant: 'destructive',
+                    });
                 } else {
                     setDeleteError(fallback);
+
+                    toast({
+                        title: '❌ Delete Failed',
+                        description: fallback,
+                        variant: 'destructive',
+                    });
                 }
             },
         });

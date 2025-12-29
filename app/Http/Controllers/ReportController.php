@@ -258,10 +258,14 @@ class ReportController extends Controller
                     'from' => $result['resolved_from'],
                     'to' => $result['resolved_to'],
                     'truck_ids' => $result['truck_ids'],
+                    'per_page' => $result['per_page'] ?? null,
+                    'page' => $result['breakdown_paginator']['meta']['current_page'] ?? 1,
                 ],
                 'totals' => $result['totals'],
                 'summary' => $result['summary'],
                 'breakdown' => $result['breakdown'],
+                'breakdown_paginator' => $result['breakdown_paginator'] ?? null,
+                'per_page_options' => $result['per_page_options'] ?? [],
                 'trend' => $result['trend'],
                 'highlights' => $result['highlights'],
                 'trucks' => $trucks,
@@ -286,7 +290,7 @@ class ReportController extends Controller
         try {
             $result = $this->fuelEfficiencyReport->build($validated);
 
-            $rows = collect($result['breakdown'] ?? []);
+            $rows = collect($result['breakdown_all'] ?? $result['breakdown'] ?? []);
             $totals = $result['totals'] ?? [];
             $summary = $result['summary'] ?? [];
             $from = $result['resolved_from'] ?? now()->toDateString();

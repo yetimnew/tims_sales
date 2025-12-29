@@ -6,6 +6,7 @@ import { useListingLoading } from '@/hooks/use-listing-loading';
 import ListPageLayout from '@/components/layouts/list-page-layout';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { Button } from '@/components/ui/button';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -240,6 +241,8 @@ export default function OutsourcePerformancesIndex({
     const [selectedOutsource, setSelectedOutsource] = useState(
         filters?.outsource_id ? String(filters.outsource_id) : 'all',
     );
+    const [dateFrom, setDateFrom] = useState(filters?.dispatched_from ?? '');
+    const [dateTo, setDateTo] = useState(filters?.dispatched_to ?? '');
     const [sortColumn, setSortColumn] = useState<string>(filters?.sort ?? 'dispatch_date');
     const [sortDirection, setSortDirection] = useState<SortDirection>(filters?.direction ?? 'desc');
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -307,6 +310,8 @@ export default function OutsourcePerformancesIndex({
         search?: string;
         status?: string;
         outsource_id?: string | number;
+        dispatched_from?: string;
+        dispatched_to?: string;
         sort?: string;
         direction?: SortDirection;
         page?: number;
@@ -331,6 +336,10 @@ export default function OutsourcePerformancesIndex({
                     : selectedOutsource !== 'all'
                         ? selectedOutsource
                         : undefined,
+            dispatched_from:
+                overrides.dispatched_from !== undefined ? overrides.dispatched_from : dateFrom || undefined,
+            dispatched_to:
+                overrides.dispatched_to !== undefined ? overrides.dispatched_to : dateTo || undefined,
             sort: overrides.sort ?? sortColumn,
             direction: overrides.direction ?? sortDirection,
             page: overrides.page,
@@ -358,7 +367,7 @@ export default function OutsourcePerformancesIndex({
             preserveScroll: true,
             replace: false,
         });
-    }, [perPage, searchTerm, selectedOutsource, selectedStatus, sortColumn, sortDirection]);
+    }, [dateFrom, dateTo, perPage, searchTerm, selectedOutsource, selectedStatus, sortColumn, sortDirection]);
 
     const handleSearchChange = (value: string) => {
         setSearchTerm(value);
@@ -373,6 +382,16 @@ export default function OutsourcePerformancesIndex({
     const handleOutsourceChange = (value: string) => {
         setSelectedOutsource(value);
         handleNavigate({ outsource_id: value !== 'all' ? value : undefined, page: 1 });
+    };
+
+    const handleDateChange = (type: 'from' | 'to', value: string) => {
+        if (type === 'from') {
+            setDateFrom(value);
+            handleNavigate({ dispatched_from: value || undefined, page: 1 });
+        } else {
+            setDateTo(value);
+            handleNavigate({ dispatched_to: value || undefined, page: 1 });
+        }
     };
 
     const handlePerPageChange = (value: string) => {
@@ -771,6 +790,19 @@ export default function OutsourcePerformancesIndex({
                         ))}
                     </SelectContent>
                 </Select>
+                <div className="flex items-center gap-2">
+                    <DatePicker
+                        className="w-[150px] h-9 justify-start text-left"
+                        value={dateFrom}
+                        onChange={(next) => handleDateChange('from', next ?? '')}
+                    />
+                    <span className="text-muted-foreground">–</span>
+                    <DatePicker
+                        className="w-[150px] h-9 justify-start text-left"
+                        value={dateTo}
+                        onChange={(next) => handleDateChange('to', next ?? '')}
+                    />
+                </div>
             </div>
         </ListingFilterBar>
     );

@@ -21,35 +21,22 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog'
 import { ActivityLogTable } from '@/components/activity-log-table'
+import { useToast } from '@/hooks/use-toast'
 import { usePermissions } from '@/hooks/use-permissions'
 import AppLayout from '@/layouts/app-layout'
 import type { BreadcrumbItem } from '@/types'
-import { PlaceBoundaryMap } from '@/components/PlaceBoundaryMap'
-import type { GeoJsonInput } from '@/components/boundary-map-utils'
-
-interface RegionSummary {
-  id: number
-  name: string
-  status?: 'active' | 'inactive'
-  boundary_geojson?: GeoJsonInput
-}
-
-interface ZoneSummary {
-  id: number
-  name: string
-  status?: 'active' | 'inactive'
-  boundary_geojson?: GeoJsonInput
-  region?: RegionSummary | null
-}
 
 interface Woreda {
   id: number
   name: string
-  status?: 'active' | 'inactive'
-  boundary_geojson?: GeoJsonInput
-  latitude?: number | string | null
-  longitude?: number | string | null
-  zone?: ZoneSummary | null
+  zone: {
+    id: number
+    name: string
+    region: {
+      id: number
+      name: string
+    }
+  }
 }
 
 interface Place {
@@ -68,7 +55,6 @@ interface Place {
   description?: string | null
   infrastructure_notes?: string | null
   road_quality_notes?: string | null
-  boundary_geojson?: GeoJsonInput
   created_at: string
   updated_at: string
 }
@@ -125,6 +111,7 @@ const formatDate = (value?: string | null) => {
 }
 
 export default function PlacesShow({ place, activityLogs }: PlacesShowProps) {
+  const { toast } = useToast()
   const { hasPermission } = usePermissions()
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -157,53 +144,26 @@ export default function PlacesShow({ place, activityLogs }: PlacesShowProps) {
     router.delete(`/places/${place.id}`, {
       preserveScroll: true,
       onSuccess: () => {
+        toast({ title: '✅ Place Deleted', description: `${place.name} was removed successfully.` })
         setDeleteDialogOpen(false)
+        setIsDeleting(false)
       },
-      onFinish: () => {
+      onError: (errors) => {
+        const errorMessage = errors && typeof errors === 'object' && 'message' in errors
+          ? String(errors.message)
+          : 'Unable to delete the place. Try again later.'
+        toast({
+          title: '❌ Delete Failed',
+          description: errorMessage,
+          variant: 'destructive',
+        })
         setIsDeleting(false)
       },
     })
   }
 
-  const parsedLatitude = place.latitude === null || place.latitude === undefined ? null : Number(place.latitude)
-  const parsedLongitude = place.longitude === null || place.longitude === undefined ? null : Number(place.longitude)
-  const coordinatesProvided = parsedLatitude !== null && !Number.isNaN(parsedLatitude) && parsedLongitude !== null && !Number.isNaN(parsedLongitude)
+  const coordinatesProvided = place.latitude !== null && place.latitude !== undefined && place.longitude !== null && place.longitude !== undefined
   const coordinateLabel = `${formatCoordinate(place.latitude)} / ${formatCoordinate(place.longitude)}`
-  const mapPlaceData = {
-    id: place.id,
-    name: place.name,
-    status: place.status,
-    boundary_geojson: place.boundary_geojson,
-    latitude: place.latitude,
-    longitude: place.longitude,
-  }
-
-  const mapWoredaData = place.woreda
-    ? {
-        id: place.woreda.id,
-        name: place.woreda.name,
-        status: place.woreda.status,
-        boundary_geojson: place.woreda.boundary_geojson,
-        latitude: place.woreda.latitude,
-        longitude: place.woreda.longitude,
-        zone: place.woreda.zone
-          ? {
-              id: place.woreda.zone.id,
-              name: place.woreda.zone.name,
-              status: place.woreda.zone.status,
-              boundary_geojson: place.woreda.zone.boundary_geojson,
-              region: place.woreda.zone.region
-                ? {
-                    id: place.woreda.zone.region.id,
-                    name: place.woreda.zone.region.name,
-                    status: place.woreda.zone.region.status,
-                    boundary_geojson: place.woreda.zone.region.boundary_geojson,
-                  }
-                : null,
-            }
-          : null,
-      }
-    : null
 
   return (
     <AppLayout breadcrumbs={breadcrumbs}>
@@ -288,19 +248,6 @@ export default function PlacesShow({ place, activityLogs }: PlacesShowProps) {
 
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr),20rem] lg:items-start">
           <div className="space-y-6">
-            <Card className="shadow-lg border-0">
-              <CardHeader className="border-b bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/20 dark:to-indigo-950/20">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <MapPin className="h-5 w-5 text-purple-600" />
-                  Location Overview Map
-                </CardTitle>
-                <CardDescription>Geospatial context for this place</CardDescription>
-              </CardHeader>
-              <CardContent>
-                  <PlaceBoundaryMap place={mapPlaceData} woreda={mapWoredaData} height="360px" />
-              </CardContent>
-            </Card>
-
             <Card className="shadow-lg border-0 bg-gradient-to-br from-background to-muted/20">
               <CardHeader className="border-b bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/20 dark:to-indigo-950/20">
                 <CardTitle className="flex items-center gap-2 text-lg">

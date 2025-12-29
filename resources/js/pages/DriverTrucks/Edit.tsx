@@ -139,6 +139,16 @@ export default function DriverTrucksEdit({ driverTruck, drivers, trucks, error }
         return () => container.removeEventListener('scroll', handleScroll);
     }, []);
 
+    useEffect(() => {
+        if (!wasSuccessful) {
+            return;
+        }
+
+        toast({
+            title: '✅ Assignment Updated',
+            description: 'Driver and truck pairing has been updated successfully.',
+        });
+    }, [wasSuccessful]);
 
     const handleScrollToTop = () => {
         const container = scrollContainerRef.current;
