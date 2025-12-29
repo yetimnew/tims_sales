@@ -125,4 +125,3 @@ class RouteProfitabilityRequest extends FormRequest
         return in_array($sort, $allowed, true) ? $sort : 'profit_desc';
     }
 }
-

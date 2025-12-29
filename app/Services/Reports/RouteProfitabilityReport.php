@@ -90,15 +90,15 @@ class RouteProfitabilityReport
             ->whereNotNull('orgion_id')
             ->whereNotNull('destination_id');
 
-        if (!empty($originIds)) {
+        if (! empty($originIds)) {
             $query->whereIn('orgion_id', $originIds);
         }
 
-        if (!empty($destinationIds)) {
+        if (! empty($destinationIds)) {
             $query->whereIn('destination_id', $destinationIds);
         }
 
-        if (!empty($customerIds)) {
+        if (! empty($customerIds)) {
             $query->whereHas('operation', static function ($operation) use ($customerIds) {
                 $operation->whereIn('customer_id', $customerIds);
             });
@@ -113,6 +113,7 @@ class RouteProfitabilityReport
             ->groupBy(function (Performance $performance) {
                 $originId = $performance->orgion_id ?? 0;
                 $destinationId = $performance->destination_id ?? 0;
+
                 return "{$originId}-{$destinationId}";
             })
             ->map(function (Collection $group, string $routeKey) {
@@ -135,12 +136,13 @@ class RouteProfitabilityReport
                 // Calculate revenue from operations
                 $revenue = $group->sum(function ($p) {
                     $operation = $p->operation;
-                    if (!$operation) {
+                    if (! $operation) {
                         return 0;
                     }
                     $tariff = (float) ($operation->tariff ?? 0);
                     $tonKm = (float) ($p->tonkm ?? 0);
                     $tonnage = (float) ($p->CargoVolumMT ?? 0);
+
                     return $tonKm > 0 ? $tonKm * $tariff : $tonnage * $tariff;
                 });
 
@@ -313,4 +315,3 @@ class RouteProfitabilityReport
         return in_array($sort, $allowed, true) ? $sort : 'profit_desc';
     }
 }
-

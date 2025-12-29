@@ -151,7 +151,6 @@ export default function RolesIndex({ roles, filters, permissionGroupOptions, per
     const canCreateRole = hasPermission('roles.create');
     const canEditRole = hasPermission('roles.edit');
     const canDeleteRole = hasPermission('roles.destroy');
-    const canExportRoles = hasPermission('roles.export');
 
     const [searchTerm, setSearchTerm] = React.useState(filters?.search ?? '');
     const [selectedPermissionGroup, setSelectedPermissionGroup] = React.useState(() => {
@@ -718,31 +717,6 @@ export default function RolesIndex({ roles, filters, permissionGroupOptions, per
 
     const headerActions = (
         <>
-            {canExportRoles && (
-                <Button
-                    variant="outline"
-                    onClick={() => {
-                        const params = new URLSearchParams();
-                        if (searchTerm.trim()) {
-                            params.set('search', searchTerm.trim());
-                        }
-                        if (selectedPermissionGroup !== 'all') {
-                            params.set('permission_group', selectedPermissionGroup);
-                        }
-                        if (sortColumn) {
-                            params.set('sort', sortColumn);
-                        }
-                        if (sortDirection) {
-                            params.set('direction', sortDirection);
-                        }
-
-                        const query = params.toString();
-                        window.location.href = query ? `/roles/export/csv?${query}` : '/roles/export/csv';
-                    }}
-                >
-                    Export CSV
-                </Button>
-            )}
             {canCreateRole && (
                 <Button asChild>
                     <Link href="/roles/create">

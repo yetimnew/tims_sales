@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import {
     Table,
     TableBody,
@@ -15,10 +16,11 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { ChevronLeft, ChevronRight, CircleDollarSign, Droplet, Gauge, Route, TrendingDown, Waypoints } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CircleDollarSign, Download, Droplet, FileDigit, FileSpreadsheet, FileType2, Gauge, Route, TrendingDown, Waypoints } from 'lucide-react';
 import { ReportFiltersDialog } from '@/components/reports/report-filters-dialog';
 import { ReportSummaryGrid, type ReportSummaryItem } from '@/components/reports/report-summary-grid';
 import type { ReportSelectionOption } from '@/components/reports/types';
+import { usePermissions } from '@/hooks/use-permissions';
 
 interface TruckOption {
     id: number;
@@ -113,6 +115,12 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Fuel Efficiency & Cost', href: '/reports/fuel-efficiency' },
 ];
 
+const toParamsArray = (key: string, values: number[], params: URLSearchParams) => {
+    values.forEach((value, index) => {
+        params.append(`${key}[${index}]`, String(value));
+    });
+};
+
 const formatNumber = (value: number) => value.toLocaleString();
 
 const formatDecimal = (value: number) =>
@@ -148,6 +156,9 @@ export default function FuelEfficiency({
     highlights,
     trucks = [],
 }: FuelEfficiencyProps) {
+    const { hasPermission } = usePermissions();
+    const canExport = hasPermission('reports.fuel-efficiency.export');
+
     const truckOptions = useMemo<TruckOption[]>(() => (Array.isArray(trucks) ? trucks : []), [trucks]);
     const truckSelectionOptions = useMemo<ReportSelectionOption[]>(
         () =>
@@ -331,6 +342,28 @@ export default function FuelEfficiency({
         router.get('/reports/fuel-efficiency', {}, { preserveState: false, preserveScroll: true });
     };
 
+    const handleExport = (format: 'csv' | 'xlsx' | 'pdf') => {
+        if (!validateDateRange(from, to)) {
+            setFiltersOpen(true);
+
+            return;
+        }
+
+        if (!canExport) {
+            return;
+        }
+
+        const params = new URLSearchParams();
+
+        if (from) params.set('from', from);
+        if (to) params.set('to', to);
+        if (selectedTrucks.length > 0) toParamsArray('truck_ids', selectedTrucks, params);
+
+        const query = params.toString();
+        const url = `/reports/fuel-efficiency/export/${format}${query ? `?${query}` : ''}`;
+        window.location.href = url;
+    };
+
     const handleDateChange = (field: 'from' | 'to', value: string) => {
         if (field === 'from') {
             setFrom(value);
@@ -371,6 +404,30 @@ export default function FuelEfficiency({
                                     onTrucksChange={setSelectedTrucks}
                                     dateError={dateError}
                                 />
+                                {canExport ? (
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button type="button" variant="secondary" className="gap-2">
+                                                <Download className="h-4 w-4" />
+                                                Export
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end" className="w-44">
+                                            <DropdownMenuItem onSelect={() => handleExport('csv')} className="gap-2">
+                                                <FileDigit className="h-4 w-4 text-amber-500" />
+                                                CSV
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onSelect={() => handleExport('xlsx')} className="gap-2">
+                                                <FileSpreadsheet className="h-4 w-4 text-emerald-500" />
+                                                Excel
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onSelect={() => handleExport('pdf')} className="gap-2">
+                                                <FileType2 className="h-4 w-4 text-rose-500" />
+                                                PDF
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                ) : null}
                                 <Button type="button" variant="outline" className="gap-2" onClick={handleReset}>
                                     Reset
                                 </Button>

@@ -6,11 +6,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ReportFiltersDialog } from '@/components/reports/report-filters-dialog';
 import { ReportSummaryGrid, type ReportSummaryItem } from '@/components/reports/report-summary-grid';
 import { formatCurrency, formatDecimal, formatInteger, formatPercentage, getFinancialTone, getMarginChipClass } from '@/components/reports/formatters';
 import type { ReportSelectionOption } from '@/components/reports/types';
-import { CircleDollarSign, ClipboardList, Coins, PiggyBank, RefreshCcw, TrendingUp, Users } from 'lucide-react';
+import { CircleDollarSign, ClipboardList, Coins, Download, FileDigit, FileSpreadsheet, FileType2, PiggyBank, RefreshCcw, TrendingUp, Users } from 'lucide-react';
+import { usePermissions } from '@/hooks/use-permissions';
 
 interface CustomerOption {
     id: number;
@@ -116,7 +118,16 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 const formatOptionalCurrency = (value: number | null) => (value === null ? '—' : formatCurrency(value));
 
+const toParamsArray = (key: string, values: number[], params: URLSearchParams) => {
+    values.forEach((value, index) => {
+        params.append(`${key}[${index}]`, String(value));
+    });
+};
+
 export default function CustomerProfitability({ filters, rows = [], summary, trend = [], customers = [] }: Props) {
+    const { hasPermission } = usePermissions();
+    const canExport = hasPermission('reports.customer-profitability.export');
+
     const customerOptions = useMemo(() => (Array.isArray(customers) ? customers : []), [customers]);
     const safeRows = useMemo(() => (Array.isArray(rows) ? rows : []), [rows]);
     const safeTrend = useMemo(() => (Array.isArray(trend) ? trend : []), [trend]);
@@ -202,6 +213,28 @@ export default function CustomerProfitability({ filters, rows = [], summary, tre
         setFiltersOpen(false);
         setDateError(null);
         router.get('/reports/customer-profitability', {}, { preserveState: false, preserveScroll: true });
+    };
+
+    const handleExport = (format: 'csv' | 'xlsx' | 'pdf') => {
+        if (!validateDateRange(from, to)) {
+            setFiltersOpen(true);
+
+            return;
+        }
+
+        if (!canExport) {
+            return;
+        }
+
+        const params = new URLSearchParams();
+
+        if (from) params.set('from', from);
+        if (to) params.set('to', to);
+        if (selectedCustomers.length > 0) toParamsArray('customer_ids', selectedCustomers, params);
+
+        const query = params.toString();
+        const url = `/reports/customer-profitability/export/${format}${query ? `?${query}` : ''}`;
+        window.location.href = url;
     };
 
     const handleDateChange = (field: 'from' | 'to', value: string) => {
@@ -344,6 +377,30 @@ export default function CustomerProfitability({ filters, rows = [], summary, tre
                                         icon: Users,
                                     }}
                                 />
+                                {canExport ? (
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button type="button" variant="secondary" className="gap-2">
+                                                <Download className="h-4 w-4" />
+                                                Export
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end" className="w-44">
+                                            <DropdownMenuItem onSelect={() => handleExport('csv')} className="gap-2">
+                                                <FileDigit className="h-4 w-4 text-amber-500" />
+                                                CSV
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onSelect={() => handleExport('xlsx')} className="gap-2">
+                                                <FileSpreadsheet className="h-4 w-4 text-emerald-500" />
+                                                Excel
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onSelect={() => handleExport('pdf')} className="gap-2">
+                                                <FileType2 className="h-4 w-4 text-rose-500" />
+                                                PDF
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                ) : null}
                                 <Button type="button" variant="outline" className="gap-2" onClick={handleReset}>
                                     <RefreshCcw className="h-4 w-4" />
                                     Reset

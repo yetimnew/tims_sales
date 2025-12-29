@@ -2,10 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\OperationDestinationScope;
+use App\Exports\Reports\CustomerProfitabilityExport;
 use App\Exports\Reports\DailyStatusExport;
 use App\Exports\Reports\DriverPerformanceExport;
+use App\Exports\Reports\FuelEfficiencyExport;
+use App\Exports\Reports\GeographyHeatmapsExport;
+use App\Exports\Reports\MaintenanceExport;
+use App\Exports\Reports\OperationProfitabilityExport;
 use App\Exports\Reports\OutsourcePerformanceExport;
 use App\Exports\Reports\PerformanceAllExport;
+use App\Exports\Reports\RouteProfitabilityExport;
 use App\Exports\Reports\TruckPerformanceExport;
 use App\Http\Requests\Reports\CostPerKilometerRequest;
 use App\Http\Requests\Reports\CustomerProfitabilityRequest;
@@ -29,10 +36,13 @@ use App\Models\Outsource;
 use App\Models\OutsourcePerformance;
 use App\Models\Performance;
 use App\Models\Place;
+use App\Models\Region;
 use App\Models\Status;
 use App\Models\Truck;
 use App\Models\VehicleMaintenanceRecord;
 use App\Models\VehicleType;
+use App\Models\Woreda;
+use App\Models\Zone;
 use App\Services\Reports\CostPerKilometerReport;
 use App\Services\Reports\CustomerProfitabilityReport;
 use App\Services\Reports\DailyStatusReport;
@@ -51,8 +61,11 @@ use App\Services\TruckAssignmentService;
 use Dompdf\Dompdf;
 use Dompdf\Options;
 use Exception;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -82,6 +95,14 @@ class ReportController extends Controller
         private readonly CostPerKilometerReport $costPerKilometerReport,
         private readonly TruckAssignmentService $truckAssignmentService,
     ) {}
+
+    private array $regionNameCache = [];
+
+    private array $zoneRegionNameCache = [];
+
+    private array $woredaRegionNameCache = [];
+
+    private array $placeRegionNameCache = [];
 
     /**
      * Display maintenance reports.
@@ -177,6 +198,39 @@ class ReportController extends Controller
         }
     }
 
+    public function maintenanceExport(MaintenancePerformanceRequest $request, string $format)
+    {
+        $format = strtolower($format);
+
+        if (! in_array($format, ['csv', 'xlsx', 'pdf'], true)) {
+            abort(404);
+        }
+
+        $validated = array_merge($request->validated(), ['format' => $format]);
+
+        try {
+            $result = $this->maintenancePerformanceReport->build($validated);
+
+            $rows = collect($result['breakdown_all'] ?? $result['breakdown'] ?? []);
+            $totals = $result['totals'] ?? [];
+            $summary = $result['summary'] ?? [];
+            $from = $result['resolved_from'] ?? now()->toDateString();
+            $to = $result['resolved_to'] ?? now()->toDateString();
+            $filename = 'maintenance_'.now()->format('Y-m-d_H-i-s');
+
+            return match ($format) {
+                'csv' => $this->exportMaintenanceCsv($rows, $totals, $summary, $from, $to, $filename.'.csv'),
+                'xlsx' => $this->exportMaintenanceExcel($rows, $totals, $summary, $filename.'.xlsx'),
+                'pdf' => $this->exportMaintenancePdf($rows, $totals, $summary, $from, $to, $filename.'.pdf'),
+                default => abort(404),
+            };
+        } catch (Exception $e) {
+            report($e);
+
+            return back()->withErrors(['error' => 'Failed to export maintenance report.']);
+        }
+    }
+
     /**
      * Display fuel efficiency and cost report.
      */
@@ -219,6 +273,39 @@ class ReportController extends Controller
         }
     }
 
+    public function fuelEfficiencyExport(FuelEfficiencyRequest $request, string $format)
+    {
+        $format = strtolower($format);
+
+        if (! in_array($format, ['csv', 'xlsx', 'pdf'], true)) {
+            abort(404);
+        }
+
+        $validated = array_merge($request->validated(), ['format' => $format]);
+
+        try {
+            $result = $this->fuelEfficiencyReport->build($validated);
+
+            $rows = collect($result['breakdown'] ?? []);
+            $totals = $result['totals'] ?? [];
+            $summary = $result['summary'] ?? [];
+            $from = $result['resolved_from'] ?? now()->toDateString();
+            $to = $result['resolved_to'] ?? now()->toDateString();
+            $filename = 'fuel_efficiency_'.now()->format('Y-m-d_H-i-s');
+
+            return match ($format) {
+                'csv' => $this->exportFuelEfficiencyCsv($rows, $totals, $summary, $from, $to, $filename.'.csv'),
+                'xlsx' => $this->exportFuelEfficiencyExcel($rows, $totals, $summary, $filename.'.xlsx'),
+                'pdf' => $this->exportFuelEfficiencyPdf($rows, $totals, $summary, $from, $to, $filename.'.pdf'),
+                default => abort(404),
+            };
+        } catch (Exception $e) {
+            report($e);
+
+            return back()->withErrors(['error' => 'Failed to export fuel efficiency report.']);
+        }
+    }
+
     /**
      * Display customer profitability report (revenue, cost, margin per customer; lanes; trend).
      */
@@ -256,6 +343,438 @@ class ReportController extends Controller
 
             return back()->withErrors(['error' => 'Failed to generate customer profitability report.']);
         }
+    }
+
+    public function customerProfitabilityExport(CustomerProfitabilityRequest $request, string $format)
+    {
+        $format = strtolower($format);
+
+        if (! in_array($format, ['csv', 'xlsx', 'pdf'], true)) {
+            abort(404);
+        }
+
+        $validated = array_merge($request->validated(), ['format' => $format]);
+
+        try {
+            $result = $this->customerProfitabilityReport->build($validated);
+
+            $rows = collect($result['rows'] ?? []);
+            $summary = $result['summary'] ?? [];
+            $from = $result['resolved_from'] ?? now()->toDateString();
+            $to = $result['resolved_to'] ?? now()->toDateString();
+            $filename = 'customer_profitability_'.now()->format('Y-m-d_H-i-s');
+
+            return match ($format) {
+                'csv' => $this->exportCustomerProfitabilityCsv($rows, $summary, $from, $to, $filename.'.csv'),
+                'xlsx' => $this->exportCustomerProfitabilityExcel($rows, $summary, $filename.'.xlsx'),
+                'pdf' => $this->exportCustomerProfitabilityPdf($rows, $summary, $from, $to, $filename.'.pdf'),
+                default => abort(404),
+            };
+        } catch (Exception $e) {
+            report($e);
+
+            return back()->withErrors(['error' => 'Failed to export customer profitability report.']);
+        }
+    }
+
+    private function fuelEfficiencyRowsWithTotals(Collection $rows, array $totals, array $summary): Collection
+    {
+        $data = $rows->map(static fn ($row) => $row)->values();
+
+        $data->push([
+            'plate' => 'TOTALS',
+            'status' => null,
+            'trip_count' => $totals['trip_count'] ?? 0,
+            'total_liters' => $totals['total_liters'] ?? 0.0,
+            'total_cost' => $totals['total_cost'] ?? 0.0,
+            'distance_loaded_km' => $totals['total_loaded_distance_km'] ?? 0.0,
+            'distance_empty_km' => $totals['total_empty_distance_km'] ?? 0.0,
+            'distance_total_km' => $totals['total_distance_km'] ?? 0.0,
+            'efficiency_km_per_liter' => $summary['fleet_efficiency_km_per_liter'] ?? null,
+            'cost_per_km' => $summary['fleet_cost_per_km'] ?? null,
+            'cost_per_liter' => $summary['average_cost_per_liter'] ?? null,
+            'avg_liters_per_trip' => $summary['average_liters_per_trip'] ?? null,
+            'avg_cost_per_trip' => $summary['average_cost_per_trip'] ?? null,
+            'first_activity_on' => null,
+            'last_activity_on' => null,
+            'driver_names' => [],
+            'loaded_distance_share_percent' => $summary['loaded_distance_share_percent'] ?? null,
+            'empty_distance_share_percent' => $summary['empty_distance_share_percent'] ?? null,
+        ]);
+
+        return $data->values();
+    }
+
+    private function exportFuelEfficiencyCsv(Collection $rows, array $totals, array $summary, string $from, string $to, string $filename)
+    {
+        $headings = [
+            'Truck',
+            'Status',
+            'Trips',
+            'Total Liters',
+            'Total Cost',
+            'Loaded Distance (km)',
+            'Empty Distance (km)',
+            'Total Distance (km)',
+            'Efficiency (km/L)',
+            'Cost/km',
+            'Cost/L',
+            'Avg Liters/Trip',
+            'Avg Cost/Trip',
+            'First Activity',
+            'Last Activity',
+            'Drivers',
+            'Loaded Distance %',
+            'Empty Distance %',
+        ];
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+
+        $exportRows = $this->fuelEfficiencyRowsWithTotals($rows, $totals, $summary);
+
+        return HttpResponse::streamDownload(static function () use ($exportRows, $headings, $summary, $from, $to) {
+            $handle = fopen('php://output', 'w');
+
+            $formatDecimal = static fn ($value) => $value === null ? '—' : number_format((float) $value, 2, '.', '');
+            $formatPercent = static fn ($value) => $value === null ? '—' : number_format((float) $value, 2, '.', '');
+
+            fputcsv($handle, ['Fuel Efficiency & Cost Report']);
+            fputcsv($handle, ["Reporting window: {$from} to {$to}"]);
+            fputcsv($handle, [
+                sprintf(
+                    'Fleet efficiency: %s km/L · Fleet cost/km: %s · Avg cost/trip: %s',
+                    $formatDecimal($summary['fleet_efficiency_km_per_liter'] ?? null),
+                    $formatDecimal($summary['fleet_cost_per_km'] ?? null),
+                    $formatDecimal($summary['average_cost_per_trip'] ?? null)
+                ),
+            ]);
+            fputcsv($handle, []);
+            fputcsv($handle, $headings);
+
+            foreach ($exportRows as $row) {
+                $drivers = $row['driver_names'] ?? [];
+
+                if (is_array($drivers)) {
+                    $drivers = implode(', ', $drivers);
+                }
+
+                fputcsv($handle, [
+                    $row['plate'] ?? '—',
+                    $row['status'] ?? '—',
+                    $row['trip_count'] ?? 0,
+                    $formatDecimal($row['total_liters'] ?? null),
+                    $formatDecimal($row['total_cost'] ?? null),
+                    $formatDecimal($row['distance_loaded_km'] ?? null),
+                    $formatDecimal($row['distance_empty_km'] ?? null),
+                    $formatDecimal($row['distance_total_km'] ?? null),
+                    $formatDecimal($row['efficiency_km_per_liter'] ?? null),
+                    $formatDecimal($row['cost_per_km'] ?? null),
+                    $formatDecimal($row['cost_per_liter'] ?? null),
+                    $formatDecimal($row['avg_liters_per_trip'] ?? null),
+                    $formatDecimal($row['avg_cost_per_trip'] ?? null),
+                    $row['first_activity_on'] ?? '—',
+                    $row['last_activity_on'] ?? '—',
+                    $drivers ?: '—',
+                    $formatPercent($row['loaded_distance_share_percent'] ?? null),
+                    $formatPercent($row['empty_distance_share_percent'] ?? null),
+                ]);
+            }
+
+            fclose($handle);
+        }, $filename, $headers);
+    }
+
+    private function exportFuelEfficiencyExcel(Collection $rows, array $totals, array $summary, string $filename)
+    {
+        return Excel::download(new FuelEfficiencyExport($this->fuelEfficiencyRowsWithTotals($rows, $totals, $summary)), $filename);
+    }
+
+    private function exportFuelEfficiencyPdf(Collection $rows, array $totals, array $summary, string $from, string $to, string $filename)
+    {
+        $options = new Options;
+        $options->set('isRemoteEnabled', true);
+        $options->set('defaultFont', 'DejaVu Sans');
+
+        $dompdf = new Dompdf($options);
+        $html = view('reports.fuel_efficiency_pdf', [
+            'rows' => $rows->values()->all(),
+            'totals' => $totals,
+            'summary' => $summary,
+            'from' => $from,
+            'to' => $to,
+        ])->render();
+
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'landscape');
+        $dompdf->render();
+
+        return HttpResponse::make($dompdf->output(), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ]);
+    }
+
+    private function customerProfitabilityRowsWithTotals(Collection $rows, array $summary): Collection
+    {
+        $data = $rows->map(static fn ($row) => $row)->values();
+
+        $data->push([
+            'customer_id' => null,
+            'customer_name' => 'TOTALS',
+            'operations' => $summary['operations'] ?? $rows->sum('operations'),
+            'lanes_used' => (int) $rows->sum('lanes_used'),
+            'internal_trips' => $summary['internal_trips'] ?? $rows->sum('internal_trips'),
+            'outsource_trips' => $summary['outsource_trips'] ?? $rows->sum('outsource_trips'),
+            'total_trips' => $summary['total_trips'] ?? $rows->sum('total_trips'),
+            'total_tonnage' => $summary['total_tonnage'] ?? $rows->sum('total_tonnage'),
+            'revenue' => $summary['revenue'] ?? $rows->sum('revenue'),
+            'total_cost' => $summary['total_cost'] ?? $rows->sum('total_cost'),
+            'profit' => $summary['profit'] ?? $rows->sum('profit'),
+            'margin_percent' => $summary['margin_percent'] ?? null,
+            'revenue_per_trip' => $summary['revenue_per_trip'] ?? null,
+            'cost_per_trip' => $summary['cost_per_trip'] ?? null,
+            'cost_per_km' => $summary['cost_per_km'] ?? null,
+            'outsource_trip_share_percent' => $summary['outsource_trip_share_percent'] ?? null,
+            'outsource_tonnage_share_percent' => $summary['outsource_tonnage_share_percent'] ?? null,
+        ]);
+
+        return $data->values();
+    }
+
+    private function exportCustomerProfitabilityCsv(Collection $rows, array $summary, string $from, string $to, string $filename)
+    {
+        $headings = [
+            'Customer',
+            'Operations',
+            'Lanes',
+            'Internal Trips',
+            'Outsource Trips',
+            'Total Trips',
+            'Total Tonnage (MT)',
+            'Revenue',
+            'Total Cost',
+            'Profit',
+            'Margin %',
+            'Revenue / Trip',
+            'Cost / Trip',
+            'Cost / Km',
+            'Outsource Trip Share %',
+            'Outsource Tonnage Share %',
+        ];
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+
+        $exportRows = $this->customerProfitabilityRowsWithTotals($rows, $summary);
+
+        return HttpResponse::streamDownload(static function () use ($exportRows, $headings, $summary, $from, $to) {
+            $handle = fopen('php://output', 'w');
+
+            $formatDecimal = static fn ($value) => $value === null ? '—' : number_format((float) $value, 2, '.', '');
+            $formatPercent = static fn ($value) => $value === null ? '—' : number_format((float) $value, 2, '.', '');
+
+            fputcsv($handle, ['Customer Profitability Report']);
+            fputcsv($handle, ["Reporting window: {$from} to {$to}"]);
+            fputcsv($handle, [
+                sprintf(
+                    'Customers: %s · Margin: %s%% · Revenue: %s',
+                    $summary['customer_count'] ?? '—',
+                    $formatPercent($summary['margin_percent'] ?? null),
+                    $formatDecimal($summary['revenue'] ?? null)
+                ),
+            ]);
+            fputcsv($handle, []);
+            fputcsv($handle, $headings);
+
+            foreach ($exportRows as $row) {
+                fputcsv($handle, [
+                    $row['customer_name'] ?? '—',
+                    $row['operations'] ?? 0,
+                    $row['lanes_used'] ?? 0,
+                    $row['internal_trips'] ?? 0,
+                    $row['outsource_trips'] ?? 0,
+                    $row['total_trips'] ?? 0,
+                    $formatDecimal($row['total_tonnage'] ?? null),
+                    $formatDecimal($row['revenue'] ?? null),
+                    $formatDecimal($row['total_cost'] ?? null),
+                    $formatDecimal($row['profit'] ?? null),
+                    $formatPercent($row['margin_percent'] ?? null),
+                    $formatDecimal($row['revenue_per_trip'] ?? null),
+                    $formatDecimal($row['cost_per_trip'] ?? null),
+                    $formatDecimal($row['cost_per_km'] ?? null),
+                    $formatPercent($row['outsource_trip_share_percent'] ?? null),
+                    $formatPercent($row['outsource_tonnage_share_percent'] ?? null),
+                ]);
+            }
+
+            fclose($handle);
+        }, $filename, $headers);
+    }
+
+    private function exportCustomerProfitabilityExcel(Collection $rows, array $summary, string $filename)
+    {
+        return Excel::download(new CustomerProfitabilityExport($this->customerProfitabilityRowsWithTotals($rows, $summary)), $filename);
+    }
+
+    private function exportCustomerProfitabilityPdf(Collection $rows, array $summary, string $from, string $to, string $filename)
+    {
+        $options = new Options;
+        $options->set('isRemoteEnabled', true);
+        $options->set('defaultFont', 'DejaVu Sans');
+
+        $dompdf = new Dompdf($options);
+        $html = view('reports.customer_profitability_pdf', [
+            'rows' => $rows->values()->all(),
+            'summary' => $summary,
+            'from' => $from,
+            'to' => $to,
+        ])->render();
+
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'landscape');
+        $dompdf->render();
+
+        return HttpResponse::make($dompdf->output(), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ]);
+    }
+
+    private function maintenanceRowsWithTotals(Collection $rows, array $totals, array $summary): Collection
+    {
+        $data = $rows->map(static fn ($row) => $row)->values();
+
+        $data->push([
+            'truck_id' => null,
+            'plate' => 'TOTALS',
+            'status' => null,
+            'records' => $totals['records'] ?? 0,
+            'completed' => $totals['completed'] ?? 0,
+            'scheduled' => $totals['scheduled'] ?? 0,
+            'in_progress' => $totals['in_progress'] ?? 0,
+            'overdue' => $totals['overdue'] ?? 0,
+            'completion_rate_pct' => $summary['completion_rate_pct'] ?? null,
+            'overdue_rate_pct' => $summary['overdue_rate_pct'] ?? null,
+            'total_cost' => $totals['total_cost'] ?? 0.0,
+            'completed_cost' => $totals['completed_cost'] ?? 0.0,
+            'open_cost' => $totals['open_cost'] ?? 0.0,
+            'average_cost' => $summary['average_cost_per_record'] ?? null,
+            'average_completion_days' => $summary['average_completion_days'] ?? null,
+            'last_completed_at' => null,
+            'next_scheduled_at' => null,
+            'max_overdue_days' => null,
+        ]);
+
+        return $data->values();
+    }
+
+    private function exportMaintenanceCsv(Collection $rows, array $totals, array $summary, string $from, string $to, string $filename)
+    {
+        $headings = [
+            'Truck',
+            'Status',
+            'Records',
+            'Completed',
+            'Scheduled',
+            'In Progress',
+            'Overdue',
+            'Completion Rate %',
+            'Overdue Rate %',
+            'Total Cost',
+            'Completed Cost',
+            'Open Cost',
+            'Average Cost',
+            'Avg Completion Days',
+            'Last Completed',
+            'Next Scheduled',
+            'Max Overdue Days',
+        ];
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+
+        $exportRows = $this->maintenanceRowsWithTotals($rows, $totals, $summary);
+
+        return HttpResponse::streamDownload(static function () use ($exportRows, $headings, $summary, $from, $to) {
+            $handle = fopen('php://output', 'w');
+
+            $formatDecimal = static fn ($value) => $value === null ? '—' : number_format((float) $value, 2, '.', '');
+            $formatPercent = static fn ($value) => $value === null ? '—' : number_format((float) $value, 2, '.', '');
+
+            fputcsv($handle, ['Maintenance Performance Report']);
+            fputcsv($handle, ["Reporting window: {$from} to {$to}"]);
+            fputcsv($handle, [
+                sprintf(
+                    'Completion rate: %s%% · Overdue rate: %s%% · Avg cost/record: %s',
+                    $formatPercent($summary['completion_rate_pct'] ?? null),
+                    $formatPercent($summary['overdue_rate_pct'] ?? null),
+                    $formatDecimal($summary['average_cost_per_record'] ?? null)
+                ),
+            ]);
+            fputcsv($handle, []);
+            fputcsv($handle, $headings);
+
+            foreach ($exportRows as $row) {
+                fputcsv($handle, [
+                    $row['plate'] ?? '—',
+                    $row['status'] ?? '—',
+                    $row['records'] ?? 0,
+                    $row['completed'] ?? 0,
+                    $row['scheduled'] ?? 0,
+                    $row['in_progress'] ?? 0,
+                    $row['overdue'] ?? 0,
+                    $formatPercent($row['completion_rate_pct'] ?? null),
+                    $formatPercent($row['overdue_rate_pct'] ?? null),
+                    $formatDecimal($row['total_cost'] ?? null),
+                    $formatDecimal($row['completed_cost'] ?? null),
+                    $formatDecimal($row['open_cost'] ?? null),
+                    $formatDecimal($row['average_cost'] ?? null),
+                    $formatDecimal($row['average_completion_days'] ?? null),
+                    $row['last_completed_at'] ?? '—',
+                    $row['next_scheduled_at'] ?? '—',
+                    $formatDecimal($row['max_overdue_days'] ?? null),
+                ]);
+            }
+
+            fclose($handle);
+        }, $filename, $headers);
+    }
+
+    private function exportMaintenanceExcel(Collection $rows, array $totals, array $summary, string $filename)
+    {
+        return Excel::download(new MaintenanceExport($this->maintenanceRowsWithTotals($rows, $totals, $summary)), $filename);
+    }
+
+    private function exportMaintenancePdf(Collection $rows, array $totals, array $summary, string $from, string $to, string $filename)
+    {
+        $options = new Options;
+        $options->set('isRemoteEnabled', true);
+        $options->set('defaultFont', 'DejaVu Sans');
+
+        $dompdf = new Dompdf($options);
+        $html = view('reports.maintenance_pdf', [
+            'rows' => $rows->values()->all(),
+            'totals' => $totals,
+            'summary' => $summary,
+            'from' => $from,
+            'to' => $to,
+        ])->render();
+
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'landscape');
+        $dompdf->render();
+
+        return HttpResponse::make($dompdf->output(), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ]);
     }
 
     /**
@@ -504,105 +1023,450 @@ class ReportController extends Controller
     public function operationProfitability(Request $request): Response|RedirectResponse
     {
         try {
-            $from = $request->input('from', now()->subMonths(6)->toDateString());
-            $to = $request->input('to', now()->toDateString());
-            $customerId = $request->input('customer_id');
-            $regionId = $request->input('region_id');
+            $payload = $this->buildOperationProfitability($request->all());
 
-            $query = Performance::with(['operation.customer', 'operation.region'])
-                ->whereBetween('DateDispach', [$from, $to]);
+            $customerOptions = Cache::remember('reports.operation_profitability.customer_options', 3600, function () {
+                return Customer::query()
+                    ->select(['id', 'name', 'status'])
+                    ->orderBy('name')
+                    ->get()
+                    ->map(static fn (Customer $customer) => [
+                        'id' => $customer->id,
+                        'name' => $customer->name,
+                        'status' => $customer->status,
+                    ])
+                    ->values()
+                    ->all();
+            });
 
-            if ($customerId) {
-                $query->whereHas('operation', function ($q) use ($customerId) {
-                    $q->where('customer_id', $customerId);
-                });
-            }
-            if ($regionId) {
-                $query->whereHas('operation', function ($q) use ($regionId) {
-                    $q->where('region_id', $regionId);
-                });
-            }
-
-            $perfs = $query->get();
-
-            // Aggregate by operation
-            $ops = [];
-            foreach ($perfs as $p) {
-                $op = $p->operation;
-                if (! $op) {
-                    continue;
-                }
-                $opId = $op->id;
-                if (! isset($ops[$opId])) {
-                    $ops[$opId] = [
-                        'operation_id' => $opId,
-                        'code' => (string) ($op->id),
-                        'customer_name' => $op->customer->name ?? 'N/A',
-                        'region_name' => $op->region->name ?? 'N/A',
-                        'revenue' => 0.0,
-                        'cost' => 0.0,
-                        'profit' => 0.0,
-                        'trips' => 0,
-                        'tonnage' => 0.0,
-                        'total_km' => 0.0,
-                    ];
-                }
-                $revenue = (float) ($op->tariff ?? 0) * (float) ($p->CargoVolumMT ?? 1);
-                $cost = (float) ($p->fuelInBirr ?? 0) + (float) ($p->perdiem ?? 0) + (float) ($p->other ?? 0);
-                $km = (float) ($p->DistanceWCargo ?? 0) + (float) ($p->DistanceWOCargo ?? 0);
-                $ops[$opId]['revenue'] += $revenue;
-                $ops[$opId]['cost'] += $cost;
-                $ops[$opId]['profit'] += ($revenue - $cost);
-                $ops[$opId]['trips'] += 1;
-                $ops[$opId]['tonnage'] += (float) ($p->CargoVolumMT ?? 0);
-                $ops[$opId]['total_km'] += $km;
-            }
-
-            $rows = [];
-            foreach ($ops as $o) {
-                $margin = $o['revenue'] > 0 ? round(($o['profit'] / $o['revenue']) * 100, 2) : null;
-                $avgKmPerTrip = $o['trips'] > 0 ? $o['total_km'] / $o['trips'] : 0.0;
-                $costPerKm = $o['total_km'] > 0 ? $o['cost'] / $o['total_km'] : null;
-                $rows[] = [
-                    'operation_id' => $o['operation_id'],
-                    'code' => $o['code'],
-                    'customer_name' => $o['customer_name'],
-                    'region_name' => $o['region_name'],
-                    'revenue' => round($o['revenue'], 2),
-                    'cost' => round($o['cost'], 2),
-                    'profit' => round($o['profit'], 2),
-                    'margin_percent' => $margin,
-                    'trips' => $o['trips'],
-                    'tonnage' => round($o['tonnage'], 2),
-                    'avg_km_per_trip' => round($avgKmPerTrip, 2),
-                    'cost_per_km' => $costPerKm !== null ? round($costPerKm, 2) : null,
-                ];
-            }
-
-            // Sort by highest profit
-            usort($rows, fn ($a, $b) => $b['profit'] <=> $a['profit']);
-
-            $totals = [
-                'revenue' => array_sum(array_column($rows, 'revenue')),
-                'cost' => array_sum(array_column($rows, 'cost')),
-                'profit' => array_sum(array_column($rows, 'profit')),
-                'operations' => count($rows),
-            ];
+            $regionOptions = Cache::remember('reports.operation_profitability.region_options', 3600, function () {
+                return Region::query()
+                    ->select(['id', 'name'])
+                    ->orderBy('name')
+                    ->get()
+                    ->map(static fn (Region $region) => [
+                        'id' => $region->id,
+                        'name' => $region->name,
+                    ])
+                    ->values()
+                    ->all();
+            });
 
             return Inertia::render('Reports/OperationProfitability', [
                 'filters' => [
-                    'from' => $from,
-                    'to' => $to,
-                    'customer_id' => $customerId,
-                    'region_id' => $regionId,
+                    'from' => $payload['resolved_from'],
+                    'to' => $payload['resolved_to'],
+                    'customer_ids' => $payload['filters']['customer_ids'],
+                    'region_ids' => $payload['filters']['region_ids'],
                 ],
-                'totals' => $totals,
-                'operations' => $rows,
+                'totals' => $payload['totals'],
+                'operations' => $payload['rows']->all(),
+                'options' => [
+                    'customers' => $customerOptions,
+                    'regions' => $regionOptions,
+                ],
             ]);
 
         } catch (Exception $e) {
             return back()->withErrors(['error' => 'Failed to generate operation profitability report.']);
         }
+    }
+
+    public function operationProfitabilityExport(Request $request, string $format)
+    {
+        $format = strtolower($format);
+
+        if (! in_array($format, ['csv', 'xlsx', 'pdf'], true)) {
+            abort(404);
+        }
+
+        try {
+            $payload = $this->buildOperationProfitability($request->all());
+
+            $rows = $payload['rows'] instanceof Collection
+                ? $payload['rows']
+                : collect($payload['rows']);
+
+            $totals = $payload['totals'];
+            $from = $payload['resolved_from'];
+            $to = $payload['resolved_to'];
+            $filename = 'operation_profitability_'.now()->format('Y-m-d_H-i-s');
+
+            return match ($format) {
+                'csv' => $this->exportOperationProfitabilityCsv(
+                    $this->operationProfitabilityRowsWithTotals($rows, $totals),
+                    $from,
+                    $to,
+                    $filename.'.csv'
+                ),
+                'xlsx' => $this->exportOperationProfitabilityExcel(
+                    $this->operationProfitabilityRowsWithTotals($rows, $totals),
+                    $filename.'.xlsx'
+                ),
+                'pdf' => $this->exportOperationProfitabilityPdf(
+                    $rows,
+                    $totals,
+                    $from,
+                    $to,
+                    $filename.'.pdf'
+                ),
+                default => abort(404),
+            };
+        } catch (Exception $e) {
+            report($e);
+
+            return back()->withErrors(['error' => 'Failed to export operation profitability report.']);
+        }
+    }
+
+    private function buildOperationProfitability(array $input): array
+    {
+        $defaultFrom = now()->subMonths(6)->toDateString();
+        $defaultTo = now()->toDateString();
+
+        $from = $input['from'] ?? $defaultFrom;
+        $to = $input['to'] ?? $defaultTo;
+
+        $customerIds = collect(Arr::wrap($input['customer_ids'] ?? []))
+            ->merge(Arr::wrap($input['customer_id'] ?? []))
+            ->map(static fn ($value) => (int) $value)
+            ->filter(static fn (int $value) => $value > 0)
+            ->unique()
+            ->values();
+
+        $regionIds = collect(Arr::wrap($input['region_ids'] ?? []))
+            ->merge(Arr::wrap($input['region_id'] ?? []))
+            ->map(static fn ($value) => (int) $value)
+            ->filter(static fn (int $value) => $value > 0)
+            ->unique()
+            ->values();
+
+        if (Carbon::parse($from)->gt(Carbon::parse($to))) {
+            [$from, $to] = [$to, $from];
+        }
+
+        $performancesQuery = Performance::query()
+            ->with([
+                'operation.customer',
+                'operation.destinationReference' => function (MorphTo $morphTo) {
+                    $morphTo->morphWith([
+                        Region::class => [],
+                        Zone::class => ['region'],
+                        Woreda::class => ['zone.region'],
+                        Place::class => ['woreda.zone.region'],
+                    ]);
+                },
+            ])
+            ->whereBetween('DateDispach', [$from, $to]);
+
+        if ($customerIds->isNotEmpty()) {
+            $performancesQuery->whereHas('operation', function (Builder $operationQuery) use ($customerIds) {
+                $operationQuery->whereIn('customer_id', $customerIds);
+            });
+        }
+
+        if ($regionIds->isNotEmpty()) {
+            $performancesQuery->whereHas('operation', function (Builder $operationQuery) use ($regionIds) {
+                $operationQuery->where(function (Builder $regionFilter) use ($regionIds) {
+                    $regionFilter
+                        ->where(function (Builder $directRegion) use ($regionIds) {
+                            $directRegion
+                                ->where('destination_scope', OperationDestinationScope::Region->value)
+                                ->where('destination_reference_type', Region::class)
+                                ->whereIn('destination_reference_id', $regionIds);
+                        })
+                        ->orWhereHasMorph(
+                            'destinationReference',
+                            [Zone::class, Woreda::class, Place::class],
+                            function (Builder $destinationQuery, string $type) use ($regionIds) {
+                                if ($type === Zone::class) {
+                                    $destinationQuery->whereIn('region_id', $regionIds);
+
+                                    return;
+                                }
+
+                                if ($type === Woreda::class) {
+                                    $destinationQuery->whereHas('zone', function (Builder $zoneQuery) use ($regionIds) {
+                                        $zoneQuery->whereIn('region_id', $regionIds);
+                                    });
+
+                                    return;
+                                }
+
+                                if ($type === Place::class) {
+                                    $destinationQuery->whereHas('woreda.zone', function (Builder $zoneQuery) use ($regionIds) {
+                                        $zoneQuery->whereIn('region_id', $regionIds);
+                                    });
+                                }
+                            }
+                        );
+                });
+            });
+        }
+
+        $performances = $performancesQuery->get();
+
+        $rowsCollection = $performances
+            ->groupBy('operation_id')
+            ->map(function (Collection $group) {
+                /** @var Performance|null $first */
+                $first = $group->first();
+                $operation = $first?->operation;
+
+                if ($operation === null) {
+                    return null;
+                }
+
+                $revenue = 0.0;
+                $cost = 0.0;
+                $tonnage = 0.0;
+                $totalKm = 0.0;
+
+                foreach ($group as $performance) {
+                    $volume = (float) ($performance->CargoVolumMT ?? 0);
+                    $revenue += (float) ($operation->tariff ?? 0) * $volume;
+                    $cost += (float) ($performance->fuelInBirr ?? 0)
+                        + (float) ($performance->perdiem ?? 0)
+                        + (float) ($performance->other ?? 0);
+                    $tonnage += $volume;
+                    $totalKm += (float) ($performance->DistanceWCargo ?? 0)
+                        + (float) ($performance->DistanceWOCargo ?? 0);
+                }
+
+                $trips = $group->count();
+                $profit = $revenue - $cost;
+                $margin = $revenue > 0 ? round(($profit / $revenue) * 100, 2) : null;
+                $avgKmPerTrip = $trips > 0 ? $totalKm / $trips : 0.0;
+                $costPerKm = $totalKm > 0 ? round($cost / $totalKm, 2) : null;
+
+                return [
+                    'operation_id' => $operation->getKey(),
+                    'code' => $operation->operationid ?? (string) $operation->getKey(),
+                    'customer_name' => $operation->customer->name ?? 'N/A',
+                    'region_name' => $this->resolveOperationRegionName($operation),
+                    'revenue' => round($revenue, 2),
+                    'cost' => round($cost, 2),
+                    'profit' => round($profit, 2),
+                    'margin_percent' => $margin,
+                    'trips' => $trips,
+                    'tonnage' => round($tonnage, 2),
+                    'avg_km_per_trip' => round($avgKmPerTrip, 2),
+                    'cost_per_km' => $costPerKm,
+                    'total_km' => round($totalKm, 2),
+                ];
+            })
+            ->filter()
+            ->sortByDesc('profit')
+            ->values();
+
+        $sumRevenue = $rowsCollection->sum('revenue');
+        $sumCost = $rowsCollection->sum('cost');
+        $sumProfit = $rowsCollection->sum('profit');
+        $sumTrips = (int) $rowsCollection->sum('trips');
+        $sumTonnage = $rowsCollection->sum('tonnage');
+        $sumTotalKm = $rowsCollection->sum('total_km');
+
+        $totals = [
+            'revenue' => round($sumRevenue, 2),
+            'cost' => round($sumCost, 2),
+            'profit' => round($sumProfit, 2),
+            'operations' => $rowsCollection->count(),
+            'trips' => $sumTrips,
+            'tonnage' => round($sumTonnage, 2),
+            'distance' => round($sumTotalKm, 2),
+            'margin_percent' => $sumRevenue > 0
+                ? round(($sumProfit / $sumRevenue) * 100, 2)
+                : null,
+            'avg_km_per_trip' => $sumTrips > 0 ? round($sumTotalKm / $sumTrips, 2) : null,
+            'cost_per_km' => $sumTotalKm > 0 ? round($sumCost / $sumTotalKm, 2) : null,
+        ];
+
+        return [
+            'rows' => $rowsCollection,
+            'totals' => $totals,
+            'resolved_from' => $from,
+            'resolved_to' => $to,
+            'filters' => [
+                'customer_ids' => $customerIds->all(),
+                'region_ids' => $regionIds->all(),
+            ],
+        ];
+    }
+
+    private function operationProfitabilityRowsWithTotals(Collection $rows, array $totals): Collection
+    {
+        $data = collect($rows->all());
+
+        $data->push([
+            'operation_id' => null,
+            'code' => 'TOTALS',
+            'customer_name' => null,
+            'region_name' => null,
+            'revenue' => $totals['revenue'],
+            'cost' => $totals['cost'],
+            'profit' => $totals['profit'],
+            'margin_percent' => $totals['margin_percent'],
+            'trips' => $totals['trips'],
+            'tonnage' => $totals['tonnage'],
+            'avg_km_per_trip' => $totals['avg_km_per_trip'],
+            'cost_per_km' => $totals['cost_per_km'],
+            'total_km' => $totals['distance'],
+        ]);
+
+        return $data->values();
+    }
+
+    private function exportOperationProfitabilityCsv(Collection $rows, string $from, string $to, string $filename)
+    {
+        $headings = [
+            'Operation',
+            'Customer',
+            'Region',
+            'Revenue',
+            'Cost',
+            'Profit',
+            'Margin %',
+            'Trips',
+            'Tonnage (MT)',
+            'Avg Km/Trip',
+            'Cost/Km',
+        ];
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+
+        return HttpResponse::streamDownload(static function () use ($rows, $headings, $from, $to) {
+            $handle = fopen('php://output', 'w');
+
+            $formatDecimal = static fn ($value) => $value === null ? null : number_format((float) $value, 2, '.', '');
+            $formatPercent = static fn ($value) => $value === null ? null : number_format((float) $value, 2, '.', '');
+
+            fputcsv($handle, ['Operation Profitability Report']);
+            fputcsv($handle, ["Reporting window: {$from} to {$to}"]);
+            fputcsv($handle, []);
+            fputcsv($handle, $headings);
+
+            foreach ($rows as $row) {
+                fputcsv($handle, [
+                    $row['code'],
+                    $row['customer_name'] ?? '—',
+                    $row['region_name'] ?? '—',
+                    $formatDecimal($row['revenue']),
+                    $formatDecimal($row['cost']),
+                    $formatDecimal($row['profit']),
+                    $formatPercent($row['margin_percent']),
+                    $row['trips'],
+                    $formatDecimal($row['tonnage']),
+                    $formatDecimal($row['avg_km_per_trip']),
+                    $formatDecimal($row['cost_per_km']),
+                ]);
+            }
+
+            fclose($handle);
+        }, $filename, $headers);
+    }
+
+    private function exportOperationProfitabilityExcel(Collection $rows, string $filename)
+    {
+        return Excel::download(new OperationProfitabilityExport($rows), $filename);
+    }
+
+    private function exportOperationProfitabilityPdf(Collection $rows, array $totals, string $from, string $to, string $filename)
+    {
+        $options = new Options;
+        $options->set('isRemoteEnabled', true);
+        $options->set('defaultFont', 'DejaVu Sans');
+
+        $dompdf = new Dompdf($options);
+        $html = view('reports.operation_profitability_pdf', [
+            'rows' => $rows->all(),
+            'totals' => $totals,
+            'from' => $from,
+            'to' => $to,
+        ])->render();
+
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'landscape');
+        $dompdf->render();
+
+        return HttpResponse::make($dompdf->output(), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ]);
+    }
+
+    private function resolveOperationRegionName(Operation $operation): string
+    {
+        $destination = $operation->destinationReference;
+
+        if ($destination instanceof Region) {
+            return $destination->name;
+        }
+
+        if ($destination instanceof Zone) {
+            return $destination->region->name ?? 'N/A';
+        }
+
+        if ($destination instanceof Woreda) {
+            return $destination->zone?->region?->name ?? 'N/A';
+        }
+
+        if ($destination instanceof Place) {
+            return $destination->woreda?->zone?->region?->name ?? 'N/A';
+        }
+
+        $scope = $operation->destination_scope instanceof OperationDestinationScope
+            ? $operation->destination_scope
+            : OperationDestinationScope::tryFrom((string) $operation->destination_scope);
+
+        if ($scope === null || $operation->destination_reference_id === null) {
+            return $operation->destination_name ?? 'N/A';
+        }
+
+        return match ($scope) {
+            OperationDestinationScope::Region => $this->lookupRegionName($operation->destination_reference_id) ?? ($operation->destination_name ?? 'N/A'),
+            OperationDestinationScope::Zone => $this->lookupZoneRegionName($operation->destination_reference_id) ?? ($operation->destination_name ?? 'N/A'),
+            OperationDestinationScope::Woreda => $this->lookupWoredaRegionName($operation->destination_reference_id) ?? ($operation->destination_name ?? 'N/A'),
+            OperationDestinationScope::Place => $this->lookupPlaceRegionName($operation->destination_reference_id) ?? ($operation->destination_name ?? 'N/A'),
+        };
+    }
+
+    private function lookupRegionName(int $regionId): ?string
+    {
+        if (! array_key_exists($regionId, $this->regionNameCache)) {
+            $this->regionNameCache[$regionId] = Region::withTrashed()->find($regionId)?->name;
+        }
+
+        return $this->regionNameCache[$regionId];
+    }
+
+    private function lookupZoneRegionName(int $zoneId): ?string
+    {
+        if (! array_key_exists($zoneId, $this->zoneRegionNameCache)) {
+            $this->zoneRegionNameCache[$zoneId] = Zone::withTrashed()->with('region')->find($zoneId)?->region?->name;
+        }
+
+        return $this->zoneRegionNameCache[$zoneId];
+    }
+
+    private function lookupWoredaRegionName(int $woredaId): ?string
+    {
+        if (! array_key_exists($woredaId, $this->woredaRegionNameCache)) {
+            $this->woredaRegionNameCache[$woredaId] = Woreda::withTrashed()->with('zone.region')->find($woredaId)?->zone?->region?->name;
+        }
+
+        return $this->woredaRegionNameCache[$woredaId];
+    }
+
+    private function lookupPlaceRegionName(int $placeId): ?string
+    {
+        if (! array_key_exists($placeId, $this->placeRegionNameCache)) {
+            $this->placeRegionNameCache[$placeId] = Place::withTrashed()->with('woreda.zone.region')->find($placeId)?->woreda?->zone?->region?->name;
+        }
+
+        return $this->placeRegionNameCache[$placeId];
     }
 
     /**
@@ -614,106 +1478,52 @@ class ReportController extends Controller
             $from = $request->input('from', now()->subMonths(6)->toDateString());
             $to = $request->input('to', now()->toDateString());
 
-            $perfs = Performance::with(['operation.customer', 'origin.woreda.zone.region'])
-                ->whereBetween('DateDispach', [$from, $to])
-                ->get();
-
-            $byRegion = [];
-            $byZone = [];
-            $byWoreda = [];
-            $byPlace = [];
-
-            foreach ($perfs as $p) {
-                $origin = $p->origin;
-                $regionName = $origin?->woreda?->zone?->region?->name ?? 'Unknown';
-                $zoneName = $origin?->woreda?->zone?->name ?? 'Unknown';
-                $woredaName = $origin?->woreda?->name ?? 'Unknown';
-                $placeName = $origin?->name ?? 'Unknown';
-                $tonnage = (float) ($p->CargoVolumMT ?? 0);
-                $revenue = (float) ($p->operation?->tariff ?? 0) * ($tonnage > 0 ? $tonnage : 1);
-
-                // Region
-                if (! isset($byRegion[$regionName])) {
-                    $byRegion[$regionName] = ['name' => $regionName, 'trips' => 0, 'tonnage' => 0.0, 'revenue' => 0.0];
-                }
-                $byRegion[$regionName]['trips'] += 1;
-                $byRegion[$regionName]['tonnage'] += $tonnage;
-                $byRegion[$regionName]['revenue'] += $revenue;
-
-                // Zone
-                if (! isset($byZone[$zoneName])) {
-                    $byZone[$zoneName] = ['name' => $zoneName, 'trips' => 0, 'tonnage' => 0.0, 'revenue' => 0.0];
-                }
-                $byZone[$zoneName]['trips'] += 1;
-                $byZone[$zoneName]['tonnage'] += $tonnage;
-                $byZone[$zoneName]['revenue'] += $revenue;
-
-                // Woreda
-                if (! isset($byWoreda[$woredaName])) {
-                    $byWoreda[$woredaName] = ['name' => $woredaName, 'trips' => 0, 'tonnage' => 0.0, 'revenue' => 0.0];
-                }
-                $byWoreda[$woredaName]['trips'] += 1;
-                $byWoreda[$woredaName]['tonnage'] += $tonnage;
-                $byWoreda[$woredaName]['revenue'] += $revenue;
-
-                // Place
-                if (! isset($byPlace[$placeName])) {
-                    $byPlace[$placeName] = ['name' => $placeName, 'trips' => 0, 'tonnage' => 0.0, 'revenue' => 0.0];
-                }
-                $byPlace[$placeName]['trips'] += 1;
-                $byPlace[$placeName]['tonnage'] += $tonnage;
-                $byPlace[$placeName]['revenue'] += $revenue;
+            if (Carbon::parse($from)->gt(Carbon::parse($to))) {
+                [$from, $to] = [$to, $from];
             }
 
-            // Convert to arrays and sort by revenue desc
-            $regions = array_values($byRegion);
-            usort($regions, fn ($a, $b) => $b['revenue'] <=> $a['revenue']);
-            $zones = array_values($byZone);
-            usort($zones, fn ($a, $b) => $b['revenue'] <=> $a['revenue']);
-            $woredas = array_values($byWoreda);
-            usort($woredas, fn ($a, $b) => $b['revenue'] <=> $a['revenue']);
-            $places = array_values($byPlace);
-            usort($places, fn ($a, $b) => $b['revenue'] <=> $a['revenue']);
-
-            // Trend by month at region level
-            $trend = [];
-            foreach ($perfs as $p) {
-                $ym = $p->DateDispach?->format('Y-m');
-                if (! $ym) {
-                    continue;
-                }
-                $regionName = $p->origin?->woreda?->zone?->region?->name ?? 'Unknown';
-                $revenue = (float) ($p->operation?->tariff ?? 0) * ((float) ($p->CargoVolumMT ?? 0) > 0 ? (float) $p->CargoVolumMT : 1);
-                if (! isset($trend[$regionName])) {
-                    $trend[$regionName] = [];
-                }
-                if (! isset($trend[$regionName][$ym])) {
-                    $trend[$regionName][$ym] = 0.0;
-                }
-                $trend[$regionName][$ym] += $revenue;
-            }
-            $regionTrends = [];
-            foreach ($trend as $region => $months) {
-                krsort($months);
-                $series = [];
-                foreach ($months as $ym => $val) {
-                    $series[] = ['month' => $ym, 'revenue' => round($val, 2)];
-                }
-                $regionTrends[] = ['region' => $region, 'series' => $series];
-            }
+            $report = $this->buildGeographyHeatmapsReport($from, $to);
 
             return Inertia::render('Reports/GeographyHeatmaps', [
                 'filters' => ['from' => $from, 'to' => $to],
-                'regions' => $regions,
-                'zones' => $zones,
-                'woredas' => $woredas,
-                'places' => $places,
-                'regionTrends' => $regionTrends,
+                'regions' => $report['regions'],
+                'zones' => $report['zones'],
+                'woredas' => $report['woredas'],
+                'places' => $report['places'],
+                'regionTrends' => $report['regionTrends'],
             ]);
 
         } catch (Exception $e) {
             return back()->withErrors(['error' => 'Failed to generate geographic heatmaps report.']);
         }
+    }
+
+    public function geographyHeatmapsExport(Request $request, string $format)
+    {
+        $format = strtolower($format);
+
+        if (! in_array($format, ['csv', 'xlsx', 'pdf'], true)) {
+            abort(404);
+        }
+
+        $from = $request->input('from', now()->subMonths(6)->toDateString());
+        $to = $request->input('to', now()->toDateString());
+
+        if (Carbon::parse($from)->gt(Carbon::parse($to))) {
+            [$from, $to] = [$to, $from];
+        }
+
+        $report = $this->buildGeographyHeatmapsReport($from, $to);
+        $rows = $this->geographyRowsWithTotals($report);
+
+        $filename = 'geography_heatmaps_'.now()->format('Y-m-d_H-i-s');
+
+        return match ($format) {
+            'csv' => $this->exportGeographyCsv($rows, $from, $to, $filename.'.csv'),
+            'xlsx' => $this->exportGeographyExcel($rows, $filename.'.xlsx'),
+            'pdf' => $this->exportGeographyPdf($rows, $report['totals'], $from, $to, $filename.'.pdf'),
+            default => abort(404),
+        };
     }
 
     /**
@@ -1122,6 +1932,212 @@ class ReportController extends Controller
         ]);
     }
 
+    private function buildGeographyHeatmapsReport(string $from, string $to): array
+    {
+        $performances = Performance::with(['operation.customer', 'origin.woreda.zone.region'])
+            ->whereBetween('DateDispach', [$from, $to])
+            ->get();
+
+        $byRegion = [];
+        $byZone = [];
+        $byWoreda = [];
+        $byPlace = [];
+        $trend = [];
+        $totals = [
+            'trips' => 0,
+            'tonnage' => 0.0,
+            'revenue' => 0.0,
+        ];
+
+        foreach ($performances as $performance) {
+            $origin = $performance->origin;
+            $regionName = $origin?->woreda?->zone?->region?->name ?? 'Unknown';
+            $zoneName = $origin?->woreda?->zone?->name ?? 'Unknown';
+            $woredaName = $origin?->woreda?->name ?? 'Unknown';
+            $placeName = $origin?->name ?? 'Unknown';
+            $tonnage = (float) ($performance->CargoVolumMT ?? 0);
+            $revenue = (float) ($performance->operation?->tariff ?? 0) * ($tonnage > 0 ? $tonnage : 1);
+
+            $totals['trips'] += 1;
+            $totals['tonnage'] += $tonnage;
+            $totals['revenue'] += $revenue;
+
+            if (! isset($byRegion[$regionName])) {
+                $byRegion[$regionName] = ['name' => $regionName, 'trips' => 0, 'tonnage' => 0.0, 'revenue' => 0.0];
+            }
+            $byRegion[$regionName]['trips'] += 1;
+            $byRegion[$regionName]['tonnage'] += $tonnage;
+            $byRegion[$regionName]['revenue'] += $revenue;
+
+            if (! isset($byZone[$zoneName])) {
+                $byZone[$zoneName] = ['name' => $zoneName, 'trips' => 0, 'tonnage' => 0.0, 'revenue' => 0.0];
+            }
+            $byZone[$zoneName]['trips'] += 1;
+            $byZone[$zoneName]['tonnage'] += $tonnage;
+            $byZone[$zoneName]['revenue'] += $revenue;
+
+            if (! isset($byWoreda[$woredaName])) {
+                $byWoreda[$woredaName] = ['name' => $woredaName, 'trips' => 0, 'tonnage' => 0.0, 'revenue' => 0.0];
+            }
+            $byWoreda[$woredaName]['trips'] += 1;
+            $byWoreda[$woredaName]['tonnage'] += $tonnage;
+            $byWoreda[$woredaName]['revenue'] += $revenue;
+
+            if (! isset($byPlace[$placeName])) {
+                $byPlace[$placeName] = ['name' => $placeName, 'trips' => 0, 'tonnage' => 0.0, 'revenue' => 0.0];
+            }
+            $byPlace[$placeName]['trips'] += 1;
+            $byPlace[$placeName]['tonnage'] += $tonnage;
+            $byPlace[$placeName]['revenue'] += $revenue;
+
+            $ym = $performance->DateDispach?->format('Y-m');
+            if ($ym) {
+                if (! isset($trend[$regionName])) {
+                    $trend[$regionName] = [];
+                }
+                if (! isset($trend[$regionName][$ym])) {
+                    $trend[$regionName][$ym] = 0.0;
+                }
+
+                $trend[$regionName][$ym] += (float) ($performance->operation?->tariff ?? 0) * ((float) ($performance->CargoVolumMT ?? 0) > 0 ? (float) $performance->CargoVolumMT : 1);
+            }
+        }
+
+        $regions = array_values($byRegion);
+        usort($regions, static fn (array $a, array $b) => $b['revenue'] <=> $a['revenue']);
+        $zones = array_values($byZone);
+        usort($zones, static fn (array $a, array $b) => $b['revenue'] <=> $a['revenue']);
+        $woredas = array_values($byWoreda);
+        usort($woredas, static fn (array $a, array $b) => $b['revenue'] <=> $a['revenue']);
+        $places = array_values($byPlace);
+        usort($places, static fn (array $a, array $b) => $b['revenue'] <=> $a['revenue']);
+
+        $regionTrends = [];
+        foreach ($trend as $region => $months) {
+            krsort($months);
+            $series = [];
+            foreach ($months as $ym => $value) {
+                $series[] = ['month' => $ym, 'revenue' => round($value, 2)];
+            }
+            $regionTrends[] = ['region' => $region, 'series' => $series];
+        }
+
+        return [
+            'regions' => $regions,
+            'zones' => $zones,
+            'woredas' => $woredas,
+            'places' => $places,
+            'regionTrends' => $regionTrends,
+            'totals' => [
+                'trips' => (int) $totals['trips'],
+                'tonnage' => round($totals['tonnage'], 2),
+                'revenue' => round($totals['revenue'], 2),
+            ],
+        ];
+    }
+
+    private function geographyRowsWithTotals(array $report): Collection
+    {
+        $levels = [
+            ['label' => 'Region', 'rows' => $report['regions']],
+            ['label' => 'Zone', 'rows' => $report['zones']],
+            ['label' => 'Woreda', 'rows' => $report['woredas']],
+            ['label' => 'Place', 'rows' => $report['places']],
+        ];
+
+        return collect($levels)
+            ->flatMap(static function (array $level) {
+                $levelRows = collect($level['rows']);
+
+                $rows = $levelRows->map(static function (array $row) use ($level) {
+                    return [
+                        'level' => $level['label'],
+                        'name' => $row['name'],
+                        'trips' => (int) ($row['trips'] ?? 0),
+                        'tonnage' => round((float) ($row['tonnage'] ?? 0), 2),
+                        'revenue' => round((float) ($row['revenue'] ?? 0), 2),
+                        'is_total' => false,
+                    ];
+                });
+
+                if ($rows->isEmpty()) {
+                    return $rows;
+                }
+
+                $totals = [
+                    'level' => $level['label'],
+                    'name' => 'Totals',
+                    'trips' => (int) $levelRows->sum(static fn (array $row) => (int) ($row['trips'] ?? 0)),
+                    'tonnage' => round($levelRows->sum(static fn (array $row) => (float) ($row['tonnage'] ?? 0)), 2),
+                    'revenue' => round($levelRows->sum(static fn (array $row) => (float) ($row['revenue'] ?? 0)), 2),
+                    'is_total' => true,
+                ];
+
+                return $rows->push($totals);
+            })
+            ->values();
+    }
+
+    private function exportGeographyCsv(Collection $rows, string $from, string $to, string $filename)
+    {
+        $headings = ['Level', 'Name', 'Trips', 'Tonnage (MT)', 'Revenue'];
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+
+        return HttpResponse::streamDownload(static function () use ($rows, $headings, $from, $to) {
+            $handle = fopen('php://output', 'w');
+
+            fputcsv($handle, ['Geographic Heatmaps Report']);
+            fputcsv($handle, ["Reporting window: {$from} to {$to}"]);
+            fputcsv($handle, []);
+            fputcsv($handle, $headings);
+
+            foreach ($rows as $row) {
+                fputcsv($handle, [
+                    $row['level'],
+                    $row['name'],
+                    $row['trips'],
+                    number_format((float) $row['tonnage'], 2, '.', ''),
+                    number_format((float) $row['revenue'], 2, '.', ''),
+                ]);
+            }
+
+            fclose($handle);
+        }, $filename, $headers);
+    }
+
+    private function exportGeographyExcel(Collection $rows, string $filename)
+    {
+        return Excel::download(new GeographyHeatmapsExport($rows), $filename);
+    }
+
+    private function exportGeographyPdf(Collection $rows, array $totals, string $from, string $to, string $filename)
+    {
+        $options = new Options;
+        $options->set('isRemoteEnabled', true);
+        $options->set('defaultFont', 'DejaVu Sans');
+
+        $dompdf = new Dompdf($options);
+        $html = view('reports.geography_heatmaps_pdf', [
+            'rows' => $rows,
+            'totals' => $totals,
+            'from' => $from,
+            'to' => $to,
+        ])->render();
+
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'landscape');
+        $dompdf->render();
+
+        return HttpResponse::make($dompdf->output(), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ]);
+    }
+
     private function performanceAllRowsWithTotals(Collection $rows, array $summary): Collection
     {
         $data = collect($rows->all());
@@ -1159,24 +2175,38 @@ class ReportController extends Controller
     private function routeProfitabilityRowsWithTotals(Collection $rows, array $summary): Collection
     {
         $data = collect($rows->all());
+        $totalDistance = $summary['total_distance'];
+        $totalTrips = $summary['total_trips'];
+
+        $avgDistance = $totalTrips > 0 ? round($totalDistance / $totalTrips, 2) : null;
+        $avgTonnage = $totalTrips > 0 ? round($summary['total_tonnage'] / $totalTrips, 2) : null;
+        $revenuePerKm = $totalDistance > 0 ? round($summary['total_revenue'] / $totalDistance, 2) : null;
+        $costPerKm = $totalDistance > 0 ? round($summary['total_expense'] / $totalDistance, 2) : null;
+        $profitPerKm = $totalDistance > 0 ? round($summary['total_profit'] / $totalDistance, 2) : null;
 
         $data->push([
             'origin_name' => 'TOTALS',
             'destination_name' => null,
+            'route_key' => 'totals',
             'trips' => $summary['total_trips'],
             'tonnage' => $summary['total_tonnage'],
             'ton_km' => $summary['total_ton_km'],
             'distance_wc' => $summary['total_distance_with_cargo'],
             'distance_wo' => $summary['total_distance_without_cargo'],
             'distance_total' => $summary['total_distance'],
-            'avg_distance' => null,
-            'revenue' => $summary['total_revenue'],
+            'avg_distance' => $avgDistance,
+            'avg_tonnage' => $avgTonnage,
+            'fuel_cost' => null,
+            'perdiem' => null,
+            'work_on_going' => null,
+            'other_cost' => null,
             'expense' => $summary['total_expense'],
+            'revenue' => $summary['total_revenue'],
             'profit' => $summary['total_profit'],
             'margin_percent' => $summary['overall_margin_percent'],
-            'revenue_per_km' => null,
-            'cost_per_km' => null,
-            'profit_per_km' => null,
+            'revenue_per_km' => $revenuePerKm,
+            'cost_per_km' => $costPerKm,
+            'profit_per_km' => $profitPerKm,
         ]);
 
         return $data->values();

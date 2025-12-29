@@ -6,12 +6,14 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ReportFiltersDialog } from '@/components/reports/report-filters-dialog';
 import { ReportSummaryGrid, type ReportSummaryItem } from '@/components/reports/report-summary-grid';
 import { ReportMaintenanceTable, type MaintenanceReportRow } from '@/components/reports/report-maintenance-table';
 import type { ReportSelectionOption } from '@/components/reports/types';
 import { formatCurrency, formatInteger, formatPercentage } from '@/components/reports/formatters';
-import { AlertTriangle, CalendarDays, CheckCircle2, ClipboardList, DollarSign, RefreshCcw, ShieldAlert, Wrench } from 'lucide-react';
+import { AlertTriangle, CalendarDays, CheckCircle2, ClipboardList, DollarSign, Download, FileDigit, FileSpreadsheet, FileType2, RefreshCcw, ShieldAlert, Wrench } from 'lucide-react';
+import { usePermissions } from '@/hooks/use-permissions';
 
 interface MaintenanceFilters {
     from?: string | null;
@@ -160,6 +162,12 @@ const formatOptionalInteger = (value: number | null): string => {
     return formatInteger(value);
 };
 
+const toParamsArray = (key: string, values: Array<number | string>, params: URLSearchParams) => {
+    values.forEach((value, index) => {
+        params.append(`${key}[${index}]`, String(value));
+    });
+};
+
 export default function MaintenanceReport({
     filters,
     options,
@@ -173,6 +181,9 @@ export default function MaintenanceReport({
     per_page_options: perPageOptionsProp = [],
     highlights,
 }: MaintenanceProps) {
+    const { hasPermission } = usePermissions();
+    const canExport = hasPermission('reports.maintenance.export');
+
     const truckSelectionOptions = useMemo<ReportSelectionOption[]>(
         () =>
             Array.isArray(options?.trucks)
@@ -366,6 +377,31 @@ export default function MaintenanceReport({
         router.get('/reports/maintenance', { per_page: defaultPerPage }, { preserveState: false, preserveScroll: true });
     };
 
+    const handleExport = (format: 'csv' | 'xlsx' | 'pdf') => {
+        if (!validateDateRange(from, to)) {
+            setFiltersOpen(true);
+
+            return;
+        }
+
+        if (!canExport) {
+            return;
+        }
+
+        const params = new URLSearchParams();
+
+        if (from) params.set('from', from);
+        if (to) params.set('to', to);
+        if (selectedTruckIds.length > 0) toParamsArray('truck_ids', selectedTruckIds, params);
+        if (selectedMaintenanceTypes.length > 0) toParamsArray('maintenance_type_ids', selectedMaintenanceTypes, params);
+        if (selectedStatuses.length > 0) toParamsArray('statuses', selectedStatuses, params);
+        if (selectedProviders.length > 0) toParamsArray('service_providers', selectedProviders, params);
+
+        const query = params.toString();
+        const url = `/reports/maintenance/export/${format}${query ? `?${query}` : ''}`;
+        window.location.href = url;
+    };
+
     const handlePerPageChange = useCallback(
         (value: number) => {
             setPerPage(value);
@@ -526,6 +562,30 @@ export default function MaintenanceReport({
                                     showDestinationFilter={false}
                                     dateError={dateError}
                                 />
+                                {canExport ? (
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button type="button" variant="secondary" className="gap-2">
+                                                <Download className="h-4 w-4" />
+                                                Export
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end" className="w-44">
+                                            <DropdownMenuItem onSelect={() => handleExport('csv')} className="gap-2">
+                                                <FileDigit className="h-4 w-4 text-amber-500" />
+                                                CSV
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onSelect={() => handleExport('xlsx')} className="gap-2">
+                                                <FileSpreadsheet className="h-4 w-4 text-emerald-500" />
+                                                Excel
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onSelect={() => handleExport('pdf')} className="gap-2">
+                                                <FileType2 className="h-4 w-4 text-rose-500" />
+                                                PDF
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                ) : null}
                                 <Button type="button" variant="outline" className="gap-2" onClick={handleReset}>
                                     <RefreshCcw className="h-4 w-4" />
                                     Reset

@@ -1,15 +1,16 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Head, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Activity, Flame, Globe, Map as MapIcon, MapPin, TrendingUp } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { ReportFiltersDialog } from '@/components/reports/report-filters-dialog';
+import { usePermissions } from '@/hooks/use-permissions';
+import { Activity, Download, FileDigit, FileSpreadsheet, FileType2, Flame, Globe, Map as MapIcon, MapPin, RefreshCcw, TrendingUp } from 'lucide-react';
 
 interface GeoRow {
     name: string;
@@ -42,8 +43,56 @@ const formatDecimal = (value: number) => value.toLocaleString(undefined, { minim
 const formatCurrency = (value: number) => new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(value);
 
 export default function GeographyHeatmaps({ filters, regions, zones, woredas, places, regionTrends }: GeographyHeatmapsProps) {
+    const { hasPermission } = usePermissions();
+    const canExport = hasPermission('reports.geography-heatmaps.export');
+
     const [from, setFrom] = useState(filters?.from ?? '');
     const [to, setTo] = useState(filters?.to ?? '');
+    const [filtersOpen, setFiltersOpen] = useState(false);
+    const [dateError, setDateError] = useState<string | null>(null);
+
+    const validateDateRange = useCallback(
+        (nextFrom: string, nextTo: string) => {
+            if (nextFrom && nextTo) {
+                const fromTimestamp = Date.parse(nextFrom);
+                const toTimestamp = Date.parse(nextTo);
+
+                if (!Number.isNaN(fromTimestamp) && !Number.isNaN(toTimestamp) && fromTimestamp > toTimestamp) {
+                    setDateError('Start date must be before or equal to the end date.');
+
+                    return false;
+                }
+            }
+
+            setDateError(null);
+
+            return true;
+        },
+        [],
+    );
+
+    const activeFilterCount = useMemo(() => {
+        let count = 0;
+
+        if (from && from !== (filters?.from ?? '')) count += 1;
+        if (to && to !== (filters?.to ?? '')) count += 1;
+
+        return count;
+    }, [from, to, filters?.from, filters?.to]);
+
+    const handleDateChange = (field: 'from' | 'to', value: string) => {
+        if (field === 'from') {
+            setFrom(value);
+            validateDateRange(value, to);
+            return;
+        }
+
+        setTo(value);
+        validateDateRange(from, value);
+    };
+
+    const appliedFrom = filters?.from ?? '';
+    const appliedTo = filters?.to ?? '';
 
     const { totals, topRegions, momentum } = useMemo(() => {
         const sumRows = (rows: GeoRow[]) =>
@@ -117,24 +166,103 @@ export default function GeographyHeatmaps({ filters, regions, zones, woredas, pl
 
     const formatDate = (date: Date) => date.toISOString().slice(0, 10);
 
-    const handleApply = () => {
-        router.get('/reports/geography-heatmaps', { from, to }, { preserveState: true, preserveScroll: true });
-    };
-
-    const handleReset = () => {
-        setFrom(filters?.from ?? '');
-        setTo(filters?.to ?? '');
-        router.get('/reports/geography-heatmaps', {}, { preserveState: false, preserveScroll: true });
-    };
-
-    const setQuickRange = (days: number) => {
+    const computeQuickRange = useCallback((days: number) => {
         const end = new Date();
         const start = new Date();
         start.setDate(end.getDate() - Math.max(days - 1, 0));
 
-        setFrom(formatDate(start));
-        setTo(formatDate(end));
+        return {
+            nextFrom: formatDate(start),
+            nextTo: formatDate(end),
+        };
+    }, []);
+
+    const setQuickRange = useCallback(
+        (days: number) => {
+            const { nextFrom, nextTo } = computeQuickRange(days);
+            setFrom(nextFrom);
+            setTo(nextTo);
+            validateDateRange(nextFrom, nextTo);
+        },
+        [computeQuickRange, validateDateRange],
+    );
+
+    const applyQuickRange = useCallback(
+        (days: number) => {
+            const { nextFrom, nextTo } = computeQuickRange(days);
+            setFrom(nextFrom);
+            setTo(nextTo);
+
+            if (!validateDateRange(nextFrom, nextTo)) {
+                setFiltersOpen(true);
+                return;
+            }
+
+            setFiltersOpen(false);
+
+            router.get(
+                '/reports/geography-heatmaps',
+                { from: nextFrom, to: nextTo },
+                { preserveState: true, preserveScroll: true },
+            );
+        },
+        [computeQuickRange, validateDateRange],
+    );
+
+    const handleApplyFilters = () => {
+        if (!validateDateRange(from, to)) {
+            setFiltersOpen(true);
+
+            return;
+        }
+
+        setFiltersOpen(false);
+
+        router.get(
+            '/reports/geography-heatmaps',
+            { from, to },
+            { preserveState: true, preserveScroll: true },
+        );
     };
+
+    const handleReset = () => {
+        const originalFrom = filters?.from ?? '';
+        const originalTo = filters?.to ?? '';
+
+        setFrom(originalFrom);
+        setTo(originalTo);
+        setFiltersOpen(false);
+        setDateError(null);
+
+        router.get('/reports/geography-heatmaps', {}, { preserveState: false, preserveScroll: true });
+    };
+
+    const handleExport = (format: 'csv' | 'xlsx' | 'pdf') => {
+        if (!validateDateRange(from, to)) {
+            setFiltersOpen(true);
+
+            return;
+        }
+
+        if (!canExport) {
+            return;
+        }
+
+        const params = new URLSearchParams();
+
+        if (from) params.set('from', from);
+        if (to) params.set('to', to);
+
+        const query = params.toString();
+        const url = `/reports/geography-heatmaps/export/${format}${query ? `?${query}` : ''}`;
+
+        window.location.href = url;
+    };
+
+    const filterBadges = useMemo(
+        () => [`From ${appliedFrom || '—'}`, `To ${appliedTo || '—'}`],
+        [appliedFrom, appliedTo],
+    );
 
     const summaryCards = [
         {
@@ -178,81 +306,104 @@ export default function GeographyHeatmaps({ filters, regions, zones, woredas, pl
                                 </p>
                             </div>
                             <div className="flex flex-wrap items-center gap-2">
-                                <Button type="button" variant="outline" onClick={() => setQuickRange(7)}>
-                                    Last 7 days
-                                </Button>
-                                <Button type="button" variant="outline" onClick={() => setQuickRange(30)}>
-                                    Last 30 days
-                                </Button>
-                                <Button type="button" variant="ghost" className="text-slate-500 hover:text-slate-700 dark:text-slate-300" onClick={handleReset}>
+                                <ReportFiltersDialog
+                                    open={filtersOpen}
+                                    onOpenChange={setFiltersOpen}
+                                    activeFilterCount={activeFilterCount}
+                                    from={from}
+                                    to={to}
+                                    onDateChange={handleDateChange}
+                                    onReset={handleReset}
+                                    onApply={handleApplyFilters}
+                                    dateError={dateError}
+                                    extraFilters={
+                                        <div className="space-y-3">
+                                            <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">Quick presets</span>
+                                            <div className="flex flex-wrap gap-2">
+                                                {[7, 14, 30, 90].map((days) => (
+                                                    <Badge
+                                                        key={days}
+                                                        variant="outline"
+                                                        className="cursor-pointer border-slate-300/70 font-medium hover:border-slate-400 dark:border-slate-700"
+                                                        onClick={() => setQuickRange(days)}
+                                                    >
+                                                        {days}-day view
+                                                    </Badge>
+                                                ))}
+                                            </div>
+                                            <p className="text-xs text-muted-foreground">Select a preset, then apply to regenerate the report.</p>
+                                        </div>
+                                    }
+                                />
+                                {canExport && (
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button type="button" variant="secondary" className="gap-2">
+                                                <Download className="h-4 w-4" />
+                                                Export
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end" className="w-44">
+                                            <DropdownMenuItem onSelect={() => handleExport('csv')} className="gap-2">
+                                                <FileDigit className="h-4 w-4 text-amber-500" />
+                                                CSV
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onSelect={() => handleExport('xlsx')} className="gap-2">
+                                                <FileSpreadsheet className="h-4 w-4 text-emerald-500" />
+                                                Excel
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onSelect={() => handleExport('pdf')} className="gap-2">
+                                                <FileType2 className="h-4 w-4 text-rose-500" />
+                                                PDF
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                )}
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button type="button" variant="outline" className="gap-2">
+                                            Quick ranges
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="w-40">
+                                        {[7, 14, 30, 90].map((days) => (
+                                            <DropdownMenuItem key={days} onSelect={() => applyQuickRange(days)} className="gap-2">
+                                                <span className="font-medium">{days}-day view</span>
+                                            </DropdownMenuItem>
+                                        ))}
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                                <Button type="button" variant="outline" className="gap-2" onClick={handleReset}>
+                                    <RefreshCcw className="h-4 w-4" />
                                     Reset
                                 </Button>
                             </div>
                         </div>
                     </header>
 
-                    <section className="grid gap-6 lg:grid-cols-[360px_1fr]">
-                        <Card className="flex h-full flex-col border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
-                            <CardHeader className="space-y-2">
-                                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50">Filters</CardTitle>
-                                <CardDescription className="text-sm">Focus on a window or replay historic performance.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="flex-1 space-y-6">
-                                <div className="space-y-2">
-                                    <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Date range</span>
-                                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                        <Input type="date" value={from} onChange={(event) => setFrom(event.target.value)} />
-                                        <Input type="date" value={to} onChange={(event) => setTo(event.target.value)} />
-                                    </div>
-                                    <p className="text-xs text-muted-foreground">Need precise control? Set the range manually and apply.</p>
-                                </div>
-                                <Separator className="border-dashed" />
-                                <div className="space-y-3">
-                                    <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Quick presets</span>
-                                    <div className="flex flex-wrap gap-2">
-                                        {[7, 14, 30, 90].map((days) => (
-                                            <Badge key={days} variant="outline" className="cursor-pointer border-slate-300/70 hover:border-slate-400 dark:border-slate-700" onClick={() => setQuickRange(days)}>
-                                                {days}-day view
-                                            </Badge>
-                                        ))}
-                                    </div>
-                                </div>
-                            </CardContent>
-                            <CardFooter className="flex flex-col gap-3 sm:flex-row sm:justify-between">
-                                <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={handleReset}>
-                                    Reset
-                                </Button>
-                                <Button type="button" className="w-full sm:w-auto" onClick={handleApply}>
-                                    Apply filters
-                                </Button>
-                            </CardFooter>
-                        </Card>
-
-                        <Card className="flex h-full flex-col border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
-                            <CardHeader className="space-y-2">
-                                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50">Signal Overview</CardTitle>
-                                <CardDescription className="text-sm">Key throughput and revenue indicators for the selected window.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="grid gap-4 md:grid-cols-2">
+                    <Card className="border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
+                        <CardHeader className="space-y-2">
+                            <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50">Signal Overview</CardTitle>
+                            <CardDescription className="text-sm">Key throughput and revenue indicators for the selected window.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="overflow-x-auto">
+                            <div className="flex min-w-full gap-3 lg:gap-4">
                                 {summaryCards.map((card) => (
-                                    <Card key={card.title} className="border border-slate-200/80 bg-white/90 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800/70 dark:bg-slate-950/60">
-                                        <CardHeader className="flex flex-row items-start justify-between space-y-0 p-4">
-                                            <div className="space-y-1">
-                                                <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                                                    {card.title}
-                                                </CardTitle>
-                                                <div className="text-xl font-semibold text-slate-900 dark:text-slate-50">{card.value}</div>
-                                            </div>
+                                    <div
+                                        key={card.title}
+                                        className="flex min-w-[13rem] flex-1 flex-col justify-between rounded-xl border border-slate-200/70 bg-white/90 px-3 py-3 text-sm shadow-sm dark:border-slate-800/70 dark:bg-slate-950/60"
+                                    >
+                                        <div className="flex items-center justify-between gap-2">
+                                            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{card.title}</span>
                                             {card.icon}
-                                        </CardHeader>
-                                        <CardContent className="px-4 pb-4 pt-0">
-                                            <CardDescription className="text-xs text-muted-foreground">{card.helper}</CardDescription>
-                                        </CardContent>
-                                    </Card>
+                                        </div>
+                                        <div className="mt-2 text-lg font-semibold text-slate-900 dark:text-slate-50">{card.value}</div>
+                                        <p className="mt-1 text-xs text-muted-foreground">{card.helper}</p>
+                                    </div>
                                 ))}
-                            </CardContent>
-                        </Card>
-                    </section>
+                            </div>
+                        </CardContent>
+                    </Card>
 
                     <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
                         <Card className="border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
@@ -351,8 +502,11 @@ export default function GeographyHeatmaps({ filters, regions, zones, woredas, pl
                                 <CardDescription className="text-sm">Drill into every layer of the network, from macro to micro.</CardDescription>
                             </div>
                             <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                                <Badge variant="outline">From {filters?.from || '—'}</Badge>
-                                <Badge variant="outline">To {filters?.to || '—'}</Badge>
+                                {filterBadges.map((label) => (
+                                    <Badge key={label} variant="outline">
+                                        {label}
+                                    </Badge>
+                                ))}
                             </div>
                         </CardHeader>
                         <CardContent className="p-0">

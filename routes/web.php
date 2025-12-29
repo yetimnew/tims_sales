@@ -627,13 +627,28 @@ Route::middleware('auth')->group(function () {
             ->middleware('can:reports.maintenance.view')
             ->name('reports.maintenance');
 
+        Route::get('reports/maintenance/export/{format}', [ReportController::class, 'maintenanceExport'])
+            ->whereIn('format', ['csv', 'xlsx', 'pdf'])
+            ->middleware('can:reports.maintenance.export')
+            ->name('reports.maintenance.export');
+
         Route::get('reports/fuel-efficiency', [ReportController::class, 'fuelEfficiency'])
             ->middleware('can:reports.fuel-efficiency.view')
             ->name('reports.fuel-efficiency');
 
+        Route::get('reports/fuel-efficiency/export/{format}', [ReportController::class, 'fuelEfficiencyExport'])
+            ->whereIn('format', ['csv', 'xlsx', 'pdf'])
+            ->middleware('can:reports.fuel-efficiency.export')
+            ->name('reports.fuel-efficiency.export');
+
         Route::get('reports/customer-profitability', [ReportController::class, 'customerProfitability'])
             ->middleware('can:reports.customer-profitability.view')
             ->name('reports.customer-profitability');
+
+        Route::get('reports/customer-profitability/export/{format}', [ReportController::class, 'customerProfitabilityExport'])
+            ->whereIn('format', ['csv', 'xlsx', 'pdf'])
+            ->middleware('can:reports.customer-profitability.export')
+            ->name('reports.customer-profitability.export');
 
         Route::get('reports/outsource-performance', [ReportController::class, 'outsourcePerformanceReport'])
             ->middleware('can:reports.outsource-performance.view')
@@ -648,15 +663,25 @@ Route::middleware('auth')->group(function () {
             ->middleware('can:reports.operation-profitability.view')
             ->name('reports.operation-profitability');
 
-        Route::get('reports/operational-profitability', function (Request $request) {
-            return redirect()->route('reports.operation-profitability', $request->query());
-        })
-            ->middleware('can:reports.operation-profitability.view')
-            ->name('reports.operational-profitability');
+        Route::get('reports/operation-profitability/export/{format}', [ReportController::class, 'operationProfitabilityExport'])
+            ->whereIn('format', ['csv', 'xlsx', 'pdf'])
+            ->middleware('can:reports.operation-profitability.export')
+            ->name('reports.operation-profitability.export');
+
+        // Route::get('reports/operational-profitability', function (Request $request) {
+        //     return redirect()->route('reports.operation-profitability', $request->query());
+        // })
+        //     ->middleware('can:reports.operation-profitability.view')
+        //     ->name('reports.operational-profitability');
 
         Route::get('reports/geography-heatmaps', [ReportController::class, 'geographyHeatmaps'])
             ->middleware('can:reports.geography-heatmaps.view')
             ->name('reports.geography-heatmaps');
+
+        Route::get('reports/geography-heatmaps/export/{format}', [ReportController::class, 'geographyHeatmapsExport'])
+            ->whereIn('format', ['csv', 'xlsx', 'pdf'])
+            ->middleware('can:reports.geography-heatmaps.export')
+            ->name('reports.geography-heatmaps.export');
 
         Route::get('reports/truck-grading', [ReportController::class, 'truckGrading'])
             ->middleware('can:reports.truck-grading.view')

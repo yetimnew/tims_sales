@@ -57,6 +57,7 @@ class MaintenancePerformanceReport
             'totals' => $totals,
             'summary' => $summary,
             'breakdown' => $breakdownPaginator['data'],
+            'breakdown_all' => $truckBreakdown->values()->all(),
             'breakdown_paginator' => Arr::except($breakdownPaginator, ['data']),
             'per_page' => $breakdownPaginator['meta']['per_page'] ?? self::DEFAULT_PER_PAGE,
             'per_page_options' => self::PER_PAGE_OPTIONS,
