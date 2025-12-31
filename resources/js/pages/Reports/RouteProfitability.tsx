@@ -542,9 +542,6 @@ export default function RouteProfitability({ filters, rows = [], summary, option
                                     <RefreshCcw className="h-4 w-4" />
                                     Reset
                                 </Button>
-                                <Button type="button" className="gap-2" onClick={handleApplyFilters}>
-                                    Generate report
-                                </Button>
                             </div>
                         </div>
                     </header>
@@ -651,7 +648,7 @@ export default function RouteProfitability({ filters, rows = [], summary, option
                                         ) : (
                                             <TableRow>
                                                 <TableCell colSpan={13} className="py-10 text-center text-sm text-muted-foreground">
-                                                    No route data available for the selected period. Adjust your filters and generate the report again.
+                                                    No route data available for the selected period. Adjust your filters to view results.
                                                 </TableCell>
                                             </TableRow>
                                         )}

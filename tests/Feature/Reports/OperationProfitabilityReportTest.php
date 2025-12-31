@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Reports;
 
+use App\Enums\CargoServiceType;
 use App\Enums\OperationDestinationScope;
 use App\Models\Customer;
 use App\Models\DriverTruck;
@@ -56,6 +57,7 @@ class OperationProfitabilityReportTest extends TestCase
             'destination_scope' => OperationDestinationScope::Region->value,
             'destination_reference_type' => Region::class,
             'destination_reference_id' => $regionAlpha->id,
+            'cargo_service_type' => CargoServiceType::Commercial->value,
         ]);
 
         $operationZone = Operation::factory()->create([
@@ -65,6 +67,7 @@ class OperationProfitabilityReportTest extends TestCase
             'destination_scope' => OperationDestinationScope::Zone->value,
             'destination_reference_type' => Zone::class,
             'destination_reference_id' => $zoneBeta->id,
+            'cargo_service_type' => CargoServiceType::Relief->value,
         ]);
 
         $this->assertInstanceOf(Region::class, $operationRegion->fresh()->destinationReference);
@@ -139,6 +142,7 @@ class OperationProfitabilityReportTest extends TestCase
                     ->where('totals.operations', 2)
                     ->where('filters.customer_ids', [])
                     ->where('filters.region_ids', [])
+                    ->where('filters.service_types', [])
                     ->has('operations', 2)
                     ->has('operations.0', function (AssertableInertia $operation) {
                         $operation
@@ -175,7 +179,47 @@ class OperationProfitabilityReportTest extends TestCase
                     ->where('options.customers.1.name', 'Customer B')
                     ->has('options.regions', 2)
                     ->where('options.regions.0.name', 'Region Alpha')
-                    ->where('options.regions.1.name', 'Region Beta');
+                    ->where('options.regions.1.name', 'Region Beta')
+                    ->has('options.service_types', 2)
+                    ->where('options.service_types.0.value', CargoServiceType::Relief->value)
+                    ->where('options.service_types.0.label', 'Relief Cargo')
+                    ->where('options.service_types.1.value', CargoServiceType::Commercial->value)
+                    ->where('options.service_types.1.label', 'Commercial Cargo');
+            });
+
+        $filteredResponse = $this->actingAs($user)->get(route('reports.operation-profitability', [
+            'from' => $baselineDate->copy()->subDay()->toDateString(),
+            'to' => $baselineDate->copy()->addDays(2)->toDateString(),
+            'service_types' => [CargoServiceType::Commercial->value],
+        ]));
+
+        $filteredResponse->assertOk()
+            ->assertInertia(function (AssertableInertia $page) {
+                $page->component('Reports/OperationProfitability')
+                    ->where('filters.service_types', [CargoServiceType::Commercial->value])
+                    ->where('totals.revenue', 12000)
+                    ->where('totals.cost', 540)
+                    ->where('totals.profit', 11460)
+                    ->where('totals.trips', 2)
+                    ->where('totals.tonnage', 12)
+                    ->where('totals.margin_percent', 95.5)
+                    ->where('totals.operations', 1)
+                    ->has('operations', 1)
+                    ->has('operations.0', function (AssertableInertia $operation) {
+                        $operation
+                            ->where('code', 'OP-REGION')
+                            ->where('customer_name', 'Customer A')
+                            ->where('region_name', 'Region Alpha')
+                            ->where('revenue', 12000)
+                            ->where('cost', 540)
+                            ->where('profit', 11460)
+                            ->where('margin_percent', 95.5)
+                            ->where('trips', 2)
+                            ->where('tonnage', 12)
+                            ->where('avg_km_per_trip', 112.5)
+                            ->where('cost_per_km', 2.4)
+                            ->etc();
+                    });
             });
     }
 }

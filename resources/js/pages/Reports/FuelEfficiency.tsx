@@ -461,7 +461,7 @@ export default function FuelEfficiency({
                                             <SelectValue placeholder={`${perPage} / page`} />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {perPageOptions.map((option) => (
+                                            {perPageOptionsList.map((option) => (
                                                 <SelectItem key={option} value={String(option)}>
                                                     {option} / page
                                                 </SelectItem>

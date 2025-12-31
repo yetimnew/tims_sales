@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Head, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
@@ -132,49 +132,6 @@ export default function GeographyHeatmaps({ filters, regions, zones, woredas, pl
         }));
     }, [topRegions]);
 
-    const formatDate = (date: Date) => date.toISOString().slice(0, 10);
-
-    const computeQuickRange = useCallback((days: number) => {
-        const end = new Date();
-        const start = new Date();
-        start.setDate(end.getDate() - Math.max(days - 1, 0));
-
-        return {
-            nextFrom: formatDate(start),
-            nextTo: formatDate(end),
-        };
-    }, []);
-
-    const setQuickRange = useCallback(
-        (days: number) => {
-            const { nextFrom, nextTo } = computeQuickRange(days);
-            resetDateRange(nextFrom, nextTo);
-            validateDateRange(nextFrom, nextTo);
-        },
-        [computeQuickRange, resetDateRange, validateDateRange],
-    );
-
-    const applyQuickRange = useCallback(
-        (days: number) => {
-            const { nextFrom, nextTo } = computeQuickRange(days);
-            resetDateRange(nextFrom, nextTo);
-
-            if (!validateDateRange(nextFrom, nextTo)) {
-                setFiltersOpen(true);
-                return;
-            }
-
-            setFiltersOpen(false);
-
-            router.get(
-                '/reports/geography-heatmaps',
-                { from: nextFrom, to: nextTo },
-                { preserveState: true, preserveScroll: true },
-            );
-        },
-        [computeQuickRange, resetDateRange, validateDateRange],
-    );
-
     const handleApplyFilters = () => {
         if (!validateDateRange(from, to)) {
             setFiltersOpen(true);
@@ -281,24 +238,6 @@ export default function GeographyHeatmaps({ filters, regions, zones, woredas, pl
                                     onReset={handleReset}
                                     onApply={handleApplyFilters}
                                     dateError={dateError}
-                                    extraFilters={
-                                        <div className="space-y-3">
-                                            <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">Quick presets</span>
-                                            <div className="flex flex-wrap gap-2">
-                                                {[7, 14, 30, 90].map((days) => (
-                                                    <Badge
-                                                        key={days}
-                                                        variant="outline"
-                                                        className="cursor-pointer border-slate-300/70 font-medium hover:border-slate-400 dark:border-slate-700"
-                                                        onClick={() => setQuickRange(days)}
-                                                    >
-                                                        {days}-day view
-                                                    </Badge>
-                                                ))}
-                                            </div>
-                                            <p className="text-xs text-muted-foreground">Select a preset, then apply to regenerate the report.</p>
-                                        </div>
-                                    }
                                 />
                                 {canExport && (
                                     <DropdownMenu>
@@ -324,20 +263,6 @@ export default function GeographyHeatmaps({ filters, regions, zones, woredas, pl
                                         </DropdownMenuContent>
                                     </DropdownMenu>
                                 )}
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button type="button" variant="outline" className="gap-2">
-                                            Quick ranges
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end" className="w-40">
-                                        {[7, 14, 30, 90].map((days) => (
-                                            <DropdownMenuItem key={days} onSelect={() => applyQuickRange(days)} className="gap-2">
-                                                <span className="font-medium">{days}-day view</span>
-                                            </DropdownMenuItem>
-                                        ))}
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
                                 <Button type="button" variant="outline" className="gap-2" onClick={handleReset}>
                                     <RefreshCcw className="h-4 w-4" />
                                     Reset

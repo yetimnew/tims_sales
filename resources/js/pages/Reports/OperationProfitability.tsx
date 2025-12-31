@@ -39,6 +39,11 @@ interface RegionOption {
     name: string;
 }
 
+interface ServiceTypeOption {
+    value: string;
+    label: string;
+}
+
 interface Totals {
     revenue: number;
     cost: number;
@@ -73,11 +78,13 @@ interface Filters {
     to?: string;
     customer_ids?: number[];
     region_ids?: number[];
+    service_types?: string[];
 }
 
 interface Options {
     customers?: CustomerOption[];
     regions?: RegionOption[];
+    service_types?: ServiceTypeOption[];
 }
 
 interface Props {
@@ -92,7 +99,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Operation Profitability', href: '/reports/operation-profitability' },
 ];
 
-const toParamsArray = (key: string, values: number[], params: URLSearchParams) => {
+const toParamsArray = (key: string, values: Array<string | number>, params: URLSearchParams) => {
     values.forEach((value) => params.append(`${key}[]`, String(value)));
 };
 
@@ -102,14 +109,17 @@ export default function OperationProfitability({ filters, totals, operations, op
 
     const customerSource = options?.customers;
     const regionSource = options?.regions;
+    const serviceTypeSource = options?.service_types;
 
     const customerOptions = useMemo<CustomerOption[]>(() => (Array.isArray(customerSource) ? customerSource : []), [customerSource]);
     const regionOptions = useMemo<RegionOption[]>(() => (Array.isArray(regionSource) ? regionSource : []), [regionSource]);
+    const serviceTypeOptions = useMemo<ServiceTypeOption[]>(() => (Array.isArray(serviceTypeSource) ? serviceTypeSource : []), [serviceTypeSource]);
 
     const [from, setFrom] = useState(filters?.from ?? '');
     const [to, setTo] = useState(filters?.to ?? '');
     const [selectedCustomers, setSelectedCustomers] = useState<number[]>(filters?.customer_ids ?? []);
     const [selectedRegions, setSelectedRegions] = useState<number[]>(filters?.region_ids ?? []);
+    const [selectedServiceTypes, setSelectedServiceTypes] = useState<string[]>(filters?.service_types ?? []);
     const [filtersOpen, setFiltersOpen] = useState(false);
     const [dateError, setDateError] = useState<string | null>(null);
 
@@ -132,6 +142,15 @@ export default function OperationProfitability({ filters, totals, operations, op
                 label: region.name,
             })),
         [regionOptions],
+    );
+
+    const serviceTypeSelectionOptions = useMemo<ReportSelectionOption[]>(
+        () =>
+            serviceTypeOptions.map((serviceType) => ({
+                id: serviceType.value,
+                label: serviceType.label,
+            })),
+        [serviceTypeOptions],
     );
 
     const validateDateRange = useCallback(
@@ -181,6 +200,7 @@ export default function OperationProfitability({ filters, totals, operations, op
 
         if (selectedCustomers.length > 0) params.customer_ids = selectedCustomers;
         if (selectedRegions.length > 0) params.region_ids = selectedRegions;
+        if (selectedServiceTypes.length > 0) params.service_types = selectedServiceTypes;
 
         router.get('/reports/operation-profitability', params, {
             preserveState: true,
@@ -193,6 +213,7 @@ export default function OperationProfitability({ filters, totals, operations, op
         setTo(filters?.to ?? '');
         setSelectedCustomers(filters?.customer_ids ?? []);
         setSelectedRegions(filters?.region_ids ?? []);
+        setSelectedServiceTypes(filters?.service_types ?? []);
         setFiltersOpen(false);
         setDateError(null);
         router.get('/reports/operation-profitability', {}, { preserveState: false, preserveScroll: true });
@@ -215,6 +236,7 @@ export default function OperationProfitability({ filters, totals, operations, op
 
         if (selectedCustomers.length > 0) toParamsArray('customer_ids', selectedCustomers, params);
         if (selectedRegions.length > 0) toParamsArray('region_ids', selectedRegions, params);
+        if (selectedServiceTypes.length > 0) toParamsArray('service_types', selectedServiceTypes, params);
 
         const query = params.toString();
         const url = `/reports/operation-profitability/export/${format}${query ? `?${query}` : ''}`;
@@ -228,9 +250,10 @@ export default function OperationProfitability({ filters, totals, operations, op
         if (to && to !== (filters?.to ?? '')) count += 1;
         if (selectedCustomers.length > 0) count += 1;
         if (selectedRegions.length > 0) count += 1;
+        if (selectedServiceTypes.length > 0) count += 1;
 
         return count;
-    }, [filters?.from, filters?.to, from, to, selectedCustomers.length, selectedRegions.length]);
+    }, [filters?.from, filters?.to, from, to, selectedCustomers.length, selectedRegions.length, selectedServiceTypes.length]);
 
     const filterBadges = useMemo(() => {
         const customerLabels = selectedCustomers
@@ -240,6 +263,10 @@ export default function OperationProfitability({ filters, totals, operations, op
         const regionLabels = selectedRegions
             .map((id) => regionOptions.find((option) => option.id === id)?.name)
             .filter((name): name is string => Boolean(name));
+
+        const serviceTypeLabels = selectedServiceTypes
+            .map((value) => serviceTypeOptions.find((option) => option.value === value)?.label)
+            .filter((label): label is string => Boolean(label));
 
         return [
             `From ${from || '—'}`,
@@ -254,8 +281,13 @@ export default function OperationProfitability({ filters, totals, operations, op
                 : regionLabels.length === 1
                     ? `Region: ${regionLabels[0]}`
                     : `${regionLabels.length} regions`,
+            serviceTypeLabels.length === 0
+                ? 'All service types'
+                : serviceTypeLabels.length === 1
+                    ? serviceTypeLabels[0]
+                    : `${serviceTypeLabels.length} service types`,
         ];
-    }, [customerOptions, from, regionOptions, selectedCustomers, selectedRegions, to]);
+    }, [customerOptions, from, regionOptions, selectedCustomers, selectedRegions, selectedServiceTypes, serviceTypeOptions, to]);
 
     const { totalTrips, totalTonnage, overallMargin } = useMemo(() => {
         const fallbackTrips = safeRows.reduce((sum, row) => sum + (row.trips ?? 0), 0);
@@ -345,10 +377,13 @@ export default function OperationProfitability({ filters, totals, operations, op
                                     onApply={handleApplyFilters}
                                     customerOptions={customerSelectionOptions}
                                     destinationOptions={regionSelectionOptions}
+                                    serviceTypeOptions={serviceTypeSelectionOptions}
                                     selectedCustomers={selectedCustomers}
                                     selectedDestinations={selectedRegions}
+                                    selectedServiceTypes={selectedServiceTypes}
                                     onCustomersChange={setSelectedCustomers}
                                     onDestinationsChange={setSelectedRegions}
+                                    onServiceTypesChange={setSelectedServiceTypes}
                                     destinationFilterText={{
                                         label: 'Regions',
                                         triggerLabelWhenAll: 'All regions',
@@ -387,9 +422,6 @@ export default function OperationProfitability({ filters, totals, operations, op
                                 <Button type="button" variant="outline" className="gap-2" onClick={handleReset}>
                                     <RefreshCcw className="h-4 w-4" />
                                     Reset
-                                </Button>
-                                <Button type="button" className="gap-2" onClick={handleApplyFilters}>
-                                    Generate report
                                 </Button>
                             </div>
                         </div>

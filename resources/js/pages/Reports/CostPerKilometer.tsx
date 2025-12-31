@@ -5,16 +5,14 @@ import { type BreadcrumbItem } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ReportSummaryGrid, type ReportSummaryItem } from '@/components/reports/report-summary-grid';
 import { ReportFiltersDialog } from '@/components/reports/report-filters-dialog';
 import type { ReportSelectionOption } from '@/components/reports/types';
 import { formatCurrency, formatDecimal, formatInteger, formatPercentage } from '@/components/reports/formatters';
-import { RefreshCcw, DollarSign, TrendingDown, Route, BarChart3, Fuel, User, Wrench, Download, FileDigit, FileSpreadsheet, FileType2 } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { RefreshCcw, DollarSign, TrendingDown, Route, BarChart3, Fuel, User, Download, FileDigit, FileSpreadsheet, FileType2 } from 'lucide-react';
 import { usePermissions } from '@/hooks/use-permissions';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, ComposedChart, Line } from 'recharts';
+import { Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, ComposedChart } from 'recharts';
 import { REPORT_DATE_RANGE_DESCRIPTION, useReportDateRange } from '@/components/reports/use-report-date-range';
 
 interface TruckOption {
@@ -106,7 +104,7 @@ export default function CostPerKilometer({ filters, rows = [], summary, options,
 
     const [filtersOpen, setFiltersOpen] = useState(false);
     const { from, to, dateError, handleDateChange, validateDateRange, resetDateRange } = useReportDateRange(filters?.from ?? '', filters?.to ?? '');
-    const [groupBy, setGroupBy] = useState(filters?.group_by ?? 'overall');
+    const groupBy = filters?.group_by ?? 'overall';
     const [selectedTrucks, setSelectedTrucks] = useState<number[]>(filters?.truck_ids ?? []);
     const [selectedDrivers, setSelectedDrivers] = useState<number[]>(filters?.driver_ids ?? []);
     const [compareEnabled, setCompareEnabled] = useState(false);
@@ -174,7 +172,6 @@ export default function CostPerKilometer({ filters, rows = [], summary, options,
 
     const handleReset = () => {
         resetDateRange(filters?.from ?? '', filters?.to ?? '');
-        setGroupBy(filters?.group_by ?? 'overall');
         setSelectedTrucks(filters?.truck_ids ?? []);
         setSelectedDrivers(filters?.driver_ids ?? []);
         setCompareEnabled(false);
@@ -333,20 +330,6 @@ export default function CostPerKilometer({ filters, rows = [], summary, options,
                                     showTruckFilter={true}
                                     dateError={dateError}
                                 />
-                                <div className="flex items-center gap-2">
-                                    <span className="text-xs font-medium text-slate-600 dark:text-slate-400">Group By</span>
-                                    <Select value={groupBy} onValueChange={setGroupBy}>
-                                        <SelectTrigger className="h-9 w-40">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="overall">Overall</SelectItem>
-                                            <SelectItem value="truck">Truck</SelectItem>
-                                            <SelectItem value="driver">Driver</SelectItem>
-                                            <SelectItem value="route">Route</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
                                 {canExport && (
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
@@ -374,9 +357,6 @@ export default function CostPerKilometer({ filters, rows = [], summary, options,
                                 <Button type="button" variant="outline" className="gap-2" onClick={handleReset}>
                                     <RefreshCcw className="h-4 w-4" />
                                     Reset
-                                </Button>
-                                <Button type="button" className="gap-2" onClick={handleApplyFilters}>
-                                    Generate report
                                 </Button>
                             </div>
                         </div>

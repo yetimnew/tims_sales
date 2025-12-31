@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\CargoServiceType;
 use App\Enums\OperationDestinationScope;
 use App\Exports\Reports\CustomerProfitabilityExport;
 use App\Exports\Reports\DailyStatusExport;
@@ -1062,12 +1063,14 @@ class ReportController extends Controller
                     'to' => $payload['resolved_to'],
                     'customer_ids' => $payload['filters']['customer_ids'],
                     'region_ids' => $payload['filters']['region_ids'],
+                    'service_types' => $payload['filters']['service_types'],
                 ],
                 'totals' => $payload['totals'],
                 'operations' => $payload['rows']->all(),
                 'options' => [
                     'customers' => $customerOptions,
                     'regions' => $regionOptions,
+                    'service_types' => CargoServiceType::options(),
                 ],
             ]);
 
@@ -1145,6 +1148,24 @@ class ReportController extends Controller
             ->unique()
             ->values();
 
+        $serviceTypes = collect(Arr::wrap($input['service_types'] ?? []))
+            ->merge(Arr::wrap($input['service_type'] ?? []))
+            ->map(static function ($value) {
+                if ($value instanceof CargoServiceType) {
+                    return $value;
+                }
+
+                if (is_string($value) || is_numeric($value)) {
+                    return CargoServiceType::tryFrom((string) $value);
+                }
+
+                return null;
+            })
+            ->filter()
+            ->map(static fn (CargoServiceType $type) => $type->value)
+            ->unique()
+            ->values();
+
         if (Carbon::parse($from)->gt(Carbon::parse($to))) {
             [$from, $to] = [$to, $from];
         }
@@ -1205,6 +1226,12 @@ class ReportController extends Controller
                             }
                         );
                 });
+            });
+        }
+
+        if ($serviceTypes->isNotEmpty()) {
+            $performancesQuery->whereHas('operation', function (Builder $operationQuery) use ($serviceTypes) {
+                $operationQuery->whereIn('cargo_service_type', $serviceTypes);
             });
         }
 
@@ -1293,6 +1320,7 @@ class ReportController extends Controller
             'filters' => [
                 'customer_ids' => $customerIds->all(),
                 'region_ids' => $regionIds->all(),
+                'service_types' => $serviceTypes->all(),
             ],
         ];
     }
