@@ -1,19 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Head, router } from '@inertiajs/react';
-import AppLayout from '@/layouts/app-layout';
+import { router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ReportFiltersDialog } from '@/components/reports/report-filters-dialog';
 import { ReportSummaryGrid, type ReportSummaryItem } from '@/components/reports/report-summary-grid';
 import { ReportMaintenanceTable, type MaintenanceReportRow } from '@/components/reports/report-maintenance-table';
 import type { ReportSelectionOption } from '@/components/reports/types';
 import { formatCurrency, formatInteger, formatPercentage } from '@/components/reports/formatters';
-import { AlertTriangle, CalendarDays, CheckCircle2, ClipboardList, DollarSign, Download, FileDigit, FileSpreadsheet, FileType2, RefreshCcw, ShieldAlert, Wrench } from 'lucide-react';
+import { AlertTriangle, CalendarDays, CheckCircle2, ClipboardList, DollarSign, ShieldAlert, Wrench } from 'lucide-react';
 import { usePermissions } from '@/hooks/use-permissions';
+import { ReportPageLayout } from '@/components/report/report-page-layout';
 
 interface MaintenanceFilters {
     from?: string | null;
@@ -496,105 +494,74 @@ export default function MaintenanceReport({
     );
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Maintenance Reports" />
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-slate-100/60 dark:bg-slate-900/40">
-                <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-4 pb-10 sm:p-6 lg:p-10">
-                    <header className="rounded-2xl border border-slate-200 bg-white/95 px-6 py-6 shadow-sm backdrop-blur dark:border-slate-800/70 dark:bg-slate-900/70">
-                        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                            <div className="space-y-2">
-                                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">Fleet Care</p>
-                                <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-50">Maintenance Operations</h1>
-                                <p className="max-w-3xl text-sm text-slate-600 dark:text-slate-300">
-                                    Track workshop throughput, completion performance, and supplier spend to keep assets road-ready. Adjust the window, focus on specific trucks or job types, and share consistent reporting with your teams.
-                                </p>
-                            </div>
-                            <div className="flex flex-wrap items-center gap-2">
-                                <ReportFiltersDialog
-                                    open={filtersOpen}
-                                    onOpenChange={setFiltersOpen}
-                                    activeFilterCount={activeFilterCount}
-                                    from={from}
-                                    to={to}
-                                    onDateChange={handleDateChange}
-                                    onReset={handleReset}
-                                    onApply={handleApplyFilters}
-                                    truckOptions={truckSelectionOptions}
-                                    operationOptions={maintenanceTypeOptions}
-                                    statusOptions={statusSelectionOptions}
-                                    providerOptions={providerSelectionOptions}
-                                    selectedTrucks={selectedTruckIds}
-                                    selectedOperations={selectedMaintenanceTypes}
-                                    selectedStatuses={selectedStatuses}
-                                    selectedProviders={selectedProviders}
-                                    onTrucksChange={setSelectedTruckIds}
-                                    onOperationsChange={setSelectedMaintenanceTypes}
-                                    onStatusesChange={handleStatusesChange}
-                                    onProvidersChange={handleProvidersChange}
-                                    driverOptions={[]}
-                                    destinationOptions={[]}
-                                    operationFilterText={{
-                                        label: 'Maintenance types',
-                                        triggerLabelWhenAll: 'All types',
-                                        summaryLabelWhenAll: 'All types included',
-                                        heading: 'Maintenance types',
-                                        searchPlaceholder: 'Search type...',
-                                        emptyMessage: 'No maintenance types found.',
-                                        icon: Wrench,
-                                    }}
-                                    statusFilterText={{
-                                        label: 'Statuses',
-                                        triggerLabelWhenAll: 'All statuses',
-                                        summaryLabelWhenAll: 'All statuses included',
-                                        heading: 'Work order status',
-                                        searchPlaceholder: 'Search status...',
-                                        emptyMessage: 'No statuses found.',
-                                    }}
-                                    providerFilterText={{
-                                        label: 'Service providers',
-                                        triggerLabelWhenAll: 'All providers',
-                                        summaryLabelWhenAll: 'All providers included',
-                                        heading: 'Service providers',
-                                        searchPlaceholder: 'Search provider...',
+        <ReportPageLayout
+            title="Maintenance Operations"
+            description="Track workshop throughput, completion performance, and supplier spend to keep assets road-ready. Adjust the window, focus on specific trucks or job types, and share consistent reporting with your teams."
+            breadcrumbs={breadcrumbs}
+            icon={<Wrench className="h-6 w-6" />}
+            filters={
+                <ReportFiltersDialog
+                    open={filtersOpen}
+                    onOpenChange={setFiltersOpen}
+                    activeFilterCount={activeFilterCount}
+                    from={from}
+                    to={to}
+                    onDateChange={handleDateChange}
+                    onReset={handleReset}
+                    onApply={handleApplyFilters}
+                    truckOptions={truckSelectionOptions}
+                    operationOptions={maintenanceTypeOptions}
+                    statusOptions={statusSelectionOptions}
+                    providerOptions={providerSelectionOptions}
+                    selectedTrucks={selectedTruckIds}
+                    selectedOperations={selectedMaintenanceTypes}
+                    selectedStatuses={selectedStatuses}
+                    selectedProviders={selectedProviders}
+                    onTrucksChange={setSelectedTruckIds}
+                    onOperationsChange={setSelectedMaintenanceTypes}
+                    onStatusesChange={handleStatusesChange}
+                    onProvidersChange={handleProvidersChange}
+                    driverOptions={[]}
+                    destinationOptions={[]}
+                    operationFilterText={{
+                        label: 'Maintenance types',
+                        triggerLabelWhenAll: 'All types',
+                        summaryLabelWhenAll: 'All types included',
+                        heading: 'Maintenance types',
+                        searchPlaceholder: 'Search type...',
+                        emptyMessage: 'No maintenance types found.',
+                        icon: Wrench,
+                    }}
+                    statusFilterText={{
+                        label: 'Statuses',
+                        triggerLabelWhenAll: 'All statuses',
+                        summaryLabelWhenAll: 'All statuses included',
+                        heading: 'Work order status',
+                        searchPlaceholder: 'Search status...',
+                        emptyMessage: 'No statuses found.',
+                    }}
+                    providerFilterText={{
+                        label: 'Service providers',
+                        triggerLabelWhenAll: 'All providers',
+                        summaryLabelWhenAll: 'All providers included',
+                        heading: 'Service providers',
+                        searchPlaceholder: 'Search provider...',
                                         emptyMessage: 'No providers found.',
                                     }}
                                     showDriverFilter={false}
                                     showDestinationFilter={false}
                                     dateError={dateError}
                                 />
-                                {canExport ? (
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button type="button" variant="secondary" className="gap-2">
-                                                <Download className="h-4 w-4" />
-                                                Export
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end" className="w-44">
-                                            <DropdownMenuItem onSelect={() => handleExport('csv')} className="gap-2">
-                                                <FileDigit className="h-4 w-4 text-amber-500" />
-                                                CSV
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onSelect={() => handleExport('xlsx')} className="gap-2">
-                                                <FileSpreadsheet className="h-4 w-4 text-emerald-500" />
-                                                Excel
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onSelect={() => handleExport('pdf')} className="gap-2">
-                                                <FileType2 className="h-4 w-4 text-rose-500" />
-                                                PDF
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                ) : null}
-                                <Button type="button" variant="outline" className="gap-2" onClick={handleReset}>
-                                    <RefreshCcw className="h-4 w-4" />
-                                    Reset
-                                </Button>
-                            </div>
-                        </div>
-                    </header>
-
-                    <ReportSummaryGrid items={summaryItems} />
+            }
+            summarySection={<ReportSummaryGrid items={summaryItems} />}
+            onRefresh={handleReset}
+            onExportPdf={() => handleExport('pdf')}
+            onExportExcel={() => handleExport('xlsx')}
+            onExportCsv={() => handleExport('csv')}
+            canExport={canExport}
+            contentClassName="p-0"
+        >
+            <div className="space-y-6 p-6">
 
                     <ReportMaintenanceTable
                         rows={safeBreakdown}
@@ -779,9 +746,8 @@ export default function MaintenanceReport({
                             </CardContent>
                         </Card>
                     </section>
-                </div>
             </div>
-        </AppLayout>
+        </ReportPageLayout>
     );
 }
 

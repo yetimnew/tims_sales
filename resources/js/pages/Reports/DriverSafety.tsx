@@ -1,8 +1,6 @@
 import { useMemo, useState } from 'react';
-import { Head, router } from '@inertiajs/react';
-import AppLayout from '@/layouts/app-layout';
+import { router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ReportFiltersDialog } from '@/components/reports/report-filters-dialog';
@@ -10,10 +8,10 @@ import { ReportSummaryGrid, type ReportSummaryItem } from '@/components/reports/
 import type { ReportSelectionOption } from '@/components/reports/types';
 import { formatCurrency, formatInteger } from '@/components/reports/formatters';
 import { Badge } from '@/components/ui/badge';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { AlertTriangle, CircleDollarSign, Download, FileDigit, FileSpreadsheet, FileType2, RefreshCcw, ShieldAlert, Users } from 'lucide-react';
+import { AlertTriangle, CircleDollarSign, ShieldAlert, Users } from 'lucide-react';
 import { usePermissions } from '@/hooks/use-permissions';
 import { REPORT_DATE_RANGE_DESCRIPTION, useReportDateRange } from '@/components/reports/use-report-date-range';
+import { ReportPageLayout } from '@/components/report/report-page-layout';
 
 interface DriverOption {
     id: number;
@@ -300,66 +298,64 @@ export default function DriverSafetyReport({
     const safeRecentIncidents = Array.isArray(recentIncidents) ? recentIncidents : [];
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Driver Safety Report" />
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-slate-100/60 dark:bg-slate-900/40">
-                <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-4 pb-10 sm:p-6 lg:p-10">
-                    <header className="rounded-2xl border border-slate-200 bg-white/95 px-6 py-6 shadow-sm backdrop-blur dark:border-slate-800/70 dark:bg-slate-900/70">
-                        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                            <div className="space-y-2">
-                                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">Safety Intelligence</p>
-                                <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-50">Driver Safety</h1>
-                                <p className="max-w-3xl text-sm text-slate-600 dark:text-slate-300">
-                                    Monitor incident trends, severity mix, and driver exposure across the reporting window.
-                                </p>
-                            </div>
-                            <div className="flex flex-wrap items-center gap-2">
-                                <ReportFiltersDialog
-                                    open={filtersOpen}
-                                    onOpenChange={setFiltersOpen}
-                                    activeFilterCount={activeFilterCount}
-                                    from={from}
-                                    to={to}
-                                    onDateChange={handleDateChange}
-                                    onReset={handleResetFilters}
-                                    onApply={handleApplyFilters}
-                                    dateError={dateError}
-                                    dateRangeDescription={REPORT_DATE_RANGE_DESCRIPTION}
-                                    selectedDrivers={selectedDrivers}
-                                    onDriversChange={setSelectedDrivers}
-                                    driverOptions={driverOptions}
-                                    selectedStatuses={selectedIncidentTypes}
-                                    onStatusesChange={(values) => setSelectedIncidentTypes(values.map((value) => String(value)))}
-                                    statusOptions={incidentTypeOptions}
-                                    statusFilterText={{
-                                        label: 'Incident types',
-                                        triggerLabelWhenAll: 'All incident types',
-                                        summaryLabelWhenAll: 'All incident types included',
-                                        heading: 'Incident types',
-                                        searchPlaceholder: 'Search incident type...',
-                                    }}
-                                    selectedProviders={selectedSeverities}
-                                    onProvidersChange={(values) => setSelectedSeverities(values.map((value) => String(value)))}
-                                    providerOptions={severityOptions}
-                                    providerFilterText={{
-                                        label: 'Severities',
-                                        triggerLabelWhenAll: 'All severities',
-                                        summaryLabelWhenAll: 'All severities included',
-                                        heading: 'Severities',
-                                        searchPlaceholder: 'Search severity...',
-                                    }}
-                                    showTruckFilter={false}
-                                    showOperationFilter={false}
-                                    showDestinationFilter={false}
-                                    showStatusFilter={incidentTypeOptions.length > 0}
-                                    showProviderFilter={severityOptions.length > 0}
-                                    title="Filter driver safety data"
-                                    description="Adjust the reporting window and filter by driver, incident type, or severity."
-                                />
-                                {canExport && (
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button type="button" variant="secondary" className="gap-2">
+        <ReportPageLayout
+            title="Driver Safety"
+            description="Monitor incident trends, severity mix, and driver exposure across the reporting window."
+            breadcrumbs={breadcrumbs}
+            icon={<ShieldAlert className="h-6 w-6" />}
+            filters={
+                <ReportFiltersDialog
+                    open={filtersOpen}
+                    onOpenChange={setFiltersOpen}
+                    activeFilterCount={activeFilterCount}
+                    from={from}
+                    to={to}
+                    onDateChange={handleDateChange}
+                    onReset={handleResetFilters}
+                    onApply={handleApplyFilters}
+                    dateError={dateError}
+                    dateRangeDescription={REPORT_DATE_RANGE_DESCRIPTION}
+                    selectedDrivers={selectedDrivers}
+                    onDriversChange={setSelectedDrivers}
+                    driverOptions={driverOptions}
+                    selectedStatuses={selectedIncidentTypes}
+                    onStatusesChange={(values) => setSelectedIncidentTypes(values.map((value) => String(value)))}
+                    statusOptions={incidentTypeOptions}
+                    statusFilterText={{
+                        label: 'Incident types',
+                        triggerLabelWhenAll: 'All incident types',
+                        summaryLabelWhenAll: 'All incident types included',
+                        heading: 'Incident types',
+                        searchPlaceholder: 'Search incident type...',
+                    }}
+                    selectedProviders={selectedSeverities}
+                    onProvidersChange={(values) => setSelectedSeverities(values.map((value) => String(value)))}
+                    providerOptions={severityOptions}
+                    providerFilterText={{
+                        label: 'Severities',
+                        triggerLabelWhenAll: 'All severities',
+                        summaryLabelWhenAll: 'All severities included',
+                        heading: 'Severities',
+                        searchPlaceholder: 'Search severity...',
+                    }}
+                    showTruckFilter={false}
+                    showOperationFilter={false}
+                    showDestinationFilter={false}
+                    showStatusFilter={incidentTypeOptions.length > 0}
+                    showProviderFilter={severityOptions.length > 0}
+                    title="Filter driver safety data"
+                    description="Adjust the reporting window and filter by driver, incident type, or severity."
+                />
+            }
+            summarySection={<ReportSummaryGrid items={summaryItems} />}
+            onRefresh={handleResetFilters}
+            onExportPdf={() => handleExport('pdf')}
+            onExportExcel={() => handleExport('xlsx')}
+            onExportCsv={() => handleExport('csv')}
+            canExport={canExport}
+            contentClassName="p-0"
+        >
+            <div className="space-y-6 p-6">
                                                 <Download className="h-4 w-4" />
                                                 Export
                                             </Button>
@@ -646,8 +642,7 @@ export default function DriverSafetyReport({
                             </CardContent>
                         </Card>
                     </div>
-                </div>
             </div>
-        </AppLayout>
+        </ReportPageLayout>
     );
 }

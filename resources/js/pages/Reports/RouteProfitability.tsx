@@ -1,20 +1,18 @@
 import { useCallback, useMemo, useState } from 'react';
-import { Head, router } from '@inertiajs/react';
-import AppLayout from '@/layouts/app-layout';
+import { router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ReportFiltersDialog } from '@/components/reports/report-filters-dialog';
 import { ReportSummaryGrid, type ReportSummaryItem } from '@/components/reports/report-summary-grid';
 import type { ReportSelectionOption } from '@/components/reports/types';
 import { formatCurrency, formatDecimal, formatInteger, formatPercentage, getMarginChipClass } from '@/components/reports/formatters';
-import { Download, FileDigit, FileSpreadsheet, FileType2, RefreshCcw, Route, TrendingUp, TrendingDown, MapPin, Package, DollarSign, BarChart3, SlidersHorizontal } from 'lucide-react';
+import { Route, TrendingUp, TrendingDown, MapPin, Package, DollarSign, BarChart3, SlidersHorizontal } from 'lucide-react';
 import { usePermissions } from '@/hooks/use-permissions';
+import { ReportPageLayout } from '@/components/report/report-page-layout';
 
 interface PlaceOption {
     id: number;
@@ -514,39 +512,16 @@ export default function RouteProfitability({ filters, rows = [], summary, option
                                         </div>
                                     )}
                                 />
-                                {canExport ? (
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button type="button" variant="secondary" className="gap-2">
-                                                <Download className="h-4 w-4" />
-                                                Export
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end" className="w-44">
-                                            <DropdownMenuItem onSelect={() => handleExport('csv')} className="gap-2">
-                                                <FileDigit className="h-4 w-4 text-amber-500" />
-                                                CSV
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onSelect={() => handleExport('xlsx')} className="gap-2">
-                                                <FileSpreadsheet className="h-4 w-4 text-emerald-500" />
-                                                Excel
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onSelect={() => handleExport('pdf')} className="gap-2">
-                                                <FileType2 className="h-4 w-4 text-rose-500" />
-                                                PDF
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                ) : null}
-                                <Button type="button" variant="outline" className="gap-2" onClick={handleReset}>
-                                    <RefreshCcw className="h-4 w-4" />
-                                    Reset
-                                </Button>
-                            </div>
-                        </div>
-                    </header>
-
-                    <ReportSummaryGrid items={summaryItems} />
+            }
+            summarySection={<ReportSummaryGrid items={summaryItems} />}
+            onRefresh={handleReset}
+            onExportPdf={() => handleExport('pdf')}
+            onExportExcel={() => handleExport('xlsx')}
+            onExportCsv={() => handleExport('csv')}
+            canExport={canExport}
+            contentClassName="p-0"
+        >
+            <div className="space-y-6 p-6">
 
                     <Card className="border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
                         <CardHeader className="space-y-3 border-b border-slate-200/60 pb-5 dark:border-slate-700/60">
@@ -657,9 +632,8 @@ export default function RouteProfitability({ filters, rows = [], summary, option
                             </div>
                         </CardContent>
                     </Card>
-                </div>
             </div>
-        </AppLayout>
+        </ReportPageLayout>
     );
 }
 

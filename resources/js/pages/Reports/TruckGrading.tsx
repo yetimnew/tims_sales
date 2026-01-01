@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Head, Link, router } from '@inertiajs/react';
-import AppLayout from '@/layouts/app-layout';
+import { Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -14,25 +13,13 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DatePicker } from '@/components/ui/date-picker';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { InertiaPagination } from '@/components/ui/pagination';
-import { CalendarClock, Gauge, LineChart, ListFilter, Loader2, RefreshCcw, Settings, Truck, type LucideIcon } from 'lucide-react';
+import { CalendarClock, Gauge, LineChart, ListFilter, Loader2, Settings, Truck, type LucideIcon } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { ReportPageLayout } from '@/components/report/report-page-layout';
 
 type GradeCategory = {
     score?: number | null;
@@ -557,21 +544,13 @@ export default function TruckGradingReport({
     }, [recalculationNotice]);
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Truck grading" />
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-slate-100/60 dark:bg-slate-900/40">
-                <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-4 pb-10 sm:p-6 lg:p-10">
-                    <header className="rounded-2xl border border-slate-200 bg-white/95 px-6 py-6 shadow-sm backdrop-blur dark:border-slate-800/70 dark:bg-slate-900/70">
-                        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                            <div className="space-y-2">
-                                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">Truck Grading</p>
-                                <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-50">Truck grading report</h1>
-                                <p className="max-w-3xl text-sm text-slate-600 dark:text-slate-300">
-                                    Review the graded leaderboard, compare category scores, and identify outliers after adjusting the configuration.
-                                </p>
-                            </div>
-                            <div className="flex flex-wrap items-center gap-2">
-                                <Dialog open={filtersOpen} onOpenChange={setFiltersOpen}>
+        <ReportPageLayout
+            title="Truck grading report"
+            description="Review the graded leaderboard, compare category scores, and identify outliers after adjusting the configuration."
+            breadcrumbs={breadcrumbs}
+            icon={<Truck className="h-6 w-6" />}
+            filters={
+                <Dialog open={filtersOpen} onOpenChange={setFiltersOpen}>
                                     <DialogTrigger asChild>
                                         <Button type="button" variant="outline" className="gap-2">
                                             <ListFilter className="h-4 w-4" />
@@ -691,40 +670,38 @@ export default function TruckGradingReport({
                                         </DialogFooter>
                                     </DialogContent>
                                 </Dialog>
-                                <Button asChild variant="secondary" className="gap-2">
-                                    <Link href="/settings/truck-grading">
-                                        <Settings className="h-4 w-4" />
-                                        Adjust settings
-                                    </Link>
-                                </Button>
-                                {canRecalculate ? (
-                                    <Button
-                                        type="button"
-                                        className="gap-2"
-                                        onClick={handleRecalculateSnapshot}
-                                        disabled={recalculating || !appliedSnapshotDate}
-                                    >
-                                        {recalculating ? (
-                                            <Loader2 className="h-4 w-4 animate-spin" />
-                                        ) : (
-                                            <Gauge className="h-4 w-4" />
-                                        )}
-                                        {recalculating ? 'Recalculating…' : 'Recalculate snapshot'}
-                                    </Button>
-                                ) : null}
-                                <Button type="button" variant="outline" className="gap-2" onClick={handleReset}>
-                                    <RefreshCcw className="h-4 w-4" />
-                                    Reset
-                                </Button>
-                            </div>
-                            {recalculationNotice ? (
-                                <div className={`mt-4 rounded-lg border px-4 py-3 text-sm transition ${recalculationTone}`}>
-                                    {recalculationNotice.message}
-                                </div>
-                            ) : null}
+                            </>
+            }
+            summarySection={
+                <>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <Button asChild variant="secondary" className="gap-2">
+                            <Link href="/settings/truck-grading">
+                                <Settings className="h-4 w-4" />
+                                Adjust settings
+                            </Link>
+                        </Button>
+                        {canRecalculate ? (
+                            <Button
+                                type="button"
+                                className="gap-2"
+                                onClick={handleRecalculateSnapshot}
+                                disabled={recalculating || !appliedSnapshotDate}
+                            >
+                                {recalculating ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                    <Gauge className="h-4 w-4" />
+                                )}
+                                {recalculating ? 'Recalculating…' : 'Recalculate snapshot'}
+                            </Button>
+                        ) : null}
+                    </div>
+                    {recalculationNotice ? (
+                        <div className={`rounded-lg border px-4 py-3 text-sm transition ${recalculationTone}`}>
+                            {recalculationNotice.message}
                         </div>
-                    </header>
-
+                    ) : null}
                     <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
                         {kpiCards.map((card) => {
                             const Icon = card.icon;
@@ -744,8 +721,13 @@ export default function TruckGradingReport({
                             );
                         })}
                     </section>
-
-                    <Card className="border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
+                </>
+            }
+            canExport={false}
+            contentClassName="p-0"
+        >
+            <div className="space-y-6 p-6">
+                <Card className="border border-slate-200 bg-slate-50/50 shadow-sm dark:border-slate-800 dark:bg-slate-800/50">
                         <CardHeader className="space-y-3 border-b border-slate-200/60 pb-5 dark:border-slate-700/60">
                             <div className="space-y-1">
                                 <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50">Graded trucks</CardTitle>
@@ -865,8 +847,7 @@ export default function TruckGradingReport({
                             </div>
                         </CardContent>
                     </Card>
-                </div>
             </div>
-        </AppLayout>
+        </ReportPageLayout>
     );
 }

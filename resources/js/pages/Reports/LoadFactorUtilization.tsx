@@ -1,21 +1,19 @@
 import { useMemo, useState } from 'react';
-import { Head, router } from '@inertiajs/react';
-import AppLayout from '@/layouts/app-layout';
+import { router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ReportSummaryGrid, type ReportSummaryItem } from '@/components/reports/report-summary-grid';
 import { ReportFiltersDialog } from '@/components/reports/report-filters-dialog';
 import type { ReportSelectionOption } from '@/components/reports/types';
 import { formatDecimal, formatInteger, formatPercentage } from '@/components/reports/formatters';
-import { RefreshCcw, TrendingUp, Route, BarChart3, Gauge, Truck, Download, FileDigit, FileSpreadsheet, FileType2, Package } from 'lucide-react';
+import { TrendingUp, Route, BarChart3, Gauge, Truck, Package } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { usePermissions } from '@/hooks/use-permissions';
 import { REPORT_DATE_RANGE_DESCRIPTION, useReportDateRange } from '@/components/reports/use-report-date-range';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { ReportPageLayout } from '@/components/report/report-page-layout';
 
 interface TruckOption {
     id: number;
@@ -269,71 +267,57 @@ export default function LoadFactorUtilization({ filters, rows = [], summary, opt
     }, [comparison, summary]);
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Load Factor & Utilization Analysis" />
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-slate-100/60 dark:bg-slate-900/40">
-                <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-4 pb-10 sm:p-6 lg:p-10">
-                    <header className="rounded-2xl border border-slate-200 bg-white/95 px-6 py-6 shadow-sm backdrop-blur dark:border-slate-800/70 dark:bg-slate-900/70">
-                        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                            <div className="space-y-2">
-                                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">Utilization Intelligence</p>
-                                <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-50">Load Factor & Utilization Analysis</h1>
-                                <p className="max-w-3xl text-sm text-slate-600 dark:text-slate-300">
-                                    Analyse capacity utilization, empty miles, and deadhead ratios. Identify opportunities to reduce empty runs and improve fleet efficiency.
-                                </p>
-                            </div>
-                            <div className="flex flex-wrap items-center gap-2">
-                                <ReportFiltersDialog
-                                    open={filtersOpen}
-                                    onOpenChange={setFiltersOpen}
-                                    activeFilterCount={activeFilterCount}
-                                    from={from}
-                                    to={to}
-                                    onDateChange={handleDateChange}
-                                    onReset={handleReset}
-                                    dateRangeDescription={REPORT_DATE_RANGE_DESCRIPTION}
-                                    driverOptions={driverSelectionOptions}
-                                    truckOptions={truckSelectionOptions}
-                                    selectedDrivers={selectedDrivers}
-                                    selectedTrucks={selectedTrucks}
-                                    onDriversChange={setSelectedDrivers}
-                                    onTrucksChange={setSelectedTrucks}
-                                    showDriverFilter={true}
-                                    showTruckFilter={true}
-                                    dateError={dateError}
-                                />
-                                <div className="flex items-center gap-2">
-                                    <span className="text-xs font-medium text-slate-600 dark:text-slate-400">Group By</span>
-                                    <Select value={groupBy} onValueChange={setGroupBy}>
-                                        <SelectTrigger className="h-9 w-40">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="overall">Overall</SelectItem>
-                                            <SelectItem value="truck">Truck</SelectItem>
-                                            <SelectItem value="driver">Driver</SelectItem>
-                                            <SelectItem value="route">Route</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                {canExport && (
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button type="button" variant="secondary" className="gap-2">
-                                                <Download className="h-4 w-4" />
-                                                Export
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end" className="w-44">
-                                            <DropdownMenuItem onSelect={() => handleExport('csv')} className="gap-2">
-                                                <FileDigit className="h-4 w-4 text-amber-500" />
-                                                CSV
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onSelect={() => handleExport('xlsx')} className="gap-2">
-                                                <FileSpreadsheet className="h-4 w-4 text-emerald-500" />
-                                                Excel
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onSelect={() => handleExport('pdf')} className="gap-2">
+        <ReportPageLayout
+            title="Load Factor & Utilization Analysis"
+            description="Analyse capacity utilization, empty miles, and deadhead ratios. Identify opportunities to reduce empty runs and improve fleet efficiency."
+            breadcrumbs={breadcrumbs}
+            icon={<Gauge className="h-6 w-6" />}
+            filters={
+                <>
+                    <ReportFiltersDialog
+                        open={filtersOpen}
+                        onOpenChange={setFiltersOpen}
+                        activeFilterCount={activeFilterCount}
+                        from={from}
+                        to={to}
+                        onDateChange={handleDateChange}
+                        onReset={handleReset}
+                        dateRangeDescription={REPORT_DATE_RANGE_DESCRIPTION}
+                        driverOptions={driverSelectionOptions}
+                        truckOptions={truckSelectionOptions}
+                        selectedDrivers={selectedDrivers}
+                        selectedTrucks={selectedTrucks}
+                        onDriversChange={setSelectedDrivers}
+                        onTrucksChange={setSelectedTrucks}
+                        showDriverFilter={true}
+                        showTruckFilter={true}
+                        dateError={dateError}
+                    />
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs font-medium text-slate-600 dark:text-slate-400">Group By</span>
+                        <Select value={groupBy} onValueChange={setGroupBy}>
+                            <SelectTrigger className="h-9 w-40">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="overall">Overall</SelectItem>
+                                <SelectItem value="truck">Truck</SelectItem>
+                                <SelectItem value="driver">Driver</SelectItem>
+                                <SelectItem value="route">Route</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </>
+            }
+            summarySection={<ReportSummaryGrid items={summaryItems} />}
+            onRefresh={handleReset}
+            onExportPdf={() => handleExport('pdf')}
+            onExportExcel={() => handleExport('xlsx')}
+            onExportCsv={() => handleExport('csv')}
+            canExport={canExport}
+            contentClassName="p-0"
+        >
+            <div className="space-y-6 p-6">
                                                 <FileType2 className="h-4 w-4 text-rose-500" />
                                                 PDF
                                             </DropdownMenuItem>
@@ -541,8 +525,7 @@ export default function LoadFactorUtilization({ filters, rows = [], summary, opt
                             </div>
                         </CardContent>
                     </Card>
-                </div>
             </div>
-        </AppLayout>
+        </ReportPageLayout>
     );
 }

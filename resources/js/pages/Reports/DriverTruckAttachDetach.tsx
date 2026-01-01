@@ -2,19 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import AppLayout from '@/layouts/app-layout';
-import { Head } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Link2, Clock, Users, UserMinus, Truck, ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import { ReportPageLayout } from '@/components/report/report-page-layout';
 
 interface Row {
     id: number;
@@ -262,23 +255,13 @@ export default function DriverTruckAttachDetach({ rows, summary, currentAssignme
     const perPageOptions = [25, 50, 100, 200];
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Attach / Detach History" />
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-slate-100/60 dark:bg-slate-900/40">
-                <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-4 pb-10 sm:p-6 lg:p-10">
-                    <header className="rounded-2xl border border-slate-200 bg-white/95 px-6 py-6 shadow-sm backdrop-blur dark:border-slate-800/70 dark:bg-slate-900/70">
-                        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                            <div className="space-y-2">
-                                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">Assignment Intelligence</p>
-                                <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-50">Driver-Truck Attach / Detach History</h1>
-                                <p className="max-w-3xl text-sm text-slate-600 dark:text-slate-300">
-                                    Track driver-truck assignment history, monitor attachment patterns, and review assignment lifecycle across your fleet.
-                                </p>
-                            </div>
-                        </div>
-                    </header>
-
-                    <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        <ReportPageLayout
+            title="Driver-Truck Attach / Detach History"
+            description="Track driver-truck assignment history, monitor attachment patterns, and review assignment lifecycle across your fleet."
+            breadcrumbs={breadcrumbs}
+            icon={<Link2 className="h-6 w-6" />}
+            summarySection={
+                <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
                         {metrics.map(({ label, value, Icon, iconClasses }) => (
                             <Card key={label} className="border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
                                 <CardContent className="flex items-center gap-3 p-4">
@@ -292,9 +275,13 @@ export default function DriverTruckAttachDetach({ rows, summary, currentAssignme
                                 </CardContent>
                             </Card>
                         ))}
-                    </section>
-
-                    <section className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
+                </section>
+            }
+            canExport={false}
+            contentClassName="p-0"
+        >
+            <div className="space-y-6 p-6">
+                <section className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
                         <Card className="border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
                             <CardHeader className="space-y-2 border-b border-slate-200/60 pb-5 dark:border-slate-800/60">
                                 <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50">{`${currentAssignments.length.toLocaleString()} Current Attachments`}</CardTitle>
@@ -530,9 +517,8 @@ export default function DriverTruckAttachDetach({ rows, summary, currentAssignme
                             </div>
                         </CardContent>
                     </Card>
-                </div>
             </div>
-        </AppLayout>
+        </ReportPageLayout>
     );
 }
 

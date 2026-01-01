@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Head, Link, router } from '@inertiajs/react';
-import AppLayout from '@/layouts/app-layout';
+import { Link, router } from '@inertiajs/react';
 import type { BreadcrumbItem } from '@/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -25,13 +24,13 @@ import {
     LineChart,
     ListFilter,
     Loader2,
-    RefreshCcw,
     Settings,
     Truck,
     User,
     Users,
     type LucideIcon,
 } from 'lucide-react';
+import { ReportPageLayout } from '@/components/report/report-page-layout';
 
 type GradeDetails = {
     overall?: { score?: number | null; letter?: string | null };
@@ -334,19 +333,13 @@ export default function DriverTruckGradingReport({ filters, filterOptions, pagin
     }, [recalculationNotice]);
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Driver-truck grading" />
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-slate-100/60 dark:bg-slate-900/40">
-                <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-4 pb-10 sm:p-6 lg:p-10">
-                    <header className="rounded-2xl border border-slate-200 bg-white/95 px-6 py-6 shadow-sm backdrop-blur dark:border-slate-800/70 dark:bg-slate-900/70">
-                        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                            <div className="space-y-2">
-                                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">Driver-Truck Grading</p>
-                                <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-50">Driver-truck grading report</h1>
-                                <p className="max-w-3xl text-sm text-slate-600 dark:text-slate-300">Review graded driver-truck assignments, compare performance categories, and audit attachment trends after adjusting grading settings.</p>
-                            </div>
-                            <div className="flex flex-wrap items-center gap-2">
-                                <Dialog open={filtersOpen} onOpenChange={setFiltersOpen}>
+        <ReportPageLayout
+            title="Driver-truck grading report"
+            description="Review graded driver-truck assignments, compare performance categories, and audit attachment trends after adjusting grading settings."
+            breadcrumbs={breadcrumbs}
+            icon={<LinkIcon className="h-6 w-6" />}
+            filters={
+                <Dialog open={filtersOpen} onOpenChange={setFiltersOpen}>
                                     <DialogTrigger asChild>
                                         <Button type="button" variant="outline" className="gap-2">
                                             <ListFilter className="h-4 w-4" />
@@ -449,29 +442,27 @@ export default function DriverTruckGradingReport({ filters, filterOptions, pagin
                                         </DialogFooter>
                                     </DialogContent>
                                 </Dialog>
-                                <Button asChild variant="secondary" className="gap-2">
-                                    <Link href="/settings/driver-truck-grading">
-                                        <Settings className="h-4 w-4" />
-                                        Adjust settings
-                                    </Link>
-                                </Button>
-                                {canRecalculate ? (
-                                    <Button type="button" className="gap-2" onClick={handleRecalculateSnapshot} disabled={recalculating || !appliedSnapshotDate}>
-                                        {recalculating ? (<Loader2 className="h-4 w-4 animate-spin" />) : (<Gauge className="h-4 w-4" />)}
-                                        {recalculating ? 'Recalculating…' : 'Recalculate snapshot'}
-                                    </Button>
-                                ) : null}
-                                <Button type="button" variant="outline" className="gap-2" onClick={handleReset}>
-                                    <RefreshCcw className="h-4 w-4" />
-                                    Reset
-                                </Button>
-                            </div>
-                            {recalculationNotice ? (
-                                <div className={`mt-4 rounded-lg border px-4 py-3 text-sm transition ${recalculationTone}`}>{recalculationNotice.message}</div>
-                            ) : null}
-                        </div>
-                    </header>
-
+                            </>
+            }
+            summarySection={
+                <>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <Button asChild variant="secondary" className="gap-2">
+                            <Link href="/settings/driver-truck-grading">
+                                <Settings className="h-4 w-4" />
+                                Adjust settings
+                            </Link>
+                        </Button>
+                        {canRecalculate ? (
+                            <Button type="button" className="gap-2" onClick={handleRecalculateSnapshot} disabled={recalculating || !appliedSnapshotDate}>
+                                {recalculating ? (<Loader2 className="h-4 w-4 animate-spin" />) : (<Gauge className="h-4 w-4" />)}
+                                {recalculating ? 'Recalculating…' : 'Recalculate snapshot'}
+                            </Button>
+                        ) : null}
+                    </div>
+                    {recalculationNotice ? (
+                        <div className={`rounded-lg border px-4 py-3 text-sm transition ${recalculationTone}`}>{recalculationNotice.message}</div>
+                    ) : null}
                     <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                         {kpiCards.map((card) => {
                             const Icon = card.icon;
@@ -490,8 +481,13 @@ export default function DriverTruckGradingReport({ filters, filterOptions, pagin
                             );
                         })}
                     </section>
-
-                    <section className="rounded-2xl border border-slate-200 bg-white/95 shadow-sm backdrop-blur dark:border-slate-800/70 dark:bg-slate-900/70">
+                </>
+            }
+            canExport={false}
+            contentClassName="p-0"
+        >
+            <div className="space-y-6 p-6">
+                <section className="rounded-2xl border border-slate-200 bg-slate-50/50 shadow-sm dark:border-slate-800 dark:bg-slate-800/50">
                         <CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                             <div>
                                 <CardTitle>Driver-truck assignment leaderboard</CardTitle>
@@ -573,8 +569,7 @@ export default function DriverTruckGradingReport({ filters, filterOptions, pagin
                             <InertiaPagination links={paginator?.links ?? []} meta={paginator?.meta ?? {}} preserveScroll preserveState />
                         </CardContent>
                     </section>
-                </div>
             </div>
-        </AppLayout>
+        </ReportPageLayout>
     );
 }

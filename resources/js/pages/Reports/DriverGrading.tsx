@@ -282,19 +282,13 @@ export default function DriverGradingReport({ filters, filterOptions, paginator,
     }, [recalculationNotice]);
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Driver grading" />
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-slate-100/60 dark:bg-slate-900/40">
-                <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-4 pb-10 sm:p-6 lg:p-10">
-                    <header className="rounded-2xl border border-slate-200 bg-white/95 px-6 py-6 shadow-sm backdrop-blur dark:border-slate-800/70 dark:bg-slate-900/70">
-                        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                            <div className="space-y-2">
-                                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">Driver Grading</p>
-                                <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-50">Driver grading report</h1>
-                                <p className="max-w-3xl text-sm text-slate-600 dark:text-slate-300">Review graded drivers, compare categories, and identify outliers after adjusting the configuration.</p>
-                            </div>
-                            <div className="flex flex-wrap items-center gap-2">
-                                <Dialog open={filtersOpen} onOpenChange={setFiltersOpen}>
+        <ReportPageLayout
+            title="Driver grading report"
+            description="Review graded drivers, compare categories, and identify outliers after adjusting the configuration."
+            breadcrumbs={breadcrumbs}
+            icon={<User className="h-6 w-6" />}
+            filters={
+                <Dialog open={filtersOpen} onOpenChange={setFiltersOpen}>
                                     <DialogTrigger asChild>
                                         <Button type="button" variant="outline" className="gap-2">
                                             <ListFilter className="h-4 w-4" />
@@ -383,16 +377,21 @@ export default function DriverGradingReport({ filters, filterOptions, paginator,
                                         </DialogFooter>
                                     </DialogContent>
                                 </Dialog>
-                                <Button asChild variant="secondary" className="gap-2">
-                                    <Link href="/settings/driver-grading">
-                                        <Settings className="h-4 w-4" />
-                                        Adjust settings
-                                    </Link>
-                                </Button>
-                                {canRecalculate ? (
-                                    <Button type="button" className="gap-2" onClick={handleRecalculateSnapshot} disabled={recalculating || !appliedSnapshotDate}>
-                                        {recalculating ? (<Loader2 className="h-4 w-4 animate-spin" />) : (<Gauge className="h-4 w-4" />)}
-                                        {recalculating ? 'Recalculating…' : 'Recalculate snapshot'}
+                            </>
+            }
+            summarySection={
+                <>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <Button asChild variant="secondary" className="gap-2">
+                            <Link href="/settings/driver-grading">
+                                <Settings className="h-4 w-4" />
+                                Adjust settings
+                            </Link>
+                        </Button>
+                        {canRecalculate ? (
+                            <Button type="button" className="gap-2" onClick={handleRecalculateSnapshot} disabled={recalculating || !appliedSnapshotDate}>
+                                {recalculating ? (<Loader2 className="h-4 w-4 animate-spin" />) : (<Gauge className="h-4 w-4" />)}
+                                {recalculating ? 'Recalculating…' : 'Recalculate snapshot'}
                                     </Button>
                                 ) : null}
                                 <Button type="button" variant="outline" className="gap-2" onClick={handleReset}>
@@ -423,9 +422,14 @@ export default function DriverGradingReport({ filters, filterOptions, paginator,
                                 </Card>
                             );
                         })}
-                    </section>
-
-                    <Card className="border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
+                    </div>
+                </>
+            }
+            canExport={false}
+            contentClassName="p-0"
+        >
+            <div className="space-y-6 p-6">
+                <Card className="border border-slate-200 bg-slate-50/50 shadow-sm dark:border-slate-800 dark:bg-slate-800/50">
                         <CardHeader className="space-y-3 border-b border-slate-200/60 pb-5 dark:border-slate-700/60">
                             <div className="space-y-1">
                                 <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50">Graded drivers</CardTitle>
@@ -497,8 +501,7 @@ export default function DriverGradingReport({ filters, filterOptions, paginator,
                             </div>
                         </CardContent>
                     </Card>
-                </div>
             </div>
-        </AppLayout>
+        </ReportPageLayout>
     );
 }

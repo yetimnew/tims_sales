@@ -1,20 +1,13 @@
 import { useMemo, useState } from 'react';
-import { Head, router } from '@inertiajs/react';
-import AppLayout from '@/layouts/app-layout';
+import { router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ReportFiltersDialog } from '@/components/reports/report-filters-dialog';
 import { formatCurrency, formatDecimal, formatPercentage } from '@/components/reports/formatters';
 import {
     AlertTriangle,
-    Download,
-    FileDigit,
-    FileSpreadsheet,
-    RefreshCcw,
     TrendingUp,
     TrendingDown,
     Truck,
@@ -31,6 +24,7 @@ import {
 } from 'lucide-react';
 import { usePermissions } from '@/hooks/use-permissions';
 import { REPORT_DATE_RANGE_DESCRIPTION, useReportDateRange } from '@/components/reports/use-report-date-range';
+import { ReportPageLayout } from '@/components/report/report-page-layout';
 
 interface FleetOverview {
     total_trucks: number;
@@ -285,56 +279,41 @@ export default function CapacityPlanning({
         : 'text-amber-600 dark:text-amber-400';
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Capacity Planning & Fleet Optimization" />
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-slate-100/60 dark:bg-slate-900/40">
-                <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-4 pb-10 sm:p-6 lg:p-10">
-                    {/* Header */}
-                    <header className="rounded-2xl border border-slate-200 bg-white/95 px-6 py-6 shadow-sm backdrop-blur dark:border-slate-800/70 dark:bg-slate-900/70">
-                        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                            <div className="space-y-2">
-                                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">
-                                    Fleet Optimization
-                                </p>
-                                <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-50">
-                                    Capacity Planning & Fleet Optimization
-                                </h1>
-                                <p className="max-w-3xl text-sm text-slate-600 dark:text-slate-300">
-                                    Analyze fleet utilization, identify overcapacity or undercapacity, and receive data-driven recommendations to
-                                    right-size your fleet for optimal performance and cost efficiency.
-                                </p>
-                            </div>
-                            <div className="flex flex-wrap items-center gap-2">
-                                <ReportFiltersDialog
-                                    open={filtersOpen}
-                                    onOpenChange={setFiltersOpen}
-                                    activeFilterCount={activeFilterCount}
-                                    from={from}
-                                    to={to}
-                                    onDateChange={handleDateChange}
-                                    dateRangeDescription={REPORT_DATE_RANGE_DESCRIPTION}
-                                    onReset={handleReset}
-                                    onApply={handleApplyFilters}
-                                    showLimit={false}
-                                    showDriverFilter={false}
-                                    showTruckFilter={false}
-                                    showDestinationFilter={false}
-                                    showStatusFilter={false}
-                                    showOperationFilter={false}
-                                    dateError={dateError}
-                                    title="Filter capacity planning"
-                                    description="Adjust the reporting period to analyze capacity planning metrics."
-                                />
-                                {canExport ? (
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button type="button" variant="secondary" className="gap-2">
-                                                <Download className="h-4 w-4" />
-                                                Export
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end" className="w-44">
-                                            <DropdownMenuItem onSelect={() => handleExport('csv')} className="gap-2">
+        <ReportPageLayout
+            title="Capacity Planning & Fleet Optimization"
+            description="Analyze fleet utilization, identify overcapacity or undercapacity, and receive data-driven recommendations to right-size your fleet for optimal performance and cost efficiency."
+            breadcrumbs={breadcrumbs}
+            icon={<Target className="h-6 w-6" />}
+            filters={
+                <ReportFiltersDialog
+                    open={filtersOpen}
+                    onOpenChange={setFiltersOpen}
+                    activeFilterCount={activeFilterCount}
+                    from={from}
+                    to={to}
+                    onDateChange={handleDateChange}
+                    dateRangeDescription={REPORT_DATE_RANGE_DESCRIPTION}
+                    onReset={handleReset}
+                    onApply={handleApplyFilters}
+                    showLimit={false}
+                    showDriverFilter={false}
+                    showTruckFilter={false}
+                    showDestinationFilter={false}
+                    showStatusFilter={false}
+                    showOperationFilter={false}
+                    dateError={dateError}
+                    title="Filter capacity planning"
+                    description="Adjust the reporting period to analyze capacity planning metrics."
+                />
+            }
+            onRefresh={handleReset}
+            onExportPdf={() => handleExport('pdf')}
+            onExportExcel={() => handleExport('xlsx')}
+            onExportCsv={() => handleExport('csv')}
+            canExport={canExport}
+            contentClassName="p-0"
+        >
+            <div className="space-y-6 p-6">
                                                 <FileDigit className="h-4 w-4 text-amber-500" />
                                                 CSV
                                             </DropdownMenuItem>
@@ -713,9 +692,8 @@ export default function CapacityPlanning({
                             </CardContent>
                         </Card>
                     )}
-                </div>
             </div>
-        </AppLayout>
+        </ReportPageLayout>
     );
 }
 

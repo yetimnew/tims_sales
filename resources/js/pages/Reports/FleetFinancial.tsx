@@ -1,20 +1,13 @@
 import { useMemo, useState } from 'react';
-import { Head, router } from '@inertiajs/react';
-import AppLayout from '@/layouts/app-layout';
+import { router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ReportFiltersDialog } from '@/components/reports/report-filters-dialog';
 import { formatCurrency, formatDecimal, formatPercentage } from '@/components/reports/formatters';
 import { 
     CircleDollarSign, 
-    Download, 
-    FileDigit, 
-    FileSpreadsheet, 
-    RefreshCcw, 
     TrendingUp,
     TrendingDown,
     DollarSign,
@@ -31,6 +24,7 @@ import {
 } from 'lucide-react';
 import { usePermissions } from '@/hooks/use-permissions';
 import { REPORT_DATE_RANGE_DESCRIPTION, useReportDateRange } from '@/components/reports/use-report-date-range';
+import { ReportPageLayout } from '@/components/report/report-page-layout';
 
 interface Profitability {
     total_revenue: number;
@@ -243,56 +237,41 @@ export default function FleetFinancial({
     };
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Fleet Financial Dashboard" />
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-slate-100/60 dark:bg-slate-900/40">
-                <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-4 pb-10 sm:p-6 lg:p-10">
-                    {/* Header */}
-                    <header className="rounded-2xl border border-slate-200 bg-white/95 px-6 py-6 shadow-sm backdrop-blur dark:border-slate-800/70 dark:bg-slate-900/70">
-                        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                            <div className="space-y-2">
-                                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">Executive Dashboard</p>
-                                <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-50">Fleet Financial Dashboard</h1>
-                                <p className="max-w-3xl text-sm text-slate-600 dark:text-slate-300">
-                                    Strategic financial KPIs and performance metrics for executive decision-making. Comprehensive view of profitability, cash flow, and capital efficiency.
-                                </p>
-                            </div>
-                            <div className="flex flex-wrap items-center gap-2">
-                                <ReportFiltersDialog
-                                    open={filtersOpen}
-                                    onOpenChange={setFiltersOpen}
-                                    activeFilterCount={activeFilterCount}
-                                    from={from}
-                                    to={to}
-                                    onDateChange={handleDateChange}
-                                    dateRangeDescription={REPORT_DATE_RANGE_DESCRIPTION}
-                                    onReset={handleReset}
-                                    onApply={handleApplyFilters}
-                                    showLimit={false}
-                                    showDriverFilter={false}
-                                    showTruckFilter={false}
-                                    showDestinationFilter={false}
-                                    showStatusFilter={false}
-                                    showOperationFilter={false}
-                                    dateError={dateError}
-                                    title="Filter financial dashboard"
-                                    description="Adjust the reporting period to view financial metrics for a specific time range."
-                                />
-                                {canExport ? (
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button type="button" variant="secondary" className="gap-2">
-                                                <Download className="h-4 w-4" />
-                                                Export
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end" className="w-44">
-                                            <DropdownMenuItem onSelect={() => handleExport('csv')} className="gap-2">
-                                                <FileDigit className="h-4 w-4 text-amber-500" />
-                                                CSV
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onSelect={() => handleExport('xlsx')} className="gap-2">
-                                                <FileSpreadsheet className="h-4 w-4 text-emerald-500" />
+        <ReportPageLayout
+            title="Fleet Financial Dashboard"
+            description="Strategic financial KPIs and performance metrics for executive decision-making. Comprehensive view of profitability, cash flow, and capital efficiency."
+            breadcrumbs={breadcrumbs}
+            icon={<CircleDollarSign className="h-6 w-6" />}
+            filters={
+                <ReportFiltersDialog
+                    open={filtersOpen}
+                    onOpenChange={setFiltersOpen}
+                    activeFilterCount={activeFilterCount}
+                    from={from}
+                    to={to}
+                    onDateChange={handleDateChange}
+                    dateRangeDescription={REPORT_DATE_RANGE_DESCRIPTION}
+                    onReset={handleReset}
+                    onApply={handleApplyFilters}
+                    showLimit={false}
+                    showDriverFilter={false}
+                    showTruckFilter={false}
+                    showDestinationFilter={false}
+                    showStatusFilter={false}
+                    showOperationFilter={false}
+                    dateError={dateError}
+                    title="Filter financial dashboard"
+                    description="Adjust the reporting period to view financial metrics for a specific time range."
+                />
+            }
+            onRefresh={handleReset}
+            onExportPdf={() => handleExport('pdf')}
+            onExportExcel={() => handleExport('xlsx')}
+            onExportCsv={() => handleExport('csv')}
+            canExport={canExport}
+            contentClassName="p-0"
+        >
+            <div className="space-y-6 p-6">
                                                 Excel
                                             </DropdownMenuItem>
                                         </DropdownMenuContent>
@@ -739,9 +718,8 @@ export default function FleetFinancial({
                             </CardContent>
                         </Card>
                     )}
-                </div>
             </div>
-        </AppLayout>
+        </ReportPageLayout>
     );
 }
 
