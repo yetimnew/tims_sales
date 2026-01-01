@@ -6,7 +6,6 @@ import { ListingStatsHeader } from '@/components/listing/stats-header';
 import { ListingFilterBar } from '@/components/listing/filter-bar';
 import { ListingTableShell } from '@/components/listing/data-table-shell';
 import { ListingMobileItemList } from '@/components/listing/mobile-item-list';
-import { ListingLoadingPlaceholder } from '@/components/listing/loading-placeholder';
 import { ListingPaginationFooter } from '@/components/listing/pagination-footer';
 import { ListingRowActionsMenu } from '@/components/listing/row-actions-menu';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
@@ -513,27 +512,8 @@ export default function WoredasIndex({ woredas, metrics, filters, statusOptions,
         }
     }, []);
 
-    const tableRows = isLoading
-        ? Array.from({ length: 6 }).map((_, rowIndex) => (
-              <TableRow key={`woreda-skeleton-${rowIndex}`} aria-hidden="true">
-                  {tableColumns.map((column) => (
-                      <TableCell
-                          key={`${column.id}-${rowIndex}`}
-                          className={
-                              column.align === 'center'
-                                  ? 'text-center'
-                                  : column.align === 'right'
-                                      ? 'text-right'
-                                      : undefined
-                          }
-                      >
-                          <Skeleton className="mx-auto h-4 w-24 max-w-full" />
-                      </TableCell>
-                  ))}
-              </TableRow>
-          ))
-        : woredaData.length > 0
-            ? woredaData.map((woreda, index) => (
+    const tableRows = woredaData.length > 0
+        ? woredaData.map((woreda, index) => (
                   <TableRow key={woreda.id} className="hover:bg-muted/50">
                       <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
                       {COLUMN_DEFINITIONS.map((column) => (
@@ -575,18 +555,18 @@ export default function WoredasIndex({ woredas, metrics, filters, statusOptions,
                       </TableCell>
                   </TableRow>
               ))
-            : (
-                <TableRow>
-                    <TableCell colSpan={tableColumns.length} className="py-8 text-center text-muted-foreground">
-                        No woredas found.
-                        {canCreateWoreda && (
-                            <Link href="/woredas/create" className="ml-1 text-primary underline">
-                                Create one
-                            </Link>
-                        )}
-                    </TableCell>
-                </TableRow>
-            );
+        : (
+            <TableRow>
+                <TableCell colSpan={tableColumns.length} className="py-8 text-center text-muted-foreground">
+                    No woredas found.
+                    {canCreateWoreda && (
+                        <Link href="/woredas/create" className="ml-1 text-primary underline">
+                            Create one
+                        </Link>
+                    )}
+                </TableCell>
+            </TableRow>
+        );
 
     const mobileItems = React.useMemo(
         () =>
@@ -597,9 +577,7 @@ export default function WoredasIndex({ woredas, metrics, filters, statusOptions,
         [woredaData, rowOffset],
     );
 
-    const mobileContent = isLoading ? (
-        <ListingLoadingPlaceholder showStats={false} filterItemCount={3} rowCount={4} />
-    ) : (
+    const mobileContent = (
         <ListingMobileItemList
             items={mobileItems}
             getKey={(item) => item.record.id}
@@ -764,15 +742,33 @@ export default function WoredasIndex({ woredas, metrics, filters, statusOptions,
                 }
             >
                 <div className="hidden md:block">
-                    <ListingTableShell
-                        columns={tableColumns}
-                        sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSort }}
-                    >
-                        {tableRows}
-                    </ListingTableShell>
+                    <div className="relative">
+                        <ListingTableShell
+                            columns={tableColumns}
+                            sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSort }}
+                        >
+                            {tableRows}
+                        </ListingTableShell>
+
+                        {isLoading && (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
+                                <img src="/images/loading-spinner.svg" alt="Loading woredas" className="h-12 w-12" />
+                                <span className="text-sm text-muted-foreground">Loading woredas...</span>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
-                <div className="space-y-3 md:hidden">{mobileContent}</div>
+                <div className="relative space-y-3 md:hidden">
+                    {mobileContent}
+
+                    {isLoading && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
+                            <img src="/images/loading-spinner.svg" alt="Loading woredas" className="h-10 w-10" />
+                            <span className="text-sm text-muted-foreground">Loading woredas...</span>
+                        </div>
+                    )}
+                </div>
             </ListPageLayout>
 
             <DeleteConfirmationDialog

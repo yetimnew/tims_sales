@@ -1,32 +1,15 @@
 import { useCallback, useMemo, useState } from 'react';
-import { Head, router } from '@inertiajs/react';
-import AppLayout from '@/layouts/app-layout';
+import { router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ReportSummaryGrid, type ReportSummaryItem } from '@/components/reports/report-summary-grid';
 import { ReportFiltersDialog } from '@/components/reports/report-filters-dialog';
 import type { ReportSelectionOption } from '@/components/reports/types';
-import {
-    formatCurrency,
-    formatDecimal,
-    formatInteger,
-    formatPercentage,
-    getFinancialTone,
-    getMarginChipClass,
-} from '@/components/reports/formatters';
+import { formatCurrency, formatDecimal, formatInteger, formatPercentage, getFinancialTone, getMarginChipClass } from '@/components/reports/formatters';
 import { usePermissions } from '@/hooks/use-permissions';
-import { RefreshCcw, CircleDollarSign, TrendingDown, TrendingUp, ClipboardList, BarChart3, MapPin, Percent, Download, FileDigit, FileSpreadsheet, FileType2 } from 'lucide-react';
+import { CircleDollarSign, TrendingDown, TrendingUp, ClipboardList, BarChart3, MapPin, Percent } from 'lucide-react';
+import { ReportPageLayout } from '@/components/report/report-page-layout';
 
 interface CustomerOption {
     id: number;
@@ -352,86 +335,52 @@ export default function OperationProfitability({ filters, totals, operations, op
     );
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Operation Profitability" />
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-slate-100/60 dark:bg-slate-900/40">
-                <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-4 pb-10 sm:p-6 lg:p-10">
-                    <header className="rounded-2xl border border-slate-200 bg-white/95 px-6 py-6 shadow-sm backdrop-blur dark:border-slate-800/70 dark:bg-slate-900/70">
-                        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                            <div className="space-y-2">
-                                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">Operation Intelligence</p>
-                                <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-50">Operation Profitability</h1>
-                                <p className="max-w-3xl text-sm text-slate-600 dark:text-slate-300">
-                                    Analyse profitability, margin, and cost efficiency by operation. Review revenue, expenses, and contribution across your operational portfolio.
-                                </p>
-                            </div>
-                            <div className="flex flex-wrap items-center gap-2">
-                                <ReportFiltersDialog
-                                    open={filtersOpen}
-                                    onOpenChange={setFiltersOpen}
-                                    activeFilterCount={activeFilterCount}
-                                    from={from}
-                                    to={to}
-                                    onDateChange={handleDateChange}
-                                    onReset={handleReset}
-                                    onApply={handleApplyFilters}
-                                    customerOptions={customerSelectionOptions}
-                                    destinationOptions={regionSelectionOptions}
-                                    serviceTypeOptions={serviceTypeSelectionOptions}
-                                    selectedCustomers={selectedCustomers}
-                                    selectedDestinations={selectedRegions}
-                                    selectedServiceTypes={selectedServiceTypes}
-                                    onCustomersChange={setSelectedCustomers}
-                                    onDestinationsChange={setSelectedRegions}
-                                    onServiceTypesChange={setSelectedServiceTypes}
-                                    destinationFilterText={{
-                                        label: 'Regions',
-                                        triggerLabelWhenAll: 'All regions',
-                                        summaryLabelWhenAll: 'All regions included',
-                                        heading: 'Regions',
-                                        searchPlaceholder: 'Search region...',
-                                        emptyMessage: 'No regions found.',
-                                        icon: MapPin,
-                                    }}
-                                    dateError={dateError}
-                                />
-                                {canExport ? (
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button type="button" variant="secondary" className="gap-2">
-                                                <Download className="h-4 w-4" />
-                                                Export
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end" className="w-44">
-                                            <DropdownMenuItem onSelect={() => handleExport('csv')} className="gap-2">
-                                                <FileDigit className="h-4 w-4 text-amber-500" />
-                                                CSV
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onSelect={() => handleExport('xlsx')} className="gap-2">
-                                                <FileSpreadsheet className="h-4 w-4 text-emerald-500" />
-                                                Excel
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onSelect={() => handleExport('pdf')} className="gap-2">
-                                                <FileType2 className="h-4 w-4 text-rose-500" />
-                                                PDF
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                ) : null}
-                                <Button type="button" variant="outline" className="gap-2" onClick={handleReset}>
-                                    <RefreshCcw className="h-4 w-4" />
-                                    Reset
-                                </Button>
-                            </div>
-                        </div>
-                    </header>
-
-                    <ReportSummaryGrid items={summaryItems} />
-
-                    <Card className="border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
-                        <CardHeader className="space-y-3 border-b border-slate-200/60 pb-5 dark:border-slate-700/60">
-                            <div className="space-y-1">
+        <ReportPageLayout
+            title="Operation Profitability"
+            description="Analyse profitability, margin, and cost efficiency by operation. Review revenue, expenses, and contribution across your operational portfolio."
+            breadcrumbs={breadcrumbs}
+            icon={<ClipboardList className="h-6 w-6" />}
+            filters={
+                <ReportFiltersDialog
+                    open={filtersOpen}
+                    onOpenChange={setFiltersOpen}
+                    activeFilterCount={activeFilterCount}
+                    from={from}
+                    to={to}
+                    onDateChange={handleDateChange}
+                    onReset={handleReset}
+                    onApply={handleApplyFilters}
+                    customerOptions={customerSelectionOptions}
+                    destinationOptions={regionSelectionOptions}
+                    serviceTypeOptions={serviceTypeSelectionOptions}
+                    selectedCustomers={selectedCustomers}
+                    selectedDestinations={selectedRegions}
+                    selectedServiceTypes={selectedServiceTypes}
+                    onCustomersChange={setSelectedCustomers}
+                    onDestinationsChange={setSelectedRegions}
+                    onServiceTypesChange={setSelectedServiceTypes}
+                    destinationFilterText={{
+                        label: 'Regions',
+                        triggerLabelWhenAll: 'All regions',
+                        summaryLabelWhenAll: 'All regions included',
+                        heading: 'Regions',
+                        searchPlaceholder: 'Search region...',
+                        emptyMessage: 'No regions found.',
+                        icon: MapPin,
+                    }}
+                    dateError={dateError}
+                />
+            }
+            summarySection={<ReportSummaryGrid items={summaryItems} />}
+            onRefresh={handleReset}
+            onExportPdf={canExport ? () => handleExport('pdf') : undefined}
+            onExportExcel={canExport ? () => handleExport('xlsx') : undefined}
+            onExportCsv={canExport ? () => handleExport('csv') : undefined}
+            canExport={canExport}
+            contentClassName="p-0"
+        >
+            <div className="space-y-4 p-6">
+                <div className="space-y-2">
                                 <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50">Operation Performance Detail</CardTitle>
                                 <CardDescription className="text-sm">Profitability, margin, and cost metrics by operation.</CardDescription>
                                 <div className="mt-4 flex flex-wrap gap-2 text-xs text-slate-500 dark:text-slate-400">
@@ -498,11 +447,11 @@ export default function OperationProfitability({ filters, totals, operations, op
                                     </TableBody>
                                 </Table>
                             </div>
-                        </CardContent>
-                    </Card>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </AppLayout>
+        </ReportPageLayout>
     );
 }
 

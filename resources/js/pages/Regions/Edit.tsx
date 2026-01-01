@@ -1,622 +1,297 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEventHandler } from 'react';
-import { Head, Link, useForm } from '@inertiajs/react';
-import AppLayout from '@/layouts/app-layout';
+import { FormPageLayout } from '@/components/forms/form-page-layout';
+import { FormSection } from '@/components/forms/form-section';
+import { FormField } from '@/components/forms/form-field';
+import { FormActionsBar } from '@/components/forms/form-actions-bar';
+import { UnsavedChangesBadge } from '@/components/forms/unsaved-changes-badge';
+import { ScrollToTopFab } from '@/components/forms/scroll-to-top-fab';
+import { useCallback, useEffect, useMemo, useState, type FormEventHandler } from 'react';
+import { Link, useForm } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { validateRegion, type ValidationErrors } from '@/lib/validation';
 import { toast } from '@/hooks/use-toast';
-import {
-    AlertCircle,
-    ArrowLeft,
-    ArrowUp,
-    CheckCircle,
-    Compass,
-    Globe2,
-    Layers,
-    Map,
-    Save,
-} from 'lucide-react';
+import { AlertCircle, CheckCircle, Compass, Globe2, Layers, Map } from 'lucide-react';
 
 interface Region {
-    id: number;
-    name: string;
-    status: 'active' | 'inactive';
-    code?: string | null;
-    capital?: string | null;
-    area_km2?: number | string | null;
-    population?: number | string | null;
-    latitude?: number | string | null;
-    longitude?: number | string | null;
-    elevation_m?: number | string | null;
-    accessibility_score?: number | string | null;
-    last_surveyed_at?: string | null;
-    description?: string | null;
-    infrastructure_notes?: string | null;
-    climate_profile?: string | null;
+  id: number;
+  name: string;
+  status: 'active' | 'inactive';
+  code?: string | null;
+  capital?: string | null;
+  area_km2?: number | string | null;
+  population?: number | string | null;
+  latitude?: number | string | null;
+  longitude?: number | string | null;
+  elevation_m?: number | string | null;
+  accessibility_score?: number | string | null;
+  last_surveyed_at?: string | null;
+  description?: string | null;
+  infrastructure_notes?: string | null;
+  climate_profile?: string | null;
 }
 
 interface RegionEditProps {
-    region: Region;
+  region: Region;
 }
 
 type RegionFormData = {
-    name: string;
-    status: 'active' | 'inactive';
-    code: string;
-    capital: string;
-    area_km2: string;
-    population: string;
-    latitude: string;
-    longitude: string;
-    elevation_m: string;
-    accessibility_score: string;
-    last_surveyed_at: string;
-    description: string;
-    infrastructure_notes: string;
-    climate_profile: string;
+  name: string;
+  status: 'active' | 'inactive';
+  code: string;
+  capital: string;
+  area_km2: string;
+  population: string;
+  latitude: string;
+  longitude: string;
+  elevation_m: string;
+  accessibility_score: string;
+  last_surveyed_at: string;
+  description: string;
+  infrastructure_notes: string;
+  climate_profile: string;
 };
 
 export default function RegionsEdit({ region }: RegionEditProps) {
-    const breadcrumbs: BreadcrumbItem[] = [
-        {
-            title: 'Regions',
-            href: '/regions',
-        },
-        {
-            title: 'Edit',
-            href: `/regions/${region.id}/edit`,
-        },
-    ];
+  const breadcrumbs: BreadcrumbItem[] = [
+    { title: 'Regions', href: '/regions' },
+    { title: 'Edit', href: `/regions/${region.id}/edit` },
+  ];
 
-    const { data, setData, put, processing, errors } = useForm<RegionFormData>({
-        name: region.name ?? '',
-        status: region.status,
-        code: region.code ?? '',
-        capital: region.capital ?? '',
-        area_km2: region.area_km2 !== null && region.area_km2 !== undefined ? String(region.area_km2) : '',
-        population: region.population !== null && region.population !== undefined ? String(region.population) : '',
-        latitude: region.latitude !== null && region.latitude !== undefined ? String(region.latitude) : '',
-        longitude: region.longitude !== null && region.longitude !== undefined ? String(region.longitude) : '',
-        elevation_m: region.elevation_m !== null && region.elevation_m !== undefined ? String(region.elevation_m) : '',
-        accessibility_score:
-            region.accessibility_score !== null && region.accessibility_score !== undefined
-                ? String(region.accessibility_score)
-                : '',
-        last_surveyed_at: region.last_surveyed_at ?? '',
-        description: region.description ?? '',
-        infrastructure_notes: region.infrastructure_notes ?? '',
-        climate_profile: region.climate_profile ?? '',
+  const { data, setData, put, processing, errors } = useForm<RegionFormData>({
+    name: region.name ?? '',
+    status: region.status,
+    code: region.code ?? '',
+    capital: region.capital ?? '',
+    area_km2: region.area_km2 !== null && region.area_km2 !== undefined ? String(region.area_km2) : '',
+    population: region.population !== null && region.population !== undefined ? String(region.population) : '',
+    latitude: region.latitude !== null && region.latitude !== undefined ? String(region.latitude) : '',
+    longitude: region.longitude !== null && region.longitude !== undefined ? String(region.longitude) : '',
+    elevation_m: region.elevation_m !== null && region.elevation_m !== undefined ? String(region.elevation_m) : '',
+    accessibility_score:
+      region.accessibility_score !== null && region.accessibility_score !== undefined ? String(region.accessibility_score) : '',
+    last_surveyed_at: region.last_surveyed_at ?? '',
+    description: region.description ?? '',
+    infrastructure_notes: region.infrastructure_notes ?? '',
+    climate_profile: region.climate_profile ?? '',
+  });
+
+  const [frontendErrors, setFrontendErrors] = useState<ValidationErrors>({});
+  const [isDirty, setIsDirty] = useState(false);
+
+  const hasErrors = useMemo(() => Object.keys(errors).length > 0 || Object.keys(frontendErrors).length > 0, [errors, frontendErrors]);
+
+  useEffect(() => {
+    const errorMessages = Object.values(errors)
+      .flatMap(message => (Array.isArray(message) ? message : message ? [message] : []))
+      .filter((message): message is string => Boolean(message));
+
+    if (errorMessages.length > 0) {
+      toast({
+        title: '⚠️ Validation Error',
+        description: errorMessages.join(', '),
+        variant: 'destructive',
+      });
+    }
+  }, [errors]);
+
+  const setFieldError = useCallback((field: keyof RegionFormData, message: string) => {
+    setFrontendErrors(prev => {
+      const next = { ...prev };
+      if (message) {
+        next[field] = message;
+      } else {
+        delete next[field];
+      }
+      return next;
     });
+  }, []);
 
-    const [frontendErrors, setFrontendErrors] = useState<ValidationErrors>({});
-    const [isDirty, setIsDirty] = useState(false);
-    const [showScrollTop, setShowScrollTop] = useState(false);
-    const scrollContainerRef = useRef<HTMLFormElement | null>(null);
+  const validateField = useCallback(
+    (field: keyof RegionFormData, value: string) => {
+      const nextValues: RegionFormData = { ...data, [field]: value } as RegionFormData;
+      const fieldErrors = validateRegion(nextValues);
+      setFieldError(field, fieldErrors[field] ?? '');
+    },
+    [data, setFieldError],
+  );
 
-    const hasErrors = useMemo(
-        () => Object.keys(errors).length > 0 || Object.keys(frontendErrors).length > 0,
-        [errors, frontendErrors]
-    );
+  const handleFieldChange = useCallback(
+    (field: keyof RegionFormData, value: string) => {
+      setData(field, value as RegionFormData[keyof RegionFormData]);
+      validateField(field, value);
+      setIsDirty(true);
+    },
+    [setData, validateField],
+  );
 
-    useEffect(() => {
-        const errorMessages = Object.values(errors)
-            .flatMap(message => (Array.isArray(message) ? message : message ? [message] : []))
-            .filter((message): message is string => Boolean(message));
+  const submit: FormEventHandler = event => {
+    event.preventDefault();
 
-        if (errorMessages.length > 0) {
-            toast({
-                title: '⚠️ Validation Error',
-                description: errorMessages.join(', '),
-                variant: 'destructive',
-            });
-        }
-    }, [errors]);
+    const validationResults = validateRegion(data);
+    if (Object.keys(validationResults).length > 0) {
+      setFrontendErrors(validationResults);
+      return;
+    }
 
-    useEffect(() => {
-        const container = scrollContainerRef.current;
-        if (!container) {
-            return;
-        }
+    put(`/regions/${region.id}`, {
+      preserveScroll: true,
+      onSuccess: () => {
+        setFrontendErrors({});
+        setIsDirty(false);
+      },
+    });
+  };
 
-        const handleScroll = () => {
-            setShowScrollTop(container.scrollTop > 240);
-        };
+  const getFieldError = useCallback((field: keyof RegionFormData) => errors[field] || frontendErrors[field] || '', [errors, frontendErrors]);
 
-        handleScroll();
-        container.addEventListener('scroll', handleScroll);
+  return (
+    <FormPageLayout
+      title="Update Region"
+      headTitle={`Edit ${region.name}`}
+      description="Refine administrative data and geospatial insights to keep logistics planning current."
+      breadcrumbs={breadcrumbs}
+      icon={<Map className="h-5 w-5" />}
+      headerAside={isDirty && <UnsavedChangesBadge />}
+    >
+      <form onSubmit={submit} className="flex flex-1 flex-col gap-6 overflow-y-auto p-6 pb-24" noValidate>
+        {hasErrors && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>Review the highlighted fields and correct validation issues before saving the region update.</AlertDescription>
+          </Alert>
+        )}
 
-        return () => {
-            container.removeEventListener('scroll', handleScroll);
-        };
-    }, []);
+        <FormSection title="Region Identity" description="Ensure naming and governance metadata stays aligned with the latest records." icon={<Globe2 className="h-4 w-4" />}>
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <FormField label="Region Name" required error={getFieldError('name')}>
+              <Input id="name" type="text" value={data.name} onChange={event => handleFieldChange('name', event.target.value)} placeholder="e.g., Oromia" />
+            </FormField>
 
-    const setFieldError = useCallback((field: keyof RegionFormData, message: string) => {
-        setFrontendErrors(prev => {
-            const next = { ...prev };
-            if (message) {
-                next[field] = message;
-            } else {
-                delete next[field];
-            }
-            return next;
-        });
-    }, []);
+            <FormField label="Region Code" error={getFieldError('code')}>
+              <Input id="code" type="text" value={data.code} onChange={event => handleFieldChange('code', event.target.value)} placeholder="e.g., OR-01" />
+            </FormField>
 
-    const validateField = useCallback(
-        (field: keyof RegionFormData, value: string) => {
-            const nextValues: RegionFormData = { ...data, [field]: value } as RegionFormData;
-            const fieldErrors = validateRegion(nextValues);
-            setFieldError(field, fieldErrors[field] ?? '');
-        },
-        [data, setFieldError]
-    );
+            <FormField label="Status" required error={getFieldError('status')}>
+              <Select value={data.status} onValueChange={value => handleFieldChange('status', value)}>
+                <SelectTrigger className={getFieldError('status') ? 'border-red-500' : ''}>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+            </FormField>
 
-    const handleFieldChange = useCallback(
-        (field: keyof RegionFormData, value: string) => {
-            setData(field, value as RegionFormData[keyof RegionFormData]);
-            validateField(field, value);
-            setIsDirty(true);
-        },
-        [setData, validateField]
-    );
+            <FormField label="Capital City" error={getFieldError('capital')}>
+              <Input id="capital" type="text" value={data.capital} onChange={event => handleFieldChange('capital', event.target.value)} placeholder="e.g., Adama" />
+            </FormField>
+          </div>
+        </FormSection>
 
-    const submit: FormEventHandler = event => {
-        event.preventDefault();
+        <FormSection title="Geographic Profile" description="Update the region footprint, demographics, and positioning for analytics." icon={<Compass className="h-4 w-4" />}>
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+            <FormField label="Area (km²)" error={getFieldError('area_km2')}>
+              <Input id="area_km2" type="number" step="0.01" value={data.area_km2} onChange={event => handleFieldChange('area_km2', event.target.value)} placeholder="e.g., 35363" />
+            </FormField>
 
-        const validationResults = validateRegion(data);
-        if (Object.keys(validationResults).length > 0) {
-            setFrontendErrors(validationResults);
-            return;
-        }
+            <FormField label="Population" error={getFieldError('population')}>
+              <Input id="population" type="number" step="1" value={data.population} onChange={event => handleFieldChange('population', event.target.value)} placeholder="e.g., 4800000" />
+            </FormField>
 
-        put(`/regions/${region.id}`, {
-            preserveScroll: true,
-            onSuccess: () => {
-                setFrontendErrors({});
-                setIsDirty(false);
-            },
-        });
-    };
+            <FormField label="Elevation (m)" error={getFieldError('elevation_m')}>
+              <Input id="elevation_m" type="number" step="0.01" value={data.elevation_m} onChange={event => handleFieldChange('elevation_m', event.target.value)} placeholder="e.g., 1325" />
+            </FormField>
+          </div>
 
-    const getFieldError = useCallback(
-        (field: keyof RegionFormData) => errors[field] || frontendErrors[field] || '',
-        [errors, frontendErrors]
-    );
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <FormField label="Latitude" error={getFieldError('latitude')}>
+              <Input id="latitude" type="number" step="0.000001" value={data.latitude} onChange={event => handleFieldChange('latitude', event.target.value)} placeholder="e.g., 8.980603" />
+            </FormField>
 
-    const handleScrollToTop = () => {
-        scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-    };
+            <FormField label="Longitude" error={getFieldError('longitude')}>
+              <Input id="longitude" type="number" step="0.000001" value={data.longitude} onChange={event => handleFieldChange('longitude', event.target.value)} placeholder="e.g., 38.757761" />
+            </FormField>
+          </div>
+        </FormSection>
 
-    return (
-        <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={`Edit ${region.name}`} />
-            <div className="flex h-full flex-1 flex-col gap-6 overflow-hidden rounded-xl p-4">
-                <Card className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200/70 bg-white/95 text-card-foreground shadow-xl backdrop-blur-lg dark:border-slate-800/60 dark:bg-slate-900/70">
-                    <CardHeader className="px-6 pb-0">
-                        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                            <div className="flex items-start gap-4">
-                                <div className="rounded-xl bg-indigo-100 p-2 text-indigo-600 shadow-sm dark:bg-indigo-900/30 dark:text-indigo-400">
-                                    <Map className="h-5 w-5" />
-                                </div>
-                                <div>
-                                    <CardTitle className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
-                                        Update Region
-                                    </CardTitle>
-                                    <CardDescription className="text-sm text-slate-600 dark:text-slate-400">
-                                        Refine administrative data and geospatial insights to keep logistics planning current.
-                                    </CardDescription>
-                                </div>
-                            </div>
-                            <div className="flex flex-wrap items-center gap-3">
-                                <Button variant="ghost" size="sm" asChild>
-                                    <Link href="/regions">
-                                        <ArrowLeft className="mr-2 h-4 w-4" />
-                                        Back to Regions
-                                    </Link>
-                                </Button>
-                                {isDirty && (
-                                    <div className="flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1.5 text-sm font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-                                        <Save className="h-3 w-3" />
-                                        Unsaved Changes
-                                    </div>
-                                )}
-                                <div className="flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1.5 text-sm font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
-                                    <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
-                                    Regional Planning
-                                </div>
-                            </div>
-                        </div>
-                    </CardHeader>
+        <FormSection title="Infrastructure & Climate" description="Capture readiness signals, climate context, and operational notes." icon={<Layers className="h-4 w-4" />}>
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <FormField label="Accessibility Score" error={getFieldError('accessibility_score')}>
+              <Input
+                id="accessibility_score"
+                type="number"
+                step="0.01"
+                min="0"
+                max="100"
+                value={data.accessibility_score}
+                onChange={event => handleFieldChange('accessibility_score', event.target.value)}
+                placeholder="0 - 100"
+              />
+            </FormField>
 
-                    <CardContent className="flex flex-1 flex-col overflow-hidden p-0">
-                        <form
-                            ref={scrollContainerRef}
-                            onSubmit={submit}
-                            className="flex flex-1 flex-col gap-8 overflow-y-auto p-6 pb-24"
-                            style={{ minHeight: 0 }}
-                            noValidate
-                        >
-                            {hasErrors && (
-                                <div className="flex items-start gap-3 rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-destructive">
-                                    <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0" />
-                                    <div>
-                                        <h3 className="font-semibold">Review the highlighted fields</h3>
-                                        <p className="text-sm opacity-80">Correct validation issues before saving the region update.</p>
-                                    </div>
-                                </div>
-                            )}
+            <FormField label="Last Surveyed" error={getFieldError('last_surveyed_at')}>
+              <Input id="last_surveyed_at" type="date" value={data.last_surveyed_at} onChange={event => handleFieldChange('last_surveyed_at', event.target.value)} />
+            </FormField>
+          </div>
 
-                            <section className="space-y-4 rounded-xl border border-slate-200/60 bg-white/75 p-5 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/35">
-                                <div className="flex items-center gap-2.5 text-sm">
-                                    <div className="rounded-md bg-indigo-100 p-1.5 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400">
-                                        <Globe2 className="h-4 w-4" />
-                                    </div>
-                                    <div className="flex flex-col gap-1">
-                                        <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">Region Identity</h2>
-                                        <p className="text-xs text-muted-foreground">Ensure naming and governance metadata stays aligned with the latest records.</p>
-                                    </div>
-                                </div>
+          <FormField label="Description">
+            <Textarea
+              id="description"
+              value={data.description}
+              onChange={event => handleFieldChange('description', event.target.value)}
+              placeholder="Regional overview, economic focus, or key logistics partners"
+              className="min-h-[100px]"
+            />
+          </FormField>
 
-                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="name">
-                                            Region Name <span className="text-red-500">*</span>
-                                        </Label>
-                                        <Input
-                                            id="name"
-                                            type="text"
-                                            value={data.name}
-                                            onChange={event => handleFieldChange('name', event.target.value)}
-                                            placeholder="e.g., Oromia"
-                                            className={getFieldError('name') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}
-                                        />
-                                        {getFieldError('name') && (
-                                            <p className="flex items-center gap-1 text-sm text-red-500">
-                                                <AlertCircle className="h-3 w-3" />
-                                                {getFieldError('name')}
-                                            </p>
-                                        )}
-                                    </div>
+          <FormField label="Infrastructure Notes">
+            <Textarea
+              id="infrastructure_notes"
+              value={data.infrastructure_notes}
+              onChange={event => handleFieldChange('infrastructure_notes', event.target.value)}
+              placeholder="Connectivity, utilities, telecom coverage, or known constraints"
+              className="min-h-[120px]"
+            />
+          </FormField>
 
-                                    <div className="space-y-2">
-                                        <Label htmlFor="code">Region Code</Label>
-                                        <Input
-                                            id="code"
-                                            type="text"
-                                            value={data.code}
-                                            onChange={event => handleFieldChange('code', event.target.value)}
-                                            placeholder="e.g., OR-01"
-                                            className={getFieldError('code') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}
-                                        />
-                                        {getFieldError('code') && (
-                                            <p className="flex items-center gap-1 text-sm text-red-500">
-                                                <AlertCircle className="h-3 w-3" />
-                                                {getFieldError('code')}
-                                            </p>
-                                        )}
-                                    </div>
+          <FormField label="Climate Profile">
+            <Textarea
+              id="climate_profile"
+              value={data.climate_profile}
+              onChange={event => handleFieldChange('climate_profile', event.target.value)}
+              placeholder="Seasonal patterns, temperature ranges, or weather alerts"
+              className="min-h-[120px]"
+            />
+          </FormField>
+        </FormSection>
+      </form>
 
-                                    <div className="space-y-2">
-                                        <Label htmlFor="status">
-                                            Status <span className="text-red-500">*</span>
-                                        </Label>
-                                        <Select value={data.status} onValueChange={value => handleFieldChange('status', value)}>
-                                            <SelectTrigger className={getFieldError('status') ? 'border-red-500 focus:ring-red-500/20' : ''}>
-                                                <SelectValue placeholder="Select status" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="active">Active</SelectItem>
-                                                <SelectItem value="inactive">Inactive</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                        {getFieldError('status') && (
-                                            <p className="flex items-center gap-1 text-sm text-red-500">
-                                                <AlertCircle className="h-3 w-3" />
-                                                {getFieldError('status')}
-                                            </p>
-                                        )}
-                                    </div>
+      <FormActionsBar>
+        <Button type="button" variant="outline" asChild>
+          <Link href="/regions">Cancel</Link>
+        </Button>
+        <Button type="submit" disabled={processing || Object.keys(frontendErrors).length > 0 || Boolean(Object.keys(errors).length > 0)} onClick={submit}>
+          {processing ? (
+            <>
+              <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white" />
+              Updating...
+            </>
+          ) : (
+            <>
+              <CheckCircle className="mr-2 h-4 w-4" />
+              Update Region
+            </>
+          )}
+        </Button>
+      </FormActionsBar>
 
-                                    <div className="space-y-2">
-                                        <Label htmlFor="capital">Capital City</Label>
-                                        <Input
-                                            id="capital"
-                                            type="text"
-                                            value={data.capital}
-                                            onChange={event => handleFieldChange('capital', event.target.value)}
-                                            placeholder="e.g., Adama"
-                                            className={getFieldError('capital') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}
-                                        />
-                                        {getFieldError('capital') && (
-                                            <p className="flex items-center gap-1 text-sm text-red-500">
-                                                <AlertCircle className="h-3 w-3" />
-                                                {getFieldError('capital')}
-                                            </p>
-                                        )}
-                                    </div>
-                                </div>
-                            </section>
-
-                            <section className="space-y-4 rounded-xl border border-slate-200/60 bg-white/75 p-5 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/35">
-                                <div className="flex items-center gap-2.5 text-sm">
-                                    <div className="rounded-md bg-indigo-100 p-1.5 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400">
-                                        <Compass className="h-4 w-4" />
-                                    </div>
-                                    <div className="flex flex-col gap-1">
-                                        <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">Geographic Profile</h2>
-                                        <p className="text-xs text-muted-foreground">Update the region footprint, demographics, and positioning for analytics.</p>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="area_km2">Area (km²)</Label>
-                                        <Input
-                                            id="area_km2"
-                                            type="number"
-                                            step="0.01"
-                                            value={data.area_km2}
-                                            onChange={event => handleFieldChange('area_km2', event.target.value)}
-                                            placeholder="e.g., 35363"
-                                            className={getFieldError('area_km2') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}
-                                        />
-                                        {getFieldError('area_km2') && (
-                                            <p className="flex items-center gap-1 text-sm text-red-500">
-                                                <AlertCircle className="h-3 w-3" />
-                                                {getFieldError('area_km2')}
-                                            </p>
-                                        )}
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <Label htmlFor="population">Population</Label>
-                                        <Input
-                                            id="population"
-                                            type="number"
-                                            step="1"
-                                            value={data.population}
-                                            onChange={event => handleFieldChange('population', event.target.value)}
-                                            placeholder="e.g., 4800000"
-                                            className={getFieldError('population') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}
-                                        />
-                                        {getFieldError('population') && (
-                                            <p className="flex items-center gap-1 text-sm text-red-500">
-                                                <AlertCircle className="h-3 w-3" />
-                                                {getFieldError('population')}
-                                            </p>
-                                        )}
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <Label htmlFor="elevation_m">Elevation (m)</Label>
-                                        <Input
-                                            id="elevation_m"
-                                            type="number"
-                                            step="0.01"
-                                            value={data.elevation_m}
-                                            onChange={event => handleFieldChange('elevation_m', event.target.value)}
-                                            placeholder="e.g., 1325"
-                                            className={getFieldError('elevation_m') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}
-                                        />
-                                        {getFieldError('elevation_m') && (
-                                            <p className="flex items-center gap-1 text-sm text-red-500">
-                                                <AlertCircle className="h-3 w-3" />
-                                                {getFieldError('elevation_m')}
-                                            </p>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="latitude">Latitude</Label>
-                                        <Input
-                                            id="latitude"
-                                            type="number"
-                                            step="0.000001"
-                                            value={data.latitude}
-                                            onChange={event => handleFieldChange('latitude', event.target.value)}
-                                            placeholder="e.g., 8.980603"
-                                            className={getFieldError('latitude') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}
-                                        />
-                                        {getFieldError('latitude') && (
-                                            <p className="flex items-center gap-1 text-sm text-red-500">
-                                                <AlertCircle className="h-3 w-3" />
-                                                {getFieldError('latitude')}
-                                            </p>
-                                        )}
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <Label htmlFor="longitude">Longitude</Label>
-                                        <Input
-                                            id="longitude"
-                                            type="number"
-                                            step="0.000001"
-                                            value={data.longitude}
-                                            onChange={event => handleFieldChange('longitude', event.target.value)}
-                                            placeholder="e.g., 38.757761"
-                                            className={getFieldError('longitude') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}
-                                        />
-                                        {getFieldError('longitude') && (
-                                            <p className="flex items-center gap-1 text-sm text-red-500">
-                                                <AlertCircle className="h-3 w-3" />
-                                                {getFieldError('longitude')}
-                                            </p>
-                                        )}
-                                    </div>
-                                </div>
-                            </section>
-
-                            <section className="space-y-4 rounded-xl border border-slate-200/60 bg-white/75 p-5 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/35">
-                                <div className="flex items-center gap-2.5 text-sm">
-                                    <div className="rounded-md bg-indigo-100 p-1.5 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400">
-                                        <Layers className="h-4 w-4" />
-                                    </div>
-                                    <div className="flex flex-col gap-1">
-                                        <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">Infrastructure & Climate</h2>
-                                        <p className="text-xs text-muted-foreground">Capture readiness signals, climate context, and operational notes.</p>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="accessibility_score">Accessibility Score</Label>
-                                        <Input
-                                            id="accessibility_score"
-                                            type="number"
-                                            step="0.01"
-                                            min="0"
-                                            max="100"
-                                            value={data.accessibility_score}
-                                            onChange={event => handleFieldChange('accessibility_score', event.target.value)}
-                                            placeholder="0 - 100"
-                                            className={getFieldError('accessibility_score') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}
-                                        />
-                                        {getFieldError('accessibility_score') && (
-                                            <p className="flex items-center gap-1 text-sm text-red-500">
-                                                <AlertCircle className="h-3 w-3" />
-                                                {getFieldError('accessibility_score')}
-                                            </p>
-                                        )}
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <Label htmlFor="last_surveyed_at">Last Surveyed</Label>
-                                        <Input
-                                            id="last_surveyed_at"
-                                            type="date"
-                                            value={data.last_surveyed_at}
-                                            onChange={event => handleFieldChange('last_surveyed_at', event.target.value)}
-                                            className={getFieldError('last_surveyed_at') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}
-                                        />
-                                        {getFieldError('last_surveyed_at') && (
-                                            <p className="flex items-center gap-1 text-sm text-red-500">
-                                                <AlertCircle className="h-3 w-3" />
-                                                {getFieldError('last_surveyed_at')}
-                                            </p>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="description">Description</Label>
-                                    <Textarea
-                                        id="description"
-                                        value={data.description}
-                                        onChange={event => handleFieldChange('description', event.target.value)}
-                                        placeholder="Regional overview, economic focus, or key logistics partners"
-                                        className={`min-h-[100px] ${getFieldError('description') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}
-                                    />
-                                    {getFieldError('description') && (
-                                        <p className="flex items-center gap-1 text-sm text-red-500">
-                                            <AlertCircle className="h-3 w-3" />
-                                            {getFieldError('description')}
-                                        </p>
-                                    )}
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="infrastructure_notes">Infrastructure Notes</Label>
-                                    <Textarea
-                                        id="infrastructure_notes"
-                                        value={data.infrastructure_notes}
-                                        onChange={event => handleFieldChange('infrastructure_notes', event.target.value)}
-                                        placeholder="Connectivity, utilities, telecom coverage, or known constraints"
-                                        className={`min-h-[120px] ${getFieldError('infrastructure_notes') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}
-                                    />
-                                    {getFieldError('infrastructure_notes') && (
-                                        <p className="flex items-center gap-1 text-sm text-red-500">
-                                            <AlertCircle className="h-3 w-3" />
-                                            {getFieldError('infrastructure_notes')}
-                                        </p>
-                                    )}
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="climate_profile">Climate Profile</Label>
-                                    <Textarea
-                                        id="climate_profile"
-                                        value={data.climate_profile}
-                                        onChange={event => handleFieldChange('climate_profile', event.target.value)}
-                                        placeholder="Seasonal patterns, temperature ranges, or weather alerts"
-                                        className={`min-h-[120px] ${getFieldError('climate_profile') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}
-                                    />
-                                    {getFieldError('climate_profile') && (
-                                        <p className="flex items-center gap-1 text-sm text-red-500">
-                                            <AlertCircle className="h-3 w-3" />
-                                            {getFieldError('climate_profile')}
-                                        </p>
-                                    )}
-                                </div>
-                            </section>
-
-                            <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-slate-200/70 bg-white/80 px-6 py-5 shadow-sm dark:border-slate-800 dark:bg-slate-900/40">
-                                <div className="flex items-center gap-4">
-                                    <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-                                        <span className="text-red-500">*</span>
-                                        <span>All required fields must be completed</span>
-                                    </div>
-                                    {isDirty && (
-                                        <div className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400">
-                                            <Save className="h-3 w-3" />
-                                            <span>You have unsaved changes</span>
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="flex gap-3">
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        asChild
-                                        className="border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700"
-                                    >
-                                        <Link href="/regions">Cancel</Link>
-                                    </Button>
-                                    <Button
-                                        type="submit"
-                                        disabled={
-                                            processing
-                                            || Object.keys(frontendErrors).length > 0
-                                            || Boolean(Object.keys(errors).length > 0)
-                                        }
-                                        className="min-w-[160px] bg-gradient-to-r from-indigo-600 to-indigo-700 px-6 text-white shadow-lg transition-all duration-200 hover:from-indigo-700 hover:to-indigo-800 hover:shadow-xl"
-                                    >
-                                        {processing ? (
-                                            <>
-                                                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white" />
-                                                Updating...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <CheckCircle className="mr-2 h-4 w-4" />
-                                                Update Region
-                                            </>
-                                        )}
-                                    </Button>
-                                </div>
-                            </div>
-                        </form>
-                    </CardContent>
-                </Card>
-
-                {showScrollTop && (
-                    <Button
-                        type="button"
-                        onClick={handleScrollToTop}
-                        className="fixed bottom-6 right-6 z-50 shadow-lg"
-                        variant="secondary"
-                        aria-label="Scroll to top"
-                    >
-                        <ArrowUp className="h-4 w-4" />
-                    </Button>
-                )}
-            </div>
-        </AppLayout>
-    );
+      <ScrollToTopFab />
+    </FormPageLayout>
+  );
 }

@@ -1,19 +1,16 @@
 import { useMemo, useState } from 'react';
-import { Head, router } from '@inertiajs/react';
-import AppLayout from '@/layouts/app-layout';
+import { router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Activity, BarChart3, CircleDollarSign, Download, FileDigit, FileSpreadsheet, FileType2, GaugeCircle, Layers, RefreshCcw, ShieldCheck } from 'lucide-react';
+import { Activity, BarChart3, CircleDollarSign, GaugeCircle, Layers, ShieldCheck } from 'lucide-react';
 import { usePermissions } from '@/hooks/use-permissions';
 import { ReportFiltersDialog } from '@/components/reports/report-filters-dialog';
 import { ReportSummaryGrid, type ReportSummaryItem } from '@/components/reports/report-summary-grid';
 import { formatCurrency, formatDecimal, formatInteger, formatPercentage, getFinancialTone, getMarginChipClass } from '@/components/reports/formatters';
 import type { ReportSelectionOption } from '@/components/reports/types';
 import { REPORT_DATE_RANGE_DESCRIPTION, useReportDateRange } from '@/components/reports/use-report-date-range';
+import { ReportPageLayout } from '@/components/report/report-page-layout';
 
 interface TruckOption {
     id: number;
@@ -317,106 +314,72 @@ export default function PerformanceByTruck({ filters, rows = [], summary, trucks
     const summaryMargin = summary?.margin_percent ?? null;
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Performance by Truck" />
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-slate-100/60 dark:bg-slate-900/40">
-                <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-4 pb-10 sm:p-6 lg:p-10">
-                    <header className="rounded-2xl border border-slate-200 bg-white/95 px-6 py-6 shadow-sm backdrop-blur dark:border-slate-800/70 dark:bg-slate-900/70">
-                        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                            <div className="space-y-2">
-                                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">Fleet Reporting</p>
-                                <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-50">Performance by Truck</h1>
-                                <p className="max-w-3xl text-sm text-slate-600 dark:text-slate-300">
-                                    Monitor utilisation, cost, and profitability for each truck. Refine the window, focus on specific vehicles, and export polished reports for finance and operations.
-                                </p>
-                            </div>
-                            <div className="flex flex-wrap items-center gap-2">
-                                <ReportFiltersDialog
-                                    open={filtersOpen}
-                                    onOpenChange={setFiltersOpen}
-                                    activeFilterCount={activeFilterCount}
-                                    from={from}
-                                    to={to}
-                                    onDateChange={handleDateRangeChange}
-                                    dateRangeDescription={REPORT_DATE_RANGE_DESCRIPTION}
-                                    onReset={handleReset}
-                                    onApply={handleApplyFilters}
-                                    truckOptions={truckSelectionOptions}
-                                    selectedTrucks={selectedTrucks}
-                                    onTrucksChange={setSelectedTrucks}
-                                    operationOptions={vehicleTypeSelectionOptions}
-                                    selectedOperations={selectedVehicleTypes}
-                                    onOperationsChange={setSelectedVehicleTypes}
-                                    destinationOptions={statusSelectionOptions}
-                                    selectedDestinations={selectedStatusIds}
-                                    onDestinationsChange={setSelectedStatusIds}
-                                    showLimit={false}
-                                    showDriverFilter={false}
-                                    showTruckFilter
-                                    showOperationFilter={vehicleTypeSelectionOptions.length > 0}
-                                    showDestinationFilter={statusSelectionOptions.length > 0}
-                                    dateError={dateError}
-                                    title="Filter performance by truck"
-                                    description="Adjust the reporting window and focus on specific trucks, vehicle types, or statuses before generating the report."
-                                    truckFilterText={{ searchPlaceholder: 'Search plate...' }}
-                                    operationFilterText={{
-                                        label: 'Vehicle types',
-                                        triggerLabelWhenAll: 'All vehicle types',
-                                        summaryLabelWhenAll: 'All vehicle types included',
-                                        heading: 'Vehicle types',
-                                        searchPlaceholder: 'Search vehicle type...',
-                                        emptyMessage: 'No vehicle types found.',
-                                        icon: Layers,
-                                    }}
-                                    destinationFilterText={{
-                                        label: 'Statuses',
-                                        triggerLabelWhenAll: 'All statuses',
-                                        summaryLabelWhenAll: 'All statuses included',
-                                        heading: 'Truck statuses',
-                                        searchPlaceholder: 'Search status...',
-                                        emptyMessage: 'No statuses found.',
-                                        icon: ShieldCheck,
-                                    }}
-                                />
-                                {canExport && (
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button type="button" variant="secondary" className="gap-2">
-                                                <Download className="h-4 w-4" />
-                                                Export
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end" className="w-44">
-                                            <DropdownMenuItem onSelect={() => handleExport('csv')} className="gap-2">
-                                                <FileDigit className="h-4 w-4 text-amber-500" />
-                                                CSV
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onSelect={() => handleExport('xlsx')} className="gap-2">
-                                                <FileSpreadsheet className="h-4 w-4 text-emerald-500" />
-                                                Excel
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onSelect={() => handleExport('pdf')} className="gap-2">
-                                                <FileType2 className="h-4 w-4 text-rose-500" />
-                                                PDF
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                )}
-                                <Button type="button" variant="outline" className="gap-2" onClick={handleReset}>
-                                    <RefreshCcw className="h-4 w-4" />
-                                    Reset
-                                </Button>
-                            </div>
-                        </div>
-                    </header>
-                    <ReportSummaryGrid items={summaryItems} />
-
-                    <Card className="border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
-                        <CardHeader className="space-y-3 border-b border-slate-200/60 pb-5 dark:border-slate-700/60">
-                            <div className="space-y-1">
-                                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50">Truck Performance Detail</CardTitle>
-                                <CardDescription className="text-sm">Revenue, expense, and utilisation metrics per truck.</CardDescription>
-                            </div>
+        <ReportPageLayout
+            title="Performance by Truck"
+            description="Monitor utilisation, cost, and profitability for each truck. Refine the window, focus on specific vehicles, and export polished reports for finance and operations."
+            breadcrumbs={breadcrumbs}
+            icon={<BarChart3 className="h-6 w-6" />}
+            filters={
+                <ReportFiltersDialog
+                    open={filtersOpen}
+                    onOpenChange={setFiltersOpen}
+                    activeFilterCount={activeFilterCount}
+                    from={from}
+                    to={to}
+                    onDateChange={handleDateRangeChange}
+                    dateRangeDescription={REPORT_DATE_RANGE_DESCRIPTION}
+                    onReset={handleReset}
+                    onApply={handleApplyFilters}
+                    truckOptions={truckSelectionOptions}
+                    selectedTrucks={selectedTrucks}
+                    onTrucksChange={setSelectedTrucks}
+                    operationOptions={vehicleTypeSelectionOptions}
+                    selectedOperations={selectedVehicleTypes}
+                    onOperationsChange={setSelectedVehicleTypes}
+                    destinationOptions={statusSelectionOptions}
+                    selectedDestinations={selectedStatusIds}
+                    onDestinationsChange={setSelectedStatusIds}
+                    showLimit={false}
+                    showDriverFilter={false}
+                    showTruckFilter
+                    showOperationFilter={vehicleTypeSelectionOptions.length > 0}
+                    showDestinationFilter={statusSelectionOptions.length > 0}
+                    dateError={dateError}
+                    title="Filter performance by truck"
+                    description="Adjust the reporting window and focus on specific trucks, vehicle types, or statuses before generating the report."
+                    truckFilterText={{ searchPlaceholder: 'Search plate...' }}
+                    operationFilterText={{
+                        label: 'Vehicle types',
+                        triggerLabelWhenAll: 'All vehicle types',
+                        summaryLabelWhenAll: 'All vehicle types included',
+                        heading: 'Vehicle types',
+                        searchPlaceholder: 'Search vehicle type...',
+                        emptyMessage: 'No vehicle types found.',
+                        icon: Layers,
+                    }}
+                    destinationFilterText={{
+                        label: 'Statuses',
+                        triggerLabelWhenAll: 'All statuses',
+                        summaryLabelWhenAll: 'All statuses included',
+                        heading: 'Truck statuses',
+                        searchPlaceholder: 'Search status...',
+                        emptyMessage: 'No statuses found.',
+                        icon: ShieldCheck,
+                    }}
+                />
+            }
+            summarySection={<ReportSummaryGrid items={summaryItems} />}
+            onRefresh={handleReset}
+            onExportPdf={() => handleExport('pdf')}
+            onExportExcel={() => handleExport('xlsx')}
+            onExportCsv={() => handleExport('csv')}
+            canExport={canExport}
+            contentClassName="p-0"
+        >
+            <div className="space-y-4 p-6">
+                <div className="space-y-2">
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-50">Truck Performance Detail</h3>
+                    <p className="text-sm text-slate-600 dark:text-slate-400">Revenue, expense, and utilisation metrics per truck.</p></div>
                             <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                                 {filterBadges.map((badge) => (
                                     <Badge key={badge} variant="outline">
@@ -542,11 +505,11 @@ export default function PerformanceByTruck({ filters, rows = [], summary, trucks
                                     )}
                                 </Table>
                             </div>
-                        </CardContent>
-                    </Card>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </AppLayout>
+        </ReportPageLayout>
     );
 }
 

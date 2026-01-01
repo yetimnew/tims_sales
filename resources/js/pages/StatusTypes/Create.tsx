@@ -1,136 +1,117 @@
-import { useState, useEffect } from 'react'
-import { useForm } from '@inertiajs/react'
-import { Link } from '@inertiajs/react'
-import { ArrowLeft } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { useToast } from '@/hooks/use-toast'
-import { validateStatusType } from '@/lib/validation'
-import AppLayout from '@/layouts/app-layout'
-import { CircleAlert } from 'lucide-react'
+import { FormPageLayout } from '@/components/forms/form-page-layout';
+import { FormSection } from '@/components/forms/form-section';
+import { FormField } from '@/components/forms/form-field';
+import { FormActionsBar } from '@/components/forms/form-actions-bar';
+import { ScrollToTopFab } from '@/components/forms/scroll-to-top-fab';
+import { useState, useEffect } from 'react';
+import { useForm, Link } from '@inertiajs/react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useToast } from '@/hooks/use-toast';
+import { validateStatusType } from '@/lib/validation';
+import { CircleAlert, Tag } from 'lucide-react';
 
 interface StatusTypeFormData {
-  name: string
-  description: string
+  name: string;
+  description: string;
 }
 
 export default function StatusTypesCreate() {
-  const { toast } = useToast()
-  const [frontendErrors, setFrontendErrors] = useState<Record<string, string>>({})
+  const { toast } = useToast();
+  const [frontendErrors, setFrontendErrors] = useState<Record<string, string>>({});
   const { data, setData, post, processing, errors } = useForm<StatusTypeFormData>({
     name: '',
     description: '',
-  })
+  });
 
   useEffect(() => {
     if (Object.keys(errors).length > 0) {
-      toast({ title: 'Validation Error', description: 'Please fix the errors', variant: 'destructive' })
+      toast({ title: 'Validation Error', description: 'Please fix the errors', variant: 'destructive' });
     }
-  }, [errors])
+  }, [errors, toast]);
 
   const handleFieldChange = (field: string, value: string) => {
-    setData(field as keyof StatusTypeFormData, value)
+    setData(field as keyof StatusTypeFormData, value);
     if (frontendErrors[field]) {
-      const validationErrors = validateStatusType({ ...data, [field]: value })
-      const error = validationErrors[field] || ''
+      const validationErrors = validateStatusType({ ...data, [field]: value });
+      const error = validationErrors[field] || '';
       if (error) {
-        setFrontendErrors(prev => ({ ...prev, [field]: error }))
+        setFrontendErrors(prev => ({ ...prev, [field]: error }));
       } else {
         setFrontendErrors(prev => {
-          const updated = { ...prev }
-          delete updated[field]
-          return updated
-        })
+          const updated = { ...prev };
+          delete updated[field];
+          return updated;
+        });
       }
     }
-  }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    const validationErrors = validateStatusType(data)
+    e.preventDefault();
+    const validationErrors = validateStatusType(data);
     if (Object.keys(validationErrors).length > 0) {
-      setFrontendErrors(validationErrors)
-      toast({ title: 'Validation Error', description: 'Please fix all errors', variant: 'destructive' })
-      return
+      setFrontendErrors(validationErrors);
+      toast({ title: 'Validation Error', description: 'Please fix all errors', variant: 'destructive' });
+      return;
     }
-    post(route('status-types.store'))
-  }
+    post(route('status-types.store'));
+  };
 
-  const hasErrors = Object.keys(frontendErrors).length > 0 || Object.keys(errors).length > 0
+  const hasErrors = Object.keys(frontendErrors).length > 0 || Object.keys(errors).length > 0;
 
   return (
-    <div className="flex h-full flex-1 flex-col gap-6 overflow-auto p-4">
-      <div className="flex items-center gap-4">
-        <Link href={route('status-types.index')}>
-          <Button variant="outline" size="icon">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-        </Link>
-        <h1 className="text-2xl font-bold">Create Status Type</h1>
-      </div>
+    <FormPageLayout
+      title="Create Status Type"
+      headTitle="Create Status Type"
+      description="Define a new status type for categorizing statuses."
+      icon={<Tag className="h-5 w-5" />}
+    >
+      <form onSubmit={handleSubmit} className="flex flex-1 flex-col gap-6 overflow-y-auto p-6 pb-24">
+        {hasErrors && (
+          <Alert variant="destructive">
+            <CircleAlert className="h-4 w-4" />
+            <AlertDescription>Please fix all errors in the form below</AlertDescription>
+          </Alert>
+        )}
 
-      <Card className="max-w-2xl">
-        <CardHeader className="border-b">
-          <h2 className="text-lg font-semibold">New Status Type Details</h2>
-        </CardHeader>
-        <CardContent className="pt-6">
-          {hasErrors && (
-            <Alert variant="destructive" className="mb-6">
-              <CircleAlert className="h-4 w-4" />
-              <AlertDescription>Please fix all errors in the form below</AlertDescription>
-            </Alert>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="name">Name *</Label>
+        <FormSection title="Status Type Details" description="Provide a name and optional description for the status type.">
+          <div className="space-y-6">
+            <FormField label="Name" required error={frontendErrors.name || (errors.name as string)}>
               <Input
                 id="name"
                 type="text"
                 value={data.name}
                 onChange={e => handleFieldChange('name', e.target.value)}
                 placeholder="Enter status type name"
-                className={frontendErrors.name || errors.name ? 'border-red-500' : ''}
               />
-              {(frontendErrors.name || errors.name) && (
-                <p className="text-sm text-red-500">{frontendErrors.name || errors.name}</p>
-              )}
-            </div>
+            </FormField>
 
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
+            <FormField label="Description" error={frontendErrors.description || (errors.description as string)}>
               <Textarea
                 id="description"
                 value={data.description}
                 onChange={e => handleFieldChange('description', e.target.value)}
                 placeholder="Enter status type description"
                 rows={4}
-                className={frontendErrors.description || errors.description ? 'border-red-500' : ''}
               />
-              {(frontendErrors.description || errors.description) && (
-                <p className="text-sm text-red-500">{frontendErrors.description || errors.description}</p>
-              )}
-            </div>
+            </FormField>
+          </div>
+        </FormSection>
+      </form>
 
-            <div className="flex gap-2 pt-4">
-              <Button type="submit" disabled={processing || hasErrors} className="flex-1">
-                Create Status Type
-              </Button>
-              <Link href={route('status-types.index')}>
-                <Button type="button" variant="outline" className="flex-1">
-                  Cancel
-                </Button>
-              </Link>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
-  )
+      <FormActionsBar>
+        <Button type="button" variant="outline" asChild>
+          <Link href={route('status-types.index')}>Cancel</Link>
+        </Button>
+        <Button type="submit" disabled={processing || hasErrors} onClick={handleSubmit}>
+          Create Status Type
+        </Button>
+      </FormActionsBar>
+
+      <ScrollToTopFab />
+    </FormPageLayout>
+  );
 }
-
-StatusTypesCreate.layout = (page: React.ReactNode) => <AppLayout children={page} />

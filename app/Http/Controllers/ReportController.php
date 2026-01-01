@@ -4,24 +4,30 @@ namespace App\Http\Controllers;
 
 use App\Enums\CargoServiceType;
 use App\Enums\OperationDestinationScope;
+use App\Exports\Reports\CapacityPlanningExport;
 use App\Exports\Reports\CustomerProfitabilityExport;
 use App\Exports\Reports\DailyStatusExport;
 use App\Exports\Reports\DriverPerformanceExport;
+use App\Exports\Reports\FleetFinancialExport;
 use App\Exports\Reports\FuelEfficiencyExport;
 use App\Exports\Reports\GeographyHeatmapsExport;
 use App\Exports\Reports\MaintenanceExport;
+use App\Exports\Reports\NetworkOptimizationExport;
 use App\Exports\Reports\OperationProfitabilityExport;
 use App\Exports\Reports\OutsourcePerformanceExport;
 use App\Exports\Reports\PerformanceAllExport;
 use App\Exports\Reports\RouteProfitabilityExport;
 use App\Exports\Reports\TruckPerformanceExport;
+use App\Http\Requests\Reports\CapacityPlanningRequest;
 use App\Http\Requests\Reports\CostPerKilometerRequest;
 use App\Http\Requests\Reports\CustomerProfitabilityRequest;
 use App\Http\Requests\Reports\DailyStatusReportRequest;
 use App\Http\Requests\Reports\DriverSafetyReportRequest;
+use App\Http\Requests\Reports\FleetFinancialRequest;
 use App\Http\Requests\Reports\FuelEfficiencyRequest;
 use App\Http\Requests\Reports\LoadFactorUtilizationRequest;
 use App\Http\Requests\Reports\MaintenancePerformanceRequest;
+use App\Http\Requests\Reports\NetworkOptimizationRequest;
 use App\Http\Requests\Reports\OutsourcePerformanceRequest;
 use App\Http\Requests\Reports\PerformanceAllRequest;
 use App\Http\Requests\Reports\PerformanceByDriverRequest;
@@ -44,14 +50,17 @@ use App\Models\VehicleMaintenanceRecord;
 use App\Models\VehicleType;
 use App\Models\Woreda;
 use App\Models\Zone;
+use App\Services\Reports\CapacityPlanningReport;
 use App\Services\Reports\CostPerKilometerReport;
 use App\Services\Reports\CustomerProfitabilityReport;
 use App\Services\Reports\DailyStatusReport;
 use App\Services\Reports\DriverSafetyReport;
 use App\Services\Reports\DriverTruckGradingReport;
+use App\Services\Reports\FleetFinancialReport;
 use App\Services\Reports\FuelEfficiencyReport;
 use App\Services\Reports\LoadFactorUtilizationReport;
 use App\Services\Reports\MaintenancePerformanceReport;
+use App\Services\Reports\NetworkOptimizationReport;
 use App\Services\Reports\OutsourcePerformanceReport;
 use App\Services\Reports\PerformanceAllReport;
 use App\Services\Reports\PerformanceByStatusReport;
@@ -84,6 +93,9 @@ class ReportController extends Controller
         private readonly DailyStatusReport $dailyStatusReport,
         private readonly TruckPerformanceReport $truckPerformanceReport,
         private readonly CustomerProfitabilityReport $customerProfitabilityReport,
+        private readonly FleetFinancialReport $fleetFinancialReport,
+        private readonly CapacityPlanningReport $capacityPlanningReport,
+        private readonly NetworkOptimizationReport $networkOptimizationReport,
         private readonly FuelEfficiencyReport $fuelEfficiencyReport,
         private readonly OutsourcePerformanceReport $outsourcePerformanceReport,
         private readonly MaintenancePerformanceReport $maintenancePerformanceReport,
@@ -379,6 +391,141 @@ class ReportController extends Controller
             report($e);
 
             return back()->withErrors(['error' => 'Failed to export customer profitability report.']);
+        }
+    }
+
+    public function fleetFinancial(FleetFinancialRequest $request): Response|RedirectResponse
+    {
+        try {
+            $result = $this->fleetFinancialReport->build($request->validated());
+
+            return Inertia::render('Reports/FleetFinancial', [
+                ...$result,
+                'filters' => [
+                    'from' => $result['resolved_from'] ?? null,
+                    'to' => $result['resolved_to'] ?? null,
+                ],
+            ]);
+        } catch (Exception $e) {
+            report($e);
+
+            return back()->withErrors(['error' => 'Failed to load fleet financial dashboard.']);
+        }
+    }
+
+    public function fleetFinancialExport(FleetFinancialRequest $request, string $format)
+    {
+        $format = strtolower($format);
+
+        if (! in_array($format, ['csv', 'xlsx'], true)) {
+            abort(404);
+        }
+
+        try {
+            $result = $this->fleetFinancialReport->build($request->validated());
+            $filename = 'fleet_financial_dashboard_'.now()->format('Y-m-d_H-i-s');
+
+            $export = new FleetFinancialExport($result);
+
+            return match ($format) {
+                'xlsx' => Excel::download($export, $filename.'.xlsx'),
+                'csv' => Excel::download($export, $filename.'.csv', \Maatwebsite\Excel\Excel::CSV),
+                default => abort(404),
+            };
+        } catch (Exception $e) {
+            report($e);
+
+            return back()->withErrors(['error' => 'Failed to export fleet financial dashboard.']);
+        }
+    }
+
+    public function capacityPlanning(CapacityPlanningRequest $request): Response|RedirectResponse
+    {
+        try {
+            $result = $this->capacityPlanningReport->build($request->validated());
+
+            return Inertia::render('Reports/CapacityPlanning', [
+                ...$result,
+                'filters' => [
+                    'from' => $result['resolved_from'] ?? null,
+                    'to' => $result['resolved_to'] ?? null,
+                ],
+            ]);
+        } catch (Exception $e) {
+            report($e);
+
+            return back()->withErrors(['error' => 'Failed to load capacity planning report.']);
+        }
+    }
+
+    public function capacityPlanningExport(CapacityPlanningRequest $request, string $format)
+    {
+        $format = strtolower($format);
+
+        if (! in_array($format, ['csv', 'xlsx'], true)) {
+            abort(404);
+        }
+
+        try {
+            $result = $this->capacityPlanningReport->build($request->validated());
+            $filename = 'capacity_planning_'.now()->format('Y-m-d_H-i-s');
+
+            $export = new CapacityPlanningExport($result);
+
+            return match ($format) {
+                'xlsx' => Excel::download($export, $filename.'.xlsx'),
+                'csv' => Excel::download($export, $filename.'.csv', \Maatwebsite\Excel\Excel::CSV),
+                default => abort(404),
+            };
+        } catch (Exception $e) {
+            report($e);
+
+            return back()->withErrors(['error' => 'Failed to export capacity planning report.']);
+        }
+    }
+
+    public function networkOptimization(NetworkOptimizationRequest $request): Response|RedirectResponse
+    {
+        try {
+            $result = $this->networkOptimizationReport->build($request->validated());
+
+            return Inertia::render('Reports/NetworkOptimization', [
+                ...$result,
+                'filters' => [
+                    'from' => $result['resolved_from'] ?? null,
+                    'to' => $result['resolved_to'] ?? null,
+                ],
+            ]);
+        } catch (Exception $e) {
+            report($e);
+
+            return back()->withErrors(['error' => 'Failed to load network optimization report.']);
+        }
+    }
+
+    public function networkOptimizationExport(NetworkOptimizationRequest $request, string $format)
+    {
+        $format = strtolower($format);
+
+        if (! in_array($format, ['csv', 'xlsx'], true)) {
+            abort(404);
+        }
+
+        try {
+            $result = $this->networkOptimizationReport->build($request->validated());
+            $filename = 'network_optimization_'.now()->format('Y-m-d_H-i-s');
+
+            $export = new NetworkOptimizationExport($result);
+
+            return match ($format) {
+                'xlsx' => Excel::download($export, $filename.'.xlsx'),
+                'csv' => Excel::download($export, $filename.'.csv', \Maatwebsite\Excel\Excel::CSV),
+                default => abort(404),
+            };
+        } catch (Exception $e) {
+            report($e);
+
+            return back()->withErrors(['error' => 'Failed to export network optimization report.']);
         }
     }
 

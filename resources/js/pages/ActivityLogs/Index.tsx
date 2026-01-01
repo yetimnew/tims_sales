@@ -6,7 +6,6 @@ import { ListingStatsHeader } from '@/components/listing/stats-header';
 import { ListingTableShell } from '@/components/listing/data-table-shell';
 import { ListingMobileItemList } from '@/components/listing/mobile-item-list';
 import { ListingPaginationFooter } from '@/components/listing/pagination-footer';
-import { ListingLoadingPlaceholder } from '@/components/listing/loading-placeholder';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { TableCell, TableRow } from '@/components/ui/table';
@@ -425,25 +424,6 @@ export default function ActivityLogsIndex({ logs, metrics, filters, filterOption
     );
 
     const tableBodyContent = useMemo(() => {
-        if (isLoading) {
-            return Array.from({ length: 6 }).map((_, rowIndex) => (
-                <TableRow key={`activity-log-skeleton-${rowIndex}`} aria-hidden="true">
-                    {tableColumns.map((column) => (
-                        <TableCell
-                            key={`${column.id}-${rowIndex}`}
-                            className={cn(
-                                column.align === 'center' && 'text-center',
-                                column.align === 'right' && 'text-right',
-                                column.className,
-                            )}
-                        >
-                            <Skeleton className="mx-auto h-4 w-24 max-w-full" />
-                        </TableCell>
-                    ))}
-                </TableRow>
-            ));
-        }
-
         if (tableData.length === 0) {
             return (
                 <TableRow>
@@ -528,9 +508,7 @@ export default function ActivityLogsIndex({ logs, metrics, filters, filterOption
         [rowOffset, tableData],
     );
 
-    const mobileContent = isLoading ? (
-        <ListingLoadingPlaceholder showStats={false} filterItemCount={0} rowCount={4} />
-    ) : (
+    const mobileContent = (
         <ListingMobileItemList
             items={mobileItems}
             getKey={(item) => item.log.id}
@@ -791,15 +769,32 @@ export default function ActivityLogsIndex({ logs, metrics, filters, filterOption
             }
         >
             <div className="hidden md:block">
-                <ListingTableShell
-                    columns={tableColumns}
-                    sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSortToggle }}
-                >
-                    {tableBodyContent}
-                </ListingTableShell>
+                <div className="relative">
+                    <ListingTableShell
+                        columns={tableColumns}
+                        sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSortToggle }}
+                    >
+                        {tableBodyContent}
+                    </ListingTableShell>
+
+                    {isLoading && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
+                            <img src="/images/loading-spinner.svg" alt="Loading activity logs" className="h-12 w-12" />
+                            <span className="text-sm text-muted-foreground">Loading activity logs...</span>
+                        </div>
+                    )}
+                </div>
             </div>
-            <div className="md:hidden">
+
+            <div className="relative md:hidden">
                 {mobileContent}
+
+                {isLoading && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
+                        <img src="/images/loading-spinner.svg" alt="Loading activity logs" className="h-10 w-10" />
+                        <span className="text-sm text-muted-foreground">Loading activity logs...</span>
+                    </div>
+                )}
             </div>
         </ListPageLayout>
     );

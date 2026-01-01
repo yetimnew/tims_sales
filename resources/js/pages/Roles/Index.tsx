@@ -6,7 +6,6 @@ import { ListingStatsHeader } from '@/components/listing/stats-header';
 import { ListingFilterBar } from '@/components/listing/filter-bar';
 import { ListingTableShell } from '@/components/listing/data-table-shell';
 import { ListingMobileItemList } from '@/components/listing/mobile-item-list';
-import { ListingLoadingPlaceholder } from '@/components/listing/loading-placeholder';
 import { ListingPaginationFooter } from '@/components/listing/pagination-footer';
 import { ListingRowActionsMenu } from '@/components/listing/row-actions-menu';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
@@ -483,27 +482,8 @@ export default function RolesIndex({ roles, filters, permissionGroupOptions, per
         }
     }, []);
 
-    const tableRows = isLoading
-        ? Array.from({ length: 6 }).map((_, rowIndex) => (
-              <TableRow key={`roles-skeleton-${rowIndex}`} aria-hidden="true">
-                  {tableColumns.map((column) => (
-                      <TableCell
-                          key={`${column.id}-${rowIndex}`}
-                          className={
-                              column.align === 'center'
-                                  ? 'text-center'
-                                  : column.align === 'right'
-                                      ? 'text-right'
-                                      : undefined
-                          }
-                      >
-                          <Skeleton className="mx-auto h-4 w-24 max-w-full" />
-                      </TableCell>
-                  ))}
-              </TableRow>
-          ))
-        : roleData.length > 0
-            ? roleData.map((role, index) => (
+    const tableRows = roleData.length > 0
+        ? roleData.map((role, index) => (
                   <TableRow key={role.id} className="hover:bg-muted/50">
                       <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
                       {COLUMN_DEFINITIONS.map((column) => (
@@ -545,31 +525,31 @@ export default function RolesIndex({ roles, filters, permissionGroupOptions, per
                       </TableCell>
                   </TableRow>
               ))
-            : (
-                <TableRow>
-                    <TableCell colSpan={tableColumns.length} className="py-12">
-                        <div className="flex flex-col items-center justify-center text-center">
-                            <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-muted/50">
-                                <Shield className="h-10 w-10 text-muted-foreground" />
-                            </div>
-                            <h3 className="mb-2 text-lg font-semibold">No roles found</h3>
-                            <p className="mb-6 max-w-md text-sm text-muted-foreground">
-                                {searchTerm
-                                    ? `No roles match "${searchTerm}". Try adjusting your filters or search terms.`
-                                    : 'Start by creating your first role to manage access levels effectively.'}
-                            </p>
-                            {canCreateRole && (
-                                <Button asChild size="sm" className="shadow-sm">
-                                    <Link href="/roles/create">
-                                        <Plus className="mr-2 h-4 w-4" />
-                                        {searchTerm ? 'Clear Filters & Add Role' : 'Add First Role'}
-                                    </Link>
-                                </Button>
-                            )}
+        : (
+            <TableRow>
+                <TableCell colSpan={tableColumns.length} className="py-12">
+                    <div className="flex flex-col items-center justify-center text-center">
+                        <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-muted/50">
+                            <Shield className="h-10 w-10 text-muted-foreground" />
                         </div>
-                    </TableCell>
-                </TableRow>
-            );
+                        <h3 className="mb-2 text-lg font-semibold">No roles found</h3>
+                        <p className="mb-6 max-w-md text-sm text-muted-foreground">
+                            {searchTerm
+                                ? `No roles match "${searchTerm}". Try adjusting your filters or search terms.`
+                                : 'Start by creating your first role to manage access levels effectively.'}
+                        </p>
+                        {canCreateRole && (
+                            <Button asChild size="sm" className="shadow-sm">
+                                <Link href="/roles/create">
+                                    <Plus className="mr-2 h-4 w-4" />
+                                    {searchTerm ? 'Clear Filters & Add Role' : 'Add First Role'}
+                                </Link>
+                            </Button>
+                        )}
+                    </div>
+                </TableCell>
+            </TableRow>
+        );
 
     const mobileItems = React.useMemo(
         () =>
@@ -580,9 +560,7 @@ export default function RolesIndex({ roles, filters, permissionGroupOptions, per
         [roleData, rowOffset],
     );
 
-    const mobileContent = isLoading ? (
-        <ListingLoadingPlaceholder showStats={false} filterItemCount={3} rowCount={4} />
-    ) : (
+    const mobileContent = (
         <ListingMobileItemList
             items={mobileItems}
             getKey={(item) => item.record.id}
@@ -779,15 +757,33 @@ export default function RolesIndex({ roles, filters, permissionGroupOptions, per
                 }
             >
                 <div className="hidden md:block">
-                    <ListingTableShell
-                        columns={tableColumns}
-                        sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSort }}
-                    >
-                        {tableRows}
-                    </ListingTableShell>
+                    <div className="relative">
+                        <ListingTableShell
+                            columns={tableColumns}
+                            sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSort }}
+                        >
+                            {tableRows}
+                        </ListingTableShell>
+
+                        {isLoading && (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
+                                <img src="/images/loading-spinner.svg" alt="Loading roles" className="h-12 w-12" />
+                                <span className="text-sm text-muted-foreground">Loading roles...</span>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
-                <div className="space-y-3 md:hidden">{mobileContent}</div>
+                <div className="relative space-y-3 md:hidden">
+                    {mobileContent}
+
+                    {isLoading && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
+                            <img src="/images/loading-spinner.svg" alt="Loading roles" className="h-10 w-10" />
+                            <span className="text-sm text-muted-foreground">Loading roles...</span>
+                        </div>
+                    )}
+                </div>
             </ListPageLayout>
 
             <DeleteConfirmationDialog

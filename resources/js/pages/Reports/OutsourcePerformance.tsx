@@ -1,28 +1,14 @@
 import { useCallback, useMemo, useState } from 'react';
-import { Head, router } from '@inertiajs/react';
-import AppLayout from '@/layouts/app-layout';
+import { router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
-import { Button } from '@/components/ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ReportFiltersDialog } from '@/components/reports/report-filters-dialog';
 import { ReportSummaryGrid, type ReportSummaryItem } from '@/components/reports/report-summary-grid';
 import { ReportDispatchTable, type ReportDispatchRow, type ReportSummary as ReportSummaryData } from '@/components/reports/report-dispatch-table';
 import type { ReportSelectionOption } from '@/components/reports/types';
 import { formatCurrency, formatDecimal, formatInteger, formatPercentage } from '@/components/reports/formatters';
-import {
-    Building2,
-    CircleDollarSign,
-    ClipboardList,
-    Download,
-    FileDigit,
-    FileSpreadsheet,
-    FileType2,
-    Flame,
-    RefreshCcw,
-    Route,
-    TrendingUp,
-} from 'lucide-react';
+import { Building2, CircleDollarSign, ClipboardList, Flame, Route, TrendingUp } from 'lucide-react';
 import { usePermissions } from '@/hooks/use-permissions';
+import { ReportPageLayout } from '@/components/report/report-page-layout';
 
 interface VendorOption {
     id: number;
@@ -327,115 +313,82 @@ export default function OutsourcePerformance({ filters, rows = [], summary, opti
     };
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Outsource Performance" />
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-slate-100/60 dark:bg-slate-900/40">
-                <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-4 pb-10 sm:p-6 lg:p-10">
-                    <header className="rounded-2xl border border-slate-200 bg-white/95 px-6 py-6 shadow-sm backdrop-blur dark:border-slate-800/70 dark:bg-slate-900/70">
-                        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                            <div className="space-y-2">
-                                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">Vendor Dispatch Intelligence</p>
-                                <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-50">Outsource Dispatch Performance</h1>
-                                <p className="max-w-3xl text-sm text-slate-600 dark:text-slate-300">
-                                    Review every outsource dispatch alongside internal benchmarks. Filter by vendor, route, and status to reconcile spend, revenue, and profitability.
-                                </p>
-                            </div>
-                            <div className="flex flex-wrap items-center gap-2">
-                                <ReportFiltersDialog
-                                    open={filtersOpen}
-                                    onOpenChange={setFiltersOpen}
-                                    activeFilterCount={activeFilterCount}
-                                    from={from}
-                                    to={to}
-                                    onDateChange={handleDateChange}
-                                    onReset={handleReset}
-                                    onApply={handleApplyFilters}
-                                    limit={limit}
-                                    onLimitChange={setLimit}
-                                    dateError={dateError}
-                                    driverOptions={vendorSelectionOptions}
-                                    operationOptions={operationSelectionOptions}
-                                    destinationOptions={destinationSelectionOptions}
-                                    statusOptions={statusSelectionOptions}
-                                    selectedDrivers={selectedVendors}
-                                    selectedOperations={selectedOperations}
-                                    selectedDestinations={selectedDestinations}
-                                    selectedStatuses={selectedStatuses}
-                                    onDriversChange={setSelectedVendors}
-                                    onOperationsChange={setSelectedOperations}
-                                    onDestinationsChange={setSelectedDestinations}
-                                    onStatusesChange={(ids) => setSelectedStatuses(ids.map(String))}
-                                    showTruckFilter={false}
-                                    driverFilterText={{
-                                        label: 'Vendors',
-                                        triggerLabelWhenAll: 'All vendors',
-                                        summaryLabelWhenAll: 'All vendors included',
-                                        heading: 'Vendors',
-                                        searchPlaceholder: 'Search vendor...',
-                                        emptyMessage: 'No vendors found.',
-                                        icon: Building2,
-                                    }}
-                                    destinationFilterText={{
-                                        label: 'Destinations',
-                                        summaryLabelWhenAll: 'All destinations included',
-                                    }}
-                                    statusFilterText={{
-                                        label: 'Statuses',
-                                        triggerLabelWhenAll: 'All statuses',
-                                        summaryLabelWhenAll: 'All statuses included',
-                                        heading: 'Statuses',
-                                        searchPlaceholder: 'Search status...',
-                                    }}
-                                />
-                                {canExport && (
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button type="button" variant="secondary" className="gap-2">
-                                                <Download className="h-4 w-4" />
-                                                Export
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end" className="w-44">
-                                            <DropdownMenuItem onSelect={() => handleExport('csv')} className="gap-2">
-                                                <FileDigit className="h-4 w-4 text-amber-500" />
-                                                CSV
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onSelect={() => handleExport('xlsx')} className="gap-2">
-                                                <FileSpreadsheet className="h-4 w-4 text-emerald-500" />
-                                                Excel
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onSelect={() => handleExport('pdf')} className="gap-2">
-                                                <FileType2 className="h-4 w-4 text-rose-500" />
-                                                PDF
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                )}
-                                <Button type="button" variant="outline" className="gap-2" onClick={handleReset}>
-                                    <RefreshCcw className="h-4 w-4" />
-                                    Reset
-                                </Button>
-                            </div>
-                        </div>
-                    </header>
-
-                    <ReportSummaryGrid items={summaryItems} />
-
-                    <ReportDispatchTable
-                        rows={safeRows}
-                        summary={summary}
-                        summaryMargin={summaryMargin}
-                        filterBadges={filterBadges}
-                        columnLabelOverrides={{
-                            driver_name: 'Vendor',
-                            truck_plate: 'Vendor Status',
-                            fuel_litres: 'Fuel (L)',
-                            other_cost: 'Vendor Cost',
-                        }}
-                    />
-                </div>
+        <ReportPageLayout
+            title="Outsource Dispatch Performance"
+            description="Review every outsource dispatch alongside internal benchmarks. Filter by vendor, route, and status to reconcile spend, revenue, and profitability."
+            breadcrumbs={breadcrumbs}
+            icon={<Building2 className="h-6 w-6" />}
+            filters={
+                <ReportFiltersDialog
+                    open={filtersOpen}
+                    onOpenChange={setFiltersOpen}
+                    activeFilterCount={activeFilterCount}
+                    from={from}
+                    to={to}
+                    onDateChange={handleDateChange}
+                    onReset={handleReset}
+                    onApply={handleApplyFilters}
+                    limit={limit}
+                    onLimitChange={setLimit}
+                    dateError={dateError}
+                    driverOptions={vendorSelectionOptions}
+                    operationOptions={operationSelectionOptions}
+                    destinationOptions={destinationSelectionOptions}
+                    statusOptions={statusSelectionOptions}
+                    selectedDrivers={selectedVendors}
+                    selectedOperations={selectedOperations}
+                    selectedDestinations={selectedDestinations}
+                    selectedStatuses={selectedStatuses}
+                    onDriversChange={setSelectedVendors}
+                    onOperationsChange={setSelectedOperations}
+                    onDestinationsChange={setSelectedDestinations}
+                    onStatusesChange={(ids) => setSelectedStatuses(ids.map(String))}
+                    showTruckFilter={false}
+                    driverFilterText={{
+                        label: 'Vendors',
+                        triggerLabelWhenAll: 'All vendors',
+                        summaryLabelWhenAll: 'All vendors included',
+                        heading: 'Vendors',
+                        searchPlaceholder: 'Search vendor...',
+                        emptyMessage: 'No vendors found.',
+                        icon: Building2,
+                    }}
+                    destinationFilterText={{
+                        label: 'Destinations',
+                        summaryLabelWhenAll: 'All destinations included',
+                    }}
+                    statusFilterText={{
+                        label: 'Statuses',
+                        triggerLabelWhenAll: 'All statuses',
+                        summaryLabelWhenAll: 'All statuses included',
+                        heading: 'Statuses',
+                        searchPlaceholder: 'Search status...',
+                    }}
+                />
+            }
+            summarySection={<ReportSummaryGrid items={summaryItems} />}
+            onRefresh={handleReset}
+            onExportPdf={() => handleExport('pdf')}
+            onExportExcel={() => handleExport('xlsx')}
+            onExportCsv={() => handleExport('csv')}
+            canExport={canExport}
+            contentClassName="p-0"
+        >
+            <div className="p-6">
+                <ReportDispatchTable
+                    rows={safeRows}
+                    summary={summary}
+                    summaryMargin={summaryMargin}
+                    filterBadges={filterBadges}
+                    columnLabelOverrides={{
+                        driver_name: 'Vendor',
+                        truck_plate: 'Vendor Status',
+                        fuel_litres: 'Fuel (L)',
+                        other_cost: 'Vendor Cost',
+                    }}
+                />
             </div>
-        </AppLayout>
+        </ReportPageLayout>
     );
 }
 

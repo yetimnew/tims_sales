@@ -1,67 +1,62 @@
-import { Head, Link } from '@inertiajs/react'
-import { useMemo } from 'react'
-import {
-  ArrowLeft,
-  MapPin,
-  Clock,
-  Route,
-  Navigation,
-} from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { usePermissions } from '@/hooks/use-permissions'
-import { InteractiveMap } from '@/components/InteractiveMap'
-import AppLayout from '@/layouts/app-layout'
-import type { BreadcrumbItem } from '@/types'
+import { Link } from '@inertiajs/react';
+import { useMemo } from 'react';
+import { ArrowLeft, MapPin, Clock, Route, Navigation } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { usePermissions } from '@/hooks/use-permissions';
+import { InteractiveMap } from '@/components/InteractiveMap';
+import type { BreadcrumbItem } from '@/types';
+import { DetailPageLayout } from '@/components/detail/detail-page-layout';
+import { DetailSectionCard } from '@/components/detail/detail-section-card';
+import { DetailSummaryGrid, type DetailSummaryItem } from '@/components/detail/detail-summary-grid';
 
 interface HierarchySummary {
-  name?: string | null
+  name?: string | null;
   zone?: {
-    name?: string | null
-    region?: { name?: string | null } | null
-  } | null
+    name?: string | null;
+    region?: { name?: string | null } | null;
+  } | null;
 }
 
 interface PlaceSummary {
-  id: number
-  name?: string | null
-  latitude?: number | null
-  longitude?: number | null
-  woreda?: HierarchySummary | null
+  id: number;
+  name?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  woreda?: HierarchySummary | null;
 }
 
 interface Distance {
-  id: number
-  from_place_id: number
-  to_place_id: number
-  distance_km: number
-  estimated_time_hours: number
-  route_type?: string | null
-  road_condition_factor?: number | null
-  toll_road?: boolean | null
-  toll_cost?: number | null
-  restricted_for_heavy_vehicles?: boolean | null
-  route_description?: string | null
-  route_notes?: string | null
-  from_place?: PlaceSummary | null
-  to_place?: PlaceSummary | null
-  created_at: string
-  updated_at: string
+  id: number;
+  from_place_id: number;
+  to_place_id: number;
+  distance_km: number;
+  estimated_time_hours: number;
+  route_type?: string | null;
+  road_condition_factor?: number | null;
+  toll_road?: boolean | null;
+  toll_cost?: number | null;
+  restricted_for_heavy_vehicles?: boolean | null;
+  route_description?: string | null;
+  route_notes?: string | null;
+  from_place?: PlaceSummary | null;
+  to_place?: PlaceSummary | null;
+  created_at: string;
+  updated_at: string;
 }
 
 interface DistancesShowProps {
-  distance: Distance
+  distance: Distance;
 }
 
 const formatHierarchy = (hierarchy?: HierarchySummary | null) => {
-  if (!hierarchy) return '—'
-  const parts = [hierarchy.name, hierarchy.zone?.name, hierarchy.zone?.region?.name].filter(Boolean)
-  return parts.join(', ') || '—'
-}
+  if (!hierarchy) return '—';
+  const parts = [hierarchy.name, hierarchy.zone?.name, hierarchy.zone?.region?.name].filter(Boolean);
+  return parts.join(', ') || '—';
+};
 
 export default function DistancesShow({ distance }: DistancesShowProps) {
-  const { hasPermission } = usePermissions()
+  const { hasPermission } = usePermissions();
   const breadcrumbs = useMemo<BreadcrumbItem[]>(
     () => [
       { title: 'Distances', href: '/distances' },
@@ -71,7 +66,7 @@ export default function DistancesShow({ distance }: DistancesShowProps) {
       },
     ],
     [distance.id, distance.from_place?.name, distance.to_place?.name],
-  )
+  );
 
   const places = [
     {
@@ -79,222 +74,164 @@ export default function DistancesShow({ distance }: DistancesShowProps) {
       name: distance.from_place?.name || '',
       latitude: distance.from_place?.latitude,
       longitude: distance.from_place?.longitude,
-      woreda: distance.from_place?.woreda
+      woreda: distance.from_place?.woreda,
     },
     {
       id: distance.to_place?.id || 0,
       name: distance.to_place?.name || '',
       latitude: distance.to_place?.latitude,
       longitude: distance.to_place?.longitude,
-      woreda: distance.to_place?.woreda
-    }
-  ].filter(place => place.latitude && place.longitude)
+      woreda: distance.to_place?.woreda,
+    },
+  ].filter(place => place.latitude && place.longitude);
 
-  const selectedFromPlace = places[0] || null
-  const selectedToPlace = places[1] || null
+  const selectedFromPlace = places[0] || null;
+  const selectedToPlace = places[1] || null;
 
-  const distanceTitle = `${distance.from_place?.name ?? 'Unknown'} → ${distance.to_place?.name ?? 'Unknown'}`
+  const distanceTitle = `${distance.from_place?.name ?? 'Unknown'} → ${distance.to_place?.name ?? 'Unknown'}`;
+  const avgSpeed = (Number(distance.distance_km) / Number(distance.estimated_time_hours)).toFixed(1);
+
+  const kpiSummary: DetailSummaryItem[] = [
+    { label: 'Distance', value: `${Number(distance.distance_km).toFixed(2)} km`, helper: 'Route length' },
+    { label: 'Estimated Time', value: `${Number(distance.estimated_time_hours).toFixed(2)} hrs`, helper: 'Travel duration' },
+    { label: 'Average Speed', value: `${avgSpeed} km/h`, helper: 'Calculated pace' },
+    { label: 'Route Type', value: distance.route_type || 'Standard', helper: 'Road classification' },
+  ];
 
   return (
-    <AppLayout breadcrumbs={breadcrumbs}>
-      <Head title={`Distance Details: ${distanceTitle}`} />
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <Link
-              href="/distances"
-              className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Distances
+    <DetailPageLayout
+      title={distanceTitle}
+      subtitle="Route distance and logistics corridor specifications."
+      breadcrumbs={breadcrumbs}
+      headTitle={`Distance Details: ${distanceTitle}`}
+      icon={<Route className="h-6 w-6 text-blue-700 dark:text-blue-300" />}
+      iconWrapperClassName="bg-blue-100 dark:bg-blue-900/30"
+      leading={
+        <Button variant="outline" size="sm" asChild>
+          <Link href="/distances">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Distances
+          </Link>
+        </Button>
+      }
+      actions={
+        hasPermission('distances.edit') && (
+          <Button asChild>
+            <Link href={`/distances/${distance.id}/edit`}>
+              <Navigation className="h-4 w-4 mr-2" />
+              Edit Distance
             </Link>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                Distance Details
-              </h1>
-              <p className="text-gray-600">
-                {distance.from_place?.name} → {distance.to_place?.name}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-2">
-            {hasPermission('distances.edit') && (
-              <Link href={`/distances/${distance.id}/edit`}>
-                <Button>
-                  <Navigation className="mr-2 h-4 w-4" />
-                  Edit Distance
-                </Button>
-              </Link>
-            )}
-          </div>
-        </div>
+          </Button>
+        )
+      }
+    >
+      <DetailSummaryGrid items={kpiSummary} />
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Interactive Map */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <MapPin className="w-5 h-5 mr-2" />
-                Route Map
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {selectedFromPlace && selectedToPlace ? (
-                <InteractiveMap
-                  places={places}
-                  selectedFromPlace={selectedFromPlace}
-                  selectedToPlace={selectedToPlace}
-                  onRouteChange={() => {}} // Read-only mode
-                  onDistanceChange={() => {}} // Read-only mode
-                  onTimeChange={() => {}} // Read-only mode
-                  height="400px"
-                  showRouteDrawing={false} // Disable drawing in show mode
-                  showPlaceMarkers={true}
-                  readOnly={true} // Read-only mode
-                  showDirectRoute={true} // Show direct route line
-                />
-              ) : (
-                <div className="h-96 flex items-center justify-center bg-gray-50 rounded-lg">
-                  <div className="text-center">
-                    <MapPin className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-500">Map not available - missing coordinates</p>
-                  </div>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <DetailSectionCard title="Route Map" description="Visual representation of the route" icon={<MapPin className="h-5 w-5" />}>
+          {selectedFromPlace && selectedToPlace ? (
+            <InteractiveMap
+              places={places}
+              selectedFromPlace={selectedFromPlace}
+              selectedToPlace={selectedToPlace}
+              onRouteChange={() => {}}
+              onDistanceChange={() => {}}
+              onTimeChange={() => {}}
+              height="400px"
+              showRouteDrawing={false}
+              showPlaceMarkers={true}
+              readOnly={true}
+              showDirectRoute={true}
+            />
+          ) : (
+            <div className="flex h-96 items-center justify-center rounded-lg bg-muted">
+              <div className="text-center">
+                <MapPin className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+                <p className="text-muted-foreground">Map not available - missing coordinates</p>
+              </div>
+            </div>
+          )}
+        </DetailSectionCard>
+
+        <div className="space-y-6">
+          <DetailSectionCard title="Distance Information" description="Origin and destination details" icon={<Route className="h-5 w-5" />}>
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-semibold uppercase text-muted-foreground">From Place</label>
+                <p className="mt-1 text-lg font-semibold">{distance.from_place?.name || 'N/A'}</p>
+                <p className="text-sm text-muted-foreground">{formatHierarchy(distance.from_place?.woreda)}</p>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold uppercase text-muted-foreground">To Place</label>
+                <p className="mt-1 text-lg font-semibold">{distance.to_place?.name || 'N/A'}</p>
+                <p className="text-sm text-muted-foreground">{formatHierarchy(distance.to_place?.woreda)}</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="rounded-lg border p-3">
+                  <label className="text-xs font-semibold uppercase text-muted-foreground">Distance</label>
+                  <p className="mt-1 flex items-center text-lg font-semibold">
+                    <Route className="mr-1 h-4 w-4" />
+                    {Number(distance.distance_km).toFixed(2)} km
+                  </p>
+                </div>
+                <div className="rounded-lg border p-3">
+                  <label className="text-xs font-semibold uppercase text-muted-foreground">Estimated Time</label>
+                  <p className="mt-1 flex items-center text-lg font-semibold">
+                    <Clock className="mr-1 h-4 w-4" />
+                    {Number(distance.estimated_time_hours).toFixed(2)} hrs
+                  </p>
+                </div>
+              </div>
+            </div>
+          </DetailSectionCard>
+
+          <DetailSectionCard title="Route Details" description="Road conditions and restrictions" icon={<Navigation className="h-5 w-5" />}>
+            <div className="space-y-3">
+              {distance.road_condition_factor && (
+                <div className="rounded-lg border p-3">
+                  <label className="text-xs font-semibold uppercase text-muted-foreground">Road Condition Factor</label>
+                  <p className="mt-1 text-sm font-semibold">{Number(distance.road_condition_factor).toFixed(2)}</p>
                 </div>
               )}
-            </CardContent>
-          </Card>
 
-          {/* Distance Information */}
-          <div className="space-y-6">
-            {/* Basic Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Distance Information</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium text-gray-500">From Place</label>
-                  <p className="text-lg font-semibold">{distance.from_place?.name || 'N/A'}</p>
-                  <p className="text-sm text-gray-600">{formatHierarchy(distance.from_place?.woreda)}</p>
+              {distance.toll_road && (
+                <div className="rounded-lg border p-3">
+                  <label className="text-xs font-semibold uppercase text-muted-foreground">Toll Road</label>
+                  <Badge className="mt-1" variant={distance.toll_road ? 'destructive' : 'secondary'}>
+                    {distance.toll_road ? 'Yes' : 'No'}
+                  </Badge>
+                  {distance.toll_cost && <p className="mt-1 text-sm text-muted-foreground">Cost: {Number(distance.toll_cost).toFixed(2)} ETB</p>}
                 </div>
+              )}
 
-                <div>
-                  <label className="text-sm font-medium text-gray-500">To Place</label>
-                  <p className="text-lg font-semibold">{distance.to_place?.name || 'N/A'}</p>
-                  <p className="text-sm text-gray-600">{formatHierarchy(distance.to_place?.woreda)}</p>
+              {distance.restricted_for_heavy_vehicles && (
+                <div className="rounded-lg border p-3">
+                  <label className="text-xs font-semibold uppercase text-muted-foreground">Heavy Vehicle Restriction</label>
+                  <Badge className="mt-1" variant={distance.restricted_for_heavy_vehicles ? 'destructive' : 'secondary'}>
+                    {distance.restricted_for_heavy_vehicles ? 'Restricted' : 'Allowed'}
+                  </Badge>
                 </div>
+              )}
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Distance</label>
-                    <p className="text-lg font-semibold flex items-center">
-                      <Route className="w-4 h-4 mr-1" />
-                      {Number(distance.distance_km).toFixed(2)} KM
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Estimated Time</label>
-                    <p className="text-lg font-semibold flex items-center">
-                      <Clock className="w-4 h-4 mr-1" />
-                      {Number(distance.estimated_time_hours).toFixed(2)} Hours
-                    </p>
-                  </div>
+              {distance.route_description && (
+                <div className="rounded-lg border p-3">
+                  <label className="text-xs font-semibold uppercase text-muted-foreground">Route Description</label>
+                  <p className="mt-1 text-sm">{distance.route_description}</p>
                 </div>
-              </CardContent>
-            </Card>
+              )}
 
-            {/* Route Details */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Route Details</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {distance.route_type && (
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Route Type</label>
-                    <Badge variant="outline">{distance.route_type}</Badge>
-                  </div>
-                )}
-
-                {distance.road_condition_factor && (
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Road Condition Factor</label>
-                    <p className="text-sm">{Number(distance.road_condition_factor).toFixed(2)}</p>
-                  </div>
-                )}
-
-                {distance.toll_road && (
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Toll Road</label>
-                    <Badge variant={distance.toll_road ? "destructive" : "secondary"}>
-                      {distance.toll_road ? "Yes" : "No"}
-                    </Badge>
-                    {distance.toll_cost && (
-                      <p className="text-sm text-gray-600 mt-1">
-                        Cost: {Number(distance.toll_cost).toFixed(2)} ETB
-                      </p>
-                    )}
-                  </div>
-                )}
-
-                {distance.restricted_for_heavy_vehicles && (
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Heavy Vehicle Restriction</label>
-                    <Badge variant={distance.restricted_for_heavy_vehicles ? "destructive" : "secondary"}>
-                      {distance.restricted_for_heavy_vehicles ? "Restricted" : "Allowed"}
-                    </Badge>
-                  </div>
-                )}
-
-                {distance.route_description && (
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Route Description</label>
-                    <p className="text-sm text-gray-700">{distance.route_description}</p>
-                  </div>
-                )}
-
-                {distance.route_notes && (
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Route Notes</label>
-                    <p className="text-sm text-gray-700">{distance.route_notes}</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Quick Info */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Quick Info</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-500">Distance ID</span>
-                  <span className="text-sm font-medium">#{distance.id}</span>
+              {distance.route_notes && (
+                <div className="rounded-lg border p-3">
+                  <label className="text-xs font-semibold uppercase text-muted-foreground">Route Notes</label>
+                  <p className="mt-1 text-sm">{distance.route_notes}</p>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-500">Created</span>
-                  <span className="text-sm font-medium">
-                    {new Date(distance.created_at).toLocaleDateString()}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-500">Last Updated</span>
-                  <span className="text-sm font-medium">
-                    {new Date(distance.updated_at).toLocaleDateString()}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-500">Average Speed</span>
-                  <span className="text-sm font-medium">
-                    {(Number(distance.distance_km) / Number(distance.estimated_time_hours)).toFixed(1)} KM/H
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+              )}
+            </div>
+          </DetailSectionCard>
         </div>
       </div>
-    </AppLayout>
-  )
+    </DetailPageLayout>
+  );
 }

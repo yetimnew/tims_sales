@@ -1,178 +1,141 @@
-import { Link } from '@inertiajs/react'
-import { ArrowLeft, SquarePen, Trash2, Tag, ScrollText } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog'
-import { ActivityLogTable } from '@/components/activity-log-table'
-import { useToast } from '@/hooks/use-toast'
-import { usePermissions } from '@/hooks/use-permissions'
-import AppLayout from '@/layouts/app-layout'
-import { useState } from 'react'
-import { router } from '@inertiajs/react'
+import { Link, router } from '@inertiajs/react';
+import { ArrowLeft, SquarePen, Trash2, Tag, ScrollText } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
+import { ActivityLogTable } from '@/components/activity-log-table';
+import { useToast } from '@/hooks/use-toast';
+import { usePermissions } from '@/hooks/use-permissions';
+import { useState } from 'react';
+import { type BreadcrumbItem } from '@/types';
+import { DetailPageLayout } from '@/components/detail/detail-page-layout';
+import { DetailSectionCard } from '@/components/detail/detail-section-card';
 
 interface StatusType {
-  id: number
-  name: string
-  description: string
-  created_at: string
-  updated_at: string
+  id: number;
+  name: string;
+  description: string;
+  created_at: string;
+  updated_at: string;
 }
 
 interface ActivityLog {
-  id: number
-  log_name: string
-  description: string
-  subject_type: string
-  subject_id: number
-  causer_type: string
-  causer_id: number
-  properties: Record<string, any>
-  created_at: string
+  id: number;
+  log_name: string;
+  description: string;
+  subject_type: string;
+  subject_id: number;
+  causer_type: string;
+  causer_id: number;
+  properties: Record<string, any>;
+  created_at: string;
 }
 
 interface StatusTypesShowProps {
-  statusType: StatusType
-  activityLogs: ActivityLog[]
+  statusType: StatusType;
+  activityLogs: ActivityLog[];
 }
 
 export default function StatusTypesShow({ statusType, activityLogs }: StatusTypesShowProps) {
-  const { toast } = useToast()
-  const { hasPermission } = usePermissions()
-  const [deleteConfirmation, setDeleteConfirmation] = useState<{ id: number; name: string } | null>(null)
-
-  const handleDelete = () => {
-    setDeleteConfirmation({ id: statusType.id, name: statusType.name })
-  }
+  const { toast } = useToast();
+  const { hasPermission } = usePermissions();
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{ id: number; name: string } | null>(null);
+  const breadcrumbs: BreadcrumbItem[] = [
+    { title: 'Status Types', href: '/status-types' },
+    { title: statusType.name, href: `/status-types/${statusType.id}` },
+  ];
 
   const confirmDelete = () => {
-    if (!deleteConfirmation) return
-    router.delete(route('status-types.destroy', deleteConfirmation.id), {
+    if (!deleteConfirmation) return;
+    router.delete(`/status-types/${deleteConfirmation.id}`, {
       onSuccess: () => {
-        toast({ title: 'Success', description: 'Status type deleted successfully', variant: 'success' })
-        setDeleteConfirmation(null)
+        toast({ title: 'Success', description: 'Status type deleted successfully', variant: 'success' });
+        setDeleteConfirmation(null);
       },
       onError: () => {
-        toast({ title: 'Error', description: 'Failed to delete status type', variant: 'destructive' })
+        toast({ title: 'Error', description: 'Failed to delete status type', variant: 'destructive' });
       },
-    })
-  }
+    });
+  };
 
   const formatDate = (dateString: string) => {
-    const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' }
-    return new Date(dateString).toLocaleDateString(undefined, options)
-  }
+    const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
+    return new Date(dateString).toLocaleDateString(undefined, options);
+  };
 
   return (
-    <div className="flex h-full flex-1 flex-col gap-6 overflow-auto p-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link href={route('status-types.index')}>
-            <Button variant="outline" size="icon">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
+    <DetailPageLayout
+      title={statusType.name}
+      subtitle={statusType.description || 'Status type classification for operational tracking.'}
+      breadcrumbs={breadcrumbs}
+      headTitle={`Status Type: ${statusType.name}`}
+      icon={<Tag className="h-6 w-6" />}
+      leading={
+        <Button variant="outline" size="sm" asChild>
+          <Link href="/status-types">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
           </Link>
-          <h1 className="text-2xl font-bold">Status Type: {statusType.name}</h1>
-        </div>
+        </Button>
+      }
+      actions={
         <div className="flex gap-2">
           {hasPermission('status-types.edit') && (
-            <Link href={route('status-types.edit', statusType.id)}>
-              <Button variant="outline">
-                <SquarePen className="mr-2 h-4 w-4" /> Edit Status Type
-              </Button>
-            </Link>
+            <Button variant="outline" asChild>
+              <Link href={`/status-types/${statusType.id}/edit`}>
+                <SquarePen className="h-4 w-4 mr-2" /> Edit
+              </Link>
+            </Button>
           )}
           {hasPermission('status-types.destroy') && (
-            <Button variant="destructive" onClick={handleDelete}>
-              <Trash2 className="mr-2 h-4 w-4" /> Delete Status Type
+            <Button variant="outline" onClick={() => setDeleteConfirmation({ id: statusType.id, name: statusType.name })} className="border-red-200 text-red-600 hover:border-red-300 hover:bg-red-50">
+              <Trash2 className="h-4 w-4 mr-2" /> Delete
             </Button>
           )}
         </div>
+      }
+    >
+      <div className="grid gap-6 lg:grid-cols-[1fr,20rem]">
+        <DetailSectionCard title="Basic Information" description="Core status type details" icon={<Tag className="h-5 w-5" />}>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="rounded-lg border p-4">
+              <p className="text-xs font-semibold uppercase text-muted-foreground">Name</p>
+              <p className="mt-2 text-base font-semibold">{statusType.name}</p>
+            </div>
+            <div className="rounded-lg border p-4">
+              <p className="text-xs font-semibold uppercase text-muted-foreground">Status Type ID</p>
+              <Badge variant="outline" className="mt-2">
+                #{statusType.id}
+              </Badge>
+            </div>
+            {statusType.description && (
+              <div className="rounded-lg border p-4 md:col-span-2">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Description</p>
+                <p className="mt-2 text-sm">{statusType.description}</p>
+              </div>
+            )}
+          </div>
+        </DetailSectionCard>
+
+        <DetailSectionCard title="Record Information" description="System tracking" icon={<ScrollText className="h-5 w-5" />}>
+          <div className="space-y-3 text-sm">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Created</span>
+              <span className="font-semibold">{formatDate(statusType.created_at)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Last Updated</span>
+              <span className="font-semibold">{formatDate(statusType.updated_at)}</span>
+            </div>
+          </div>
+        </DetailSectionCard>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Basic Information Card */}
-        <Card className="lg:col-span-2">
-          <CardHeader className="border-b">
-            <CardTitle className="flex items-center gap-2">
-              <Tag className="h-5 w-5" /> Basic Information
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-4 p-6 md:grid-cols-2">
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-muted-foreground">Name</p>
-              <p className="text-base">{statusType.name}</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-muted-foreground">Status Type ID</p>
-              <Badge variant="outline">#{statusType.id}</Badge>
-            </div>
-            <div className="space-y-1 md:col-span-2">
-              <p className="text-sm font-medium text-muted-foreground">Description</p>
-              <p className="text-base">{statusType.description || 'No description provided.'}</p>
-            </div>
-          </CardContent>
-        </Card>
+      <DetailSectionCard title="Activity Log" description="Auditable timeline" icon={<ScrollText className="h-5 w-5" />}>
+        <ActivityLogTable activityLogs={activityLogs} />
+      </DetailSectionCard>
 
-        {/* Quick Info Sidebar */}
-        <Card className="lg:col-span-1">
-          <CardHeader className="border-b">
-            <CardTitle className="flex items-center gap-2">
-              <Tag className="h-5 w-5" /> Quick Info
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-4 p-6">
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-muted-foreground">Status Type</p>
-              <Badge variant="default">{statusType.name}</Badge>
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-muted-foreground">Record ID</p>
-              <Badge variant="outline">#{statusType.id}</Badge>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Record Information Card */}
-        <Card className="lg:col-span-3">
-          <CardHeader className="border-b">
-            <CardTitle className="flex items-center gap-2">
-              <ScrollText className="h-5 w-5" /> Record Information
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-4 p-6 md:grid-cols-2">
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-muted-foreground">Created At</p>
-              <p className="text-base">{formatDate(statusType.created_at)}</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-muted-foreground">Last Updated At</p>
-              <p className="text-base">{formatDate(statusType.updated_at)}</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Activity Log Card */}
-        <Card className="lg:col-span-3">
-          <CardHeader className="border-b">
-            <CardTitle className="flex items-center gap-2">
-              <ScrollText className="h-5 w-5" /> Activity Log
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-6">
-            <ActivityLogTable activityLogs={activityLogs} />
-          </CardContent>
-        </Card>
-      </div>
-
-      <DeleteConfirmationDialog
-        isOpen={!!deleteConfirmation}
-        onClose={() => setDeleteConfirmation(null)}
-        onConfirm={confirmDelete}
-        itemName={deleteConfirmation?.name}
-      />
-    </div>
-  )
+      <DeleteConfirmationDialog open={!!deleteConfirmation} onOpenChange={() => setDeleteConfirmation(null)} onConfirm={confirmDelete} itemName={deleteConfirmation?.name} title="Delete Status Type" description="Are you sure you want to delete this status type?" />
+    </DetailPageLayout>
+  );
 }
-
-StatusTypesShow.layout = (page: React.ReactNode) => <AppLayout children={page} />

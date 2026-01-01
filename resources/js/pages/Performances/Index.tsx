@@ -457,6 +457,7 @@ export default function PerformancesIndex({
 
     const tableColumns = React.useMemo(
         () => [
+            { id: 'index', label: '#', align: 'center' as const },
             ...COLUMN_DEFINITIONS.map((column) => ({
                 id: column.id,
                 label: column.label,
@@ -475,15 +476,16 @@ export default function PerformancesIndex({
     );
 
     const statsSection = (
-        <ListingStatsHeader stats={statsDefinitions} />
+        <ListingStatsHeader stats={statsDefinitions} orientation="row" />
     );
 
     const tableRows = performanceData.length > 0
-        ? performanceData.map((performance) => {
+        ? performanceData.map((performance, index) => {
               const distanceValue = resolveDistanceValue(performance);
 
               return (
                   <TableRow key={performance.id} className="hover:bg-muted/50">
+                      <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
                       <TableCell className="font-medium">{performance.foNumber}</TableCell>
                       <TableCell className="text-muted-foreground">{formatDateValue(performance.dispatchDate)}</TableCell>
                       <TableCell>

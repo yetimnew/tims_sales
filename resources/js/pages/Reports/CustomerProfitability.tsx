@@ -1,19 +1,16 @@
 import { useMemo, useState } from 'react';
-import { Head, router } from '@inertiajs/react';
-import AppLayout from '@/layouts/app-layout';
+import { router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ReportFiltersDialog } from '@/components/reports/report-filters-dialog';
 import { ReportSummaryGrid, type ReportSummaryItem } from '@/components/reports/report-summary-grid';
 import { formatCurrency, formatDecimal, formatInteger, formatPercentage, getFinancialTone, getMarginChipClass } from '@/components/reports/formatters';
 import type { ReportSelectionOption } from '@/components/reports/types';
-import { CircleDollarSign, ClipboardList, Coins, Download, FileDigit, FileSpreadsheet, FileType2, PiggyBank, RefreshCcw, TrendingUp, Users } from 'lucide-react';
+import { CircleDollarSign, ClipboardList, Coins, PiggyBank, TrendingUp, Users } from 'lucide-react';
 import { usePermissions } from '@/hooks/use-permissions';
 import { REPORT_DATE_RANGE_DESCRIPTION, useReportDateRange } from '@/components/reports/use-report-date-range';
+import { ReportPageLayout } from '@/components/report/report-page-layout';
 
 interface CustomerOption {
     id: number;
@@ -298,71 +295,54 @@ export default function CustomerProfitability({ filters, rows = [], summary, tre
     const summaryMargin = summary?.margin_percent ?? null;
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Customer Profitability" />
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-slate-100/60 dark:bg-slate-900/40">
-                <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-4 pb-10 sm:p-6 lg:p-10">
-                    <header className="rounded-2xl border border-slate-200 bg-white/95 px-6 py-6 shadow-sm backdrop-blur dark:border-slate-800/70 dark:bg-slate-900/70">
-                        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                            <div className="space-y-2">
-                                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">Customer Lens</p>
-                                <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-50">Customer Profitability</h1>
-                                <p className="max-w-3xl text-sm text-slate-600 dark:text-slate-300">
-                                    Analyse profitability, tonnage mix, and utilisation across customers. Combine internal and outsourced execution to see who delivers the strongest contribution.
-                                </p>
-                            </div>
-                            <div className="flex flex-wrap items-center gap-2">
-                                <ReportFiltersDialog
-                                    open={filtersOpen}
-                                    onOpenChange={setFiltersOpen}
-                                    activeFilterCount={activeFilterCount}
-                                    from={from}
-                                    to={to}
-                                    onDateChange={handleDateChange}
-                                    dateRangeDescription={REPORT_DATE_RANGE_DESCRIPTION}
-                                    onReset={handleReset}
-                                    onApply={handleApplyFilters}
-                                    showLimit={false}
-                                    showDriverFilter={false}
-                                    showTruckFilter={false}
-                                    showDestinationFilter={false}
-                                    showStatusFilter={false}
-                                    showOperationFilter
-                                    operationOptions={customerSelectionOptions}
-                                    selectedOperations={selectedCustomers}
-                                    onOperationsChange={setSelectedCustomers}
-                                    dateError={dateError}
-                                    title="Filter customer profitability"
-                                    description="Adjust the reporting window and focus on specific customers before generating the report."
-                                    operationFilterText={{
-                                        label: 'Customers',
-                                        triggerLabelWhenAll: 'All customers',
-                                        summaryLabelWhenAll: 'All customers included',
-                                        heading: 'Customers',
-                                        searchPlaceholder: 'Search customer...',
-                                        emptyMessage: 'No customers found.',
-                                        icon: Users,
-                                    }}
-                                />
-                                {canExport ? (
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button type="button" variant="secondary" className="gap-2">
-                                                <Download className="h-4 w-4" />
-                                                Export
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end" className="w-44">
-                                            <DropdownMenuItem onSelect={() => handleExport('csv')} className="gap-2">
-                                                <FileDigit className="h-4 w-4 text-amber-500" />
-                                                CSV
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onSelect={() => handleExport('xlsx')} className="gap-2">
-                                                <FileSpreadsheet className="h-4 w-4 text-emerald-500" />
-                                                Excel
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onSelect={() => handleExport('pdf')} className="gap-2">
-                                                <FileType2 className="h-4 w-4 text-rose-500" />
+        <ReportPageLayout
+            title="Customer Profitability"
+            description="Analyse profitability, tonnage mix, and utilisation across customers. Combine internal and outsourced execution to see who delivers the strongest contribution."
+            breadcrumbs={breadcrumbs}
+            icon={<Users className="h-6 w-6" />}
+            filters={
+                <ReportFiltersDialog
+                    open={filtersOpen}
+                    onOpenChange={setFiltersOpen}
+                    activeFilterCount={activeFilterCount}
+                    from={from}
+                    to={to}
+                    onDateChange={handleDateChange}
+                    dateRangeDescription={REPORT_DATE_RANGE_DESCRIPTION}
+                    onReset={handleReset}
+                    onApply={handleApplyFilters}
+                    showLimit={false}
+                    showDriverFilter={false}
+                    showTruckFilter={false}
+                    showDestinationFilter={false}
+                    showStatusFilter={false}
+                    showOperationFilter
+                    operationOptions={customerSelectionOptions}
+                    selectedOperations={selectedCustomers}
+                    onOperationsChange={setSelectedCustomers}
+                    dateError={dateError}
+                    title="Filter customer profitability"
+                    description="Adjust the reporting window and focus on specific customers before generating the report."
+                    operationFilterText={{
+                        label: 'Customers',
+                        triggerLabelWhenAll: 'All customers',
+                        summaryLabelWhenAll: 'All customers included',
+                        heading: 'Customers',
+                        searchPlaceholder: 'Search customer...',
+                        emptyMessage: 'No customers found.',
+                        icon: Users,
+                    }}
+                />
+            }
+            summarySection={<ReportSummaryGrid items={summaryItems} />}
+            onRefresh={handleReset}
+            onExportPdf={canExport ? () => handleExport('pdf') : undefined}
+            onExportExcel={canExport ? () => handleExport('xlsx') : undefined}
+            onExportCsv={canExport ? () => handleExport('csv') : undefined}
+            canExport={canExport}
+            contentClassName="p-0"
+        >
+            <div className="space-y-4 p-6">
                                                 PDF
                                             </DropdownMenuItem>
                                         </DropdownMenuContent>
@@ -525,11 +505,11 @@ export default function CustomerProfitability({ filters, rows = [], summary, tre
                                     </TableBody>
                                 </Table>
                             </div>
-                        </CardContent>
-                    </Card>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </AppLayout>
+        </ReportPageLayout>
     );
 }
 

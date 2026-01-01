@@ -1,108 +1,129 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { FormPageLayout } from '@/components/forms/form-page-layout';
+import { FormSection } from '@/components/forms/form-section';
+import { FormField } from '@/components/forms/form-field';
+import { FormActionsBar } from '@/components/forms/form-actions-bar';
+import { UnsavedChangesBadge } from '@/components/forms/unsaved-changes-badge';
+import { ScrollToTopFab } from '@/components/forms/scroll-to-top-fab';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import AppLayout from '@/layouts/app-layout';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Link, useForm } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
-import { ArrowLeft } from 'lucide-react';
-
-const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Customers', href: '/customers' },
-    { title: 'Edit', href: '#' },
-];
+import { useState } from 'react';
+import { Building2, CheckCircle, Phone, UserCircle } from 'lucide-react';
 
 interface Customer {
-    id: number;
-    name: string;
-    contact_person?: string;
-    phone?: string;
-    email?: string;
-    address?: string;
-    status: string;
+  id: number;
+  name: string;
+  contact_person?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  status: string;
 }
 
 export default function CustomersEdit({ customer }: { customer: Customer }) {
-    const { data, setData, put, processing, errors } = useForm({
-        name: customer.name,
-        contact_person: customer.contact_person || '',
-        phone: customer.phone || '',
-        email: customer.email || '',
-        address: customer.address || '',
-        status: customer.status,
+  const breadcrumbs: BreadcrumbItem[] = [
+    { title: 'Customers', href: '/customers' },
+    { title: 'Edit', href: '#' },
+  ];
+
+  const { data, setData, put, processing, errors } = useForm({
+    name: customer.name,
+    contact_person: customer.contact_person || '',
+    phone: customer.phone || '',
+    email: customer.email || '',
+    address: customer.address || '',
+    status: customer.status,
+  });
+
+  const [isDirty, setIsDirty] = useState(false);
+
+  const handleFieldChange = (field: string, value: string) => {
+    setData(field as any, value);
+    setIsDirty(true);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    put(`/customers/${customer.id}`, {
+      preserveScroll: true,
+      onSuccess: () => {
+        setIsDirty(false);
+      },
     });
+  };
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        put(`/customers/${customer.id}`);
-    };
+  return (
+    <FormPageLayout
+      title="Edit Customer"
+      headTitle={`Edit Customer: ${customer.name}`}
+      description={`Update ${customer.name}`}
+      breadcrumbs={breadcrumbs}
+      icon={<Building2 className="h-5 w-5" />}
+      headerAside={isDirty && <UnsavedChangesBadge />}
+    >
+      <form onSubmit={handleSubmit} className="flex flex-1 flex-col gap-6 overflow-y-auto p-6 pb-24" noValidate>
+        <FormSection title="Customer Information" description="Update customer details" icon={<UserCircle className="h-4 w-4" />}>
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <FormField label="Customer Name" required error={errors.name}>
+              <Input id="name" value={data.name} onChange={e => handleFieldChange('name', e.target.value)} placeholder="Customer name" />
+            </FormField>
 
-    return (
-        <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={`Edit Customer: ${customer.name}`} />
-            <div className="space-y-6">
-                <div className="flex items-center gap-4">
-                    <Link href="/customers" className="text-gray-600 hover:text-gray-900">
-                        <ArrowLeft size={20} />
-                    </Link>
-                    <div>
-                        <h1 className="text-3xl font-bold">Edit Customer</h1>
-                        <p className="text-gray-600 mt-1">Update {customer.name}</p>
-                    </div>
-                </div>
+            <FormField label="Contact Person" error={errors.contact_person}>
+              <Input id="contact_person" value={data.contact_person} onChange={e => handleFieldChange('contact_person', e.target.value)} placeholder="Contact person name" />
+            </FormField>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Customer Information</CardTitle>
-                        <CardDescription>Update customer details</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <form onSubmit={handleSubmit} className="space-y-6">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div>
-                                    <Label htmlFor="name">Customer Name *</Label>
-                                    <Input id="name" value={data.name} onChange={e => setData('name', e.target.value)} placeholder="Customer name" />
-                                    {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
-                                </div>
-                                <div>
-                                    <Label htmlFor="contact_person">Contact Person</Label>
-                                    <Input id="contact_person" value={data.contact_person} onChange={e => setData('contact_person', e.target.value)} placeholder="Contact person name" />
-                                    {errors.contact_person && <p className="text-red-500 text-sm mt-1">{errors.contact_person}</p>}
-                                </div>
-                                <div>
-                                    <Label htmlFor="phone">Phone Number</Label>
-                                    <Input id="phone" value={data.phone} onChange={e => setData('phone', e.target.value)} placeholder="Phone number" type="tel" />
-                                    {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
-                                </div>
-                                <div>
-                                    <Label htmlFor="email">Email Address</Label>
-                                    <Input id="email" value={data.email} onChange={e => setData('email', e.target.value)} placeholder="Email address" type="email" />
-                                    {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
-                                </div>
-                                <div className="md:col-span-2">
-                                    <Label htmlFor="address">Address</Label>
-                                    <textarea id="address" value={data.address} onChange={e => setData('address', e.target.value)} placeholder="Customer address" rows={3} className="w-full border rounded px-3 py-2" />
-                                    {errors.address && <p className="text-red-500 text-sm mt-1">{errors.address}</p>}
-                                </div>
-                                <div>
-                                    <Label htmlFor="status">Status *</Label>
-                                    <select value={data.status} onChange={e => setData('status', e.target.value)} className="w-full border rounded px-3 py-2">
-                                        <option value="active">Active</option>
-                                        <option value="inactive">Inactive</option>
-                                    </select>
-                                    {errors.status && <p className="text-red-500 text-sm mt-1">{errors.status}</p>}
-                                </div>
-                            </div>
+            <FormField label="Phone Number" error={errors.phone}>
+              <Input id="phone" value={data.phone} onChange={e => handleFieldChange('phone', e.target.value)} placeholder="Phone number" type="tel" />
+            </FormField>
 
-                            <div className="flex gap-3">
-                                <Button type="submit" disabled={processing}>Update Customer</Button>
-                                <Link href="/customers"><Button variant="outline">Cancel</Button></Link>
-                            </div>
-                        </form>
-                    </CardContent>
-                </Card>
+            <FormField label="Email Address" error={errors.email}>
+              <Input id="email" value={data.email} onChange={e => handleFieldChange('email', e.target.value)} placeholder="Email address" type="email" />
+            </FormField>
+
+            <FormField label="Status" required error={errors.status}>
+              <Select value={data.status} onValueChange={value => handleFieldChange('status', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+            </FormField>
+
+            <div className="md:col-span-2">
+              <FormField label="Address" error={errors.address}>
+                <Textarea id="address" value={data.address} onChange={e => handleFieldChange('address', e.target.value)} placeholder="Customer address" rows={3} />
+              </FormField>
             </div>
-        </AppLayout>
-    );
-}
+          </div>
+        </FormSection>
+      </form>
 
+      <FormActionsBar>
+        <Button type="button" variant="outline" asChild>
+          <Link href="/customers">Cancel</Link>
+        </Button>
+        <Button type="submit" disabled={processing} onClick={handleSubmit}>
+          {processing ? (
+            <>
+              <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white" />
+              Updating...
+            </>
+          ) : (
+            <>
+              <CheckCircle className="mr-2 h-4 w-4" />
+              Update Customer
+            </>
+          )}
+        </Button>
+      </FormActionsBar>
+
+      <ScrollToTopFab />
+    </FormPageLayout>
+  );
+}

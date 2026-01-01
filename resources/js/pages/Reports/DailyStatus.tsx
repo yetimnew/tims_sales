@@ -1,19 +1,17 @@
 import { useCallback, useMemo, useState } from 'react';
-import { Head, router } from '@inertiajs/react';
-import AppLayout from '@/layouts/app-layout';
+import { router } from '@inertiajs/react';
 import type { BreadcrumbItem } from '@/types';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ReportFiltersDialog } from '@/components/reports/report-filters-dialog';
 import type { ReportSelectionOption } from '@/components/reports/types';
 import { formatInteger, formatPercentage } from '@/components/reports/formatters';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Download, Filter, RefreshCcw, Truck, Users } from 'lucide-react';
+import { Filter, RefreshCcw, Truck, Users } from 'lucide-react';
 import { ListingPaginationFooter } from '@/components/listing/pagination-footer';
 import { usePermissions } from '@/hooks/use-permissions';
 import { REPORT_DATE_RANGE_DESCRIPTION, useReportDateRange } from '@/components/reports/use-report-date-range';
+import { ReportPageLayout } from '@/components/report/report-page-layout';
 
 interface StatusSummaryRow {
     status_id: number | null;
@@ -356,89 +354,58 @@ export default function DailyStatus({ filters, summary, statusSummary, daily, op
     );
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Daily Status" />
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-slate-100/60 dark:bg-slate-900/40">
-                <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-4 pb-10 sm:p-6 lg:p-10">
-                    <header className="rounded-2xl border border-slate-200 bg-white/95 px-6 py-6 shadow-sm backdrop-blur dark:border-slate-800/70 dark:bg-slate-900/70">
-                        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                            <div className="space-y-2">
-                                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">Status Intelligence</p>
-                                <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-50">Daily Status Report</h1>
-                                <p className="max-w-3xl text-sm text-slate-600 dark:text-slate-300">
-                                    Review daily operational statuses for selected trucks and periods. Compare status distribution, spot activity peaks, and export
-                                    summaries for your teams.
-                                </p>
+        <ReportPageLayout
+            title="Daily Status Report"
+            description="Review daily operational statuses for selected trucks and periods. Compare status distribution, spot activity peaks, and export summaries for your teams."
+            breadcrumbs={breadcrumbs}
+            icon={<Filter className="h-6 w-6" />}
+            filters={
+                <ReportFiltersDialog
+                    open={filtersOpen}
+                    onOpenChange={setFiltersOpen}
+                    activeFilterCount={activeFilterCount}
+                    onReset={handleReset}
+                    onApply={handleApply}
+                    from={from}
+                    to={to}
+                    onDateChange={handleDateChange}
+                    dateError={dateError}
+                    limit={perPage}
+                    onLimitChange={(value) => setPerPage(value)}
+                    showLimit
+                    limitLabel="Days per page"
+                    limitDescription="Number of days to display per page."
+                    truckOptions={truckOptions}
+                    statusOptions={statusOptions}
+                    selectedTrucks={selectedTrucks}
+                    selectedStatuses={selectedStatuses}
+                    onTrucksChange={setSelectedTrucks}
+                    onStatusesChange={(ids) => setSelectedStatuses(ids.map((value) => Number(value)))}
+                    dateRangeDescription={REPORT_DATE_RANGE_DESCRIPTION}
+                />
+            }
+            summarySection={
+                <section className="grid gap-4 lg:grid-cols-4">
+                    {quickMetrics.map((metric) => (
+                        <div key={metric.label} className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-800/50">
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm font-medium text-slate-600 dark:text-slate-300">{metric.label}</span>
+                                <metric.icon className="h-4 w-4 text-slate-400" />
                             </div>
-                            <div className="flex flex-wrap items-center gap-2">
-                                <ReportFiltersDialog
-                                    open={filtersOpen}
-                                    onOpenChange={setFiltersOpen}
-                                    activeFilterCount={activeFilterCount}
-                                    onReset={handleReset}
-                                    onApply={handleApply}
-                                    from={from}
-                                    to={to}
-                                    onDateChange={handleDateChange}
-                                    dateError={dateError}
-                                    limit={perPage}
-                                    onLimitChange={(value) => setPerPage(value)}
-                                    showLimit
-                                    limitLabel="Days per page"
-                                    limitDescription="Number of days to display per page."
-                                    truckOptions={truckOptions}
-                                    statusOptions={statusOptions}
-                                    selectedTrucks={selectedTrucks}
-                                    selectedStatuses={selectedStatuses}
-                                    onTrucksChange={setSelectedTrucks}
-                                    onStatusesChange={(ids) => setSelectedStatuses(ids.map((value) => Number(value)))}
-                                    dateRangeDescription={REPORT_DATE_RANGE_DESCRIPTION}
-                                />
-                                <Button type="button" variant="outline" className="gap-2" onClick={handleReset}>
-                                    <RefreshCcw className="h-4 w-4" />
-                                    Reset
-                                </Button>
-                                {canExport ? (
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button type="button" variant="secondary" className="gap-2">
-                                                <Download className="h-4 w-4" />
-                                                Export
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end" className="w-44">
-                                            <DropdownMenuItem onSelect={() => handleExport('csv')} className="gap-2">
-                                                <Download className="h-4 w-4" />
-                                                CSV
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onSelect={() => handleExport('xlsx')} className="gap-2">
-                                                <Download className="h-4 w-4" />
-                                                Excel
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onSelect={() => handleExport('pdf')} className="gap-2">
-                                                <Download className="h-4 w-4" />
-                                                PDF
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                ) : null}
-                            </div>
+                            <p className="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-50">{metric.value}</p>
                         </div>
-                    </header>
-
-                    <section className="grid gap-4 lg:grid-cols-4">
-                        {quickMetrics.map((metric) => (
-                            <div key={metric.label} className="rounded-xl border border-slate-200 bg-white/95 p-4 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm font-medium text-slate-600 dark:text-slate-300">{metric.label}</span>
-                                    <metric.icon className="h-4 w-4 text-slate-400" />
-                                </div>
-                                <p className="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-50">{metric.value}</p>
-                            </div>
-                        ))}
-                    </section>
-
-                    {renderStatusSummary()}
+                    ))}
+                </section>
+            }
+            onRefresh={handleReset}
+            onExportPdf={canExport ? () => handleExport('pdf') : undefined}
+            onExportExcel={canExport ? () => handleExport('xlsx') : undefined}
+            onExportCsv={canExport ? () => handleExport('csv') : undefined}
+            canExport={canExport}
+            contentClassName="p-0"
+        >
+            <div className="space-y-6 p-6">
+                {renderStatusSummary()}
 
                     <Card className="border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
                         <CardHeader className="space-y-3 border-b border-slate-200/60 pb-5 dark:border-slate-700/60">
@@ -539,13 +506,12 @@ export default function DailyStatus({ filters, summary, statusSummary, daily, op
                         />
                     </Card>
 
-                    {meta?.truncated ? (
-                        <div className="rounded-xl border border-amber-200/70 bg-amber-50/70 p-4 text-sm text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
-                            The selected period exceeded the maximum supported window. The report has been truncated to the first {formatInteger(meta.total_days)} days.
-                        </div>
-                    ) : null}
-                </div>
+                {meta?.truncated ? (
+                    <div className="rounded-xl border border-amber-200/70 bg-amber-50/70 p-4 text-sm text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+                        The selected period exceeded the maximum supported window. The report has been truncated to the first {formatInteger(meta.total_days)} days.
+                    </div>
+                ) : null}
             </div>
-        </AppLayout>
+        </ReportPageLayout>
     );
 }

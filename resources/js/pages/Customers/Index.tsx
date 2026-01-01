@@ -398,11 +398,25 @@ export default function CustomersIndex({ customers, metrics, filters, statusOpti
         },
     ];
 
-    const tableColumns = COLUMN_DEFINITIONS.map(col => ({ key: col.id, label: col.label }));
+    const tableColumns = React.useMemo(
+        () => [
+            { id: 'index', label: '#', align: 'center' as const },
+            ...COLUMN_DEFINITIONS.map((col) => ({
+                id: col.id,
+                label: col.label,
+                sortable: Boolean(col.sortKey),
+                sortKey: col.sortKey,
+                align: col.align,
+            })),
+            { id: 'actions', label: 'Actions', align: 'center' as const },
+        ],
+        [],
+    );
 
     const tableRows = customerData.length > 0
                 ? customerData.map((customer, index) => (
                       <TableRow key={customer.id} className="hover:bg-muted/50">
+                          <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
                           <TableCell className="font-medium">
                               <div className="flex flex-col">
                                   <span className="text-base font-semibold text-foreground">{customer.name}</span>
@@ -468,7 +482,7 @@ export default function CustomersIndex({ customers, metrics, filters, statusOpti
     );
 
     const statsSection = (
-        <ListingStatsHeader stats={statsDefinitions} />
+        <ListingStatsHeader stats={statsDefinitions} orientation="row" />
     );
 
     const mobileContent = (

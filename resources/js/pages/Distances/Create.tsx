@@ -1,64 +1,60 @@
-import { useMemo, useState, type ReactNode } from 'react'
-import { Head, Link, router, useForm } from '@inertiajs/react'
-import { ArrowLeft, MapPin, Route, Save, Navigation, AlertCircle } from 'lucide-react'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { toast } from '@/hooks/use-toast'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Textarea } from '@/components/ui/textarea'
-import { InteractiveMap } from '@/components/InteractiveMap'
-import AppLayout from '@/layouts/app-layout'
-import type { BreadcrumbItem } from '@/types'
-
+import { FormPageLayout } from '@/components/forms/form-page-layout';
+import { UnsavedChangesBadge } from '@/components/forms/unsaved-changes-badge';
+import { useMemo, useState } from 'react';
+import { Link, useForm } from '@inertiajs/react';
+import { ArrowLeft, MapPin, Route, Save, Navigation, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { toast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
+import { InteractiveMap } from '@/components/InteractiveMap';
+import type { BreadcrumbItem } from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [
   { title: 'Distances', href: '/distances' },
   { title: 'Create', href: '/distances/create' },
-]
+];
 
-DistancesCreate.layout = (page: ReactNode) => <AppLayout breadcrumbs={breadcrumbs}>{page}</AppLayout>
 interface Place {
-  id: number
-  name: string
-  latitude?: number
-  longitude?: number
+  id: number;
+  name: string;
+  latitude?: number;
+  longitude?: number;
   woreda?: {
-    name: string
+    name: string;
     zone?: {
-      name: string
-      region?: { name: string }
-    }
-  }
+      name: string;
+      region?: { name: string };
+    };
+  };
 }
 
 interface DistancesCreateProps {
-  places: Place[]
+  places: Place[];
 }
 
-type ValidatableField = 'from_place_id' | 'to_place_id' | 'distance_km' | 'estimated_time_hours'
+type ValidatableField = 'from_place_id' | 'to_place_id' | 'distance_km' | 'estimated_time_hours';
 
 export default function DistancesCreate({ places }: DistancesCreateProps) {
   const placesWithCoordinates = useMemo(
     () => places.filter(place => place.latitude !== undefined && place.longitude !== undefined).length,
     [places],
-  )
-  const coordinateCoverage = places.length > 0 ? Math.round((placesWithCoordinates / places.length) * 100) : 0
+  );
+  const coordinateCoverage = places.length > 0 ? Math.round((placesWithCoordinates / places.length) * 100) : 0;
 
-  const [selectedFromPlace, setSelectedFromPlace] = useState<Place | null>(null)
-  const [selectedToPlace, setSelectedToPlace] = useState<Place | null>(null)
-  const [routePoints, setRoutePoints] = useState<[number, number][]>([])
-  const [calculatedDistance, setCalculatedDistance] = useState<number>(0)
-  const [calculatedTime, setCalculatedTime] = useState<number>(0)
-  const [frontendErrors, setFrontendErrors] = useState<Record<string, string>>({})
-  const hasErrors = useMemo(
-    () => Object.keys(errors).length > 0 || Object.keys(frontendErrors).length > 0,
-    [errors, frontendErrors]
-  )
+  const [selectedFromPlace, setSelectedFromPlace] = useState<Place | null>(null);
+  const [selectedToPlace, setSelectedToPlace] = useState<Place | null>(null);
+  const [routePoints, setRoutePoints] = useState<[number, number][]>([]);
+  const [calculatedDistance, setCalculatedDistance] = useState<number>(0);
+  const [calculatedTime, setCalculatedTime] = useState<number>(0);
+  const [frontendErrors, setFrontendErrors] = useState<Record<string, string>>({});
+  const [isDirty, setIsDirty] = useState(false);
 
   const { data, setData, post, processing, errors, reset } = useForm({
     from_place_id: '',
@@ -73,227 +69,227 @@ export default function DistancesCreate({ places }: DistancesCreateProps) {
     toll_cost: '',
     restricted_for_heavy_vehicles: false,
     route_notes: '',
-  })
+  });
 
-  const getFieldError = (field: keyof typeof data) => frontendErrors[field as string] || (errors[field] as string | undefined)
+  const hasErrors = useMemo(
+    () => Object.keys(errors).length > 0 || Object.keys(frontendErrors).length > 0,
+    [errors, frontendErrors]
+  );
+
+  const getFieldError = (field: keyof typeof data) => frontendErrors[field as string] || (errors[field] as string | undefined);
 
   const validateField = (field: ValidatableField, value: string) => {
-    const fieldErrors: Record<string, string> = {}
+    const fieldErrors: Record<string, string> = {};
 
     switch (field) {
       case 'from_place_id':
-        if (!value) fieldErrors.from_place_id = 'From place is required'
-        break
+        if (!value) fieldErrors.from_place_id = 'From place is required';
+        break;
       case 'to_place_id':
-        if (!value) fieldErrors.to_place_id = 'To place is required'
+        if (!value) fieldErrors.to_place_id = 'To place is required';
         else if (value === data.from_place_id) {
-          fieldErrors.to_place_id = 'To place must be different from from place'
+          fieldErrors.to_place_id = 'To place must be different from from place';
         }
-        break
+        break;
       case 'distance_km':
-        if (!value) fieldErrors.distance_km = 'Distance is required'
+        if (!value) fieldErrors.distance_km = 'Distance is required';
         else if (Number.isNaN(Number(value)) || Number(value) <= 0) {
-          fieldErrors.distance_km = 'Distance must be a positive number'
+          fieldErrors.distance_km = 'Distance must be a positive number';
         }
-        break
+        break;
       case 'estimated_time_hours':
-        if (!value) fieldErrors.estimated_time_hours = 'Estimated time is required'
+        if (!value) fieldErrors.estimated_time_hours = 'Estimated time is required';
         else if (Number.isNaN(Number(value)) || Number(value) <= 0) {
-          fieldErrors.estimated_time_hours = 'Estimated time must be a positive number'
+          fieldErrors.estimated_time_hours = 'Estimated time must be a positive number';
         }
-        break
+        break;
       default:
-        break
+        break;
     }
 
-    return fieldErrors
-  }
+    return fieldErrors;
+  };
 
   const applyValidation = (field: ValidatableField, value: string) => {
-    const validationResult = validateField(field, value)
+    const validationResult = validateField(field, value);
     setFrontendErrors(prev => {
-      const updated = { ...prev }
+      const updated = { ...prev };
 
       if (Object.keys(validationResult).length === 0) {
-        delete updated[field as string]
+        delete updated[field as string];
       }
 
       Object.entries(validationResult).forEach(([key, message]) => {
         if (message) {
-          updated[key] = message
+          updated[key] = message;
         } else {
-          delete updated[key]
+          delete updated[key];
         }
-      })
+      });
 
-      return updated
-    })
-  }
+      return updated;
+    });
+  };
 
-  // Handle place selection
   const handleFromPlaceChange = (placeId: string) => {
-    setData('from_place_id', placeId)
-    const place = places.find(p => p.id.toString() === placeId)
-    setSelectedFromPlace(place || null)
-    applyValidation('from_place_id', placeId)
+    setData('from_place_id', placeId);
+    const place = places.find(p => p.id.toString() === placeId);
+    setSelectedFromPlace(place || null);
+    applyValidation('from_place_id', placeId);
     if (data.to_place_id) {
-      applyValidation('to_place_id', data.to_place_id)
+      applyValidation('to_place_id', data.to_place_id);
     }
-  }
+    setIsDirty(true);
+  };
 
   const handleToPlaceChange = (placeId: string) => {
-    setData('to_place_id', placeId)
-    const place = places.find(p => p.id.toString() === placeId)
-    setSelectedToPlace(place || null)
-    applyValidation('to_place_id', placeId)
-  }
+    setData('to_place_id', placeId);
+    const place = places.find(p => p.id.toString() === placeId);
+    setSelectedToPlace(place || null);
+    applyValidation('to_place_id', placeId);
+    setIsDirty(true);
+  };
 
-  // Handle route changes from map
   const handleRouteChange = (points: [number, number][]) => {
-    setRoutePoints(points)
+    setRoutePoints(points);
     if (points.length === 0) {
-      setCalculatedDistance(0)
-      setCalculatedTime(0)
+      setCalculatedDistance(0);
+      setCalculatedTime(0);
     }
-  }
+    setIsDirty(true);
+  };
 
   const handleDistanceChange = (distance: number) => {
-    setCalculatedDistance(distance)
-    const value = distance > 0 ? distance.toFixed(2) : ''
-    setData('distance_km', value)
-    applyValidation('distance_km', value)
-  }
+    setCalculatedDistance(distance);
+    const value = distance > 0 ? distance.toFixed(2) : '';
+    setData('distance_km', value);
+    applyValidation('distance_km', value);
+    setIsDirty(true);
+  };
 
   const handleTimeChange = (time: number) => {
-    setCalculatedTime(time)
-    const value = time > 0 ? time.toFixed(1) : ''
-    setData('estimated_time_hours', value)
-    applyValidation('estimated_time_hours', value)
-  }
+    setCalculatedTime(time);
+    const value = time > 0 ? time.toFixed(1) : '';
+    setData('estimated_time_hours', value);
+    applyValidation('estimated_time_hours', value);
+    setIsDirty(true);
+  };
 
   const handleManualDistanceChange = (value: string) => {
-    setData('distance_km', value)
-    applyValidation('distance_km', value)
-  }
+    setData('distance_km', value);
+    applyValidation('distance_km', value);
+    setIsDirty(true);
+  };
 
   const handleManualTimeChange = (value: string) => {
-    setData('estimated_time_hours', value)
-    applyValidation('estimated_time_hours', value)
-  }
+    setData('estimated_time_hours', value);
+    applyValidation('estimated_time_hours', value);
+    setIsDirty(true);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
-    const submissionErrors: Record<string, string> = {}
-    const fieldsToValidate: ValidatableField[] = ['from_place_id', 'to_place_id', 'distance_km', 'estimated_time_hours']
+    const submissionErrors: Record<string, string> = {};
+    const fieldsToValidate: ValidatableField[] = ['from_place_id', 'to_place_id', 'distance_km', 'estimated_time_hours'];
     fieldsToValidate.forEach(field => {
-      const result = validateField(field, data[field])
-      Object.assign(submissionErrors, result)
-    })
+      const result = validateField(field, data[field]);
+      Object.assign(submissionErrors, result);
+    });
 
     if (Object.keys(submissionErrors).length > 0) {
-      setFrontendErrors(prev => ({ ...prev, ...submissionErrors }))
-      return
+      setFrontendErrors(prev => ({ ...prev, ...submissionErrors }));
+      toast({
+        title: '⚠️ Validation Error',
+        description: 'Please resolve the highlighted fields before submitting.',
+        variant: 'destructive',
+      });
+      return;
     }
 
     post('/distances', {
       preserveScroll: true,
       onSuccess: () => {
-        reset()
-        setFrontendErrors({})
-        setSelectedFromPlace(null)
-        setSelectedToPlace(null)
-        setRoutePoints([])
-        setCalculatedDistance(0)
-        setCalculatedTime(0)
+        reset();
+        setFrontendErrors({});
+        setSelectedFromPlace(null);
+        setSelectedToPlace(null);
+        setRoutePoints([]);
+        setCalculatedDistance(0);
+        setCalculatedTime(0);
+        setIsDirty(false);
         toast({
           title: '✅ Distance Record Created',
           description: 'The route distance has been registered successfully.',
-        })
+        });
       },
-    })
-  }
+    });
+  };
 
   const distanceDisplay = data.distance_km
     ? `${Number(data.distance_km).toLocaleString(undefined, { maximumFractionDigits: 2 })} km`
-    : 'Awaiting route'
+    : 'Awaiting route';
   const timeDisplay = data.estimated_time_hours
     ? `${Number(data.estimated_time_hours).toFixed(1)} hrs estimated`
-    : 'Draw a route on the map'
-  const fromPlaceError = getFieldError('from_place_id')
-  const toPlaceError = getFieldError('to_place_id')
-  const distanceError = getFieldError('distance_km')
-  const estimatedTimeError = getFieldError('estimated_time_hours')
+    : 'Draw a route on the map';
+  const fromPlaceError = getFieldError('from_place_id');
+  const toPlaceError = getFieldError('to_place_id');
+  const distanceError = getFieldError('distance_km');
+  const estimatedTimeError = getFieldError('estimated_time_hours');
 
   return (
-    <>
-      <Head title="Create Distance" />
-      <div className="flex h-full flex-1 flex-col gap-6 overflow-hidden rounded-xl p-4">
-        <div className="rounded-lg border border-slate-200 bg-gradient-to-r from-slate-50 to-emerald-50 p-6 shadow-sm dark:border-slate-700 dark:from-slate-900 dark:to-emerald-950/30">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex flex-wrap items-center gap-4">
-              <Button
-                variant="outline"
-                size="sm"
-                asChild
-                className="flex items-center gap-2 border-slate-300 hover:bg-slate-100 dark:border-slate-600 dark:hover:bg-slate-800"
-              >
-                <Link href="/distances">
-                  <ArrowLeft className="h-4 w-4" />
-                  Back to Distances
-                </Link>
-              </Button>
-              <div className="flex items-center gap-4">
-                <div className="rounded-xl bg-emerald-100 p-3 dark:bg-emerald-900/30">
-                  <MapPin className="h-6 w-6 text-emerald-700 dark:text-emerald-300" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Create Distance</h1>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">
-                    Capture mileage and travel time between key logistics locations.
-                  </p>
-                </div>
-              </div>
-            </div>
+    <FormPageLayout
+      title="Create Distance"
+      headTitle="Create Distance"
+      description="Capture mileage and travel time between key logistics locations."
+      breadcrumbs={breadcrumbs}
+      icon={<MapPin className="h-5 w-5" />}
+      headerAside={
+        <>
+          <Button variant="ghost" size="sm" asChild>
+            <Link href="/distances">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Distances
+            </Link>
+          </Button>
+          {isDirty && <UnsavedChangesBadge />}
+          <div className="flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1.5 text-sm font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+            <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
+            Route Planning
           </div>
-          <div className="mt-4 grid gap-4 sm:grid-cols-3">
-            <div className="rounded-lg border border-emerald-200 bg-white/90 p-4 shadow-sm dark:border-emerald-900/40 dark:bg-emerald-950/20">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Places Available</p>
-              <p className="mt-1 text-lg font-semibold text-emerald-700 dark:text-emerald-300">{places.length}</p>
-              <p className="text-xs text-muted-foreground">{placesWithCoordinates} have map coordinates</p>
-            </div>
-            <div className="rounded-lg border border-slate-200 bg-white/90 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/40">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Coverage</p>
-              <p className="mt-1 text-lg font-semibold text-slate-900 dark:text-slate-100">{coordinateCoverage}% geocoded</p>
-              <p className="text-xs text-muted-foreground">Ready for route planning</p>
-            </div>
-            <div className="rounded-lg border border-blue-200 bg-white/90 p-4 shadow-sm dark:border-blue-900/40 dark:bg-blue-950/20">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Current Draft</p>
-              <p className="mt-1 text-lg font-semibold text-blue-700 dark:text-blue-300">{distanceDisplay}</p>
-              <p className="text-xs text-muted-foreground">{timeDisplay}</p>
-            </div>
+        </>
+      }
+    >
+      <div className="flex flex-1 flex-col gap-6 overflow-hidden p-6">
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div className="rounded-lg border border-emerald-200 bg-white/90 p-4 shadow-sm dark:border-emerald-900/40 dark:bg-emerald-950/20">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Places Available</p>
+            <p className="mt-1 text-lg font-semibold text-emerald-700 dark:text-emerald-300">{places.length}</p>
+            <p className="text-xs text-muted-foreground">{placesWithCoordinates} have map coordinates</p>
+          </div>
+          <div className="rounded-lg border border-slate-200 bg-white/90 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/40">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Coverage</p>
+            <p className="mt-1 text-lg font-semibold text-slate-900 dark:text-slate-100">{coordinateCoverage}% geocoded</p>
+            <p className="text-xs text-muted-foreground">Ready for route planning</p>
+          </div>
+          <div className="rounded-lg border border-blue-200 bg-white/90 p-4 shadow-sm dark:border-blue-900/40 dark:bg-blue-950/20">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Current Draft</p>
+            <p className="mt-1 text-lg font-semibold text-blue-700 dark:text-blue-300">{distanceDisplay}</p>
+            <p className="text-xs text-muted-foreground">{timeDisplay}</p>
           </div>
         </div>
+
         <Tabs defaultValue="form" className="flex flex-1 flex-col overflow-hidden">
           <TabsList className="grid w-full grid-cols-1 gap-2 rounded-xl border border-slate-200 bg-slate-100 p-1 dark:border-slate-700 dark:bg-slate-800 sm:grid-cols-3">
-            <TabsTrigger
-              value="form"
-              className="flex items-center justify-center gap-2 rounded-lg px-3 py-2 font-medium transition-all duration-200 data-[state=active]:border data-[state=active]:border-slate-200 data-[state=active]:bg-white data-[state=active]:shadow-md dark:data-[state=active]:border-slate-600 dark:data-[state=active]:bg-slate-700"
-            >
+            <TabsTrigger value="form" className="flex items-center justify-center gap-2">
               <Save className="h-4 w-4" />
               Form
             </TabsTrigger>
-            <TabsTrigger
-              value="map"
-              className="flex items-center justify-center gap-2 rounded-lg px-3 py-2 font-medium transition-all duration-200 data-[state=active]:border data-[state=active]:border-slate-200 data-[state=active]:bg-white data-[state=active]:shadow-md dark:data-[state=active]:border-slate-600 dark:data-[state=active]:bg-slate-700"
-            >
+            <TabsTrigger value="map" className="flex items-center justify-center gap-2">
               <Navigation className="h-4 w-4" />
               Map
             </TabsTrigger>
-            <TabsTrigger
-              value="preview"
-              className="flex items-center justify-center gap-2 rounded-lg px-3 py-2 font-medium transition-all duration-200 data-[state=active]:border data-[state=active]:border-slate-200 data-[state=active]:bg-white data-[state=active]:shadow-md dark:data-[state=active]:border-slate-600 dark:data-[state=active]:bg-slate-700"
-            >
+            <TabsTrigger value="preview" className="flex items-center justify-center gap-2">
               <Route className="h-4 w-4" />
               Preview
             </TabsTrigger>
@@ -400,7 +396,7 @@ export default function DistancesCreate({ places }: DistancesCreateProps) {
 
                     <div className="space-y-2">
                       <Label htmlFor="route_type">Route Type</Label>
-                      <Select value={data.route_type} onValueChange={value => setData('route_type', value)}>
+                      <Select value={data.route_type} onValueChange={value => { setData('route_type', value); setIsDirty(true); }}>
                         <SelectTrigger id="route_type">
                           <SelectValue />
                         </SelectTrigger>
@@ -421,7 +417,7 @@ export default function DistancesCreate({ places }: DistancesCreateProps) {
                         min="0.5"
                         max="2.0"
                         value={data.road_condition_factor}
-                        onChange={e => setData('road_condition_factor', e.target.value)}
+                        onChange={e => { setData('road_condition_factor', e.target.value); setIsDirty(true); }}
                         placeholder="1.0 = normal, 1.5 = poor condition"
                       />
                     </div>
@@ -431,7 +427,7 @@ export default function DistancesCreate({ places }: DistancesCreateProps) {
                       <Textarea
                         id="route_description"
                         value={data.route_description}
-                        onChange={e => setData('route_description', e.target.value)}
+                        onChange={e => { setData('route_description', e.target.value); setIsDirty(true); }}
                         placeholder="Describe the route..."
                         rows={3}
                       />
@@ -442,7 +438,7 @@ export default function DistancesCreate({ places }: DistancesCreateProps) {
                       <Textarea
                         id="route_notes"
                         value={data.route_notes}
-                        onChange={e => setData('route_notes', e.target.value)}
+                        onChange={e => { setData('route_notes', e.target.value); setIsDirty(true); }}
                         placeholder="Additional notes about the route..."
                         rows={3}
                       />
@@ -455,7 +451,7 @@ export default function DistancesCreate({ places }: DistancesCreateProps) {
                         <Checkbox
                           id="toll_road"
                           checked={data.toll_road}
-                          onCheckedChange={checked => setData('toll_road', Boolean(checked))}
+                          onCheckedChange={checked => { setData('toll_road', Boolean(checked)); setIsDirty(true); }}
                         />
                         <Label htmlFor="toll_road">Toll Road</Label>
                       </div>
@@ -468,7 +464,7 @@ export default function DistancesCreate({ places }: DistancesCreateProps) {
                             step="0.01"
                             min="0"
                             value={data.toll_cost}
-                            onChange={e => setData('toll_cost', e.target.value)}
+                            onChange={e => { setData('toll_cost', e.target.value); setIsDirty(true); }}
                             placeholder="Enter toll cost"
                           />
                         </div>
@@ -480,7 +476,7 @@ export default function DistancesCreate({ places }: DistancesCreateProps) {
                         <Checkbox
                           id="restricted_for_heavy_vehicles"
                           checked={data.restricted_for_heavy_vehicles}
-                          onCheckedChange={checked => setData('restricted_for_heavy_vehicles', Boolean(checked))}
+                          onCheckedChange={checked => { setData('restricted_for_heavy_vehicles', Boolean(checked)); setIsDirty(true); }}
                         />
                         <Label htmlFor="restricted_for_heavy_vehicles">Restricted for Heavy Vehicles</Label>
                       </div>
@@ -492,8 +488,8 @@ export default function DistancesCreate({ places }: DistancesCreateProps) {
                       <Save className="mr-2 h-4 w-4" />
                       {processing ? 'Creating...' : 'Create Distance'}
                     </Button>
-                    <Button type="button" variant="outline" onClick={() => router.get('/distances')}>
-                      Cancel
+                    <Button type="button" variant="outline" asChild>
+                      <Link href="/distances">Cancel</Link>
                     </Button>
                   </div>
                 </form>
@@ -601,6 +597,6 @@ export default function DistancesCreate({ places }: DistancesCreateProps) {
           </TabsContent>
         </Tabs>
       </div>
-    </>
-  )
+    </FormPageLayout>
+  );
 }

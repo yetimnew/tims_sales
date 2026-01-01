@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Head, Link, router } from '@inertiajs/react';
-import AppLayout from '@/layouts/app-layout';
+import { Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -18,7 +17,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { DatePicker } from '@/components/ui/date-picker';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { InertiaPagination } from '@/components/ui/pagination';
-import { CalendarClock, Gauge, LineChart, ListFilter, Loader2, RefreshCcw, Settings, User, type LucideIcon } from 'lucide-react';
+import { CalendarClock, Gauge, LineChart, ListFilter, Loader2, Settings, User, type LucideIcon } from 'lucide-react';
+import { ReportPageLayout } from '@/components/report/report-page-layout';
 
 type GradeDetails = {
     overall?: { score?: number | null; letter?: string | null };

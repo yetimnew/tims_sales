@@ -650,6 +650,33 @@ Route::middleware('auth')->group(function () {
             ->middleware('can:reports.customer-profitability.export')
             ->name('reports.customer-profitability.export');
 
+        Route::get('reports/fleet-financial', [ReportController::class, 'fleetFinancial'])
+            ->middleware('can:reports.fleet-financial.view')
+            ->name('reports.fleet-financial');
+
+        Route::get('reports/fleet-financial/export/{format}', [ReportController::class, 'fleetFinancialExport'])
+            ->whereIn('format', ['csv', 'xlsx'])
+            ->middleware('can:reports.fleet-financial.export')
+            ->name('reports.fleet-financial.export');
+
+        Route::get('reports/capacity-planning', [ReportController::class, 'capacityPlanning'])
+            ->middleware('can:reports.capacity-planning.view')
+            ->name('reports.capacity-planning');
+
+        Route::get('reports/capacity-planning/export/{format}', [ReportController::class, 'capacityPlanningExport'])
+            ->whereIn('format', ['csv', 'xlsx'])
+            ->middleware('can:reports.capacity-planning.export')
+            ->name('reports.capacity-planning.export');
+
+        Route::get('reports/network-optimization', [ReportController::class, 'networkOptimization'])
+            ->middleware('can:reports.network-optimization.view')
+            ->name('reports.network-optimization');
+
+        Route::get('reports/network-optimization/export/{format}', [ReportController::class, 'networkOptimizationExport'])
+            ->whereIn('format', ['csv', 'xlsx'])
+            ->middleware('can:reports.network-optimization.export')
+            ->name('reports.network-optimization.export');
+
         Route::get('reports/outsource-performance', [ReportController::class, 'outsourcePerformanceReport'])
             ->middleware('can:reports.outsource-performance.view')
             ->name('reports.outsource-performance');

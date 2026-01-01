@@ -237,13 +237,18 @@ export default function FuelEfficiency({
         setPerPage(resolvedPerPage);
     }, [resolvedPerPage]);
 
-    const defaultPerPage = perPageOptionsList[0] ?? 25;
-
     const totalRows = breakdownPaginatorMeta?.total ?? safeBreakdown.length;
     const pageRangeStart = breakdownPaginatorMeta?.from ?? (safeBreakdown.length > 0 ? 1 : 0);
     const pageRangeEnd = breakdownPaginatorMeta?.to ?? safeBreakdown.length;
     const currentPage = breakdownPaginatorMeta?.current_page ?? 1;
     const totalPages = breakdownPaginatorMeta?.last_page ?? 1;
+    const safeTotalPages = Math.max(totalPages, 1);
+    const safeCurrentPage = totalRows > 0 ? Math.min(Math.max(currentPage, 1), safeTotalPages) : 1;
+    const paginationExtra = totalRows > 0 ? (
+        <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Page {safeCurrentPage} of {safeTotalPages}
+        </span>
+    ) : null;
 
     const appliedFrom = filters?.from ?? '';
     const appliedTo = filters?.to ?? '';
@@ -509,7 +514,7 @@ export default function FuelEfficiency({
                                                 </TableCell>
                                             </TableRow>
                                         )}
-                                        {paginatedBreakdown.map((row) => (
+                                        {safeBreakdown.map((row) => (
                                             <TableRow key={row.truck_id} className="divide-x divide-slate-100/60 dark:divide-slate-800/60">
                                                 <TableCell className="whitespace-nowrap font-medium text-slate-900 dark:text-slate-50">
                                                     {row.plate}
@@ -560,42 +565,14 @@ export default function FuelEfficiency({
                                     )}
                                 </Table>
                             </div>
-                            <div className="flex flex-col gap-3 border-t border-slate-200/60 px-4 py-3 text-xs text-muted-foreground dark:border-slate-800/60 sm:flex-row sm:items-center sm:justify-between">
-                                <span>
-                                    {totalRows > 0
-                                        ? `Showing ${formatNumber(pageRangeStart)}–${formatNumber(pageRangeEnd)} of ${formatNumber(totalRows)}`
-                                        : 'No rows to display'}
-                                </span>
-                                {totalRows > 0 ? (
-                                    <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-                                        <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground sm:order-last">
-                                            Page {clampedPage} of {totalPages}
-                                        </span>
-                                        <div className="flex items-center justify-between gap-4 sm:justify-end">
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => goToPage(clampedPage - 1)}
-                                                disabled={clampedPage <= 1}
-                                            >
-                                                <ChevronLeft className="h-4 w-4" />
-                                                <span className="sr-only">Previous page</span>
-                                            </Button>
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => goToPage(clampedPage + 1)}
-                                                disabled={clampedPage >= totalPages}
-                                            >
-                                                <span className="sr-only">Next page</span>
-                                                <ChevronRight className="h-4 w-4" />
-                                            </Button>
-                                        </div>
-                                    </div>
-                                ) : null}
-                            </div>
+                            <ListingPaginationFooter
+                                from={pageRangeStart}
+                                to={pageRangeEnd}
+                                total={totalRows}
+                                links={breakdownPaginationLinks}
+                                extra={paginationExtra}
+                                className="px-4"
+                            />
                         </CardContent>
                     </Card>
 

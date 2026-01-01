@@ -28,7 +28,7 @@ interface ReportFiltersDialogProps {
     to?: string;
     onDateChange?: (field: 'from' | 'to', value: string) => void;
     onReset: () => void;
-    onApply?: () => void;
+    onApply: () => void;
     title?: string;
     description?: string;
     limit?: number;
@@ -40,7 +40,6 @@ interface ReportFiltersDialogProps {
     truckOptions?: ReportSelectionOption[];
     operationOptions?: ReportSelectionOption[];
     destinationOptions?: ReportSelectionOption[];
-    serviceTypeOptions?: ReportSelectionOption[];
     statusOptions?: ReportSelectionOption[];
     providerOptions?: ReportSelectionOption[];
     loadPhaseOptions?: ReportSelectionOption[];
@@ -48,7 +47,6 @@ interface ReportFiltersDialogProps {
     selectedTrucks?: number[];
     selectedOperations?: number[];
     selectedDestinations?: number[];
-    selectedServiceTypes?: string[];
     selectedLoadPhase?: string | null;
     selectedStatuses?: Array<number | string>;
     selectedProviders?: Array<number | string>;
@@ -56,7 +54,6 @@ interface ReportFiltersDialogProps {
     onTrucksChange?: (ids: number[]) => void;
     onOperationsChange?: (ids: number[]) => void;
     onDestinationsChange?: (ids: number[]) => void;
-    onServiceTypesChange?: (ids: string[]) => void;
     onLoadPhaseChange?: (id: string | null) => void;
     onStatusesChange?: (ids: Array<number | string>) => void;
     onProvidersChange?: (ids: Array<number | string>) => void;
@@ -64,7 +61,6 @@ interface ReportFiltersDialogProps {
     showTruckFilter?: boolean;
     showOperationFilter?: boolean;
     showDestinationFilter?: boolean;
-    showServiceTypeFilter?: boolean;
     showLoadPhaseFilter?: boolean;
     showStatusFilter?: boolean;
     showProviderFilter?: boolean;
@@ -73,7 +69,6 @@ interface ReportFiltersDialogProps {
     truckFilterText?: FilterTextOverrides;
     operationFilterText?: FilterTextOverrides;
     destinationFilterText?: FilterTextOverrides;
-    serviceTypeFilterText?: FilterTextOverrides;
     loadPhaseFilterText?: FilterTextOverrides;
     statusFilterText?: FilterTextOverrides;
     providerFilterText?: FilterTextOverrides;
@@ -106,7 +101,6 @@ export function ReportFiltersDialog({
     truckOptions,
     operationOptions,
     destinationOptions,
-    serviceTypeOptions,
     statusOptions,
     providerOptions,
     loadPhaseOptions,
@@ -114,7 +108,6 @@ export function ReportFiltersDialog({
     selectedTrucks,
     selectedOperations,
     selectedDestinations,
-    selectedServiceTypes,
     selectedLoadPhase,
     selectedStatuses,
     selectedProviders,
@@ -122,7 +115,6 @@ export function ReportFiltersDialog({
     onTrucksChange,
     onOperationsChange,
     onDestinationsChange,
-    onServiceTypesChange,
     onLoadPhaseChange,
     onStatusesChange,
     onProvidersChange,
@@ -130,7 +122,6 @@ export function ReportFiltersDialog({
     showTruckFilter,
     showOperationFilter,
     showDestinationFilter,
-    showServiceTypeFilter,
     showLoadPhaseFilter,
     showStatusFilter,
     showProviderFilter,
@@ -139,7 +130,6 @@ export function ReportFiltersDialog({
     truckFilterText,
     operationFilterText,
     destinationFilterText,
-    serviceTypeFilterText,
     loadPhaseFilterText,
     statusFilterText,
     providerFilterText,
@@ -151,12 +141,10 @@ export function ReportFiltersDialog({
     singleDateLabel = 'Reporting date',
     singleDateDescription,
 }: ReportFiltersDialogProps) {
-    const showApplyButton = typeof onApply === 'function';
     const driverOptionsList = driverOptions ?? [];
     const truckOptionsList = truckOptions ?? [];
     const operationOptionsList = operationOptions ?? [];
     const destinationOptionsList = destinationOptions ?? [];
-    const serviceTypeOptionsList = serviceTypeOptions ?? [];
     const statusOptionsList = statusOptions ?? [];
     const providerOptionsList = providerOptions ?? [];
     const loadPhaseOptionsList = loadPhaseOptions ?? [];
@@ -165,7 +153,6 @@ export function ReportFiltersDialog({
     const selectedTruckIds = selectedTrucks ?? [];
     const selectedOperationIds = selectedOperations ?? [];
     const selectedDestinationIds = selectedDestinations ?? [];
-    const selectedServiceTypeIds = selectedServiceTypes ?? [];
     const selectedLoadPhaseId = selectedLoadPhase ?? 'all';
     const selectedStatusIds = selectedStatuses ?? [];
     const selectedProviderIds = selectedProviders ?? [];
@@ -184,10 +171,6 @@ export function ReportFiltersDialog({
 
     const handleDestinationsChange = (ids: Array<number | string>) => {
         onDestinationsChange?.(ids.map((value) => Number(value)));
-    };
-
-    const handleServiceTypesChange = (ids: Array<number | string>) => {
-        onServiceTypesChange?.(ids.map((value) => String(value)));
     };
 
     const handleLoadPhaseChange = (value: string) => {
@@ -214,7 +197,6 @@ export function ReportFiltersDialog({
     const shouldShowTruck = showTruckFilter ?? truckOptionsList.length > 0;
     const shouldShowOperation = showOperationFilter ?? operationOptionsList.length > 0;
     const shouldShowDestination = showDestinationFilter ?? destinationOptionsList.length > 0;
-    const shouldShowServiceType = showServiceTypeFilter ?? serviceTypeOptionsList.length > 0;
     const shouldShowLoadPhase = showLoadPhaseFilter ?? loadPhaseOptionsList.length > 0;
     const shouldShowStatus = showStatusFilter ?? statusOptionsList.length > 0;
     const shouldShowProvider = showProviderFilter ?? providerOptionsList.length > 0;
@@ -261,17 +243,6 @@ export function ReportFiltersDialog({
         emptyMessage: 'No destinations found.',
         icon: MapPin,
         ...(destinationFilterText ?? {}),
-    };
-
-    const serviceTypeText = {
-        label: 'Service types',
-        triggerLabelWhenAll: 'All service types',
-        summaryLabelWhenAll: 'All service types included',
-        heading: 'Service types',
-        searchPlaceholder: 'Search service type...',
-        emptyMessage: 'No service types found.',
-        icon: PackageCheck,
-        ...(serviceTypeFilterText ?? {}),
     };
 
     const loadPhaseText = {
@@ -366,21 +337,6 @@ export function ReportFiltersDialog({
                 options={destinationOptionsList}
                 selectedIds={selectedDestinationIds as Array<number | string>}
                 onChange={handleDestinationsChange}
-            />
-        ) : null,
-        shouldShowServiceType ? (
-            <ReportMultiSelectFilter
-                key="service-types"
-                label={serviceTypeText.label ?? 'Service types'}
-                icon={serviceTypeText.icon ?? PackageCheck}
-                triggerLabelWhenAll={serviceTypeText.triggerLabelWhenAll ?? 'All service types'}
-                summaryLabelWhenAll={serviceTypeText.summaryLabelWhenAll ?? 'All service types included'}
-                heading={serviceTypeText.heading ?? 'Service types'}
-                searchPlaceholder={serviceTypeText.searchPlaceholder ?? 'Search service type...'}
-                emptyMessage={serviceTypeText.emptyMessage ?? 'No service types found.'}
-                options={serviceTypeOptionsList}
-                selectedIds={selectedServiceTypeIds as Array<number | string>}
-                onChange={handleServiceTypesChange}
             />
         ) : null,
         shouldShowLoadPhase ? (
@@ -544,16 +500,14 @@ export function ReportFiltersDialog({
                         <RefreshCcw className="h-4 w-4 mr-2" />
                         Reset All
                     </Button>
-                    {showApplyButton ? (
-                        <Button
-                            type="button"
-                            onClick={onApply}
-                            className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all duration-200 min-w-[160px]"
-                        >
-                            <BarChart3 className="h-4 w-4 mr-2" />
-                            Generate Report
-                        </Button>
-                    ) : null}
+                    <Button
+                        type="button"
+                        onClick={onApply}
+                        className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all duration-200 min-w-[160px]"
+                    >
+                        <BarChart3 className="h-4 w-4 mr-2" />
+                        Generate Report
+                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

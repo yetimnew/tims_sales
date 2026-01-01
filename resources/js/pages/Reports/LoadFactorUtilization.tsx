@@ -103,9 +103,6 @@ export default function LoadFactorUtilization({ filters, rows = [], summary, opt
     const [groupBy, setGroupBy] = useState(filters?.group_by ?? 'overall');
     const [selectedTrucks, setSelectedTrucks] = useState<number[]>(filters?.truck_ids ?? []);
     const [selectedDrivers, setSelectedDrivers] = useState<number[]>(filters?.driver_ids ?? []);
-    const [compareEnabled, setCompareEnabled] = useState(false);
-    const [compareFrom, setCompareFrom] = useState(filters?.compare_from ?? '');
-    const [compareTo, setCompareTo] = useState(filters?.compare_to ?? '');
 
     const truckSource = options?.trucks;
     const driverSource = options?.drivers;
@@ -134,46 +131,11 @@ export default function LoadFactorUtilization({ filters, rows = [], summary, opt
         [driverOptions],
     );
 
-    const handleApplyFilters = () => {
-        if (!validateDateRange(from, to)) {
-            setFiltersOpen(true);
-            return;
-        }
-
-        if (compareEnabled && (!validateDateRange(compareFrom, compareTo))) {
-            setFiltersOpen(true);
-            return;
-        }
-
-        setFiltersOpen(false);
-
-        const params: Record<string, unknown> = {
-            from,
-            to,
-            group_by: groupBy,
-        };
-
-        if (selectedTrucks.length > 0) params.truck_ids = selectedTrucks;
-        if (selectedDrivers.length > 0) params.driver_ids = selectedDrivers;
-        if (compareEnabled && compareFrom && compareTo) {
-            params.compare_from = compareFrom;
-            params.compare_to = compareTo;
-        }
-
-        router.get('/reports/load-factor-utilization', params, {
-            preserveState: true,
-            preserveScroll: true,
-        });
-    };
-
     const handleReset = () => {
         resetDateRange(filters?.from ?? '', filters?.to ?? '');
         setGroupBy(filters?.group_by ?? 'overall');
         setSelectedTrucks(filters?.truck_ids ?? []);
         setSelectedDrivers(filters?.driver_ids ?? []);
-        setCompareEnabled(false);
-        setCompareFrom('');
-        setCompareTo('');
         setFiltersOpen(false);
         router.get('/reports/load-factor-utilization', {}, { preserveState: false, preserveScroll: true });
     };
@@ -299,12 +261,12 @@ export default function LoadFactorUtilization({ filters, rows = [], summary, opt
     }, [summary]);
 
     const comparisonData = useMemo(() => {
-        if (!comparison || !compareEnabled) return null;
+        if (!comparison) return null;
         return {
             current: summary,
             previous: comparison.summary,
         };
-    }, [comparison, compareEnabled, summary]);
+    }, [comparison, summary]);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -329,7 +291,6 @@ export default function LoadFactorUtilization({ filters, rows = [], summary, opt
                                     to={to}
                                     onDateChange={handleDateChange}
                                     onReset={handleReset}
-                                    onApply={handleApplyFilters}
                                     dateRangeDescription={REPORT_DATE_RANGE_DESCRIPTION}
                                     driverOptions={driverSelectionOptions}
                                     truckOptions={truckSelectionOptions}

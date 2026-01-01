@@ -29,7 +29,6 @@ import { ListingFilterBar } from '@/components/listing/filter-bar';
 import { ListingStatsHeader, type ListingStatDefinition } from '@/components/listing/stats-header';
 import { ListingTableShell, type ListingTableColumn } from '@/components/listing/data-table-shell';
 import { ListingMobileItemList } from '@/components/listing/mobile-item-list';
-import { ListingLoadingPlaceholder } from '@/components/listing/loading-placeholder';
 import { ListingRowActionsMenu } from '@/components/listing/row-actions-menu';
 import { ListingPaginationFooter } from '@/components/listing/pagination-footer';
 
@@ -556,27 +555,6 @@ export default function OutsourcePerformancesIndex({
     }, []);
 
     const tableRows = useMemo(() => {
-        if (isLoading) {
-            return Array.from({ length: 6 }).map((_, rowIndex) => (
-                <TableRow key={`outsource-performance-skeleton-${rowIndex}`} aria-hidden="true">
-                    {tableColumns.map((column) => (
-                        <TableCell
-                            key={`${column.id}-${rowIndex}`}
-                            className={
-                                column.align === 'center'
-                                    ? 'text-center'
-                                    : column.align === 'right'
-                                        ? 'text-right'
-                                        : undefined
-                            }
-                        >
-                            <Skeleton className="mx-auto h-4 w-24 max-w-full" />
-                        </TableCell>
-                    ))}
-                </TableRow>
-            ));
-        }
-
         if (!outsourcePerformances?.data?.length) {
             return (
                 <TableRow>
@@ -657,9 +635,7 @@ export default function OutsourcePerformancesIndex({
         [outsourcePerformances?.data, rowOffset],
     );
 
-    const mobileContent = isLoading ? (
-        <ListingLoadingPlaceholder showStats={false} filterItemCount={4} rowCount={4} className="p-4" />
-    ) : (
+    const mobileContent = (
         <ListingMobileItemList
             items={mobileItems}
             getKey={(item) => item.record.id}
@@ -815,7 +791,7 @@ export default function OutsourcePerformancesIndex({
                 description={`Manage vendor delivery performance (${totalRecords.toLocaleString()} records).`}
                 breadcrumbs={breadcrumbs}
                 actions={headerActions}
-                stats={<ListingStatsHeader stats={statsDefinitions} />}
+                stats={<ListingStatsHeader stats={statsDefinitions} orientation="row" />}
                 tableTitle="Outsource Trip Ledger"
                 tableDescription="Analyse partner performance across distance, volume, and spend"
                 tableHeaderExtras={tableHeaderExtras}
@@ -849,14 +825,33 @@ export default function OutsourcePerformancesIndex({
                 }
             >
                 <div className="hidden md:block">
-                    <ListingTableShell
-                        columns={tableColumns}
-                        sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSortToggle }}
-                    >
-                        {tableRows}
-                    </ListingTableShell>
+                    <div className="relative">
+                        <ListingTableShell
+                            columns={tableColumns}
+                            sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSortToggle }}
+                        >
+                            {tableRows}
+                        </ListingTableShell>
+
+                        {isLoading && (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
+                                <img src="/images/loading-spinner.svg" alt="Loading outsource performances" className="h-12 w-12" />
+                                <span className="text-sm text-muted-foreground">Loading outsource performances...</span>
+                            </div>
+                        )}
+                    </div>
                 </div>
-                <div className="space-y-3 md:hidden">{mobileContent}</div>
+
+                <div className="relative space-y-3 md:hidden">
+                    {mobileContent}
+
+                    {isLoading && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
+                            <img src="/images/loading-spinner.svg" alt="Loading outsource performances" className="h-10 w-10" />
+                            <span className="text-sm text-muted-foreground">Loading outsource performances...</span>
+                        </div>
+                    )}
+                </div>
             </ListPageLayout>
 
             <DeleteConfirmationDialog

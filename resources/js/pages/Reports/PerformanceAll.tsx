@@ -1,19 +1,17 @@
 import { useMemo, useState } from 'react';
-import { Head, router } from '@inertiajs/react';
-import AppLayout from '@/layouts/app-layout';
+import { router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
-import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ReportFiltersDialog } from '@/components/reports/report-filters-dialog';
 import { ReportSummaryGrid, type ReportSummaryItem } from '@/components/reports/report-summary-grid';
 import { ReportDispatchTable, type ReportDispatchRow, type ReportSummary as ReportSummaryData } from '@/components/reports/report-dispatch-table';
 import { ListingPaginationFooter } from '@/components/listing/pagination-footer';
 import type { ReportSelectionOption } from '@/components/reports/types';
 import { formatCurrency, formatDecimal, formatInteger, formatPercentage } from '@/components/reports/formatters';
-import { BarChart3, CircleDollarSign, ClipboardList, Download, FileDigit, FileSpreadsheet, FileType2, Flame, RefreshCcw, Route, TrendingUp } from 'lucide-react';
+import { BarChart3, CircleDollarSign, ClipboardList, Flame, Route, TrendingUp } from 'lucide-react';
 import { usePermissions } from '@/hooks/use-permissions';
 import { REPORT_DATE_RANGE_DESCRIPTION, useReportDateRange } from '@/components/reports/use-report-date-range';
+import { ReportPageLayout } from '@/components/report/report-page-layout';
 
 interface OptionBase {
     id: number;
@@ -328,119 +326,86 @@ export default function PerformanceAll({ filters, performances, summary, perPage
     );
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Performance (All)" />
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-slate-100/60 dark:bg-slate-900/40">
-                <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-4 pb-10 sm:p-6 lg:p-10">
-                    <header className="rounded-2xl border border-slate-200 bg-white/95 px-6 py-6 shadow-sm backdrop-blur dark:border-slate-800/70 dark:bg-slate-900/70">
-                        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                            <div className="space-y-2">
-                                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">Performance Intelligence</p>
-                                <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-50">Performance (All Dispatches)</h1>
-                                <p className="max-w-3xl text-sm text-slate-600 dark:text-slate-300">
-                                    Review every dispatch outcome across drivers, trucks, operations, and destinations. Refine the window, focus on specific assets, and export ready-to-share reports for your operations team.
-                                </p>
-                            </div>
-                            <div className="flex flex-wrap items-center gap-2">
-                                <ReportFiltersDialog
-                                    open={filtersOpen}
-                                    onOpenChange={setFiltersOpen}
-                                    activeFilterCount={activeFilterCount}
-                                    from={from}
-                                    to={to}
-                                    onDateChange={handleDateRangeChange}
-                                    dateRangeDescription={REPORT_DATE_RANGE_DESCRIPTION}
-                                    limit={perPage}
-                                    onLimitChange={setPerPage}
-                                    onReset={handleReset}
-                                    onApply={handleApplyFilters}
-                                    driverOptions={driverSelectionOptions}
-                                    truckOptions={truckSelectionOptions}
-                                    operationOptions={operationSelectionOptions}
-                                    loadPhaseOptions={loadPhaseSelectionOptions}
-                                    selectedDrivers={selectedDrivers}
-                                    selectedTrucks={selectedTrucks}
-                                    selectedOperations={selectedOperations}
-                                    selectedLoadPhase={selectedLoadPhase !== 'all' ? selectedLoadPhase : null}
-                                    onDriversChange={setSelectedDrivers}
-                                    onTrucksChange={setSelectedTrucks}
-                                    onOperationsChange={setSelectedOperations}
-                                    onLoadPhaseChange={(value) => {
-                                        setSelectedLoadPhase(value ?? 'all');
-                                    }}
-                                    dateError={dateError}
-                                />
-                                {canExport && (
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button type="button" variant="secondary" className="gap-2">
-                                                <Download className="h-4 w-4" />
-                                                Export
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end" className="w-44">
-                                            <DropdownMenuItem onSelect={() => handleExport('csv')} className="gap-2">
-                                                <FileDigit className="h-4 w-4 text-amber-500" />
-                                                CSV
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onSelect={() => handleExport('xlsx')} className="gap-2">
-                                                <FileSpreadsheet className="h-4 w-4 text-emerald-500" />
-                                                Excel
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onSelect={() => handleExport('pdf')} className="gap-2">
-                                                <FileType2 className="h-4 w-4 text-rose-500" />
-                                                PDF
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                )}
-                                <Button type="button" variant="outline" className="gap-2" onClick={handleReset}>
-                                    <RefreshCcw className="h-4 w-4" />
-                                    Reset
-                                </Button>
-                            </div>
-                        </div>
-                    </header>
+        <ReportPageLayout
+            title="Performance (All Dispatches)"
+            description="Review every dispatch outcome across drivers, trucks, operations, and destinations. Refine the window, focus on specific assets, and export ready-to-share reports for your operations team."
+            breadcrumbs={breadcrumbs}
+            icon={<ClipboardList className="h-6 w-6" />}
+            filters={
+                <ReportFiltersDialog
+                    open={filtersOpen}
+                    onOpenChange={setFiltersOpen}
+                    activeFilterCount={activeFilterCount}
+                    from={from}
+                    to={to}
+                    onDateChange={handleDateRangeChange}
+                    dateRangeDescription={REPORT_DATE_RANGE_DESCRIPTION}
+                    limit={perPage}
+                    onLimitChange={setPerPage}
+                    onReset={handleReset}
+                    onApply={handleApplyFilters}
+                    driverOptions={driverSelectionOptions}
+                    truckOptions={truckSelectionOptions}
+                    operationOptions={operationSelectionOptions}
+                    loadPhaseOptions={loadPhaseSelectionOptions}
+                    selectedDrivers={selectedDrivers}
+                    selectedTrucks={selectedTrucks}
+                    selectedOperations={selectedOperations}
+                    selectedLoadPhase={selectedLoadPhase !== 'all' ? selectedLoadPhase : null}
+                    onDriversChange={setSelectedDrivers}
+                    onTrucksChange={setSelectedTrucks}
+                    onOperationsChange={setSelectedOperations}
+                    onLoadPhaseChange={(value) => {
+                        setSelectedLoadPhase(value ?? 'all');
+                    }}
+                    dateError={dateError}
+                />
+            }
+            summarySection={<ReportSummaryGrid items={summaryItems} />}
+            onRefresh={handleReset}
+            onExportPdf={() => handleExport('pdf')}
+            onExportExcel={() => handleExport('xlsx')}
+            onExportCsv={() => handleExport('csv')}
+            canExport={canExport}
+            contentClassName="p-0"
+        >
+            <div className="space-y-6 p-6">
+                <ReportDispatchTable rows={safeRows} summary={summary} summaryMargin={summaryMargin} filterBadges={filterBadges} />
 
-                    <ReportSummaryGrid items={summaryItems} />
-
-                    <ReportDispatchTable rows={safeRows} summary={summary} summaryMargin={summaryMargin} filterBadges={filterBadges} />
-
-                    {performances && performances.links && performances.last_page > 1 && (
-                        <div className="mt-6 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-md dark:border-slate-700 dark:bg-slate-900">
-                            <ListingPaginationFooter
-                                from={performances.from}
-                                to={performances.to}
-                                total={performances.total}
-                                links={performances.links}
-                                extra={
-                                    <div className="flex items-center gap-2">
-                                        <label htmlFor="per-page-select" className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                                            Rows per page:
-                                        </label>
-                                        <Select value={String(perPage)} onValueChange={handlePerPageChange}>
-                                            <SelectTrigger
-                                                id="per-page-select"
-                                                className="h-9 w-[70px] border-slate-300 bg-white font-semibold shadow-sm transition-all hover:border-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-slate-600 dark:bg-slate-800 dark:hover:border-slate-500"
-                                            >
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent className="min-w-[70px]">
-                                                {availablePerPageOptions.map((option) => (
-                                                    <SelectItem key={option} value={String(option)} className="font-semibold">
-                                                        {option}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                }
-                            />
-                        </div>
-                    )}
-                </div>
+                {performances && performances.links && performances.last_page > 1 && (
+                    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-md dark:border-slate-700 dark:bg-slate-900">
+                        <ListingPaginationFooter
+                            from={performances.from}
+                            to={performances.to}
+                            total={performances.total}
+                            links={performances.links}
+                            extra={
+                                <div className="flex items-center gap-2">
+                                    <label htmlFor="per-page-select" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                        Rows per page:
+                                    </label>
+                                    <Select value={String(perPage)} onValueChange={handlePerPageChange}>
+                                        <SelectTrigger
+                                            id="per-page-select"
+                                            className="h-9 w-[70px] border-slate-300 bg-white font-semibold shadow-sm transition-all hover:border-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-slate-600 dark:bg-slate-800 dark:hover:border-slate-500"
+                                        >
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent className="min-w-[70px]">
+                                            {availablePerPageOptions.map((option) => (
+                                                <SelectItem key={option} value={String(option)} className="font-semibold">
+                                                    {option}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            }
+                        />
+                    </div>
+                )}
             </div>
-        </AppLayout>
+        </ReportPageLayout>
     );
 }
 

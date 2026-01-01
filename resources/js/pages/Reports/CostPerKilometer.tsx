@@ -1,19 +1,17 @@
 import { useMemo, useState } from 'react';
-import { Head, router } from '@inertiajs/react';
-import AppLayout from '@/layouts/app-layout';
+import { router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ReportSummaryGrid, type ReportSummaryItem } from '@/components/reports/report-summary-grid';
 import { ReportFiltersDialog } from '@/components/reports/report-filters-dialog';
 import type { ReportSelectionOption } from '@/components/reports/types';
 import { formatCurrency, formatDecimal, formatInteger, formatPercentage } from '@/components/reports/formatters';
-import { RefreshCcw, DollarSign, TrendingDown, Route, BarChart3, Fuel, User, Download, FileDigit, FileSpreadsheet, FileType2 } from 'lucide-react';
+import { DollarSign, TrendingDown, Route, BarChart3, Fuel, User } from 'lucide-react';
 import { usePermissions } from '@/hooks/use-permissions';
 import { Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, ComposedChart } from 'recharts';
 import { REPORT_DATE_RANGE_DESCRIPTION, useReportDateRange } from '@/components/reports/use-report-date-range';
+import { ReportPageLayout } from '@/components/report/report-page-layout';
 
 interface TruckOption {
     id: number;
@@ -107,9 +105,6 @@ export default function CostPerKilometer({ filters, rows = [], summary, options,
     const groupBy = filters?.group_by ?? 'overall';
     const [selectedTrucks, setSelectedTrucks] = useState<number[]>(filters?.truck_ids ?? []);
     const [selectedDrivers, setSelectedDrivers] = useState<number[]>(filters?.driver_ids ?? []);
-    const [compareEnabled, setCompareEnabled] = useState(false);
-    const [compareFrom, setCompareFrom] = useState(filters?.compare_from ?? '');
-    const [compareTo, setCompareTo] = useState(filters?.compare_to ?? '');
 
     const truckSource = options?.trucks;
     const driverSource = options?.drivers;
@@ -138,45 +133,10 @@ export default function CostPerKilometer({ filters, rows = [], summary, options,
         [driverOptions],
     );
 
-    const handleApplyFilters = () => {
-        if (!validateDateRange(from, to)) {
-            setFiltersOpen(true);
-            return;
-        }
-
-        if (compareEnabled && (!validateDateRange(compareFrom, compareTo))) {
-            setFiltersOpen(true);
-            return;
-        }
-
-        setFiltersOpen(false);
-
-        const params: Record<string, unknown> = {
-            from,
-            to,
-            group_by: groupBy,
-        };
-
-        if (selectedTrucks.length > 0) params.truck_ids = selectedTrucks;
-        if (selectedDrivers.length > 0) params.driver_ids = selectedDrivers;
-        if (compareEnabled && compareFrom && compareTo) {
-            params.compare_from = compareFrom;
-            params.compare_to = compareTo;
-        }
-
-        router.get('/reports/cost-per-kilometer', params, {
-            preserveState: true,
-            preserveScroll: true,
-        });
-    };
-
     const handleReset = () => {
         resetDateRange(filters?.from ?? '', filters?.to ?? '');
         setSelectedTrucks(filters?.truck_ids ?? []);
         setSelectedDrivers(filters?.driver_ids ?? []);
-        setCompareEnabled(false);
-        setCompareFrom('');
-        setCompareTo('');
         setFiltersOpen(false);
         router.get('/reports/cost-per-kilometer', {}, { preserveState: false, preserveScroll: true });
     };
@@ -288,75 +248,49 @@ export default function CostPerKilometer({ filters, rows = [], summary, options,
     }, [summary]);
 
     const comparisonData = useMemo(() => {
-        if (!comparison || !compareEnabled) return null;
+        if (!comparison) return null;
         return {
             current: summary,
             previous: comparison.summary,
         };
-    }, [comparison, compareEnabled, summary]);
+    }, [comparison, summary]);
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Cost Per Kilometer Analysis" />
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-slate-100/60 dark:bg-slate-900/40">
-                <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-4 pb-10 sm:p-6 lg:p-10">
-                    <header className="rounded-2xl border border-slate-200 bg-white/95 px-6 py-6 shadow-sm backdrop-blur dark:border-slate-800/70 dark:bg-slate-900/70">
-                        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                            <div className="space-y-2">
-                                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">Cost Intelligence</p>
-                                <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-50">Cost Per Kilometer Analysis</h1>
-                                <p className="max-w-3xl text-sm text-slate-600 dark:text-slate-300">
-                                    Analyse cost efficiency by breaking down expenses per kilometer. Identify cost drivers and optimize operational expenses across your fleet.
-                                </p>
-                            </div>
-                            <div className="flex flex-wrap items-center gap-2">
-                                <ReportFiltersDialog
-                                    open={filtersOpen}
-                                    onOpenChange={setFiltersOpen}
-                                    activeFilterCount={activeFilterCount}
-                                    from={from}
-                                    to={to}
-                                    onDateChange={handleDateChange}
-                                    dateRangeDescription={REPORT_DATE_RANGE_DESCRIPTION}
-                                    onReset={handleReset}
-                                    onApply={handleApplyFilters}
-                                    driverOptions={driverSelectionOptions}
-                                    truckOptions={truckSelectionOptions}
-                                    selectedDrivers={selectedDrivers}
-                                    selectedTrucks={selectedTrucks}
-                                    onDriversChange={setSelectedDrivers}
-                                    onTrucksChange={setSelectedTrucks}
-                                    showDriverFilter={true}
-                                    showTruckFilter={true}
-                                    dateError={dateError}
-                                />
-                                {canExport && (
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button type="button" variant="secondary" className="gap-2">
-                                                <Download className="h-4 w-4" />
-                                                Export
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end" className="w-44">
-                                            <DropdownMenuItem onSelect={() => handleExport('csv')} className="gap-2">
-                                                <FileDigit className="h-4 w-4 text-amber-500" />
-                                                CSV
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onSelect={() => handleExport('xlsx')} className="gap-2">
-                                                <FileSpreadsheet className="h-4 w-4 text-emerald-500" />
-                                                Excel
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onSelect={() => handleExport('pdf')} className="gap-2">
-                                                <FileType2 className="h-4 w-4 text-rose-500" />
-                                                PDF
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                )}
-                                <Button type="button" variant="outline" className="gap-2" onClick={handleReset}>
-                                    <RefreshCcw className="h-4 w-4" />
-                                    Reset
+        <ReportPageLayout
+            title="Cost Per Kilometer Analysis"
+            description="Analyse cost efficiency by breaking down expenses per kilometer. Identify cost drivers and optimize operational expenses across your fleet."
+            breadcrumbs={breadcrumbs}
+            icon={<DollarSign className="h-6 w-6" />}
+            filters={
+                <ReportFiltersDialog
+                    open={filtersOpen}
+                    onOpenChange={setFiltersOpen}
+                    activeFilterCount={activeFilterCount}
+                    from={from}
+                    to={to}
+                    onDateChange={handleDateChange}
+                    dateRangeDescription={REPORT_DATE_RANGE_DESCRIPTION}
+                    onReset={handleReset}
+                    driverOptions={driverSelectionOptions}
+                    truckOptions={truckSelectionOptions}
+                    selectedDrivers={selectedDrivers}
+                    selectedTrucks={selectedTrucks}
+                    onDriversChange={setSelectedDrivers}
+                    onTrucksChange={setSelectedTrucks}
+                    showDriverFilter={true}
+                    showTruckFilter={true}
+                    dateError={dateError}
+                />
+            }
+            summarySection={<ReportSummaryGrid items={summaryItems} />}
+            onRefresh={handleReset}
+            onExportPdf={() => handleExport('pdf')}
+            onExportExcel={() => handleExport('xlsx')}
+            onExportCsv={() => handleExport('csv')}
+            canExport={canExport}
+            contentClassName="p-0"
+        >
+            <div className="space-y-6 p-6">
                                 </Button>
                             </div>
                         </div>
@@ -541,8 +475,7 @@ export default function CostPerKilometer({ filters, rows = [], summary, options,
                             </div>
                         </CardContent>
                     </Card>
-                </div>
             </div>
-        </AppLayout>
+        </ReportPageLayout>
     );
 }
