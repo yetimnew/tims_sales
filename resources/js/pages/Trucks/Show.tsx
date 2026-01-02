@@ -11,7 +11,8 @@ import { toast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePermissions } from '@/hooks/use-permissions';
-import { Activity, ArrowLeft, ArrowUpRight, Ban, BarChart3, Calendar, CheckCircle, Edit, History, Sparkles, Target, Truck, Trash2, Wrench, Clock, User, XCircle } from 'lucide-react';
+import { Activity, ArrowLeft, ArrowUpRight, Ban, BarChart3, Calendar, CheckCircle, Edit, History, Sparkles, Target, Truck, Trash2, Wrench, Clock, User, XCircle, TrendingUp, DollarSign, Package, ExternalLink, MapPin, Fuel, Route, Gauge } from 'lucide-react';
+import { Area, AreaChart, Bar, BarChart as RechartsBarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Legend, Line, LineChart } from 'recharts';
 
 type VehicleType = { id: number; name: string };
 type ActivityLog = { id: number; description: string; causer?: { name?: string }; created_at: string; properties?: Record<string, unknown> };
@@ -157,30 +158,70 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
   const totalAssignments = counts?.driverAssignments ?? truck.driverTrucks?.length ?? 0;
   const activeAssignmentsCount = truck.driverTrucks?.filter(assignment => assignment.is_attached).length ?? 0;
 
+  // Calculate financial metrics from performance data
+  const totalFuelCost = performanceSummary?.fuel_cost_birr ?? 0;
+  const totalMaintenanceCost = maintenanceSummary?.total_cost ?? 0;
+  const totalOperationalCost = totalFuelCost + totalMaintenanceCost;
+  const avgCostPerKm = performanceSummary?.total_distance_km && performanceSummary.total_distance_km > 0 
+    ? totalOperationalCost / performanceSummary.total_distance_km 
+    : 0;
+  const avgCostPerTrip = performanceSummary?.completed_trips && performanceSummary.completed_trips > 0 
+    ? totalOperationalCost / performanceSummary.completed_trips 
+    : 0;
+
+  // Utilization metrics
+  const loadFactor = performanceSummary?.total_distance_km && performanceSummary.total_distance_km > 0
+    ? (performanceSummary.total_loaded_distance_km / performanceSummary.total_distance_km) * 100
+    : 0;
+  const emptyFactor = 100 - loadFactor;
+
+  // Prepare chart data
+  const distanceChartData = performanceSummary ? [
+    { name: 'Loaded', value: performanceSummary.total_loaded_distance_km, fill: '#22c55e' },
+    { name: 'Empty', value: performanceSummary.total_empty_distance_km, fill: '#ef4444' },
+  ].filter(item => item.value > 0) : [];
+
+  const tripStatusData = performanceSummary ? [
+    { name: 'Completed', value: performanceSummary.completed_trips, fill: '#22c55e' },
+    { name: 'Open', value: performanceSummary.open_trips, fill: '#3b82f6' },
+  ].filter(item => item.value > 0) : [];
+
+  const costBreakdownData = [
+    { name: 'Fuel Cost', value: totalFuelCost, fill: '#f97316' },
+    { name: 'Maintenance', value: totalMaintenanceCost, fill: '#8b5cf6' },
+  ].filter(item => item.value > 0);
+
+  const recentPerformances = truck.performances?.slice(0, 10).map((perf, index) => ({
+    name: `Trip ${index + 1}`,
+    distance: (perf.DistanceWCargo ?? 0) + (perf.DistanceWOCargo ?? 0),
+    tonnage: perf.cargo_volume_mt ?? 0,
+    fuel: perf.fuelInLitter ?? 0,
+  })) ?? [];
+
   const overviewSummaryCards = [
     {
-      key: 'status',
-      label: 'Status',
-      value: <Badge className={`flex w-fit items-center gap-1 ${getStatusBadgeColor(truck.status)}`}>{statusLabel}</Badge>,
-      helper: `Vehicle Type: ${truck.vehicleType?.name || 'N/A'}`,
-    },
-    {
-      key: 'assignments',
-      label: 'Assignments',
-      value: formatNumber(totalAssignments, { maximumFractionDigits: 0 }),
-      helper: activeAssignmentsCount > 0 ? `${activeAssignmentsCount} active right now` : 'No active assignments',
-    },
-    {
       key: 'trips',
-      label: 'Trips Completed',
+      label: 'Completed Trips',
       value: formatNumber(performanceSummary?.completed_trips ?? 0, { maximumFractionDigits: 0 }),
-      helper: performanceSummary ? `Distance ${formatKilometers(performanceSummary.total_distance_km, 0)}` : 'No performance data yet',
+      helper: `${formatNumber(performanceSummary?.open_trips ?? 0, { maximumFractionDigits: 0 })} open trips`,
     },
     {
-      key: 'maintenance',
-      label: 'Maintenance',
-      value: formatNumber(maintenanceSummary?.total_records ?? 0, { maximumFractionDigits: 0 }),
-      helper: maintenanceSummary?.overdue ? `${maintenanceSummary.overdue} overdue` : 'No overdue maintenance',
+      key: 'distance',
+      label: 'Total Distance',
+      value: formatKilometers(performanceSummary?.total_distance_km ?? 0, 0),
+      helper: `Load Factor: ${loadFactor.toFixed(1)}%`,
+    },
+    {
+      key: 'efficiency',
+      label: 'Fuel Efficiency',
+      value: formatFuelEfficiency(performanceSummary?.avg_fuel_efficiency_km_per_liter ?? null),
+      helper: `${formatNumber(performanceSummary?.total_fuel_liters ?? 0, { maximumFractionDigits: 0 })} L total`,
+    },
+    {
+      key: 'cost',
+      label: 'Total Cost',
+      value: formatCurrency(totalOperationalCost),
+      helper: `${formatCurrency(avgCostPerKm)} per KM`,
     },
   ];
 
@@ -258,15 +299,17 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
       }
     >
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview"><CheckCircle className="h-4 w-4 mr-2" /> Overview</TabsTrigger>
           <TabsTrigger value="performance"><BarChart3 className="h-4 w-4 mr-2" /> Performance</TabsTrigger>
+          <TabsTrigger value="analytics"><TrendingUp className="h-4 w-4 mr-2" /> Analytics</TabsTrigger>
           <TabsTrigger value="maintenance"><Wrench className="h-4 w-4 mr-2" /> Maintenance</TabsTrigger>
           <TabsTrigger value="history"><History className="h-4 w-4 mr-2" /> History</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
           <DetailSummaryGrid items={overviewSummaryCards} />
+          
           <div className="grid gap-6 lg:grid-cols-[1fr,20rem]">
             <div className="space-y-6">
               <DetailSectionCard icon={<Truck className="h-5 w-5" />} title="Basic Information" description="Truck details and specifications">
@@ -284,7 +327,7 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
                   <div className="grid grid-cols-2 gap-4">
                     <div className="rounded-lg border p-3">
                       <p className="text-xs font-semibold uppercase text-muted-foreground">Plate Number</p>
-                      <p className="mt-2 font-mono text-sm">{truck.plate}</p>
+                      <p className="mt-2 font-mono text-lg font-bold">{truck.plate}</p>
                     </div>
                     <div className="rounded-lg border p-3">
                       <p className="text-xs font-semibold uppercase text-muted-foreground">Chassis Number</p>
@@ -297,9 +340,48 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
                       <p className="mt-2 text-sm">{truck.engineNumber || 'N/A'}</p>
                     </div>
                     <div className="rounded-lg border p-3">
-                      <p className="text-xs font-semibold uppercase text-muted-foreground">Vehicle Type ID</p>
-                      <p className="mt-2 text-sm">{truck.vehicletype_id}</p>
+                      <p className="text-xs font-semibold uppercase text-muted-foreground">Created</p>
+                      <p className="mt-2 text-sm">{formatDate(truck.created_at)}</p>
                     </div>
+                  </div>
+                </div>
+              </DetailSectionCard>
+
+              <DetailSectionCard icon={<ExternalLink className="h-5 w-5" />} title="Quick Links">
+                <div className="grid gap-3 md:grid-cols-2">
+                  <Button variant="outline" asChild className="w-full">
+                    <Link href={`/performances?truck=${truck.id}`}>
+                      <Package className="h-4 w-4 mr-2" />
+                      View All Performances
+                      <ExternalLink className="h-3 w-3 ml-auto" />
+                    </Link>
+                  </Button>
+                  <Button variant="outline" asChild className="w-full">
+                    <Link href={`/driver-trucks?truck_id=${truck.id}`}>
+                      <User className="h-4 w-4 mr-2" />
+                      View All Assignments
+                      <ExternalLink className="h-3 w-3 ml-auto" />
+                    </Link>
+                  </Button>
+                </div>
+              </DetailSectionCard>
+
+              <DetailSectionCard icon={<Gauge className="h-5 w-5" />} title="Utilization Metrics">
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div className="rounded-lg border border-green-200 bg-green-50 p-3 text-center">
+                    <p className="text-xs font-semibold uppercase text-muted-foreground">Load Factor</p>
+                    <p className="mt-2 text-2xl font-bold text-green-700">{loadFactor.toFixed(1)}%</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{formatKilometers(performanceSummary?.total_loaded_distance_km ?? 0, 0)}</p>
+                  </div>
+                  <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-center">
+                    <p className="text-xs font-semibold uppercase text-muted-foreground">Empty Running</p>
+                    <p className="mt-2 text-2xl font-bold text-red-700">{emptyFactor.toFixed(1)}%</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{formatKilometers(performanceSummary?.total_empty_distance_km ?? 0, 0)}</p>
+                  </div>
+                  <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-center">
+                    <p className="text-xs font-semibold uppercase text-muted-foreground">Avg Payload</p>
+                    <p className="mt-2 text-2xl font-bold text-blue-700">{formatNumber(performanceSummary?.avg_payload_tons_per_trip ?? 0, { maximumFractionDigits: 1 })} T</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Per trip</p>
                   </div>
                 </div>
               </DetailSectionCard>
@@ -366,7 +448,7 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
               )}
 
               {performanceSummary && (
-                <DetailSectionCard icon={<BarChart3 className="h-5 w-5" />} title="Quick Metrics">
+                <DetailSectionCard icon={<BarChart3 className="h-5 w-5" />} title="Performance Summary">
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Total Distance</span>
@@ -384,6 +466,42 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
                       <span className="text-muted-foreground">Ton-Km</span>
                       <span className="font-semibold">{formatNumber(performanceSummary.total_ton_km)}</span>
                     </div>
+                    <div className="flex justify-between border-t pt-2">
+                      <span className="text-muted-foreground">Total Cost</span>
+                      <span className="font-semibold">{formatCurrency(totalOperationalCost)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Cost per KM</span>
+                      <span className="font-semibold">{formatCurrency(avgCostPerKm)}</span>
+                    </div>
+                  </div>
+                </DetailSectionCard>
+              )}
+
+              {distanceChartData.length > 0 && (
+                <DetailSectionCard icon={<Route className="h-5 w-5" />} title="Distance Split">
+                  <div className="h-48">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie 
+                          data={distanceChartData} 
+                          dataKey="value" 
+                          nameKey="name" 
+                          cx="50%" 
+                          cy="50%" 
+                          innerRadius={40}
+                          outerRadius={70}
+                          paddingAngle={4}
+                          label
+                        >
+                          {distanceChartData.map((entry, index) => (
+                            <Cell key={index} fill={entry.fill} />
+                          ))}
+                        </Pie>
+                        <Tooltip formatter={(value) => formatKilometers(value as number, 0)} />
+                        <Legend />
+                      </PieChart>
+                    </ResponsiveContainer>
                   </div>
                 </DetailSectionCard>
               )}
@@ -392,24 +510,83 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
         </TabsContent>
 
         <TabsContent value="performance" className="space-y-6">
-          <DetailSectionCard icon={<BarChart3 className="h-5 w-5" />} title="Performance Records" description="Operational history">
+          {performanceSummary && (
+            <div className="grid gap-4 md:grid-cols-5">
+              <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-center">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Total Records</p>
+                <p className="mt-2 text-3xl font-bold text-blue-700">{performanceSummary.total_records}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{performanceSummary.main_trip_records} main trips</p>
+              </div>
+              <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-center">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Completed</p>
+                <p className="mt-2 text-3xl font-bold text-green-700">{performanceSummary.completed_trips}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{performanceSummary.trip_completion_rate ? (performanceSummary.trip_completion_rate * 100).toFixed(1) : '0'}% rate</p>
+              </div>
+              <div className="rounded-lg border border-orange-200 bg-orange-50 p-4 text-center">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Open Trips</p>
+                <p className="mt-2 text-3xl font-bold text-orange-700">{performanceSummary.open_trips}</p>
+                <p className="mt-1 text-xs text-muted-foreground">In progress</p>
+              </div>
+              <div className="rounded-lg border border-purple-200 bg-purple-50 p-4 text-center">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Ton-Km</p>
+                <p className="mt-2 text-3xl font-bold text-purple-700">{formatNumber(performanceSummary.total_ton_km, { maximumFractionDigits: 0 })}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{formatNumber(performanceSummary.avg_ton_km_per_trip, { maximumFractionDigits: 1 })} avg</p>
+              </div>
+              <div className="rounded-lg border border-teal-200 bg-teal-50 p-4 text-center">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Cargo Volume</p>
+                <p className="mt-2 text-3xl font-bold text-teal-700">{formatNumber(performanceSummary.total_cargo_volume_mt, { maximumFractionDigits: 0 })}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{formatNumber(performanceSummary.avg_cargo_volume_mt_per_trip, { maximumFractionDigits: 1 })} MT avg</p>
+              </div>
+            </div>
+          )}
+
+          <DetailSectionCard icon={<BarChart3 className="h-5 w-5" />} title="Performance Records" description="Recent operational trips"
+            actions={
+              truck.performances && truck.performances.length > 0 ? (
+                <Button variant="link" size="sm" className="px-0" asChild>
+                  <Link href={`/performances?truck=${truck.id}`} className="flex items-center gap-1">
+                    View all
+                    <ArrowUpRight className="h-4 w-4" />
+                  </Link>
+                </Button>
+              ) : null
+            }
+          >
             {truck.performances && truck.performances.length > 0 ? (
               <div className="space-y-3">
                 {truck.performances.slice(0, 10).map(perf => (
-                  <div key={perf.id} className="rounded-lg border p-4">
+                  <div key={perf.id} className="rounded-lg border p-4 hover:border-blue-300 transition-colors">
                     <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-semibold">Performance #{perf.id}</p>
+                      <div className="flex-1">
+                        <Link href={`/performances/${perf.id}`} className="font-semibold text-blue-600 hover:underline">
+                          Performance #{perf.id}
+                        </Link>
                         <p className="text-xs text-muted-foreground">{formatDate(perf.DateDispach)}</p>
+                        {perf.origin && perf.destination && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            <MapPin className="h-3 w-3 inline mr-1" />
+                            {perf.origin.name} → {perf.destination.name}
+                          </p>
+                        )}
                       </div>
-                      <Link href={`/performances/${perf.id}`} className="text-blue-600 hover:underline">
-                        View
-                      </Link>
                     </div>
-                    <div className="mt-3 grid gap-2 text-xs text-muted-foreground md:grid-cols-3">
-                      <div><span className="font-medium">Distance WCargo:</span> {formatKilometers(perf.DistanceWCargo ?? null, 1)}</div>
-                      <div><span className="font-medium">Ton-KM:</span> {formatNumber(perf.tonkm ?? null)}</div>
-                      <div><span className="font-medium">Fuel:</span> {formatNumber(perf.fuelInLitter ?? null)} L</div>
+                    <div className="mt-3 grid gap-2 text-xs md:grid-cols-4">
+                      <div className="rounded-lg bg-muted p-2">
+                        <span className="font-medium text-muted-foreground">Distance:</span>
+                        <span className="ml-1 font-semibold">{formatKilometers((perf.DistanceWCargo ?? 0) + (perf.DistanceWOCargo ?? 0), 0)}</span>
+                      </div>
+                      <div className="rounded-lg bg-muted p-2">
+                        <span className="font-medium text-muted-foreground">Cargo:</span>
+                        <span className="ml-1 font-semibold">{formatNumber(perf.cargo_volume_mt ?? null)} MT</span>
+                      </div>
+                      <div className="rounded-lg bg-muted p-2">
+                        <span className="font-medium text-muted-foreground">Ton-KM:</span>
+                        <span className="ml-1 font-semibold">{formatNumber(perf.tonkm ?? null)}</span>
+                      </div>
+                      <div className="rounded-lg bg-muted p-2">
+                        <span className="font-medium text-muted-foreground">Fuel:</span>
+                        <span className="ml-1 font-semibold">{formatNumber(perf.fuelInLitter ?? null)} L</span>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -420,6 +597,125 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
                 <p>No performance records found for this truck yet.</p>
               </div>
             )}
+          </DetailSectionCard>
+        </TabsContent>
+
+        <TabsContent value="analytics" className="space-y-6">
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="rounded-lg border border-orange-200 bg-orange-50 p-4">
+              <p className="text-xs font-semibold uppercase text-muted-foreground">Fuel Cost</p>
+              <p className="mt-2 text-2xl font-bold text-orange-700">{formatCurrency(totalFuelCost)}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{formatNumber(performanceSummary?.total_fuel_liters ?? 0, { maximumFractionDigits: 0 })} L total</p>
+            </div>
+            <div className="rounded-lg border border-purple-200 bg-purple-50 p-4">
+              <p className="text-xs font-semibold uppercase text-muted-foreground">Maintenance Cost</p>
+              <p className="mt-2 text-2xl font-bold text-purple-700">{formatCurrency(totalMaintenanceCost)}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{maintenanceSummary?.total_records ?? 0} records</p>
+            </div>
+            <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+              <p className="text-xs font-semibold uppercase text-muted-foreground">Total Operational Cost</p>
+              <p className="mt-2 text-2xl font-bold text-blue-700">{formatCurrency(totalOperationalCost)}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{formatCurrency(avgCostPerKm)} per KM</p>
+            </div>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-2">
+            {tripStatusData.length > 0 && (
+              <DetailSectionCard title="Trip Status Distribution" icon={<Target className="h-5 w-5" />}>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie 
+                        data={tripStatusData} 
+                        dataKey="value" 
+                        nameKey="name" 
+                        cx="50%" 
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={90}
+                        paddingAngle={4}
+                        label
+                      >
+                        {tripStatusData.map((entry, index) => (
+                          <Cell key={index} fill={entry.fill} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </DetailSectionCard>
+            )}
+
+            {costBreakdownData.length > 0 && (
+              <DetailSectionCard title="Cost Breakdown" icon={<DollarSign className="h-5 w-5" />}>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie 
+                        data={costBreakdownData} 
+                        dataKey="value" 
+                        nameKey="name" 
+                        cx="50%" 
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={90}
+                        paddingAngle={4}
+                        label
+                      >
+                        {costBreakdownData.map((entry, index) => (
+                          <Cell key={index} fill={entry.fill} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value) => formatCurrency(value as number)} />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </DetailSectionCard>
+            )}
+          </div>
+
+          {recentPerformances.length > 0 && (
+            <DetailSectionCard title="Recent Performance Trends" icon={<TrendingUp className="h-5 w-5" />}>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={recentPerformances}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis yAxisId="left" />
+                    <YAxis yAxisId="right" orientation="right" />
+                    <Tooltip />
+                    <Legend />
+                    <Line yAxisId="left" type="monotone" dataKey="distance" stroke="#3b82f6" name="Distance (KM)" />
+                    <Line yAxisId="right" type="monotone" dataKey="tonnage" stroke="#22c55e" name="Tonnage (MT)" />
+                    <Line yAxisId="right" type="monotone" dataKey="fuel" stroke="#f97316" name="Fuel (L)" />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </DetailSectionCard>
+          )}
+
+          <DetailSectionCard title="Efficiency Metrics" icon={<Gauge className="h-5 w-5" />}>
+            <div className="grid gap-4 md:grid-cols-4">
+              <div className="rounded-lg border p-3">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Avg Distance/Trip</p>
+                <p className="mt-2 font-semibold">{formatKilometers(performanceSummary?.avg_trip_distance_km ?? 0, 1)}</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Fuel Efficiency</p>
+                <p className="mt-2 font-semibold">{formatFuelEfficiency(performanceSummary?.avg_fuel_efficiency_km_per_liter ?? null)}</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Cost per Trip</p>
+                <p className="mt-2 font-semibold">{formatCurrency(avgCostPerTrip)}</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Avg Trip Duration</p>
+                <p className="mt-2 font-semibold">{performanceSummary?.avg_trip_duration_days ? `${performanceSummary.avg_trip_duration_days.toFixed(1)} days` : 'N/A'}</p>
+              </div>
+            </div>
           </DetailSectionCard>
         </TabsContent>
 

@@ -115,14 +115,14 @@ export default function DistancesShow({ distance }: DistancesShowProps) {
         </Button>
       }
       actions={
-        hasPermission('distances.edit') && (
+        hasPermission('distances.edit') ? (
           <Button asChild>
             <Link href={`/distances/${distance.id}/edit`}>
               <Navigation className="h-4 w-4 mr-2" />
               Edit Distance
             </Link>
           </Button>
-        )
+        ) : null
       }
     >
       <DetailSummaryGrid items={kpiSummary} />

@@ -33,3 +33,76 @@ export const getMarginChipClass = (value: number | null): string => {
 
     return 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-200';
 };
+
+/**
+ * Format a datetime string to display date and time in 24-hour format
+ * @param value - ISO datetime string (e.g., "2025-01-15T14:30:00")
+ * @returns Formatted string like "Jan 15, 2025 14:30" or "—" if invalid
+ */
+export const formatDateTime = (value: string | null | undefined): string => {
+    if (!value) return '—';
+    
+    try {
+        const date = new Date(value);
+        if (isNaN(date.getTime())) return '—';
+        
+        const dateStr = date.toLocaleDateString('en-US', { 
+            month: 'short', 
+            day: 'numeric', 
+            year: 'numeric' 
+        });
+        const timeStr = date.toLocaleTimeString('en-US', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            hour12: false 
+        });
+        
+        return `${dateStr} ${timeStr}`;
+    } catch {
+        return '—';
+    }
+};
+
+/**
+ * Format a datetime string to display only the date part
+ * @param value - ISO datetime string
+ * @returns Formatted string like "Jan 15, 2025" or "—" if invalid
+ */
+export const formatDate = (value: string | null | undefined): string => {
+    if (!value) return '—';
+    
+    try {
+        const date = new Date(value);
+        if (isNaN(date.getTime())) return '—';
+        
+        return date.toLocaleDateString('en-US', { 
+            month: 'short', 
+            day: 'numeric', 
+            year: 'numeric' 
+        });
+    } catch {
+        return '—';
+    }
+};
+
+/**
+ * Format a datetime string to display only the time part in 24-hour format
+ * @param value - ISO datetime string
+ * @returns Formatted string like "14:30" or "—" if invalid
+ */
+export const formatTime = (value: string | null | undefined): string => {
+    if (!value) return '—';
+    
+    try {
+        const date = new Date(value);
+        if (isNaN(date.getTime())) return '—';
+        
+        return date.toLocaleTimeString('en-US', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            hour12: false 
+        });
+    } catch {
+        return '—';
+    }
+};

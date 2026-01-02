@@ -30,7 +30,7 @@ class OutsourcePerformance extends Model
     ];
 
     protected $casts = [
-        'dispatch_date' => 'date',
+        'dispatch_date' => 'datetime',
         'distance_km' => 'decimal:2',
         'cargo_volume_mt' => 'decimal:2',
         'tonkm' => 'decimal:2',

@@ -545,14 +545,14 @@ export default function OutsourcePerformancesCreate({ outsources, statusOptions,
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             <div className="space-y-2">
               <Label>
-                Dispatch Date <span className="text-red-500">*</span>
+                Dispatch Date & Time <span className="text-red-500">*</span>
               </Label>
-              <DatePicker
+              <Input
+                type="datetime-local"
                 value={data.dispatch_date || ''}
-                onChange={next => handleFieldChange('dispatch_date', next ?? '')}
-                placeholder="Select dispatch date"
+                onChange={event => handleFieldChange('dispatch_date', event.target.value)}
                 className={cn(
-                  'w-full justify-start text-left h-11',
+                  'w-full h-11',
                   clientErrors.dispatch_date ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500/20' : undefined,
                 )}
               />

@@ -1010,9 +1010,10 @@ export const outsourcePerformanceValidation = {
   },
 
   dispatch_date: (value: string) => {
-    if (!value) return 'Dispatch date is required'
+    if (!value) return 'Dispatch date and time is required'
+    // Accept both date (YYYY-MM-DD) and datetime-local (YYYY-MM-DDTHH:MM) formats
     const date = new Date(value)
-    if (Number.isNaN(date.getTime())) return 'Dispatch date must be a valid date'
+    if (Number.isNaN(date.getTime())) return 'Dispatch date must be a valid date and time'
     return ''
   },
 

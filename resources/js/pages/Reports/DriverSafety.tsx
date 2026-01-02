@@ -206,7 +206,7 @@ export default function DriverSafetyReport({
             params['severities'] = selectedSeverities;
         }
 
-        router.get('/reports/driver-safety', params, {
+        router.get('/reports/driver-safety', params as Record<string, string | string[]>, {
             preserveState: true,
             preserveScroll: true,
         });
@@ -356,47 +356,7 @@ export default function DriverSafetyReport({
             contentClassName="p-0"
         >
             <div className="space-y-6 p-6">
-                                                <Download className="h-4 w-4" />
-                                                Export
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end" className="w-44">
-                                            <DropdownMenuItem onSelect={() => handleExport('csv')} className="gap-2">
-                                                <FileDigit className="h-4 w-4 text-amber-500" />
-                                                CSV
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onSelect={() => handleExport('xlsx')} className="gap-2">
-                                                <FileSpreadsheet className="h-4 w-4 text-emerald-500" />
-                                                Excel
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onSelect={() => handleExport('pdf')} className="gap-2">
-                                                <FileType2 className="h-4 w-4 text-rose-500" />
-                                                PDF
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                )}
-                                <Button type="button" variant="outline" className="gap-2" onClick={handleResetFilters}>
-                                    <RefreshCcw className="h-4 w-4" />
-                                    Reset
-                                </Button>
-                                <Button type="button" className="gap-2" onClick={handleApplyFilters}>
-                                    Generate report
-                                </Button>
-                            </div>
-                        </div>
-                        <div className="mt-4 flex flex-wrap gap-2 text-xs text-muted-foreground">
-                            {filterBadges.map((badge) => (
-                                <Badge key={badge} variant="outline">
-                                    {badge}
-                                </Badge>
-                            ))}
-                        </div>
-                    </header>
-
-                    <ReportSummaryGrid items={summaryItems} />
-
-                    <div className="grid gap-6 lg:grid-cols-3">
+                <div className="grid gap-6 lg:grid-cols-3">
                         <Card className="border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70 lg:col-span-2">
                             <CardHeader>
                                 <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50">Incident trend</CardTitle>

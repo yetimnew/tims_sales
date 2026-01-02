@@ -25,7 +25,7 @@ class StorePerformanceRequest extends FormRequest
             'FOnumber' => 'required|string|max:255',
             'operation_id' => 'required|exists:operations,id',
             'driver_truck_id' => 'required|exists:driver_truck,id',
-            'DateDispach' => 'required|date|before_or_equal:today',
+            'DateDispach' => 'required|date_format:Y-m-d\TH:i|before_or_equal:now',
             'orgion_id' => 'required|exists:places,id',
             'destination_id' => 'required|exists:places,id|different:orgion_id',
             'DistanceWCargo' => 'nullable|numeric|min:0|max:99999.99',
@@ -40,7 +40,7 @@ class StorePerformanceRequest extends FormRequest
             'comment' => 'nullable|string|max:1000',
             'satus' => 'required|string|in:active,inactive',
             'is_returned' => 'boolean',
-            'returned_date' => 'nullable|date|after_or_equal:DateDispach',
+            'returned_date' => 'nullable|date_format:Y-m-d\TH:i|after_or_equal:DateDispach',
         ];
     }
 
@@ -53,7 +53,9 @@ class StorePerformanceRequest extends FormRequest
             'load_phase.in' => 'Load phase must be main or return',
             'load_completion.in' => 'Load completion must be full or partial',
             'destination_id.different' => 'Destination must be different from origin',
-            'DateDispach.before_or_equal' => 'Dispatch date cannot be in the future',
+            'DateDispach.date_format' => 'Dispatch date must be in the format YYYY-MM-DDTHH:MM',
+            'DateDispach.before_or_equal' => 'Dispatch date and time cannot be in the future',
+            'returned_date.date_format' => 'Return date must be in the format YYYY-MM-DDTHH:MM',
             'returned_date.after_or_equal' => 'Return date must be after dispatch date',
             'DistanceWCargo.min' => 'Distance with cargo cannot be negative',
             'CargoVolumMT.max' => 'Cargo volume cannot exceed 999.99 MT',

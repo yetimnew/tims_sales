@@ -416,102 +416,94 @@ export default function RouteProfitability({ filters, rows = [], summary, option
     ]);
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Route Profitability Matrix" />
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-slate-100/60 dark:bg-slate-900/40">
-                <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-4 pb-10 sm:p-6 lg:p-10">
-                    <header className="rounded-2xl border border-slate-200 bg-white/95 px-6 py-6 shadow-sm backdrop-blur dark:border-slate-800/70 dark:bg-slate-900/70">
-                        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                            <div className="space-y-2">
-                                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">Route Intelligence</p>
-                                <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-50">Route Profitability Matrix</h1>
-                                <p className="max-w-3xl text-sm text-slate-600 dark:text-slate-300">
-                                    Analyse profitability by origin-destination route pairs. Identify high-performing routes, optimise pricing, and discover opportunities to improve underperforming corridors.
-                                </p>
+        <ReportPageLayout
+            title="Route Profitability Matrix"
+            description="Analyse profitability by origin-destination route pairs. Identify high-performing routes, optimise pricing, and discover opportunities to improve underperforming corridors."
+            breadcrumbs={breadcrumbs}
+            icon={<Route className="h-6 w-6" />}
+            filters={
+                <ReportFiltersDialog
+                    open={filtersOpen}
+                    onOpenChange={setFiltersOpen}
+                    activeFilterCount={activeFilterCount}
+                    from={from}
+                    to={to}
+                    onDateChange={handleDateChange}
+                    onReset={handleReset}
+                    onApply={handleApplyFilters}
+                    originOptions={placeSelectionOptions}
+                    destinationOptions={placeSelectionOptions}
+                    customerOptions={customerSelectionOptions}
+                    selectedOrigins={selectedOrigins}
+                    selectedDestinations={selectedDestinations}
+                    selectedCustomers={selectedCustomers}
+                    onOriginsChange={setSelectedOrigins}
+                    onDestinationsChange={setSelectedDestinations}
+                    onCustomersChange={setSelectedCustomers}
+                    dateError={dateError}
+                    extraFilters={(
+                        <div className="space-y-6">
+                            <div className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                                <SlidersHorizontal className="h-4 w-4" />
+                                Advanced thresholds
                             </div>
-                            <div className="flex flex-wrap items-center gap-2">
-                                <ReportFiltersDialog
-                                    open={filtersOpen}
-                                    onOpenChange={setFiltersOpen}
-                                    activeFilterCount={activeFilterCount}
-                                    from={from}
-                                    to={to}
-                                    onDateChange={handleDateChange}
-                                    onReset={handleReset}
-                                    onApply={handleApplyFilters}
-                                    originOptions={placeSelectionOptions}
-                                    destinationOptions={placeSelectionOptions}
-                                    customerOptions={customerSelectionOptions}
-                                    selectedOrigins={selectedOrigins}
-                                    selectedDestinations={selectedDestinations}
-                                    selectedCustomers={selectedCustomers}
-                                    onOriginsChange={setSelectedOrigins}
-                                    onDestinationsChange={setSelectedDestinations}
-                                    onCustomersChange={setSelectedCustomers}
-                                    dateError={dateError}
-                                    extraFilters={(
-                                        <div className="space-y-6">
-                                            <div className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
-                                                <SlidersHorizontal className="h-4 w-4" />
-                                                Advanced thresholds
-                                            </div>
-                                            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-                                                <div className="flex flex-col gap-2">
-                                                    <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Minimum trips</span>
-                                                    <Input
-                                                        type="number"
-                                                        min={0}
-                                                        value={minTrips}
-                                                        onChange={(event) => setMinTrips(event.target.value)}
-                                                        placeholder="e.g. 5"
-                                                        className="bg-white dark:bg-slate-950 shadow-sm"
-                                                    />
-                                                    <p className="text-xs text-slate-500 dark:text-slate-400">Only include routes with dispatch counts above this value.</p>
-                                                </div>
-                                                <div className="flex flex-col gap-2">
-                                                    <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Minimum margin %</span>
-                                                    <Input
-                                                        type="number"
-                                                        step="0.1"
-                                                        value={minMarginPercent}
-                                                        onChange={(event) => setMinMarginPercent(event.target.value)}
-                                                        placeholder="e.g. 12.5"
-                                                        className="bg-white dark:bg-slate-950 shadow-sm"
-                                                    />
-                                                    <p className="text-xs text-slate-500 dark:text-slate-400">Filter out routes below the selected profitability margin.</p>
-                                                </div>
-                                                <div className="flex flex-col gap-2">
-                                                    <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Minimum profit per KM</span>
-                                                    <Input
-                                                        type="number"
-                                                        step="0.01"
-                                                        value={minProfitPerKm}
-                                                        onChange={(event) => setMinProfitPerKm(event.target.value)}
-                                                        placeholder="e.g. 2.75"
-                                                        className="bg-white dark:bg-slate-950 shadow-sm"
-                                                    />
-                                                    <p className="text-xs text-slate-500 dark:text-slate-400">Focus on corridors that meet your profit-per-kilometre goals.</p>
-                                                </div>
-                                                <div className="flex flex-col gap-2">
-                                                    <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Sort results</span>
-                                                    <Select value={selectedSort} onValueChange={setSelectedSort}>
-                                                        <SelectTrigger className="justify-between bg-white dark:bg-slate-950">
-                                                            <SelectValue placeholder="Sort by" />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            {sortOptions.map((option) => (
-                                                                <SelectItem key={option.id} value={option.id}>
-                                                                    {option.label}
-                                                                </SelectItem>
-                                                            ))}
-                                                        </SelectContent>
-                                                    </Select>
-                                                    <p className="text-xs text-slate-500 dark:text-slate-400">Organise the matrix around the metric that matters most right now.</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-                                />
+                            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+                                <div className="flex flex-col gap-2">
+                                    <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Minimum trips</span>
+                                    <Input
+                                        type="number"
+                                        min={0}
+                                        value={minTrips}
+                                        onChange={(event) => setMinTrips(event.target.value)}
+                                        placeholder="e.g. 5"
+                                        className="bg-white dark:bg-slate-950 shadow-sm"
+                                    />
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">Only include routes with dispatch counts above this value.</p>
+                                </div>
+                                <div className="flex flex-col gap-2">
+                                    <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Minimum margin %</span>
+                                    <Input
+                                        type="number"
+                                        step="0.1"
+                                        value={minMarginPercent}
+                                        onChange={(event) => setMinMarginPercent(event.target.value)}
+                                        placeholder="e.g. 12.5"
+                                        className="bg-white dark:bg-slate-950 shadow-sm"
+                                    />
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">Filter out routes below the selected profitability margin.</p>
+                                </div>
+                                <div className="flex flex-col gap-2">
+                                    <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Minimum profit per KM</span>
+                                    <Input
+                                        type="number"
+                                        step="0.01"
+                                        value={minProfitPerKm}
+                                        onChange={(event) => setMinProfitPerKm(event.target.value)}
+                                        placeholder="e.g. 2.75"
+                                        className="bg-white dark:bg-slate-950 shadow-sm"
+                                    />
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">Focus on corridors that meet your profit-per-kilometre goals.</p>
+                                </div>
+                                <div className="flex flex-col gap-2">
+                                    <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Sort results</span>
+                                    <Select value={selectedSort} onValueChange={setSelectedSort}>
+                                        <SelectTrigger className="justify-between bg-white dark:bg-slate-950">
+                                            <SelectValue placeholder="Sort by" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {sortOptions.map((option) => (
+                                                <SelectItem key={option.id} value={option.id}>
+                                                    {option.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">Organise the matrix around the metric that matters most right now.</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                />
             }
             summarySection={<ReportSummaryGrid items={summaryItems} />}
             onRefresh={handleReset}
@@ -522,8 +514,7 @@ export default function RouteProfitability({ filters, rows = [], summary, option
             contentClassName="p-0"
         >
             <div className="space-y-6 p-6">
-
-                    <Card className="border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
+                <Card className="border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
                         <CardHeader className="space-y-3 border-b border-slate-200/60 pb-5 dark:border-slate-700/60">
                             <div className="space-y-1">
                                 <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50">Route Performance Matrix</CardTitle>

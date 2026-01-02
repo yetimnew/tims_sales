@@ -19,7 +19,7 @@ class UpdatePerformanceRequest extends FormRequest
             'FOnumber' => 'required|string|max:255',
             'operation_id' => 'required|exists:operations,id',
             'driver_truck_id' => 'required|exists:driver_truck,id',
-            'DateDispach' => 'required|date',
+            'DateDispach' => 'required|date_format:Y-m-d\TH:i',
             'orgion_id' => 'required|exists:places,id',
             'destination_id' => 'required|exists:places,id',
             'DistanceWCargo' => 'nullable|numeric|min:0',
@@ -34,7 +34,7 @@ class UpdatePerformanceRequest extends FormRequest
             'comment' => 'nullable|string|max:1000',
             'satus' => 'required|string|in:active,inactive,completed,cancelled',
             'is_returned' => 'boolean',
-            'returned_date' => 'nullable|date',
+            'returned_date' => 'nullable|date_format:Y-m-d\TH:i',
         ];
     }
 

@@ -684,10 +684,10 @@ export default function PerformancesCreate({ driverTrucks, places }: Performance
                         )}
                     </FormField>
 
-                    <FormField id="DateDispach" label="Dispatch Date" required error={getFieldError('DateDispach')}>
+                    <FormField id="DateDispach" label="Dispatch Date & Time" required error={getFieldError('DateDispach')}>
                         <Input
                             id="DateDispach"
-                            type="date"
+                            type="datetime-local"
                             value={data.DateDispach}
                             onChange={event => handleFieldChange('DateDispach', event.target.value)}
                             className={getFieldError('DateDispach') ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-200' : ''}
@@ -866,10 +866,10 @@ export default function PerformancesCreate({ driverTrucks, places }: Performance
                     </FormField>
 
                     {data.is_returned && (
-                        <FormField id="returned_date" label="Returned Date" required error={getFieldError('returned_date')}>
+                        <FormField id="returned_date" label="Returned Date & Time" required error={getFieldError('returned_date')}>
                             <Input
                                 id="returned_date"
-                                type="date"
+                                type="datetime-local"
                                 value={data.returned_date}
                                 onChange={event => handleFieldChange('returned_date', event.target.value)}
                                 className={

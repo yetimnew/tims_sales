@@ -133,6 +133,29 @@ export default function CostPerKilometer({ filters, rows = [], summary, options,
         [driverOptions],
     );
 
+    const handleApplyFilters = () => {
+        if (!validateDateRange(from, to)) {
+            setFiltersOpen(true);
+            return;
+        }
+
+        setFiltersOpen(false);
+
+        const params: Record<string, unknown> = {
+            from,
+            to,
+        };
+
+        if (groupBy) params.group_by = groupBy;
+        if (selectedTrucks.length > 0) params.truck_ids = selectedTrucks;
+        if (selectedDrivers.length > 0) params.driver_ids = selectedDrivers;
+
+        router.get('/reports/cost-per-kilometer', params, {
+            preserveState: true,
+            preserveScroll: true,
+        });
+    };
+
     const handleReset = () => {
         resetDateRange(filters?.from ?? '', filters?.to ?? '');
         setSelectedTrucks(filters?.truck_ids ?? []);
@@ -271,6 +294,7 @@ export default function CostPerKilometer({ filters, rows = [], summary, options,
                     onDateChange={handleDateChange}
                     dateRangeDescription={REPORT_DATE_RANGE_DESCRIPTION}
                     onReset={handleReset}
+                    onApply={handleApplyFilters}
                     driverOptions={driverSelectionOptions}
                     truckOptions={truckSelectionOptions}
                     selectedDrivers={selectedDrivers}
@@ -291,12 +315,7 @@ export default function CostPerKilometer({ filters, rows = [], summary, options,
             contentClassName="p-0"
         >
             <div className="space-y-6 p-6">
-                                </Button>
-                            </div>
-                        </div>
-                    </header>
-
-                    {comparisonData && (
+                {comparisonData && (
                         <Card className="border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
                             <CardHeader>
                                 <CardTitle className="text-lg font-semibold">Period Comparison</CardTitle>
@@ -368,7 +387,7 @@ export default function CostPerKilometer({ filters, rows = [], summary, options,
                                                 cx="50%"
                                                 cy="50%"
                                                 labelLine={false}
-                                                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                                label={({ name, percent }: { name: string; percent: number }) => `${name} ${(percent * 100).toFixed(0)}%`}
                                                 outerRadius={100}
                                                 fill="#8884d8"
                                                 dataKey="value"

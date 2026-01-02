@@ -102,7 +102,7 @@ export const HelpNavMain = React.memo(function HelpNavMain({ items = [] }: HelpN
                                                             isActive={isActive}
                                                             size="sm"
                                                         >
-                                                            <Link href={subitemHref} prefetch>
+                                                            <Link href={resolvedSubitemHref || subitemHref} prefetch>
                                                                 {subitem.icon && <subitem.icon className="h-4 w-4" />}
                                                                 <span>{subitem.title}</span>
                                                                 {subitem.badge && (
@@ -132,7 +132,7 @@ export const HelpNavMain = React.memo(function HelpNavMain({ items = [] }: HelpN
                                 isActive={isActive}
                                 tooltip={{ children: item.title }}
                             >
-                                <Link href={itemHref} prefetch>
+                                <Link href={resolvedItemHref || itemHref} prefetch>
                                     {item.icon && <item.icon className="h-4 w-4" />}
                                     <span>{item.title}</span>
                                     {item.badge && (

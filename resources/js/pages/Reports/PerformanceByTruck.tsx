@@ -1,7 +1,14 @@
 import { useMemo, useState } from 'react';
 import { router } from '@inertiajs/react';
-import { type BreadcrumbItem } from '@/types';
+import type { BreadcrumbItem } from '@/types';
 import { Badge } from '@/components/ui/badge';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Activity, BarChart3, CircleDollarSign, GaugeCircle, Layers, ShieldCheck } from 'lucide-react';
 import { usePermissions } from '@/hooks/use-permissions';
@@ -377,18 +384,23 @@ export default function PerformanceByTruck({ filters, rows = [], summary, trucks
             contentClassName="p-0"
         >
             <div className="space-y-4 p-6">
-                <div className="space-y-2">
-                    <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-50">Truck Performance Detail</h3>
-                    <p className="text-sm text-slate-600 dark:text-slate-400">Revenue, expense, and utilisation metrics per truck.</p></div>
-                            <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                                {filterBadges.map((badge) => (
-                                    <Badge key={badge} variant="outline">
-                                        {badge}
-                                    </Badge>
-                                ))}
-                            </div>
-                        </CardHeader>
-                        <CardContent className="p-0">
+                <Card className="border border-slate-200 bg-slate-50/50 shadow-sm dark:border-slate-800 dark:bg-slate-800/50">
+                    <CardHeader className="space-y-3 border-b border-slate-200/60 pb-5 dark:border-slate-700/60">
+                        <div className="space-y-1">
+                            <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50">Truck Performance Detail</CardTitle>
+                            <CardDescription className="text-sm">Revenue, expense, and utilisation metrics per truck.</CardDescription>
+                            {filterBadges.length > 0 && (
+                                <div className="mt-4 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                                    {filterBadges.map((badge) => (
+                                        <Badge key={badge} variant="outline">
+                                            {badge}
+                                        </Badge>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </CardHeader>
+                    <CardContent className="p-0">
                             <div className="overflow-x-auto">
                                 <Table>
                                     <TableHeader className="bg-slate-50/60 text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-900/60 dark:text-slate-400">
@@ -505,9 +517,8 @@ export default function PerformanceByTruck({ filters, rows = [], summary, trucks
                                     )}
                                 </Table>
                             </div>
-                        </div>
-                    </div>
-                </div>
+                        </CardContent>
+                    </Card>
             </div>
         </ReportPageLayout>
     );

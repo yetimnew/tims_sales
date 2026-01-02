@@ -138,6 +138,9 @@ const formatDate = (value: string | null | undefined): string => {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
   });
 };
 
@@ -148,6 +151,9 @@ const formatShortDate = (value: string | null | undefined): string => {
   return date.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
   });
 };
 

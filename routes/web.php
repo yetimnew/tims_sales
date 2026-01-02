@@ -915,7 +915,9 @@ Route::middleware('auth')->group(function () {
         Route::post('notifications/read-all', [NotificationController::class, 'markAllAsRead'])
             ->name('notifications.read-all');
     });
+
+    // Help & Documentation routes (authenticated)
+    require __DIR__.'/help.php';
 });
 
-require __DIR__.'/help.php';
 require __DIR__.'/settings.php';

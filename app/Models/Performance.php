@@ -49,8 +49,8 @@ class Performance extends Model
     ];
 
     protected $casts = [
-        'DateDispach' => 'date',
-        'returned_date' => 'date',
+        'DateDispach' => 'datetime',
+        'returned_date' => 'datetime',
         'load_phase' => 'string',
         'load_completion' => 'string',
         'DistanceWCargo' => 'decimal:2',

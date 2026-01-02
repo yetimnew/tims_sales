@@ -276,7 +276,6 @@ export default function TrucksEdit({ truck, vehicleTypes }: TrucksEditProps) {
                             </SelectTrigger>
                             <SelectContent className="z-50 bg-white shadow-lg dark:bg-slate-800">
                                 <SelectItem value="active" className="hover:bg-slate-100 focus:bg-slate-100 dark:hover:bg-slate-700 dark:focus:bg-slate-700">Active</SelectItem>
-                                <SelectItem value="maintenance" className="hover:bg-slate-100 focus:bg-slate-100 dark:hover:bg-slate-700 dark:focus:bg-slate-700">Maintenance</SelectItem>
                                 <SelectItem value="inactive" className="hover:bg-slate-100 focus:bg-slate-100 dark:hover:bg-slate-700 dark:focus:bg-slate-700">Inactive</SelectItem>
                             </SelectContent>
                         </Select>

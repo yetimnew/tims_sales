@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ReportFiltersDialog } from '@/components/reports/report-filters-dialog';
 import { ReportSummaryGrid, type ReportSummaryItem } from '@/components/reports/report-summary-grid';
@@ -343,22 +344,7 @@ export default function CustomerProfitability({ filters, rows = [], summary, tre
             contentClassName="p-0"
         >
             <div className="space-y-4 p-6">
-                                                PDF
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                ) : null}
-                                <Button type="button" variant="outline" className="gap-2" onClick={handleReset}>
-                                    <RefreshCcw className="h-4 w-4" />
-                                    Reset
-                                </Button>
-                            </div>
-                        </div>
-                    </header>
-
-                    <ReportSummaryGrid items={summaryItems} />
-
-                    <Card className="border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
+                <Card className="border border-slate-200 bg-slate-50/50 shadow-sm dark:border-slate-800 dark:bg-slate-800/50">
                         <CardHeader className="space-y-3 border-b border-slate-200/60 pb-5 dark:border-slate-700/60">
                             <div className="space-y-1">
                                 <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50">Customer Contribution</CardTitle>
@@ -505,9 +491,8 @@ export default function CustomerProfitability({ filters, rows = [], summary, tre
                                     </TableBody>
                                 </Table>
                             </div>
-                        </div>
-                    </div>
-                </div>
+                        </CardContent>
+                    </Card>
             </div>
         </ReportPageLayout>
     );

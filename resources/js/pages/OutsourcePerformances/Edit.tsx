@@ -461,13 +461,13 @@ export default function OutsourcePerformancesEdit({ outsourcePerformance, outsou
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             <div className="space-y-2">
               <span className="flex items-center gap-1 text-sm font-medium text-slate-700 dark:text-slate-200">
-                Dispatch Date <span className="text-red-500">*</span>
+                Dispatch Date & Time <span className="text-red-500">*</span>
               </span>
-              <DatePicker
+              <Input
+                type="datetime-local"
                 value={data.dispatch_date || ''}
-                onChange={next => handleFieldChange('dispatch_date', next ?? '')}
-                placeholder="Select dispatch date"
-                className={cn('w-full justify-start text-left h-11', clientErrors.dispatch_date ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500/20' : undefined)}
+                onChange={event => handleFieldChange('dispatch_date', event.target.value)}
+                className={cn('w-full h-11', clientErrors.dispatch_date ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500/20' : undefined)}
               />
               {clientErrors.dispatch_date && (
                 <p className="flex items-center gap-1 text-xs text-red-500">

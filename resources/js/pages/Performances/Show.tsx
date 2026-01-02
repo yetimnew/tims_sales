@@ -55,11 +55,22 @@ interface ShowProps {
   operationInsights?: OperationInsights | null;
 }
 
+interface PerformanceShare {
+  tonnageShare: number | null;
+  distanceShare: number | null;
+  costShare: number | null;
+  plannedContribution: number | null;
+  tonnage: number;
+  distance: number;
+  cost: number;
+  tonKm: number;
+}
+
 interface OperationInsights {
   overview: { plannedVolume: number | null; totalTrips: number; completedTrips: number; ongoingTrips: number; totalTonnage: number; remainingTonnage: number; completionRate: number | null };
   economics?: OperationEconomics | null;
   tripEconomics?: TripEconomics | null;
-  performanceShare: { tonnageShare: number | null; distanceShare: number | null; costShare: number | null; plannedContribution: number | null; tonnage: number; distance: number; cost: number; tonKm: number };
+  performanceShare: PerformanceShare;
   trends: {
     recentTrips: Array<{ id: number; foNumber: string; date: string; tonnage: number; distance: number; cost: number; highlight: boolean }>;
     statusBreakdown: Array<{ label: string; value: number }>;
@@ -180,6 +191,7 @@ export default function PerformancesShow({ performance, activityLogs, operationI
   const operationEconomics = operationInsights?.economics ?? null;
   const tripEconomics = operationInsights?.tripEconomics ?? null;
   const operationTrends = operationInsights?.trends;
+  const performanceShare = operationInsights?.performanceShare ?? null;
 
   const tariff = tripEconomics?.tariff ?? operationRef?.tariff ?? null;
   const actualRevenueRaw = tripEconomics?.actualRevenue ?? (tariff !== null ? Number((tonKm * tariff).toFixed(2)) : null);
@@ -230,10 +242,26 @@ export default function PerformancesShow({ performance, activityLogs, operationI
   ];
 
   const kpiSummary: DetailSummaryItem[] = [
-    { label: 'Distance', value: `${formatNumberDisplay(totalDistance, 0)} km`, helper: `${formatNumberDisplay(dwc, 0)} km with cargo` },
-    { label: 'Cargo Volume', value: `${formatNumberDisplay(cvm, 2)} MT`, helper: `Ton-km: ${formatNumberDisplay(tonKm, 2)}` },
-    { label: 'Total Cost', value: formatCurrencyDisplay(totalCost), helper: `Fuel: ${formatCurrencyDisplay(fib)}` },
-    { label: 'Revenue', value: actualRevenueLabel, helper: `Margin: ${grossMarginPercentLabel}` },
+    { 
+      label: 'Distance', 
+      value: `${formatNumberDisplay(totalDistance, 0)} km`, 
+      helper: `Load Factor: ${formatPercentDisplay(tripEconomics?.loadFactor ?? (totalDistance > 0 ? (dwc / totalDistance) * 100 : null))}` 
+    },
+    { 
+      label: 'Cargo Volume', 
+      value: `${formatNumberDisplay(cvm, 2)} MT`, 
+      helper: `Ton-km: ${formatNumberDisplay(tonKm, 2)}` 
+    },
+    { 
+      label: 'Total Cost', 
+      value: formatCurrencyDisplay(totalCost), 
+      helper: `${formatCurrencyPerUnit(costPerTonKmRaw, 'ton-km')}` 
+    },
+    { 
+      label: 'Revenue', 
+      value: actualRevenueLabel, 
+      helper: `Margin: ${grossMarginPercentLabel} ${(grossMarginValueRaw ?? 0) >= 0 ? '✓' : '✗'}` 
+    },
   ];
 
   return (
@@ -313,6 +341,18 @@ export default function PerformancesShow({ performance, activityLogs, operationI
                     <p className="text-xs font-semibold uppercase text-muted-foreground">Destination</p>
                     <p className="mt-2 font-semibold">{destinationName}</p>
                   </div>
+                  {performance.load_phase && (
+                    <div className="rounded-lg border p-3">
+                      <p className="text-xs font-semibold uppercase text-muted-foreground">Load Phase</p>
+                      <p className="mt-2 font-semibold capitalize">{performance.load_phase}</p>
+                    </div>
+                  )}
+                  {performance.load_completion && (
+                    <div className="rounded-lg border p-3">
+                      <p className="text-xs font-semibold uppercase text-muted-foreground">Load Completion</p>
+                      <p className="mt-2 font-semibold capitalize">{performance.load_completion}</p>
+                    </div>
+                  )}
                   <div className="rounded-lg border p-3">
                     <p className="text-xs font-semibold uppercase text-muted-foreground">Distance W/Cargo</p>
                     <p className="mt-2 font-semibold">{formatNumberDisplay(dwc, 0)} km</p>
@@ -320,6 +360,14 @@ export default function PerformancesShow({ performance, activityLogs, operationI
                   <div className="rounded-lg border p-3">
                     <p className="text-xs font-semibold uppercase text-muted-foreground">Distance W/O Cargo</p>
                     <p className="mt-2 font-semibold">{formatNumberDisplay(dwo, 0)} km</p>
+                  </div>
+                  <div className="rounded-lg border p-3">
+                    <p className="text-xs font-semibold uppercase text-muted-foreground">Total Distance</p>
+                    <p className="mt-2 text-lg font-bold">{formatNumberDisplay(totalDistance, 0)} km</p>
+                  </div>
+                  <div className="rounded-lg border p-3">
+                    <p className="text-xs font-semibold uppercase text-muted-foreground">Load Factor</p>
+                    <p className="mt-2 text-lg font-bold">{formatPercentDisplay(tripEconomics?.loadFactor ?? (totalDistance > 0 ? (dwc / totalDistance) * 100 : null))}</p>
                   </div>
                 </div>
               </DetailSectionCard>
@@ -344,18 +392,30 @@ export default function PerformancesShow({ performance, activityLogs, operationI
               {driver && (
                 <DetailSectionCard title="Driver & Truck" icon={<User className="h-5 w-5" />}>
                   <div className="grid gap-4 md:grid-cols-2">
-                    <div className="rounded-lg border p-3">
+                    <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
                       <p className="text-xs font-semibold uppercase text-muted-foreground">Driver</p>
-                      <Link href={`/drivers/${driver.id}`} className="mt-2 block font-semibold text-blue-600 hover:underline">
+                      <Link href={`/drivers/${driver.id}`} className="mt-2 block text-lg font-bold text-blue-600 hover:underline">
                         {driver.name}
                       </Link>
+                      {driver.license && (
+                        <p className="mt-1 text-xs text-muted-foreground">License: {driver.license}</p>
+                      )}
+                      {driver.phone && (
+                        <p className="mt-1 text-xs text-muted-foreground">Phone: {driver.phone}</p>
+                      )}
                     </div>
                     {truck && (
-                      <div className="rounded-lg border p-3">
+                      <div className="rounded-lg border border-orange-200 bg-orange-50 p-3">
                         <p className="text-xs font-semibold uppercase text-muted-foreground">Truck</p>
-                        <Link href={`/trucks/${truck.id}`} className="mt-2 block font-semibold text-blue-600 hover:underline">
+                        <Link href={`/trucks/${truck.id}`} className="mt-2 block text-lg font-bold text-orange-600 hover:underline">
                           {truck.plate}
                         </Link>
+                        {truck.model && (
+                          <p className="mt-1 text-xs text-muted-foreground">Model: {truck.model}</p>
+                        )}
+                        {truck.capacity && (
+                          <p className="mt-1 text-xs text-muted-foreground">Capacity: {formatNumberDisplay(truck.capacity, 0)} MT</p>
+                        )}
                       </div>
                     )}
                   </div>
@@ -431,87 +491,238 @@ export default function PerformancesShow({ performance, activityLogs, operationI
         </TabsContent>
 
         <TabsContent value="economics" className="space-y-6">
-          <DetailSectionCard title="Trip Economics" icon={<DollarSign className="h-5 w-5" />}>
-            <div className="grid gap-4 md:grid-cols-3">
+          <DetailSectionCard title="Revenue & Profitability" icon={<DollarSign className="h-5 w-5" />}>
+            <div className="grid gap-4 md:grid-cols-4">
               <div className="rounded-lg border p-3">
                 <p className="text-xs font-semibold uppercase text-muted-foreground">Tariff</p>
                 <p className="mt-2 font-semibold">{tariffLabel}</p>
               </div>
               <div className="rounded-lg border p-3">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Ton-Km</p>
+                <p className="mt-2 font-semibold">{formatNumberDisplay(tonKm, 2)}</p>
+              </div>
+              <div className="rounded-lg border border-green-200 bg-green-50 p-3">
                 <p className="text-xs font-semibold uppercase text-muted-foreground">Revenue</p>
-                <p className="mt-2 font-semibold">{actualRevenueLabel}</p>
+                <p className="mt-2 text-lg font-bold text-green-700">{actualRevenueLabel}</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Total Cost</p>
+                <p className="mt-2 text-lg font-bold">{formatCurrencyDisplay(totalCost)}</p>
+              </div>
+              <div className={`rounded-lg border p-3 ${(grossMarginValueRaw ?? 0) >= 0 ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}>
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Gross Margin</p>
+                <p className={`mt-2 text-lg font-bold ${(grossMarginValueRaw ?? 0) >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                  {grossMarginValueLabel}
+                </p>
+              </div>
+              <div className={`rounded-lg border p-3 ${(grossMarginPercentRaw ?? 0) >= 0 ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}>
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Margin %</p>
+                <p className={`mt-2 text-lg font-bold ${(grossMarginPercentRaw ?? 0) >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                  {grossMarginPercentLabel}
+                </p>
               </div>
               <div className="rounded-lg border p-3">
                 <p className="text-xs font-semibold uppercase text-muted-foreground">Cost/Ton-km</p>
                 <p className="mt-2 font-semibold">{costPerTonKmLabel}</p>
               </div>
               <div className="rounded-lg border p-3">
-                <p className="text-xs font-semibold uppercase text-muted-foreground">Gross Margin</p>
-                <p className="mt-2 font-semibold">{grossMarginValueLabel}</p>
-              </div>
-              <div className="rounded-lg border p-3">
-                <p className="text-xs font-semibold uppercase text-muted-foreground">Margin %</p>
-                <p className="mt-2 font-semibold">{grossMarginPercentLabel}</p>
-              </div>
-              <div className="rounded-lg border p-3">
-                <p className="text-xs font-semibold uppercase text-muted-foreground">Ton-Km</p>
-                <p className="mt-2 font-semibold">{formatNumberDisplay(tonKm, 2)}</p>
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Cost/km</p>
+                <p className="mt-2 font-semibold">{formatCurrencyPerUnit(totalDistance > 0 ? totalCost / totalDistance : null, 'km')}</p>
               </div>
             </div>
           </DetailSectionCard>
+
+          <DetailSectionCard title="Yield Metrics" icon={<Target className="h-5 w-5" />}>
+            <div className="grid gap-4 md:grid-cols-4">
+              <div className="rounded-lg border p-3">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Yield per Ton</p>
+                <p className="mt-2 font-semibold">{formatCurrencyDisplay(tripEconomics?.yieldPerTon ?? null)}</p>
+                <p className="mt-1 text-xs text-muted-foreground">Revenue / Tonnage</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Yield per Km</p>
+                <p className="mt-2 font-semibold">{formatCurrencyDisplay(tripEconomics?.yieldPerKm ?? null)}</p>
+                <p className="mt-1 text-xs text-muted-foreground">Revenue / Distance</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Cost per Ton</p>
+                <p className="mt-2 font-semibold">{formatCurrencyDisplay(cvm > 0 ? totalCost / cvm : null)}</p>
+                <p className="mt-1 text-xs text-muted-foreground">Cost / Tonnage</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Fuel Cost Share</p>
+                <p className="mt-2 font-semibold">{formatPercentDisplay(totalCost > 0 ? (fib / totalCost) * 100 : null)}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{formatCurrencyDisplay(fib)} of total</p>
+              </div>
+            </div>
+          </DetailSectionCard>
+
+          <DetailSectionCard title="Efficiency Metrics" icon={<BarChart3 className="h-5 w-5" />}>
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="rounded-lg border p-3">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Load Factor</p>
+                <p className="mt-2 text-xl font-bold">{formatPercentDisplay(tripEconomics?.loadFactor ?? null)}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{formatNumberDisplay(dwc, 0)} / {formatNumberDisplay(totalDistance, 0)} km</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Empty Backhaul</p>
+                <p className="mt-2 text-xl font-bold">{formatPercentDisplay(tripEconomics?.emptyBackhaulShare ?? null)}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{formatNumberDisplay(dwo, 0)} km empty</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Fuel Efficiency</p>
+                <p className="mt-2 text-xl font-bold">{formatNumberDisplay(fuelEfficiency, 2)} km/L</p>
+                <p className="mt-1 text-xs text-muted-foreground">{formatNumberDisplay(fil, 0)} L consumed</p>
+              </div>
+            </div>
+          </DetailSectionCard>
+
+          {performanceShare && (
+            <DetailSectionCard title="Contribution to Operation" icon={<PieIcon className="h-5 w-5" />}>
+              <div className="grid gap-4 md:grid-cols-4">
+                <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
+                  <p className="text-xs font-semibold uppercase text-muted-foreground">Tonnage Share</p>
+                  <p className="mt-2 text-2xl font-bold text-blue-700">{formatPercentDisplay(performanceShare.tonnageShare)}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{formatNumberDisplay(performanceShare.tonnage, 2)} MT</p>
+                </div>
+                <div className="rounded-lg border border-purple-200 bg-purple-50 p-3">
+                  <p className="text-xs font-semibold uppercase text-muted-foreground">Distance Share</p>
+                  <p className="mt-2 text-2xl font-bold text-purple-700">{formatPercentDisplay(performanceShare.distanceShare)}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{formatNumberDisplay(performanceShare.distance, 0)} km</p>
+                </div>
+                <div className="rounded-lg border border-orange-200 bg-orange-50 p-3">
+                  <p className="text-xs font-semibold uppercase text-muted-foreground">Cost Share</p>
+                  <p className="mt-2 text-2xl font-bold text-orange-700">{formatPercentDisplay(performanceShare.costShare)}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{formatCurrencyDisplay(performanceShare.cost)}</p>
+                </div>
+                <div className="rounded-lg border border-green-200 bg-green-50 p-3">
+                  <p className="text-xs font-semibold uppercase text-muted-foreground">Planned Contribution</p>
+                  <p className="mt-2 text-2xl font-bold text-green-700">{formatPercentDisplay(performanceShare.plannedContribution)}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{formatNumberDisplay(performanceShare.tonKm, 2)} ton-km</p>
+                </div>
+              </div>
+              <div className="mt-4 rounded-lg bg-slate-50 dark:bg-slate-900 p-3">
+                <p className="text-xs text-muted-foreground">
+                  This trip contributed <strong>{formatPercentDisplay(performanceShare.tonnageShare)}</strong> of the operation's total tonnage and <strong>{formatPercentDisplay(performanceShare.plannedContribution)}</strong> towards the planned target.
+                </p>
+              </div>
+            </DetailSectionCard>
+          )}
         </TabsContent>
 
         <TabsContent value="operation" className="space-y-6">
-          {operationInsights && (
-            <div className="grid gap-6 xl:grid-cols-2">
-              <DetailSectionCard title="Operation Progress" icon={<Target className="h-5 w-5" />}>
-                <div className="space-y-4">
-                  <div className="grid gap-3 text-sm md:grid-cols-3">
-                    <div className="text-center">
-                      <p className="text-muted-foreground">Total Trips</p>
-                      <p className="text-2xl font-bold">{operationInsights.overview.totalTrips}</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-muted-foreground">Completed</p>
-                      <p className="text-2xl font-bold text-green-600">{operationInsights.overview.completedTrips}</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-muted-foreground">Ongoing</p>
-                      <p className="text-2xl font-bold text-blue-600">{operationInsights.overview.ongoingTrips}</p>
-                    </div>
-                  </div>
-                  {hasStatusData && (
-                    <div className="h-48">
-                      <ResponsiveContainer>
-                        <PieChart>
-                          <Pie data={statusData} dataKey="value" nameKey="label" innerRadius={45} outerRadius={75} paddingAngle={4}>
-                            {statusData.map((_, index) => (
-                              <Cell key={index} fill={piePalette[index % piePalette.length]} />
-                            ))}
-                          </Pie>
-                          <Tooltip />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
+          {operationRef && (
+            <DetailSectionCard title={`Operation ${operationRef.operationid}`} icon={<Target className="h-5 w-5" />}
+              actions={
+                <Button variant="outline" size="sm" asChild>
+                  <Link href={`/operations/${operationRef.id}`}>
+                    <Building2 className="h-4 w-4 mr-2" />
+                    View Full Operation
+                  </Link>
+                </Button>
+              }
+            >
+              <div className="grid gap-4 md:grid-cols-4">
+                <div className="rounded-lg border p-3">
+                  <p className="text-xs font-semibold uppercase text-muted-foreground">Customer</p>
+                  <p className="mt-2 font-semibold">{operationRef.customer.name}</p>
+                  {operationRef.customer.email && (
+                    <p className="mt-1 text-xs text-muted-foreground">{operationRef.customer.email}</p>
                   )}
                 </div>
-              </DetailSectionCard>
+                <div className="rounded-lg border p-3">
+                  <p className="text-xs font-semibold uppercase text-muted-foreground">Tariff</p>
+                  <p className="mt-2 font-semibold">{formatCurrencyPerUnit(operationRef.tariff, 'ton-km')}</p>
+                </div>
+                <div className="rounded-lg border p-3">
+                  <p className="text-xs font-semibold uppercase text-muted-foreground">Planned Volume</p>
+                  <p className="mt-2 font-semibold">{formatNumberDisplay(operationRef.volume, 2)} MT</p>
+                </div>
+                <div className="rounded-lg border p-3">
+                  <p className="text-xs font-semibold uppercase text-muted-foreground">Planned Distance</p>
+                  <p className="mt-2 font-semibold">{formatNumberDisplay(operationRef.km, 0)} km</p>
+                </div>
+              </div>
+            </DetailSectionCard>
+          )}
 
-              {hasTimelineData && (
-                <DetailSectionCard title="Recent Trips Trend" icon={<BarChart3 className="h-5 w-5" />}>
-                  <div className="h-48">
-                    <ResponsiveContainer>
-                      <AreaChart data={timelineData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="foNumber" />
-                        <Tooltip />
-                        <Area type="monotone" dataKey="cost" stroke="#6366f1" fill="#6366f1" fillOpacity={0.2} />
-                      </AreaChart>
-                    </ResponsiveContainer>
+          {operationInsights && (
+            <>
+              <div className="grid gap-4 md:grid-cols-4">
+                <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-center">
+                  <p className="text-xs font-semibold uppercase text-muted-foreground">Volume Completion</p>
+                  <p className="mt-2 text-3xl font-bold text-blue-700">{formatPercentDisplay(operationInsights.overview.completionRate)}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{formatNumberDisplay(operationInsights.overview.totalTonnage, 2)} / {formatNumberDisplay(operationInsights.overview.plannedVolume, 2)} MT</p>
+                </div>
+                <div className="rounded-lg border border-purple-200 bg-purple-50 p-4 text-center">
+                  <p className="text-xs font-semibold uppercase text-muted-foreground">Ton-Km Completion</p>
+                  <p className="mt-2 text-3xl font-bold text-purple-700">{formatPercentDisplay(operationEconomics?.tonKmCompletionRate)}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{formatNumberDisplay(operationEconomics?.totalTonKm, 0)} / {formatNumberDisplay(operationEconomics?.plannedTonKm, 0)}</p>
+                </div>
+                <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-center">
+                  <p className="text-xs font-semibold uppercase text-muted-foreground">Operation Revenue</p>
+                  <p className="mt-2 text-3xl font-bold text-green-700">{formatCurrencyDisplay(operationEconomics?.actualRevenue ?? null)}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Total earned</p>
+                </div>
+                <div className="rounded-lg border border-orange-200 bg-orange-50 p-4 text-center">
+                  <p className="text-xs font-semibold uppercase text-muted-foreground">Operation Margin</p>
+                  <p className={`mt-2 text-3xl font-bold ${(operationEconomics?.grossMarginPercent ?? 0) >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                    {formatPercentDisplay(operationEconomics?.grossMarginPercent)}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">{formatCurrencyDisplay(operationEconomics?.grossMarginValue ?? null)}</p>
+                </div>
+              </div>
+
+              <div className="grid gap-6 xl:grid-cols-2">
+                <DetailSectionCard title="Operation Progress" icon={<Target className="h-5 w-5" />}>
+                  <div className="space-y-4">
+                    <div className="grid gap-3 text-sm md:grid-cols-3">
+                      <div className="text-center">
+                        <p className="text-muted-foreground">Total Trips</p>
+                        <p className="text-2xl font-bold">{operationInsights.overview.totalTrips}</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-muted-foreground">Completed</p>
+                        <p className="text-2xl font-bold text-green-600">{operationInsights.overview.completedTrips}</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-muted-foreground">Ongoing</p>
+                        <p className="text-2xl font-bold text-blue-600">{operationInsights.overview.ongoingTrips}</p>
+                      </div>
+                    </div>
+                    {hasStatusData && (
+                      <div className="h-48">
+                        <ResponsiveContainer>
+                          <PieChart>
+                            <Pie data={statusData} dataKey="value" nameKey="label" innerRadius={45} outerRadius={75} paddingAngle={4}>
+                              {statusData.map((_, index) => (
+                                <Cell key={index} fill={piePalette[index % piePalette.length]} />
+                              ))}
+                            </Pie>
+                            <Tooltip />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
+                    )}
                   </div>
                 </DetailSectionCard>
-              )}
-            </div>
+
+                {hasTimelineData && (
+                  <DetailSectionCard title="Recent Trips Trend" icon={<BarChart3 className="h-5 w-5" />}>
+                    <div className="h-48">
+                      <ResponsiveContainer>
+                        <AreaChart data={timelineData}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="foNumber" />
+                          <Tooltip />
+                          <Area type="monotone" dataKey="cost" stroke="#6366f1" fill="#6366f1" fillOpacity={0.2} />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </DetailSectionCard>
+                )}
+              </div>
+            </>
           )}
         </TabsContent>
 

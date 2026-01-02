@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
-import { ArrowLeft, Edit, Trash2, Activity, CheckCircle, AlertCircle, Calendar, BarChart3, Target, FileText, Building2, Handshake, TrendingUp, History } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, Activity, CheckCircle, AlertCircle, Calendar, BarChart3, Target, FileText, Building2, Handshake, TrendingUp, History, XCircle, Lock, Unlock, Package, MapPin, Truck, ExternalLink } from 'lucide-react';
 import { Area, AreaChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis } from 'recharts';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useMemo, useState } from 'react';
@@ -13,6 +13,10 @@ import { DetailPageLayout } from '@/components/detail/detail-page-layout';
 import { DetailSectionCard } from '@/components/detail/detail-section-card';
 import { DetailSummaryGrid, type DetailSummaryItem } from '@/components/detail/detail-summary-grid';
 import { ActivityLogTable } from '@/components/activity-log-table';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 
 interface User {
   id: number;
@@ -32,6 +36,12 @@ interface OperationDestination {
   reference_type?: string | null;
 }
 
+interface CargoType {
+  id: number;
+  name: string;
+  category?: string | null;
+}
+
 interface Operation {
   id: number;
   operationid: string;
@@ -44,12 +54,16 @@ interface Operation {
   tariff?: number;
   closed?: boolean;
   created_at: string;
+  remark?: string | null;
   customer?: { id: number; name: string };
+  cargo_type?: CargoType | null;
+  cargo_service_type?: string | null;
   destination_scope?: string | null;
   destination_name?: string | null;
   destination_reference_id?: number | null;
   destination_reference_type?: string | null;
   destination?: OperationDestination | null;
+  destination_reference?: { id: number; name: string } | null;
   user?: { id: number; name: string };
 }
 interface PerformanceTotals {
@@ -148,6 +162,13 @@ export default function OperationsShow({ operation, activityLogs = [], performan
   const { hasPermission } = usePermissions();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [closeDialogOpen, setCloseDialogOpen] = useState(false);
+  const [reopenDialogOpen, setReopenDialogOpen] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
+  const [isReopening, setIsReopening] = useState(false);
+  const [closedDate, setClosedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [closeComment, setCloseComment] = useState('');
+  const [reopenComment, setReopenComment] = useState('');
   const breadcrumbs = useMemo<BreadcrumbItem[]>(() => [{ title: 'Operations', href: '/operations' }, { title: operation.operationid || `Operation ${operation.id}`, href: `/operations/${operation.id}` }], [operation.id, operation.operationid]);
 
   const handleDelete = () => {
@@ -171,6 +192,63 @@ export default function OperationsShow({ operation, activityLogs = [], performan
           }
         }
         toast({ title: '❌ Delete Failed', description: 'An unexpected error occurred while deleting the operation.', variant: 'destructive' });
+      },
+    });
+  };
+
+  const handleClose = () => {
+    setIsClosing(true);
+    router.post(`/operations/${operation.id}/close`, {
+      closed_date: closedDate,
+      comment: closeComment,
+    }, {
+      preserveScroll: true,
+      onSuccess: () => {
+        setCloseDialogOpen(false);
+        setIsClosing(false);
+        setCloseComment('');
+        toast({ title: '✅ Operation Closed', description: `${operation.operationid} has been closed successfully.` });
+      },
+      onError: errors => {
+        setIsClosing(false);
+        if (errors && typeof errors === 'object') {
+          const errorMessages = Object.values(errors)
+            .flatMap(message => (Array.isArray(message) ? message : message ? [message] : []))
+            .filter((message): message is string => typeof message === 'string' && message.trim().length > 0);
+          if (errorMessages.length > 0) {
+            toast({ title: '❌ Close Failed', description: errorMessages.join('\n'), variant: 'destructive' });
+            return;
+          }
+        }
+        toast({ title: '❌ Close Failed', description: 'An unexpected error occurred while closing the operation.', variant: 'destructive' });
+      },
+    });
+  };
+
+  const handleReopen = () => {
+    setIsReopening(true);
+    router.post(`/operations/${operation.id}/reopen`, {
+      comment: reopenComment,
+    }, {
+      preserveScroll: true,
+      onSuccess: () => {
+        setReopenDialogOpen(false);
+        setIsReopening(false);
+        setReopenComment('');
+        toast({ title: '✅ Operation Reopened', description: `${operation.operationid} has been reopened successfully.` });
+      },
+      onError: errors => {
+        setIsReopening(false);
+        if (errors && typeof errors === 'object') {
+          const errorMessages = Object.values(errors)
+            .flatMap(message => (Array.isArray(message) ? message : message ? [message] : []))
+            .filter((message): message is string => typeof message === 'string' && message.trim().length > 0);
+          if (errorMessages.length > 0) {
+            toast({ title: '❌ Reopen Failed', description: errorMessages.join('\n'), variant: 'destructive' });
+            return;
+          }
+        }
+        toast({ title: '❌ Reopen Failed', description: 'An unexpected error occurred while reopening the operation.', variant: 'destructive' });
       },
     });
   };
@@ -281,6 +359,18 @@ export default function OperationsShow({ operation, activityLogs = [], performan
               </Link>
             </Button>
           )}
+          {hasPermission('operations.edit') && !operation.closed && (
+            <Button variant="outline" onClick={() => setCloseDialogOpen(true)} className="border-orange-200 text-orange-600 hover:bg-orange-50">
+              <Lock className="h-4 w-4 mr-2" />
+              Close
+            </Button>
+          )}
+          {hasPermission('operations.edit') && operation.closed && (
+            <Button variant="outline" onClick={() => setReopenDialogOpen(true)} className="border-green-200 text-green-600 hover:bg-green-50">
+              <Unlock className="h-4 w-4 mr-2" />
+              Reopen
+            </Button>
+          )}
           {hasPermission('operations.destroy') && (
             <Button variant="outline" onClick={() => setDeleteDialogOpen(true)} className="border-red-200 text-red-600 hover:bg-red-50">
               <Trash2 className="h-4 w-4 mr-2" />
@@ -329,6 +419,33 @@ export default function OperationsShow({ operation, activityLogs = [], performan
                       </Link>
                     </div>
                   )}
+                  {operation.cargo_type && (
+                    <div className="rounded-lg border p-3">
+                      <p className="text-xs font-semibold uppercase text-muted-foreground">Cargo Type</p>
+                      <p className="mt-2 font-semibold">{operation.cargo_type.name}</p>
+                      {operation.cargo_type.category && (
+                        <Badge variant="secondary" className="mt-1 text-xs">{operation.cargo_type.category}</Badge>
+                      )}
+                    </div>
+                  )}
+                  {operation.cargo_service_type && (
+                    <div className="rounded-lg border p-3">
+                      <p className="text-xs font-semibold uppercase text-muted-foreground">Service Type</p>
+                      <p className="mt-2 font-semibold">{capitalize(operation.cargo_service_type)}</p>
+                    </div>
+                  )}
+                  {operation.destination_name && (
+                    <div className="rounded-lg border p-3">
+                      <p className="text-xs font-semibold uppercase text-muted-foreground">Destination ({capitalize(operation.destination_scope)})</p>
+                      <p className="mt-2 font-semibold">{operation.destination_name}</p>
+                    </div>
+                  )}
+                  {operation.km !== null && operation.km !== undefined && (
+                    <div className="rounded-lg border p-3">
+                      <p className="text-xs font-semibold uppercase text-muted-foreground">Distance</p>
+                      <p className="mt-2 font-semibold">{formatNumber(operation.km)} KM</p>
+                    </div>
+                  )}
                   <div className="rounded-lg border p-3">
                     <p className="text-xs font-semibold uppercase text-muted-foreground">Start Date</p>
                     <p className="mt-2 font-semibold">{formatDate(operation.startdate)}</p>
@@ -362,6 +479,33 @@ export default function OperationsShow({ operation, activityLogs = [], performan
                   <p className="text-sm">{operation.description}</p>
                 </DetailSectionCard>
               )}
+
+              {operation.remark && (
+                <DetailSectionCard title="Remarks" icon={<FileText className="h-5 w-5" />}>
+                  <div className="rounded-lg bg-slate-50 dark:bg-slate-900 p-3">
+                    <p className="whitespace-pre-wrap text-sm">{operation.remark}</p>
+                  </div>
+                </DetailSectionCard>
+              )}
+
+              <DetailSectionCard title="Related Records" icon={<Truck className="h-5 w-5" />}>
+                <div className="grid gap-3 md:grid-cols-2">
+                  <Button variant="outline" asChild className="w-full">
+                    <Link href={`/performances?operation=${operation.id}`}>
+                      <Package className="h-4 w-4 mr-2" />
+                      View Company Performances
+                      <ExternalLink className="h-3 w-3 ml-auto" />
+                    </Link>
+                  </Button>
+                  <Button variant="outline" asChild className="w-full">
+                    <Link href={`/outsource-performances?operation=${operation.id}`}>
+                      <Handshake className="h-4 w-4 mr-2" />
+                      View Outsource Performances
+                      <ExternalLink className="h-3 w-3 ml-auto" />
+                    </Link>
+                  </Button>
+                </div>
+              </DetailSectionCard>
             </div>
 
             <div className="space-y-4">
@@ -369,11 +513,19 @@ export default function OperationsShow({ operation, activityLogs = [], performan
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Tariff</span>
-                    <span className="font-semibold">{formatCurrencyPerUnit(operation.tariff, 'MT')}</span>
+                    <span className="font-semibold">{formatCurrencyPerUnit(operation.tariff, 'ton-km')}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Expected Revenue</span>
-                    <span className="font-semibold">{formatCurrency(expectedRevenue)}</span>
+                    <span className="text-muted-foreground">Planned Ton-Km</span>
+                    <span className="font-semibold">{formatNumber(economics?.plannedTonKm ?? totals?.plannedTonKm ?? null)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Actual Ton-Km</span>
+                    <span className="font-semibold">{formatNumber(economics?.totalTonKm ?? totals?.totalTonKm ?? null)}</span>
+                  </div>
+                  <div className="flex justify-between border-t pt-2">
+                    <span className="text-muted-foreground">Potential Revenue</span>
+                    <span className="font-semibold">{formatCurrency(economics?.potentialRevenue ?? null)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Actual Revenue</span>
@@ -382,6 +534,12 @@ export default function OperationsShow({ operation, activityLogs = [], performan
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Total Cost</span>
                     <span className="font-semibold">{formatCurrency(financial?.totalCost ?? null)}</span>
+                  </div>
+                  <div className="flex justify-between border-t pt-2">
+                    <span className="text-muted-foreground">Gross Margin</span>
+                    <span className={`font-semibold ${(economics?.grossMarginValue ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {formatCurrency(economics?.grossMarginValue ?? null)}
+                    </span>
                   </div>
                 </div>
               </DetailSectionCard>
@@ -405,6 +563,29 @@ export default function OperationsShow({ operation, activityLogs = [], performan
         </TabsContent>
 
         <TabsContent value="performance" className="space-y-6">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <div className="rounded-lg border p-4 text-center">
+              <p className="text-xs font-semibold uppercase text-muted-foreground">Volume Completion</p>
+              <p className="mt-2 text-3xl font-bold">{completionLabel}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{formatNumber(totals?.totalTonnage ?? null)} / {formatNumber(operation.volume)} MT</p>
+            </div>
+            <div className="rounded-lg border p-4 text-center">
+              <p className="text-xs font-semibold uppercase text-muted-foreground">Ton-Km Completion</p>
+              <p className="mt-2 text-3xl font-bold">{formatPercent(totals?.tonKmCompletionRate ?? null)}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{formatNumber(totals?.totalTonKm ?? null)} / {formatNumber(totals?.plannedTonKm ?? null)}</p>
+            </div>
+            <div className="rounded-lg border p-4 text-center">
+              <p className="text-xs font-semibold uppercase text-muted-foreground">Return Rate</p>
+              <p className="mt-2 text-3xl font-bold">{formatPercent(totals?.returnRate ?? null)}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{formatNumber(totals?.completedTrips ?? 0, 0)} / {formatNumber(totals?.totalTrips ?? 0, 0)} trips</p>
+            </div>
+            <div className="rounded-lg border p-4 text-center">
+              <p className="text-xs font-semibold uppercase text-muted-foreground">Load Factor</p>
+              <p className="mt-2 text-3xl font-bold">{formatPercent(totals?.loadFactor ?? null)}</p>
+              <p className="mt-1 text-xs text-muted-foreground">Efficiency metric</p>
+            </div>
+          </div>
+
           <div className="grid gap-6 xl:grid-cols-2">
             <DetailSectionCard title="Trip Statistics" icon={<BarChart3 className="h-5 w-5" />}>
               <div className="grid gap-4 md:grid-cols-3">
@@ -452,55 +633,160 @@ export default function OperationsShow({ operation, activityLogs = [], performan
               </DetailSectionCard>
             )}
           </div>
+
+          <DetailSectionCard title="Distance Metrics" icon={<MapPin className="h-5 w-5" />}>
+            <div className="grid gap-4 md:grid-cols-4">
+              <div className="rounded-lg border p-3">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Total Distance</p>
+                <p className="mt-2 font-semibold">{formatNumber(totals?.totalDistance ?? null)} KM</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Loaded Distance</p>
+                <p className="mt-2 font-semibold">{formatNumber(totals?.loadedDistance ?? null)} KM</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Empty Distance</p>
+                <p className="mt-2 font-semibold">{formatNumber(totals?.emptyDistance ?? null)} KM</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Empty Backhaul</p>
+                <p className="mt-2 font-semibold">{formatPercent(totals?.emptyBackhaulShare ?? null)}</p>
+              </div>
+            </div>
+          </DetailSectionCard>
         </TabsContent>
 
         <TabsContent value="economics" className="space-y-6">
-          <DetailSectionCard title="Economic Performance" icon={<TrendingUp className="h-5 w-5" />}>
+          <DetailSectionCard title="Revenue Analysis" icon={<TrendingUp className="h-5 w-5" />}>
             <div className="grid gap-4 md:grid-cols-3">
-              <div className="rounded-lg border p-3">
-                <p className="text-xs font-semibold uppercase text-muted-foreground">Actual Revenue</p>
-                <p className="mt-2 font-semibold">{formatCurrency(economics?.actualRevenue ?? null)}</p>
+              <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Potential Revenue</p>
+                <p className="mt-2 text-xl font-bold">{formatCurrency(economics?.potentialRevenue ?? null)}</p>
+                <p className="mt-1 text-xs text-muted-foreground">Based on planned ton-km</p>
               </div>
+              <div className="rounded-lg border border-green-200 bg-green-50 p-3">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Actual Revenue</p>
+                <p className="mt-2 text-xl font-bold text-green-700">{formatCurrency(economics?.actualRevenue ?? null)}</p>
+                <p className="mt-1 text-xs text-muted-foreground">Based on actual ton-km</p>
+              </div>
+              <div className={`rounded-lg border p-3 ${(economics?.revenueGap ?? 0) > 0 ? 'border-red-200 bg-red-50' : 'border-gray-200'}`}>
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Revenue Gap</p>
+                <p className={`mt-2 text-xl font-bold ${(economics?.revenueGap ?? 0) > 0 ? 'text-red-700' : ''}`}>{formatCurrency(economics?.revenueGap ?? null)}</p>
+                <p className="mt-1 text-xs text-muted-foreground">Unrealized revenue</p>
+              </div>
+            </div>
+          </DetailSectionCard>
+
+          <DetailSectionCard title="Cost & Profitability" icon={<TrendingUp className="h-5 w-5" />}>
+            <div className="grid gap-4 md:grid-cols-4">
               <div className="rounded-lg border p-3">
                 <p className="text-xs font-semibold uppercase text-muted-foreground">Total Cost</p>
                 <p className="mt-2 font-semibold">{formatCurrency(financial?.totalCost ?? null)}</p>
               </div>
               <div className="rounded-lg border p-3">
                 <p className="text-xs font-semibold uppercase text-muted-foreground">Gross Margin</p>
-                <p className="mt-2 font-semibold">{formatCurrency(economics?.grossMarginValue ?? null)}</p>
+                <p className={`mt-2 font-semibold ${(economics?.grossMarginValue ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {formatCurrency(economics?.grossMarginValue ?? null)}
+                </p>
               </div>
               <div className="rounded-lg border p-3">
                 <p className="text-xs font-semibold uppercase text-muted-foreground">Margin %</p>
-                <p className="mt-2 font-semibold">{formatPercent(economics?.grossMarginPercent ?? null)}</p>
+                <p className={`mt-2 font-semibold ${(economics?.grossMarginPercent ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {formatPercent(economics?.grossMarginPercent ?? null)}
+                </p>
               </div>
               <div className="rounded-lg border p-3">
                 <p className="text-xs font-semibold uppercase text-muted-foreground">Cost/Ton-Km</p>
                 <p className="mt-2 font-semibold">{formatCurrencyPerUnit(economics?.costPerTonKm ?? null, 'ton-km')}</p>
               </div>
+            </div>
+          </DetailSectionCard>
+
+          <DetailSectionCard title="Yield Metrics" icon={<BarChart3 className="h-5 w-5" />}>
+            <div className="grid gap-4 md:grid-cols-4">
+              <div className="rounded-lg border p-3">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Yield per Trip</p>
+                <p className="mt-2 font-semibold">{formatCurrency(economics?.yieldPerTrip ?? null)}</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Yield per Ton</p>
+                <p className="mt-2 font-semibold">{formatCurrency(economics?.yieldPerTon ?? null)}</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Avg Cost/Trip</p>
+                <p className="mt-2 font-semibold">{formatCurrency(financial?.averageCostPerTrip ?? null)}</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Avg Cost/Ton</p>
+                <p className="mt-2 font-semibold">{formatCurrency(financial?.averageCostPerTon ?? null)}</p>
+              </div>
+            </div>
+          </DetailSectionCard>
+
+          <DetailSectionCard title="Efficiency Metrics" icon={<Target className="h-5 w-5" />}>
+            <div className="grid gap-4 md:grid-cols-3">
               <div className="rounded-lg border p-3">
                 <p className="text-xs font-semibold uppercase text-muted-foreground">Load Factor</p>
                 <p className="mt-2 font-semibold">{formatPercent(economics?.loadFactor ?? null)}</p>
+                <p className="mt-1 text-xs text-muted-foreground">Loaded vs total distance</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Empty Backhaul</p>
+                <p className="mt-2 font-semibold">{formatPercent(economics?.emptyBackhaulShare ?? null)}</p>
+                <p className="mt-1 text-xs text-muted-foreground">Empty return trips</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Avg Ton/Trip</p>
+                <p className="mt-2 font-semibold">{formatNumber(totals?.averageTonPerTrip ?? null)} MT</p>
+                <p className="mt-1 text-xs text-muted-foreground">Load per trip</p>
               </div>
             </div>
           </DetailSectionCard>
 
           {transportExecution && (
-            <DetailSectionCard title="Transport Execution Mix" icon={<Handshake className="h-5 w-5" />}>
+            <DetailSectionCard 
+              title="Transport Execution Mix" 
+              icon={<Handshake className="h-5 w-5" />}
+              actions={
+                <Badge 
+                  className={
+                    transportExecution.executionMode === 'company' ? 'bg-blue-100 text-blue-700 border-blue-200' :
+                    transportExecution.executionMode === 'vendor' ? 'bg-orange-100 text-orange-700 border-orange-200' :
+                    transportExecution.executionMode === 'hybrid' ? 'bg-purple-100 text-purple-700 border-purple-200' :
+                    'bg-gray-100 text-gray-700 border-gray-200'
+                  }
+                >
+                  {capitalize(transportExecution.executionMode)} Mode
+                </Badge>
+              }
+            >
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
                   <p className="text-xs font-semibold uppercase text-muted-foreground">Company Execution</p>
                   <div className="mt-3 space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span>Trips</span>
-                      <span className="font-semibold">{formatNumber(transportExecution.companyTrips, 0)}</span>
+                      <span className="font-semibold">{formatNumber(transportExecution.companyTrips, 0)} ({formatPercent(transportExecution.companyTripShare, 0)})</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Tonnage</span>
-                      <span className="font-semibold">{formatNumber(transportExecution.companyTonnage)} MT</span>
+                      <span className="font-semibold">{formatNumber(transportExecution.companyTonnage)} MT ({formatPercent(transportExecution.companyTonnageShare, 0)})</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Ton-Km</span>
+                      <span className="font-semibold">{formatNumber(transportExecution.companyTonKm)} ({formatPercent(transportExecution.companyTonKmShare, 0)})</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Cost</span>
-                      <span className="font-semibold">{formatCurrency(transportExecution.companyCost)}</span>
+                      <span className="font-semibold">{formatCurrency(transportExecution.companyCost)} ({formatPercent(transportExecution.companyCostShare, 0)})</span>
+                    </div>
+                    <div className="flex justify-between border-t pt-2">
+                      <span>Avg Ton/Trip</span>
+                      <span className="font-semibold">{formatNumber(transportExecution.companyAverageTonPerTrip)} MT</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Cost/Ton-Km</span>
+                      <span className="font-semibold">{formatCurrencyPerUnit(transportExecution.companyCostPerTonKm, 'ton-km')}</span>
                     </div>
                   </div>
                 </div>
@@ -509,15 +795,27 @@ export default function OperationsShow({ operation, activityLogs = [], performan
                   <div className="mt-3 space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span>Trips</span>
-                      <span className="font-semibold">{formatNumber(transportExecution.vendorTrips, 0)}</span>
+                      <span className="font-semibold">{formatNumber(transportExecution.vendorTrips, 0)} ({formatPercent(transportExecution.vendorTripShare, 0)})</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Tonnage</span>
-                      <span className="font-semibold">{formatNumber(transportExecution.vendorTonnage)} MT</span>
+                      <span className="font-semibold">{formatNumber(transportExecution.vendorTonnage)} MT ({formatPercent(transportExecution.vendorTonnageShare, 0)})</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Ton-Km</span>
+                      <span className="font-semibold">{formatNumber(transportExecution.vendorTonKm)} ({formatPercent(transportExecution.vendorTonKmShare, 0)})</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Cost</span>
-                      <span className="font-semibold">{formatCurrency(transportExecution.vendorCost)}</span>
+                      <span className="font-semibold">{formatCurrency(transportExecution.vendorCost)} ({formatPercent(transportExecution.vendorCostShare, 0)})</span>
+                    </div>
+                    <div className="flex justify-between border-t pt-2">
+                      <span>Avg Ton/Trip</span>
+                      <span className="font-semibold">{formatNumber(transportExecution.vendorAverageTonPerTrip)} MT</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Cost/Ton-Km</span>
+                      <span className="font-semibold">{formatCurrencyPerUnit(transportExecution.vendorCostPerTonKm, 'ton-km')}</span>
                     </div>
                   </div>
                 </div>
@@ -532,6 +830,80 @@ export default function OperationsShow({ operation, activityLogs = [], performan
           </DetailSectionCard>
         </TabsContent>
       </Tabs>
+
+      <Dialog open={closeDialogOpen} onOpenChange={setCloseDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Close Operation</DialogTitle>
+            <DialogDescription>
+              This will mark the operation as closed and set the end date. You can add a comment explaining the closure.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="closed_date">Close Date</Label>
+              <Input
+                id="closed_date"
+                type="date"
+                value={closedDate}
+                onChange={(e) => setClosedDate(e.target.value)}
+                disabled={isClosing}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="close_comment">Comment</Label>
+              <Textarea
+                id="close_comment"
+                placeholder="Add a comment about closing this operation..."
+                value={closeComment}
+                onChange={(e) => setCloseComment(e.target.value)}
+                disabled={isClosing}
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCloseDialogOpen(false)} disabled={isClosing}>
+              Cancel
+            </Button>
+            <Button onClick={handleClose} disabled={isClosing || !closedDate}>
+              {isClosing ? 'Closing...' : 'Close Operation'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={reopenDialogOpen} onOpenChange={setReopenDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reopen Operation</DialogTitle>
+            <DialogDescription>
+              This will reopen the operation and clear the end date. You can add a comment explaining the reopening.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="reopen_comment">Comment (Optional)</Label>
+              <Textarea
+                id="reopen_comment"
+                placeholder="Add a comment about reopening this operation..."
+                value={reopenComment}
+                onChange={(e) => setReopenComment(e.target.value)}
+                disabled={isReopening}
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReopenDialogOpen(false)} disabled={isReopening}>
+              Cancel
+            </Button>
+            <Button onClick={handleReopen} disabled={isReopening}>
+              {isReopening ? 'Reopening...' : 'Reopen Operation'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <DeleteConfirmationDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen} title="Delete Operation" description="Are you sure you want to delete this operation? This action cannot be undone." itemName={operation.operationid} onConfirm={handleDelete} isLoading={isDeleting} />
     </DetailPageLayout>

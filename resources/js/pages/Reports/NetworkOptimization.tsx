@@ -238,8 +238,8 @@ export default function NetworkOptimization({
     };
 
     const emptyRatioColor = getEmptyRatioColor(empty_miles_analysis.empty_miles_ratio);
-    const benchmarkColor = empty_miles_analysis.performance_vs_benchmark > 0 
-        ? 'text-rose-600 dark:text-rose-400' 
+    const benchmarkColor = empty_miles_analysis.performance_vs_benchmark > 0
+        ? 'text-rose-600 dark:text-rose-400'
         : 'text-emerald-600 dark:text-emerald-400';
 
     return (
@@ -278,40 +278,22 @@ export default function NetworkOptimization({
             contentClassName="p-0"
         >
             <div className="space-y-6 p-6">
-                                                <FileDigit className="h-4 w-4 text-amber-500" />
-                                                CSV
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onSelect={() => handleExport('xlsx')} className="gap-2">
-                                                <FileSpreadsheet className="h-4 w-4 text-emerald-500" />
-                                                Excel
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                ) : null}
-                                <Button type="button" variant="outline" className="gap-2" onClick={handleReset}>
-                                    <RefreshCcw className="h-4 w-4" />
-                                    Reset
-                                </Button>
-                            </div>
-                        </div>
-                    </header>
+                {/* Active Filters */}
+                {filterBadges.length > 0 && (
+                    <Card className="border-slate-200 dark:border-slate-800">
+                        <CardContent className="flex flex-wrap gap-2 px-6 py-4">
+                            <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Active Filters:</span>
+                            {filterBadges.map((badge, index) => (
+                                <Badge key={index} variant="secondary" className="font-mono text-xs">
+                                    {badge}
+                                </Badge>
+                            ))}
+                        </CardContent>
+                    </Card>
+                )}
 
-                    {/* Active Filters */}
-                    {filterBadges.length > 0 ? (
-                        <Card className="border-slate-200 dark:border-slate-800">
-                            <CardContent className="flex flex-wrap gap-2 px-6 py-4">
-                                <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Active Filters:</span>
-                                {filterBadges.map((badge, index) => (
-                                    <Badge key={index} variant="secondary" className="font-mono text-xs">
-                                        {badge}
-                                    </Badge>
-                                ))}
-                            </CardContent>
-                        </Card>
-                    ) : null}
-
-                    {/* Key Metrics Cards */}
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                {/* Key Metrics Cards */}
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                         <Card className="border-slate-200 dark:border-slate-800">
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                 <CardTitle className="text-sm font-medium">Empty Miles Ratio</CardTitle>
@@ -322,7 +304,7 @@ export default function NetworkOptimization({
                                     {formatPercentage(empty_miles_analysis.empty_miles_ratio)}
                                 </div>
                                 <p className="text-xs text-muted-foreground mt-1">
-                                    Benchmark: {formatPercentage(empty_miles_analysis.industry_benchmark)} | 
+                                    Benchmark: {formatPercentage(empty_miles_analysis.industry_benchmark)} |
                                     <span className={benchmarkColor}>
                                         {' '}{empty_miles_analysis.performance_vs_benchmark >= 0 ? '+' : ''}
                                         {formatPercentage(Math.abs(empty_miles_analysis.performance_vs_benchmark))}

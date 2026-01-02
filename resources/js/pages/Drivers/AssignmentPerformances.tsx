@@ -126,6 +126,14 @@ const shortDateFormatter = new Intl.DateTimeFormat('en-US', {
     month: 'short',
     day: 'numeric',
 });
+const dateTimeFormatter = new Intl.DateTimeFormat('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+});
 
 const formatNumber = (value?: number | null, options?: Intl.NumberFormatOptions): string => {
     if (value === null || value === undefined || Number.isNaN(Number(value))) {
@@ -455,7 +463,7 @@ export default function DriversAssignmentPerformances({
                                             return (
                                                 <TableRow key={row.id} className="bg-white/70 transition hover:bg-blue-50/60 dark:bg-slate-900/60 dark:hover:bg-blue-950/30">
                                                     <TableCell className="font-medium text-slate-900 dark:text-slate-100">
-                                                        <div>{formatDate(row.DateDispach, shortDateFormatter)}</div>
+                                                        <div>{formatDate(row.DateDispach, dateTimeFormatter)}</div>
                                                         <div className="text-xs text-muted-foreground">Duration {formatDays(row.trip_duration_days, 0)}</div>
                                                     </TableCell>
                                                     <TableCell>

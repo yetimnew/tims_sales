@@ -1,5 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { TableCell, TableRow } from '@/components/ui/table';
 import ListPageLayout from '@/components/layouts/list-page-layout';
 import { ListingStatsHeader } from '@/components/listing/stats-header';

@@ -272,20 +272,7 @@ export default function FleetFinancial({
             contentClassName="p-0"
         >
             <div className="space-y-6 p-6">
-                                                Excel
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                ) : null}
-                                <Button type="button" variant="outline" className="gap-2" onClick={handleReset}>
-                                    <RefreshCcw className="h-4 w-4" />
-                                    Reset
-                                </Button>
-                            </div>
-                        </div>
-                    </header>
-
-                    {/* Active Filters */}
+                {/* Active Filters */}
                     {filterBadges.length > 0 ? (
                         <Card className="border-slate-200 dark:border-slate-800">
                             <CardContent className="flex flex-wrap gap-2 px-6 py-4">

@@ -1,8 +1,9 @@
 import { Link, router } from '@inertiajs/react';
-import { ArrowLeft, Edit, Trash2, Phone, Mail, MapPin, Activity, Target, Calendar, Building2, User, Navigation, PiggyBank, Hash, History } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, Phone, Mail, MapPin, Activity, Target, Calendar, Building2, User, Navigation, PiggyBank, Hash, History, DollarSign, TrendingUp, BarChart3, Package, ExternalLink, Truck, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { type BreadcrumbItem } from '@/types';
 import { toast } from '@/hooks/use-toast';
 import { usePermissions } from '@/hooks/use-permissions';
@@ -11,6 +12,8 @@ import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialo
 import { DetailPageLayout } from '@/components/detail/detail-page-layout';
 import { DetailSectionCard } from '@/components/detail/detail-section-card';
 import { DetailSummaryGrid, type DetailSummaryItem } from '@/components/detail/detail-summary-grid';
+import { ActivityLogTable } from '@/components/activity-log-table';
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Legend } from 'recharts';
 
 interface User {
   id: number;
@@ -117,13 +120,23 @@ export default function CustomersShow({ customer, activityLogs = [], activeOpera
 
   const aggregate = activeOperations.reduce(
     (acc, operation) => {
+      const tonnage = operation.deliveredTonnage ?? 0;
+      const distance = operation.totalDistance ?? 0;
+      const cost = operation.totalCost ?? 0;
+      const tonKm = tonnage * (operation.km ?? 0);
+      const tariff = operation.tariff ?? 0;
+      const revenue = tariff > 0 && tonKm > 0 ? tonKm * tariff : 0;
+
       acc.totalTrips += operation.totalTrips;
       acc.completedTrips += operation.completedTrips;
       acc.inProgressTrips += operation.inProgressTrips;
       acc.totalVolume += operation.volume ?? 0;
-      acc.deliveredVolume += operation.deliveredTonnage ?? 0;
-      acc.totalDistance += operation.totalDistance ?? 0;
-      acc.totalCost += operation.totalCost ?? 0;
+      acc.deliveredVolume += tonnage;
+      acc.totalDistance += distance;
+      acc.totalCost += cost;
+      acc.totalRevenue += revenue;
+      acc.totalTonKm += tonKm;
+      
       return acc;
     },
     {
@@ -134,16 +147,45 @@ export default function CustomersShow({ customer, activityLogs = [], activeOpera
       deliveredVolume: 0,
       totalDistance: 0,
       totalCost: 0,
+      totalRevenue: 0,
+      totalTonKm: 0,
     },
   );
 
   const deliveredPercentage = aggregate.totalVolume > 0 ? Math.min(Math.max((aggregate.deliveredVolume / aggregate.totalVolume) * 100, 0), 100) : null;
+  const grossMargin = aggregate.totalRevenue - aggregate.totalCost;
+  const grossMarginPercent = aggregate.totalRevenue > 0 ? (grossMargin / aggregate.totalRevenue) * 100 : 0;
+  const averageRevenuePerOperation = activeOpsCount > 0 ? aggregate.totalRevenue / activeOpsCount : 0;
+  const averageCostPerOperation = activeOpsCount > 0 ? aggregate.totalCost / activeOpsCount : 0;
+  const costPerTonKm = aggregate.totalTonKm > 0 ? aggregate.totalCost / aggregate.totalTonKm : 0;
+  const revenuePerTrip = aggregate.completedTrips > 0 ? aggregate.totalRevenue / aggregate.completedTrips : 0;
+  const costPerTrip = aggregate.completedTrips > 0 ? aggregate.totalCost / aggregate.completedTrips : 0;
+
+  // Prepare chart data
+  const operationChartData = activeOperations.map(op => ({
+    name: op.operationid,
+    tonnage: op.deliveredTonnage,
+    trips: op.completedTrips,
+    completion: op.completionRate ?? 0,
+    cost: op.totalCost,
+  })).slice(0, 10);
+
+  const statusData = [
+    { label: 'Completed', value: aggregate.completedTrips },
+    { label: 'In Progress', value: aggregate.inProgressTrips },
+  ];
+  const hasStatusData = statusData.some(item => item.value > 0);
+  const piePalette = ['#22c55e', '#3b82f6'];
+
+  const formatCurrency = (value: number) => {
+    return `${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Birr`;
+  };
 
   const kpiSummary: DetailSummaryItem[] = [
-    { label: 'Active Operations', value: activeOpsCount, helper: 'Currently monitored engagements' },
-    { label: 'Trips Completed', value: aggregate.completedTrips, helper: 'Across all active operations' },
-    { label: 'Delivered Volume', value: `${formatNumber(aggregate.deliveredVolume)} MT`, helper: 'Against planned commitments' },
-    { label: 'Volume Completion', value: deliveredPercentage !== null ? `${deliveredPercentage.toFixed(1)}%` : 'N/A', helper: 'Aggregate delivery progress' },
+    { label: 'Active Operations', value: activeOpsCount, helper: `${aggregate.totalTrips} total trips` },
+    { label: 'Volume Delivered', value: `${formatNumber(aggregate.deliveredVolume)} MT`, helper: `${deliveredPercentage?.toFixed(1) ?? 'N/A'}% of planned` },
+    { label: 'Total Revenue', value: formatCurrency(aggregate.totalRevenue), helper: `Margin: ${grossMarginPercent.toFixed(1)}%` },
+    { label: 'Gross Margin', value: formatCurrency(grossMargin), helper: grossMargin >= 0 ? 'Profitable' : 'Loss' },
   ];
 
   return (
@@ -193,7 +235,28 @@ export default function CustomersShow({ customer, activityLogs = [], activeOpera
     >
       <DetailSummaryGrid items={kpiSummary} />
 
-      <div className="grid gap-6 lg:grid-cols-[1fr,20rem]">
+      <Tabs defaultValue="overview" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="overview">
+            <Building2 className="h-4 w-4 mr-2" />
+            Overview
+          </TabsTrigger>
+          <TabsTrigger value="operations">
+            <Target className="h-4 w-4 mr-2" />
+            Operations
+          </TabsTrigger>
+          <TabsTrigger value="analytics">
+            <TrendingUp className="h-4 w-4 mr-2" />
+            Analytics
+          </TabsTrigger>
+          <TabsTrigger value="activity">
+            <History className="h-4 w-4 mr-2" />
+            Activity
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="space-y-6">
+          <div className="grid gap-6 lg:grid-cols-[1fr,20rem]">
         <div className="space-y-6">
           <DetailSectionCard title="Customer Overview" description="Core identifiers and relationship contacts" icon={<Building2 className="h-5 w-5" />}>
             <div className="grid gap-4 md:grid-cols-2">
@@ -230,18 +293,139 @@ export default function CustomersShow({ customer, activityLogs = [], activeOpera
             )}
           </DetailSectionCard>
 
-          <DetailSectionCard title="Active Operations" description="Snapshot of live engagements and their progress" icon={<Activity className="h-5 w-5" />}>
+          <DetailSectionCard title="Quick Links" icon={<ExternalLink className="h-5 w-5" />}>
+            <div className="grid gap-3 md:grid-cols-2">
+              <Button variant="outline" asChild className="w-full">
+                <Link href={`/operations?customer=${customer.id}`}>
+                  <Target className="h-4 w-4 mr-2" />
+                  View All Operations
+                  <ExternalLink className="h-3 w-3 ml-auto" />
+                </Link>
+              </Button>
+              <Button variant="outline" asChild className="w-full">
+                <Link href={`/performances?customer=${customer.id}`}>
+                  <Truck className="h-4 w-4 mr-2" />
+                  View All Performances
+                  <ExternalLink className="h-3 w-3 ml-auto" />
+                </Link>
+              </Button>
+            </div>
+          </DetailSectionCard>
+          </div>
+
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Performance Snapshot</CardTitle>
+                <CardDescription>Key metrics across operations</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <Hash className="h-4 w-4" />
+                  <div>
+                    <p className="text-xs uppercase text-muted-foreground">Customer ID</p>
+                    <p className="font-semibold">{customer.id}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Activity className="h-4 w-4" />
+                  <div>
+                    <p className="text-xs uppercase text-muted-foreground">Trips In Progress</p>
+                    <p className="font-semibold">{aggregate.inProgressTrips}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <CheckCircle className="h-4 w-4" />
+                  <div>
+                    <p className="text-xs uppercase text-muted-foreground">Completed Trips</p>
+                    <p className="font-semibold">{aggregate.completedTrips}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Navigation className="h-4 w-4" />
+                  <div>
+                    <p className="text-xs uppercase text-muted-foreground">Distance Covered</p>
+                    <p className="font-semibold">{formatNumber(aggregate.totalDistance)} km</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <DollarSign className="h-4 w-4" />
+                  <div>
+                    <p className="text-xs uppercase text-muted-foreground">Total Revenue</p>
+                    <p className="font-semibold">{formatCurrency(aggregate.totalRevenue)}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <PiggyBank className="h-4 w-4" />
+                  <div>
+                    <p className="text-xs uppercase text-muted-foreground">Total Cost</p>
+                    <p className="font-semibold">{formatCurrency(aggregate.totalCost)}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 border-t pt-3">
+                  <TrendingUp className={`h-4 w-4 ${grossMargin >= 0 ? 'text-green-600' : 'text-red-600'}`} />
+                  <div>
+                    <p className="text-xs uppercase text-muted-foreground">Gross Margin</p>
+                    <p className={`font-bold ${grossMargin >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {formatCurrency(grossMargin)}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Contact Details</CardTitle>
+                <CardDescription>Reach out directly</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm">
+                <div className="flex items-center gap-3">
+                  <User className="h-4 w-4" />
+                  <div>
+                    <p className="text-xs uppercase text-muted-foreground">Contact Person</p>
+                    <p className="font-semibold">{customer.contact_person || 'N/A'}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Phone className="h-4 w-4" />
+                  <div>
+                    <p className="text-xs uppercase text-muted-foreground">Phone</p>
+                    <p className="font-mono">{customer.phone || 'N/A'}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Mail className="h-4 w-4" />
+                  <div>
+                    <p className="text-xs uppercase text-muted-foreground">Email</p>
+                    <p>{customer.email || 'N/A'}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+        </TabsContent>
+
+        <TabsContent value="operations" className="space-y-6">
+          <DetailSectionCard title="Active Operations" description="Live engagements and their progress" icon={<Activity className="h-5 w-5" />}>
             {activeOperations.length > 0 ? (
               <div className="space-y-4">
                 {activeOperations.map(operation => {
                   const tripCompletion = operation.totalTrips > 0 ? Math.min(Math.max((operation.completedTrips / operation.totalTrips) * 100, 0), 100) : 0;
                   const volumeCompletion = operation.completionRate ?? (operation.volume && operation.volume > 0 ? Math.min(Math.max((operation.deliveredTonnage / operation.volume) * 100, 0), 100) : 0);
+                  const tonKm = operation.deliveredTonnage * (operation.km ?? 0);
+                  const revenue = (operation.tariff ?? 0) * tonKm;
+                  const margin = revenue - operation.totalCost;
+                  const marginPercent = revenue > 0 ? (margin / revenue) * 100 : 0;
 
                   return (
-                    <div key={operation.id} className="rounded-lg border p-4">
+                    <div key={operation.id} className="rounded-lg border p-4 hover:border-blue-300 transition-colors">
                       <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="font-semibold">Operation {operation.operationid}</p>
+                        <div className="flex-1">
+                          <Link href={`/operations/${operation.id}`} className="font-semibold text-blue-600 hover:underline">
+                            Operation {operation.operationid}
+                          </Link>
                           <p className="text-xs text-muted-foreground">Last dispatch: {formatDate(operation.lastDispatch)}</p>
                         </div>
                         <Badge className={`text-xs ${getStatusColor(operation.status)}`}>{operation.status.charAt(0).toUpperCase() + operation.status.slice(1)}</Badge>
@@ -270,7 +454,7 @@ export default function CustomersShow({ customer, activityLogs = [], activeOpera
                         </div>
                       </div>
 
-                      <div className="mt-4 grid gap-3 text-xs sm:grid-cols-3">
+                      <div className="mt-4 grid gap-3 text-xs sm:grid-cols-4">
                         <div className="flex items-center gap-2 rounded-lg bg-muted p-3">
                           <Activity className="h-4 w-4 text-blue-600" />
                           <div>
@@ -285,18 +469,25 @@ export default function CustomersShow({ customer, activityLogs = [], activeOpera
                             <p className="font-semibold">{operation.completionRate !== null ? `${operation.completionRate.toFixed(1)}%` : 'N/A'}</p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 rounded-lg bg-muted p-3">
-                          <Calendar className="h-4 w-4 text-purple-600" />
+                        <div className="flex items-center gap-2 rounded-lg bg-green-50 border border-green-200 p-3">
+                          <DollarSign className="h-4 w-4 text-green-600" />
                           <div>
-                            <p className="text-xs uppercase">Started</p>
-                            <p className="font-semibold">{formatDate(operation.startdate)}</p>
+                            <p className="text-xs uppercase">Revenue</p>
+                            <p className="font-semibold">{formatNumber(revenue, { maximumFractionDigits: 0 })} Birr</p>
+                          </div>
+                        </div>
+                        <div className={`flex items-center gap-2 rounded-lg p-3 border ${margin >= 0 ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                          <TrendingUp className={`h-4 w-4 ${margin >= 0 ? 'text-green-600' : 'text-red-600'}`} />
+                          <div>
+                            <p className="text-xs uppercase">Margin</p>
+                            <p className={`font-semibold ${margin >= 0 ? 'text-green-700' : 'text-red-700'}`}>{marginPercent.toFixed(1)}%</p>
                           </div>
                         </div>
                       </div>
 
                       <div className="mt-4 flex justify-end">
                         <Button variant="outline" asChild size="sm">
-                          <Link href={`/operations/${operation.id}`}>View operation</Link>
+                          <Link href={`/operations/${operation.id}`}>View Details</Link>
                         </Button>
                       </div>
                     </div>
@@ -304,96 +495,113 @@ export default function CustomersShow({ customer, activityLogs = [], activeOpera
                 })}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">This customer has no active operations.</p>
+              <p className="py-8 text-center text-muted-foreground">This customer has no active operations.</p>
             )}
           </DetailSectionCard>
+        </TabsContent>
 
-          {activityLogs.length > 0 && (
-            <DetailSectionCard title="Activity History" description="Auditable timeline of changes to this account" icon={<History className="h-5 w-5" />}>
-              <div className="space-y-3">
-                {activityLogs.map(log => (
-                  <div key={log.id} className="flex items-start gap-3 rounded-lg border p-3">
-                    <div className="text-xs font-semibold uppercase text-muted-foreground">{formatDate(log.created_at)}</div>
-                    <div>
-                      <p className="font-medium">{log.causer?.name || 'System'}</p>
-                      <p className="text-xs text-muted-foreground">{log.description}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </DetailSectionCard>
-          )}
-        </div>
+        <TabsContent value="analytics" className="space-y-6">
+          <div className="grid gap-4 md:grid-cols-4">
+            <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-center">
+              <p className="text-xs font-semibold uppercase text-muted-foreground">Total Revenue</p>
+              <p className="mt-2 text-2xl font-bold text-green-700">{formatCurrency(aggregate.totalRevenue)}</p>
+              <p className="mt-1 text-xs text-muted-foreground">Across all operations</p>
+            </div>
+            <div className="rounded-lg border border-orange-200 bg-orange-50 p-4 text-center">
+              <p className="text-xs font-semibold uppercase text-muted-foreground">Total Cost</p>
+              <p className="mt-2 text-2xl font-bold text-orange-700">{formatCurrency(aggregate.totalCost)}</p>
+              <p className="mt-1 text-xs text-muted-foreground">Operational expenses</p>
+            </div>
+            <div className={`rounded-lg border p-4 text-center ${grossMargin >= 0 ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}>
+              <p className="text-xs font-semibold uppercase text-muted-foreground">Gross Margin</p>
+              <p className={`mt-2 text-2xl font-bold ${grossMargin >= 0 ? 'text-green-700' : 'text-red-700'}`}>{formatCurrency(grossMargin)}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{grossMarginPercent.toFixed(1)}% margin</p>
+            </div>
+            <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-center">
+              <p className="text-xs font-semibold uppercase text-muted-foreground">Avg per Operation</p>
+              <p className="mt-2 text-2xl font-bold text-blue-700">{formatCurrency(averageRevenuePerOperation)}</p>
+              <p className="mt-1 text-xs text-muted-foreground">Revenue average</p>
+            </div>
+          </div>
 
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Snapshot</CardTitle>
-              <CardDescription>Key metrics</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center gap-3">
-                <Hash className="h-4 w-4" />
-                <div>
-                  <p className="text-xs uppercase text-muted-foreground">Customer ID</p>
-                  <p className="font-semibold">{customer.id}</p>
+          <div className="grid gap-6 lg:grid-cols-2">
+            {operationChartData.length > 0 && (
+              <DetailSectionCard title="Operations Performance" icon={<BarChart3 className="h-5 w-5" />}>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={operationChartData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Bar dataKey="tonnage" fill="#22c55e" name="Tonnage (MT)" />
+                      <Bar dataKey="trips" fill="#3b82f6" name="Trips" />
+                    </BarChart>
+                  </ResponsiveContainer>
                 </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <Activity className="h-4 w-4" />
-                <div>
-                  <p className="text-xs uppercase text-muted-foreground">Trips In Progress</p>
-                  <p className="font-semibold">{aggregate.inProgressTrips}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <Navigation className="h-4 w-4" />
-                <div>
-                  <p className="text-xs uppercase text-muted-foreground">Distance Covered</p>
-                  <p className="font-semibold">{formatNumber(aggregate.totalDistance)} km</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <PiggyBank className="h-4 w-4" />
-                <div>
-                  <p className="text-xs uppercase text-muted-foreground">Total Cost</p>
-                  <p className="font-semibold">{formatNumber(aggregate.totalCost)} Birr</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </DetailSectionCard>
+            )}
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Contact Details</CardTitle>
-              <CardDescription>Reach out directly</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm">
-              <div className="flex items-center gap-3">
-                <User className="h-4 w-4" />
-                <div>
-                  <p className="text-xs uppercase text-muted-foreground">Contact Person</p>
-                  <p className="font-semibold">{customer.contact_person || 'N/A'}</p>
+            {hasStatusData && (
+              <DetailSectionCard title="Trip Status Distribution" icon={<Activity className="h-5 w-5" />}>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={statusData} dataKey="value" nameKey="label" cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={4} label>
+                        {statusData.map((_, index) => (
+                          <Cell key={index} fill={piePalette[index % piePalette.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
                 </div>
+              </DetailSectionCard>
+            )}
+          </div>
+
+          <DetailSectionCard title="Financial Metrics" icon={<DollarSign className="h-5 w-5" />}>
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="rounded-lg border p-3">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Revenue per Trip</p>
+                <p className="mt-2 font-semibold">{formatCurrency(revenuePerTrip)}</p>
               </div>
-              <div className="flex items-center gap-3">
-                <Phone className="h-4 w-4" />
-                <div>
-                  <p className="text-xs uppercase text-muted-foreground">Phone</p>
-                  <p className="font-mono">{customer.phone || 'N/A'}</p>
-                </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Cost per Trip</p>
+                <p className="mt-2 font-semibold">{formatCurrency(costPerTrip)}</p>
               </div>
-              <div className="flex items-center gap-3">
-                <Mail className="h-4 w-4" />
-                <div>
-                  <p className="text-xs uppercase text-muted-foreground">Email</p>
-                  <p>{customer.email || 'N/A'}</p>
-                </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Cost per Ton-Km</p>
+                <p className="mt-2 font-semibold">{formatNumber(costPerTonKm, { minimumFractionDigits: 2 })} Birr</p>
               </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Avg Revenue/Operation</p>
+                <p className="mt-2 font-semibold">{formatCurrency(averageRevenuePerOperation)}</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Avg Cost/Operation</p>
+                <p className="mt-2 font-semibold">{formatCurrency(averageCostPerOperation)}</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Total Ton-Km</p>
+                <p className="mt-2 font-semibold">{formatNumber(aggregate.totalTonKm, { maximumFractionDigits: 0 })}</p>
+              </div>
+            </div>
+          </DetailSectionCard>
+        </TabsContent>
+
+        <TabsContent value="activity" className="space-y-6">
+          <DetailSectionCard title="Activity History" description="Auditable timeline of changes to this account" icon={<History className="h-5 w-5" />}>
+            {activityLogs && activityLogs.length > 0 ? (
+              <ActivityLogTable logs={activityLogs} />
+            ) : (
+              <p className="py-8 text-center text-muted-foreground">No activity history available.</p>
+            )}
+          </DetailSectionCard>
+        </TabsContent>
+      </Tabs>
 
       <DeleteConfirmationDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen} title="Delete Customer" description={`Are you sure you want to delete ${customer.name}? This action cannot be undone.`} onConfirm={handleDelete} isLoading={isDeleting} />
     </DetailPageLayout>

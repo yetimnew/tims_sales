@@ -4,9 +4,11 @@ import * as React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import AppLayout from '@/layouts/app-layout';
 import { usePermissions } from '@/hooks/use-permissions';
+import { useListingLoading } from '@/hooks/use-listing-loading';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
 import {
@@ -442,6 +444,178 @@ const renderDelta = (label: string, value: number | null | undefined) => (
 
 const getProgressWidth = (value: number) => `${Math.min(Math.max(value, 0), 100)}%`;
 
+// Skeleton Components
+const SkeletonKPICard = () => (
+    <Card className="border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+        <CardContent className="p-5">
+            <div className="flex items-start justify-between gap-3">
+                <div className="space-y-2 flex-1">
+                    <Skeleton className="h-3 w-24" />
+                    <Skeleton className="h-8 w-32" />
+                    <Skeleton className="h-4 w-20" />
+                </div>
+                <Skeleton className="h-11 w-11 rounded-lg" />
+            </div>
+        </CardContent>
+    </Card>
+);
+
+const SkeletonChart = ({ height = 360 }: { height?: number }) => (
+    <div className="w-full" style={{ height }}>
+        <Skeleton className="h-full w-full rounded-lg" />
+    </div>
+);
+
+const SkeletonPieChart = () => (
+    <div className="flex flex-col gap-6">
+        <div className="text-center">
+            <Skeleton className="h-4 w-32 mx-auto mb-2" />
+            <Skeleton className="h-8 w-24 mx-auto" />
+        </div>
+        <div className="mx-auto w-full max-w-[360px]">
+            <Skeleton className="h-[320px] w-full rounded-lg" />
+        </div>
+        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-4 border-t border-slate-200/60 pt-4 dark:border-slate-700/60">
+            {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-3">
+                    <Skeleton className="h-2.5 w-2.5 rounded-full" />
+                    <div className="flex flex-col gap-1">
+                        <Skeleton className="h-4 w-20" />
+                        <Skeleton className="h-3 w-16" />
+                    </div>
+                </div>
+            ))}
+        </div>
+    </div>
+);
+
+const SkeletonFinancialPulse = () => (
+    <div className="grid gap-3">
+        {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="flex items-center justify-between gap-4 rounded-lg border border-slate-200/70 dark:border-slate-700/60 bg-white/50 p-3 dark:bg-slate-900/40">
+                <div className="space-y-2">
+                    <Skeleton className="h-3 w-32" />
+                    <Skeleton className="h-6 w-24" />
+                </div>
+                <div className="space-y-1">
+                    <Skeleton className="h-3 w-20" />
+                    <Skeleton className="h-4 w-16" />
+                </div>
+            </div>
+        ))}
+    </div>
+);
+
+const SkeletonMaintenancePulse = () => (
+    <div className="space-y-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <Skeleton className="h-9 w-9 rounded" />
+                    <div className="space-y-1">
+                        <Skeleton className="h-4 w-24" />
+                        <Skeleton className="h-3 w-32" />
+                    </div>
+                </div>
+                <Skeleton className="h-8 w-16" />
+            </div>
+        ))}
+    </div>
+);
+
+const SkeletonUpcomingJobs = () => (
+    <div className="space-y-3">
+        <Skeleton className="h-4 w-24" />
+        <div className="grid gap-3">
+            {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex items-center justify-between rounded-lg border px-3 py-2">
+                    <div className="flex items-center gap-3">
+                        <Skeleton className="h-5 w-5 rounded" />
+                        <div className="space-y-1">
+                            <Skeleton className="h-4 w-24" />
+                            <Skeleton className="h-3 w-32" />
+                        </div>
+                    </div>
+                    <div className="text-right space-y-1">
+                        <Skeleton className="h-4 w-20" />
+                        <Skeleton className="h-3 w-16" />
+                    </div>
+                </div>
+            ))}
+        </div>
+    </div>
+);
+
+const SkeletonStatusBreakdown = () => (
+    <div className="space-y-3">
+        {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="space-y-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 p-4">
+                <div className="flex items-center justify-between gap-2">
+                    <div className="space-y-1">
+                        <Skeleton className="h-4 w-24" />
+                        <Skeleton className="h-3 w-20" />
+                    </div>
+                    <Skeleton className="h-6 w-12" />
+                </div>
+                <Skeleton className="h-2 w-full rounded-full" />
+            </div>
+        ))}
+    </div>
+);
+
+const SkeletonTable = ({ rows = 5 }: { rows?: number }) => (
+    <Table>
+        <TableHeader>
+            <TableRow>
+                <TableHead><Skeleton className="h-4 w-24" /></TableHead>
+                <TableHead className="text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableHead>
+                <TableHead className="text-right"><Skeleton className="h-4 w-20 ml-auto" /></TableHead>
+            </TableRow>
+        </TableHeader>
+        <TableBody>
+            {Array.from({ length: rows }).map((_, i) => (
+                <TableRow key={i}>
+                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                    <TableCell className="text-right"><Skeleton className="h-4 w-12 ml-auto" /></TableCell>
+                    <TableCell className="text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
+                </TableRow>
+            ))}
+        </TableBody>
+    </Table>
+);
+
+const SkeletonPerformancesTable = ({ rows = 5 }: { rows?: number }) => (
+    <Table>
+        <TableHeader>
+            <TableRow>
+                <TableHead><Skeleton className="h-4 w-16" /></TableHead>
+                <TableHead><Skeleton className="h-4 w-20" /></TableHead>
+                <TableHead><Skeleton className="h-4 w-24" /></TableHead>
+                <TableHead className="text-right"><Skeleton className="h-4 w-20 ml-auto" /></TableHead>
+                <TableHead className="text-right"><Skeleton className="h-4 w-24 ml-auto" /></TableHead>
+                <TableHead className="text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableHead>
+            </TableRow>
+        </TableHeader>
+        <TableBody>
+            {Array.from({ length: rows }).map((_, i) => (
+                <TableRow key={i}>
+                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                    <TableCell>
+                        <div className="space-y-1">
+                            <Skeleton className="h-4 w-28" />
+                            <Skeleton className="h-3 w-20" />
+                        </div>
+                    </TableCell>
+                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                    <TableCell className="text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
+                    <TableCell className="text-right"><Skeleton className="h-4 w-20 ml-auto" /></TableCell>
+                    <TableCell className="text-right"><Skeleton className="h-6 w-20 ml-auto rounded-full" /></TableCell>
+                </TableRow>
+            ))}
+        </TableBody>
+    </Table>
+);
+
 export default function Dashboard({
     primaryKpis,
     executiveSummary,
@@ -456,6 +630,34 @@ export default function Dashboard({
     const { hasPermission } = usePermissions();
     const canViewDashboard = hasPermission('dashboard.view');
     const [isVisible, setIsVisible] = React.useState(false);
+
+    const SKELETON_FLAG_KEY = 'dashboard.shouldShowSkeleton';
+    const isDataReady = React.useMemo(() => {
+        // Check if data props exist (they may be empty arrays/objects, which is still "ready")
+        return (
+            primaryKpis !== null &&
+            primaryKpis !== undefined &&
+            Array.isArray(primaryKpis) &&
+            executiveSummary !== null &&
+            executiveSummary !== undefined &&
+            networkOverview !== null &&
+            networkOverview !== undefined &&
+            financialOverview !== null &&
+            financialOverview !== undefined &&
+            assetOverview !== null &&
+            assetOverview !== undefined &&
+            safetyOverview !== null &&
+            safetyOverview !== undefined
+        );
+    }, [primaryKpis, executiveSummary, networkOverview, financialOverview, assetOverview, safetyOverview]);
+
+    const { isLoading } = useListingLoading({
+        storageKey: SKELETON_FLAG_KEY,
+        isDataReady,
+        onlySamePath: true,
+        targetPath: '/dashboard',
+        initialIsLoading: true,
+    });
 
     React.useEffect(() => {
         setIsVisible(true);
@@ -575,15 +777,16 @@ export default function Dashboard({
 
                 {/* Primary KPIs Section */}
                 <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-                    {primaryKpis.length === 0 && (
+                    {isLoading ? (
+                        Array.from({ length: 6 }).map((_, i) => <SkeletonKPICard key={i} />)
+                    ) : primaryKpis.length === 0 ? (
                         <Card className="sm:col-span-2 lg:col-span-3 xl:col-span-6 border-dashed border-slate-300/70 dark:border-slate-700/70 bg-white dark:bg-slate-800">
                             <CardContent className="flex h-32 items-center justify-center text-sm text-slate-500 dark:text-slate-400">
                                 No KPI insights available yet.
                             </CardContent>
                         </Card>
-                    )}
-
-                    {primaryKpis.map((kpi, index) => {
+                    ) : (
+                        primaryKpis.map((kpi, index) => {
                         const Icon = PRIMARY_KPI_ICONS[kpi.key] ?? Sparkles;
                         const displayValue = formatPrimaryKpiValue(kpi);
                         const backgrounds = [
@@ -647,7 +850,8 @@ export default function Dashboard({
                                 </CardContent>
                             </Card>
                         );
-                    })}
+                        })
+                    )}
                 </section>
 
                 <section className="space-y-6">
@@ -670,7 +874,9 @@ export default function Dashboard({
                                 <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Daily tonnage with trip count and ton-km productivity overlays.</CardDescription>
                             </CardHeader>
                             <CardContent className="pt-6">
-                                {dailyTrendWithProductivity.length === 0 ? (
+                                {isLoading ? (
+                                    <SkeletonChart height={360} />
+                                ) : dailyTrendWithProductivity.length === 0 ? (
                                     renderEmptyState('No performance data recorded for the selected window.')
                                 ) : (
                                     <ResponsiveContainer width="100%" height={360}>
@@ -697,7 +903,9 @@ export default function Dashboard({
                                 <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Trips grouped by main vs return loads (30d).</CardDescription>
                             </CardHeader>
                             <CardContent className="pt-6">
-                                {networkOverview.loadPhaseBreakdown.length === 0 ? (
+                                {isLoading ? (
+                                    <SkeletonPieChart />
+                                ) : networkOverview.loadPhaseBreakdown.length === 0 ? (
                                     renderEmptyState('Load phase data unavailable – capture trips with load phase details to populate.')
                                 ) : (
                                     <div className="flex flex-col gap-6">
@@ -765,7 +973,9 @@ export default function Dashboard({
                             <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Tonnage handled on major origin-destination pairs (30d).</CardDescription>
                         </CardHeader>
                         <CardContent className="pt-6">
-                            {networkOverview.corridors.length === 0 ? (
+                            {isLoading ? (
+                                <SkeletonChart height={360} />
+                            ) : networkOverview.corridors.length === 0 ? (
                                 renderEmptyState('No corridor flows recorded in the period.')
                             ) : (
                                 <ResponsiveContainer width="100%" height={360}>
@@ -803,7 +1013,9 @@ export default function Dashboard({
                                 <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Six-month view across revenue, cost, and net contribution.</CardDescription>
                             </CardHeader>
                             <CardContent className="pt-6">
-                                {financialOverview.trend.length === 0 ? (
+                                {isLoading ? (
+                                    <SkeletonChart height={360} />
+                                ) : financialOverview.trend.length === 0 ? (
                                     renderEmptyState('No financial entries captured yet.')
                                 ) : (
                                     <ResponsiveContainer width="100%" height={360}>
@@ -828,7 +1040,21 @@ export default function Dashboard({
                                 <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Share of spend across cost categories (30d).</CardDescription>
                             </CardHeader>
                             <CardContent className="pt-6">
-                                {financialOverview.costBreakdown.length === 0 ? (
+                                {isLoading ? (
+                                    <>
+                                        <Skeleton className="h-[280px] w-full rounded-lg mb-4" />
+                                        <div className="grid gap-2 text-sm">
+                                            <div className="flex items-center justify-between">
+                                                <Skeleton className="h-4 w-40" />
+                                                <Skeleton className="h-4 w-24" />
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <Skeleton className="h-4 w-36" />
+                                                <Skeleton className="h-4 w-24" />
+                                            </div>
+                                        </div>
+                                    </>
+                                ) : financialOverview.costBreakdown.length === 0 ? (
                                     renderEmptyState('Cost breakdown unavailable. Add financial records to populate.')
                                 ) : (
                                     <>
@@ -863,24 +1089,28 @@ export default function Dashboard({
                                 <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Month-over-month shifts in core financials.</CardDescription>
                             </CardHeader>
                             <CardContent className="pt-6">
-                                <div className="grid gap-3">
-                                    {financialPulseMetrics.map(metric => (
-                                        <div
-                                            key={metric.key}
-                                            className="flex items-center justify-between gap-4 rounded-lg border border-slate-200/70 dark:border-slate-700/60 bg-white/50 p-3 dark:bg-slate-900/40"
-                                        >
-                                            <div>
-                                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                                                    {metric.label}
-                                                </p>
-                                                <p className="text-lg font-semibold text-slate-900 dark:text-white">
-                                                    {formatFinancialValue(metric.value, metric.type)}
-                                                </p>
+                                {isLoading ? (
+                                    <SkeletonFinancialPulse />
+                                ) : (
+                                    <div className="grid gap-3">
+                                        {financialPulseMetrics.map(metric => (
+                                            <div
+                                                key={metric.key}
+                                                className="flex items-center justify-between gap-4 rounded-lg border border-slate-200/70 dark:border-slate-700/60 bg-white/50 p-3 dark:bg-slate-900/40"
+                                            >
+                                                <div>
+                                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                                                        {metric.label}
+                                                    </p>
+                                                    <p className="text-lg font-semibold text-slate-900 dark:text-white">
+                                                        {formatFinancialValue(metric.value, metric.type)}
+                                                    </p>
+                                                </div>
+                                                {renderDelta('Vs previous 30d', metric.change)}
                                             </div>
-                                            {renderDelta('Vs previous 30d', metric.change)}
-                                        </div>
-                                    ))}
-                                </div>
+                                        ))}
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
 
@@ -895,7 +1125,9 @@ export default function Dashboard({
                                 <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Today's operational status distribution</CardDescription>
                             </CardHeader>
                             <CardContent className="pt-6">
-                                {hasLatestStatusData ? (
+                                {isLoading ? (
+                                    <SkeletonStatusBreakdown />
+                                ) : hasLatestStatusData ? (
                                     <div className="space-y-3">
                                         {statusSummary.statusBreakdown.slice(0, 6).map((entry) => {
                                             const share = totalStatusEntries > 0 ? (entry.count / totalStatusEntries) * 100 : 0;
@@ -969,7 +1201,9 @@ export default function Dashboard({
                                 })()}
                         </CardHeader>
                         <CardContent className="pt-6">
-                            {financialOverview.fuel.trend.length === 0 ? (
+                            {isLoading ? (
+                                <SkeletonChart height={360} />
+                            ) : financialOverview.fuel.trend.length === 0 ? (
                                 renderEmptyState('Fuel records unavailable for the selected window.')
                             ) : (
                                 <ResponsiveContainer width="100%" height={360}>
@@ -1009,41 +1243,47 @@ export default function Dashboard({
                                 <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Current status of maintenance queue.</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4 pt-6">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <Wrench className="h-9 w-9 text-indigo-500" />
-                                        <div>
-                                            <p className="text-sm font-medium">Scheduled</p>
-                                            <p className="text-muted-foreground">Booked in calendar</p>
+                                {isLoading ? (
+                                    <SkeletonMaintenancePulse />
+                                ) : (
+                                    <>
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <Wrench className="h-9 w-9 text-indigo-500" />
+                                                <div>
+                                                    <p className="text-sm font-medium">Scheduled</p>
+                                                    <p className="text-muted-foreground">Booked in calendar</p>
+                                                </div>
+                                            </div>
+                                            <span className="text-2xl font-semibold">{integerFormatter.format(assetOverview.maintenance.scheduled)}</span>
                                         </div>
-                                    </div>
-                                    <span className="text-2xl font-semibold">{integerFormatter.format(assetOverview.maintenance.scheduled)}</span>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-sm font-medium text-rose-600">Overdue</p>
-                                        <p className="text-xs text-muted-foreground">Past schedule</p>
-                                    </div>
-                                    <span className="text-xl font-semibold text-rose-600">{integerFormatter.format(assetOverview.maintenance.overdue)}</span>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-sm font-medium text-teal-600">Completed (30d)</p>
-                                        <p className="text-xs text-muted-foreground">Closed work orders</p>
-                                    </div>
-                                    <span className="text-xl font-semibold text-teal-600">{integerFormatter.format(assetOverview.maintenance.completed30d)}</span>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-sm font-medium">Avg turnaround</p>
-                                        <p className="text-xs text-muted-foreground">Scheduled to complete</p>
-                                    </div>
-                                    <span className="text-xl font-semibold">
-                                        {assetOverview.maintenance.averageTurnaroundDays === null
-                                            ? '—'
-                                            : `${formatNumber(assetOverview.maintenance.averageTurnaroundDays)} days`}
-                                    </span>
-                                </div>
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <p className="text-sm font-medium text-rose-600">Overdue</p>
+                                                <p className="text-xs text-muted-foreground">Past schedule</p>
+                                            </div>
+                                            <span className="text-xl font-semibold text-rose-600">{integerFormatter.format(assetOverview.maintenance.overdue)}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <p className="text-sm font-medium text-teal-600">Completed (30d)</p>
+                                                <p className="text-xs text-muted-foreground">Closed work orders</p>
+                                            </div>
+                                            <span className="text-xl font-semibold text-teal-600">{integerFormatter.format(assetOverview.maintenance.completed30d)}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <p className="text-sm font-medium">Avg turnaround</p>
+                                                <p className="text-xs text-muted-foreground">Scheduled to complete</p>
+                                            </div>
+                                            <span className="text-xl font-semibold">
+                                                {assetOverview.maintenance.averageTurnaroundDays === null
+                                                    ? '—'
+                                                    : `${formatNumber(assetOverview.maintenance.averageTurnaroundDays)} days`}
+                                            </span>
+                                        </div>
+                                    </>
+                                )}
                             </CardContent>
                         </Card>
 
@@ -1053,58 +1293,65 @@ export default function Dashboard({
                                 <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Monthly completions vs scheduled jobs, with next five assignments.</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-6 pt-6">
-                                {assetOverview.maintenance.trend.length === 0 ? (
+                                {isLoading ? (
+                                    <>
+                                        <SkeletonChart height={300} />
+                                        <SkeletonUpcomingJobs />
+                                    </>
+                                ) : assetOverview.maintenance.trend.length === 0 ? (
                                     renderEmptyState('Maintenance trend not yet recorded.')
                                 ) : (
-                                    <ResponsiveContainer width="100%" height={300}>
-                                        <ComposedChart data={assetOverview.maintenance.trend}>
-                                            <CartesianGrid strokeDasharray="3 3" />
-                                            <XAxis dataKey="period" />
-                                            <YAxis />
-                                            <Tooltip />
-                                            <Legend />
-                                            <Bar dataKey="scheduled" name="Scheduled" fill="#4338ca" radius={[4, 4, 0, 0]} />
-                                            <Bar dataKey="completed" name="Completed" fill="#14b8a6" radius={[4, 4, 0, 0]} />
-                                        </ComposedChart>
-                                    </ResponsiveContainer>
-                                )}
+                                    <>
+                                        <ResponsiveContainer width="100%" height={300}>
+                                            <ComposedChart data={assetOverview.maintenance.trend}>
+                                                <CartesianGrid strokeDasharray="3 3" />
+                                                <XAxis dataKey="period" />
+                                                <YAxis />
+                                                <Tooltip />
+                                                <Legend />
+                                                <Bar dataKey="scheduled" name="Scheduled" fill="#4338ca" radius={[4, 4, 0, 0]} />
+                                                <Bar dataKey="completed" name="Completed" fill="#14b8a6" radius={[4, 4, 0, 0]} />
+                                            </ComposedChart>
+                                        </ResponsiveContainer>
 
-                                <div className="space-y-3">
-                                    <h3 className="text-sm font-semibold text-muted-foreground uppercase">Next jobs</h3>
-                                    {assetOverview.maintenance.upcoming.length === 0 ? (
-                                        <p className="text-sm text-muted-foreground">No upcoming maintenance within the planning horizon.</p>
-                                    ) : (
-                                        <div className="grid gap-3">
-                                            {assetOverview.maintenance.upcoming.map(item => {
-                                                const daysUntil = item.daysUntil ?? null;
-                                                const relativeLabel = item.scheduledRelative
-                                                    ?? (daysUntil === null
-                                                        ? 'Not scheduled'
-                                                        : daysUntil > 0
-                                                            ? `in ${daysUntil} day${daysUntil === 1 ? '' : 's'}`
-                                                            : daysUntil === 0
-                                                                ? 'Today'
-                                                                : `${Math.abs(daysUntil)} day${Math.abs(daysUntil) === 1 ? '' : 's'} overdue`);
+                                        <div className="space-y-3">
+                                            <h3 className="text-sm font-semibold text-muted-foreground uppercase">Next jobs</h3>
+                                            {assetOverview.maintenance.upcoming.length === 0 ? (
+                                                <p className="text-sm text-muted-foreground">No upcoming maintenance within the planning horizon.</p>
+                                            ) : (
+                                                <div className="grid gap-3">
+                                                    {assetOverview.maintenance.upcoming.map(item => {
+                                                        const daysUntil = item.daysUntil ?? null;
+                                                        const relativeLabel = item.scheduledRelative
+                                                            ?? (daysUntil === null
+                                                                ? 'Not scheduled'
+                                                                : daysUntil > 0
+                                                                    ? `in ${daysUntil} day${daysUntil === 1 ? '' : 's'}`
+                                                                    : daysUntil === 0
+                                                                        ? 'Today'
+                                                                        : `${Math.abs(daysUntil)} day${Math.abs(daysUntil) === 1 ? '' : 's'} overdue`);
 
-                                                return (
-                                                    <div key={item.id} className="flex items-center justify-between rounded-lg border px-3 py-2">
-                                                        <div className="flex items-center gap-3">
-                                                            <ShieldCheck className="h-5 w-5 text-indigo-500" />
-                                                            <div>
-                                                                <p className="text-sm font-medium">Truck {item.truck}</p>
-                                                                <p className="text-xs text-muted-foreground">Scheduled {item.scheduledDate ? dateFormatter.format(new Date(item.scheduledDate)) : 'TBC'}</p>
+                                                        return (
+                                                            <div key={item.id} className="flex items-center justify-between rounded-lg border px-3 py-2">
+                                                                <div className="flex items-center gap-3">
+                                                                    <ShieldCheck className="h-5 w-5 text-indigo-500" />
+                                                                    <div>
+                                                                        <p className="text-sm font-medium">Truck {item.truck}</p>
+                                                                        <p className="text-xs text-muted-foreground">Scheduled {item.scheduledDate ? dateFormatter.format(new Date(item.scheduledDate)) : 'TBC'}</p>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="text-right text-sm">
+                                                                    <p className="font-medium">{relativeLabel}</p>
+                                                                    <p className="text-xs text-muted-foreground capitalize">{item.status ?? 'scheduled'}</p>
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                        <div className="text-right text-sm">
-                                                            <p className="font-medium">{relativeLabel}</p>
-                                                            <p className="text-xs text-muted-foreground capitalize">{item.status ?? 'scheduled'}</p>
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
                                         </div>
-                                    )}
-                                </div>
+                                    </>
+                                )}
                             </CardContent>
                         </Card>
                     </div>
@@ -1130,23 +1377,47 @@ export default function Dashboard({
                                 <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Rate normalised per 100 trips.</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4 pt-6">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <ShieldCheck className="h-10 w-10 text-rose-500" />
-                                        <div>
-                                            <p className="text-sm text-muted-foreground">Recorded incidents</p>
-                                            <p className="text-3xl font-semibold">{integerFormatter.format(safetyOverview.incidents90d)}</p>
+                                {isLoading ? (
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <Skeleton className="h-10 w-10 rounded" />
+                                                <div className="space-y-2">
+                                                    <Skeleton className="h-4 w-32" />
+                                                    <Skeleton className="h-8 w-20" />
+                                                </div>
+                                            </div>
+                                            <Skeleton className="h-6 w-16" />
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <div className="space-y-2">
+                                                <Skeleton className="h-4 w-28" />
+                                                <Skeleton className="h-7 w-16" />
+                                            </div>
+                                            <Skeleton className="h-6 w-16" />
                                         </div>
                                     </div>
-                                    {renderTrendIndicator(safetyOverview.change.incidents)}
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-sm text-muted-foreground">Rate per 100 trips</p>
-                                        <p className="text-2xl font-semibold">{formatPercent(safetyOverview.incidentRatePer100Trips, 2)}</p>
-                                    </div>
-                                    {renderTrendIndicator(safetyOverview.change.incidentRate)}
-                                </div>
+                                ) : (
+                                    <>
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <ShieldCheck className="h-10 w-10 text-rose-500" />
+                                                <div>
+                                                    <p className="text-sm text-muted-foreground">Recorded incidents</p>
+                                                    <p className="text-3xl font-semibold">{integerFormatter.format(safetyOverview.incidents90d)}</p>
+                                                </div>
+                                            </div>
+                                            {renderTrendIndicator(safetyOverview.change.incidents)}
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <p className="text-sm text-muted-foreground">Rate per 100 trips</p>
+                                                <p className="text-2xl font-semibold">{formatPercent(safetyOverview.incidentRatePer100Trips, 2)}</p>
+                                            </div>
+                                            {renderTrendIndicator(safetyOverview.change.incidentRate)}
+                                        </div>
+                                    </>
+                                )}
                             </CardContent>
                         </Card>
 
@@ -1156,7 +1427,9 @@ export default function Dashboard({
                                 <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Distribution by severity level.</CardDescription>
                             </CardHeader>
                             <CardContent className="pt-6">
-                                {safetyOverview.severityMix.length === 0 ? (
+                                {isLoading ? (
+                                    <Skeleton className="h-[280px] w-full rounded-lg" />
+                                ) : safetyOverview.severityMix.length === 0 ? (
                                     renderEmptyState('No safety events reported in this window.')
                                 ) : (
                                     <ResponsiveContainer width="100%" height={280}>
@@ -1179,7 +1452,9 @@ export default function Dashboard({
                                 <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Rolling six-month incident volume.</CardDescription>
                             </CardHeader>
                             <CardContent className="pt-6">
-                                {safetyOverview.incidentTrend.length === 0 ? (
+                                {isLoading ? (
+                                    <SkeletonChart height={280} />
+                                ) : safetyOverview.incidentTrend.length === 0 ? (
                                     renderEmptyState('Trend data unavailable.')
                                 ) : (
                                     <ResponsiveContainer width="100%" height={280}>
@@ -1217,7 +1492,9 @@ export default function Dashboard({
                             <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Trips and tonnage delivered per customer.</CardDescription>
                         </CardHeader>
                         <CardContent className="pt-6">
-                            {topCustomers.length === 0 ? (
+                            {isLoading ? (
+                                <SkeletonTable rows={5} />
+                            ) : topCustomers.length === 0 ? (
                                 renderEmptyState('No customer movements captured in the window.')
                             ) : (
                                 <Table>
@@ -1250,7 +1527,9 @@ export default function Dashboard({
                             </div>
                         </CardHeader>
                         <CardContent className="pt-6">
-                            {recentPerformances.length === 0 ? (
+                            {isLoading ? (
+                                <SkeletonPerformancesTable rows={5} />
+                            ) : recentPerformances.length === 0 ? (
                                 <p className="text-sm text-muted-foreground">No recorded performances yet.</p>
                             ) : (
                                 <Table>

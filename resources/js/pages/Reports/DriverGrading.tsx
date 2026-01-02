@@ -192,7 +192,7 @@ export default function DriverGradingReport({ filters, filterOptions, paginator,
     const handleGenerateReport = () => {
         setFiltersOpen(false);
         const query = normalizeQuery({ snapshot_date: snapshotDate || null, status: status === 'all' ? null : status, grade_letter: gradeLetter === 'all' ? null : gradeLetter, per_page: perPage });
-        router.get('/reports/driver-grading', query, { preserveScroll: true, preserveState: true });
+        router.get('/reports/driver-grading', query as Record<string, string>, { preserveScroll: true, preserveState: true });
     };
 
     const handleReset = () => {
@@ -237,7 +237,7 @@ export default function DriverGradingReport({ filters, filterOptions, paginator,
             if (!response.ok) throw new Error(`Unexpected status code: ${response.status}`);
             const body = (await response.json()) as { message?: string };
             setRecalculationNotice({ status: 'success', message: body.message ?? 'Recalculated driver grades for the selected filters.' });
-            router.reload({ only: ['filters', 'filterOptions', 'paginator', 'latestCalculation'], preserveScroll: true, onFinish: () => setRecalculating(false), onError: () => setRecalculating(false) });
+            router.reload({ only: ['filters', 'filterOptions', 'paginator', 'latestCalculation'], onFinish: () => setRecalculating(false), onError: () => setRecalculating(false) });
         } catch (error) {
             console.error(error);
             setRecalculationNotice({ status: 'error', message: 'Failed to recalculate driver grades. Please try again shortly.' });
@@ -288,7 +288,20 @@ export default function DriverGradingReport({ filters, filterOptions, paginator,
             breadcrumbs={breadcrumbs}
             icon={<User className="h-6 w-6" />}
             filters={
-                <Dialog open={filtersOpen} onOpenChange={setFiltersOpen}>
+                <>
+                    <Button asChild variant="secondary" className="gap-2">
+                        <Link href="/settings/driver-grading">
+                            <Settings className="h-4 w-4" />
+                            Adjust settings
+                        </Link>
+                    </Button>
+                    {canRecalculate ? (
+                        <Button type="button" className="gap-2" onClick={handleRecalculateSnapshot} disabled={recalculating || !appliedSnapshotDate}>
+                            {recalculating ? (<Loader2 className="h-4 w-4 animate-spin" />) : (<Gauge className="h-4 w-4" />)}
+                            {recalculating ? 'Recalculating…' : 'Recalculate snapshot'}
+                        </Button>
+                    ) : null}
+                    <Dialog open={filtersOpen} onOpenChange={setFiltersOpen}>
                                     <DialogTrigger asChild>
                                         <Button type="button" variant="outline" className="gap-2">
                                             <ListFilter className="h-4 w-4" />
@@ -377,34 +390,13 @@ export default function DriverGradingReport({ filters, filterOptions, paginator,
                                         </DialogFooter>
                                     </DialogContent>
                                 </Dialog>
-                            </>
+                </>
             }
             summarySection={
                 <>
-                    <div className="flex flex-wrap items-center gap-2">
-                        <Button asChild variant="secondary" className="gap-2">
-                            <Link href="/settings/driver-grading">
-                                <Settings className="h-4 w-4" />
-                                Adjust settings
-                            </Link>
-                        </Button>
-                        {canRecalculate ? (
-                            <Button type="button" className="gap-2" onClick={handleRecalculateSnapshot} disabled={recalculating || !appliedSnapshotDate}>
-                                {recalculating ? (<Loader2 className="h-4 w-4 animate-spin" />) : (<Gauge className="h-4 w-4" />)}
-                                {recalculating ? 'Recalculating…' : 'Recalculate snapshot'}
-                                    </Button>
-                                ) : null}
-                                <Button type="button" variant="outline" className="gap-2" onClick={handleReset}>
-                                    <RefreshCcw className="h-4 w-4" />
-                                    Reset
-                                </Button>
-                            </div>
-                            {recalculationNotice ? (
-                                <div className={`mt-4 rounded-lg border px-4 py-3 text-sm transition ${recalculationTone}`}>{recalculationNotice.message}</div>
-                            ) : null}
-                        </div>
-                    </header>
-
+                    {recalculationNotice ? (
+                        <div className={`rounded-lg border px-4 py-3 text-sm transition ${recalculationTone}`}>{recalculationNotice.message}</div>
+                    ) : null}
                     <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
                         {kpiCards.map((card) => {
                             const Icon = card.icon;
@@ -422,7 +414,7 @@ export default function DriverGradingReport({ filters, filterOptions, paginator,
                                 </Card>
                             );
                         })}
-                    </div>
+                    </section>
                 </>
             }
             canExport={false}

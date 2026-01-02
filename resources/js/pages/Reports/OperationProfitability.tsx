@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ReportSummaryGrid, type ReportSummaryItem } from '@/components/reports/report-summary-grid';
 import { ReportFiltersDialog } from '@/components/reports/report-filters-dialog';
@@ -380,9 +381,12 @@ export default function OperationProfitability({ filters, totals, operations, op
             contentClassName="p-0"
         >
             <div className="space-y-4 p-6">
-                <div className="space-y-2">
-                                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50">Operation Performance Detail</CardTitle>
-                                <CardDescription className="text-sm">Profitability, margin, and cost metrics by operation.</CardDescription>
+                <Card className="border border-slate-200 bg-slate-50/50 shadow-sm dark:border-slate-800 dark:bg-slate-800/50">
+                    <CardHeader className="space-y-3 border-b border-slate-200/60 pb-5 dark:border-slate-700/60">
+                        <div className="space-y-1">
+                            <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50">Operation Performance Detail</CardTitle>
+                            <CardDescription className="text-sm">Profitability, margin, and cost metrics by operation.</CardDescription>
+                            {filterBadges.length > 0 && (
                                 <div className="mt-4 flex flex-wrap gap-2 text-xs text-slate-500 dark:text-slate-400">
                                     {filterBadges.map((badge) => (
                                         <Badge key={badge} variant="outline" className="border-dashed">
@@ -390,9 +394,10 @@ export default function OperationProfitability({ filters, totals, operations, op
                                         </Badge>
                                     ))}
                                 </div>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="p-0">
+                            )}
+                        </div>
+                    </CardHeader>
+                    <CardContent className="p-0">
                             <div className="overflow-x-auto">
                                 <Table>
                                     <TableHeader className="bg-slate-50/60 text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-900/60 dark:text-slate-400">
@@ -447,9 +452,8 @@ export default function OperationProfitability({ filters, totals, operations, op
                                     </TableBody>
                                 </Table>
                             </div>
-                        </div>
-                    </div>
-                </div>
+                        </CardContent>
+                    </Card>
             </div>
         </ReportPageLayout>
     );

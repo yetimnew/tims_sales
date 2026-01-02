@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
-import { AlertCircle, Ban, BarChart3, History, ShieldCheck, CheckCircle, Calendar, User, ArrowLeft, Edit, Trash2, Truck, ArrowUpRight, Award } from 'lucide-react';
+import { AlertCircle, Ban, BarChart3, History, ShieldCheck, CheckCircle, Calendar, User, ArrowLeft, Edit, Trash2, Truck, ArrowUpRight, Award, TrendingUp, DollarSign, Package, ExternalLink, MapPin, Fuel, Route, Gauge } from 'lucide-react';
 import { Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
@@ -12,6 +12,7 @@ import { DetailSectionCard } from '@/components/detail/detail-section-card';
 import { DetailPageLayout } from '@/components/detail/detail-page-layout';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useState, useMemo } from 'react';
+import { Area, AreaChart, Bar, BarChart as RechartsBarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Legend, Line, LineChart } from 'recharts';
 
 interface ActivityLog {
   id: number;
@@ -250,22 +251,39 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
   const safetyIncidentCountLabel = safetySummary ? formatNumber(safetySummary.total_records, { maximumFractionDigits: 0 }) : 'N/A';
   const totalDamageCostLabel = safetySummary ? formatCurrency(safetySummary.total_damage_cost ?? null) : null;
 
+  // Calculate cost metrics
+  const totalFuelCost = performanceSummary?.total_fuel_cost ?? 0;
+  const avgCostPerKm = performanceSummary?.total_distance_km && performanceSummary.total_distance_km > 0
+    ? totalFuelCost / performanceSummary.total_distance_km
+    : 0;
+  const avgCostPerTrip = performanceSummary?.total_trips && performanceSummary.total_trips > 0
+    ? totalFuelCost / performanceSummary.total_trips
+    : 0;
+
+  // Prepare chart data
+  const safetyChartData = safetySummary ? [
+    { name: 'Accidents', value: safetySummary.accidents, fill: '#ef4444' },
+    { name: 'Violations', value: safetySummary.violations, fill: '#f97316' },
+    { name: 'Warnings', value: safetySummary.warnings, fill: '#eab308' },
+  ].filter(item => item.value > 0) : [];
+
+  const severityChartData = safetySummary ? [
+    { name: 'Critical', value: safetySummary.critical, fill: '#dc2626' },
+    { name: 'Major', value: safetySummary.major, fill: '#f97316' },
+    { name: 'Minor', value: safetySummary.minor, fill: '#facc15' },
+  ].filter(item => item.value > 0) : [];
+
+  const recentPerformances = driver.performances?.slice(0, 10).map((perf, index) => ({
+    name: `Trip ${index + 1}`,
+    distance: (perf.DistanceWCargo ?? 0) + (perf.DistanceWOCargo ?? 0),
+    tonnage: perf.cargo_volume_mt ?? 0,
+    fuel: perf.fuelInLitter ?? 0,
+  })) ?? [];
+
   const overviewSummaryCards = [
     {
-      key: 'status',
-      label: 'Status',
-      value: <Badge className={`flex w-fit items-center gap-1 ${getStatusBadgeColor(driver.status)}`}>{statusLabel}</Badge>,
-      helper: `Gender: ${sexLabel}`,
-    },
-    {
-      key: 'assignments',
-      label: 'Assignments',
-      value: formatNumber(totalAssignments, { maximumFractionDigits: 0 }),
-      helper: activeAssignmentsCount > 0 ? `${activeAssignmentsCount} active right now` : 'No active assignments',
-    },
-    {
       key: 'trips',
-      label: 'Trips Completed',
+      label: 'Completed Trips',
       value: totalTripsLabel,
       helper: performanceSummary ? `Distance ${totalDistanceLabel}` : 'No performance data yet',
     },
@@ -273,13 +291,19 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
       key: 'efficiency',
       label: 'Fuel Efficiency',
       value: fuelEfficiencyLabel,
-      helper: performanceSummary ? `Avg rating ${averageRatingLabel}` : 'No rating yet',
+      helper: performanceSummary ? `${formatNumber(performanceSummary.total_fuel_liters, { maximumFractionDigits: 0 })} L total` : 'No fuel data',
+    },
+    {
+      key: 'cargo',
+      label: 'Total Cargo',
+      value: performanceSummary ? formatTons(performanceSummary.total_cargo_tonnage, 1) : 'N/A',
+      helper: performanceSummary ? `Avg ${formatTons(performanceSummary.total_cargo_tonnage / Math.max(performanceSummary.total_trips, 1), 1)} per trip` : 'No cargo data',
     },
     {
       key: 'safety',
-      label: 'Safety Incidents',
+      label: 'Safety Score',
       value: safetyIncidentCountLabel,
-      helper: totalDamageCostLabel ? `Damage ${totalDamageCostLabel}` : 'No recorded damage costs',
+      helper: totalDamageCostLabel ? `Damage ${totalDamageCostLabel}` : 'No incidents',
     },
   ];
 
@@ -380,9 +404,10 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
       }
     >
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview"><CheckCircle className="h-4 w-4 mr-2" /> Overview</TabsTrigger>
           <TabsTrigger value="performance"><BarChart3 className="h-4 w-4 mr-2" /> Performance</TabsTrigger>
+          <TabsTrigger value="analytics"><TrendingUp className="h-4 w-4 mr-2" /> Analytics</TabsTrigger>
           <TabsTrigger value="safety"><ShieldCheck className="h-4 w-4 mr-2" /> Safety</TabsTrigger>
           <TabsTrigger value="history"><History className="h-4 w-4 mr-2" /> History</TabsTrigger>
         </TabsList>
@@ -492,6 +517,27 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
                   </div>
                 </div>
               </DetailSectionCard>
+
+              <DetailSectionCard icon={<ExternalLink className="h-5 w-5" />} title="Quick Links">
+                <div className="grid gap-3 md:grid-cols-2">
+                  <Button variant="outline" asChild className="w-full">
+                    <Link href={`/performances?driver=${driver.id}`}>
+                      <Package className="h-4 w-4 mr-2" />
+                      View All Performances
+                      <ExternalLink className="h-3 w-3 ml-auto" />
+                    </Link>
+                  </Button>
+                  {canViewDriverTruckAssignments && (
+                    <Button variant="outline" asChild className="w-full">
+                      <Link href={`/driver-trucks?driver_id=${driver.id}`}>
+                        <Truck className="h-4 w-4 mr-2" />
+                        View All Assignments
+                        <ExternalLink className="h-3 w-3 ml-auto" />
+                      </Link>
+                    </Button>
+                  )}
+                </div>
+              </DetailSectionCard>
             </div>
 
             <div className="space-y-4">
@@ -511,7 +557,7 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
               )}
 
               {performanceSummary && (
-                <DetailSectionCard icon={<BarChart3 className="h-5 w-5" />} title="Quick Metrics">
+                <DetailSectionCard icon={<BarChart3 className="h-5 w-5" />} title="Performance Summary">
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Distance</span>
@@ -529,10 +575,48 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
                       <span className="text-muted-foreground">Fuel Efficiency</span>
                       <span className="font-semibold">{formatFuelEfficiency(performanceSummary.avg_fuel_efficiency)}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Avg Rating</span>
-                      <span className="font-semibold">{formatRating(performanceSummary.avg_customer_rating)}</span>
+                    <div className="flex justify-between border-t pt-2">
+                      <span className="text-muted-foreground">Fuel Cost</span>
+                      <span className="font-semibold">{formatCurrency(totalFuelCost)}</span>
                     </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Cost per KM</span>
+                      <span className="font-semibold">{formatCurrency(avgCostPerKm)}</span>
+                    </div>
+                    {performanceSummary.avg_customer_rating && (
+                      <div className="flex justify-between border-t pt-2">
+                        <span className="text-muted-foreground">Avg Rating</span>
+                        <span className="font-semibold">{formatRating(performanceSummary.avg_customer_rating)}</span>
+                      </div>
+                    )}
+                  </div>
+                </DetailSectionCard>
+              )}
+
+              {safetyChartData.length > 0 && (
+                <DetailSectionCard icon={<ShieldCheck className="h-5 w-5" />} title="Safety Overview">
+                  <div className="h-48">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie 
+                          data={safetyChartData} 
+                          dataKey="value" 
+                          nameKey="name" 
+                          cx="50%" 
+                          cy="50%" 
+                          innerRadius={40}
+                          outerRadius={70}
+                          paddingAngle={4}
+                          label
+                        >
+                          {safetyChartData.map((entry, index) => (
+                            <Cell key={index} fill={entry.fill} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                        <Legend />
+                      </PieChart>
+                    </ResponsiveContainer>
                   </div>
                 </DetailSectionCard>
               )}
@@ -541,26 +625,83 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
         </TabsContent>
 
         <TabsContent value="performance" className="space-y-6">
-          <DetailSectionCard icon={<BarChart3 className="h-5 w-5" />} title="Performance Records" description="Operational history">
+          {performanceSummary && (
+            <div className="grid gap-4 md:grid-cols-4">
+              <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-center">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Total Distance</p>
+                <p className="mt-2 text-3xl font-bold text-blue-700">{formatKilometers(performanceSummary.total_distance_km, 0)}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{performanceSummary.total_trips} trips</p>
+              </div>
+              <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-center">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Total Cargo</p>
+                <p className="mt-2 text-3xl font-bold text-green-700">{formatTons(performanceSummary.total_cargo_tonnage, 0)}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{formatTons(performanceSummary.total_cargo_tonnage / Math.max(performanceSummary.total_trips, 1), 1)} avg</p>
+              </div>
+              <div className="rounded-lg border border-orange-200 bg-orange-50 p-4 text-center">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Fuel Efficiency</p>
+                <p className="mt-2 text-3xl font-bold text-orange-700">{formatFuelEfficiency(performanceSummary.avg_fuel_efficiency)}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{formatNumber(performanceSummary.total_fuel_liters, { maximumFractionDigits: 0 })} L total</p>
+              </div>
+              <div className="rounded-lg border border-purple-200 bg-purple-50 p-4 text-center">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Fuel Cost</p>
+                <p className="mt-2 text-3xl font-bold text-purple-700">{formatCurrency(totalFuelCost)}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{formatCurrency(avgCostPerKm)} per KM</p>
+              </div>
+            </div>
+          )}
+
+          <DetailSectionCard icon={<BarChart3 className="h-5 w-5" />} title="Performance Records" description="Recent operational trips"
+            actions={
+              driver.performances && driver.performances.length > 0 ? (
+                <Button variant="link" size="sm" className="px-0" asChild>
+                  <Link href={`/performances?driver=${driver.id}`} className="flex items-center gap-1">
+                    View all
+                    <ArrowUpRight className="h-4 w-4" />
+                  </Link>
+                </Button>
+              ) : null
+            }
+          >
             {driver.performances && driver.performances.length > 0 ? (
               <div className="space-y-3">
                 {driver.performances.slice(0, 10).map(perf => (
-                  <div key={perf.id} className="rounded-lg border p-4">
+                  <div key={perf.id} className="rounded-lg border p-4 hover:border-blue-300 transition-colors">
                     <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-semibold">Performance #{perf.id}</p>
+                      <div className="flex-1">
+                        <Link href={`/performances/${perf.id}`} className="font-semibold text-blue-600 hover:underline">
+                          Performance #{perf.id}
+                        </Link>
                         <p className="text-xs text-muted-foreground">{formatDateDisplay(perf.DateDispach)}</p>
+                        {perf.origin && perf.destination && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            <MapPin className="h-3 w-3 inline mr-1" />
+                            {perf.origin.name} → {perf.destination.name}
+                          </p>
+                        )}
                       </div>
                       {perf.operation && (
-                        <Link href={`/operations/${perf.operation.id}`} className="text-blue-600 hover:underline">
+                        <Link href={`/operations/${perf.operation.id}`} className="text-sm text-blue-600 hover:underline">
                           View Operation
                         </Link>
                       )}
                     </div>
-                    <div className="mt-3 grid gap-2 text-xs text-muted-foreground md:grid-cols-3">
-                      <div><span className="font-medium">Distance WCargo:</span> {formatKilometers(perf.DistanceWCargo ?? null, 1)}</div>
-                      <div><span className="font-medium">Ton-KM:</span> {formatNumber(perf.tonkm ?? null, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                      <div><span className="font-medium">Fuel:</span> {formatNumber(perf.fuelInLitter ?? null, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} L</div>
+                    <div className="mt-3 grid gap-2 text-xs md:grid-cols-4">
+                      <div className="rounded-lg bg-muted p-2">
+                        <span className="font-medium text-muted-foreground">Distance:</span>
+                        <span className="ml-1 font-semibold">{formatKilometers((perf.DistanceWCargo ?? 0) + (perf.DistanceWOCargo ?? 0), 0)}</span>
+                      </div>
+                      <div className="rounded-lg bg-muted p-2">
+                        <span className="font-medium text-muted-foreground">Cargo:</span>
+                        <span className="ml-1 font-semibold">{formatTons(perf.cargo_volume_mt ?? null, 1)}</span>
+                      </div>
+                      <div className="rounded-lg bg-muted p-2">
+                        <span className="font-medium text-muted-foreground">Ton-KM:</span>
+                        <span className="ml-1 font-semibold">{formatNumber(perf.tonkm ?? null)}</span>
+                      </div>
+                      <div className="rounded-lg bg-muted p-2">
+                        <span className="font-medium text-muted-foreground">Fuel:</span>
+                        <span className="ml-1 font-semibold">{formatNumber(perf.fuelInLitter ?? null)} L</span>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -572,6 +713,125 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
               </div>
             )}
           </DetailSectionCard>
+        </TabsContent>
+
+        <TabsContent value="analytics" className="space-y-6">
+          {performanceSummary && (
+            <div className="grid gap-6 lg:grid-cols-2">
+              {recentPerformances.length > 0 && (
+                <DetailSectionCard title="Recent Performance Trends" icon={<TrendingUp className="h-5 w-5" />}>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={recentPerformances}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis yAxisId="left" />
+                        <YAxis yAxisId="right" orientation="right" />
+                        <Tooltip />
+                        <Legend />
+                        <Line yAxisId="left" type="monotone" dataKey="distance" stroke="#3b82f6" name="Distance (KM)" />
+                        <Line yAxisId="right" type="monotone" dataKey="tonnage" stroke="#22c55e" name="Tonnage (MT)" />
+                        <Line yAxisId="right" type="monotone" dataKey="fuel" stroke="#f97316" name="Fuel (L)" />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </DetailSectionCard>
+              )}
+
+              {safetyChartData.length > 0 && (
+                <DetailSectionCard title="Safety Incidents by Type" icon={<ShieldCheck className="h-5 w-5" />}>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie 
+                          data={safetyChartData} 
+                          dataKey="value" 
+                          nameKey="name" 
+                          cx="50%" 
+                          cy="50%" 
+                          innerRadius={60}
+                          outerRadius={90}
+                          paddingAngle={4}
+                          label
+                        >
+                          {safetyChartData.map((entry, index) => (
+                            <Cell key={index} fill={entry.fill} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                        <Legend />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                </DetailSectionCard>
+              )}
+            </div>
+          )}
+
+          {severityChartData.length > 0 && (
+            <DetailSectionCard title="Incidents by Severity" icon={<AlertCircle className="h-5 w-5" />}>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RechartsBarChart data={severityChartData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="value" name="Incidents">
+                      {severityChartData.map((entry, index) => (
+                        <Cell key={index} fill={entry.fill} />
+                      ))}
+                    </Bar>
+                  </RechartsBarChart>
+                </ResponsiveContainer>
+              </div>
+            </DetailSectionCard>
+          )}
+
+          <DetailSectionCard title="Efficiency Metrics" icon={<Gauge className="h-5 w-5" />}>
+            <div className="grid gap-4 md:grid-cols-4">
+              <div className="rounded-lg border p-3">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Avg Distance/Trip</p>
+                <p className="mt-2 font-semibold">{formatKilometers(performanceSummary ? performanceSummary.total_distance_km / Math.max(performanceSummary.total_trips, 1) : 0, 1)}</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Fuel Efficiency</p>
+                <p className="mt-2 font-semibold">{formatFuelEfficiency(performanceSummary?.avg_fuel_efficiency)}</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Cost per Trip</p>
+                <p className="mt-2 font-semibold">{formatCurrency(avgCostPerTrip)}</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Avg Payload</p>
+                <p className="mt-2 font-semibold">{formatTons(performanceSummary ? performanceSummary.total_cargo_tonnage / Math.max(performanceSummary.total_trips, 1) : 0, 1)}</p>
+              </div>
+            </div>
+          </DetailSectionCard>
+
+          {safetySummary && (
+            <DetailSectionCard title="Safety Performance" icon={<ShieldCheck className="h-5 w-5" />}>
+              <div className="grid gap-4 md:grid-cols-4">
+                <div className={`rounded-lg border p-3 ${safetySummary.total_records === 0 ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}>
+                  <p className="text-xs font-semibold uppercase text-muted-foreground">Total Incidents</p>
+                  <p className={`mt-2 text-2xl font-bold ${safetySummary.total_records === 0 ? 'text-green-700' : 'text-red-700'}`}>{safetySummary.total_records}</p>
+                </div>
+                <div className="rounded-lg border border-orange-200 bg-orange-50 p-3">
+                  <p className="text-xs font-semibold uppercase text-muted-foreground">Accidents</p>
+                  <p className="mt-2 text-2xl font-bold text-orange-700">{safetySummary.accidents}</p>
+                </div>
+                <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-3">
+                  <p className="text-xs font-semibold uppercase text-muted-foreground">Violations</p>
+                  <p className="mt-2 text-2xl font-bold text-yellow-700">{safetySummary.violations}</p>
+                </div>
+                <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
+                  <p className="text-xs font-semibold uppercase text-muted-foreground">Total Damage</p>
+                  <p className="mt-2 text-lg font-bold text-blue-700">{formatCurrency(safetySummary.total_damage_cost)}</p>
+                </div>
+              </div>
+            </DetailSectionCard>
+          )}
         </TabsContent>
 
         <TabsContent value="safety" className="space-y-6">

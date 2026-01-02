@@ -600,8 +600,8 @@ class PerformanceController extends Controller
         });
 
         $performanceData = $performance->toArray();
-        $performanceData['DateDispach'] = optional($performance->DateDispach)->toDateString();
-        $performanceData['returned_date'] = optional($performance->returned_date)->toDateString();
+        $performanceData['DateDispach'] = optional($performance->DateDispach)->toIso8601String();
+        $performanceData['returned_date'] = optional($performance->returned_date)->toIso8601String();
 
         return Inertia::render('Performances/Edit', [
             'performance' => $performanceData,

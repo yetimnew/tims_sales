@@ -24,6 +24,7 @@ import {
     LineChart,
     ListFilter,
     Loader2,
+    RefreshCcw,
     Settings,
     Truck,
     User,
@@ -339,7 +340,20 @@ export default function DriverTruckGradingReport({ filters, filterOptions, pagin
             breadcrumbs={breadcrumbs}
             icon={<LinkIcon className="h-6 w-6" />}
             filters={
-                <Dialog open={filtersOpen} onOpenChange={setFiltersOpen}>
+                <>
+                    <Button asChild variant="secondary" className="gap-2">
+                        <Link href="/settings/driver-truck-grading">
+                            <Settings className="h-4 w-4" />
+                            Adjust settings
+                        </Link>
+                    </Button>
+                    {canRecalculate ? (
+                        <Button type="button" className="gap-2" onClick={handleRecalculateSnapshot} disabled={recalculating || !appliedSnapshotDate}>
+                            {recalculating ? (<Loader2 className="h-4 w-4 animate-spin" />) : (<Gauge className="h-4 w-4" />)}
+                            {recalculating ? 'Recalculating…' : 'Recalculate snapshot'}
+                        </Button>
+                    ) : null}
+                    <Dialog open={filtersOpen} onOpenChange={setFiltersOpen}>
                                     <DialogTrigger asChild>
                                         <Button type="button" variant="outline" className="gap-2">
                                             <ListFilter className="h-4 w-4" />
@@ -442,24 +456,10 @@ export default function DriverTruckGradingReport({ filters, filterOptions, pagin
                                         </DialogFooter>
                                     </DialogContent>
                                 </Dialog>
-                            </>
+                </>
             }
             summarySection={
                 <>
-                    <div className="flex flex-wrap items-center gap-2">
-                        <Button asChild variant="secondary" className="gap-2">
-                            <Link href="/settings/driver-truck-grading">
-                                <Settings className="h-4 w-4" />
-                                Adjust settings
-                            </Link>
-                        </Button>
-                        {canRecalculate ? (
-                            <Button type="button" className="gap-2" onClick={handleRecalculateSnapshot} disabled={recalculating || !appliedSnapshotDate}>
-                                {recalculating ? (<Loader2 className="h-4 w-4 animate-spin" />) : (<Gauge className="h-4 w-4" />)}
-                                {recalculating ? 'Recalculating…' : 'Recalculate snapshot'}
-                            </Button>
-                        ) : null}
-                    </div>
                     {recalculationNotice ? (
                         <div className={`rounded-lg border px-4 py-3 text-sm transition ${recalculationTone}`}>{recalculationNotice.message}</div>
                     ) : null}

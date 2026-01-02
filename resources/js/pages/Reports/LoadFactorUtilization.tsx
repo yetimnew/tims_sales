@@ -318,24 +318,7 @@ export default function LoadFactorUtilization({ filters, rows = [], summary, opt
             contentClassName="p-0"
         >
             <div className="space-y-6 p-6">
-                                                <FileType2 className="h-4 w-4 text-rose-500" />
-                                                PDF
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                )}
-                                <Button type="button" variant="outline" className="gap-2" onClick={handleReset}>
-                                    <RefreshCcw className="h-4 w-4" />
-                                    Reset
-                                </Button>
-                                <Button type="button" className="gap-2" onClick={handleApplyFilters}>
-                                    Generate report
-                                </Button>
-                            </div>
-                        </div>
-                    </header>
-
-                    {comparisonData && (
+                {comparisonData && (
                         <Card className="border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
                             <CardHeader>
                                 <CardTitle className="text-lg font-semibold">Period Comparison</CardTitle>

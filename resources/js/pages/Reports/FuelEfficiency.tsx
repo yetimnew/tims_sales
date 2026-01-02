@@ -411,19 +411,7 @@ export default function FuelEfficiency({
             contentClassName="p-0"
         >
             <div className="space-y-6 p-6">
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                ) : null}
-                                <Button type="button" variant="outline" className="gap-2" onClick={handleReset}>
-                                    Reset
-                                </Button>
-                            </div>
-                        </div>
-                    </header>
-
-                    <ReportSummaryGrid items={summaryItems} />
-
-                    <Card className="border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
+                <Card className="border border-slate-200 bg-slate-50/50 shadow-sm dark:border-slate-800 dark:bg-slate-800/50">
                         <CardHeader className="space-y-4 border-b border-slate-200/60 pb-4 dark:border-slate-700/60">
                             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                                 <div className="space-y-1">
