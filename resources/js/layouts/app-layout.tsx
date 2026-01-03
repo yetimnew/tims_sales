@@ -11,7 +11,15 @@ import { usePageTransitionLoading } from '@/hooks/use-page-transition-loading';
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { usePage, router } from '@inertiajs/react';
 
-const OVERLAY_DISABLED_ROOTS: string[] = [];
+const OVERLAY_DISABLED_ROOTS: string[] = [
+    '/trucks', // Disable overlay for trucks page - uses skeleton loaders instead
+    '/operations', // Disable overlay for operations page - uses skeleton loaders instead
+    '/performances', // Disable overlay for performances page - uses skeleton loaders instead
+    '/customers', // Disable overlay for customers page - uses skeleton loaders instead
+    '/drivers', // Disable overlay for drivers page - uses skeleton loaders instead
+    '/fuel', // Disable overlay for fuel page - uses skeleton loaders instead
+    '/maintenance', // Disable overlay for maintenance page - uses skeleton loaders instead
+];
 
 interface AppLayoutProps {
     children: React.ReactNode;

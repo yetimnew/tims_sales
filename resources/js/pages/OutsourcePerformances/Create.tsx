@@ -17,7 +17,6 @@ import { PlaceCombobox } from '@/components/place-combobox';
 import { useToast } from '@/hooks/use-toast';
 import { useRemoteLookup } from '@/hooks/use-remote-lookup';
 import { search as operationsSearch } from '@/routes/operations';
-import { DatePicker } from '@/components/ui/date-picker';
 import { validateOutsourcePerformance, type ValidationErrors } from '@/lib/validation';
 import { cn } from '@/lib/utils';
 import type { BreadcrumbItem } from '@/types';

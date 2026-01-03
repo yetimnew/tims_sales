@@ -8,7 +8,6 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FormEventHandle
 import { Link, router, useForm } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -20,7 +19,6 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { useRemoteLookup } from '@/hooks/use-remote-lookup';
 import { search as operationsSearch } from '@/routes/operations';
 import { validateOutsourcePerformance, type ValidationErrors } from '@/lib/validation';
-import { DatePicker } from '@/components/ui/date-picker';
 import { cn } from '@/lib/utils';
 import type { BreadcrumbItem } from '@/types';
 import { AlertCircle, CheckCircle, ClipboardList, MapPin, Package, Pencil, RefreshCcw, Trash2, Wallet } from 'lucide-react';

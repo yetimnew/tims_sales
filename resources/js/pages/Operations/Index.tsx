@@ -22,7 +22,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import * as React from 'react';
 import {
-    ArrowUpDown,
     CheckCircle,
     Eye,
     Gauge,
@@ -653,54 +652,85 @@ export default function OperationsIndex({
         [],
     );
 
-    const tableRows = operationData.length > 0
-        ? operationData.map((operation, index) => (
-              <TableRow key={operation.id} className="hover:bg-muted/50">
-                  <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
-                  <TableCell className="font-medium">{operation.operationid}</TableCell>
-                  <TableCell className="text-muted-foreground">{operation.customer?.name || '—'}</TableCell>
-                  <TableCell className="text-muted-foreground">{formatDateValue(operation.startdate)}</TableCell>
-                  <TableCell className="text-right font-medium">{formatNumberValue(operation.volume)}</TableCell>
-                  <TableCell className="text-right text-muted-foreground">{formatNumberValue(operation.km)}</TableCell>
-                  <TableCell>{renderTonnageProgress(operation)}</TableCell>
-                  <TableCell className="text-center">{getClosedBadge(operation.closed)}</TableCell>
+    const tableRows = isTableLoading
+        ? Array.from({ length: 8 }).map((_, index) => (
+              <TableRow key={`skeleton-${index}`} aria-hidden="true">
                   <TableCell className="text-center">
-                      <ListingRowActionsMenu
-                          actions={[
-                              canViewOperation && {
-                                  label: 'View',
-                                  icon: <Eye className="h-4 w-4" />,
-                                  href: `/operations/${operation.id}`,
-                              },
-                              canEditOperation && {
-                                  label: 'Edit',
-                                  icon: <SquarePen className="h-4 w-4" />,
-                                  href: `/operations/${operation.id}/edit`,
-                              },
-                              canCloseOperation && !operation.closed && {
-                                  label: 'Close',
-                                  icon: <Lock className="h-4 w-4" />,
-                                  onSelect: () => handleCloseOperationClick(operation),
-                              },
-                              canReopenOperation && operation.closed && {
-                                  label: 'Reopen',
-                                  icon: <Unlock className="h-4 w-4" />,
-                                  onSelect: () => handleReopenOperationClick(operation),
-                              },
-                              canDeleteOperation && {
-                                  label: 'Delete',
-                                  icon: <Trash2 className="h-4 w-4" />,
-                                  danger: true,
-                                  disabled: isDeleting && selectedOperation?.id === operation.id,
-                                  onSelect: () => handleDeleteClick(operation),
-                              },
-                          ].filter(Boolean)}
-                      />
+                      <Skeleton className="h-4 w-6 mx-auto" />
+                  </TableCell>
+                  <TableCell>
+                      <Skeleton className="h-4 w-24" />
+                  </TableCell>
+                  <TableCell>
+                      <Skeleton className="h-4 w-32" />
+                  </TableCell>
+                  <TableCell>
+                      <Skeleton className="h-4 w-20" />
+                  </TableCell>
+                  <TableCell className="text-right">
+                      <Skeleton className="h-4 w-16 ml-auto" />
+                  </TableCell>
+                  <TableCell className="text-right">
+                      <Skeleton className="h-4 w-16 ml-auto" />
+                  </TableCell>
+                  <TableCell>
+                      <Skeleton className="h-12 w-48" />
+                  </TableCell>
+                  <TableCell className="text-center">
+                      <Skeleton className="h-6 w-16 mx-auto rounded-full" />
+                  </TableCell>
+                  <TableCell className="text-center">
+                      <Skeleton className="h-8 w-8 mx-auto rounded" />
                   </TableCell>
               </TableRow>
           ))
-        : !isTableLoading
-            ? (
+        : operationData.length > 0
+            ? operationData.map((operation, index) => (
+                  <TableRow key={operation.id} className="hover:bg-muted/50">
+                      <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
+                      <TableCell className="font-medium">{operation.operationid}</TableCell>
+                      <TableCell className="text-muted-foreground">{operation.customer?.name || '—'}</TableCell>
+                      <TableCell className="text-muted-foreground">{formatDateValue(operation.startdate)}</TableCell>
+                      <TableCell className="text-right font-medium">{formatNumberValue(operation.volume)}</TableCell>
+                      <TableCell className="text-right text-muted-foreground">{formatNumberValue(operation.km)}</TableCell>
+                      <TableCell>{renderTonnageProgress(operation)}</TableCell>
+                      <TableCell className="text-center">{getClosedBadge(operation.closed)}</TableCell>
+                      <TableCell className="text-center">
+                          <ListingRowActionsMenu
+                              actions={[
+                                  canViewOperation && {
+                                      label: 'View',
+                                      icon: <Eye className="h-4 w-4" />,
+                                      href: `/operations/${operation.id}`,
+                                  },
+                                  canEditOperation && {
+                                      label: 'Edit',
+                                      icon: <SquarePen className="h-4 w-4" />,
+                                      href: `/operations/${operation.id}/edit`,
+                                  },
+                                  canCloseOperation && !operation.closed && {
+                                      label: 'Close',
+                                      icon: <Lock className="h-4 w-4" />,
+                                      onSelect: () => handleCloseOperationClick(operation),
+                                  },
+                                  canReopenOperation && operation.closed && {
+                                      label: 'Reopen',
+                                      icon: <Unlock className="h-4 w-4" />,
+                                      onSelect: () => handleReopenOperationClick(operation),
+                                  },
+                                  canDeleteOperation && {
+                                      label: 'Delete',
+                                      icon: <Trash2 className="h-4 w-4" />,
+                                      danger: true,
+                                      disabled: isDeleting && selectedOperation?.id === operation.id,
+                                      onSelect: () => handleDeleteClick(operation),
+                                  },
+                              ].filter(Boolean)}
+                          />
+                      </TableCell>
+                  </TableRow>
+              ))
+            : (
                 <TableRow>
                     <TableCell colSpan={tableColumns.length} className="py-8 text-center text-muted-foreground">
                         No operations found.
@@ -711,8 +741,7 @@ export default function OperationsIndex({
                         )}
                     </TableCell>
                 </TableRow>
-            )
-            : null;
+            );
 
     const mobileItems = React.useMemo(
         () =>
@@ -723,7 +752,43 @@ export default function OperationsIndex({
         [operationData, rowOffset],
     );
 
-    const mobileContent = (
+    const mobileContent = isTableLoading ? (
+        <ListingMobileItemList
+            items={Array.from({ length: 5 }).map((_, i) => ({ record: { id: i }, position: i + 1 }))}
+            getKey={(item) => `skeleton-${item.position}`}
+            renderTitle={() => (
+                <div className="flex items-center gap-2">
+                    <Skeleton className="h-3 w-8" />
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-3.5 w-3.5 rounded" />
+                </div>
+            )}
+            renderSubtitle={() => <Skeleton className="h-3 w-40" />}
+            renderContent={() => (
+                <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                        <Skeleton className="h-3 w-20" />
+                        <Skeleton className="h-3 w-24" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <Skeleton className="h-3 w-16" />
+                        <Skeleton className="h-3 w-20" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <Skeleton className="h-3 w-20" />
+                        <Skeleton className="h-3 w-24" />
+                    </div>
+                    <Skeleton className="h-12 w-full" />
+                </div>
+            )}
+            renderFooter={() => (
+                <div className="flex w-full gap-2">
+                    <Skeleton className="h-8 flex-1" />
+                    <Skeleton className="h-8 w-20" />
+                </div>
+            )}
+        />
+    ) : (
         <ListingMobileItemList
             items={mobileItems}
             getKey={(item) => item.record.id}
@@ -826,21 +891,12 @@ export default function OperationsIndex({
     );
 
     const tableContent = (
-        <div className="relative">
-            <ListingTableShell
-                columns={tableColumns}
-                sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSort }}
-            >
-                {tableRows}
-            </ListingTableShell>
-
-            {isTableLoading && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
-                    <img src="/images/loading-spinner.svg" alt="Loading operations" className="h-12 w-12" />
-                    <span className="text-sm text-muted-foreground">Loading operations...</span>
-                </div>
-            )}
-        </div>
+        <ListingTableShell
+            columns={tableColumns}
+            sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSort }}
+        >
+            {tableRows}
+        </ListingTableShell>
     );
 
     const tableHeaderExtras = (
@@ -928,13 +984,6 @@ export default function OperationsIndex({
 
                 <div className="relative space-y-3 md:hidden">
                     {mobileContent}
-
-                    {isTableLoading && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
-                            <img src="/images/loading-spinner.svg" alt="Loading operations" className="h-10 w-10" />
-                            <span className="text-sm text-muted-foreground">Loading operations...</span>
-                        </div>
-                    )}
                 </div>
             </ListPageLayout>
 

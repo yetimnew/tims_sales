@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link, router } from '@inertiajs/react';
-import { Activity, ArrowLeft, Mail, MoreVertical, Shield, SquarePen, Trash2, User, Clock } from 'lucide-react';
+import { Activity, ArrowLeft, Mail, MoreVertical, Shield, SquarePen, Trash2, User } from 'lucide-react';
 import { ActivityLogTable } from '@/components/activity-log-table';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { Badge } from '@/components/ui/badge';

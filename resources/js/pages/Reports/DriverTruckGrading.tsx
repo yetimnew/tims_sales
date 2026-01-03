@@ -197,8 +197,6 @@ export default function DriverTruckGradingReport({ filters, filterOptions, pagin
     const appliedSnapshotDate = filters?.snapshot_date ?? snapshotDates[0] ?? '';
     const appliedStatus = filters?.status ?? 'all';
     const appliedAttachmentState = filters?.attachment_state ?? 'all';
-    const appliedGradeLetter = filters?.grade_letter ?? 'all';
-    const appliedPerPage = filters?.per_page ?? paginator?.meta?.per_page ?? availablePerPageOptions[0] ?? 10;
 
     const gradeLetterOptions = useMemo(() => {
         const observed = new Set<string>(['A', 'B', 'C', 'D', 'E']);

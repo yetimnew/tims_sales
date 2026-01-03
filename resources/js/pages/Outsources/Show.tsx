@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { usePermissions } from '@/hooks/use-permissions';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, BarChart3, Building2, CircleDot, DollarSign, Edit, Mail, MapPin, Phone, Route, Trash2, UserRound, Activity } from 'lucide-react';
+import { ArrowLeft, BarChart3, Building2, CircleDot, Edit, Mail, MapPin, Phone, Trash2, UserRound, Activity } from 'lucide-react';
 import { DetailPageLayout } from '@/components/detail/detail-page-layout';
 import { DetailSectionCard } from '@/components/detail/detail-section-card';
 import { DetailSummaryGrid, type DetailSummaryItem } from '@/components/detail/detail-summary-grid';

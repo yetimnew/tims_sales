@@ -20,7 +20,6 @@ import {
     Target,
     BarChart3,
     Building2,
-    Percent
 } from 'lucide-react';
 import { usePermissions } from '@/hooks/use-permissions';
 import { REPORT_DATE_RANGE_DESCRIPTION, useReportDateRange } from '@/components/reports/use-report-date-range';
@@ -150,8 +149,8 @@ const formatOptionalDecimal = (value: number | null) => (value === null ? '—' 
 
 export default function FleetFinancial({ 
     filters, 
-    resolved_from,
-    resolved_to,
+    resolved_from: _resolved_from,
+    resolved_to: _resolved_to,
     profitability, 
     revenue, 
     costs, 

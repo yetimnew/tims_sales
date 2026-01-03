@@ -194,7 +194,7 @@ async function createDriverViaUI(page: Page, overrides: CreateDriverOptions = {}
 
   try {
     await expect(row).toBeVisible({ timeout: 30000 });
-  } catch (error) {
+  } catch (_error) {
     // Debug: capture what's on the page
     console.error(`Failed to find driver ${driver.driverId} after creation`);
     const tableContent = await page.locator('table tbody').textContent().catch(() => 'Could not read table');

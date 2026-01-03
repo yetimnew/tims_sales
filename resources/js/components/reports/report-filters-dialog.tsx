@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -40,6 +41,8 @@ interface ReportFiltersDialogProps {
     truckOptions?: ReportSelectionOption[];
     operationOptions?: ReportSelectionOption[];
     destinationOptions?: ReportSelectionOption[];
+    originOptions?: ReportSelectionOption[];
+    customerOptions?: ReportSelectionOption[];
     statusOptions?: ReportSelectionOption[];
     providerOptions?: ReportSelectionOption[];
     loadPhaseOptions?: ReportSelectionOption[];
@@ -47,6 +50,8 @@ interface ReportFiltersDialogProps {
     selectedTrucks?: number[];
     selectedOperations?: number[];
     selectedDestinations?: number[];
+    selectedOrigins?: number[];
+    selectedCustomers?: number[];
     selectedLoadPhase?: string | null;
     selectedStatuses?: Array<number | string>;
     selectedProviders?: Array<number | string>;
@@ -54,6 +59,8 @@ interface ReportFiltersDialogProps {
     onTrucksChange?: (ids: number[]) => void;
     onOperationsChange?: (ids: number[]) => void;
     onDestinationsChange?: (ids: number[]) => void;
+    onOriginsChange?: (ids: number[]) => void;
+    onCustomersChange?: (ids: number[]) => void;
     onLoadPhaseChange?: (id: string | null) => void;
     onStatusesChange?: (ids: Array<number | string>) => void;
     onProvidersChange?: (ids: Array<number | string>) => void;
@@ -61,6 +68,8 @@ interface ReportFiltersDialogProps {
     showTruckFilter?: boolean;
     showOperationFilter?: boolean;
     showDestinationFilter?: boolean;
+    showOriginFilter?: boolean;
+    showCustomerFilter?: boolean;
     showLoadPhaseFilter?: boolean;
     showStatusFilter?: boolean;
     showProviderFilter?: boolean;
@@ -69,6 +78,8 @@ interface ReportFiltersDialogProps {
     truckFilterText?: FilterTextOverrides;
     operationFilterText?: FilterTextOverrides;
     destinationFilterText?: FilterTextOverrides;
+    originFilterText?: FilterTextOverrides;
+    customerFilterText?: FilterTextOverrides;
     loadPhaseFilterText?: FilterTextOverrides;
     statusFilterText?: FilterTextOverrides;
     providerFilterText?: FilterTextOverrides;
@@ -79,6 +90,7 @@ interface ReportFiltersDialogProps {
     onSingleDateChange?: (value: string) => void;
     singleDateLabel?: string;
     singleDateDescription?: string;
+    extraFilters?: ReactNode;
 }
 
 export function ReportFiltersDialog({
@@ -101,6 +113,8 @@ export function ReportFiltersDialog({
     truckOptions,
     operationOptions,
     destinationOptions,
+    originOptions,
+    customerOptions,
     statusOptions,
     providerOptions,
     loadPhaseOptions,
@@ -108,6 +122,8 @@ export function ReportFiltersDialog({
     selectedTrucks,
     selectedOperations,
     selectedDestinations,
+    selectedOrigins,
+    selectedCustomers,
     selectedLoadPhase,
     selectedStatuses,
     selectedProviders,
@@ -115,6 +131,8 @@ export function ReportFiltersDialog({
     onTrucksChange,
     onOperationsChange,
     onDestinationsChange,
+    onOriginsChange,
+    onCustomersChange,
     onLoadPhaseChange,
     onStatusesChange,
     onProvidersChange,
@@ -122,6 +140,8 @@ export function ReportFiltersDialog({
     showTruckFilter,
     showOperationFilter,
     showDestinationFilter,
+    showOriginFilter,
+    showCustomerFilter,
     showLoadPhaseFilter,
     showStatusFilter,
     showProviderFilter,
@@ -130,6 +150,8 @@ export function ReportFiltersDialog({
     truckFilterText,
     operationFilterText,
     destinationFilterText,
+    originFilterText,
+    customerFilterText,
     loadPhaseFilterText,
     statusFilterText,
     providerFilterText,
@@ -140,11 +162,14 @@ export function ReportFiltersDialog({
     onSingleDateChange,
     singleDateLabel = 'Reporting date',
     singleDateDescription,
+    extraFilters,
 }: ReportFiltersDialogProps) {
     const driverOptionsList = driverOptions ?? [];
     const truckOptionsList = truckOptions ?? [];
     const operationOptionsList = operationOptions ?? [];
     const destinationOptionsList = destinationOptions ?? [];
+    const originOptionsList = originOptions ?? [];
+    const customerOptionsList = customerOptions ?? [];
     const statusOptionsList = statusOptions ?? [];
     const providerOptionsList = providerOptions ?? [];
     const loadPhaseOptionsList = loadPhaseOptions ?? [];
@@ -153,6 +178,8 @@ export function ReportFiltersDialog({
     const selectedTruckIds = selectedTrucks ?? [];
     const selectedOperationIds = selectedOperations ?? [];
     const selectedDestinationIds = selectedDestinations ?? [];
+    const selectedOriginIds = selectedOrigins ?? [];
+    const selectedCustomerIds = selectedCustomers ?? [];
     const selectedLoadPhaseId = selectedLoadPhase ?? 'all';
     const selectedStatusIds = selectedStatuses ?? [];
     const selectedProviderIds = selectedProviders ?? [];
@@ -171,6 +198,14 @@ export function ReportFiltersDialog({
 
     const handleDestinationsChange = (ids: Array<number | string>) => {
         onDestinationsChange?.(ids.map((value) => Number(value)));
+    };
+
+    const handleOriginsChange = (ids: Array<number | string>) => {
+        onOriginsChange?.(ids.map((value) => Number(value)));
+    };
+
+    const handleCustomersChange = (ids: Array<number | string>) => {
+        onCustomersChange?.(ids.map((value) => Number(value)));
     };
 
     const handleLoadPhaseChange = (value: string) => {
@@ -196,7 +231,9 @@ export function ReportFiltersDialog({
     const shouldShowDriver = showDriverFilter ?? driverOptionsList.length > 0;
     const shouldShowTruck = showTruckFilter ?? truckOptionsList.length > 0;
     const shouldShowOperation = showOperationFilter ?? operationOptionsList.length > 0;
+    const shouldShowOrigin = showOriginFilter ?? originOptionsList.length > 0;
     const shouldShowDestination = showDestinationFilter ?? destinationOptionsList.length > 0;
+    const shouldShowCustomer = showCustomerFilter ?? customerOptionsList.length > 0;
     const shouldShowLoadPhase = showLoadPhaseFilter ?? loadPhaseOptionsList.length > 0;
     const shouldShowStatus = showStatusFilter ?? statusOptionsList.length > 0;
     const shouldShowProvider = showProviderFilter ?? providerOptionsList.length > 0;
@@ -234,6 +271,17 @@ export function ReportFiltersDialog({
         ...(operationFilterText ?? {}),
     };
 
+    const originText = {
+        label: 'Origins',
+        triggerLabelWhenAll: 'All origins',
+        summaryLabelWhenAll: 'All origins included',
+        heading: 'Origins',
+        searchPlaceholder: 'Search origin...',
+        emptyMessage: 'No origins found.',
+        icon: MapPin,
+        ...(originFilterText ?? {}),
+    };
+
     const destinationText = {
         label: 'Destinations',
         triggerLabelWhenAll: 'All destinations',
@@ -243,6 +291,17 @@ export function ReportFiltersDialog({
         emptyMessage: 'No destinations found.',
         icon: MapPin,
         ...(destinationFilterText ?? {}),
+    };
+
+    const customerText = {
+        label: 'Customers',
+        triggerLabelWhenAll: 'All customers',
+        summaryLabelWhenAll: 'All customers included',
+        heading: 'Customers',
+        searchPlaceholder: 'Search customer...',
+        emptyMessage: 'No customers found.',
+        icon: Building2,
+        ...(customerFilterText ?? {}),
     };
 
     const loadPhaseText = {
@@ -324,6 +383,21 @@ export function ReportFiltersDialog({
                 onChange={handleOperationsChange}
             />
         ) : null,
+        shouldShowOrigin ? (
+            <ReportMultiSelectFilter
+                key="origins"
+                label={originText.label ?? 'Origins'}
+                icon={originText.icon ?? MapPin}
+                triggerLabelWhenAll={originText.triggerLabelWhenAll ?? 'All origins'}
+                summaryLabelWhenAll={originText.summaryLabelWhenAll ?? 'All origins included'}
+                heading={originText.heading ?? 'Origins'}
+                searchPlaceholder={originText.searchPlaceholder ?? 'Search origin...'}
+                emptyMessage={originText.emptyMessage ?? 'No origins found.'}
+                options={originOptionsList}
+                selectedIds={selectedOriginIds as Array<number | string>}
+                onChange={handleOriginsChange}
+            />
+        ) : null,
         shouldShowDestination ? (
             <ReportMultiSelectFilter
                 key="destinations"
@@ -337,6 +411,21 @@ export function ReportFiltersDialog({
                 options={destinationOptionsList}
                 selectedIds={selectedDestinationIds as Array<number | string>}
                 onChange={handleDestinationsChange}
+            />
+        ) : null,
+        shouldShowCustomer ? (
+            <ReportMultiSelectFilter
+                key="customers"
+                label={customerText.label ?? 'Customers'}
+                icon={customerText.icon ?? Building2}
+                triggerLabelWhenAll={customerText.triggerLabelWhenAll ?? 'All customers'}
+                summaryLabelWhenAll={customerText.summaryLabelWhenAll ?? 'All customers included'}
+                heading={customerText.heading ?? 'Customers'}
+                searchPlaceholder={customerText.searchPlaceholder ?? 'Search customer...'}
+                emptyMessage={customerText.emptyMessage ?? 'No customers found.'}
+                options={customerOptionsList}
+                selectedIds={selectedCustomerIds as Array<number | string>}
+                onChange={handleCustomersChange}
             />
         ) : null,
         shouldShowLoadPhase ? (
@@ -486,6 +575,11 @@ export function ReportFiltersDialog({
                                 <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
                                     {filterSections}
                                 </div>
+                            </div>
+                        ) : null}
+                        {extraFilters ? (
+                            <div className="border-t border-slate-200/60 dark:border-slate-700/60 pt-6">
+                                {extraFilters}
                             </div>
                         ) : null}
                     </div>

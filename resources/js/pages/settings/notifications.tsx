@@ -76,7 +76,7 @@ const formatTimestamp = (timestamp?: string | null): string | null => {
             hour: '2-digit',
             minute: '2-digit',
         }).format(new Date(timestamp));
-    } catch (error) {
+    } catch (_error) {
         return null;
     }
 };

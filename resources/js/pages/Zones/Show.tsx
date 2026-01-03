@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link, router } from '@inertiajs/react';
-import { ArrowLeft, Edit, Trash2, Layers, MapPin, Building2, Compass, Globe2, Users, ThermometerSun, BarChart3 } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, Layers, Building2, Globe2, Users, ThermometerSun, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
@@ -102,7 +102,7 @@ const formatDate = (value?: string | null) => {
 
 export default function ZonesShow({ zone, activityLogs = [] }: ZoneShowProps) {
   const { toast } = useToast();
-  const { hasPermissions } = usePermissions();
+  const { hasPermission } = usePermissions();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const breadcrumbs = useMemo<BreadcrumbItem[]>(() => [{ title: 'Zones', href: '/zones' }, { title: zone.name || `Zone ${zone.id}`, href: `/zones/${zone.id}` }], [zone.id, zone.name]);

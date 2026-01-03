@@ -1,19 +1,23 @@
 import { useMemo, useState } from 'react';
 import { router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ReportSummaryGrid, type ReportSummaryItem } from '@/components/reports/report-summary-grid';
 import { ReportFiltersDialog } from '@/components/reports/report-filters-dialog';
 import type { ReportSelectionOption } from '@/components/reports/types';
 import { formatDecimal, formatInteger, formatPercentage } from '@/components/reports/formatters';
-import { TrendingUp, Route, BarChart3, Gauge, Truck, Package } from 'lucide-react';
+import { TrendingUp, Route, BarChart3, Gauge, Truck, Package, Download, FileDigit, FileSpreadsheet, FileType2, RefreshCcw } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { usePermissions } from '@/hooks/use-permissions';
 import { REPORT_DATE_RANGE_DESCRIPTION, useReportDateRange } from '@/components/reports/use-report-date-range';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { ReportPageLayout } from '@/components/report/report-page-layout';
+
+type QueryParamValue = string | number | boolean | null | undefined | Array<string | number | boolean>;
 
 interface TruckOption {
     id: number;
@@ -162,6 +166,28 @@ export default function LoadFactorUtilization({ filters, rows = [], summary, opt
         window.location.href = url;
     };
 
+    const handleApplyFilters = () => {
+        if (!validateDateRange(from, to)) {
+            setFiltersOpen(true);
+            return;
+        }
+
+        setFiltersOpen(false);
+
+        const params: Record<string, QueryParamValue> = {};
+
+        if (from) params.from = from;
+        if (to) params.to = to;
+        if (groupBy) params.group_by = groupBy;
+        if (selectedTrucks.length > 0) params.truck_ids = selectedTrucks;
+        if (selectedDrivers.length > 0) params.driver_ids = selectedDrivers;
+
+        router.get('/reports/load-factor-utilization', params, {
+            preserveState: true,
+            preserveScroll: true,
+        });
+    };
+
     const activeFilterCount = useMemo(() => {
         let count = 0;
         if (selectedTrucks.length > 0) count++;
@@ -266,6 +292,22 @@ export default function LoadFactorUtilization({ filters, rows = [], summary, opt
         };
     }, [comparison, summary]);
 
+    const appliedFrom = filters?.from ?? '';
+    const appliedTo = filters?.to ?? '';
+    const appliedTruckCount = filters?.truck_ids?.length ?? 0;
+    const appliedDriverCount = filters?.driver_ids?.length ?? 0;
+
+    const headerBadges = useMemo(
+        () => [
+            `From ${appliedFrom || '—'}`,
+            `To ${appliedTo || '—'}`,
+            appliedTruckCount > 0 ? `${appliedTruckCount} truck${appliedTruckCount > 1 ? 's' : ''}` : 'All trucks',
+            appliedDriverCount > 0 ? `${appliedDriverCount} driver${appliedDriverCount > 1 ? 's' : ''}` : 'All drivers',
+            `Grouped by ${groupByLabel.toLowerCase()}`,
+        ],
+        [appliedDriverCount, appliedFrom, appliedTo, appliedTruckCount, groupByLabel],
+    );
+
     return (
         <ReportPageLayout
             title="Load Factor & Utilization Analysis"
@@ -318,7 +360,58 @@ export default function LoadFactorUtilization({ filters, rows = [], summary, opt
             contentClassName="p-0"
         >
             <div className="space-y-6 p-6">
-                {comparisonData && (
+                <header className="space-y-4 rounded-xl border border-slate-200 bg-white/95 p-4 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
+                    <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                        <div className="space-y-1">
+                            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-50">Utilization overview</h2>
+                            <p className="text-sm text-muted-foreground">
+                                Compare load factor, empty miles, and utilization trends across your fleet.
+                            </p>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                            {canExport ? (
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button type="button" variant="outline" className="gap-2">
+                                            <Download className="h-4 w-4" />
+                                            Export
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="w-44">
+                                        <DropdownMenuItem onSelect={() => handleExport('csv')} className="gap-2">
+                                            <FileDigit className="h-4 w-4 text-amber-500" />
+                                            CSV
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onSelect={() => handleExport('xlsx')} className="gap-2">
+                                            <FileSpreadsheet className="h-4 w-4 text-emerald-500" />
+                                            Excel
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onSelect={() => handleExport('pdf')} className="gap-2">
+                                            <FileType2 className="h-4 w-4 text-rose-500" />
+                                            PDF
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            ) : null}
+                            <Button type="button" variant="outline" className="gap-2" onClick={handleReset}>
+                                <RefreshCcw className="h-4 w-4" />
+                                Reset
+                            </Button>
+                            <Button type="button" className="gap-2" onClick={handleApplyFilters}>
+                                Generate report
+                            </Button>
+                        </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                        {headerBadges.map((badge) => (
+                            <Badge key={badge} variant="outline">
+                                {badge}
+                            </Badge>
+                        ))}
+                    </div>
+                </header>
+
+                    {comparisonData && (
                         <Card className="border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
                             <CardHeader>
                                 <CardTitle className="text-lg font-semibold">Period Comparison</CardTitle>

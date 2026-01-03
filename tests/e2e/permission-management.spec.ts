@@ -341,7 +341,6 @@ test.describe('Permission Search and Filter', () => {
       await input.fill('specific_permission_that_does_not_exist');
       await page.waitForTimeout(500);
 
-      const rowsFiltered = await table.locator('tr').count();
 
       // Clear search
       await input.clear();
@@ -513,6 +512,7 @@ test.describe('Permission Export', () => {
       // Save file and check contents
       const path = await download.path();
       if (path) {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
         const fs = require('fs');
         const content = fs.readFileSync(path, 'utf-8');
         expect(content).toContain('name');
@@ -533,6 +533,7 @@ test.describe('Permission Export', () => {
 
       const path = await download.path();
       if (path) {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
         const fs = require('fs');
         const content = fs.readFileSync(path, 'utf-8');
         const lines = content.split('\n');

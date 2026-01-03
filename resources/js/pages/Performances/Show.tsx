@@ -5,7 +5,7 @@ import { Link, router } from '@inertiajs/react';
 import { toast } from '@/hooks/use-toast';
 import { usePermissions } from '@/hooks/use-permissions';
 import { type BreadcrumbItem } from '@/types';
-import { Activity, DollarSign, Edit2, Trash2, ArrowLeft, CheckCircle, Clock, MapPin, User, Truck, Building2, Route, Fuel, Package, Calendar, FileText, AlertCircle, BarChart3, Target, Navigation, PieChart as PieIcon } from 'lucide-react';
+import { DollarSign, Edit2, Trash2, ArrowLeft, CheckCircle, Clock, User, Building2, Route, Package, Calendar, FileText, AlertCircle, BarChart3, Target, PieChart as PieIcon } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { ActivityLogTable } from '@/components/activity-log-table';

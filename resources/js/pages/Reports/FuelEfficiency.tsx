@@ -2,17 +2,21 @@ import { useEffect, useMemo, useState } from 'react';
 import { router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ListingPaginationFooter } from '@/components/listing/pagination-footer';
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { CircleDollarSign, Droplet, Gauge, Route, TrendingDown, Waypoints } from 'lucide-react';
+import { CircleDollarSign, Download, Droplet, FileDigit, FileSpreadsheet, FileType2, Gauge, RefreshCcw, Route, TrendingDown, Waypoints } from 'lucide-react';
 import { ReportFiltersDialog } from '@/components/reports/report-filters-dialog';
 import { ReportSummaryGrid, type ReportSummaryItem } from '@/components/reports/report-summary-grid';
 import type { ReportSelectionOption } from '@/components/reports/types';
 import { usePermissions } from '@/hooks/use-permissions';
 import { REPORT_DATE_RANGE_DESCRIPTION, useReportDateRange } from '@/components/reports/use-report-date-range';
 import { ReportPageLayout } from '@/components/report/report-page-layout';
+
+type QueryParamValue = string | number | boolean | null | undefined | Array<string | number | boolean>;
 
 interface TruckOption {
     id: number;
@@ -304,7 +308,7 @@ export default function FuelEfficiency({
 
         setPerPage(parsed);
 
-        const params: Record<string, unknown> = {};
+        const params: Record<string, QueryParamValue> = {};
 
         if (from) params.from = from;
         if (to) params.to = to;
@@ -337,7 +341,7 @@ export default function FuelEfficiency({
 
         setFiltersOpen(false);
 
-        const params: Record<string, unknown> = {};
+        const params: Record<string, QueryParamValue> = {};
 
         if (from) params.from = from;
         if (to) params.to = to;
@@ -411,7 +415,57 @@ export default function FuelEfficiency({
             contentClassName="p-0"
         >
             <div className="space-y-6 p-6">
-                <Card className="border border-slate-200 bg-slate-50/50 shadow-sm dark:border-slate-800 dark:bg-slate-800/50">
+                <header className="space-y-4 rounded-xl border border-slate-200 bg-white/95 p-4 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
+                    <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                        <div className="space-y-1">
+                            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-50">Fuel efficiency overview</h2>
+                            <p className="text-sm text-muted-foreground">
+                                Track fleet consumption, cost, and distance performance for the selected window.
+                            </p>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                            {canExport ? (
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button type="button" variant="outline" className="gap-2">
+                                            <Download className="h-4 w-4" />
+                                            Export
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="w-44">
+                                        <DropdownMenuItem onSelect={() => handleExport('csv')} className="gap-2">
+                                            <FileDigit className="h-4 w-4 text-amber-500" />
+                                            CSV
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onSelect={() => handleExport('xlsx')} className="gap-2">
+                                            <FileSpreadsheet className="h-4 w-4 text-emerald-500" />
+                                            Excel
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onSelect={() => handleExport('pdf')} className="gap-2">
+                                            <FileType2 className="h-4 w-4 text-rose-500" />
+                                            PDF
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            ) : null}
+                            <Button type="button" variant="outline" className="gap-2" onClick={handleReset}>
+                                <RefreshCcw className="h-4 w-4" />
+                                Reset
+                            </Button>
+                        </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                        {filterBadges.map((badge) => (
+                            <Badge key={badge} variant="outline">
+                                {badge}
+                            </Badge>
+                        ))}
+                    </div>
+                </header>
+
+                <ReportSummaryGrid items={summaryItems} />
+
+                    <Card className="border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
                         <CardHeader className="space-y-4 border-b border-slate-200/60 pb-4 dark:border-slate-700/60">
                             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                                 <div className="space-y-1">

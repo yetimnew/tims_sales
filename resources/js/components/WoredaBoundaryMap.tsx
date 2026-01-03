@@ -6,6 +6,7 @@ import {
   defaultCenter,
   extractFeatures,
   parseCoordinate,
+  type BoundaryLevel,
   type GeoJsonInput,
   type NormalizedFeature,
 } from '@/components/boundary-map-utils'
@@ -38,7 +39,7 @@ interface WoredaBoundaryMapProps {
   height?: string
 }
 
-const levelStyles: Record<'region' | 'zone' | 'woreda', L.PathOptions> = {
+const levelStyles: Record<BoundaryLevel, L.PathOptions> = {
   region: {
     color: '#1f2937',
     dashArray: '2 6',
@@ -58,6 +59,13 @@ const levelStyles: Record<'region' | 'zone' | 'woreda', L.PathOptions> = {
     weight: 2,
     fillColor: '#fed7aa',
     fillOpacity: 0.08,
+  },
+  place: {
+    color: '#0ea5e9',
+    weight: 1.5,
+    dashArray: '1 5',
+    fillColor: '#bae6fd',
+    fillOpacity: 0.05,
   },
 }
 

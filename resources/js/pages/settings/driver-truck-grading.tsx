@@ -198,7 +198,7 @@ const formatTimestamp = (value?: string | null): string | null => {
 
     try {
         return timestampFormatter.format(new Date(value));
-    } catch (error) {
+    } catch (_error) {
         return null;
     }
 };
@@ -210,7 +210,7 @@ const formatDate = (value?: string | null): string => {
 
     try {
         return dateFormatter.format(new Date(value));
-    } catch (error) {
+    } catch (_error) {
         return value;
     }
 };

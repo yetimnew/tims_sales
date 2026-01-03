@@ -1,0 +1,245 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - generic [ref=e7]:
+      - list [ref=e9]:
+        - listitem [ref=e10]:
+          - link "TIMS" [ref=e11] [cursor=pointer]:
+            - /url: /dashboard
+            - img [ref=e13]:
+              - generic [ref=e15]: TIMS
+              - generic [ref=e16]: Transport Integrated Management System
+            - generic [ref=e18]: TIMS
+      - generic [ref=e20]:
+        - generic [ref=e21]: Platform
+        - list [ref=e22]:
+          - listitem [ref=e23]:
+            - link "Dashboard" [ref=e24] [cursor=pointer]:
+              - /url: /dashboard
+              - img [ref=e25]
+              - generic [ref=e30]: Dashboard
+          - listitem [ref=e31]:
+            - button "Fleet Management" [expanded] [ref=e32]:
+              - img [ref=e33]
+              - generic [ref=e38]: Fleet Management
+              - img [ref=e39]
+            - list [ref=e42]:
+              - listitem [ref=e43]:
+                - link "Trucks" [ref=e44] [cursor=pointer]:
+                  - /url: /trucks
+                  - img [ref=e45]
+                  - generic [ref=e50]: Trucks
+              - listitem [ref=e51]:
+                - link "Drivers" [ref=e52] [cursor=pointer]:
+                  - /url: /drivers
+                  - img [ref=e53]
+                  - generic [ref=e58]: Drivers
+              - listitem [ref=e59]:
+                - link "Driver-Truck Assignments" [ref=e60] [cursor=pointer]:
+                  - /url: /driver-trucks
+                  - img [ref=e61]
+                  - generic [ref=e65]: Driver-Truck Assignments
+              - listitem [ref=e66]:
+                - link "Vehicle Types" [ref=e67] [cursor=pointer]:
+                  - /url: /vehicletypes
+                  - img [ref=e68]
+                  - generic [ref=e71]: Vehicle Types
+              - listitem [ref=e72]:
+                - link "Driver Safety" [ref=e73] [cursor=pointer]:
+                  - /url: /driver-safety
+                  - img [ref=e74]
+                  - generic [ref=e76]: Driver Safety
+              - listitem [ref=e77]:
+                - link "Cargo Types" [ref=e78] [cursor=pointer]:
+                  - /url: /cargo-types
+                  - img [ref=e79]
+                  - generic [ref=e83]: Cargo Types
+          - listitem [ref=e84]:
+            - button "Maintenance" [ref=e85]:
+              - img [ref=e86]
+              - generic [ref=e88]: Maintenance
+              - img [ref=e89]
+          - listitem [ref=e91]:
+            - button "Operations" [ref=e92]:
+              - img [ref=e93]
+              - generic [ref=e95]: Operations
+              - img [ref=e96]
+          - listitem [ref=e98]:
+            - button "Geographic Management" [ref=e99]:
+              - img [ref=e100]
+              - generic [ref=e103]: Geographic Management
+              - img [ref=e104]
+          - listitem [ref=e106]:
+            - button "Status Management" [ref=e107]:
+              - img [ref=e108]
+              - generic [ref=e111]: Status Management
+              - img [ref=e112]
+          - listitem [ref=e114]:
+            - button "Outsourcing" [ref=e115]:
+              - img [ref=e116]
+              - generic [ref=e120]: Outsourcing
+              - img [ref=e121]
+          - listitem [ref=e123]:
+            - button "Reports" [ref=e124]:
+              - img [ref=e125]
+              - generic [ref=e128]: Reports
+              - img [ref=e129]
+          - listitem [ref=e131]:
+            - button "Grading" [ref=e132]:
+              - img [ref=e133]
+              - generic [ref=e136]: Grading
+              - img [ref=e137]
+          - listitem [ref=e139]:
+            - link "Activity Logs" [ref=e140] [cursor=pointer]:
+              - /url: /activity-logs
+              - img [ref=e141]
+              - generic [ref=e145]: Activity Logs
+          - listitem [ref=e146]:
+            - button "User Management" [ref=e147]:
+              - img [ref=e148]
+              - generic [ref=e150]: User Management
+              - img [ref=e151]
+          - listitem [ref=e153]:
+            - link "System Backups" [ref=e154] [cursor=pointer]:
+              - /url: /settings/backups
+              - img [ref=e155]
+              - generic [ref=e159]: System Backups
+          - listitem [ref=e160]:
+            - link "Help & Documentation" [ref=e161] [cursor=pointer]:
+              - /url: /help
+              - img [ref=e162]
+              - generic [ref=e165]: Help & Documentation
+      - list [ref=e167]:
+        - listitem [ref=e168]:
+          - button "AU Admin User" [ref=e169]:
+            - generic [ref=e171]: AU
+            - generic [ref=e173]: Admin User
+            - img [ref=e174]
+    - main [ref=e177]:
+      - generic [ref=e178]:
+        - generic [ref=e179]:
+          - button "Toggle Sidebar" [ref=e180]:
+            - img
+            - generic [ref=e181]: Toggle Sidebar
+          - navigation "breadcrumb" [ref=e182]:
+            - list [ref=e183]:
+              - listitem [ref=e184]:
+                - link "Trucks" [ref=e185] [cursor=pointer]:
+                  - /url: /trucks
+              - listitem [ref=e186]:
+                - img [ref=e187]
+              - listitem [ref=e189]:
+                - link "Create" [disabled] [ref=e190]
+        - button [ref=e192]:
+          - img
+      - generic [ref=e195]:
+        - generic [ref=e197]:
+          - generic [ref=e198]:
+            - img [ref=e200]
+            - generic [ref=e205]:
+              - generic [ref=e206]: Create New Truck
+              - generic [ref=e207]: Complete a unified intake covering identification, specifications, and lifecycle financials.
+          - generic [ref=e208]:
+            - link "Back to Trucks" [ref=e209] [cursor=pointer]:
+              - /url: /trucks
+              - img
+              - text: Back to Trucks
+            - generic [ref=e210]:
+              - img [ref=e211]
+              - text: Unsaved Changes
+            - generic [ref=e215]: Fleet Operations
+        - generic [ref=e218]:
+          - generic [ref=e219]:
+            - generic [ref=e221]:
+              - img [ref=e223]
+              - generic [ref=e225]:
+                - heading "General Details" [level=2] [ref=e226]
+                - paragraph [ref=e227]: Primary identification and status information.
+            - generic [ref=e228]:
+              - generic [ref=e229]:
+                - generic [ref=e230]:
+                  - generic [ref=e231]: Plate Number*
+                  - generic [ref=e232]:
+                    - img [ref=e233]
+                    - generic [ref=e236]: Official license plate number
+                - generic [ref=e239]:
+                  - img [ref=e240]
+                  - textbox "Plate Number*" [active] [ref=e243]:
+                    - /placeholder: e.g., AA-1234
+                    - text: AB-2488
+              - generic [ref=e244]:
+                - generic [ref=e246]: Vehicle Type*
+                - generic [ref=e247]:
+                  - combobox [ref=e248]:
+                    - generic: Select vehicle type
+                    - img
+                  - combobox [ref=e249]
+              - generic [ref=e250]:
+                - generic [ref=e252]: Status*
+                - generic [ref=e253]:
+                  - combobox [ref=e254]:
+                    - generic: Active
+                    - img
+                  - combobox [ref=e255]
+          - generic [ref=e256]:
+            - generic [ref=e258]:
+              - img [ref=e260]
+              - generic [ref=e262]:
+                - heading "Technical Specifications" [level=2] [ref=e263]
+                - paragraph [ref=e264]: Detailed build and maintenance metadata.
+            - generic [ref=e265]:
+              - generic [ref=e266]:
+                - generic [ref=e268]: Chassis Number
+                - textbox "Chassis Number" [ref=e270]:
+                  - /placeholder: Chassis number
+                - paragraph [ref=e271]: Optional - Factory assigned identifier
+              - generic [ref=e272]:
+                - generic [ref=e274]: Engine Number
+                - textbox "Engine Number" [ref=e276]:
+                  - /placeholder: Engine number
+                - paragraph [ref=e277]: Optional - Engine identifier
+              - generic [ref=e278]:
+                - generic [ref=e280]: Tyre Size
+                - textbox "Tyre Size" [ref=e282]:
+                  - /placeholder: e.g., 315/80R22.5
+                - paragraph [ref=e283]: Optional - Standard tire specification
+              - generic [ref=e284]:
+                - generic [ref=e286]: Service Interval (KM)
+                - spinbutton "Service Interval (KM)" [ref=e288]
+          - generic [ref=e289]:
+            - generic [ref=e291]:
+              - img [ref=e293]
+              - generic [ref=e295]:
+                - heading "Operational & Financial" [level=2] [ref=e296]
+                - paragraph [ref=e297]: Track lifecycle dates and investment values.
+            - generic [ref=e298]:
+              - generic [ref=e299]:
+                - generic [ref=e301]: Purchase Price
+                - spinbutton "Purchase Price" [ref=e303]
+              - generic [ref=e304]:
+                - generic [ref=e306]: Production Date
+                - textbox "Date" [ref=e309]:
+                  - /placeholder: Pick a date
+              - generic [ref=e310]:
+                - generic [ref=e312]: Service Start Date
+                - generic [ref=e314]:
+                  - textbox "Date" [disabled]:
+                    - /placeholder: Pick a date
+          - generic [ref=e315]:
+            - generic [ref=e316]:
+              - generic [ref=e317]: "*"
+              - generic [ref=e318]: All required fields must be completed
+              - generic [ref=e319]:
+                - img [ref=e320]
+                - text: You have unsaved changes
+            - generic [ref=e324]:
+              - link "Cancel" [ref=e325] [cursor=pointer]:
+                - /url: /trucks
+              - button "Create Truck" [ref=e326]:
+                - img
+                - text: Create Truck
+  - region "Notifications (F8)":
+    - list
+```

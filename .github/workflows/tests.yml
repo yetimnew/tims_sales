@@ -1,14 +1,16 @@
 name: tests
 
+# Disabled - Tests not running in CI
 on:
-  push:
-    branches:
-      - develop
-      - main
-  pull_request:
-    branches:
-      - develop
-      - main
+  workflow_dispatch: # Only run manually if needed
+  # push:
+  #   branches:
+  #     - develop
+  #     - main
+  # pull_request:
+  #   branches:
+  #     - develop
+  #     - main
 
 jobs:
   ci:

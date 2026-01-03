@@ -19,6 +19,8 @@ import type { ReportSelectionOption } from '@/components/reports/types';
 import { REPORT_DATE_RANGE_DESCRIPTION, useReportDateRange } from '@/components/reports/use-report-date-range';
 import { ReportPageLayout } from '@/components/report/report-page-layout';
 
+type QueryParamValue = string | number | boolean | null | undefined | Array<string | number | boolean>;
+
 interface TruckOption {
     id: number;
     plate: string;
@@ -198,23 +200,15 @@ export default function PerformanceByTruck({ filters, rows = [], summary, trucks
         }
 
         setFiltersOpen(false);
-        const params: Record<string, unknown> = {
-            from,
-            to,
-        };
+        const params: Record<string, QueryParamValue> = {};
 
-        if (selectedTrucks.length > 0) {
-            params.truck_ids = selectedTrucks;
-        }
-
-        if (selectedVehicleTypes.length > 0) {
-            params.vehicle_type_ids = selectedVehicleTypes;
-        }
+        if (from) params.from = from;
+        if (to) params.to = to;
+        if (selectedTrucks.length > 0) params.truck_ids = selectedTrucks;
+        if (selectedVehicleTypes.length > 0) params.vehicle_type_ids = selectedVehicleTypes;
 
         const statusValues = convertIdsToStatuses(selectedStatusIds, statuses);
-        if (statusValues.length > 0) {
-            params.statuses = statusValues;
-        }
+        if (statusValues.length > 0) params.statuses = statusValues;
 
         router.get('/reports/performance-by-truck', params, {
             preserveState: true,

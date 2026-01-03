@@ -140,7 +140,7 @@ export default function NetworkOptimization({
     filters,
     empty_miles_analysis,
     backhaul_opportunities,
-    lane_analysis = [],
+    lane_analysis: _lane_analysis = [],
     route_balance = [],
     deadhead_cost_analysis,
     backhaul_revenue_opportunity,

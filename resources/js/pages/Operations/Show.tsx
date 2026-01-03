@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
-import { ArrowLeft, Edit, Trash2, Activity, CheckCircle, AlertCircle, Calendar, BarChart3, Target, FileText, Building2, Handshake, TrendingUp, History, XCircle, Lock, Unlock, Package, MapPin, Truck, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, BarChart3, Target, FileText, Building2, Handshake, TrendingUp, History, Lock, Unlock, Package, MapPin, ExternalLink } from 'lucide-react';
 import { Area, AreaChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis } from 'recharts';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useMemo, useState } from 'react';
@@ -307,10 +307,6 @@ export default function OperationsShow({ operation, activityLogs = [], performan
     return `${formatted} Birr${unit ? ` / ${unit}` : ''}`;
   };
 
-  const expectedRevenue =
-    operation.volume !== undefined && operation.volume !== null && operation.tariff !== undefined && operation.tariff !== null && Number.isFinite(Number(operation.volume)) && Number.isFinite(Number(operation.tariff)) && Number(operation.volume) >= 0 && Number(operation.tariff) >= 0
-      ? Number(operation.volume) * Number(operation.tariff)
-      : null;
 
   const totals = performanceInsights?.totals;
   const financial = performanceInsights?.financial;

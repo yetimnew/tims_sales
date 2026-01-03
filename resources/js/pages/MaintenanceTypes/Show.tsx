@@ -3,7 +3,7 @@ import { Link, router } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CheckCircle, Settings, Edit, Trash2, History, BarChart3, Wrench, ArrowLeft, Activity } from 'lucide-react';
+import { CheckCircle, Settings, Edit, Trash2, History, BarChart3, Wrench, ArrowLeft } from 'lucide-react';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { ActivityLogTable } from '@/components/activity-log-table';
 import { toast } from '@/hooks/use-toast';

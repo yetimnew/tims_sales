@@ -1,14 +1,16 @@
 import { useMemo, useState } from 'react';
 import { router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ReportFiltersDialog } from '@/components/reports/report-filters-dialog';
 import { ReportSummaryGrid, type ReportSummaryItem } from '@/components/reports/report-summary-grid';
 import type { ReportSelectionOption } from '@/components/reports/types';
 import { formatCurrency, formatInteger } from '@/components/reports/formatters';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, CircleDollarSign, ShieldAlert, Users } from 'lucide-react';
+import { AlertTriangle, CircleDollarSign, Download, FileDigit, FileSpreadsheet, FileType2, RefreshCcw, ShieldAlert, Users } from 'lucide-react';
 import { usePermissions } from '@/hooks/use-permissions';
 import { REPORT_DATE_RANGE_DESCRIPTION, useReportDateRange } from '@/components/reports/use-report-date-range';
 import { ReportPageLayout } from '@/components/report/report-page-layout';
@@ -86,6 +88,8 @@ interface RecentIncidentRow {
     reported_by?: PersonRef | null;
     safety_score_impact?: number | null;
 }
+
+type QueryParamValue = string | number | boolean | null | undefined | Array<string | number | boolean>;
 
 interface DriverSafetyReportProps {
     filters: {
@@ -189,24 +193,15 @@ export default function DriverSafetyReport({
 
         setFiltersOpen(false);
 
-        const params: Record<string, unknown> = {
-            from,
-            to,
-        };
+        const params: Record<string, QueryParamValue> = {};
 
-        if (selectedDrivers.length > 0) {
-            params['driver_ids'] = selectedDrivers;
-        }
+        if (from) params.from = from;
+        if (to) params.to = to;
+        if (selectedDrivers.length > 0) params.driver_ids = selectedDrivers;
+        if (selectedIncidentTypes.length > 0) params.incident_types = selectedIncidentTypes;
+        if (selectedSeverities.length > 0) params.severities = selectedSeverities;
 
-        if (selectedIncidentTypes.length > 0) {
-            params['incident_types'] = selectedIncidentTypes;
-        }
-
-        if (selectedSeverities.length > 0) {
-            params['severities'] = selectedSeverities;
-        }
-
-        router.get('/reports/driver-safety', params as Record<string, string | string[]>, {
+        router.get('/reports/driver-safety', params, {
             preserveState: true,
             preserveScroll: true,
         });
@@ -274,12 +269,14 @@ export default function DriverSafetyReport({
 
     const averageDamageText = useMemo(() => formatCurrency(summary?.average_damage_cost ?? 0), [summary?.average_damage_cost]);
 
+    const daysSinceLastIncident = summary?.days_since_last_incident;
+
     const daysSinceLastIncidentText = useMemo(() => {
-        if (summary?.days_since_last_incident === null || typeof summary?.days_since_last_incident === 'undefined') {
+        if (daysSinceLastIncident === null || typeof daysSinceLastIncident === 'undefined') {
             return '—';
         }
 
-        const value = summary.days_since_last_incident;
+        const value = daysSinceLastIncident;
         if (value < 0) {
             return `${Math.abs(value)} days ahead`;
         }
@@ -289,7 +286,7 @@ export default function DriverSafetyReport({
         }
 
         return `${value} days ago`;
-    }, [summary?.days_since_last_incident]);
+    }, [daysSinceLastIncident]);
 
     const safeSeverityBreakdown = Array.isArray(severityBreakdown) ? severityBreakdown : [];
     const safeIncidentTypeBreakdown = Array.isArray(incidentTypeBreakdown) ? incidentTypeBreakdown : [];
@@ -356,7 +353,60 @@ export default function DriverSafetyReport({
             contentClassName="p-0"
         >
             <div className="space-y-6 p-6">
-                <div className="grid gap-6 lg:grid-cols-3">
+                <header className="space-y-4 rounded-xl border border-slate-200 bg-white/95 p-4 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
+                    <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                        <div className="space-y-1">
+                            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-50">Driver safety overview</h2>
+                            <p className="text-sm text-muted-foreground">
+                                Review incidents, severity mix, and exposed drivers for the selected filters.
+                            </p>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                            {canExport ? (
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button type="button" variant="outline" className="gap-2">
+                                            <Download className="h-4 w-4" />
+                                            Export
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="w-44">
+                                        <DropdownMenuItem onSelect={() => handleExport('csv')} className="gap-2">
+                                            <FileDigit className="h-4 w-4 text-amber-500" />
+                                            CSV
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onSelect={() => handleExport('xlsx')} className="gap-2">
+                                            <FileSpreadsheet className="h-4 w-4 text-emerald-500" />
+                                            Excel
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onSelect={() => handleExport('pdf')} className="gap-2">
+                                            <FileType2 className="h-4 w-4 text-rose-500" />
+                                            PDF
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            ) : null}
+                            <Button type="button" variant="outline" className="gap-2" onClick={handleResetFilters}>
+                                <RefreshCcw className="h-4 w-4" />
+                                Reset
+                            </Button>
+                            <Button type="button" className="gap-2" onClick={handleApplyFilters}>
+                                Generate report
+                            </Button>
+                        </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                        {filterBadges.map((badge) => (
+                            <Badge key={badge} variant="outline">
+                                {badge}
+                            </Badge>
+                        ))}
+                    </div>
+                </header>
+
+                <ReportSummaryGrid items={summaryItems} />
+
+                    <div className="grid gap-6 lg:grid-cols-3">
                         <Card className="border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70 lg:col-span-2">
                             <CardHeader>
                                 <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50">Incident trend</CardTitle>

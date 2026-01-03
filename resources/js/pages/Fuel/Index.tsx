@@ -473,79 +473,105 @@ export default function FuelIndex({
         [],
     );
 
-    const tableRows = fuelData.length > 0
-        ? fuelData.map((record, index) => {
-              const truckLabel = record.truck?.plate ?? record.driver_truck?.truck?.plate ?? '—';
-              const driverLabel = record.driver?.name ?? record.driver_truck?.driver?.name ?? '—';
+    const tableRows = isTableLoading
+        ? Array.from({ length: 8 }).map((_, index) => (
+              <TableRow key={`skeleton-${index}`} aria-hidden="true">
+                  <TableCell className="text-center">
+                      <Skeleton className="h-4 w-6 mx-auto" />
+                  </TableCell>
+                  <TableCell>
+                      <Skeleton className="h-4 w-24" />
+                  </TableCell>
+                  <TableCell>
+                      <Skeleton className="h-4 w-20" />
+                  </TableCell>
+                  <TableCell>
+                      <Skeleton className="h-4 w-28" />
+                  </TableCell>
+                  <TableCell className="text-center">
+                      <Skeleton className="h-6 w-16 mx-auto rounded-full" />
+                  </TableCell>
+                  <TableCell className="text-right">
+                      <Skeleton className="h-4 w-16 ml-auto" />
+                  </TableCell>
+                  <TableCell className="text-right">
+                      <Skeleton className="h-4 w-20 ml-auto" />
+                  </TableCell>
+                  <TableCell className="text-right">
+                      <Skeleton className="h-4 w-24 ml-auto" />
+                  </TableCell>
+                  <TableCell>
+                      <Skeleton className="h-4 w-24" />
+                  </TableCell>
+                  <TableCell className="text-center">
+                      <Skeleton className="h-8 w-8 mx-auto rounded" />
+                  </TableCell>
+              </TableRow>
+          ))
+        : fuelData.length > 0
+            ? fuelData.map((record, index) => {
+                  const truckLabel = record.truck?.plate ?? record.driver_truck?.truck?.plate ?? '—';
+                  const driverLabel = record.driver?.name ?? record.driver_truck?.driver?.name ?? '—';
 
-              return (
-                  <TableRow key={record.id} className="hover:bg-muted/50">
-                      <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
-                      <TableCell className="font-medium">{formatDate(record.fuel_date)}</TableCell>
-                      <TableCell className="text-muted-foreground">{truckLabel}</TableCell>
-                      <TableCell className="text-muted-foreground">{driverLabel}</TableCell>
-                      <TableCell className="text-center">
-                          <Badge className={getFuelTypeBadgeClass(record.fuel_type)}>{record.fuel_type}</Badge>
-                      </TableCell>
-                      <TableCell className="text-right text-muted-foreground">{formatNumber(record.fuel_quantity_liters)}</TableCell>
-                      <TableCell className="text-right text-muted-foreground">{formatCurrency(record.fuel_price_per_liter)}</TableCell>
-                      <TableCell className="text-right font-semibold">{formatCurrency(record.total_cost)}</TableCell>
-                      <TableCell className="text-muted-foreground">{record.receipt_number || '—'}</TableCell>
-                      <TableCell className="text-center">
-                          <ListingRowActionsMenu
-                              actions={[
-                                  canViewRecord && {
-                                      label: 'View',
-                                      icon: <Eye className="h-4 w-4" />,
-                                      href: `/fuel/${record.id}`,
-                                  },
-                                  canEditRecord && {
-                                      label: 'Edit',
-                                      icon: <Edit className="h-4 w-4" />,
-                                      href: `/fuel/${record.id}/edit`,
-                                  },
-                                  canDeleteRecord && {
-                                      label: 'Delete',
-                                      icon: <Trash2 className="h-4 w-4" />,
-                                      danger: true,
-                                      disabled: isDeleting && selectedRecord?.id === record.id,
-                                      onSelect: () => handleDeleteClick(record),
-                                  },
-                              ]}
-                          />
-                      </TableCell>
-                  </TableRow>
-              );
-          })
-        : (
-            <TableRow>
-                <TableCell colSpan={tableColumns.length} className="py-8 text-center text-muted-foreground">
-                    No fuel records found.
-                    {canCreateRecord && (
-                        <Link href="/fuel/create" className="ml-1 text-primary underline">
-                            Create one
-                        </Link>
-                    )}
-                </TableCell>
-            </TableRow>
-        );
+                  return (
+                      <TableRow key={record.id} className="hover:bg-muted/50">
+                          <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
+                          <TableCell className="font-medium">{formatDate(record.fuel_date)}</TableCell>
+                          <TableCell className="text-muted-foreground">{truckLabel}</TableCell>
+                          <TableCell className="text-muted-foreground">{driverLabel}</TableCell>
+                          <TableCell className="text-center">
+                              <Badge className={getFuelTypeBadgeClass(record.fuel_type)}>{record.fuel_type}</Badge>
+                          </TableCell>
+                          <TableCell className="text-right text-muted-foreground">{formatNumber(record.fuel_quantity_liters)}</TableCell>
+                          <TableCell className="text-right text-muted-foreground">{formatCurrency(record.fuel_price_per_liter)}</TableCell>
+                          <TableCell className="text-right font-semibold">{formatCurrency(record.total_cost)}</TableCell>
+                          <TableCell className="text-muted-foreground">{record.receipt_number || '—'}</TableCell>
+                          <TableCell className="text-center">
+                              <ListingRowActionsMenu
+                                  actions={[
+                                      canViewRecord && {
+                                          label: 'View',
+                                          icon: <Eye className="h-4 w-4" />,
+                                          href: `/fuel/${record.id}`,
+                                      },
+                                      canEditRecord && {
+                                          label: 'Edit',
+                                          icon: <Edit className="h-4 w-4" />,
+                                          href: `/fuel/${record.id}/edit`,
+                                      },
+                                      canDeleteRecord && {
+                                          label: 'Delete',
+                                          icon: <Trash2 className="h-4 w-4" />,
+                                          danger: true,
+                                          disabled: isDeleting && selectedRecord?.id === record.id,
+                                          onSelect: () => handleDeleteClick(record),
+                                      },
+                                  ]}
+                              />
+                          </TableCell>
+                      </TableRow>
+                  );
+              })
+            : (
+                <TableRow>
+                    <TableCell colSpan={tableColumns.length} className="py-8 text-center text-muted-foreground">
+                        No fuel records found.
+                        {canCreateRecord && (
+                            <Link href="/fuel/create" className="ml-1 text-primary underline">
+                                Create one
+                            </Link>
+                        )}
+                    </TableCell>
+                </TableRow>
+            );
 
     const tableContent = (
-        <div className="relative">
-            <ListingTableShell
-                columns={tableColumns}
-                sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSort }}
-            >
-                {tableRows}
-            </ListingTableShell>
-
-            {isTableLoading && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
-                    <img src="/images/loading-spinner.svg" alt="Loading fuel records" className="h-12 w-12" />
-                    <span className="text-sm text-muted-foreground">Loading fuel records...</span>
-                </div>
-            )}
-        </div>
+        <ListingTableShell
+            columns={tableColumns}
+            sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSort }}
+        >
+            {tableRows}
+        </ListingTableShell>
     );
 
     const mobileItems = React.useMemo(
@@ -559,7 +585,46 @@ export default function FuelIndex({
         [fuelData, rowOffset],
     );
 
-    const mobileContent = (
+    const mobileContent = isTableLoading ? (
+        <ListingMobileItemList
+            items={Array.from({ length: 5 }).map((_, i) => ({ record: { id: i }, position: i + 1 }))}
+            getKey={(item) => `skeleton-${item.position}`}
+            renderTitle={() => (
+                <div className="flex items-center gap-2">
+                    <Skeleton className="h-3 w-8" />
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-3.5 w-3.5 rounded" />
+                </div>
+            )}
+            renderSubtitle={() => <Skeleton className="h-3 w-28" />}
+            renderContent={() => (
+                <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                        <Skeleton className="h-3 w-16" />
+                        <Skeleton className="h-3 w-24" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <Skeleton className="h-3 w-20" />
+                        <Skeleton className="h-3 w-20" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <Skeleton className="h-3 w-20" />
+                        <Skeleton className="h-3 w-24" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <Skeleton className="h-3 w-24" />
+                        <Skeleton className="h-3 w-28" />
+                    </div>
+                </div>
+            )}
+            renderFooter={() => (
+                <div className="flex w-full gap-2">
+                    <Skeleton className="h-8 flex-1" />
+                    <Skeleton className="h-8 w-20" />
+                </div>
+            )}
+        />
+    ) : (
         <ListingMobileItemList
             items={mobileItems}
             getKey={(item) => item.record.id}
@@ -721,13 +786,6 @@ export default function FuelIndex({
 
                 <div className="relative space-y-3 md:hidden">
                     {mobileContent}
-
-                    {isTableLoading && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
-                            <img src="/images/loading-spinner.svg" alt="Loading fuel records" className="h-10 w-10" />
-                            <span className="text-sm text-muted-foreground">Loading fuel records...</span>
-                        </div>
-                    )}
                 </div>
             </ListPageLayout>
 

@@ -222,8 +222,10 @@ const statusBadgeTone = (status?: string | null): string => {
     return 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200';
 };
 
-const normalizeQuery = (value: TruckGradingFilters): Record<string, unknown> => {
-    const query: Record<string, unknown> = {};
+type TruckGradingQueryValue = string | number | boolean | null;
+
+const normalizeQuery = (value: TruckGradingFilters): Record<string, TruckGradingQueryValue> => {
+    const query: Record<string, TruckGradingQueryValue> = {};
 
     if (value.snapshot_date) {
         query.snapshot_date = value.snapshot_date;
@@ -379,7 +381,7 @@ export default function TruckGradingReport({
         setPerPage(availablePerPageOptions[0] ?? 10);
         setFiltersOpen(false);
 
-        router.get('/reports/truck-grading', {}, {
+        router.get('/reports/truck-grading', undefined, {
             preserveScroll: true,
             preserveState: false,
         });
@@ -443,7 +445,6 @@ export default function TruckGradingReport({
 
             router.reload({
                 only: ['filters', 'filterOptions', 'paginator', 'latestCalculation'],
-                preserveScroll: true,
                 onFinish: () => setRecalculating(false),
                 onError: () => setRecalculating(false),
             });

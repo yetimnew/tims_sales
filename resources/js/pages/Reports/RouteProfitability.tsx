@@ -14,6 +14,8 @@ import { Route, TrendingUp, TrendingDown, MapPin, Package, DollarSign, BarChart3
 import { usePermissions } from '@/hooks/use-permissions';
 import { ReportPageLayout } from '@/components/report/report-page-layout';
 
+type QueryParamValue = string | number | boolean | null | undefined | Array<string | number | boolean>;
+
 interface PlaceOption {
     id: number;
     name: string;
@@ -198,12 +200,12 @@ export default function RouteProfitability({ filters, rows = [], summary, option
 
         setFiltersOpen(false);
 
-        const params: Record<string, unknown> = {
-            from,
-            to,
+        const params: Record<string, QueryParamValue> = {
             sort: selectedSort,
         };
 
+        if (from) params.from = from;
+        if (to) params.to = to;
         if (selectedOrigins.length > 0) params.origin_ids = selectedOrigins;
         if (selectedDestinations.length > 0) params.destination_ids = selectedDestinations;
         if (selectedCustomers.length > 0) params.customer_ids = selectedCustomers;

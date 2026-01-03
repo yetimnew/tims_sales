@@ -17,12 +17,16 @@ test.describe('Truck Management CRUD', () => {
   }
 
   async function selectFirstVehicleType(page: Page): Promise<void> {
-    const trigger = comboboxByFieldLabel(page, /Vehicle Type/i);
-    await expect(trigger).toBeVisible();
+    // Try multiple selectors for the vehicle type dropdown
+    const trigger = page.locator('label').filter({ hasText: /Vehicle Type/i }).locator('xpath=..').locator('[role="combobox"], button[role="combobox"], [data-radix-select-trigger]').first();
+    await page.waitForTimeout(500); // Wait for form to fully load
+    await expect(trigger).toBeVisible({ timeout: 10000 });
     await trigger.click();
+    await page.waitForTimeout(300);
     const firstOption = page.locator('[role="option"]').first();
-    await expect(firstOption).toBeVisible();
+    await expect(firstOption).toBeVisible({ timeout: 5000 });
     await firstOption.click();
+    await page.waitForTimeout(300);
   }
 
   async function locateTruckRow(page: Page, plate: string) {

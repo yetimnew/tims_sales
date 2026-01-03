@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import { TableCell, TableRow } from '@/components/ui/table';
 import ListPageLayout from '@/components/layouts/list-page-layout';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
@@ -191,15 +192,28 @@ export default function TrucksIndex({
     perPageOptions,
 }: TrucksIndexProps) {
     const { hasPermission } = usePermissions();
-    const isDataReady = Array.isArray(trucks?.data);
-    const { isLoading: isTableLoading } = useListingLoading({
+    const isDataReady = React.useMemo(() => {
+        // Check if we have valid data structure
+        // Data is ready if trucks exists and has a data array (even if empty)
+        return (
+            trucks !== null &&
+            trucks !== undefined &&
+            Array.isArray(trucks.data)
+        );
+    }, [trucks]);
+    const { isLoading: isLoadingState } = useListingLoading({
         storageKey: SKELETON_FLAG_KEY,
         isDataReady,
-        minimumDuration: 200,
+        minimumDuration: 350,
         onlySamePath: true, // Still show loading for same-path navigation (pagination, filtering)
         targetPath: '/trucks', // Show loading when navigating TO /trucks from any other page
         initialIsLoading: true, // Show skeleton immediately on initial mount
     });
+
+    // Force skeleton display for testing - remove this in production
+    // Uncomment the line below to always show skeletons for testing
+    // const isTableLoading = true;
+    const isTableLoading = isLoadingState;
 
     const [searchTerm, setSearchTerm] = React.useState(filters?.search ?? '');
     const [selectedStatus, setSelectedStatus] = React.useState(filters?.status ?? 'all');
@@ -475,41 +489,106 @@ export default function TrucksIndex({
 
     const statsDefinitions = [
         {
+            id: 'total-trucks',
+            label: 'Total Trucks',
+            icon: <Truck className="h-3.5 w-3.5 text-blue-600" />,
+            className: 'min-w-[220px] flex-shrink-0',
+            value: isTableLoading ? (
+                <Skeleton className="h-3.5 w-20" aria-hidden="true" />
+            ) : (
+                truckCount.toLocaleString()
+            ),
+            description: isTableLoading ? (
+                <Skeleton className="h-3 w-24" aria-hidden="true" />
+            ) : (
+                'All vehicles'
+            ),
+            valueClassName: isTableLoading ? undefined : 'text-blue-600',
+        },
+        {
             id: 'active-trucks',
             label: 'Active',
             icon: <CheckCircle className="h-3.5 w-3.5 text-green-600" />,
             className: 'min-w-[220px] flex-shrink-0',
-            value: activeCount.toLocaleString(),
-            description: `${maintenanceCount.toLocaleString()} in maintenance`,
-            valueClassName: 'text-green-600',
+            value: isTableLoading ? (
+                <Skeleton className="h-3.5 w-16" aria-hidden="true" />
+            ) : (
+                activeCount.toLocaleString()
+            ),
+            description: isTableLoading ? (
+                <Skeleton className="h-3 w-28" aria-hidden="true" />
+            ) : (
+                `${maintenanceCount.toLocaleString()} in maintenance`
+            ),
+            valueClassName: isTableLoading ? undefined : 'text-green-600',
         },
         {
             id: 'fleet-value',
             label: 'Fleet Value',
             icon: <DollarSign className="h-3.5 w-3.5 text-purple-600" />,
             className: 'min-w-[220px] flex-shrink-0',
-            value: fleetValueDisplay,
-            description: 'Total fleet value',
-            valueClassName: 'text-purple-600',
+            value: isTableLoading ? (
+                <Skeleton className="h-3.5 w-20" aria-hidden="true" />
+            ) : (
+                fleetValueDisplay
+            ),
+            description: isTableLoading ? (
+                <Skeleton className="h-3 w-24" aria-hidden="true" />
+            ) : (
+                'Total fleet value'
+            ),
+            valueClassName: isTableLoading ? undefined : 'text-purple-600',
         },
-
+        {
+            id: 'revenue',
+            label: `Revenue (${financialWindowDays}d)`,
+            icon: <TrendingUp className="h-3.5 w-3.5 text-emerald-600" />,
+            className: 'min-w-[220px] flex-shrink-0',
+            value: isTableLoading ? (
+                <Skeleton className="h-3.5 w-24" aria-hidden="true" />
+            ) : (
+                revenueDisplay
+            ),
+            description: isTableLoading ? (
+                <Skeleton className="h-3 w-28" aria-hidden="true" />
+            ) : (
+                tonKmPerBirrDisplay
+            ),
+            valueClassName: isTableLoading ? undefined : 'text-emerald-600',
+        },
         {
             id: 'driver-churn',
             label: `Driver Churn (${churnWindowDays}d)`,
             icon: <Users className="h-3.5 w-3.5 text-rose-600" />,
             className: 'min-w-[220px] flex-shrink-0',
-            value: averageTenureDisplay,
-            description: highChurnDescription,
-            valueClassName: churnValueClass,
+            value: isTableLoading ? (
+                <Skeleton className="h-3.5 w-16" aria-hidden="true" />
+            ) : (
+                averageTenureDisplay
+            ),
+            description: isTableLoading ? (
+                <Skeleton className="h-3 w-32" aria-hidden="true" />
+            ) : (
+                highChurnDescription
+            ),
+            valueClassName: isTableLoading ? undefined : churnValueClass,
         },
         {
             id: 'utilization',
             label: `Utilization (${utilization?.window_days ?? 30}d)`,
             icon: <Gauge className="h-3.5 w-3.5 text-slate-600" />,
             className: 'min-w-[220px] flex-shrink-0',
-            value: utilizationRateDisplay,
-            description: utilizationDescription,
-            valueClassName: utilizationValueClass,
+            value: isTableLoading ? (
+                <Skeleton className="h-3.5 w-16" aria-hidden="true" />
+            ) : (
+                utilizationRateDisplay
+            ),
+            description: isTableLoading ? (
+                <Skeleton className="h-3 w-36" aria-hidden="true" />
+            ) : (
+                utilizationDescription
+            ),
+            valueClassName: isTableLoading ? undefined : utilizationValueClass,
         },
     ];
 
@@ -559,7 +638,42 @@ export default function TrucksIndex({
         );
     };
 
-    const tableRows = trucks?.data && trucks.data.length > 0
+    const tableRows = isTableLoading
+        ? Array.from({ length: 8 }).map((_, index) => (
+              <TableRow key={`skeleton-${index}`} aria-hidden="true">
+                  <TableCell className="text-center">
+                      <Skeleton className="h-4 w-6 mx-auto" />
+                  </TableCell>
+                  <TableCell>
+                      <Skeleton className="h-4 w-20" />
+                  </TableCell>
+                  <TableCell>
+                      <Skeleton className="h-4 w-24" />
+                  </TableCell>
+                  <TableCell>
+                      <Skeleton className="h-4 w-28" />
+                  </TableCell>
+                  <TableCell>
+                      <Skeleton className="h-4 w-24" />
+                  </TableCell>
+                  <TableCell>
+                      <Skeleton className="h-4 w-20" />
+                  </TableCell>
+                  <TableCell>
+                      <Skeleton className="h-4 w-16" />
+                  </TableCell>
+                  <TableCell>
+                      <Skeleton className="h-4 w-24" />
+                  </TableCell>
+                  <TableCell className="text-center">
+                      <Skeleton className="h-6 w-20 mx-auto rounded-full" />
+                  </TableCell>
+                  <TableCell className="text-center">
+                      <Skeleton className="h-8 w-8 mx-auto rounded" />
+                  </TableCell>
+              </TableRow>
+          ))
+        : trucks?.data && trucks.data.length > 0
         ? trucks.data.map((truck, index) => (
               <TableRow key={truck.id} className="hover:bg-muted/50">
                   <TableCell className="text-center font-medium">
@@ -633,7 +747,52 @@ export default function TrucksIndex({
         [rowOffset, trucks?.data],
     );
 
-    const mobileContent = (
+    const skeletonMobileItems = React.useMemo(
+        () => Array.from({ length: 5 }).map((_, index) => ({ id: `skeleton-${index}` })),
+        [],
+    );
+
+    const mobileContent = isTableLoading ? (
+        <div className="space-y-3">
+            {skeletonMobileItems.map((item) => (
+                <div key={item.id} className="rounded-lg border bg-card p-4" aria-hidden="true">
+                    <div className="mb-3 flex items-center gap-2">
+                        <Skeleton className="h-3 w-8" />
+                        <Skeleton className="h-5 w-24" />
+                        <Skeleton className="h-3.5 w-3.5 ml-auto" />
+                    </div>
+                    <Skeleton className="mb-3 h-4 w-32" />
+                    <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                            <Skeleton className="h-4 w-16" />
+                            <Skeleton className="h-4 w-20" />
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <Skeleton className="h-4 w-20" />
+                            <Skeleton className="h-4 w-24" />
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <Skeleton className="h-4 w-16" />
+                            <Skeleton className="h-4 w-20" />
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <Skeleton className="h-4 w-28" />
+                            <Skeleton className="h-4 w-16" />
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <Skeleton className="h-4 w-24" />
+                            <Skeleton className="h-4 w-24" />
+                        </div>
+                    </div>
+                    <div className="mt-4 flex gap-2">
+                        <Skeleton className="h-8 flex-1" />
+                        <Skeleton className="h-8 w-20" />
+                        <Skeleton className="h-8 w-20" />
+                    </div>
+                </div>
+            ))}
+        </div>
+    ) : (
         <ListingMobileItemList
             items={mobileItems}
             getKey={(item) => item.truck.id}
@@ -822,29 +981,13 @@ export default function TrucksIndex({
                 }
             >
                 <div className="hidden md:block">
-                    <div className="relative">
                         <ListingTableShell columns={tableColumns} sort={{ column: sortBy, direction: sortDirection, onToggle: handleSort }}>
                             {tableRows}
                         </ListingTableShell>
-
-                        {isTableLoading && (
-                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
-                                <img src="/images/loading-spinner.svg" alt="Loading trucks" className="h-12 w-12" />
-                                <span className="text-sm text-muted-foreground">Loading trucks...</span>
-                            </div>
-                        )}
-                    </div>
                 </div>
 
-                <div className="relative space-y-3 md:hidden">
+                <div className="space-y-3 md:hidden">
                     {mobileContent}
-
-                    {isTableLoading && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
-                            <img src="/images/loading-spinner.svg" alt="Loading trucks" className="h-10 w-10" />
-                            <span className="text-sm text-muted-foreground">Loading trucks...</span>
-                        </div>
-                    )}
                 </div>
             </ListPageLayout>
 

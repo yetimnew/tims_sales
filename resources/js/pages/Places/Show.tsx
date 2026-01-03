@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link, router } from '@inertiajs/react';
-import { ArrowLeft, Edit, Trash2, MapPin, Landmark, Compass, Navigation, Users, Mountain, ThermometerSun, Warehouse, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, MapPin, ThermometerSun, Warehouse, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';

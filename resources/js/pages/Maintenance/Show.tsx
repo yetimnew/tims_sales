@@ -1,5 +1,5 @@
 import { Link, router } from '@inertiajs/react';
-import { Edit, Trash2, ArrowLeft, Wrench, Calendar, CalendarCheck, Clock, DollarSign, ClipboardList, User, AlertTriangle, FileText, Lightbulb } from 'lucide-react';
+import { Edit, Trash2, ArrowLeft, Wrench, Calendar, ClipboardList, User, AlertTriangle, FileText, Lightbulb } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { type BreadcrumbItem } from '@/types';

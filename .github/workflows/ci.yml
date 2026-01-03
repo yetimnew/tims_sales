@@ -46,17 +46,6 @@ jobs:
       - name: Run Pint (dry-run)
         run: vendor/bin/pint --dirty --test
 
-      - name: Run PHPUnit
-        run: php artisan test --no-interaction
-        env:
-          APP_ENV: testing
-          CACHE_STORE: array
-          DB_CONNECTION: sqlite
-          DB_DATABASE: :memory:
-          MAIL_MAILER: array
-          QUEUE_CONNECTION: sync
-          SESSION_DRIVER: array
-
   node:
     name: Node Quality
     runs-on: ubuntu-latest

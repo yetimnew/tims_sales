@@ -9,13 +9,11 @@ import { formatCurrency, formatDecimal, formatPercentage } from '@/components/re
 import {
     AlertTriangle,
     TrendingUp,
-    TrendingDown,
     Truck,
     Target,
     Activity,
     AlertCircle,
     CheckCircle2,
-    XCircle,
     Percent,
     Calendar,
     BarChart3,
@@ -176,14 +174,11 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Capacity Planning', href: '/reports/capacity-planning' },
 ];
 
-const formatOptionalCurrency = (value: number | null) => (value === null ? '—' : formatCurrency(value));
-const formatOptionalPercentage = (value: number | null) => (value === null ? '—' : formatPercentage(value));
-const formatOptionalDecimal = (value: number | null) => (value === null ? '—' : formatDecimal(value));
 
 export default function CapacityPlanning({
     filters,
-    resolved_from,
-    resolved_to,
+    resolved_from: _resolved_from,
+    resolved_to: _resolved_to,
     fleet_overview,
     utilization_analysis,
     demand_analysis,

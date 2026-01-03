@@ -848,8 +848,6 @@ export default function MaintenanceTypesIndex({
             deactivate: '/maintenance-types/bulk-deactivate',
         };
 
-        const selectionCount = selectedIds.length;
-
         const onError = () => {
             // Flash messaging handles user feedback for bulk actions.
         };

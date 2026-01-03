@@ -114,7 +114,7 @@ export function extractFeatures(
     const maybeType = (input as Record<string, unknown>).type
 
     if (maybeType === 'Feature') {
-      const normalized = decorateFeature(input as GeoJsonFeature, level, name, sourceId, status)
+      const normalized = decorateFeature(input as unknown as GeoJsonFeature, level, name, sourceId, status)
       return normalized.geometry ? [normalized] : []
     }
 

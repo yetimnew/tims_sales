@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
@@ -11,8 +11,8 @@ import { toast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePermissions } from '@/hooks/use-permissions';
-import { Activity, ArrowLeft, ArrowUpRight, Ban, BarChart3, Calendar, CheckCircle, Edit, History, Sparkles, Target, Truck, Trash2, Wrench, Clock, User, XCircle, TrendingUp, DollarSign, Package, ExternalLink, MapPin, Fuel, Route, Gauge } from 'lucide-react';
-import { Area, AreaChart, Bar, BarChart as RechartsBarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Legend, Line, LineChart } from 'recharts';
+import { ArrowLeft, ArrowUpRight, Ban, BarChart3, Calendar, CheckCircle, Edit, History, Sparkles, Target, Truck, Trash2, Wrench, Clock, User, TrendingUp, DollarSign, Package, ExternalLink, MapPin, Route, Gauge } from 'lucide-react';
+import { Area, AreaChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Legend, Line, LineChart } from 'recharts';
 
 type VehicleType = { id: number; name: string };
 type ActivityLog = { id: number; description: string; causer?: { name?: string }; created_at: string; properties?: Record<string, unknown> };
@@ -78,18 +78,32 @@ interface TruckDetails {
   performances?: PerformanceRecord[];
 }
 
+interface TruckPerformanceSummary {
+  total_records: number;
+  completed_trips: number;
+  total_distance_km: number;
+  avg_fuel_efficiency_km_per_liter: number | null;
+  total_ton_km: number;
+  avg_payload_tons_per_trip: number | null;
+  fuel_cost_birr?: number | null;
+  total_loaded_distance_km?: number | null;
+  total_empty_distance_km?: number | null;
+  open_trips?: number | null;
+  total_fuel_liters?: number | null;
+  main_trip_records?: number | null;
+  trip_completion_rate?: number | null;
+  avg_ton_km_per_trip?: number | null;
+  total_cargo_volume_mt?: number | null;
+  avg_cargo_volume_mt_per_trip?: number | null;
+  avg_trip_distance_km?: number | null;
+  avg_trip_duration_days?: number | null;
+}
+
 interface TrucksShowProps {
   truck: TruckDetails;
   activityLogs?: ActivityLog[];
   counts?: { drivers: number; performances: number; driverAssignments: number; maintenance: number };
-  performanceSummary?: {
-    total_records: number;
-    completed_trips: number;
-    total_distance_km: number;
-    avg_fuel_efficiency_km_per_liter: number | null;
-    total_ton_km: number;
-    avg_payload_tons_per_trip: number | null;
-  };
+  performanceSummary?: TruckPerformanceSummary;
   maintenanceSummary?: { total_records: number; completed: number; scheduled: number; overdue: number; total_cost: number };
   gradeReport?: GradeReport;
 }
@@ -155,8 +169,6 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
   const canDeactivateTruck = hasPermission('trucks.deactivate');
 
   const statusLabel = truck.status ? truck.status.charAt(0).toUpperCase() + truck.status.slice(1) : 'Unknown';
-  const totalAssignments = counts?.driverAssignments ?? truck.driverTrucks?.length ?? 0;
-  const activeAssignmentsCount = truck.driverTrucks?.filter(assignment => assignment.is_attached).length ?? 0;
 
   // Calculate financial metrics from performance data
   const totalFuelCost = performanceSummary?.fuel_cost_birr ?? 0;
@@ -169,22 +181,34 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
     ? totalOperationalCost / performanceSummary.completed_trips 
     : 0;
 
+  const totalLoadedDistance = performanceSummary?.total_loaded_distance_km ?? 0;
+  const totalEmptyDistance = performanceSummary?.total_empty_distance_km ?? 0;
+  const openTrips = performanceSummary?.open_trips ?? 0;
+  const totalFuelLiters = performanceSummary?.total_fuel_liters ?? 0;
+  const mainTripRecords = performanceSummary?.main_trip_records ?? 0;
+  const tripCompletionRate = performanceSummary?.trip_completion_rate ?? null;
+  const avgTonKmPerTrip = performanceSummary?.avg_ton_km_per_trip ?? null;
+  const totalCargoVolumeMt = performanceSummary?.total_cargo_volume_mt ?? null;
+  const avgCargoVolumePerTrip = performanceSummary?.avg_cargo_volume_mt_per_trip ?? null;
+  const avgTripDistance = performanceSummary?.avg_trip_distance_km ?? null;
+  const avgTripDurationDays = performanceSummary?.avg_trip_duration_days ?? null;
+
   // Utilization metrics
   const loadFactor = performanceSummary?.total_distance_km && performanceSummary.total_distance_km > 0
-    ? (performanceSummary.total_loaded_distance_km / performanceSummary.total_distance_km) * 100
+    ? (totalLoadedDistance / performanceSummary.total_distance_km) * 100
     : 0;
   const emptyFactor = 100 - loadFactor;
 
   // Prepare chart data
   const distanceChartData = performanceSummary ? [
-    { name: 'Loaded', value: performanceSummary.total_loaded_distance_km, fill: '#22c55e' },
-    { name: 'Empty', value: performanceSummary.total_empty_distance_km, fill: '#ef4444' },
-  ].filter(item => item.value > 0) : [];
+    { name: 'Loaded', value: totalLoadedDistance, fill: '#22c55e' },
+    { name: 'Empty', value: totalEmptyDistance, fill: '#ef4444' },
+  ].filter(item => (item.value ?? 0) > 0) : [];
 
   const tripStatusData = performanceSummary ? [
     { name: 'Completed', value: performanceSummary.completed_trips, fill: '#22c55e' },
-    { name: 'Open', value: performanceSummary.open_trips, fill: '#3b82f6' },
-  ].filter(item => item.value > 0) : [];
+    { name: 'Open', value: openTrips, fill: '#3b82f6' },
+  ].filter(item => (item.value ?? 0) > 0) : [];
 
   const costBreakdownData = [
     { name: 'Fuel Cost', value: totalFuelCost, fill: '#f97316' },
@@ -203,7 +227,7 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
       key: 'trips',
       label: 'Completed Trips',
       value: formatNumber(performanceSummary?.completed_trips ?? 0, { maximumFractionDigits: 0 }),
-      helper: `${formatNumber(performanceSummary?.open_trips ?? 0, { maximumFractionDigits: 0 })} open trips`,
+      helper: `${formatNumber(openTrips, { maximumFractionDigits: 0 })} open trips`,
     },
     {
       key: 'distance',
@@ -215,7 +239,7 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
       key: 'efficiency',
       label: 'Fuel Efficiency',
       value: formatFuelEfficiency(performanceSummary?.avg_fuel_efficiency_km_per_liter ?? null),
-      helper: `${formatNumber(performanceSummary?.total_fuel_liters ?? 0, { maximumFractionDigits: 0 })} L total`,
+      helper: `${formatNumber(totalFuelLiters, { maximumFractionDigits: 0 })} L total`,
     },
     {
       key: 'cost',
@@ -515,27 +539,27 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
               <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-center">
                 <p className="text-xs font-semibold uppercase text-muted-foreground">Total Records</p>
                 <p className="mt-2 text-3xl font-bold text-blue-700">{performanceSummary.total_records}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{performanceSummary.main_trip_records} main trips</p>
+                <p className="mt-1 text-xs text-muted-foreground">{formatNumber(mainTripRecords, { maximumFractionDigits: 0 })} main trips</p>
               </div>
               <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-center">
                 <p className="text-xs font-semibold uppercase text-muted-foreground">Completed</p>
                 <p className="mt-2 text-3xl font-bold text-green-700">{performanceSummary.completed_trips}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{performanceSummary.trip_completion_rate ? (performanceSummary.trip_completion_rate * 100).toFixed(1) : '0'}% rate</p>
+                <p className="mt-1 text-xs text-muted-foreground">{tripCompletionRate ? (tripCompletionRate * 100).toFixed(1) : '0'}% rate</p>
               </div>
               <div className="rounded-lg border border-orange-200 bg-orange-50 p-4 text-center">
                 <p className="text-xs font-semibold uppercase text-muted-foreground">Open Trips</p>
-                <p className="mt-2 text-3xl font-bold text-orange-700">{performanceSummary.open_trips}</p>
+                <p className="mt-2 text-3xl font-bold text-orange-700">{formatNumber(openTrips, { maximumFractionDigits: 0 })}</p>
                 <p className="mt-1 text-xs text-muted-foreground">In progress</p>
               </div>
               <div className="rounded-lg border border-purple-200 bg-purple-50 p-4 text-center">
                 <p className="text-xs font-semibold uppercase text-muted-foreground">Ton-Km</p>
                 <p className="mt-2 text-3xl font-bold text-purple-700">{formatNumber(performanceSummary.total_ton_km, { maximumFractionDigits: 0 })}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{formatNumber(performanceSummary.avg_ton_km_per_trip, { maximumFractionDigits: 1 })} avg</p>
+                <p className="mt-1 text-xs text-muted-foreground">{formatNumber(avgTonKmPerTrip, { maximumFractionDigits: 1 })} avg</p>
               </div>
               <div className="rounded-lg border border-teal-200 bg-teal-50 p-4 text-center">
                 <p className="text-xs font-semibold uppercase text-muted-foreground">Cargo Volume</p>
-                <p className="mt-2 text-3xl font-bold text-teal-700">{formatNumber(performanceSummary.total_cargo_volume_mt, { maximumFractionDigits: 0 })}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{formatNumber(performanceSummary.avg_cargo_volume_mt_per_trip, { maximumFractionDigits: 1 })} MT avg</p>
+                <p className="mt-2 text-3xl font-bold text-teal-700">{formatNumber(totalCargoVolumeMt, { maximumFractionDigits: 0 })}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{formatNumber(avgCargoVolumePerTrip, { maximumFractionDigits: 1 })} MT avg</p>
               </div>
             </div>
           )}
@@ -605,7 +629,7 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
             <div className="rounded-lg border border-orange-200 bg-orange-50 p-4">
               <p className="text-xs font-semibold uppercase text-muted-foreground">Fuel Cost</p>
               <p className="mt-2 text-2xl font-bold text-orange-700">{formatCurrency(totalFuelCost)}</p>
-              <p className="mt-1 text-xs text-muted-foreground">{formatNumber(performanceSummary?.total_fuel_liters ?? 0, { maximumFractionDigits: 0 })} L total</p>
+                <p className="mt-1 text-xs text-muted-foreground">{formatNumber(totalFuelLiters, { maximumFractionDigits: 0 })} L total</p>
             </div>
             <div className="rounded-lg border border-purple-200 bg-purple-50 p-4">
               <p className="text-xs font-semibold uppercase text-muted-foreground">Maintenance Cost</p>
@@ -701,7 +725,7 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
             <div className="grid gap-4 md:grid-cols-4">
               <div className="rounded-lg border p-3">
                 <p className="text-xs font-semibold uppercase text-muted-foreground">Avg Distance/Trip</p>
-                <p className="mt-2 font-semibold">{formatKilometers(performanceSummary?.avg_trip_distance_km ?? 0, 1)}</p>
+                <p className="mt-2 font-semibold">{formatKilometers(avgTripDistance ?? 0, 1)}</p>
               </div>
               <div className="rounded-lg border p-3">
                 <p className="text-xs font-semibold uppercase text-muted-foreground">Fuel Efficiency</p>
@@ -713,7 +737,7 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
               </div>
               <div className="rounded-lg border p-3">
                 <p className="text-xs font-semibold uppercase text-muted-foreground">Avg Trip Duration</p>
-                <p className="mt-2 font-semibold">{performanceSummary?.avg_trip_duration_days ? `${performanceSummary.avg_trip_duration_days.toFixed(1)} days` : 'N/A'}</p>
+                <p className="mt-2 font-semibold">{avgTripDurationDays ? `${avgTripDurationDays.toFixed(1)} days` : 'N/A'}</p>
               </div>
             </div>
           </DetailSectionCard>

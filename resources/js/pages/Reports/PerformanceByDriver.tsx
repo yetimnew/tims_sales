@@ -12,6 +12,8 @@ import type { ReportSelectionOption } from '@/components/reports/types';
 import { REPORT_DATE_RANGE_DESCRIPTION, useReportDateRange } from '@/components/reports/use-report-date-range';
 import { ReportPageLayout } from '@/components/report/report-page-layout';
 
+type QueryParamValue = string | number | boolean | null | undefined | Array<string | number | boolean>;
+
 interface DriverOption {
     id: number;
     name: string;
@@ -108,14 +110,11 @@ export default function PerformanceByDriver({ filters, rows = [], summary, drive
         }
 
         setFiltersOpen(false);
-        const params: Record<string, unknown> = {
-            from,
-            to,
-        };
+        const params: Record<string, QueryParamValue> = {};
 
-        if (selectedDrivers.length > 0) {
-            params.driver_ids = selectedDrivers;
-        }
+        if (from) params.from = from;
+        if (to) params.to = to;
+        if (selectedDrivers.length > 0) params.driver_ids = selectedDrivers;
 
         router.get('/reports/performance-by-driver', params, {
             preserveState: true,

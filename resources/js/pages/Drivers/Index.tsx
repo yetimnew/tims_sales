@@ -17,6 +17,7 @@ import { toast } from '@/hooks/use-toast';
 import { Plus, Eye, Edit, Search, Trash2, Users, UserCheck, UserX, User, MapPin as MapPinIcon, Phone } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Skeleton } from '@/components/ui/skeleton';
 import * as React from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -339,45 +340,85 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
             label: 'Total Drivers',
             icon: <Users className="h-3.5 w-3.5 text-blue-600" />,
             className: 'min-w-[220px] flex-shrink-0',
-            value: totalDrivers.toLocaleString(),
-            description: 'Workforce size',
-            valueClassName: 'text-blue-600',
+            value: isTableLoading ? (
+                <Skeleton className="h-3.5 w-20" aria-hidden="true" />
+            ) : (
+                totalDrivers.toLocaleString()
+            ),
+            description: isTableLoading ? (
+                <Skeleton className="h-3 w-28" aria-hidden="true" />
+            ) : (
+                'Workforce size'
+            ),
+            valueClassName: isTableLoading ? undefined : 'text-blue-600',
         },
         {
             id: 'active-drivers',
             label: 'Active',
             icon: <UserCheck className="h-3.5 w-3.5 text-green-600" />,
             className: 'min-w-[220px] flex-shrink-0',
-            value: activeDrivers.toLocaleString(),
-            description: 'Currently active',
-            valueClassName: 'text-green-600',
+            value: isTableLoading ? (
+                <Skeleton className="h-3.5 w-16" aria-hidden="true" />
+            ) : (
+                activeDrivers.toLocaleString()
+            ),
+            description: isTableLoading ? (
+                <Skeleton className="h-3 w-24" aria-hidden="true" />
+            ) : (
+                'Currently active'
+            ),
+            valueClassName: isTableLoading ? undefined : 'text-green-600',
         },
         {
             id: 'inactive-drivers',
             label: 'Inactive',
             icon: <UserX className="h-3.5 w-3.5 text-red-600" />,
             className: 'min-w-[220px] flex-shrink-0',
-            value: inactiveDrivers.toLocaleString(),
-            description: 'Off duty',
-            valueClassName: 'text-red-600',
+            value: isTableLoading ? (
+                <Skeleton className="h-3.5 w-16" aria-hidden="true" />
+            ) : (
+                inactiveDrivers.toLocaleString()
+            ),
+            description: isTableLoading ? (
+                <Skeleton className="h-3 w-24" aria-hidden="true" />
+            ) : (
+                'Off duty'
+            ),
+            valueClassName: isTableLoading ? undefined : 'text-red-600',
         },
         {
             id: 'male-drivers',
             label: 'Male',
             icon: <User className="h-3.5 w-3.5 text-blue-500" />,
             className: 'min-w-[220px] flex-shrink-0',
-            value: maleDrivers.toLocaleString(),
-            description: '👨 Male drivers',
-            valueClassName: 'text-blue-500',
+            value: isTableLoading ? (
+                <Skeleton className="h-3.5 w-16" aria-hidden="true" />
+            ) : (
+                maleDrivers.toLocaleString()
+            ),
+            description: isTableLoading ? (
+                <Skeleton className="h-3 w-24" aria-hidden="true" />
+            ) : (
+                '👨 Male drivers'
+            ),
+            valueClassName: isTableLoading ? undefined : 'text-blue-500',
         },
         {
             id: 'female-drivers',
             label: 'Female',
             icon: <User className="h-3.5 w-3.5 text-pink-500" />,
             className: 'min-w-[220px] flex-shrink-0',
-            value: femaleDrivers.toLocaleString(),
-            description: '👩 Female drivers',
-            valueClassName: 'text-pink-500',
+            value: isTableLoading ? (
+                <Skeleton className="h-3.5 w-16" aria-hidden="true" />
+            ) : (
+                femaleDrivers.toLocaleString()
+            ),
+            description: isTableLoading ? (
+                <Skeleton className="h-3 w-24" aria-hidden="true" />
+            ) : (
+                '👩 Female drivers'
+            ),
+            valueClassName: isTableLoading ? undefined : 'text-pink-500',
         },
     ];
 
@@ -406,8 +447,40 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
         [],
     );
 
-    const tableRows = driverData.length > 0
-        ? driverData.map((driver, index) => (
+    const tableRows = isTableLoading
+        ? Array.from({ length: 8 }).map((_, index) => (
+              <TableRow key={`skeleton-${index}`} aria-hidden="true">
+                  <TableCell className="text-center">
+                      <Skeleton className="h-4 w-6 mx-auto" />
+                  </TableCell>
+                  <TableCell>
+                      <Skeleton className="h-4 w-32" />
+                  </TableCell>
+                  <TableCell>
+                      <Skeleton className="h-4 w-24" />
+                  </TableCell>
+                  <TableCell>
+                      <Skeleton className="h-6 w-20 rounded-full" />
+                  </TableCell>
+                  <TableCell>
+                      <Skeleton className="h-4 w-28" />
+                  </TableCell>
+                  <TableCell>
+                      <Skeleton className="h-4 w-24" />
+                  </TableCell>
+                  <TableCell>
+                      <Skeleton className="h-4 w-24" />
+                  </TableCell>
+                  <TableCell>
+                      <Skeleton className="h-6 w-20 rounded-full" />
+                  </TableCell>
+                  <TableCell className="text-center">
+                      <Skeleton className="h-8 w-8 mx-auto rounded" />
+                  </TableCell>
+              </TableRow>
+          ))
+        : driverData.length > 0
+            ? driverData.map((driver, index) => (
                   <TableRow key={driver.id} className="hover:bg-muted/50">
                       <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
                       <TableCell className="font-medium">{driver.name}</TableCell>
@@ -457,25 +530,69 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
                       </TableCell>
                   </TableRow>
               ))
-        : (
-            <TableRow>
-                <TableCell colSpan={tableColumns.length} className="py-8 text-center text-muted-foreground">
-                    No drivers found.
-                    {hasPermission('drivers.create') && (
-                        <Link href="/drivers/create" className="ml-1 text-primary underline">
-                            Create one
-                        </Link>
-                    )}
-                </TableCell>
-            </TableRow>
-        );
+            : (
+                <TableRow>
+                    <TableCell colSpan={tableColumns.length} className="py-8 text-center text-muted-foreground">
+                        No drivers found.
+                        {hasPermission('drivers.create') && (
+                            <Link href="/drivers/create" className="ml-1 text-primary underline">
+                                Create one
+                            </Link>
+                        )}
+                    </TableCell>
+                </TableRow>
+            );
 
     const mobileItems = React.useMemo(
         () => driverData.map((driver, index) => ({ driver, position: rowOffset + index + 1 })),
         [driverData, rowOffset],
     );
 
-    const mobileContent = (
+    const mobileContent = isTableLoading ? (
+        <ListingMobileItemList
+            items={Array.from({ length: 5 }).map((_, i) => ({ driver: { id: i }, position: i + 1 }))}
+            getKey={(item) => `skeleton-${item.position}`}
+            renderTitle={() => (
+                <div className="flex items-center gap-2">
+                    <Skeleton className="h-3 w-8" />
+                    <Skeleton className="h-4 w-40" />
+                </div>
+            )}
+            renderSubtitle={() => <Skeleton className="h-3 w-32" />}
+            renderContent={() => (
+                <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                        <Skeleton className="h-3 w-16" />
+                        <Skeleton className="h-6 w-20 rounded-full" />
+                    </div>
+                    <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                            <Skeleton className="h-3 w-16" />
+                            <Skeleton className="h-6 w-16 rounded-full" />
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <Skeleton className="h-3 w-20" />
+                            <Skeleton className="h-3 w-24" />
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <Skeleton className="h-3 w-16" />
+                            <Skeleton className="h-3 w-24" />
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <Skeleton className="h-3 w-16" />
+                            <Skeleton className="h-3 w-24" />
+                        </div>
+                    </div>
+                </div>
+            )}
+            renderFooter={() => (
+                <div className="flex w-full gap-2">
+                    <Skeleton className="h-8 flex-1" />
+                    <Skeleton className="h-8 w-20" />
+                </div>
+            )}
+        />
+    ) : (
         <ListingMobileItemList
             items={mobileItems}
             getKey={(item) => item.driver.id}
@@ -639,32 +756,16 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
                 }
             >
                 <div className="hidden md:block">
-                    <div className="relative">
-                        <ListingTableShell
-                            columns={tableColumns}
-                            sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSort }}
-                        >
-                            {tableRows}
-                        </ListingTableShell>
-
-                        {isTableLoading && (
-                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
-                                <img src="/images/loading-spinner.svg" alt="Loading drivers" className="h-12 w-12" />
-                                <span className="text-sm text-muted-foreground">Loading drivers...</span>
-                            </div>
-                        )}
-                    </div>
+                    <ListingTableShell
+                        columns={tableColumns}
+                        sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSort }}
+                    >
+                        {tableRows}
+                    </ListingTableShell>
                 </div>
 
                 <div className="relative space-y-3 md:hidden">
                     {mobileContent}
-
-                    {isTableLoading && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
-                            <img src="/images/loading-spinner.svg" alt="Loading drivers" className="h-10 w-10" />
-                            <span className="text-sm text-muted-foreground">Loading drivers...</span>
-                        </div>
-                    )}
                 </div>
             </ListPageLayout>
 

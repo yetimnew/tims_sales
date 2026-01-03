@@ -11,6 +11,8 @@ import { cn } from '@/lib/utils';
 import { CalendarClock, Medal, PieChart, Truck } from 'lucide-react';
 import { ReportPageLayout } from '@/components/report/report-page-layout';
 
+type QueryParamValue = string | number | boolean | null | undefined | Array<string | number | boolean>;
+
 interface SummaryRow {
     status_id: number;
     status_name: string;
@@ -204,15 +206,10 @@ export default function PerformanceByStatus({ filters, summary = [], latest = []
     );
 
     const handleApplyFilters = () => {
-        const params: Record<string, unknown> = {};
+        const params: Record<string, QueryParamValue> = {};
 
-        if (selectedDate) {
-            params.date = selectedDate;
-        }
-
-        if (selectedStatuses.length > 0) {
-            params.status_ids = selectedStatuses;
-        }
+        if (selectedDate) params.date = selectedDate;
+        if (selectedStatuses.length > 0) params.status_ids = selectedStatuses;
 
         setFiltersOpen(false);
 

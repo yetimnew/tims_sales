@@ -158,6 +158,10 @@ export default function TrucksEdit({ truck, vehicleTypes }: TrucksEditProps) {
                 clearErrors();
                 setFrontendErrors({});
                 setIsDirty(false);
+                toast({
+                    title: '✅ Truck Updated',
+                    description: 'The truck has been updated successfully.',
+                });
             },
         });
     };

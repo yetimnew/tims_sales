@@ -1,5 +1,5 @@
 import { Link, router } from '@inertiajs/react';
-import { Settings, Edit, Trash2, Truck, ArrowLeft, Activity, Calendar } from 'lucide-react';
+import { Settings, Edit, Trash2, Truck, ArrowLeft, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { type BreadcrumbItem } from '@/types';

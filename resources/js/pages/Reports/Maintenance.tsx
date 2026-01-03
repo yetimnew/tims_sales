@@ -152,13 +152,6 @@ const formatOptionalCurrency = (value: number | null): string => {
     return formatCurrency(value);
 };
 
-const formatOptionalInteger = (value: number | null): string => {
-    if (value === null || Number.isNaN(value)) {
-        return '—';
-    }
-
-    return formatInteger(value);
-};
 
 const toParamsArray = (key: string, values: Array<number | string>, params: URLSearchParams) => {
     values.forEach((value, index) => {

@@ -501,6 +501,46 @@ export default function MaintenanceIndex({ maintenanceRecords, metrics, filters,
     );
 
     const tableRows = React.useMemo(() => {
+        if (isTableLoading) {
+            return Array.from({ length: 8 }).map((_, index) => (
+                <TableRow key={`skeleton-${index}`} aria-hidden="true">
+                    <TableCell className="text-center">
+                        <Skeleton className="h-4 w-6 mx-auto" />
+                    </TableCell>
+                    <TableCell>
+                        <div className="flex flex-col gap-2">
+                            <Skeleton className="h-4 w-24" />
+                            <Skeleton className="h-3 w-40" />
+                        </div>
+                    </TableCell>
+                    <TableCell>
+                        <Skeleton className="h-4 w-28" />
+                    </TableCell>
+                    <TableCell>
+                        <Skeleton className="h-4 w-24" />
+                    </TableCell>
+                    <TableCell>
+                        <Skeleton className="h-4 w-24" />
+                    </TableCell>
+                    <TableCell>
+                        <Skeleton className="h-4 w-24" />
+                    </TableCell>
+                    <TableCell className="text-right">
+                        <Skeleton className="h-4 w-20 ml-auto" />
+                    </TableCell>
+                    <TableCell>
+                        <Skeleton className="h-6 w-24 rounded-full" />
+                    </TableCell>
+                    <TableCell>
+                        <Skeleton className="h-4 w-28" />
+                    </TableCell>
+                    <TableCell className="text-center">
+                        <Skeleton className="h-8 w-8 mx-auto rounded" />
+                    </TableCell>
+                </TableRow>
+            ));
+        }
+
         if (maintenanceData.length === 0) {
             return [
                 <TableRow key="maintenance-empty">
@@ -569,6 +609,7 @@ export default function MaintenanceIndex({ maintenanceRecords, metrics, filters,
         canEditMaintenance,
         handleDeleteClick,
         isDeleting,
+        isTableLoading,
         maintenanceData,
         recordToDelete,
         rowOffset,
@@ -580,7 +621,51 @@ export default function MaintenanceIndex({ maintenanceRecords, metrics, filters,
         [maintenanceData, rowOffset],
     );
 
-    const mobileContent = (
+    const mobileContent = isTableLoading ? (
+        <ListingMobileItemList
+            items={Array.from({ length: 5 }).map((_, i) => ({ record: { id: i }, position: i + 1 }))}
+            getKey={(item) => `skeleton-${item.position}`}
+            renderTitle={() => (
+                <div className="flex items-center gap-2">
+                    <Skeleton className="h-3 w-8" />
+                    <Skeleton className="h-4 w-32" />
+                </div>
+            )}
+            renderSubtitle={() => <Skeleton className="h-3 w-40" />}
+            renderContent={() => (
+                <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                        <Skeleton className="h-3 w-16" />
+                        <Skeleton className="h-6 w-24 rounded-full" />
+                    </div>
+                    <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                            <Skeleton className="h-3 w-20" />
+                            <Skeleton className="h-3 w-24" />
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <Skeleton className="h-3 w-20" />
+                            <Skeleton className="h-3 w-24" />
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <Skeleton className="h-3 w-16" />
+                            <Skeleton className="h-3 w-20" />
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <Skeleton className="h-3 w-20" />
+                            <Skeleton className="h-3 w-28" />
+                        </div>
+                    </div>
+                </div>
+            )}
+            renderFooter={() => (
+                <div className="flex w-full gap-2">
+                    <Skeleton className="h-8 flex-1" />
+                    <Skeleton className="h-8 w-20" />
+                </div>
+            )}
+        />
+    ) : (
         <ListingMobileItemList
             items={mobileItems}
             getKey={(item) => item.record.id}
@@ -671,21 +756,12 @@ export default function MaintenanceIndex({ maintenanceRecords, metrics, filters,
     );
 
     const tableContent = (
-        <div className="relative">
-            <ListingTableShell
-                columns={tableColumns}
-                sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSort }}
-            >
-                {tableRows}
-            </ListingTableShell>
-
-            {isTableLoading && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
-                    <img src="/images/loading-spinner.svg" alt="Loading maintenance records" className="h-12 w-12" />
-                    <span className="text-sm text-muted-foreground">Loading maintenance records...</span>
-                </div>
-            )}
-        </div>
+        <ListingTableShell
+            columns={tableColumns}
+            sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSort }}
+        >
+            {tableRows}
+        </ListingTableShell>
     );
 
     const tableHeaderExtras = (
@@ -773,13 +849,6 @@ export default function MaintenanceIndex({ maintenanceRecords, metrics, filters,
 
                 <div className="relative space-y-3 md:hidden">
                     {mobileContent}
-
-                    {isTableLoading && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
-                            <img src="/images/loading-spinner.svg" alt="Loading maintenance records" className="h-10 w-10" />
-                            <span className="text-sm text-muted-foreground">Loading maintenance records...</span>
-                        </div>
-                    )}
                 </div>
             </ListPageLayout>
 
