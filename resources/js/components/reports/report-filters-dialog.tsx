@@ -43,6 +43,7 @@ interface ReportFiltersDialogProps {
     destinationOptions?: ReportSelectionOption[];
     originOptions?: ReportSelectionOption[];
     customerOptions?: ReportSelectionOption[];
+    serviceTypeOptions?: ReportSelectionOption[];
     statusOptions?: ReportSelectionOption[];
     providerOptions?: ReportSelectionOption[];
     loadPhaseOptions?: ReportSelectionOption[];
@@ -52,6 +53,7 @@ interface ReportFiltersDialogProps {
     selectedDestinations?: number[];
     selectedOrigins?: number[];
     selectedCustomers?: number[];
+    selectedServiceTypes?: string[];
     selectedLoadPhase?: string | null;
     selectedStatuses?: Array<number | string>;
     selectedProviders?: Array<number | string>;
@@ -61,6 +63,7 @@ interface ReportFiltersDialogProps {
     onDestinationsChange?: (ids: number[]) => void;
     onOriginsChange?: (ids: number[]) => void;
     onCustomersChange?: (ids: number[]) => void;
+    onServiceTypesChange?: (ids: string[]) => void;
     onLoadPhaseChange?: (id: string | null) => void;
     onStatusesChange?: (ids: Array<number | string>) => void;
     onProvidersChange?: (ids: Array<number | string>) => void;
@@ -70,6 +73,7 @@ interface ReportFiltersDialogProps {
     showDestinationFilter?: boolean;
     showOriginFilter?: boolean;
     showCustomerFilter?: boolean;
+    showServiceTypeFilter?: boolean;
     showLoadPhaseFilter?: boolean;
     showStatusFilter?: boolean;
     showProviderFilter?: boolean;
@@ -80,6 +84,7 @@ interface ReportFiltersDialogProps {
     destinationFilterText?: FilterTextOverrides;
     originFilterText?: FilterTextOverrides;
     customerFilterText?: FilterTextOverrides;
+    serviceTypeFilterText?: FilterTextOverrides;
     loadPhaseFilterText?: FilterTextOverrides;
     statusFilterText?: FilterTextOverrides;
     providerFilterText?: FilterTextOverrides;
@@ -115,6 +120,7 @@ export function ReportFiltersDialog({
     destinationOptions,
     originOptions,
     customerOptions,
+    serviceTypeOptions,
     statusOptions,
     providerOptions,
     loadPhaseOptions,
@@ -124,6 +130,7 @@ export function ReportFiltersDialog({
     selectedDestinations,
     selectedOrigins,
     selectedCustomers,
+    selectedServiceTypes,
     selectedLoadPhase,
     selectedStatuses,
     selectedProviders,
@@ -133,6 +140,7 @@ export function ReportFiltersDialog({
     onDestinationsChange,
     onOriginsChange,
     onCustomersChange,
+    onServiceTypesChange,
     onLoadPhaseChange,
     onStatusesChange,
     onProvidersChange,
@@ -142,6 +150,7 @@ export function ReportFiltersDialog({
     showDestinationFilter,
     showOriginFilter,
     showCustomerFilter,
+    showServiceTypeFilter,
     showLoadPhaseFilter,
     showStatusFilter,
     showProviderFilter,
@@ -152,6 +161,7 @@ export function ReportFiltersDialog({
     destinationFilterText,
     originFilterText,
     customerFilterText,
+    serviceTypeFilterText,
     loadPhaseFilterText,
     statusFilterText,
     providerFilterText,
@@ -170,6 +180,7 @@ export function ReportFiltersDialog({
     const destinationOptionsList = destinationOptions ?? [];
     const originOptionsList = originOptions ?? [];
     const customerOptionsList = customerOptions ?? [];
+    const serviceTypeOptionsList = serviceTypeOptions ?? [];
     const statusOptionsList = statusOptions ?? [];
     const providerOptionsList = providerOptions ?? [];
     const loadPhaseOptionsList = loadPhaseOptions ?? [];
@@ -180,6 +191,7 @@ export function ReportFiltersDialog({
     const selectedDestinationIds = selectedDestinations ?? [];
     const selectedOriginIds = selectedOrigins ?? [];
     const selectedCustomerIds = selectedCustomers ?? [];
+    const selectedServiceTypeIds = selectedServiceTypes ?? [];
     const selectedLoadPhaseId = selectedLoadPhase ?? 'all';
     const selectedStatusIds = selectedStatuses ?? [];
     const selectedProviderIds = selectedProviders ?? [];
@@ -208,6 +220,10 @@ export function ReportFiltersDialog({
         onCustomersChange?.(ids.map((value) => Number(value)));
     };
 
+    const handleServiceTypesChange = (ids: Array<number | string>) => {
+        onServiceTypesChange?.(ids.map((value) => String(value)));
+    };
+
     const handleLoadPhaseChange = (value: string) => {
         if (value === 'all') {
             onLoadPhaseChange?.(null);
@@ -234,6 +250,7 @@ export function ReportFiltersDialog({
     const shouldShowOrigin = showOriginFilter ?? originOptionsList.length > 0;
     const shouldShowDestination = showDestinationFilter ?? destinationOptionsList.length > 0;
     const shouldShowCustomer = showCustomerFilter ?? customerOptionsList.length > 0;
+    const shouldShowServiceType = showServiceTypeFilter ?? serviceTypeOptionsList.length > 0;
     const shouldShowLoadPhase = showLoadPhaseFilter ?? loadPhaseOptionsList.length > 0;
     const shouldShowStatus = showStatusFilter ?? statusOptionsList.length > 0;
     const shouldShowProvider = showProviderFilter ?? providerOptionsList.length > 0;
@@ -302,6 +319,17 @@ export function ReportFiltersDialog({
         emptyMessage: 'No customers found.',
         icon: Building2,
         ...(customerFilterText ?? {}),
+    };
+
+    const serviceTypeText = {
+        label: 'Service types',
+        triggerLabelWhenAll: 'All service types',
+        summaryLabelWhenAll: 'All service types included',
+        heading: 'Service types',
+        searchPlaceholder: 'Search service type...',
+        emptyMessage: 'No service types found.',
+        icon: Filter,
+        ...(serviceTypeFilterText ?? {}),
     };
 
     const loadPhaseText = {
@@ -426,6 +454,21 @@ export function ReportFiltersDialog({
                 options={customerOptionsList}
                 selectedIds={selectedCustomerIds as Array<number | string>}
                 onChange={handleCustomersChange}
+            />
+        ) : null,
+        shouldShowServiceType ? (
+            <ReportMultiSelectFilter
+                key="service-types"
+                label={serviceTypeText.label ?? 'Service types'}
+                icon={serviceTypeText.icon ?? Filter}
+                triggerLabelWhenAll={serviceTypeText.triggerLabelWhenAll ?? 'All service types'}
+                summaryLabelWhenAll={serviceTypeText.summaryLabelWhenAll ?? 'All service types included'}
+                heading={serviceTypeText.heading ?? 'Service types'}
+                searchPlaceholder={serviceTypeText.searchPlaceholder ?? 'Search service type...'}
+                emptyMessage={serviceTypeText.emptyMessage ?? 'No service types found.'}
+                options={serviceTypeOptionsList}
+                selectedIds={selectedServiceTypeIds as Array<number | string>}
+                onChange={handleServiceTypesChange}
             />
         ) : null,
         shouldShowLoadPhase ? (

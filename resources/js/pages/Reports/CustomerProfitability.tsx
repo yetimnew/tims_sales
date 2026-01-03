@@ -13,6 +13,8 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { REPORT_DATE_RANGE_DESCRIPTION, useReportDateRange } from '@/components/reports/use-report-date-range';
 import { ReportPageLayout } from '@/components/report/report-page-layout';
 
+type QueryParamValue = string | number | boolean | null | undefined | Array<string | number | boolean>;
+
 interface CustomerOption {
     id: number;
     name: string;
@@ -168,10 +170,10 @@ export default function CustomerProfitability({ filters, rows = [], summary, tre
 
         setFiltersOpen(false);
 
-        const params: Record<string, unknown> = {
-            from,
-            to,
-        };
+        const params: Record<string, QueryParamValue> = {};
+
+        if (from) params.from = from;
+        if (to) params.to = to;
 
         if (selectedCustomers.length > 0) {
             params.customer_ids = selectedCustomers;
@@ -187,7 +189,7 @@ export default function CustomerProfitability({ filters, rows = [], summary, tre
         resetDateRange(filters?.from ?? '', filters?.to ?? '');
         setSelectedCustomers(filters?.customer_ids ?? []);
         setFiltersOpen(false);
-        router.get('/reports/customer-profitability', {}, { preserveState: false, preserveScroll: true });
+        router.get('/reports/customer-profitability', undefined, { preserveState: false, preserveScroll: true });
     };
 
     const handleExport = (format: 'csv' | 'xlsx' | 'pdf') => {

@@ -523,76 +523,96 @@ export default function DriverSafetyIndex({
         [],
     );
 
-    const tableRows = safetyData.length > 0
-        ? safetyData.map((record, index) => (
-              <TableRow key={record.id} className="hover:bg-muted/50">
-                  <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
-                  <TableCell className="font-medium">{formatDate(record.incident_date)}</TableCell>
-                  <TableCell className="text-muted-foreground">{record.driver?.name || '—'}</TableCell>
+    const tableRows = isTableLoading
+        ? Array.from({ length: 8 }).map((_, index) => (
+              <TableRow key={`skeleton-${index}`} aria-hidden="true">
                   <TableCell className="text-center">
-                      <Badge className={getIncidentTypeBadgeClass(record.incident_type)}>{record.incident_type}</Badge>
+                      <Skeleton className="h-4 w-6 mx-auto" />
+                  </TableCell>
+                  <TableCell>
+                      <Skeleton className="h-4 w-24" />
+                  </TableCell>
+                  <TableCell>
+                      <Skeleton className="h-4 w-28" />
                   </TableCell>
                   <TableCell className="text-center">
-                      <Badge className={getSeverityBadgeClass(record.severity)}>{record.severity}</Badge>
+                      <Skeleton className="h-6 w-20 mx-auto rounded-full" />
                   </TableCell>
-                  <TableCell className="max-w-sm truncate text-muted-foreground" title={record.description}>
-                      {record.description || '—'}
-                  </TableCell>
-                  <TableCell className="text-right font-semibold">{formatCurrency(record.damage_cost ?? 0)}</TableCell>
                   <TableCell className="text-center">
-                      <ListingRowActionsMenu
-                          actions={[
-                              canViewRecord && {
-                                  label: 'View',
-                                  icon: <Eye className="h-4 w-4" />,
-                                  href: `/driver-safety/${record.id}`,
-                              },
-                              canEditRecord && {
-                                  label: 'Edit',
-                                  icon: <Edit className="h-4 w-4" />,
-                                  href: `/driver-safety/${record.id}/edit`,
-                              },
-                              canDeleteRecord && {
-                                  label: 'Delete',
-                                  icon: <Trash2 className="h-4 w-4" />,
-                                  danger: true,
-                                  disabled: isDeleting && selectedRecord?.id === record.id,
-                                  onSelect: () => handleDeleteClick(record),
-                              },
-                          ]}
-                      />
+                      <Skeleton className="h-6 w-20 mx-auto rounded-full" />
+                  </TableCell>
+                  <TableCell>
+                      <Skeleton className="h-4 w-48" />
+                  </TableCell>
+                  <TableCell className="text-right">
+                      <Skeleton className="h-4 w-24 ml-auto" />
+                  </TableCell>
+                  <TableCell className="text-center">
+                      <Skeleton className="h-8 w-8 mx-auto rounded" />
                   </TableCell>
               </TableRow>
           ))
-        : (
-            <TableRow>
-                <TableCell colSpan={tableColumns.length} className="py-8 text-center text-muted-foreground">
-                    No safety records found.
-                    {canCreateRecord && (
-                        <Link href="/driver-safety/create" className="ml-1 text-primary underline">
-                            Create one
-                        </Link>
-                    )}
-                </TableCell>
-            </TableRow>
-        );
+        : safetyData.length > 0
+            ? safetyData.map((record, index) => (
+                  <TableRow key={record.id} className="hover:bg-muted/50">
+                      <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
+                      <TableCell className="font-medium">{formatDate(record.incident_date)}</TableCell>
+                      <TableCell className="text-muted-foreground">{record.driver?.name || '—'}</TableCell>
+                      <TableCell className="text-center">
+                          <Badge className={getIncidentTypeBadgeClass(record.incident_type)}>{record.incident_type}</Badge>
+                      </TableCell>
+                      <TableCell className="text-center">
+                          <Badge className={getSeverityBadgeClass(record.severity)}>{record.severity}</Badge>
+                      </TableCell>
+                      <TableCell className="max-w-sm truncate text-muted-foreground" title={record.description}>
+                          {record.description || '—'}
+                      </TableCell>
+                      <TableCell className="text-right font-semibold">{formatCurrency(record.damage_cost ?? 0)}</TableCell>
+                      <TableCell className="text-center">
+                          <ListingRowActionsMenu
+                              actions={[
+                                  canViewRecord && {
+                                      label: 'View',
+                                      icon: <Eye className="h-4 w-4" />,
+                                      href: `/driver-safety/${record.id}`,
+                                  },
+                                  canEditRecord && {
+                                      label: 'Edit',
+                                      icon: <Edit className="h-4 w-4" />,
+                                      href: `/driver-safety/${record.id}/edit`,
+                                  },
+                                  canDeleteRecord && {
+                                      label: 'Delete',
+                                      icon: <Trash2 className="h-4 w-4" />,
+                                      danger: true,
+                                      disabled: isDeleting && selectedRecord?.id === record.id,
+                                      onSelect: () => handleDeleteClick(record),
+                                  },
+                              ]}
+                          />
+                      </TableCell>
+                  </TableRow>
+              ))
+            : (
+                <TableRow>
+                    <TableCell colSpan={tableColumns.length} className="py-8 text-center text-muted-foreground">
+                        No safety records found.
+                        {canCreateRecord && (
+                            <Link href="/driver-safety/create" className="ml-1 text-primary underline">
+                                Create one
+                            </Link>
+                        )}
+                    </TableCell>
+                </TableRow>
+            );
 
     const tableContent = (
-        <div className="relative">
-            <ListingTableShell
-                columns={tableColumns}
-                sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSort }}
-            >
-                {tableRows}
-            </ListingTableShell>
-
-            {isTableLoading && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
-                    <img src="/images/loading-spinner.svg" alt="Loading safety records" className="h-12 w-12" />
-                    <span className="text-sm text-muted-foreground">Loading safety records...</span>
-                </div>
-            )}
-        </div>
+        <ListingTableShell
+            columns={tableColumns}
+            sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSort }}
+        >
+            {tableRows}
+        </ListingTableShell>
     );
 
     const mobileItems = React.useMemo(
@@ -604,7 +624,42 @@ export default function DriverSafetyIndex({
         [rowOffset, safetyData],
     );
 
-    const mobileContent = (
+    const mobileContent = isTableLoading ? (
+        <ListingMobileItemList
+            items={Array.from({ length: 5 }).map((_, i) => ({ record: { id: i }, position: i + 1 }))}
+            getKey={(item) => `skeleton-${item.position}`}
+            renderTitle={() => (
+                <div className="flex items-center gap-2">
+                    <Skeleton className="h-3 w-8" />
+                    <Skeleton className="h-4 w-36" />
+                    <Skeleton className="h-3.5 w-3.5 rounded" />
+                </div>
+            )}
+            renderSubtitle={() => <Skeleton className="h-3 w-40" />}
+            renderContent={() => (
+                <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                        <Skeleton className="h-3 w-16" />
+                        <Skeleton className="h-3 w-24" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <Skeleton className="h-3 w-24" />
+                        <Skeleton className="h-3 w-32" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <Skeleton className="h-3 w-24" />
+                        <Skeleton className="h-3 w-24" />
+                    </div>
+                </div>
+            )}
+            renderFooter={() => (
+                <div className="flex w-full gap-2">
+                    <Skeleton className="h-8 flex-1" />
+                    <Skeleton className="h-8 w-20" />
+                </div>
+            )}
+        />
+    ) : (
         <ListingMobileItemList
             items={mobileItems}
             getKey={(item) => item.record.id}

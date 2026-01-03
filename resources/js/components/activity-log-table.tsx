@@ -12,22 +12,25 @@ import { CheckCircle2, Edit, Trash2, Clock } from 'lucide-react';
 
 interface ActivityLog {
     id: number;
-    action?: string;
+    action?: string | null;
     description: string;
     user?: {
-        name: string;
-    };
+        name?: string | null;
+    } | null;
     created_at: string;
-    old_values?: Record<string, any>;
-    new_values?: Record<string, any>;
+    old_values?: Record<string, any> | null;
+    new_values?: Record<string, any> | null;
 }
 
 interface ActivityLogTableProps {
-    logs: ActivityLog[];
+    logs?: ActivityLog[] | null;
+    activityLogs?: ActivityLog[] | null;
     isLoading?: boolean;
 }
 
-export function ActivityLogTable({ logs, isLoading = false }: ActivityLogTableProps) {
+export function ActivityLogTable({ logs, activityLogs, isLoading = false }: ActivityLogTableProps) {
+    const resolvedLogs = logs ?? activityLogs ?? [];
+
     const getActionIcon = (action: string) => {
         switch (action) {
             case 'created':
@@ -90,7 +93,7 @@ export function ActivityLogTable({ logs, isLoading = false }: ActivityLogTablePr
         );
     }
 
-    if (!logs || logs.length === 0) {
+    if (!resolvedLogs || resolvedLogs.length === 0) {
         return (
             <Card>
                 <CardHeader>
@@ -123,7 +126,7 @@ export function ActivityLogTable({ logs, isLoading = false }: ActivityLogTablePr
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {logs.map((log) => {
+                            {resolvedLogs.map((log) => {
                                 const action = log.action ?? 'updated';
                                 const actionLabel = action
                                     ? action.charAt(0).toUpperCase() + action.slice(1)

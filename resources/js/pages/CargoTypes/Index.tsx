@@ -472,61 +472,84 @@ export default function CargoTypesIndex({
         [],
     );
 
-    const tableRows = cargoTypeData.length > 0
-        ? cargoTypeData.map((type, index) => (
-              <TableRow key={type.id} className="hover:bg-muted/50">
-                  <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
-                  <TableCell className="font-semibold">{type.name}</TableCell>
+    const tableRows = isTableLoading
+        ? Array.from({ length: 8 }).map((_, index) => (
+              <TableRow key={`skeleton-${index}`} aria-hidden="true">
+                  <TableCell className="text-center">
+                      <Skeleton className="h-4 w-6 mx-auto" />
+                  </TableCell>
                   <TableCell>
-                      <Badge className={getCategoryBadgeClass(type.category)}>{type.category}</Badge>
+                      <Skeleton className="h-4 w-32" />
                   </TableCell>
-                  <TableCell className="text-right text-muted-foreground">
-                      {formatWeight(type.weight_per_cubic_meter)}
+                  <TableCell>
+                      <Skeleton className="h-6 w-24 rounded-full" />
                   </TableCell>
-                  <TableCell className="text-center">
-                      {type.requires_special_equipment ? (
-                          <Badge className="bg-rose-500 text-white hover:bg-rose-600">Required</Badge>
-                      ) : (
-                          <span className="text-muted-foreground">Not required</span>
-                      )}
+                  <TableCell className="text-right">
+                      <Skeleton className="h-4 w-20 ml-auto" />
                   </TableCell>
                   <TableCell className="text-center">
-                      <ListingRowActionsMenu
-                          actions={[
-                              canViewCargoType && {
-                                  label: 'View',
-                                  icon: <Eye className="h-4 w-4" />,
-                                  href: `/cargo-types/${type.id}`,
-                              },
-                              canEditCargoType && {
-                                  label: 'Edit',
-                                  icon: <Edit className="h-4 w-4" />,
-                                  href: `/cargo-types/${type.id}/edit`,
-                              },
-                              canDeleteCargoType && {
-                                  label: 'Delete',
-                                  icon: <Trash2 className="h-4 w-4" />,
-                                  danger: true,
-                                  disabled: isDeleting && selectedType?.id === type.id,
-                                  onSelect: () => handleDeleteClick(type),
-                              },
-                          ]}
-                      />
+                      <Skeleton className="h-6 w-24 mx-auto rounded-full" />
+                  </TableCell>
+                  <TableCell className="text-center">
+                      <Skeleton className="h-8 w-8 mx-auto rounded" />
                   </TableCell>
               </TableRow>
           ))
-        : (
-            <TableRow>
-                <TableCell colSpan={tableColumns.length} className="py-8 text-center text-muted-foreground">
-                    No cargo types found.
-                    {canCreateCargoType && (
-                        <Link href="/cargo-types/create" className="ml-1 text-primary underline">
-                            Create one
-                        </Link>
-                    )}
-                </TableCell>
-            </TableRow>
-        );
+        : cargoTypeData.length > 0
+            ? cargoTypeData.map((type, index) => (
+                  <TableRow key={type.id} className="hover:bg-muted/50">
+                      <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
+                      <TableCell className="font-semibold">{type.name}</TableCell>
+                      <TableCell>
+                          <Badge className={getCategoryBadgeClass(type.category)}>{type.category}</Badge>
+                      </TableCell>
+                      <TableCell className="text-right text-muted-foreground">
+                          {formatWeight(type.weight_per_cubic_meter)}
+                      </TableCell>
+                      <TableCell className="text-center">
+                          {type.requires_special_equipment ? (
+                              <Badge className="bg-rose-500 text-white hover:bg-rose-600">Required</Badge>
+                          ) : (
+                              <span className="text-muted-foreground">Not required</span>
+                          )}
+                      </TableCell>
+                      <TableCell className="text-center">
+                          <ListingRowActionsMenu
+                              actions={[
+                                  canViewCargoType && {
+                                      label: 'View',
+                                      icon: <Eye className="h-4 w-4" />,
+                                      href: `/cargo-types/${type.id}`,
+                                  },
+                                  canEditCargoType && {
+                                      label: 'Edit',
+                                      icon: <Edit className="h-4 w-4" />,
+                                      href: `/cargo-types/${type.id}/edit`,
+                                  },
+                                  canDeleteCargoType && {
+                                      label: 'Delete',
+                                      icon: <Trash2 className="h-4 w-4" />,
+                                      danger: true,
+                                      disabled: isDeleting && selectedType?.id === type.id,
+                                      onSelect: () => handleDeleteClick(type),
+                                  },
+                              ]}
+                          />
+                      </TableCell>
+                  </TableRow>
+              ))
+            : (
+                <TableRow>
+                    <TableCell colSpan={tableColumns.length} className="py-8 text-center text-muted-foreground">
+                        No cargo types found.
+                        {canCreateCargoType && (
+                            <Link href="/cargo-types/create" className="ml-1 text-primary underline">
+                                Create one
+                            </Link>
+                        )}
+                    </TableCell>
+                </TableRow>
+            );
 
     const mobileItems = React.useMemo(
         () =>
@@ -538,24 +561,46 @@ export default function CargoTypesIndex({
     );
 
     const tableContent = (
-        <div className="relative">
-            <ListingTableShell
-                columns={tableColumns}
-                sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSort }}
-            >
-                {tableRows}
-            </ListingTableShell>
-
-            {isTableLoading && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
-                    <img src="/images/loading-spinner.svg" alt="Loading cargo types" className="h-12 w-12" />
-                    <span className="text-sm text-muted-foreground">Loading cargo types...</span>
-                </div>
-            )}
-        </div>
+        <ListingTableShell
+            columns={tableColumns}
+            sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSort }}
+        >
+            {tableRows}
+        </ListingTableShell>
     );
 
-    const mobileContent = (
+    const mobileContent = isTableLoading ? (
+        <ListingMobileItemList
+            items={Array.from({ length: 5 }).map((_, i) => ({ record: { id: i }, position: i + 1 }))}
+            getKey={(item) => `skeleton-${item.position}`}
+            renderTitle={() => (
+                <div className="flex items-center gap-2">
+                    <Skeleton className="h-3 w-8" />
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-3.5 w-3.5 rounded" />
+                </div>
+            )}
+            renderSubtitle={() => <Skeleton className="h-3 w-24" />}
+            renderContent={() => (
+                <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                        <Skeleton className="h-3 w-24" />
+                        <Skeleton className="h-3 w-20" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <Skeleton className="h-3 w-32" />
+                        <Skeleton className="h-3 w-24" />
+                    </div>
+                </div>
+            )}
+            renderFooter={() => (
+                <div className="flex w-full gap-2">
+                    <Skeleton className="h-8 flex-1" />
+                    <Skeleton className="h-8 w-20" />
+                </div>
+            )}
+        />
+    ) : (
         <ListingMobileItemList
             items={mobileItems}
             getKey={(item) => item.record.id}
@@ -738,13 +783,6 @@ export default function CargoTypesIndex({
 
                 <div className="relative space-y-3 md:hidden">
                     {mobileContent}
-
-                    {isTableLoading && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
-                            <img src="/images/loading-spinner.svg" alt="Loading cargo types" className="h-10 w-10" />
-                            <span className="text-sm text-muted-foreground">Loading cargo types...</span>
-                        </div>
-                    )}
                 </div>
             </ListPageLayout>
 

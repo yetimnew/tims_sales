@@ -10,8 +10,11 @@ import { formatCurrency, formatDecimal, formatInteger, formatPercentage } from '
 import { DollarSign, TrendingDown, Route, BarChart3, Fuel, User } from 'lucide-react';
 import { usePermissions } from '@/hooks/use-permissions';
 import { Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, ComposedChart } from 'recharts';
+import type { PieLabelRenderProps } from 'recharts';
 import { REPORT_DATE_RANGE_DESCRIPTION, useReportDateRange } from '@/components/reports/use-report-date-range';
 import { ReportPageLayout } from '@/components/report/report-page-layout';
+
+type QueryParamValue = string | number | boolean | null | undefined | Array<string | number | boolean>;
 
 interface TruckOption {
     id: number;
@@ -141,11 +144,10 @@ export default function CostPerKilometer({ filters, rows = [], summary, options,
 
         setFiltersOpen(false);
 
-        const params: Record<string, unknown> = {
-            from,
-            to,
-        };
+        const params: Record<string, QueryParamValue> = {};
 
+        if (from) params.from = from;
+        if (to) params.to = to;
         if (groupBy) params.group_by = groupBy;
         if (selectedTrucks.length > 0) params.truck_ids = selectedTrucks;
         if (selectedDrivers.length > 0) params.driver_ids = selectedDrivers;
@@ -161,7 +163,7 @@ export default function CostPerKilometer({ filters, rows = [], summary, options,
         setSelectedTrucks(filters?.truck_ids ?? []);
         setSelectedDrivers(filters?.driver_ids ?? []);
         setFiltersOpen(false);
-        router.get('/reports/cost-per-kilometer', {}, { preserveState: false, preserveScroll: true });
+        router.get('/reports/cost-per-kilometer', undefined, { preserveState: false, preserveScroll: true });
     };
 
     const handleExport = (format: 'csv' | 'xlsx' | 'pdf') => {
@@ -387,7 +389,11 @@ export default function CostPerKilometer({ filters, rows = [], summary, options,
                                                 cx="50%"
                                                 cy="50%"
                                                 labelLine={false}
-                                                label={({ name, percent }: { name: string; percent: number }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                                label={(props: PieLabelRenderProps) => {
+                                                    const name = typeof props?.name === 'string' ? props.name : String(props?.name ?? '');
+                                                    const percent = typeof props?.percent === 'number' ? props.percent : 0;
+                                                    return `${name} ${(percent * 100).toFixed(0)}%`;
+                                                }}
                                                 outerRadius={100}
                                                 fill="#8884d8"
                                                 dataKey="value"

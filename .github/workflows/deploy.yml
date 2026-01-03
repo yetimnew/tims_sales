@@ -1,0 +1,119 @@
+name: deploy
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment label (staging, production, etc.)"
+        required: false
+        default: production
+
+jobs:
+  build:
+    name: Build artifacts
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: mbstring, bcmath, intl, gd, sqlite3, pdo, pdo_mysql, pcntl, fileinfo
+          tools: composer:v2
+          ini-values: memory_limit=512M
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache/files
+          key: ${{ runner.os }}-composer-prod-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-prod-
+
+      - name: Install PHP dependencies
+        run: composer install --no-dev --no-interaction --prefer-dist --no-progress --optimize-autoloader
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Build frontend assets
+        run: npm run build
+
+      - name: Prune development files
+        run: |
+          rm -rf node_modules tests storage/logs storage/framework/cache/data
+          mkdir -p storage/logs storage/framework/cache/data storage/framework/sessions storage/framework/views
+
+      - name: Archive deployment package
+        run: |
+          tar -czf deployment-package.tar.gz \
+            --exclude=".git" \
+            --exclude=".github" \
+            --exclude="storage/framework/cache/data/*" \
+            --exclude="storage/framework/sessions/*" \
+            --exclude="storage/framework/testing/*" \
+            --exclude="storage/framework/views/*" \
+            .
+
+      - name: Upload deployment artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-package
+          path: deployment-package.tar.gz
+          retention-days: 7
+
+  deploy:
+    name: Deploy via FTP
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: ${{ github.event.inputs.environment || 'production' }}
+
+    steps:
+      - name: Download deployment artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: deployment-package
+
+      - name: Extract artifact
+        run: |
+          mkdir deploy
+          tar -xzf deployment-package.tar.gz -C deploy
+
+      - name: Deploy to cPanel over FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          port: ${{ secrets.FTP_PORT || 21 }}
+          protocol: ftps
+          timeout: 120000
+          local-dir: deploy
+          server-dir: ${{ secrets.FTP_SERVER_DIR }}
+          exclude: |
+            **/.git*
+            **/.github/**
+            **/.env*
+            **/storage/logs/**
+            **/storage/framework/cache/data/**
+            **/tests/**
+            **/node_modules/**
+
+      - name: Trigger cPanel Git deployment
+        if: ${{ secrets.CPANEL_DEPLOY_WEBHOOK != '' }}
+        env:
+          DEPLOY_WEBHOOK: ${{ secrets.CPANEL_DEPLOY_WEBHOOK }}
+        run: curl -fsSL "$DEPLOY_WEBHOOK"

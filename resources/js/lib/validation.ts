@@ -902,6 +902,22 @@ export const placeValidation = {
     if (value.length > 2000) return 'Road quality notes cannot exceed 2,000 characters'
     return ''
   },
+
+  boundary_geojson: (value: string) => {
+    if (!value) return ''
+
+    try {
+      const parsed = JSON.parse(value)
+
+      if (parsed === null || typeof parsed !== 'object') {
+        return 'Boundary GeoJSON must be a valid GeoJSON object'
+      }
+    } catch (error) {
+      return 'Boundary GeoJSON must be valid JSON'
+    }
+
+    return ''
+  },
 }
 
 // ==================== DISTANCE VALIDATION ====================

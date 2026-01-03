@@ -443,73 +443,105 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
         [],
     );
 
-    const tableRows = assignments.length > 0
-        ? assignments.map((assignment, index) => {
-              const assignedDate = assignment.date_recived ?? assignment.assigned_at;
+    const tableRows = isTableLoading
+        ? Array.from({ length: 8 }).map((_, index) => (
+              <TableRow key={`skeleton-${index}`} aria-hidden="true">
+                  <TableCell className="text-center">
+                      <Skeleton className="h-4 w-6 mx-auto" />
+                  </TableCell>
+                  <TableCell>
+                      <div className="flex flex-col gap-2">
+                          <Skeleton className="h-4 w-32" />
+                          <Skeleton className="h-3 w-24" />
+                      </div>
+                  </TableCell>
+                  <TableCell>
+                      <Skeleton className="h-4 w-24" />
+                  </TableCell>
+                  <TableCell>
+                      <Skeleton className="h-4 w-24" />
+                  </TableCell>
+                  <TableCell>
+                      <Skeleton className="h-4 w-24" />
+                  </TableCell>
+                  <TableCell>
+                      <div className="flex flex-col gap-2">
+                          <Skeleton className="h-6 w-20 rounded-full" />
+                          <Skeleton className="h-3 w-16" />
+                      </div>
+                  </TableCell>
+                  <TableCell className="text-center">
+                      <Skeleton className="h-8 w-8 mx-auto rounded" />
+                  </TableCell>
+              </TableRow>
+          ))
+        : assignments.length > 0
+            ? assignments.map((assignment, index) => {
+                  const assignedDate = assignment.date_recived ?? assignment.assigned_at;
 
-              return (
-                  <TableRow key={assignment.id} className="hover:bg-muted/50">
-                      <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
-                      <TableCell className="font-medium">
-                          <div className="flex flex-col">
-                              <span>{assignment.driver.name}</span>
-                              <span className="text-xs text-muted-foreground">{assignment.driver.driverid}</span>
-                          </div>
-                      </TableCell>
-                      <TableCell className="font-mono text-muted-foreground">{assignment.truck.plate}</TableCell>
-                      <TableCell className="text-muted-foreground">{formatDate(assignedDate)}</TableCell>
-                      <TableCell className="text-muted-foreground">{formatDate(assignment.created_at)}</TableCell>
-                      <TableCell>
-                          <div className="flex flex-col items-start gap-1">
-                              {getAttachmentBadge(assignment.is_attached)}
-                              <span className="text-xs text-muted-foreground">
-                                  {assignment.is_attached ? 'Attached' : 'Detached'}
-                              </span>
-                              {assignment.date_detach && (
+                  return (
+                      <TableRow key={assignment.id} className="hover:bg-muted/50">
+                          <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
+                          <TableCell className="font-medium">
+                              <div className="flex flex-col">
+                                  <span>{assignment.driver.name}</span>
+                                  <span className="text-xs text-muted-foreground">{assignment.driver.driverid}</span>
+                              </div>
+                          </TableCell>
+                          <TableCell className="font-mono text-muted-foreground">{assignment.truck.plate}</TableCell>
+                          <TableCell className="text-muted-foreground">{formatDate(assignedDate)}</TableCell>
+                          <TableCell className="text-muted-foreground">{formatDate(assignment.created_at)}</TableCell>
+                          <TableCell>
+                              <div className="flex flex-col items-start gap-1">
+                                  {getAttachmentBadge(assignment.is_attached)}
                                   <span className="text-xs text-muted-foreground">
-                                      Detached: {formatDate(assignment.date_detach)}
+                                      {assignment.is_attached ? 'Attached' : 'Detached'}
                                   </span>
-                              )}
-                          </div>
-                      </TableCell>
-                      <TableCell className="text-center">
-                          <ListingRowActionsMenu
-                              actions={[
-                                  canViewAssignment && {
-                                      label: 'View',
-                                      icon: <Eye className="h-4 w-4" />,
-                                      href: `/driver-trucks/${assignment.id}`,
-                                  },
-                                  canEditAssignment && {
-                                      label: 'Edit',
-                                      icon: <Edit className="h-4 w-4" />,
-                                      href: `/driver-trucks/${assignment.id}/edit`,
-                                  },
-                                  canDeleteAssignment && {
-                                      label: 'Delete',
-                                      icon: <Trash2 className="h-4 w-4" />,
-                                      danger: true,
-                                      disabled: isDeleting && selectedAssignment?.id === assignment.id,
-                                      onSelect: () => handleDeleteClick(assignment),
-                                  },
-                              ]}
-                          />
-                      </TableCell>
-                  </TableRow>
-              );
-          })
-        : (
-            <TableRow>
-                <TableCell colSpan={tableColumns.length} className="py-8 text-center text-muted-foreground">
-                    No assignments found.
-                    {canCreateAssignment && (
-                        <Link href="/driver-trucks/create" className="ml-1 text-primary underline">
-                            Create one
-                        </Link>
-                    )}
-                </TableCell>
-            </TableRow>
-        );
+                                  {assignment.date_detach && (
+                                      <span className="text-xs text-muted-foreground">
+                                          Detached: {formatDate(assignment.date_detach)}
+                                      </span>
+                                  )}
+                              </div>
+                          </TableCell>
+                          <TableCell className="text-center">
+                              <ListingRowActionsMenu
+                                  actions={[
+                                      canViewAssignment && {
+                                          label: 'View',
+                                          icon: <Eye className="h-4 w-4" />,
+                                          href: `/driver-trucks/${assignment.id}`,
+                                      },
+                                      canEditAssignment && {
+                                          label: 'Edit',
+                                          icon: <Edit className="h-4 w-4" />,
+                                          href: `/driver-trucks/${assignment.id}/edit`,
+                                      },
+                                      canDeleteAssignment && {
+                                          label: 'Delete',
+                                          icon: <Trash2 className="h-4 w-4" />,
+                                          danger: true,
+                                          disabled: isDeleting && selectedAssignment?.id === assignment.id,
+                                          onSelect: () => handleDeleteClick(assignment),
+                                      },
+                                  ]}
+                              />
+                          </TableCell>
+                      </TableRow>
+                  );
+              })
+            : (
+                <TableRow>
+                    <TableCell colSpan={tableColumns.length} className="py-8 text-center text-muted-foreground">
+                        No assignments found.
+                        {canCreateAssignment && (
+                            <Link href="/driver-trucks/create" className="ml-1 text-primary underline">
+                                Create one
+                            </Link>
+                        )}
+                    </TableCell>
+                </TableRow>
+            );
 
     const mobileItems = React.useMemo(
         () =>
@@ -520,7 +552,49 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
         [assignments, rowOffset],
     );
 
-    const mobileContent = (
+    const mobileContent = isTableLoading ? (
+        <ListingMobileItemList
+            items={Array.from({ length: 5 }).map((_, i) => ({ assignment: { id: i }, position: i + 1 }))}
+            getKey={(item) => `skeleton-${item.position}`}
+            renderTitle={() => (
+                <div className="flex items-center gap-2">
+                    <Skeleton className="h-3 w-8" />
+                    <Skeleton className="h-4 w-36" />
+                    <Skeleton className="h-3.5 w-3.5 rounded" />
+                </div>
+            )}
+            renderSubtitle={() => <Skeleton className="h-3 w-24" />}
+            renderContent={() => (
+                <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                        <Skeleton className="h-3 w-16" />
+                        <Skeleton className="h-6 w-20 rounded-full" />
+                    </div>
+                    <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                            <Skeleton className="h-3 w-20" />
+                            <Skeleton className="h-3 w-24" />
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <Skeleton className="h-3 w-20" />
+                            <Skeleton className="h-3 w-24" />
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <Skeleton className="h-3 w-20" />
+                            <Skeleton className="h-3 w-24" />
+                        </div>
+                    </div>
+                    <Skeleton className="h-3 w-32" />
+                </div>
+            )}
+            renderFooter={() => (
+                <div className="flex w-full gap-2">
+                    <Skeleton className="h-8 flex-1" />
+                    <Skeleton className="h-8 w-20" />
+                </div>
+            )}
+        />
+    ) : (
         <ListingMobileItemList
             items={mobileItems}
             getKey={(item) => item.assignment.id}
@@ -666,32 +740,16 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
                 }
             >
                 <div className="hidden md:block">
-                    <div className="relative">
-                        <ListingTableShell
-                            columns={tableColumns}
-                            sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSort }}
-                        >
-                            {tableRows}
-                        </ListingTableShell>
-
-                        {isTableLoading && (
-                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
-                                <img src="/images/loading-spinner.svg" alt="Loading assignments" className="h-12 w-12" />
-                                <span className="text-sm text-muted-foreground">Loading assignments...</span>
-                            </div>
-                        )}
-                    </div>
+                    <ListingTableShell
+                        columns={tableColumns}
+                        sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSort }}
+                    >
+                        {tableRows}
+                    </ListingTableShell>
                 </div>
 
                 <div className="relative space-y-3 md:hidden">
                     {mobileContent}
-
-                    {isTableLoading && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
-                            <img src="/images/loading-spinner.svg" alt="Loading assignments" className="h-10 w-10" />
-                            <span className="text-sm text-muted-foreground">Loading assignments...</span>
-                        </div>
-                    )}
                 </div>
             </ListPageLayout>
 

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { ListingPaginationFooter } from '@/components/listing/pagination-footer';
+import { ListingPaginationFooter, type ListingPaginationLink } from '@/components/listing/pagination-footer';
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { CircleDollarSign, Download, Droplet, FileDigit, FileSpreadsheet, FileType2, Gauge, RefreshCcw, Route, TrendingDown, Waypoints } from 'lucide-react';
 import { ReportFiltersDialog } from '@/components/reports/report-filters-dialog';
@@ -205,8 +205,13 @@ export default function FuelEfficiency({
         [breakdownPaginator],
     );
 
-    const breakdownPaginationLinks = useMemo(
-        () => (breakdownPaginator && Array.isArray(breakdownPaginator.links) ? breakdownPaginator.links : []),
+    const breakdownPaginationLinks = useMemo<ListingPaginationLink[]>(
+        () =>
+            (breakdownPaginator && Array.isArray(breakdownPaginator.links) ? breakdownPaginator.links : []).map((link) => ({
+                url: typeof link.url === 'string' ? link.url : null,
+                label: typeof link.label === 'string' ? link.label : String(link.label ?? ''),
+                active: Boolean(link.active),
+            })),
         [breakdownPaginator],
     );
 

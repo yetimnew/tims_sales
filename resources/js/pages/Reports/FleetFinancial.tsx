@@ -25,6 +25,8 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { REPORT_DATE_RANGE_DESCRIPTION, useReportDateRange } from '@/components/reports/use-report-date-range';
 import { ReportPageLayout } from '@/components/report/report-page-layout';
 
+type QueryParamValue = string | number | boolean | null | undefined | Array<string | number | boolean>;
+
 interface Profitability {
     total_revenue: number;
     total_cost: number;
@@ -180,7 +182,10 @@ export default function FleetFinancial({
 
         setFiltersOpen(false);
 
-        const params: Record<string, unknown> = { from, to };
+        const params: Record<string, QueryParamValue> = {};
+
+        if (from) params.from = from;
+        if (to) params.to = to;
 
         router.get('/reports/fleet-financial', params, {
             preserveState: true,
@@ -191,10 +196,10 @@ export default function FleetFinancial({
     const handleReset = () => {
         resetDateRange(filters?.from ?? '', filters?.to ?? '');
         setFiltersOpen(false);
-        router.get('/reports/fleet-financial', {}, { preserveState: false, preserveScroll: true });
+        router.get('/reports/fleet-financial', undefined, { preserveState: false, preserveScroll: true });
     };
 
-    const handleExport = (format: 'csv' | 'xlsx') => {
+    const handleExport = (format: 'csv' | 'xlsx' | 'pdf') => {
         if (!validateDateRange(from, to)) {
             setFiltersOpen(true);
             return;

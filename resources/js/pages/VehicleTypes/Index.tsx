@@ -382,52 +382,78 @@ export default function VehicleTypesIndex({ vehicleTypes, metrics, filters, perP
         [],
     );
 
-    const tableRows = vehicleTypeData.length > 0
-        ? vehicleTypeData.map((vehicleType, index) => (
-              <TableRow key={vehicleType.id} className="hover:bg-muted/50">
-                  <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
-                  <TableCell className="font-medium">{vehicleType.name}</TableCell>
-                  <TableCell className="text-muted-foreground">{vehicleType.description || '—'}</TableCell>
-                  <TableCell className="font-medium">{formatNumber(vehicleType.trucks_count)}</TableCell>
-                  <TableCell className="text-muted-foreground">{formatNumber(vehicleType.active_trucks_count)}</TableCell>
-                  <TableCell className="text-muted-foreground">{formatDate(vehicleType.created_at)}</TableCell>
+    const tableRows = isTableLoading
+        ? Array.from({ length: 8 }).map((_, index) => (
+              <TableRow key={`skeleton-${index}`} aria-hidden="true">
                   <TableCell className="text-center">
-                      <ListingRowActionsMenu
-                          actions={[
-                              {
-                                  label: 'View',
-                                  icon: <Eye className="h-4 w-4" />,
-                                  href: `/vehicletypes/${vehicleType.id}`,
-                              },
-                              canEditVehicleType && {
-                                  label: 'Edit',
-                                  icon: <Edit className="h-4 w-4" />,
-                                  href: `/vehicletypes/${vehicleType.id}/edit`,
-                              },
-                              canDeleteVehicleType && {
-                                  label: 'Delete',
-                                  icon: <Trash2 className="h-4 w-4" />,
-                                  danger: true,
-                                  disabled: isDeleting && selectedVehicleType?.id === vehicleType.id,
-                                  onSelect: () => handleDeleteClick(vehicleType),
-                              },
-                          ]}
-                      />
+                      <Skeleton className="h-4 w-6 mx-auto" />
+                  </TableCell>
+                  <TableCell>
+                      <Skeleton className="h-4 w-32" />
+                  </TableCell>
+                  <TableCell>
+                      <Skeleton className="h-4 w-48" />
+                  </TableCell>
+                  <TableCell>
+                      <Skeleton className="h-4 w-16" />
+                  </TableCell>
+                  <TableCell>
+                      <Skeleton className="h-4 w-16" />
+                  </TableCell>
+                  <TableCell>
+                      <Skeleton className="h-4 w-24" />
+                  </TableCell>
+                  <TableCell className="text-center">
+                      <Skeleton className="h-8 w-8 mx-auto rounded" />
                   </TableCell>
               </TableRow>
           ))
-        : (
-            <TableRow>
-                <TableCell colSpan={tableColumns.length} className="py-8 text-center text-muted-foreground">
-                    No vehicle types found.
-                    {canCreateVehicleType && (
-                        <Link href="/vehicletypes/create" className="ml-1 text-primary underline">
-                            Create one
-                        </Link>
-                    )}
-                </TableCell>
-            </TableRow>
-        );
+        : vehicleTypeData.length > 0
+            ? vehicleTypeData.map((vehicleType, index) => (
+                  <TableRow key={vehicleType.id} className="hover:bg-muted/50">
+                      <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
+                      <TableCell className="font-medium">{vehicleType.name}</TableCell>
+                      <TableCell className="text-muted-foreground">{vehicleType.description || '—'}</TableCell>
+                      <TableCell className="font-medium">{formatNumber(vehicleType.trucks_count)}</TableCell>
+                      <TableCell className="text-muted-foreground">{formatNumber(vehicleType.active_trucks_count)}</TableCell>
+                      <TableCell className="text-muted-foreground">{formatDate(vehicleType.created_at)}</TableCell>
+                      <TableCell className="text-center">
+                          <ListingRowActionsMenu
+                              actions={[
+                                  {
+                                      label: 'View',
+                                      icon: <Eye className="h-4 w-4" />,
+                                      href: `/vehicletypes/${vehicleType.id}`,
+                                  },
+                                  canEditVehicleType && {
+                                      label: 'Edit',
+                                      icon: <Edit className="h-4 w-4" />,
+                                      href: `/vehicletypes/${vehicleType.id}/edit`,
+                                  },
+                                  canDeleteVehicleType && {
+                                      label: 'Delete',
+                                      icon: <Trash2 className="h-4 w-4" />,
+                                      danger: true,
+                                      disabled: isDeleting && selectedVehicleType?.id === vehicleType.id,
+                                      onSelect: () => handleDeleteClick(vehicleType),
+                                  },
+                              ]}
+                          />
+                      </TableCell>
+                  </TableRow>
+              ))
+            : (
+                <TableRow>
+                    <TableCell colSpan={tableColumns.length} className="py-8 text-center text-muted-foreground">
+                        No vehicle types found.
+                        {canCreateVehicleType && (
+                            <Link href="/vehicletypes/create" className="ml-1 text-primary underline">
+                                Create one
+                            </Link>
+                        )}
+                    </TableCell>
+                </TableRow>
+            );
 
     const mobileItems = React.useMemo(
         () =>
@@ -438,7 +464,46 @@ export default function VehicleTypesIndex({ vehicleTypes, metrics, filters, perP
         [rowOffset, vehicleTypeData],
     );
 
-    const mobileContent = (
+    const mobileContent = isTableLoading ? (
+        <ListingMobileItemList
+            items={Array.from({ length: 5 }).map((_, i) => ({ vehicleType: { id: i }, position: i + 1 }))}
+            getKey={(item) => `skeleton-${item.position}`}
+            renderTitle={() => (
+                <div className="flex items-center gap-2">
+                    <Skeleton className="h-3 w-8" />
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-3.5 w-3.5 rounded" />
+                </div>
+            )}
+            renderSubtitle={() => <Skeleton className="h-3 w-24" />}
+            renderContent={() => (
+                <div className="space-y-3">
+                    <div>
+                        <Skeleton className="h-3 w-24 mb-2" />
+                        <Skeleton className="h-3 w-full" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <Skeleton className="h-3 w-24" />
+                        <Skeleton className="h-3 w-16" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <Skeleton className="h-3 w-24" />
+                        <Skeleton className="h-3 w-16" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <Skeleton className="h-3 w-20" />
+                        <Skeleton className="h-3 w-24" />
+                    </div>
+                </div>
+            )}
+            renderFooter={() => (
+                <div className="flex w-full gap-2">
+                    <Skeleton className="h-8 flex-1" />
+                    <Skeleton className="h-8 w-20" />
+                </div>
+            )}
+        />
+    ) : (
         <ListingMobileItemList
             items={mobileItems}
             getKey={(item) => item.vehicleType.id}
@@ -563,32 +628,16 @@ export default function VehicleTypesIndex({ vehicleTypes, metrics, filters, perP
                 }
             >
                 <div className="hidden md:block">
-                    <div className="relative">
-                        <ListingTableShell
-                            columns={tableColumns}
-                            sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSort }}
-                        >
-                            {tableRows}
-                        </ListingTableShell>
-
-                        {isTableLoading && (
-                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
-                                <img src="/images/loading-spinner.svg" alt="Loading vehicle types" className="h-12 w-12" />
-                                <span className="text-sm text-muted-foreground">Loading vehicle types...</span>
-                            </div>
-                        )}
-                    </div>
+                    <ListingTableShell
+                        columns={tableColumns}
+                        sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSort }}
+                    >
+                        {tableRows}
+                    </ListingTableShell>
                 </div>
 
                 <div className="relative space-y-3 md:hidden">
                     {mobileContent}
-
-                    {isTableLoading && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
-                            <img src="/images/loading-spinner.svg" alt="Loading vehicle types" className="h-10 w-10" />
-                            <span className="text-sm text-muted-foreground">Loading vehicle types...</span>
-                        </div>
-                    )}
                 </div>
             </ListPageLayout>
 

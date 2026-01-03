@@ -578,8 +578,58 @@ export default function PlacesIndex({ places, metrics, filters, statusOptions, p
         }
     }, []);
 
-    const tableRows = placeData.length > 0
-        ? placeData.map((place, index) => (
+    const tableRows = isLoading
+        ? Array.from({ length: 8 }).map((_, index) => (
+              <TableRow key={`skeleton-${index}`} aria-hidden="true">
+                  <TableCell className="text-center">
+                      <Skeleton className="h-4 w-6 mx-auto" />
+                  </TableCell>
+                  <TableCell>
+                      <div className="flex items-center gap-2">
+                          <Skeleton className="h-4 w-4 rounded" />
+                          <div className="flex flex-col gap-2">
+                              <Skeleton className="h-4 w-32" />
+                              <Skeleton className="h-3 w-20" />
+                          </div>
+                      </div>
+                  </TableCell>
+                  <TableCell>
+                      <Skeleton className="h-4 w-16" />
+                  </TableCell>
+                  <TableCell className="text-center">
+                      <Skeleton className="h-6 w-20 mx-auto rounded-full" />
+                  </TableCell>
+                  <TableCell>
+                      <Skeleton className="h-4 w-32" />
+                  </TableCell>
+                  <TableCell>
+                      <Skeleton className="h-4 w-24" />
+                  </TableCell>
+                  <TableCell className="text-right">
+                      <Skeleton className="h-4 w-20 ml-auto" />
+                  </TableCell>
+                  <TableCell className="text-right">
+                      <Skeleton className="h-4 w-16 ml-auto" />
+                  </TableCell>
+                  <TableCell className="text-center">
+                      <Skeleton className="h-4 w-12 mx-auto" />
+                  </TableCell>
+                  <TableCell className="text-center">
+                      <Skeleton className="h-6 w-20 mx-auto rounded-full" />
+                  </TableCell>
+                  <TableCell className="text-right">
+                      <Skeleton className="h-4 w-12 ml-auto" />
+                  </TableCell>
+                  <TableCell className="text-right">
+                      <Skeleton className="h-4 w-12 ml-auto" />
+                  </TableCell>
+                  <TableCell className="text-center">
+                      <Skeleton className="h-8 w-8 mx-auto rounded" />
+                  </TableCell>
+              </TableRow>
+          ))
+        : placeData.length > 0
+            ? placeData.map((place, index) => (
                   <TableRow key={place.id} className="hover:bg-muted/50">
                       <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
                       {COLUMN_DEFINITIONS.map((column) => (
@@ -621,18 +671,18 @@ export default function PlacesIndex({ places, metrics, filters, statusOptions, p
                       </TableCell>
                   </TableRow>
               ))
-        : (
-            <TableRow>
-                <TableCell colSpan={tableColumns.length} className="py-8 text-center text-muted-foreground">
-                    No places found.
-                    {canCreatePlace && (
-                        <Link href="/places/create" className="ml-1 text-primary underline">
-                            Create one
-                        </Link>
-                    )}
-                </TableCell>
-            </TableRow>
-        );
+            : (
+                <TableRow>
+                    <TableCell colSpan={tableColumns.length} className="py-8 text-center text-muted-foreground">
+                        No places found.
+                        {canCreatePlace && (
+                            <Link href="/places/create" className="ml-1 text-primary underline">
+                                Create one
+                            </Link>
+                        )}
+                    </TableCell>
+                </TableRow>
+            );
 
     const mobileItems = React.useMemo(
         () =>
@@ -643,7 +693,46 @@ export default function PlacesIndex({ places, metrics, filters, statusOptions, p
         [placeData, rowOffset],
     );
 
-    const mobileContent = (
+    const mobileContent = isLoading ? (
+        <ListingMobileItemList
+            items={Array.from({ length: 5 }).map((_, i) => ({ record: { id: i }, position: i + 1 }))}
+            getKey={(item) => `skeleton-${item.position}`}
+            renderTitle={() => (
+                <div className="flex items-center gap-2">
+                    <Skeleton className="h-3 w-8" />
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-3.5 w-3.5 rounded" />
+                </div>
+            )}
+            renderSubtitle={() => <Skeleton className="h-3 w-28" />}
+            renderContent={() => (
+                <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                        <Skeleton className="h-3 w-16" />
+                        <Skeleton className="h-6 w-20 rounded-full" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <Skeleton className="h-3 w-12" />
+                        <Skeleton className="h-6 w-20 rounded-full" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <Skeleton className="h-3 w-24" />
+                        <Skeleton className="h-3 w-24" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <Skeleton className="h-3 w-28" />
+                        <Skeleton className="h-3 w-16" />
+                    </div>
+                </div>
+            )}
+            renderFooter={() => (
+                <div className="flex w-full gap-2">
+                    <Skeleton className="h-8 flex-1" />
+                    <Skeleton className="h-8 w-20" />
+                </div>
+            )}
+        />
+    ) : (
         <ListingMobileItemList
             items={mobileItems}
             getKey={(item) => item.record.id}
@@ -799,32 +888,16 @@ export default function PlacesIndex({ places, metrics, filters, statusOptions, p
                 }
             >
                 <div className="hidden md:block">
-                    <div className="relative">
-                        <ListingTableShell
-                            columns={tableColumns}
-                            sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSort }}
-                        >
-                            {tableRows}
-                        </ListingTableShell>
-
-                        {isLoading && (
-                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
-                                <img src="/images/loading-spinner.svg" alt="Loading places" className="h-12 w-12" />
-                                <span className="text-sm text-muted-foreground">Loading places...</span>
-                            </div>
-                        )}
-                    </div>
+                    <ListingTableShell
+                        columns={tableColumns}
+                        sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSort }}
+                    >
+                        {tableRows}
+                    </ListingTableShell>
                 </div>
 
                 <div className="relative space-y-3 md:hidden">
                     {mobileContent}
-
-                    {isLoading && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
-                            <img src="/images/loading-spinner.svg" alt="Loading places" className="h-10 w-10" />
-                            <span className="text-sm text-muted-foreground">Loading places...</span>
-                        </div>
-                    )}
                 </div>
             </ListPageLayout>
 

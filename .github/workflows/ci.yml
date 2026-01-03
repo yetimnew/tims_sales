@@ -37,12 +37,6 @@ jobs:
       - name: Install PHP dependencies
         run: composer install --no-interaction --prefer-dist --no-progress
 
-      - name: Prepare environment file
-        run: cp .env.example .env
-
-      - name: Generate application key
-        run: php artisan key:generate --ansi
-
       - name: Run Pint (dry-run)
         run: vendor/bin/pint --dirty --test
 

@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { usePermissions } from '@/hooks/use-permissions';
 import { REPORT_DATE_RANGE_DESCRIPTION, useReportDateRange } from '@/components/reports/use-report-date-range';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import type { PieLabelRenderProps } from 'recharts';
 import { ReportPageLayout } from '@/components/report/report-page-layout';
 
 type QueryParamValue = string | number | boolean | null | undefined | Array<string | number | boolean>;
@@ -331,6 +332,7 @@ export default function LoadFactorUtilization({ filters, rows = [], summary, opt
                         selectedTrucks={selectedTrucks}
                         onDriversChange={setSelectedDrivers}
                         onTrucksChange={setSelectedTrucks}
+                        onApply={handleApplyFilters}
                         showDriverFilter={true}
                         showTruckFilter={true}
                         dateError={dateError}
@@ -482,7 +484,11 @@ export default function LoadFactorUtilization({ filters, rows = [], summary, opt
                                                 cx="50%"
                                                 cy="50%"
                                                 labelLine={false}
-                                                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                                label={(props: PieLabelRenderProps) => {
+                                                    const name = typeof props?.name === 'string' ? props.name : String(props?.name ?? '');
+                                                    const percent = typeof props?.percent === 'number' ? props.percent : 0;
+                                                    return `${name} ${(percent * 100).toFixed(0)}%`;
+                                                }}
                                                 outerRadius={100}
                                                 fill="#8884d8"
                                                 dataKey="value"

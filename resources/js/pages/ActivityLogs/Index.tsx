@@ -34,6 +34,7 @@ interface ActivityLogEntry {
     action?: string | null;
     description: string;
     user?: { name: string } | null;
+    causer?: { name?: string | null; email?: string | null } | null;
     created_at: string;
     old_values?: Record<string, unknown> | null;
     new_values?: Record<string, unknown> | null;

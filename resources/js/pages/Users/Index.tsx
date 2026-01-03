@@ -570,8 +570,37 @@ export default function UsersIndex({ users, filters, roleOptions, statusOptions,
         }
     }, []);
 
-    const tableRows = userData.length > 0
-        ? userData.map((user, index) => (
+    const tableRows = isLoading
+        ? Array.from({ length: 8 }).map((_, index) => (
+              <TableRow key={`skeleton-${index}`} aria-hidden="true">
+                  <TableCell className="text-center">
+                      <Skeleton className="h-4 w-6 mx-auto" />
+                  </TableCell>
+                  <TableCell>
+                      <div className="flex flex-col gap-2">
+                          <Skeleton className="h-4 w-32" />
+                          <Skeleton className="h-3 w-16" />
+                      </div>
+                  </TableCell>
+                  <TableCell>
+                      <Skeleton className="h-4 w-40" />
+                  </TableCell>
+                  <TableCell>
+                      <Skeleton className="h-6 w-24 rounded-full" />
+                  </TableCell>
+                  <TableCell>
+                      <Skeleton className="h-6 w-20 rounded-full" />
+                  </TableCell>
+                  <TableCell>
+                      <Skeleton className="h-4 w-24" />
+                  </TableCell>
+                  <TableCell className="text-center">
+                      <Skeleton className="h-8 w-8 mx-auto rounded" />
+                  </TableCell>
+              </TableRow>
+          ))
+        : userData.length > 0
+            ? userData.map((user, index) => (
                   <TableRow key={user.id} className="hover:bg-muted/50">
                       <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
                       {COLUMN_DEFINITIONS.map((column) => (
@@ -613,31 +642,31 @@ export default function UsersIndex({ users, filters, roleOptions, statusOptions,
                       </TableCell>
                   </TableRow>
               ))
-        : (
-            <TableRow>
-                <TableCell colSpan={tableColumns.length} className="py-12">
-                    <div className="flex flex-col items-center justify-center text-center">
-                        <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-muted/50">
-                            <UsersIcon className="h-10 w-10 text-muted-foreground" />
+            : (
+                <TableRow>
+                    <TableCell colSpan={tableColumns.length} className="py-12">
+                        <div className="flex flex-col items-center justify-center text-center">
+                            <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-muted/50">
+                                <UsersIcon className="h-10 w-10 text-muted-foreground" />
+                            </div>
+                            <h3 className="mb-2 text-lg font-semibold">No users found</h3>
+                            <p className="mb-6 max-w-md text-sm text-muted-foreground">
+                                {searchTerm
+                                    ? `No users match "${searchTerm}". Try adjusting your filters or search terms.`
+                                    : 'Get started by adding your first user to the system. Manage access and permissions effectively.'}
+                            </p>
+                            {canCreateUser && (
+                                <Button asChild size="sm" className="shadow-sm">
+                                    <Link href="/users/create">
+                                        <Plus className="mr-2 h-4 w-4" />
+                                        {searchTerm ? 'Clear Filters & Add User' : 'Add First User'}
+                                    </Link>
+                                </Button>
+                            )}
                         </div>
-                        <h3 className="mb-2 text-lg font-semibold">No users found</h3>
-                        <p className="mb-6 max-w-md text-sm text-muted-foreground">
-                            {searchTerm
-                                ? `No users match "${searchTerm}". Try adjusting your filters or search terms.`
-                                : 'Get started by adding your first user to the system. Manage access and permissions effectively.'}
-                        </p>
-                        {canCreateUser && (
-                            <Button asChild size="sm" className="shadow-sm">
-                                <Link href="/users/create">
-                                    <Plus className="mr-2 h-4 w-4" />
-                                    {searchTerm ? 'Clear Filters & Add User' : 'Add First User'}
-                                </Link>
-                            </Button>
-                        )}
-                    </div>
-                </TableCell>
-            </TableRow>
-        );
+                    </TableCell>
+                </TableRow>
+            );
 
     const mobileItems = React.useMemo(
         () =>
@@ -648,7 +677,42 @@ export default function UsersIndex({ users, filters, roleOptions, statusOptions,
         [userData, rowOffset],
     );
 
-    const mobileContent = (
+    const mobileContent = isLoading ? (
+        <ListingMobileItemList
+            items={Array.from({ length: 5 }).map((_, i) => ({ record: { id: i }, position: i + 1 }))}
+            getKey={(item) => `skeleton-${item.position}`}
+            renderTitle={() => (
+                <div className="flex items-center gap-2">
+                    <Skeleton className="h-3 w-8" />
+                    <Skeleton className="h-4 w-36" />
+                    <Skeleton className="h-3.5 w-3.5 rounded" />
+                </div>
+            )}
+            renderSubtitle={() => <Skeleton className="h-3 w-40" />}
+            renderContent={() => (
+                <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                        <Skeleton className="h-3 w-16" />
+                        <Skeleton className="h-3 w-24" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <Skeleton className="h-3 w-20" />
+                        <Skeleton className="h-6 w-20 rounded-full" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <Skeleton className="h-3 w-20" />
+                        <Skeleton className="h-3 w-24" />
+                    </div>
+                </div>
+            )}
+            renderFooter={() => (
+                <div className="flex w-full gap-2">
+                    <Skeleton className="h-8 flex-1" />
+                    <Skeleton className="h-8 w-20" />
+                </div>
+            )}
+        />
+    ) : (
         <ListingMobileItemList
             items={mobileItems}
             getKey={(item) => item.record.id}
@@ -872,32 +936,16 @@ export default function UsersIndex({ users, filters, roleOptions, statusOptions,
                 }
             >
                 <div className="hidden md:block">
-                    <div className="relative">
-                        <ListingTableShell
-                            columns={tableColumns}
-                            sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSort }}
-                        >
-                            {tableRows}
-                        </ListingTableShell>
-
-                        {isLoading && (
-                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
-                                <img src="/images/loading-spinner.svg" alt="Loading users" className="h-12 w-12" />
-                                <span className="text-sm text-muted-foreground">Loading users...</span>
-                            </div>
-                        )}
-                    </div>
+                    <ListingTableShell
+                        columns={tableColumns}
+                        sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSort }}
+                    >
+                        {tableRows}
+                    </ListingTableShell>
                 </div>
 
                 <div className="relative space-y-3 md:hidden">
                     {mobileContent}
-
-                    {isLoading && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
-                            <img src="/images/loading-spinner.svg" alt="Loading users" className="h-10 w-10" />
-                            <span className="text-sm text-muted-foreground">Loading users...</span>
-                        </div>
-                    )}
                 </div>
             </ListPageLayout>
 

@@ -19,6 +19,16 @@ const OVERLAY_DISABLED_ROOTS: string[] = [
     '/drivers', // Disable overlay for drivers page - uses skeleton loaders instead
     '/fuel', // Disable overlay for fuel page - uses skeleton loaders instead
     '/maintenance', // Disable overlay for maintenance page - uses skeleton loaders instead
+    '/regions', // Disable overlay for regions page - uses skeleton loaders instead
+    '/driver-safety', // Disable overlay for driver-safety page - uses skeleton loaders instead
+    '/driver-trucks', // Disable overlay for driver-trucks page - uses skeleton loaders instead
+    '/users', // Disable overlay for users page - uses skeleton loaders instead
+    '/vehicletypes', // Disable overlay for vehicletypes page - uses skeleton loaders instead
+    '/cargo-types', // Disable overlay for cargo-types page - uses skeleton loaders instead
+    '/roles', // Disable overlay for roles page - uses skeleton loaders instead
+    '/permissions', // Disable overlay for permissions page - uses skeleton loaders instead
+    '/zones', // Disable overlay for zones page - uses skeleton loaders instead
+    '/places', // Disable overlay for places page - uses skeleton loaders instead
 ];
 
 interface AppLayoutProps {

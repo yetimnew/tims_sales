@@ -15,6 +15,8 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { REPORT_DATE_RANGE_DESCRIPTION, useReportDateRange } from '@/components/reports/use-report-date-range';
 import { ReportPageLayout } from '@/components/report/report-page-layout';
 
+type QueryParamValue = string | number | boolean | null | undefined | Array<string | number | boolean>;
+
 interface StatusSummaryRow {
     status_id: number | null;
     status_name: string;
@@ -199,11 +201,11 @@ export default function DailyStatus({ filters, summary, statusSummary, daily, op
             return;
         }
 
-        const params: Record<string, unknown> = {
-            from,
-            to,
-            per_page: perPage,
-        };
+        const params: Record<string, QueryParamValue> = {};
+
+        if (from) params.from = from;
+        if (to) params.to = to;
+        if (perPage) params.per_page = perPage;
 
         if (selectedTrucks.length > 0) {
             params.truck_ids = selectedTrucks;
@@ -228,7 +230,7 @@ export default function DailyStatus({ filters, summary, statusSummary, daily, op
         setSelectedStatuses(filters?.status_ids ?? []);
         setFiltersOpen(false);
 
-        router.get('/reports/daily-status', {}, { preserveState: false, preserveScroll: true });
+        router.get('/reports/daily-status', undefined, { preserveState: false, preserveScroll: true });
     }, [filters, resetDateRange]);
 
     const handleExport = useCallback(
@@ -290,17 +292,15 @@ export default function DailyStatus({ filters, summary, statusSummary, daily, op
     const handlePerPageChange = (value: string) => {
         const next = Number(value);
         setPerPage(next);
-        router.get(
-            '/reports/daily-status',
-            {
-                from,
-                to,
-                per_page: next,
-                truck_ids: selectedTrucks,
-                status_ids: selectedStatuses,
-            },
-            { preserveState: true, preserveScroll: true },
-        );
+        const params: Record<string, QueryParamValue> = {};
+
+        if (from) params.from = from;
+        if (to) params.to = to;
+        if (next) params.per_page = next;
+        if (selectedTrucks.length > 0) params.truck_ids = selectedTrucks;
+        if (selectedStatuses.length > 0) params.status_ids = selectedStatuses;
+
+        router.get('/reports/daily-status', params, { preserveState: true, preserveScroll: true });
     };
 
     const renderStatusSummary = () => (

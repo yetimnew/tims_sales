@@ -2,7 +2,7 @@ import { InertiaPagination } from '@/components/ui/pagination';
 import { cn } from '@/lib/utils';
 import { type ReactNode } from 'react';
 
-interface ListingPaginationLink {
+export interface ListingPaginationLink {
     url: string | null;
     label: string;
     active: boolean;
