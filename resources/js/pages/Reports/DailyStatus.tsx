@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ReportFiltersDialog } from '@/components/reports/report-filters-dialog';
 import type { ReportSelectionOption } from '@/components/reports/types';
-import { formatInteger, formatPercentage } from '@/components/reports/formatters';
+import { formatDecimal, formatInteger, formatPercentage } from '@/components/reports/formatters';
 import { Filter, RefreshCcw, Truck, Users } from 'lucide-react';
 import { ListingPaginationFooter } from '@/components/listing/pagination-footer';
 import { usePermissions } from '@/hooks/use-permissions';
@@ -282,7 +282,7 @@ export default function DailyStatus({ filters, summary, statusSummary, daily, op
             { label: 'Unique statuses', value: formatInteger(summary?.unique_statuses ?? 0), icon: Filter },
             {
                 label: 'Updates per day',
-                value: formatPercentage(summary?.average_updates_per_day ?? 0, { style: 'decimal', minimumFractionDigits: 0, maximumFractionDigits: 2 }),
+                value: formatDecimal(summary?.average_updates_per_day ?? 0),
                 icon: RefreshCcw,
             },
         ],

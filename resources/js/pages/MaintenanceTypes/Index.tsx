@@ -622,6 +622,40 @@ export default function MaintenanceTypesIndex({
     );
 
     const tableRows = React.useMemo(() => {
+        if (isTableLoading) {
+            return Array.from({ length: 8 }).map((_, index) => (
+                <TableRow key={`skeleton-${index}`} aria-hidden="true">
+                    <TableCell className="text-center">
+                        <Skeleton className="h-4 w-4 mx-auto" />
+                    </TableCell>
+                    <TableCell className="text-center">
+                        <Skeleton className="h-4 w-6 mx-auto" />
+                    </TableCell>
+                    <TableCell>
+                        <Skeleton className="h-4 w-32" />
+                    </TableCell>
+                    <TableCell>
+                        <Skeleton className="h-5 w-20 rounded-full" />
+                    </TableCell>
+                    <TableCell>
+                        <Skeleton className="h-4 w-24" />
+                    </TableCell>
+                    <TableCell>
+                        <Skeleton className="h-4 w-20" />
+                    </TableCell>
+                    <TableCell className="text-right">
+                        <Skeleton className="h-4 w-20 ml-auto" />
+                    </TableCell>
+                    <TableCell className="text-center">
+                        <Skeleton className="h-6 w-20 mx-auto rounded-full" />
+                    </TableCell>
+                    <TableCell className="text-center">
+                        <Skeleton className="h-8 w-8 mx-auto rounded" />
+                    </TableCell>
+                </TableRow>
+            ));
+        }
+
         if (maintenanceTypeData.length === 0) {
             return [
                 <TableRow key="maintenance-types-empty">
@@ -701,6 +735,7 @@ export default function MaintenanceTypesIndex({
         handleDeleteClick,
         handleSelectItem,
         isDeleting,
+        isTableLoading,
         maintenanceTypeData,
         rowOffset,
         selectedIds,
@@ -717,7 +752,32 @@ export default function MaintenanceTypesIndex({
         [maintenanceTypeData, rowOffset],
     );
 
-    const mobileContent = (
+    const mobileContent = isTableLoading ? (
+        <ListingMobileItemList
+            items={Array.from({ length: 5 }).map((_, i) => ({ id: `skeleton-${i}` }))}
+            getKey={(item) => item.id}
+            renderTitle={() => (
+                <div className="flex items-center gap-2">
+                    <Skeleton className="h-3 w-8" />
+                    <Skeleton className="h-4 w-32" />
+                </div>
+            )}
+            renderSubtitle={() => <Skeleton className="h-3 w-24" />}
+            renderContent={() => (
+                <div className="space-y-3">
+                    <Skeleton className="h-3 w-full" />
+                    <Skeleton className="h-3 w-3/4" />
+                    <Skeleton className="h-3 w-full" />
+                </div>
+            )}
+            renderFooter={() => (
+                <div className="flex w-full gap-2">
+                    <Skeleton className="h-8 flex-1" />
+                    <Skeleton className="h-8 w-20" />
+                </div>
+            )}
+        />
+    ) : (
         <ListingMobileItemList
             items={mobileItems}
             getKey={(item) => item.maintenanceType.id}
@@ -808,21 +868,12 @@ export default function MaintenanceTypesIndex({
     );
 
     const tableContent = (
-        <div className="relative">
-            <ListingTableShell
-                columns={tableColumns}
-                sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSort }}
-            >
-                {tableRows}
-            </ListingTableShell>
-
-            {isTableLoading && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
-                    <img src="/images/loading-spinner.svg" alt="Loading maintenance types" className="h-12 w-12" />
-                    <span className="text-sm text-muted-foreground">Loading maintenance types...</span>
-                </div>
-            )}
-        </div>
+        <ListingTableShell
+            columns={tableColumns}
+            sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSort }}
+        >
+            {tableRows}
+        </ListingTableShell>
     );
 
     const handleBulkAction = (action: BulkActionType) => {
@@ -1022,15 +1073,8 @@ export default function MaintenanceTypesIndex({
             >
                 <div className="hidden md:block">{tableContent}</div>
 
-                <div className="relative space-y-3 md:hidden">
+                <div className="space-y-3 md:hidden">
                     {mobileContent}
-
-                    {isTableLoading && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
-                            <img src="/images/loading-spinner.svg" alt="Loading maintenance types" className="h-10 w-10" />
-                            <span className="text-sm text-muted-foreground">Loading maintenance types...</span>
-                        </div>
-                    )}
                 </div>
             </ListPageLayout>
 

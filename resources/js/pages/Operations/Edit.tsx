@@ -150,8 +150,31 @@ export default function OperationsEdit({ operation, customers, regions, zones, w
 
   const [frontendErrors, setFrontendErrors] = useState<ValidationErrors>({});
   const [isDirty, setIsDirty] = useState(false);
-  const [recentCustomers, setRecentCustomers] = useState<string[]>([]);
-  const [recentCargoTypes, setRecentCargoTypes] = useState<string[]>([]);
+
+  const readRecentSelections = (): RecentSelections => {
+    if (typeof window === 'undefined') {
+      return { customers: [], cargoTypes: [] };
+    }
+
+    try {
+      const storedValue = window.localStorage.getItem(RECENT_SELECTIONS_KEY);
+      if (!storedValue) {
+        return { customers: [], cargoTypes: [] };
+      }
+
+      const parsed: Partial<RecentSelections> = JSON.parse(storedValue);
+      return {
+        customers: Array.isArray(parsed.customers) ? parsed.customers.slice(0, 5) : [],
+        cargoTypes: Array.isArray(parsed.cargoTypes) ? parsed.cargoTypes.slice(0, 5) : [],
+      };
+    } catch (error) {
+      console.error('Failed to load recent selections', error);
+      return { customers: [], cargoTypes: [] };
+    }
+  };
+
+  const [recentCustomers, setRecentCustomers] = useState<string[]>(() => readRecentSelections().customers);
+  const [recentCargoTypes, setRecentCargoTypes] = useState<string[]>(() => readRecentSelections().cargoTypes);
 
   const hasErrors = useMemo(() => Object.keys(errors).length > 0 || Object.keys(frontendErrors).length > 0, [errors, frontendErrors]);
 
@@ -169,35 +192,6 @@ export default function OperationsEdit({ operation, customers, regions, zones, w
       });
     }
   }, [errors]);
-
-  const loadRecentSelections = useCallback(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-
-    try {
-      const storedValue = window.localStorage.getItem(RECENT_SELECTIONS_KEY);
-      if (!storedValue) {
-        return;
-      }
-
-      const parsed: RecentSelections = JSON.parse(storedValue);
-
-      if (Array.isArray(parsed.customers)) {
-        setRecentCustomers(parsed.customers.slice(0, 5));
-      }
-
-      if (Array.isArray(parsed.cargoTypes)) {
-        setRecentCargoTypes(parsed.cargoTypes.slice(0, 5));
-      }
-    } catch (error) {
-      console.error('Failed to load recent selections', error);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadRecentSelections();
-  }, [loadRecentSelections]);
 
   const persistRecentSelections = useCallback((next: RecentSelections) => {
     if (typeof window === 'undefined') {
@@ -298,10 +292,6 @@ export default function OperationsEdit({ operation, customers, regions, zones, w
     });
   };
 
-  const getFieldError = (field: keyof OperationFormData) => {
-    return errors[field] || frontendErrors[field] || '';
-  };
-
   const safeCustomers = useMemo(() => (Array.isArray(customers) ? customers : []), [customers]);
   const safeRegions = useMemo(() => (Array.isArray(regions) ? regions : []), [regions]);
   const safeZones = useMemo(() => (Array.isArray(zones) ? zones : []), [zones]);
@@ -328,18 +318,18 @@ export default function OperationsEdit({ operation, customers, regions, zones, w
 
   const selectedDestinationScopeLabel = useMemo(() => destinationScopeOptions.find(option => option.value === data.destination_scope)?.label ?? null, [destinationScopeOptions, data.destination_scope]);
 
-  useEffect(() => {
-    if (!data.destination_id) {
-      return;
+  const destinationExists = Boolean(data.destination_id);
+  const destinationMatchesOptions = destinationExists && destinationOptions.some(option => option.value === data.destination_id);
+  const destinationSelectValue = destinationMatchesOptions ? data.destination_id : '';
+
+  const getFieldError = (field: keyof OperationFormData) => {
+    const baseError = errors[field] || frontendErrors[field] || '';
+    if (field === 'destination_id' && destinationExists && !destinationMatchesOptions) {
+      return baseError || 'Destination selection is required';
     }
 
-    const stillValid = destinationOptions.some(option => option.value === data.destination_id);
-
-    if (!stillValid) {
-      setData('destination_id', '');
-      setFieldError('destination_id', 'Destination selection is required');
-    }
-  }, [destinationOptions, data.destination_id, setData]);
+    return baseError;
+  };
 
   return (
     <FormPageLayout
@@ -422,7 +412,7 @@ export default function OperationsEdit({ operation, customers, regions, zones, w
             </FormField>
 
             <FormField label="Destination" required error={getFieldError('destination_id')} hint={selectedDestinationScopeLabel ? `Showing ${selectedDestinationScopeLabel.toLowerCase()} destinations.` : 'Select a destination scope to populate options.'}>
-              <Select value={data.destination_id} onValueChange={value => handleFieldChange('destination_id', value)} disabled={destinationOptions.length === 0}>
+              <Select value={destinationSelectValue} onValueChange={value => handleFieldChange('destination_id', value)} disabled={destinationOptions.length === 0}>
                 <SelectTrigger className={getFieldError('destination_id') ? 'border-red-500' : ''}>
                   <SelectValue placeholder="Select destination" />
                 </SelectTrigger>
@@ -538,7 +528,7 @@ export default function OperationsEdit({ operation, customers, regions, zones, w
         <Button type="button" variant="outline" asChild>
           <Link href={`/operations/${operation.id}`}>Cancel</Link>
         </Button>
-        <Button type="submit" disabled={processing || Object.keys(frontendErrors).length > 0 || !data.destination_id || !data.cargo_type_id} onClick={submit}>
+        <Button type="submit" disabled={processing || Object.keys(frontendErrors).length > 0 || !destinationMatchesOptions || !data.cargo_type_id} onClick={submit}>
           {processing ? (
             <>
               <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white" />

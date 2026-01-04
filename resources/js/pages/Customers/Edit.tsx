@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Link, useForm } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Building2, CheckCircle, Phone, UserCircle } from 'lucide-react';
 
 interface Customer {
@@ -39,6 +39,24 @@ export default function CustomersEdit({ customer }: { customer: Customer }) {
   });
 
   const [isDirty, setIsDirty] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    const form = formRef.current;
+    if (!form) return;
+
+    const handleScroll = () => {
+      setShowScrollTop(form.scrollTop > 300);
+    };
+
+    form.addEventListener('scroll', handleScroll);
+    return () => form.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const handleScrollToTop = () => {
+    formRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const handleFieldChange = (field: string, value: string) => {
     setData(field as any, value);
@@ -64,26 +82,26 @@ export default function CustomersEdit({ customer }: { customer: Customer }) {
       icon={<Building2 className="h-5 w-5" />}
       headerAside={isDirty && <UnsavedChangesBadge />}
     >
-      <form onSubmit={handleSubmit} className="flex flex-1 flex-col gap-6 overflow-y-auto p-6 pb-24" noValidate>
+      <form ref={formRef} onSubmit={handleSubmit} className="flex flex-1 flex-col gap-6 overflow-y-auto p-6 pb-24" noValidate>
         <FormSection title="Customer Information" description="Update customer details" icon={<UserCircle className="h-4 w-4" />}>
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <FormField label="Customer Name" required error={errors.name}>
+            <FormField id="name" label="Customer Name" required error={errors.name}>
               <Input id="name" value={data.name} onChange={e => handleFieldChange('name', e.target.value)} placeholder="Customer name" />
             </FormField>
 
-            <FormField label="Contact Person" error={errors.contact_person}>
+            <FormField id="contact_person" label="Contact Person" error={errors.contact_person}>
               <Input id="contact_person" value={data.contact_person} onChange={e => handleFieldChange('contact_person', e.target.value)} placeholder="Contact person name" />
             </FormField>
 
-            <FormField label="Phone Number" error={errors.phone}>
+            <FormField id="phone" label="Phone Number" error={errors.phone}>
               <Input id="phone" value={data.phone} onChange={e => handleFieldChange('phone', e.target.value)} placeholder="Phone number" type="tel" />
             </FormField>
 
-            <FormField label="Email Address" error={errors.email}>
+            <FormField id="email" label="Email Address" error={errors.email}>
               <Input id="email" value={data.email} onChange={e => handleFieldChange('email', e.target.value)} placeholder="Email address" type="email" />
             </FormField>
 
-            <FormField label="Status" required error={errors.status}>
+            <FormField id="status" label="Status" required error={errors.status}>
               <Select value={data.status} onValueChange={value => handleFieldChange('status', value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select status" />
@@ -96,7 +114,7 @@ export default function CustomersEdit({ customer }: { customer: Customer }) {
             </FormField>
 
             <div className="md:col-span-2">
-              <FormField label="Address" error={errors.address}>
+              <FormField id="address" label="Address" error={errors.address}>
                 <Textarea id="address" value={data.address} onChange={e => handleFieldChange('address', e.target.value)} placeholder="Customer address" rows={3} />
               </FormField>
             </div>
@@ -104,26 +122,30 @@ export default function CustomersEdit({ customer }: { customer: Customer }) {
         </FormSection>
       </form>
 
-      <FormActionsBar>
-        <Button type="button" variant="outline" asChild>
-          <Link href="/customers">Cancel</Link>
-        </Button>
-        <Button type="submit" disabled={processing} onClick={handleSubmit}>
-          {processing ? (
-            <>
-              <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white" />
-              Updating...
-            </>
-          ) : (
-            <>
-              <CheckCircle className="mr-2 h-4 w-4" />
-              Update Customer
-            </>
-          )}
-        </Button>
-      </FormActionsBar>
+      <FormActionsBar
+        left={
+          <Button type="button" variant="outline" asChild>
+            <Link href="/customers">Cancel</Link>
+          </Button>
+        }
+        right={
+          <Button type="submit" disabled={processing} onClick={handleSubmit}>
+            {processing ? (
+              <>
+                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white" />
+                Updating...
+              </>
+            ) : (
+              <>
+                <CheckCircle className="mr-2 h-4 w-4" />
+                Update Customer
+              </>
+            )}
+          </Button>
+        }
+      />
 
-      <ScrollToTopFab />
+      <ScrollToTopFab visible={showScrollTop} onClick={handleScrollToTop} />
     </FormPageLayout>
   );
 }

@@ -9,7 +9,7 @@ interface FormPageLayoutProps {
     title: string;
     description?: string;
     headTitle?: string;
-    breadcrumbs: BreadcrumbItem[];
+    breadcrumbs?: BreadcrumbItem[];
     icon?: ReactNode;
     headerAside?: ReactNode;
     children: ReactNode;
@@ -31,7 +31,7 @@ export function FormPageLayout({
     contentClassName,
 }: FormPageLayoutProps) {
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <AppLayout breadcrumbs={breadcrumbs ?? []}>
             <Head title={headTitle ?? title} />
             <div className={cn('flex h-full flex-1 flex-col gap-6 overflow-hidden rounded-xl p-4', layoutClassName)}>
                 <Card

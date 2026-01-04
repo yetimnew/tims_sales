@@ -13,6 +13,8 @@ import { AlertTriangle, CalendarDays, CheckCircle2, ClipboardList, DollarSign, S
 import { usePermissions } from '@/hooks/use-permissions';
 import { ReportPageLayout } from '@/components/report/report-page-layout';
 
+type QueryParamValue = string | number | boolean | null | undefined | Array<string | number | boolean>;
+
 interface MaintenanceFilters {
     from?: string | null;
     to?: string | null;
@@ -311,8 +313,8 @@ export default function MaintenanceReport({
     );
 
     const buildAppliedParams = useCallback(
-        (overrides: Record<string, unknown> = {}) => {
-            const params: Record<string, unknown> = {};
+        (overrides: Record<string, QueryParamValue> = {}) => {
+            const params: Record<string, QueryParamValue> = {};
 
             if (filters?.from) params.from = filters.from;
             if (filters?.to) params.to = filters.to;
@@ -320,7 +322,7 @@ export default function MaintenanceReport({
             if (Array.isArray(filters?.maintenance_type_ids) && filters.maintenance_type_ids.length > 0) params.maintenance_type_ids = filters.maintenance_type_ids;
             if (Array.isArray(filters?.statuses) && filters.statuses.length > 0) params.statuses = filters.statuses;
             if (Array.isArray(filters?.service_providers) && filters.service_providers.length > 0) params.service_providers = filters.service_providers;
-            if (filters?.per_page) params.per_page = filters.per_page;
+            if (typeof filters?.per_page === 'number') params.per_page = filters.per_page;
 
             return { ...params, ...overrides };
         },
@@ -336,7 +338,7 @@ export default function MaintenanceReport({
 
         setFiltersOpen(false);
 
-        const params: Record<string, unknown> = {};
+        const params: Record<string, QueryParamValue> = {};
 
         if (from) params.from = from;
         if (to) params.to = to;
@@ -365,7 +367,12 @@ export default function MaintenanceReport({
         setFiltersOpen(false);
         setDateError(null);
 
-        router.get('/reports/maintenance', { per_page: defaultPerPage }, { preserveState: false, preserveScroll: true });
+        const resetParams: Record<string, QueryParamValue> = { per_page: defaultPerPage };
+
+        router.get('/reports/maintenance', resetParams, {
+            preserveState: false,
+            preserveScroll: true,
+        });
     };
 
     const handleExport = (format: 'csv' | 'xlsx' | 'pdf') => {

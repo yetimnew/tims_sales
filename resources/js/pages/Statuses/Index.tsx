@@ -16,6 +16,7 @@ import { useListingLoading } from '@/hooks/use-listing-loading';
 import { toast } from '@/hooks/use-toast';
 import { type BreadcrumbItem } from '@/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Plus,
   Search,
@@ -187,49 +188,49 @@ export default function StatusesIndex({
       id: 'total-statuses',
       label: 'Total Statuses',
       icon: <Tag className="h-3.5 w-3.5 text-blue-600" />,
-      value: totalCount.toLocaleString(),
-      description: 'Overall catalog size',
-      valueClassName: 'text-blue-600',
+      value: isTableLoading ? <Skeleton className="h-4 w-16" aria-hidden="true" /> : totalCount.toLocaleString(),
+      description: isTableLoading ? <Skeleton className="h-3 w-32" aria-hidden="true" /> : 'Overall catalog size',
+      valueClassName: isTableLoading ? undefined : 'text-blue-600',
     },
     {
       id: 'in-use-statuses',
       label: 'In Use',
       icon: <LinkIcon className="h-3.5 w-3.5 text-emerald-600" />,
-      value: inUseCount.toLocaleString(),
-      description: 'Active in truck logs',
-      valueClassName: 'text-emerald-600',
+      value: isTableLoading ? <Skeleton className="h-4 w-12" aria-hidden="true" /> : inUseCount.toLocaleString(),
+      description: isTableLoading ? <Skeleton className="h-3 w-28" aria-hidden="true" /> : 'Active in truck logs',
+      valueClassName: isTableLoading ? undefined : 'text-emerald-600',
     },
     {
       id: 'status-types-covered',
       label: 'Status Types',
       icon: <Layers className="h-3.5 w-3.5 text-indigo-600" />,
-      value: uniqueTypes.toLocaleString(),
-      description: `${averagePerType.toFixed(2)} avg per type`,
-      valueClassName: 'text-indigo-600',
+      value: isTableLoading ? <Skeleton className="h-4 w-12" aria-hidden="true" /> : uniqueTypes.toLocaleString(),
+      description: isTableLoading ? <Skeleton className="h-3 w-32" aria-hidden="true" /> : `${averagePerType.toFixed(2)} avg per type`,
+      valueClassName: isTableLoading ? undefined : 'text-indigo-600',
     },
     {
       id: 'recent-statuses',
       label: `New (${recentDays}d)`,
       icon: <CalendarClock className="h-3.5 w-3.5 text-slate-600" />,
-      value: recentCount.toLocaleString(),
-      description: 'Recently added records',
-      valueClassName: 'text-slate-600',
+      value: isTableLoading ? <Skeleton className="h-4 w-12" aria-hidden="true" /> : recentCount.toLocaleString(),
+      description: isTableLoading ? <Skeleton className="h-3 w-32" aria-hidden="true" /> : 'Recently added records',
+      valueClassName: isTableLoading ? undefined : 'text-slate-600',
     },
     {
       id: 'with-description',
       label: 'Documented',
       icon: <FileText className="h-3.5 w-3.5 text-purple-600" />,
-      value: withDescription.toLocaleString(),
-      description: 'Statuses with descriptions',
-      valueClassName: 'text-purple-600',
+      value: isTableLoading ? <Skeleton className="h-4 w-12" aria-hidden="true" /> : withDescription.toLocaleString(),
+      description: isTableLoading ? <Skeleton className="h-3 w-32" aria-hidden="true" /> : 'Statuses with descriptions',
+      valueClassName: isTableLoading ? undefined : 'text-purple-600',
     },
     {
       id: 'without-description',
       label: 'Needs Details',
       icon: <FileWarning className="h-3.5 w-3.5 text-amber-600" />,
-      value: withoutDescription.toLocaleString(),
-      description: 'Missing documentation',
-      valueClassName: 'text-amber-600',
+      value: isTableLoading ? <Skeleton className="h-4 w-12" aria-hidden="true" /> : withoutDescription.toLocaleString(),
+      description: isTableLoading ? <Skeleton className="h-3 w-32" aria-hidden="true" /> : 'Missing documentation',
+      valueClassName: isTableLoading ? undefined : 'text-amber-600',
     },
   ];
 
@@ -371,52 +372,78 @@ export default function StatusesIndex({
     [],
   );
 
-  const tableRows = statuses?.data?.length
-    ? statuses.data.map((status, index) => (
-        <TableRow key={status.id} className="hover:bg-muted/50">
-          <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
-          <TableCell className="font-medium">{status.name}</TableCell>
-          <TableCell className="text-sm text-muted-foreground">
-            {status.status_type?.name ? (
-              <Badge variant="outline" className="rounded-full px-3 py-0.5 text-xs font-semibold">
-                {status.status_type.name}
-              </Badge>
-            ) : (
-              <span className="text-xs text-muted-foreground">Unassigned</span>
-            )}
-          </TableCell>
-          <TableCell className="max-w-[320px] text-sm text-muted-foreground">
-            {status.description || '—'}
-          </TableCell>
-          <TableCell className="text-center font-semibold text-slate-700 dark:text-slate-200">
-            {status.daily_truck_statuses_count.toLocaleString()}
-          </TableCell>
-          <TableCell className="text-sm text-muted-foreground">{formatDate(status.created_at)}</TableCell>
+  const tableRows = isTableLoading
+    ? Array.from({ length: 8 }).map((_, index) => (
+        <TableRow key={`skeleton-${index}`} aria-hidden="true">
           <TableCell className="text-center">
-            <ListingRowActionsMenu
-              actions={[
-                hasPermission('statuses.show') && {
-                  label: 'View',
-                  icon: <Eye className="h-4 w-4" />,
-                  href: `/statuses/${status.id}`,
-                },
-                hasPermission('statuses.edit') && {
-                  label: 'Edit',
-                  icon: <Edit className="h-4 w-4" />,
-                  href: `/statuses/${status.id}/edit`,
-                },
-                hasPermission('statuses.destroy') && {
-                  label: 'Delete',
-                  icon: <Trash2 className="h-4 w-4" />,
-                  danger: true,
-                  onSelect: () => handleDeleteClick(status),
-                },
-              ]}
-            />
+            <Skeleton className="h-4 w-6 mx-auto" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-4 w-32" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-5 w-24 rounded-full" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-4 w-48" />
+          </TableCell>
+          <TableCell className="text-center">
+            <Skeleton className="h-4 w-12 mx-auto" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-4 w-24" />
+          </TableCell>
+          <TableCell className="text-center">
+            <Skeleton className="h-8 w-8 mx-auto rounded" />
           </TableCell>
         </TableRow>
       ))
-    : (
+    : statuses?.data?.length
+        ? statuses.data.map((status, index) => (
+            <TableRow key={status.id} className="hover:bg-muted/50">
+              <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
+              <TableCell className="font-medium">{status.name}</TableCell>
+              <TableCell className="text-sm text-muted-foreground">
+                {status.status_type?.name ? (
+                  <Badge variant="outline" className="rounded-full px-3 py-0.5 text-xs font-semibold">
+                    {status.status_type.name}
+                  </Badge>
+                ) : (
+                  <span className="text-xs text-muted-foreground">Unassigned</span>
+                )}
+              </TableCell>
+              <TableCell className="max-w-[320px] text-sm text-muted-foreground">
+                {status.description || '—'}
+              </TableCell>
+              <TableCell className="text-center font-semibold text-slate-700 dark:text-slate-200">
+                {status.daily_truck_statuses_count.toLocaleString()}
+              </TableCell>
+              <TableCell className="text-sm text-muted-foreground">{formatDate(status.created_at)}</TableCell>
+              <TableCell className="text-center">
+                <ListingRowActionsMenu
+                  actions={[
+                    hasPermission('statuses.show') && {
+                      label: 'View',
+                      icon: <Eye className="h-4 w-4" />,
+                      href: `/statuses/${status.id}`,
+                    },
+                    hasPermission('statuses.edit') && {
+                      label: 'Edit',
+                      icon: <Edit className="h-4 w-4" />,
+                      href: `/statuses/${status.id}/edit`,
+                    },
+                    hasPermission('statuses.destroy') && {
+                      label: 'Delete',
+                      icon: <Trash2 className="h-4 w-4" />,
+                      danger: true,
+                      onSelect: () => handleDeleteClick(status),
+                    },
+                  ]}
+                />
+              </TableCell>
+            </TableRow>
+          ))
+        : (
         <TableRow>
           <TableCell colSpan={tableColumns.length} className="py-8 text-center text-muted-foreground">
             No statuses found.
@@ -438,7 +465,32 @@ export default function StatusesIndex({
     [rowOffset, statuses?.data],
   );
 
-  const mobileContent = (
+  const mobileContent = isTableLoading ? (
+    <ListingMobileItemList
+      items={Array.from({ length: 5 }).map((_, i) => ({ id: `skeleton-${i}` }))}
+      getKey={(item) => item.id}
+      renderTitle={() => (
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-3 w-8" />
+          <Skeleton className="h-4 w-32" />
+        </div>
+      )}
+      renderSubtitle={() => <Skeleton className="h-3 w-24" />}
+      renderContent={() => (
+        <div className="space-y-3">
+          <Skeleton className="h-3 w-full" />
+          <Skeleton className="h-3 w-3/4" />
+          <Skeleton className="h-3 w-full" />
+        </div>
+      )}
+      renderFooter={() => (
+        <div className="flex w-full gap-2">
+          <Skeleton className="h-8 flex-1" />
+          <Skeleton className="h-8 w-20" />
+        </div>
+      )}
+    />
+  ) : (
     <ListingMobileItemList
       items={mobileItems}
       getKey={(item) => item.status.id}
@@ -589,29 +641,13 @@ export default function StatusesIndex({
         }
       >
         <div className="hidden md:block">
-          <div className="relative">
-            <ListingTableShell columns={tableColumns} sort={{ column: sortBy, direction: sortDirection, onToggle: handleSort }}>
-              {tableRows}
-            </ListingTableShell>
-
-            {isTableLoading && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
-                <img src="/images/loading-spinner.svg" alt="Loading statuses" className="h-12 w-12" />
-                <span className="text-sm text-muted-foreground">Loading statuses...</span>
-              </div>
-            )}
-          </div>
+          <ListingTableShell columns={tableColumns} sort={{ column: sortBy, direction: sortDirection, onToggle: handleSort }}>
+            {tableRows}
+          </ListingTableShell>
         </div>
 
-        <div className="relative space-y-3 md:hidden">
+        <div className="space-y-3 md:hidden">
           {mobileContent}
-
-          {isTableLoading && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
-              <img src="/images/loading-spinner.svg" alt="Loading statuses" className="h-10 w-10" />
-              <span className="text-sm text-muted-foreground">Loading statuses...</span>
-            </div>
-          )}
         </div>
       </ListPageLayout>
 

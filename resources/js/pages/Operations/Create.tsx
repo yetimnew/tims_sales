@@ -4,7 +4,7 @@ import { FormField } from '@/components/forms/form-field';
 import { FormActionsBar } from '@/components/forms/form-actions-bar';
 import { UnsavedChangesBadge } from '@/components/forms/unsaved-changes-badge';
 import { ScrollToTopFab } from '@/components/forms/scroll-to-top-fab';
-import { useEffect, useMemo, useState, useCallback, type FormEventHandler } from 'react';
+import { useMemo, useState, useCallback, type FormEventHandler } from 'react';
 import { Link, useForm } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -130,37 +130,33 @@ export default function OperationsCreate({
 
   const [frontendErrors, setFrontendErrors] = useState<ValidationErrors>({});
   const [isDirty, setIsDirty] = useState(false);
-  const [recentCustomers, setRecentCustomers] = useState<string[]>([]);
-  const [recentCargoTypes, setRecentCargoTypes] = useState<string[]>([]);
 
-  const hasErrors = useMemo(() => Object.keys(errors).length > 0 || Object.keys(frontendErrors).length > 0, [errors, frontendErrors]);
-
-  const loadRecentSelections = useCallback(() => {
+  const readRecentSelections = (): RecentSelections => {
     if (typeof window === 'undefined') {
-      return;
+      return { customers: [], cargoTypes: [] };
     }
 
     try {
       const storedValue = window.localStorage.getItem(RECENT_SELECTIONS_KEY);
       if (!storedValue) {
-        return;
+        return { customers: [], cargoTypes: [] };
       }
 
-      const parsed: RecentSelections = JSON.parse(storedValue);
-      if (Array.isArray(parsed.customers)) {
-        setRecentCustomers(parsed.customers.slice(0, 5));
-      }
-      if (Array.isArray(parsed.cargoTypes)) {
-        setRecentCargoTypes(parsed.cargoTypes.slice(0, 5));
-      }
+      const parsed: Partial<RecentSelections> = JSON.parse(storedValue);
+      return {
+        customers: Array.isArray(parsed.customers) ? parsed.customers.slice(0, 5) : [],
+        cargoTypes: Array.isArray(parsed.cargoTypes) ? parsed.cargoTypes.slice(0, 5) : [],
+      };
     } catch (error) {
       console.error('Failed to load recent selections', error);
+      return { customers: [], cargoTypes: [] };
     }
-  }, []);
+  };
 
-  useEffect(() => {
-    loadRecentSelections();
-  }, [loadRecentSelections]);
+  const [recentCustomers, setRecentCustomers] = useState<string[]>(() => readRecentSelections().customers);
+  const [recentCargoTypes, setRecentCargoTypes] = useState<string[]>(() => readRecentSelections().cargoTypes);
+
+  const hasErrors = useMemo(() => Object.keys(errors).length > 0 || Object.keys(frontendErrors).length > 0, [errors, frontendErrors]);
 
   const persistRecentSelections = useCallback(
     (next: RecentSelections) => {
@@ -245,8 +241,14 @@ export default function OperationsCreate({
     event.preventDefault();
 
     const validationResults = validateOperation(data);
-    if (Object.keys(validationResults).length > 0) {
-      setFrontendErrors(validationResults);
+    const nextErrors: ValidationErrors = { ...validationResults };
+
+    if (!destinationIsValid) {
+      nextErrors.destination_id = 'Destination selection is required';
+    }
+
+    if (Object.keys(nextErrors).length > 0) {
+      setFrontendErrors(nextErrors);
       return;
     }
 
@@ -267,7 +269,12 @@ export default function OperationsCreate({
   };
 
   const getFieldError = (field: keyof OperationFormData) => {
-    return errors[field] || frontendErrors[field] || '';
+    const baseError = errors[field] || frontendErrors[field] || '';
+    if (field === 'destination_id' && !destinationIsValid) {
+      return baseError || 'Destination selection is required';
+    }
+
+    return baseError;
   };
 
   const safeCustomers = useMemo(() => (Array.isArray(customers) ? customers : []), [customers]);
@@ -299,17 +306,11 @@ export default function OperationsCreate({
     [destinationScopeOptions, data.destination_scope],
   );
 
-  useEffect(() => {
-    if (!data.destination_id) {
-      return;
-    }
+  const destinationIsValid = !data.destination_id || destinationOptions.some(option => option.value === data.destination_id);
 
-    const stillValid = destinationOptions.some(option => option.value === data.destination_id);
-    if (!stillValid) {
-      setData('destination_id', '');
-      setFieldError('destination_id', 'Destination selection is required');
-    }
-  }, [destinationOptions, data.destination_id, setData]);
+  const destinationSelectValue = destinationIsValid ? data.destination_id : '';
+
+
 
   return (
     <FormPageLayout
@@ -411,7 +412,7 @@ export default function OperationsCreate({
             <div className="space-y-2">
               <FormField label="Destination" required error={getFieldError('destination_id')}>
                 <Select
-                  value={data.destination_id}
+                  value={destinationSelectValue}
                   onValueChange={value => handleFieldChange('destination_id', value)}
                   disabled={destinationOptions.length === 0}
                 >

@@ -16,6 +16,7 @@ import { useListingLoading } from '@/hooks/use-listing-loading';
 import { toast } from '@/hooks/use-toast';
 import { type BreadcrumbItem } from '@/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Plus,
   Search,
@@ -186,49 +187,49 @@ export default function StatusTypesIndex({
           id: 'total-status-types',
           label: 'Total Types',
           icon: <Tag className="h-3.5 w-3.5 text-blue-600" />,
-          value: totalCount.toLocaleString(),
-          description: 'All lifecycle categories',
-          valueClassName: 'text-blue-600',
+          value: isTableLoading ? <Skeleton className="h-4 w-16" aria-hidden="true" /> : totalCount.toLocaleString(),
+          description: isTableLoading ? <Skeleton className="h-3 w-32" aria-hidden="true" /> : 'All lifecycle categories',
+          valueClassName: isTableLoading ? undefined : 'text-blue-600',
         },
         {
           id: 'in-use-status-types',
           label: 'In Use',
           icon: <LinkIcon className="h-3.5 w-3.5 text-emerald-600" />,
-          value: inUseCount.toLocaleString(),
-          description: `${statusesTotal.toLocaleString()} statuses linked`,
-          valueClassName: 'text-emerald-600',
+          value: isTableLoading ? <Skeleton className="h-4 w-12" aria-hidden="true" /> : inUseCount.toLocaleString(),
+          description: isTableLoading ? <Skeleton className="h-3 w-32" aria-hidden="true" /> : `${statusesTotal.toLocaleString()} statuses linked`,
+          valueClassName: isTableLoading ? undefined : 'text-emerald-600',
         },
         {
           id: 'unused-status-types',
           label: 'Unused',
           icon: <Ban className="h-3.5 w-3.5 text-amber-600" />,
-          value: unusedCount.toLocaleString(),
-          description: 'Ready for assignment',
-          valueClassName: 'text-amber-600',
+          value: isTableLoading ? <Skeleton className="h-4 w-12" aria-hidden="true" /> : unusedCount.toLocaleString(),
+          description: isTableLoading ? <Skeleton className="h-3 w-28" aria-hidden="true" /> : 'Ready for assignment',
+          valueClassName: isTableLoading ? undefined : 'text-amber-600',
         },
         {
           id: 'average-statuses',
           label: 'Avg. Statuses',
           icon: <BarChart3 className="h-3.5 w-3.5 text-purple-600" />,
-          value: averagePerType.toFixed(2),
-          description: 'Per status type',
-          valueClassName: 'text-purple-600',
+          value: isTableLoading ? <Skeleton className="h-4 w-16" aria-hidden="true" /> : averagePerType.toFixed(2),
+          description: isTableLoading ? <Skeleton className="h-3 w-24" aria-hidden="true" /> : 'Per status type',
+          valueClassName: isTableLoading ? undefined : 'text-purple-600',
         },
         {
           id: 'recent-status-types',
           label: `Created (${recentDays}d)`,
           icon: <CalendarClock className="h-3.5 w-3.5 text-slate-600" />,
-          value: recentCount.toLocaleString(),
-          description: 'Recently added types',
-          valueClassName: 'text-slate-600',
+          value: isTableLoading ? <Skeleton className="h-4 w-12" aria-hidden="true" /> : recentCount.toLocaleString(),
+          description: isTableLoading ? <Skeleton className="h-3 w-32" aria-hidden="true" /> : 'Recently added types',
+          valueClassName: isTableLoading ? undefined : 'text-slate-600',
         },
         {
           id: 'total-statuses',
           label: 'Statuses',
           icon: <ListTree className="h-3.5 w-3.5 text-indigo-600" />,
-          value: statusesTotal.toLocaleString(),
-          description: 'Across all types',
-          valueClassName: 'text-indigo-600',
+          value: isTableLoading ? <Skeleton className="h-4 w-16" aria-hidden="true" /> : statusesTotal.toLocaleString(),
+          description: isTableLoading ? <Skeleton className="h-3 w-28" aria-hidden="true" /> : 'Across all types',
+          valueClassName: isTableLoading ? undefined : 'text-indigo-600',
         },
       ]
     : null;
@@ -365,12 +366,35 @@ export default function StatusTypesIndex({
     [],
   );
 
-  const tableRows = statusTypes?.data?.length
-    ? statusTypes.data.map((statusType, index) => {
-        const statuses = Array.isArray(statusType.statuses) ? statusType.statuses : [];
+  const tableRows = isTableLoading
+    ? Array.from({ length: 8 }).map((_, index) => (
+        <TableRow key={`skeleton-${index}`} aria-hidden="true">
+          <TableCell className="text-center">
+            <Skeleton className="h-4 w-6 mx-auto" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-4 w-32" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-4 w-48" />
+          </TableCell>
+          <TableCell className="text-center">
+            <Skeleton className="h-4 w-12 mx-auto" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-4 w-24" />
+          </TableCell>
+          <TableCell className="text-center">
+            <Skeleton className="h-8 w-8 mx-auto rounded" />
+          </TableCell>
+        </TableRow>
+      ))
+    : statusTypes?.data?.length
+        ? statusTypes.data.map((statusType, index) => {
+            const statuses = Array.isArray(statusType.statuses) ? statusType.statuses : [];
 
-        return (
-        <TableRow key={statusType.id} className="hover:bg-muted/50">
+            return (
+            <TableRow key={statusType.id} className="hover:bg-muted/50">
           <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
           <TableCell className="font-medium">{statusType.name}</TableCell>
           <TableCell className="max-w-[320px] text-sm text-muted-foreground">
@@ -445,7 +469,32 @@ export default function StatusTypesIndex({
     [rowOffset, statusTypes?.data],
   );
 
-  const mobileContent = (
+  const mobileContent = isTableLoading ? (
+    <ListingMobileItemList
+      items={Array.from({ length: 5 }).map((_, i) => ({ id: `skeleton-${i}` }))}
+      getKey={(item) => item.id}
+      renderTitle={() => (
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-3 w-8" />
+          <Skeleton className="h-4 w-32" />
+        </div>
+      )}
+      renderSubtitle={() => <Skeleton className="h-3 w-24" />}
+      renderContent={() => (
+        <div className="space-y-3">
+          <Skeleton className="h-3 w-full" />
+          <Skeleton className="h-3 w-3/4" />
+          <Skeleton className="h-3 w-full" />
+        </div>
+      )}
+      renderFooter={() => (
+        <div className="flex w-full gap-2">
+          <Skeleton className="h-8 flex-1" />
+          <Skeleton className="h-8 w-20" />
+        </div>
+      )}
+    />
+  ) : (
     <ListingMobileItemList
       items={mobileItems}
       getKey={(item) => item.statusType.id}
@@ -603,29 +652,13 @@ export default function StatusTypesIndex({
         }
       >
         <div className="hidden md:block">
-          <div className="relative">
-            <ListingTableShell columns={tableColumns} sort={{ column: sortBy, direction: sortDirection, onToggle: handleSort }}>
-              {tableRows}
-            </ListingTableShell>
-
-            {isTableLoading && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
-                <img src="/images/loading-spinner.svg" alt="Loading status types" className="h-12 w-12" />
-                <span className="text-sm text-muted-foreground">Loading status types...</span>
-              </div>
-            )}
-          </div>
+          <ListingTableShell columns={tableColumns} sort={{ column: sortBy, direction: sortDirection, onToggle: handleSort }}>
+            {tableRows}
+          </ListingTableShell>
         </div>
 
-        <div className="relative space-y-3 md:hidden">
+        <div className="space-y-3 md:hidden">
           {mobileContent}
-
-          {isTableLoading && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
-              <img src="/images/loading-spinner.svg" alt="Loading status types" className="h-10 w-10" />
-              <span className="text-sm text-muted-foreground">Loading status types...</span>
-            </div>
-          )}
         </div>
       </ListPageLayout>
 

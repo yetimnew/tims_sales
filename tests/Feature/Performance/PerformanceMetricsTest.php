@@ -5,6 +5,8 @@ namespace Tests\Feature\Performance;
 use App\Models\Operation;
 use App\Models\Performance;
 use App\Models\User;
+use App\Models\DriverTruck;
+use App\Models\Truck;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Inertia\Testing\AssertableInertia;
@@ -101,6 +103,49 @@ class PerformanceMetricsTest extends TestCase
             );
 
         Carbon::setTestNow();
+    }
+
+    #[Test]
+    public function index_filters_by_truck_when_requested(): void
+    {
+        $user = User::factory()->create();
+        $this->givePermissions($user, [
+            'performances.view',
+            'performances.view-any',
+            'performances.show',
+        ]);
+
+        $targetTruck = Truck::factory()->create();
+        $otherTruck = Truck::factory()->create();
+
+        $targetAssignment = DriverTruck::factory()->create([
+            'truck_id' => $targetTruck->id,
+        ]);
+
+        $otherAssignment = DriverTruck::factory()->create([
+            'truck_id' => $otherTruck->id,
+        ]);
+
+        $matchingPerformance = Performance::factory()->create([
+            'driver_truck_id' => $targetAssignment->id,
+            'DateDispach' => now()->subDay(),
+        ]);
+
+        Performance::factory()->create([
+            'driver_truck_id' => $otherAssignment->id,
+            'DateDispach' => now()->subDays(2),
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('performances.index', ['truck' => $targetTruck->id]))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('Performances/Index')
+                ->has('performances.data', 1)
+                ->where('performances.data.0.id', $matchingPerformance->id)
+                ->where('filters.truck', $targetTruck->id)
+                ->where('metrics.total', 1)
+            );
     }
 
     #[Test]

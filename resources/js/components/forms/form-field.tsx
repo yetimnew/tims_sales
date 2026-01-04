@@ -4,12 +4,13 @@ import { AlertCircle, HelpCircle } from 'lucide-react';
 import { type ReactNode } from 'react';
 
 interface FormFieldProps {
-    id: string;
+    id?: string;
     label: string;
     children: ReactNode;
     required?: boolean;
     tooltip?: ReactNode;
     helperText?: ReactNode;
+    hint?: ReactNode;
     error?: ReactNode;
     className?: string;
     labelClassName?: string;
@@ -23,6 +24,7 @@ export function FormField({
     required,
     tooltip,
     helperText,
+    hint,
     error,
     className,
     labelClassName,
@@ -57,6 +59,7 @@ export function FormField({
                 </Label>
                 {renderTooltip()}
             </div>
+            {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
             <div className={cn('space-y-2', contentClassName)}>{children}</div>
             {helperText && <p className="text-xs text-muted-foreground">{helperText}</p>}
             {error && (

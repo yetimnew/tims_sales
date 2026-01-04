@@ -29,6 +29,12 @@ const OVERLAY_DISABLED_ROOTS: string[] = [
     '/permissions', // Disable overlay for permissions page - uses skeleton loaders instead
     '/zones', // Disable overlay for zones page - uses skeleton loaders instead
     '/places', // Disable overlay for places page - uses skeleton loaders instead
+    '/maintenance-types', // Disable overlay for maintenance-types page - uses skeleton loaders instead
+    '/outsource-performances', // Disable overlay for outsource-performances page - uses skeleton loaders instead
+    '/woredas', // Disable overlay for woredas page - uses skeleton loaders instead
+    '/activity-logs', // Disable overlay for activity-logs page - uses skeleton loaders instead
+    '/statuses', // Disable overlay for statuses page - uses skeleton loaders instead
+    '/statustypes', // Disable overlay for statustypes page - uses skeleton loaders instead
 ];
 
 interface AppLayoutProps {

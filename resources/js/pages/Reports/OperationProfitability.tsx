@@ -12,6 +12,8 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { CircleDollarSign, TrendingDown, TrendingUp, ClipboardList, BarChart3, MapPin, Percent } from 'lucide-react';
 import { ReportPageLayout } from '@/components/report/report-page-layout';
 
+type QueryParamValue = string | number | boolean | null | undefined | Array<string | number | boolean>;
+
 interface CustomerOption {
     id: number;
     name: string;
@@ -177,10 +179,10 @@ export default function OperationProfitability({ filters, totals, operations, op
 
         setFiltersOpen(false);
 
-        const params: Record<string, unknown> = {
-            from,
-            to,
-        };
+        const params: Record<string, QueryParamValue> = {};
+
+        if (from) params.from = from;
+        if (to) params.to = to;
 
         if (selectedCustomers.length > 0) params.customer_ids = selectedCustomers;
         if (selectedRegions.length > 0) params.region_ids = selectedRegions;
@@ -200,7 +202,7 @@ export default function OperationProfitability({ filters, totals, operations, op
         setSelectedServiceTypes(filters?.service_types ?? []);
         setFiltersOpen(false);
         setDateError(null);
-        router.get('/reports/operation-profitability', {}, { preserveState: false, preserveScroll: true });
+        router.get('/reports/operation-profitability', undefined, { preserveState: false, preserveScroll: true });
     };
 
     const handleExport = (format: 'csv' | 'xlsx' | 'pdf') => {

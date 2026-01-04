@@ -52,6 +52,32 @@ class DriverTruckControllerTest extends TestCase
     }
 
     #[Test]
+    public function it_filters_assignments_by_truck_id(): void
+    {
+        $targetTruck = Truck::factory()->create();
+        $otherTruck = Truck::factory()->create();
+
+        $matchingAssignment = DriverTruck::factory()->create([
+            'truck_id' => $targetTruck->id,
+        ]);
+
+        DriverTruck::factory()->create([
+            'truck_id' => $otherTruck->id,
+        ]);
+
+        $response = $this->actingAs($this->user)
+            ->get(route('driver-trucks.index', ['truck_id' => $targetTruck->id]));
+
+        $response->assertStatus(200)
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('DriverTrucks/Index')
+                ->has('driverTrucks.data', 1)
+                ->where('driverTrucks.data.0.id', $matchingAssignment->id)
+                ->where('filters.truck_id', $targetTruck->id)
+            );
+    }
+
+    #[Test]
     public function it_prevents_deleting_assignments_with_performance_records(): void
     {
         $assignment = DriverTruck::factory()->create();

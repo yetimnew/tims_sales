@@ -80,6 +80,7 @@ interface PerformancesIndexProps {
         sort?: string | null;
         direction?: 'asc' | 'desc' | null;
         per_page?: number | null;
+        truck?: number | string | null;
     };
     statusOptions: Array<{ label: string; value: string }>;
     loadPhaseOptions: Array<{ label: string; value: string }>;
@@ -200,6 +201,7 @@ export default function PerformancesIndex({
     const [selectedLoadPhase, setSelectedLoadPhase] = React.useState(filters?.load_phase ?? 'all');
     const [sortColumn, setSortColumn] = React.useState<string>(filters?.sort ?? 'DateDispach');
     const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>(filters?.direction ?? 'desc');
+    const truckFilter = filters?.truck ?? undefined;
     const availablePerPageOptions = React.useMemo(
         () => (perPageOptions?.length ? perPageOptions : [15, 25, 50, 100]),
         [perPageOptions],
@@ -259,6 +261,7 @@ export default function PerformancesIndex({
             direction?: 'asc' | 'desc';
             page?: number;
             per_page?: number;
+            truck?: number | string | null;
         } = {}) => {
             const hasOverride = (key: keyof typeof overrides) => Object.prototype.hasOwnProperty.call(overrides, key);
 
@@ -283,6 +286,7 @@ export default function PerformancesIndex({
             const nextSort = hasOverride('sort') ? overrides.sort ?? sortColumn : sortColumn;
             const nextDirection = hasOverride('direction') ? overrides.direction ?? sortDirection : sortDirection;
             const nextPerPage = hasOverride('per_page') ? overrides.per_page : Number(perPage);
+            const nextTruck = hasOverride('truck') ? overrides.truck ?? undefined : truckFilter;
             const nextPage = hasOverride('page') ? overrides.page : undefined;
 
             const params: Record<string, string | number | undefined> = {
@@ -296,6 +300,7 @@ export default function PerformancesIndex({
                     typeof nextPerPage === 'number' && Number.isFinite(nextPerPage) && nextPerPage > 0
                         ? nextPerPage
                         : undefined,
+                truck: typeof nextTruck === 'number' || (typeof nextTruck === 'string' && nextTruck !== '') ? nextTruck : undefined,
             };
 
             Object.keys(params).forEach((key) => {
@@ -310,7 +315,7 @@ export default function PerformancesIndex({
 
             router.get('/performances', params, { preserveState: true, replace: false });
         },
-        [perPage, searchTerm, selectedStatus, selectedLoadPhase, sortColumn, sortDirection],
+        [perPage, searchTerm, selectedStatus, selectedLoadPhase, sortColumn, sortDirection, truckFilter],
     );
 
     const statsDefinitions = [

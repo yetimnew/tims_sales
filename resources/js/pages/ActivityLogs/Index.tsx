@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Link, router } from '@inertiajs/react';
 import ListPageLayout from '@/components/layouts/list-page-layout';
 import { ListingFilterBar } from '@/components/listing/filter-bar';
@@ -95,7 +95,6 @@ interface ActivityLogsIndexProps {
         log_names: ActivityLogFilterOption[];
         subject_types: ActivityLogFilterOption[];
     };
-    sortOptions: Array<{ label: string; value: string }>;
     perPageOptions: number[];
 }
 
@@ -164,7 +163,29 @@ function resolveActionMeta(log: ActivityLogEntry): { badgeClass: string; label: 
     };
 }
 
-export default function ActivityLogsIndex({ logs, metrics, filters, filterOptions, sortOptions, perPageOptions }: ActivityLogsIndexProps) {
+export default function ActivityLogsIndex(props: ActivityLogsIndexProps) {
+    const { filters, perPageOptions } = props;
+    const filterSnapshot = useMemo(() => {
+        const parts: Array<string | number> = [
+            filters.search ?? '',
+            filters.causer_id ?? 'all',
+            filters.action ?? 'all',
+            filters.log_name ?? 'all',
+            filters.subject_type ?? 'all',
+            filters.from ?? '',
+            filters.to ?? '',
+            filters.sort ?? DEFAULT_SORT,
+            filters.direction ?? DEFAULT_DIRECTION,
+            filters.per_page ?? perPageOptions[0] ?? 25,
+        ];
+
+        return parts.join('|');
+    }, [filters, perPageOptions]);
+
+    return <ActivityLogsIndexContent key={filterSnapshot} {...props} />;
+}
+
+function ActivityLogsIndexContent({ logs, metrics, filters, filterOptions, perPageOptions }: ActivityLogsIndexProps) {
     const { hasPermission } = usePermissions();
     const canExport = hasPermission('activity-logs.export');
     const isDataReady = Array.isArray(logs?.data);
@@ -176,16 +197,16 @@ export default function ActivityLogsIndex({ logs, metrics, filters, filterOption
         initialIsLoading: true,
     });
 
-    const [searchTerm, setSearchTerm] = useState(filters.search ?? '');
+    const [searchTerm, setSearchTerm] = useState(() => filters.search ?? '');
     const [selectedUser, setSelectedUser] = useState(() => (filters.causer_id ? String(filters.causer_id) : 'all'));
     const [selectedAction, setSelectedAction] = useState(() => filters.action ?? 'all');
     const [selectedLogName, setSelectedLogName] = useState(() => filters.log_name ?? 'all');
     const [selectedSubjectType, setSelectedSubjectType] = useState(() => filters.subject_type ?? 'all');
-    const [from, setFrom] = useState(filters.from ?? '');
-    const [to, setTo] = useState(filters.to ?? '');
+    const [from, setFrom] = useState(() => filters.from ?? '');
+    const [to, setTo] = useState(() => filters.to ?? '');
     const [perPage, setPerPage] = useState(() => String(filters.per_page ?? perPageOptions[0] ?? 25));
-    const [sortColumn, setSortColumn] = useState(filters.sort ?? DEFAULT_SORT);
-    const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(filters.direction ?? DEFAULT_DIRECTION);
+    const [sortColumn, setSortColumn] = useState(() => filters.sort ?? DEFAULT_SORT);
+    const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(() => filters.direction ?? DEFAULT_DIRECTION);
     const [isFiltersOpen, setFiltersOpen] = useState(false);
     const [filterDraft, setFilterDraft] = useState<ActivityLogFilterDraft>(() => ({
         causerId: filters.causer_id ? String(filters.causer_id) : 'all',
@@ -195,27 +216,6 @@ export default function ActivityLogsIndex({ logs, metrics, filters, filterOption
         from: filters.from ?? '',
         to: filters.to ?? '',
     }));
-
-    useEffect(() => {
-        setSearchTerm(filters.search ?? '');
-        setSelectedUser(filters.causer_id ? String(filters.causer_id) : 'all');
-        setSelectedAction(filters.action ?? 'all');
-        setSelectedLogName(filters.log_name ?? 'all');
-        setSelectedSubjectType(filters.subject_type ?? 'all');
-        setFrom(filters.from ?? '');
-        setTo(filters.to ?? '');
-        setPerPage(String(filters.per_page ?? perPageOptions[0] ?? 25));
-        setSortColumn(filters.sort ?? DEFAULT_SORT);
-        setSortDirection(filters.direction ?? DEFAULT_DIRECTION);
-        setFilterDraft({
-            causerId: filters.causer_id ? String(filters.causer_id) : 'all',
-            action: filters.action ?? 'all',
-            logName: filters.log_name ?? 'all',
-            subjectType: filters.subject_type ?? 'all',
-            from: filters.from ?? '',
-            to: filters.to ?? '',
-        });
-    }, [filters, perPageOptions]);
 
     const perPageSelectOptions = useMemo(
         () => perPageOptions.map((option) => ({ value: String(option), label: `${option} / page` })),
@@ -425,6 +425,27 @@ export default function ActivityLogsIndex({ logs, metrics, filters, filterOption
     );
 
     const tableBodyContent = useMemo(() => {
+        if (isLoading) {
+            return Array.from({ length: 8 }).map((_, index) => (
+                <TableRow key={`skeleton-${index}`} aria-hidden="true">
+                    {tableColumns.map((column) => (
+                        <TableCell
+                            key={column.id}
+                            className={
+                                column.align === 'center'
+                                    ? 'text-center'
+                                    : column.align === 'right'
+                                        ? 'text-right'
+                                        : undefined
+                            }
+                        >
+                            <Skeleton className="h-4 w-20" />
+                        </TableCell>
+                    ))}
+                </TableRow>
+            ));
+        }
+
         if (tableData.length === 0) {
             return (
                 <TableRow>
@@ -509,7 +530,29 @@ export default function ActivityLogsIndex({ logs, metrics, filters, filterOption
         [rowOffset, tableData],
     );
 
-    const mobileContent = (
+    const mobileContent = isLoading ? (
+        <ListingMobileItemList
+            items={Array.from({ length: 5 }).map((_, i) => ({ id: `skeleton-${i}` }))}
+            getKey={(item) => item.id}
+            renderTitle={() => (
+                <div className="flex items-center gap-2">
+                    <Skeleton className="h-3 w-8" />
+                    <Skeleton className="h-4 w-32" />
+                </div>
+            )}
+            renderSubtitle={() => <Skeleton className="h-3 w-24" />}
+            renderContent={() => (
+                <div className="space-y-3">
+                    <Skeleton className="h-3 w-full" />
+                    <Skeleton className="h-3 w-3/4" />
+                    <Skeleton className="h-3 w-full" />
+                </div>
+            )}
+            renderFooter={() => (
+                <Skeleton className="h-8 w-full" />
+            )}
+        />
+    ) : (
         <ListingMobileItemList
             items={mobileItems}
             getKey={(item) => item.log.id}
@@ -770,32 +813,16 @@ export default function ActivityLogsIndex({ logs, metrics, filters, filterOption
             }
         >
             <div className="hidden md:block">
-                <div className="relative">
-                    <ListingTableShell
-                        columns={tableColumns}
-                        sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSortToggle }}
-                    >
-                        {tableBodyContent}
-                    </ListingTableShell>
-
-                    {isLoading && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
-                            <img src="/images/loading-spinner.svg" alt="Loading activity logs" className="h-12 w-12" />
-                            <span className="text-sm text-muted-foreground">Loading activity logs...</span>
-                        </div>
-                    )}
-                </div>
+                <ListingTableShell
+                    columns={tableColumns}
+                    sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSortToggle }}
+                >
+                    {tableBodyContent}
+                </ListingTableShell>
             </div>
 
-            <div className="relative md:hidden">
+            <div className="md:hidden">
                 {mobileContent}
-
-                {isLoading && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
-                        <img src="/images/loading-spinner.svg" alt="Loading activity logs" className="h-10 w-10" />
-                        <span className="text-sm text-muted-foreground">Loading activity logs...</span>
-                    </div>
-                )}
             </div>
         </ListPageLayout>
     );

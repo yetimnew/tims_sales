@@ -10,35 +10,52 @@ import * as React from 'react';
 
 interface DeleteConfirmationDialogProps {
     open: boolean;
-    onOpenChange: (open: boolean) => void;
+    onOpenChange?: (open: boolean) => void;
     title: string;
     description: string;
     itemName?: string;
     onConfirm: () => void;
     isLoading?: boolean;
+    isDeleting?: boolean;
     isDangerous?: boolean;
     confirmLabel?: string;
     cancelLabel?: string;
     errorMessage?: string | null;
     supportingText?: string;
+    onClose?: () => void;
 }
 
 export function DeleteConfirmationDialog({
     open,
     onOpenChange,
+    onClose,
     title,
     description,
     itemName,
     onConfirm,
     isLoading = false,
+    isDeleting,
     isDangerous = true,
     confirmLabel = 'Delete',
     cancelLabel = 'Cancel',
     errorMessage,
     supportingText,
 }: DeleteConfirmationDialogProps) {
+    const loading = isDeleting ?? isLoading;
+
+    const handleOpenChange = (next: boolean) => {
+        onOpenChange?.(next);
+        if (!next) {
+            onClose?.();
+        }
+    };
+
+    const handleCancel = () => {
+        handleOpenChange(false);
+    };
+
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
+        <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogContent className="sm:max-w-[360px] p-0">
                 <div className="space-y-4 px-6 pt-6">
                     <div className="flex items-start gap-3">
@@ -82,8 +99,8 @@ export function DeleteConfirmationDialog({
                     <Button
                         type="button"
                         variant="outline"
-                        onClick={() => onOpenChange(false)}
-                        disabled={isLoading}
+                        onClick={handleCancel}
+                        disabled={loading}
                         className="w-full sm:w-auto"
                     >
                         {cancelLabel}
@@ -92,10 +109,10 @@ export function DeleteConfirmationDialog({
                         type="button"
                         variant={isDangerous ? 'destructive' : 'default'}
                         onClick={onConfirm}
-                        disabled={isLoading}
+                        disabled={loading}
                         className="w-full sm:w-auto"
                     >
-                        {isLoading ? (
+                        {loading ? (
                             <span className="flex items-center gap-2">
                                 <Loader2 className="h-4 w-4 animate-spin" />
                                 Processing...

@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Link, useForm } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
-import { FormEventHandler, useEffect, useState } from 'react';
+import { FormEventHandler, useEffect, useState, useRef } from 'react';
 import { validateFinancial, type ValidationErrors } from '@/lib/validation';
 import { useToast } from '@/hooks/use-toast';
 import { CircleAlert, DollarSign } from 'lucide-react';
@@ -39,6 +39,24 @@ export default function FinancialCreate({ trucks }: FinancialCreateProps) {
 
   const { toast } = useToast();
   const [frontendErrors, setFrontendErrors] = useState<ValidationErrors>({});
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    const form = formRef.current;
+    if (!form) return;
+
+    const handleScroll = () => {
+      setShowScrollTop(form.scrollTop > 300);
+    };
+
+    form.addEventListener('scroll', handleScroll);
+    return () => form.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const handleScrollToTop = () => {
+    formRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   useEffect(() => {
     if (Object.keys(errors).length > 0) {
@@ -125,7 +143,7 @@ export default function FinancialCreate({ trucks }: FinancialCreateProps) {
       breadcrumbs={breadcrumbs}
       icon={<DollarSign className="h-5 w-5" />}
     >
-      <form onSubmit={submit} className="flex flex-1 flex-col gap-6 overflow-y-auto p-6 pb-24">
+      <form ref={formRef} onSubmit={submit} className="flex flex-1 flex-col gap-6 overflow-y-auto p-6 pb-24">
         {hasErrors && (
           <Alert variant="destructive">
             <CircleAlert className="h-4 w-4" />
@@ -136,7 +154,7 @@ export default function FinancialCreate({ trucks }: FinancialCreateProps) {
         <FormSection title="Financial Record" description="Enter revenue and cost information">
           <div className="space-y-6">
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-              <FormField label="Truck" required error={allErrors.truck_id as string}>
+              <FormField id="truck_id" label="Truck" required error={allErrors.truck_id as string}>
                 <Select value={data.truck_id} onValueChange={value => handleFieldChange('truck_id', value)}>
                   <SelectTrigger className={allErrors.truck_id ? 'border-red-500' : ''}>
                     <SelectValue placeholder="Select truck" />
@@ -151,7 +169,7 @@ export default function FinancialCreate({ trucks }: FinancialCreateProps) {
                 </Select>
               </FormField>
 
-              <FormField label="Record Date" required error={allErrors.record_date as string}>
+              <FormField id="record_date" label="Record Date" required error={allErrors.record_date as string}>
                 <Input
                   id="record_date"
                   type="date"
@@ -160,7 +178,7 @@ export default function FinancialCreate({ trucks }: FinancialCreateProps) {
                 />
               </FormField>
 
-              <FormField label="Period Type" required error={allErrors.period_type as string}>
+              <FormField id="period_type" label="Period Type" required error={allErrors.period_type as string}>
                 <Select value={data.period_type} onValueChange={value => handleFieldChange('period_type', value)}>
                   <SelectTrigger className={allErrors.period_type ? 'border-red-500' : ''}>
                     <SelectValue placeholder="Select period" />
@@ -173,7 +191,7 @@ export default function FinancialCreate({ trucks }: FinancialCreateProps) {
                 </Select>
               </FormField>
 
-              <FormField label="Revenue" required error={allErrors.revenue as string}>
+              <FormField id="revenue" label="Revenue" required error={allErrors.revenue as string}>
                 <Input
                   id="revenue"
                   type="number"
@@ -189,7 +207,7 @@ export default function FinancialCreate({ trucks }: FinancialCreateProps) {
 
         <FormSection title="Costs Breakdown" description="Enter all cost components for this period">
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <FormField label="Fuel Cost" required error={allErrors.fuel_cost as string}>
+            <FormField id="fuel_cost" label="Fuel Cost" required error={allErrors.fuel_cost as string}>
               <Input
                 id="fuel_cost"
                 type="number"
@@ -200,7 +218,7 @@ export default function FinancialCreate({ trucks }: FinancialCreateProps) {
               />
             </FormField>
 
-            <FormField label="Maintenance Cost" required error={allErrors.maintenance_cost as string}>
+            <FormField id="maintenance_cost" label="Maintenance Cost" required error={allErrors.maintenance_cost as string}>
               <Input
                 id="maintenance_cost"
                 type="number"
@@ -211,7 +229,7 @@ export default function FinancialCreate({ trucks }: FinancialCreateProps) {
               />
             </FormField>
 
-            <FormField label="Driver Salary" required error={allErrors.driver_salary as string}>
+            <FormField id="driver_salary" label="Driver Salary" required error={allErrors.driver_salary as string}>
               <Input
                 id="driver_salary"
                 type="number"
@@ -222,7 +240,7 @@ export default function FinancialCreate({ trucks }: FinancialCreateProps) {
               />
             </FormField>
 
-            <FormField label="Insurance Cost" required error={allErrors.insurance_cost as string}>
+            <FormField id="insurance_cost" label="Insurance Cost" required error={allErrors.insurance_cost as string}>
               <Input
                 id="insurance_cost"
                 type="number"
@@ -233,7 +251,7 @@ export default function FinancialCreate({ trucks }: FinancialCreateProps) {
               />
             </FormField>
 
-            <FormField label="Depreciation" required error={allErrors.depreciation as string}>
+            <FormField id="depreciation" label="Depreciation" required error={allErrors.depreciation as string}>
               <Input
                 id="depreciation"
                 type="number"
@@ -244,7 +262,7 @@ export default function FinancialCreate({ trucks }: FinancialCreateProps) {
               />
             </FormField>
 
-            <FormField label="Other Costs" required error={allErrors.other_costs as string}>
+            <FormField id="other_costs" label="Other Costs" required error={allErrors.other_costs as string}>
               <Input
                 id="other_costs"
                 type="number"
@@ -258,16 +276,20 @@ export default function FinancialCreate({ trucks }: FinancialCreateProps) {
         </FormSection>
       </form>
 
-      <FormActionsBar>
-        <Button type="button" variant="outline" asChild>
-          <Link href="/financial">Cancel</Link>
-        </Button>
-        <Button type="submit" disabled={processing || hasErrors} onClick={submit}>
-          {processing ? 'Saving...' : 'Record Financial Data'}
-        </Button>
-      </FormActionsBar>
+      <FormActionsBar
+        left={
+          <Button type="button" variant="outline" asChild>
+            <Link href="/financial">Cancel</Link>
+          </Button>
+        }
+        right={
+          <Button type="submit" disabled={processing || hasErrors} onClick={submit}>
+            {processing ? 'Saving...' : 'Record Financial Data'}
+          </Button>
+        }
+      />
 
-      <ScrollToTopFab />
+      <ScrollToTopFab visible={showScrollTop} onClick={handleScrollToTop} />
     </FormPageLayout>
   );
 }

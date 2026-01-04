@@ -5,11 +5,12 @@ interface FormSectionProps {
     title: string;
     description?: string;
     icon?: ReactNode;
-    children: ReactNode;
+    children?: ReactNode;
     className?: string;
     headingClassName?: string;
     contentClassName?: string;
     headingAside?: ReactNode;
+    badge?: ReactNode;
 }
 
 export function FormSection({
@@ -21,6 +22,7 @@ export function FormSection({
     headingClassName,
     contentClassName,
     headingAside,
+    badge,
 }: FormSectionProps) {
     return (
         <section
@@ -38,13 +40,16 @@ export function FormSection({
                 <div className="flex items-start gap-3">
                     {icon}
                     <div>
-                        <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{title}</h2>
+                        <div className="flex items-center gap-2">
+                            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{title}</h2>
+                            {badge}
+                        </div>
                         {description && <p className="text-sm text-muted-foreground">{description}</p>}
                     </div>
                 </div>
                 {headingAside && <div className="w-full md:max-w-sm xl:max-w-md">{headingAside}</div>}
             </div>
-            <div className={cn('grid grid-cols-1 gap-4 md:grid-cols-2', contentClassName)}>{children}</div>
+            {children && <div className={cn('grid grid-cols-1 gap-4 md:grid-cols-2', contentClassName)}>{children}</div>}
         </section>
     );
 }

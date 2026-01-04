@@ -98,17 +98,18 @@ export default function CargoTypesEdit({ cargoType, categories }: CargoTypesEdit
 
     const initialValuesRef = useRef<CargoTypeFormData>(initialValues);
     const formRef = useRef<HTMLFormElement | null>(null);
-    const { data, setData, put, processing, errors, clearErrors, reset } = useForm<CargoTypeFormData>(initialValues);
+    const { data, setData, put, processing, errors, clearErrors } = useForm<CargoTypeFormData>(initialValues);
     const [frontendErrors, setFrontendErrors] = useState<FieldErrorMap>({});
     const [isDirty, setIsDirty] = useState(false);
     const [showScrollTop, setShowScrollTop] = useState(false);
 
     useEffect(() => {
-        reset(initialValues);
+        setData(initialValues);
         initialValuesRef.current = initialValues;
         setFrontendErrors({});
         setIsDirty(false);
-    }, [initialValues, reset]);
+        clearErrors();
+    }, [initialValues, setData, clearErrors]);
 
     useEffect(() => {
         const container = formRef.current;
@@ -128,17 +129,25 @@ export default function CargoTypesEdit({ cargoType, categories }: CargoTypesEdit
         }
     }, [data.category, categoryOptions, setData]);
 
-    const backendErrors = useMemo<FieldErrorMap>(
-        () =>
-            Object.entries(errors).reduce<FieldErrorMap>((acc, [field, value]) => {
-                const message = typeof value === 'string' ? value : Array.isArray(value) ? value.join(', ') : '';
-                if (message) {
-                    acc[field as CargoTypeFormField] = message;
-                }
+    const backendErrors = useMemo<FieldErrorMap>(() => {
+        const typedErrors = errors as Partial<Record<CargoTypeFormField, string | string[] | null | undefined>>;
+
+        return Object.entries(typedErrors).reduce<FieldErrorMap>((acc, [field, value]) => {
+            if (!value) {
                 return acc;
-            }, {}),
-        [errors],
-    );
+            }
+
+            const message = Array.isArray(value)
+                ? value.filter((entry): entry is string => typeof entry === 'string' && entry.trim().length > 0).join(', ')
+                : value;
+
+            if (message) {
+                acc[field as CargoTypeFormField] = message;
+            }
+
+            return acc;
+        }, {});
+    }, [errors]);
 
     const fieldErrors = useMemo<FieldErrorMap>(
         () => ({

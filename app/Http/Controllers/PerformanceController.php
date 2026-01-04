@@ -36,6 +36,17 @@ class PerformanceController extends Controller
         $perPageDefault = 15;
         $perPage = (int) $request->input('per_page', $perPageDefault);
 
+        $truckIdRaw = $request->input('truck');
+        $truckId = null;
+
+        if ($truckIdRaw !== null && $truckIdRaw !== '') {
+            $truckIdCandidate = filter_var($truckIdRaw, FILTER_VALIDATE_INT);
+
+            if ($truckIdCandidate !== false && $truckIdCandidate > 0) {
+                $truckId = $truckIdCandidate;
+            }
+        }
+
         if (! in_array($perPage, $perPageOptions, true)) {
             $perPage = $perPageDefault;
         }
@@ -89,6 +100,12 @@ class PerformanceController extends Controller
                 'orgion_id',
                 'destination_id',
             ]);
+
+        if ($truckId !== null) {
+            $baseQuery->whereHas('driverTruck', static function ($query) use ($truckId) {
+                $query->where('truck_id', $truckId);
+            });
+        }
 
         if (! $user->can('performances.view-any')) {
             $baseQuery->ownedBy($user->id);
@@ -205,6 +222,7 @@ class PerformanceController extends Controller
                 'sort' => $sort,
                 'direction' => $direction,
                 'per_page' => $perPage,
+                'truck' => $truckId,
             ],
             'statusOptions' => $statusOptions,
             'loadPhaseOptions' => $loadPhaseOptions,

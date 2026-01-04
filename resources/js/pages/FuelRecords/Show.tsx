@@ -1,6 +1,6 @@
 import { type ComponentProps, type ReactNode, useMemo, useState } from 'react';
 import { Link, router } from '@inertiajs/react';
-import { ArrowLeft, Fuel, Truck, User, MapPin, Calendar, DollarSign, FileText, Edit, Trash2, Hash, TrendingUp, BarChart3, History, type LucideIcon } from 'lucide-react';
+import { ArrowLeft, Fuel, Truck, MapPin, Calendar, DollarSign, FileText, Edit, Trash2, Hash, TrendingUp, BarChart3, History, type LucideIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -61,20 +61,12 @@ interface FuelRecordsShowProps {
 const numberFormatter = new Intl.NumberFormat('en-ET');
 const currencyFormatter = new Intl.NumberFormat('en-ET', { style: 'currency', currency: 'ETB', maximumFractionDigits: 2 });
 const longDateFormatter = new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-const dateTimeFormatter = new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 
 const formatDate = (value?: string | null): string => {
   if (!value) return 'N/A';
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return 'N/A';
   return longDateFormatter.format(parsed);
-};
-
-const formatDateTime = (value?: string | null): string => {
-  if (!value) return 'N/A';
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return 'N/A';
-  return dateTimeFormatter.format(parsed);
 };
 
 const formatCurrency = (value?: number | null): string => {
@@ -136,31 +128,8 @@ const DetailTile = ({ icon: Icon, label, value, highlight = false, badgeVariant 
 
 export default function FuelRecordsShow({ fuelRecord, activityLogs = [] }: FuelRecordsShowProps) {
   const { hasPermission } = usePermissions();
-
-  if (!fuelRecord) {
-    return <div>Loading...</div>;
-  }
-
-  const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Fuel Records', href: '/fuel-records' },
-    { title: fuelRecord.fuel_station, href: `/fuel-records/${fuelRecord.id}` },
-  ];
-
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-
-  const handleDeleteConfirm = () => {
-    setIsDeleting(true);
-    router.delete(`/fuel-records/${fuelRecord.id}`, {
-      onSuccess: () => {
-        setDeleteDialogOpen(false);
-        setIsDeleting(false);
-      },
-      onError: () => {
-        setIsDeleting(false);
-      },
-    });
-  };
 
   const getFuelTypeBadgeVariant = (fuelType: string) => {
     switch (fuelType.toLowerCase()) {
@@ -173,8 +142,12 @@ export default function FuelRecordsShow({ fuelRecord, activityLogs = [] }: FuelR
     }
   };
 
-  const summaryItems = useMemo(
-    () => [
+  const summaryItems = useMemo(() => {
+    if (!fuelRecord) {
+      return [];
+    }
+
+    return [
       { key: 'fuel-date', label: 'Fuel Date', value: formatDate(fuelRecord.fuel_date), helper: fuelRecord.fuel_station },
       { key: 'quantity', label: 'Quantity', value: formatLiters(fuelRecord.fuel_quantity_liters), helper: `Price ${formatCurrency(fuelRecord.fuel_price_per_liter)} / L` },
       { key: 'total-cost', label: 'Total Cost', value: formatCurrency(fuelRecord.total_cost), helper: fuelRecord.receipt_number ? `Receipt ${fuelRecord.receipt_number}` : 'Receipt not provided' },
@@ -189,9 +162,30 @@ export default function FuelRecordsShow({ fuelRecord, activityLogs = [] }: FuelR
         valueClassName: 'text-base font-medium',
         helper: fuelRecord.driverTruck?.truck?.plate ? `Truck ${fuelRecord.driverTruck.truck.plate}` : 'No truck linked',
       },
-    ],
-    [fuelRecord],
-  );
+    ];
+  }, [fuelRecord]);
+
+  if (!fuelRecord) {
+    return <div>Loading...</div>;
+  }
+
+  const breadcrumbs: BreadcrumbItem[] = [
+    { title: 'Fuel Records', href: '/fuel-records' },
+    { title: fuelRecord.fuel_station, href: `/fuel-records/${fuelRecord.id}` },
+  ];
+
+  const handleDeleteConfirm = () => {
+    setIsDeleting(true);
+    router.delete(`/fuel-records/${fuelRecord.id}`, {
+      onSuccess: () => {
+        setDeleteDialogOpen(false);
+        setIsDeleting(false);
+      },
+      onError: () => {
+        setIsDeleting(false);
+      },
+    });
+  };
 
   return (
     <DetailPageLayout

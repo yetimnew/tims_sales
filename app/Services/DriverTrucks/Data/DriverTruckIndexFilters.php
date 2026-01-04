@@ -9,6 +9,7 @@ class DriverTruckIndexFilters
     public function __construct(
         public readonly ?string $search,
         public readonly ?string $status,
+        public readonly ?int $truckId,
         public readonly string $sort,
         public readonly string $direction,
         public readonly int $perPage,
@@ -32,6 +33,17 @@ class DriverTruckIndexFilters
         $rawStatus = strtolower(trim((string) $request->input('status', '')));
         $status = $rawStatus !== '' && $rawStatus !== 'all' ? $rawStatus : null;
 
+        $truckIdRaw = $request->input('truck_id', $request->input('truck'));
+        $truckId = null;
+
+        if ($truckIdRaw !== null && $truckIdRaw !== '') {
+            $truckIdCandidate = filter_var($truckIdRaw, FILTER_VALIDATE_INT);
+
+            if ($truckIdCandidate !== false && $truckIdCandidate > 0) {
+                $truckId = $truckIdCandidate;
+            }
+        }
+
         $sortCandidate = (string) $request->input('sort', $defaultSort);
         $sort = in_array($sortCandidate, $allowedSorts, true) ? $sortCandidate : $defaultSort;
 
@@ -44,6 +56,7 @@ class DriverTruckIndexFilters
         return new self(
             $search,
             $status,
+            $truckId,
             $sort,
             $direction,
             $perPage,
@@ -58,6 +71,7 @@ class DriverTruckIndexFilters
         return [
             'search' => $this->search,
             'status' => $this->status,
+            'truck_id' => $this->truckId,
             'sort' => $this->sort,
             'direction' => $this->direction,
             'per_page' => $this->perPage,

@@ -23,6 +23,10 @@ export interface SearchableComboboxProps {
     placeholder?: string;
     searchPlaceholder?: string;
     emptyMessage?: string;
+    loadingMessage?: string;
+    isLoading?: boolean;
+    searchValue?: string;
+    onSearchChange?: (value: string) => void;
     error?: string;
     disabled?: boolean;
     buttonClassName?: string;
@@ -42,6 +46,10 @@ export function SearchableCombobox({
     placeholder = 'Select an option',
     searchPlaceholder = 'Search…',
     emptyMessage = 'No results found.',
+    loadingMessage = 'Loading…',
+    isLoading = false,
+    searchValue,
+    onSearchChange,
     error,
     disabled = false,
     buttonClassName,
@@ -51,8 +59,27 @@ export function SearchableCombobox({
     renderOption,
 }: SearchableComboboxProps) {
     const [open, setOpen] = useState(false);
+    const [internalSearch, setInternalSearch] = useState('');
 
     const selectedOption = useMemo(() => options.find(option => option.value === value) ?? null, [options, value]);
+
+    const effectiveSearchValue = searchValue ?? internalSearch;
+
+    const handleSearchChange = (next: string) => {
+        if (onSearchChange) {
+            onSearchChange(next);
+        } else {
+            setInternalSearch(next);
+        }
+    };
+
+    const resetSearch = () => {
+        if (onSearchChange) {
+            onSearchChange('');
+        } else {
+            setInternalSearch('');
+        }
+    };
 
     const renderedLabel = (() => {
         if (!label) {
@@ -124,9 +151,25 @@ export function SearchableCombobox({
                 </PopoverTrigger>
                 <PopoverContent className="w-[min(400px,calc(var(--radix-popover-trigger-width,320px)))] p-0" align="start">
                     <Command>
-                        <CommandInput autoFocus placeholder={searchPlaceholder} className="h-9 text-sm" />
+                        <CommandInput
+                            autoFocus
+                            placeholder={searchPlaceholder}
+                            className="h-9 text-sm"
+                            value={effectiveSearchValue}
+                            onValueChange={handleSearchChange}
+                        />
                         <CommandList className="max-h-72">
-                            <CommandEmpty>{emptyMessage}</CommandEmpty>
+                            <CommandEmpty>{isLoading ? loadingMessage : emptyMessage}</CommandEmpty>
+                            {isLoading && (
+                                <CommandGroup>
+                                    <CommandItem value="__loading" disabled>
+                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                            <span className="h-2 w-2 animate-ping rounded-full bg-slate-400" aria-hidden="true"></span>
+                                            {loadingMessage}
+                                        </div>
+                                    </CommandItem>
+                                </CommandGroup>
+                            )}
                             <CommandGroup>
                                 {options.map(option => {
                                     const searchValue = [option.label, option.description, option.keywords?.join(' ') ?? '']
@@ -141,6 +184,7 @@ export function SearchableCombobox({
                                             onSelect={() => {
                                                 onSelect(option.value);
                                                 setOpen(false);
+                                                resetSearch();
                                             }}
                                         >
                                             {renderOption ? renderOption(option, isSelected) : defaultOption(option, isSelected)}

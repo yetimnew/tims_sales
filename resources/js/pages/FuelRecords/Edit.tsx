@@ -106,8 +106,6 @@ const customValidationMessage = (field: FuelFormField, value: string): string =>
     }
 };
 
-const areFormValuesEqual = (left: FuelFormData, right: FuelFormData): boolean => JSON.stringify(left) === JSON.stringify(right);
-
 export default function FuelRecordsEdit({ fuelRecord, driverTrucks }: FuelRecordsEditProps) {
     const initialFormData = useMemo<FuelFormData>(
         () => ({
@@ -125,12 +123,9 @@ export default function FuelRecordsEdit({ fuelRecord, driverTrucks }: FuelRecord
         [fuelRecord],
     );
 
-    const initialDataRef = useRef<FuelFormData>(initialFormData);
-
-    const { data, setData, setDefaults, put, processing, errors, clearErrors } = useForm<FuelFormData>(initialFormData);
+    const { data, setData, setDefaults, put, processing, errors, clearErrors, isDirty } = useForm<FuelFormData>(initialFormData);
 
     const [frontendErrors, setFrontendErrors] = useState<Partial<Record<FuelFormField, string>>>({});
-    const [isDirty, setIsDirty] = useState(false);
     const [showScrollTop, setShowScrollTop] = useState(false);
     const formRef = useRef<HTMLFormElement | null>(null);
 
@@ -138,9 +133,6 @@ export default function FuelRecordsEdit({ fuelRecord, driverTrucks }: FuelRecord
         const nextDefaults: FuelFormData = { ...initialFormData };
         setDefaults(nextDefaults);
         setData(() => ({ ...nextDefaults }));
-        initialDataRef.current = { ...nextDefaults };
-        setIsDirty(false);
-        setFrontendErrors({});
     }, [initialFormData, setDefaults, setData]);
 
     useEffect(() => {
@@ -237,8 +229,6 @@ export default function FuelRecordsEdit({ fuelRecord, driverTrucks }: FuelRecord
         if (field === 'fuel_quantity_liters' || field === 'fuel_price_per_liter') {
             validateField('total_cost', nextData.total_cost);
         }
-
-        setIsDirty(!areFormValuesEqual(nextData, initialDataRef.current));
     };
 
     const handleSubmit: FormEventHandler<HTMLFormElement> = (event) => {
@@ -269,9 +259,7 @@ export default function FuelRecordsEdit({ fuelRecord, driverTrucks }: FuelRecord
             preserveScroll: true,
             onSuccess: () => {
                 const nextDefaults: FuelFormData = { ...data };
-                initialDataRef.current = { ...nextDefaults };
                 setDefaults(nextDefaults);
-                setIsDirty(false);
                 setFrontendErrors({});
             },
             onError: (pageErrors) => {

@@ -84,6 +84,8 @@ interface DriverTrucksIndexProps {
         sort?: string | null;
         direction?: 'asc' | 'desc' | null;
         per_page?: number | null;
+        truck_id?: number | string | null;
+        truck?: number | string | null;
     };
     statusOptions: Array<{ label: string; value: string }>;
     perPageOptions: number[];
@@ -107,6 +109,7 @@ type NavigateOverrides = {
     direction?: 'asc' | 'desc';
     page?: number;
     per_page?: number;
+    truck_id?: number | string | null;
 };
 
 const formatDate = (value?: string | null): string => {
@@ -169,6 +172,7 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
     const [selectedAssignment, setSelectedAssignment] = React.useState<DriverTruckData | null>(null);
     const [isDeleting, setIsDeleting] = React.useState(false);
     const [deleteError, setDeleteError] = React.useState<string | null>(null);
+    const truckFilter = filters?.truck_id ?? filters?.truck ?? undefined;
 
     React.useEffect(() => {
         const incoming = filters?.status ?? 'all';
@@ -232,6 +236,11 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
             const nextSort = hasOverride('sort') ? overrides.sort ?? sortColumn : sortColumn;
             const nextDirection = hasOverride('direction') ? overrides.direction ?? sortDirection : sortDirection;
             const nextPerPage = hasOverride('per_page') ? overrides.per_page : Number(perPage);
+            const nextTruckId = hasOverride('truck_id')
+                ? overrides.truck_id ?? undefined
+                : typeof truckFilter === 'number' || (typeof truckFilter === 'string' && truckFilter !== '')
+                    ? truckFilter
+                    : undefined;
             const nextPage = hasOverride('page') ? overrides.page : undefined;
 
             const params: Record<string, string | number | undefined> = {
@@ -244,6 +253,7 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
                     typeof nextPerPage === 'number' && Number.isFinite(nextPerPage) && nextPerPage > 0
                         ? nextPerPage
                         : undefined,
+                truck_id: nextTruckId,
             };
 
             Object.keys(params).forEach((key) => {
@@ -258,7 +268,7 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
 
             router.get('/driver-trucks', params, { preserveState: true, replace: false });
         },
-        [perPage, searchTerm, selectedStatus, sortColumn, sortDirection],
+        [perPage, searchTerm, selectedStatus, sortColumn, sortDirection, truckFilter],
     );
 
     const handleSearchChange = (value: string) => {

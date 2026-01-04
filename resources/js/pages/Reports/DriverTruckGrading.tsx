@@ -17,6 +17,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { DatePicker } from '@/components/ui/date-picker';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { InertiaPagination } from '@/components/ui/pagination';
+
+type QueryParamValue = string | number | boolean | null | undefined | Array<string | number | boolean>;
 import {
     CalendarClock,
     Gauge,
@@ -143,13 +145,15 @@ const attachmentBadgeTone = (value?: boolean | null): string => {
     return 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200';
 };
 
-const resolveQuery = (value: Filters): Record<string, unknown> => {
-    const query: Record<string, unknown> = {};
+const resolveQuery = (value: Filters): Record<string, QueryParamValue> => {
+    const query: Record<string, QueryParamValue> = {};
+
     if (value.snapshot_date) query.snapshot_date = value.snapshot_date;
     if (value.status) query.status = value.status;
     if (value.attachment_state) query.attachment_state = value.attachment_state;
     if (value.grade_letter) query.grade_letter = value.grade_letter;
     if (typeof value.per_page === 'number' && value.per_page > 0) query.per_page = value.per_page;
+
     return query;
 };
 
@@ -245,7 +249,7 @@ export default function DriverTruckGradingReport({ filters, filterOptions, pagin
         setGradeLetter('all');
         setPerPage(availablePerPageOptions[0] ?? 10);
         setFiltersOpen(false);
-        router.get('/reports/driver-truck-grading', {}, { preserveScroll: true, preserveState: false });
+        router.get('/reports/driver-truck-grading', undefined, { preserveScroll: true, preserveState: false });
     };
 
     const handleSnapshotDateChange = (newDate: string) => {
@@ -304,7 +308,10 @@ export default function DriverTruckGradingReport({ filters, filterOptions, pagin
         return priority.find((letter) => letters.includes(letter)) ?? letters[0];
     }, [rows]);
 
-    const totalAssignments = paginator?.meta?.total ?? rows.length;
+    const paginationMeta = paginator?.meta ?? {};
+    const paginationLinks = Array.isArray(paginator?.links) ? paginator.links : [];
+
+    const totalAssignments = paginationMeta.total ?? rows.length;
 
     const attachedCount = useMemo(() => rows.filter((row) => row.is_attached === true).length, [rows]);
     const detachedCount = useMemo(() => rows.filter((row) => row.is_attached === false).length, [rows]);
@@ -564,7 +571,14 @@ export default function DriverTruckGradingReport({ filters, filterOptions, pagin
                                     </TableBody>
                                 </Table>
                             </div>
-                            <InertiaPagination links={paginator?.links ?? []} meta={paginator?.meta ?? {}} preserveScroll preserveState />
+                            <InertiaPagination
+                                links={paginationLinks}
+                                from={paginationMeta.from ?? undefined}
+                                to={paginationMeta.to ?? undefined}
+                                total={paginationMeta.total ?? undefined}
+                                currentPage={paginationMeta.current_page ?? undefined}
+                                lastPage={paginationMeta.last_page ?? undefined}
+                            />
                         </CardContent>
                     </section>
             </div>

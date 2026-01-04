@@ -79,6 +79,26 @@ interface FuelRecordsIndexProps {
     };
 }
 
+interface SortableHeadProps {
+    column: string;
+    currentColumn: string | null;
+    onSort: (column: string) => void;
+    children: React.ReactNode;
+}
+
+const SortableHead = ({ column, currentColumn, onSort, children }: SortableHeadProps) => {
+    const isActive = currentColumn === column;
+
+    return (
+        <TableHead className="cursor-pointer select-none transition-colors hover:bg-muted/70" onClick={() => onSort(column)}>
+            <div className="flex items-center">
+                {children}
+                <ArrowUpDown className={`ml-2 h-4 w-4 ${isActive ? 'text-primary' : 'text-muted-foreground'}`} />
+            </div>
+        </TableHead>
+    );
+};
+
 export default function FuelRecordsIndex({ fuelRecords, statistics, filters }: FuelRecordsIndexProps) {
     const { hasPermission } = usePermissions();
 
@@ -142,21 +162,6 @@ export default function FuelRecordsIndex({ fuelRecords, statistics, filters }: F
             direction: newDirection,
             page: currentPage
         }, { preserveState: true });
-    };
-
-    const SortableHead = ({ column, children }: { column: string; children: React.ReactNode }) => {
-        const isActive = sortColumn === column;
-        return (
-            <TableHead
-                className="cursor-pointer select-none hover:bg-muted/70 transition-colors"
-                onClick={() => handleSort(column)}
-            >
-                <div className="flex items-center">
-                    {children}
-                    <ArrowUpDown className={`ml-2 h-4 w-4 ${isActive ? 'text-primary' : 'text-muted-foreground'}`} />
-                </div>
-            </TableHead>
-        );
     };
 
     const handleDeleteClick = (fuelRecord: FuelRecord) => {
@@ -302,14 +307,24 @@ export default function FuelRecordsIndex({ fuelRecords, statistics, filters }: F
                             <Table>
                                 <TableHeader>
                                     <TableRow className="bg-muted/50">
-                                        <SortableHead column="fuel_date">Date</SortableHead>
+                                        <SortableHead column="fuel_date" currentColumn={sortColumn} onSort={handleSort}>
+                                            Date
+                                        </SortableHead>
                                         <TableHead>Truck</TableHead>
                                         <TableHead>Driver</TableHead>
                                         <TableHead>Station</TableHead>
-                                        <SortableHead column="fuel_type">Type</SortableHead>
-                                        <SortableHead column="fuel_quantity_liters">Quantity</SortableHead>
-                                        <SortableHead column="fuel_price_per_liter">Price/Liter</SortableHead>
-                                        <SortableHead column="total_cost">Total Cost</SortableHead>
+                                        <SortableHead column="fuel_type" currentColumn={sortColumn} onSort={handleSort}>
+                                            Type
+                                        </SortableHead>
+                                        <SortableHead column="fuel_quantity_liters" currentColumn={sortColumn} onSort={handleSort}>
+                                            Quantity
+                                        </SortableHead>
+                                        <SortableHead column="fuel_price_per_liter" currentColumn={sortColumn} onSort={handleSort}>
+                                            Price/Liter
+                                        </SortableHead>
+                                        <SortableHead column="total_cost" currentColumn={sortColumn} onSort={handleSort}>
+                                            Total Cost
+                                        </SortableHead>
                                         <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>

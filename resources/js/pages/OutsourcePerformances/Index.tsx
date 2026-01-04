@@ -555,6 +555,33 @@ export default function OutsourcePerformancesIndex({
     }, []);
 
     const tableRows = useMemo(() => {
+        if (isLoading) {
+            return Array.from({ length: 8 }).map((_, index) => (
+                <TableRow key={`skeleton-${index}`} aria-hidden="true">
+                    <TableCell className="text-center">
+                        <Skeleton className="h-4 w-6 mx-auto" />
+                    </TableCell>
+                    {COLUMN_DEFINITIONS.map((column) => (
+                        <TableCell
+                            key={column.id}
+                            className={
+                                column.align === 'right'
+                                    ? 'text-right'
+                                    : column.align === 'center'
+                                        ? 'text-center'
+                                        : undefined
+                            }
+                        >
+                            <Skeleton className="h-4 w-20" />
+                        </TableCell>
+                    ))}
+                    <TableCell className="text-center">
+                        <Skeleton className="h-8 w-8 mx-auto rounded" />
+                    </TableCell>
+                </TableRow>
+            ));
+        }
+
         if (!outsourcePerformances?.data?.length) {
             return (
                 <TableRow>
@@ -635,7 +662,32 @@ export default function OutsourcePerformancesIndex({
         [outsourcePerformances?.data, rowOffset],
     );
 
-    const mobileContent = (
+    const mobileContent = isLoading ? (
+        <ListingMobileItemList
+            items={Array.from({ length: 5 }).map((_, i) => ({ id: `skeleton-${i}` }))}
+            getKey={(item) => item.id}
+            renderTitle={() => (
+                <div className="flex items-center gap-2">
+                    <Skeleton className="h-3 w-8" />
+                    <Skeleton className="h-4 w-32" />
+                </div>
+            )}
+            renderSubtitle={() => <Skeleton className="h-3 w-24" />}
+            renderContent={() => (
+                <div className="space-y-3">
+                    <Skeleton className="h-3 w-full" />
+                    <Skeleton className="h-3 w-3/4" />
+                    <Skeleton className="h-3 w-full" />
+                </div>
+            )}
+            renderFooter={() => (
+                <div className="flex w-full gap-2">
+                    <Skeleton className="h-8 flex-1" />
+                    <Skeleton className="h-8 w-20" />
+                </div>
+            )}
+        />
+    ) : (
         <ListingMobileItemList
             items={mobileItems}
             getKey={(item) => item.record.id}
@@ -825,32 +877,16 @@ export default function OutsourcePerformancesIndex({
                 }
             >
                 <div className="hidden md:block">
-                    <div className="relative">
-                        <ListingTableShell
-                            columns={tableColumns}
-                            sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSortToggle }}
-                        >
-                            {tableRows}
-                        </ListingTableShell>
-
-                        {isLoading && (
-                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
-                                <img src="/images/loading-spinner.svg" alt="Loading outsource performances" className="h-12 w-12" />
-                                <span className="text-sm text-muted-foreground">Loading outsource performances...</span>
-                            </div>
-                        )}
-                    </div>
+                    <ListingTableShell
+                        columns={tableColumns}
+                        sort={{ column: sortColumn, direction: sortDirection, onToggle: handleSortToggle }}
+                    >
+                        {tableRows}
+                    </ListingTableShell>
                 </div>
 
-                <div className="relative space-y-3 md:hidden">
+                <div className="space-y-3 md:hidden">
                     {mobileContent}
-
-                    {isLoading && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
-                            <img src="/images/loading-spinner.svg" alt="Loading outsource performances" className="h-10 w-10" />
-                            <span className="text-sm text-muted-foreground">Loading outsource performances...</span>
-                        </div>
-                    )}
                 </div>
             </ListPageLayout>
 

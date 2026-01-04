@@ -79,7 +79,6 @@ export default function MaintenanceTypesEdit({ maintenanceType }: MaintenanceTyp
         description: backendMessages.join(', '),
         variant: 'destructive',
       });
-      setFrontendErrors(prev => ({ ...prev, ...errors }));
     }
   }, [errors]);
 
@@ -107,7 +106,7 @@ export default function MaintenanceTypesEdit({ maintenanceType }: MaintenanceTyp
 
   const handleFieldChange = <K extends keyof MaintenanceTypeFormData>(field: K, value: MaintenanceTypeFormData[K] | string) => {
     const sanitized = sanitizeValue(field, value);
-    setData(field, sanitized as any);
+    setData(field, sanitized);
     const draft = { ...data, [field]: sanitized } as MaintenanceTypeFormData;
     syncValidation(draft);
     setIsDirty(evaluateDirty(draft));

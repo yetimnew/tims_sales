@@ -56,6 +56,9 @@ class DriverTruckIndexService
         $this->applyStatusFilter($assignmentsQuery, $filters->status);
         $this->applyStatusFilter($metricsQuery, $filters->status);
 
+        $this->applyTruckFilter($assignmentsQuery, $filters->truckId);
+        $this->applyTruckFilter($metricsQuery, $filters->truckId);
+
         $this->applySort($assignmentsQuery, $filters->sort, $filters->direction);
 
         $paginator = $assignmentsQuery
@@ -204,6 +207,15 @@ class DriverTruckIndexService
         }
 
         $query->where('status', $status);
+    }
+
+    private function applyTruckFilter(Builder $query, ?int $truckId): void
+    {
+        if ($truckId === null) {
+            return;
+        }
+
+        $query->where('truck_id', $truckId);
     }
 
     private function applySort(Builder $query, string $sort, string $direction): void
