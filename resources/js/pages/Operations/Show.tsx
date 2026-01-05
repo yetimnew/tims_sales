@@ -740,11 +740,11 @@ export default function OperationsShow({ operation, activityLogs = [], performan
           </DetailSectionCard>
 
           {transportExecution && (
-            <DetailSectionCard 
-              title="Transport Execution Mix" 
+            <DetailSectionCard
+              title="Transport Execution Mix"
               icon={<Handshake className="h-5 w-5" />}
               actions={
-                <Badge 
+                <Badge
                   className={
                     transportExecution.executionMode === 'company' ? 'bg-blue-100 text-blue-700 border-blue-200' :
                     transportExecution.executionMode === 'vendor' ? 'bg-orange-100 text-orange-700 border-orange-200' :

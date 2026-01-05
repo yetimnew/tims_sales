@@ -174,11 +174,11 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
   const totalFuelCost = performanceSummary?.fuel_cost_birr ?? 0;
   const totalMaintenanceCost = maintenanceSummary?.total_cost ?? 0;
   const totalOperationalCost = totalFuelCost + totalMaintenanceCost;
-  const avgCostPerKm = performanceSummary?.total_distance_km && performanceSummary.total_distance_km > 0 
-    ? totalOperationalCost / performanceSummary.total_distance_km 
+  const avgCostPerKm = performanceSummary?.total_distance_km && performanceSummary.total_distance_km > 0
+    ? totalOperationalCost / performanceSummary.total_distance_km
     : 0;
-  const avgCostPerTrip = performanceSummary?.completed_trips && performanceSummary.completed_trips > 0 
-    ? totalOperationalCost / performanceSummary.completed_trips 
+  const avgCostPerTrip = performanceSummary?.completed_trips && performanceSummary.completed_trips > 0
+    ? totalOperationalCost / performanceSummary.completed_trips
     : 0;
 
   const totalLoadedDistance = performanceSummary?.total_loaded_distance_km ?? 0;
@@ -333,7 +333,7 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
 
         <TabsContent value="overview" className="space-y-6">
           <DetailSummaryGrid items={overviewSummaryCards} />
-          
+
           <div className="grid gap-6 lg:grid-cols-[1fr,20rem]">
             <div className="space-y-6">
               <DetailSectionCard icon={<TruckIcon className="h-5 w-5" />} title="Basic Information" description="Truck details and specifications">
@@ -507,12 +507,12 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
                   <div className="h-48">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
-                        <Pie 
-                          data={distanceChartData} 
-                          dataKey="value" 
-                          nameKey="name" 
-                          cx="50%" 
-                          cy="50%" 
+                        <Pie
+                          data={distanceChartData}
+                          dataKey="value"
+                          nameKey="name"
+                          cx="50%"
+                          cy="50%"
                           innerRadius={40}
                           outerRadius={70}
                           paddingAngle={4}
@@ -649,11 +649,11 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
-                      <Pie 
-                        data={tripStatusData} 
-                        dataKey="value" 
-                        nameKey="name" 
-                        cx="50%" 
+                      <Pie
+                        data={tripStatusData}
+                        dataKey="value"
+                        nameKey="name"
+                        cx="50%"
                         cy="50%"
                         innerRadius={60}
                         outerRadius={90}
@@ -677,11 +677,11 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
-                      <Pie 
-                        data={costBreakdownData} 
-                        dataKey="value" 
-                        nameKey="name" 
-                        cx="50%" 
+                      <Pie
+                        data={costBreakdownData}
+                        dataKey="value"
+                        nameKey="name"
+                        cx="50%"
                         cy="50%"
                         innerRadius={60}
                         outerRadius={90}

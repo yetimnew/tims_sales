@@ -242,25 +242,25 @@ export default function PerformancesShow({ performance, activityLogs, operationI
   ];
 
   const kpiSummary: DetailSummaryItem[] = [
-    { 
-      label: 'Distance', 
-      value: `${formatNumberDisplay(totalDistance, 0)} km`, 
-      helper: `Load Factor: ${formatPercentDisplay(tripEconomics?.loadFactor ?? (totalDistance > 0 ? (dwc / totalDistance) * 100 : null))}` 
+    {
+      label: 'Distance',
+      value: `${formatNumberDisplay(totalDistance, 0)} km`,
+      helper: `Load Factor: ${formatPercentDisplay(tripEconomics?.loadFactor ?? (totalDistance > 0 ? (dwc / totalDistance) * 100 : null))}`
     },
-    { 
-      label: 'Cargo Volume', 
-      value: `${formatNumberDisplay(cvm, 2)} MT`, 
-      helper: `Ton-km: ${formatNumberDisplay(tonKm, 2)}` 
+    {
+      label: 'Cargo Volume',
+      value: `${formatNumberDisplay(cvm, 2)} MT`,
+      helper: `Ton-km: ${formatNumberDisplay(tonKm, 2)}`
     },
-    { 
-      label: 'Total Cost', 
-      value: formatCurrencyDisplay(totalCost), 
-      helper: `${formatCurrencyPerUnit(costPerTonKmRaw, 'ton-km')}` 
+    {
+      label: 'Total Cost',
+      value: formatCurrencyDisplay(totalCost),
+      helper: `${formatCurrencyPerUnit(costPerTonKmRaw, 'ton-km')}`
     },
-    { 
-      label: 'Revenue', 
-      value: actualRevenueLabel, 
-      helper: `Margin: ${grossMarginPercentLabel} ${(grossMarginValueRaw ?? 0) >= 0 ? '✓' : '✗'}` 
+    {
+      label: 'Revenue',
+      value: actualRevenueLabel,
+      helper: `Margin: ${grossMarginPercentLabel} ${(grossMarginValueRaw ?? 0) >= 0 ? '✓' : '✗'}`
     },
   ];
 

@@ -148,7 +148,7 @@ export default function CustomersShow({ customer, activityLogs = [], activeOpera
       acc.totalCost += cost;
       acc.totalRevenue += revenue;
       acc.totalTonKm += tonKm;
-      
+
       return acc;
     },
     {
