@@ -4673,5 +4673,22 @@
     "deleted_at": null,
     "created_at": "2025-08-27 09:26:33",
     "updated_at": "2025-08-27 09:26:53"
+  },
+  {
+    "legacy_id": 283,
+    "driverid": "05-R-008389",
+    "name": "DANIEL SEYUM",
+    "sex": "male",
+    "birthdate": "1987-09-12",
+    "zone": "ADDIS ABABA",
+    "woreda": "0",
+    "kebele": "0",
+    "housenumber": "0",
+    "mobile": "0911423185",
+    "hireddate": "2029-06-01",
+    "status": 1,
+    "deleted_at": null,
+    "created_at": "2025-12-23 16:52:54",
+    "updated_at": "2025-12-23 16:52:54"
   }
 ]

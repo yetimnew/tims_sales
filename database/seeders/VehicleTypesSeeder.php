@@ -22,8 +22,6 @@ class VehicleTypesSeeder extends Seeder
 
         $vehicleTypeDataset = collect(json_decode(File::get($dataPath), true, 512, JSON_THROW_ON_ERROR));
 
-        VehicleType::withTrashed()->forceDelete();
-
         $records = $vehicleTypeDataset->map(static function (array $vehicleType): array {
             $legacyId = (int) ($vehicleType['legacy_id'] ?? 0);
             $name = Str::of($vehicleType['name'] ?? '')->trim()->squish();
@@ -54,7 +52,20 @@ class VehicleTypesSeeder extends Seeder
         });
 
         $records->chunk(500)->each(static function ($chunk): void {
-            VehicleType::query()->insert($chunk->all());
+            VehicleType::query()->upsert(
+                $chunk->all(),
+                ['id'],
+                ['name', 'description', 'created_at', 'updated_at', 'deleted_at']
+            );
         });
+
+        $synchronisedIds = $records->pluck('id')->all();
+
+        if ($synchronisedIds !== []) {
+            VehicleType::query()
+                ->whereNotIn('id', $synchronisedIds)
+                ->whereDoesntHave('trucks')
+                ->delete();
+        }
     }
 }

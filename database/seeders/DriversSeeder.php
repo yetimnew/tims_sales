@@ -22,8 +22,6 @@ class DriversSeeder extends Seeder
 
         $driverDataset = collect(json_decode(File::get($dataPath), true, 512, JSON_THROW_ON_ERROR));
 
-        Driver::withTrashed()->forceDelete();
-
         $records = $driverDataset->map(function (array $driver): array {
             $legacyId = (int) ($driver['legacy_id'] ?? 0);
             $driverIdentifier = Str::of($driver['driverid'] ?? '')->trim()->squish();
@@ -58,7 +56,26 @@ class DriversSeeder extends Seeder
         });
 
         $records->chunk(500)->each(static function ($chunk): void {
-            Driver::query()->insert($chunk->all());
+            Driver::query()->upsert(
+                $chunk->all(),
+                ['id'],
+                [
+                    'driverid',
+                    'name',
+                    'sex',
+                    'birthdate',
+                    'zone',
+                    'woreda',
+                    'kebele',
+                    'housenumber',
+                    'mobile',
+                    'hireddate',
+                    'status',
+                    'created_at',
+                    'updated_at',
+                    'deleted_at',
+                ]
+            );
         });
     }
 

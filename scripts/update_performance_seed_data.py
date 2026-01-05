@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Iterable, Callable
 
 SQL_CANDIDATES = [
+    Path(__file__).resolve().parent.parent / "eletderashcom_tims (3).sql",
     Path(__file__).resolve().parent.parent / "performances.sql",
     Path(__file__).resolve().parent.parent / "perfornces.sql",
     Path(__file__).resolve().parent.parent / "operations.sql",

@@ -5,7 +5,7 @@
     "email": "yetimnew@gmail.com",
     "email_verified_at": null,
     "password": "$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi",
-    "remember_token": "AkIAw6XidVwSPGzPAaXNAaj7Q6g5QdAD0Mm86XqiIgmg8RKwPhmzdNNy3azn",
+    "remember_token": "JL24leX9yxYwEVbplCNlltCJ8fgo1UpEYomdGMKQu4Qktp3PeW9l3ZX6YwSH",
     "created_at": "2019-11-04 14:34:44",
     "updated_at": "2020-10-26 11:02:10"
   },
@@ -85,7 +85,7 @@
     "email": "andualembiresaw21@gmail.com",
     "email_verified_at": null,
     "password": "$2y$10$tF2O5.DMCvfSgW60AEUfFeTdIuEybzCO/oKizAGLwZzZKoAPgD/7u",
-    "remember_token": "XUxXwk0vVfttrAj6zuYrPrYvEqTDufmnXiog5cakptvUg1WAoKlF2jILolHK",
+    "remember_token": "6RIJKChZfnaDEbEOueirDGTIifSGBO2lBJqb4MSbqEgFEPsI4zfgwGyqNCoP",
     "created_at": "2020-06-18 14:16:27",
     "updated_at": "2023-02-09 15:49:05"
   },
@@ -321,13 +321,13 @@
   },
   {
     "legacy_id": 33,
-    "name": "Dibora Selemon",
-    "email": "dibo@gmail.com",
+    "name": "Abiy Lemma",
+    "email": "abiy@gmail.com",
     "email_verified_at": null,
-    "password": "$2y$10$OS1MiELw0B9T0G/tN87bjejcoJmyeDqvhRrKSsP7EyKistmdfE3by",
-    "remember_token": "zUBo3mJkHXAy4iezRFiPDQRUzIKTUsE0pX9IBriUdez6o3wQ8ze26P4F5wzC",
+    "password": "$2y$10$NUlXVp5p3qaHao8ACgwDcuF6NsUDSUM1WxYbZsPVYydLBp7Urek6C",
+    "remember_token": "6BtOeFpzR6XXwKmW9xtPmdkhME8Sd8fPntUMLnf4Sp668jHukdcEq1hjq8kO",
     "created_at": "2024-01-15 13:54:38",
-    "updated_at": "2024-07-30 10:10:53"
+    "updated_at": "2025-12-23 16:35:44"
   },
   {
     "legacy_id": 34,
@@ -335,7 +335,7 @@
     "email": "tigist@gmail.com",
     "email_verified_at": null,
     "password": "$2y$10$Raoz.LlsTads6GeNqPcA0uZckfMypHb92V9gOyDcgFx9LElbABIpu",
-    "remember_token": "7LxNffPkFLuaSeHU8rSi5Kr4PqGFEJnDIFtUT3YWJPFpr0sNMoIBNGIx99Et",
+    "remember_token": "ZMljuIluSIvICFIqieFJ2Rjm9oyi7U1I6suZewtS9a4MtOqlCv8NW8AKsp1J",
     "created_at": "2024-04-23 15:06:43",
     "updated_at": "2024-04-24 13:12:19"
   },

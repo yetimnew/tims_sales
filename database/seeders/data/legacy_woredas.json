@@ -7338,5 +7338,15 @@
     "status": 1,
     "latitude": 8.5410261,
     "longitude": 39.2705461
+  },
+  {
+    "legacy_id": 783,
+    "name": "FICHE SELALE",
+    "zone_legacy_id": 16,
+    "comment": "DE",
+    "administrative_center": "Fiche",
+    "status": 1,
+    "latitude": 9.8004,
+    "longitude": 38.7369
   }
 ]

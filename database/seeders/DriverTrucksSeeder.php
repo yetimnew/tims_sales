@@ -26,8 +26,6 @@ class DriverTrucksSeeder extends Seeder
         $driverIds = Driver::withTrashed()->pluck('id')->all();
         $truckIds = Truck::withTrashed()->pluck('id')->all();
 
-        DriverTruck::withTrashed()->forceDelete();
-
         $records = $assignmentDataset->map(function (array $assignment) use ($driverIds, $truckIds): array {
             $legacyId = (int) ($assignment['legacy_id'] ?? 0);
             $driverId = (int) ($assignment['driver_id'] ?? 0);
@@ -70,7 +68,27 @@ class DriverTrucksSeeder extends Seeder
         });
 
         $records->chunk(500)->each(static function ($chunk): void {
-            DriverTruck::query()->insert($chunk->all());
+            DriverTruck::query()->upsert(
+                $chunk->all(),
+                ['id'],
+                [
+                    'driver_id',
+                    'truck_id',
+                    'driverid',
+                    'plate',
+                    'assigned_date',
+                    'unassigned_date',
+                    'date_recived',
+                    'date_detach',
+                    'reason',
+                    'is_attached',
+                    'user_id',
+                    'status',
+                    'created_at',
+                    'updated_at',
+                    'deleted_at',
+                ]
+            );
         });
     }
 

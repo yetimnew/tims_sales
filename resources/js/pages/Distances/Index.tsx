@@ -110,18 +110,12 @@ interface DistancesIndexProps {
     filters?: {
         search?: string | null;
         routeType?: string | null;
-        tollRoad?: string | null;
-        heavyVehicleRestricted?: string | null;
-        distanceMin?: string | null;
-        distanceMax?: string | null;
-        timeMin?: string | null;
-        timeMax?: string | null;
         region?: string | null;
+        zone?: string | null;
+        woreda?: string | null;
         sort?: string | null;
         direction?: 'asc' | 'desc' | null;
-        per_page?: number | null;
     };
-    perPageOptions?: number[];
 }
 
 const SKELETON_FLAG_KEY = 'distances.index.shouldShowSkeleton';
@@ -149,12 +143,6 @@ const ROUTE_TYPE_OPTIONS = [
     { label: 'Primary', value: 'primary' },
     { label: 'Secondary', value: 'secondary' },
     { label: 'Alternative', value: 'alternative' },
-];
-
-const BOOLEAN_OPTIONS = [
-    { label: 'All', value: 'all' },
-    { label: 'Yes', value: 'true' },
-    { label: 'No', value: 'false' },
 ];
 
 const formatNumberValue = (value?: number | string | null, fractionDigits = 0): string => {
@@ -285,7 +273,7 @@ const resolveRegionLabel = (place?: PlaceSummary | null): string => {
     return region ?? '—';
 };
 
-export default function DistancesIndex({ distances, metrics, filters, perPageOptions }: DistancesIndexProps) {
+export default function DistancesIndex({ distances, metrics, filters }: DistancesIndexProps) {
     const { hasPermission } = usePermissions();
     const canViewDistance = hasPermission('distances.show');
     const canCreateDistance = hasPermission('distances.create');
@@ -294,31 +282,11 @@ export default function DistancesIndex({ distances, metrics, filters, perPageOpt
 
     const [searchTerm, setSearchTerm] = React.useState(filters?.search ?? '');
     const [selectedRouteType, setSelectedRouteType] = React.useState(filters?.routeType ?? 'all');
-    const [selectedTollRoad, setSelectedTollRoad] = React.useState(filters?.tollRoad ?? 'all');
-    const [selectedHeavyRestriction, setSelectedHeavyRestriction] = React.useState(filters?.heavyVehicleRestricted ?? 'all');
-    const [distanceMin, setDistanceMin] = React.useState(filters?.distanceMin ?? '');
-    const [distanceMax, setDistanceMax] = React.useState(filters?.distanceMax ?? '');
-    const [timeMin, setTimeMin] = React.useState(filters?.timeMin ?? '');
-    const [timeMax, setTimeMax] = React.useState(filters?.timeMax ?? '');
     const [regionQuery, setRegionQuery] = React.useState(filters?.region ?? '');
+    const [zoneQuery, setZoneQuery] = React.useState(filters?.zone ?? '');
+    const [woredaQuery, setWoredaQuery] = React.useState(filters?.woreda ?? '');
     const [sortColumn, setSortColumn] = React.useState<string>(filters?.sort ?? 'distance_km');
     const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>(filters?.direction ?? 'asc');
-
-    const availablePerPageOptions = React.useMemo(
-        () => (perPageOptions?.length ? perPageOptions : [15, 25, 50, 100]),
-        [perPageOptions],
-    );
-
-    const resolvedPerPage = React.useMemo(() => {
-        const candidate = filters?.per_page;
-        if (typeof candidate === 'number' && availablePerPageOptions.includes(candidate)) {
-            return candidate;
-        }
-
-        return availablePerPageOptions[0] ?? 15;
-    }, [filters?.per_page, availablePerPageOptions]);
-
-    const [perPage, setPerPage] = React.useState<string>(() => String(resolvedPerPage));
 
     const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
     const [selectedDistance, setSelectedDistance] = React.useState<DistanceRecord | null>(null);
@@ -332,10 +300,6 @@ export default function DistancesIndex({ distances, metrics, filters, perPageOpt
         targetPath: '/distances',
         initialIsLoading: true,
     });
-
-    React.useEffect(() => {
-        setPerPage(String(resolvedPerPage));
-    }, [resolvedPerPage]);
 
     const distanceData = React.useMemo(() => {
         const records = distances?.data;
@@ -351,17 +315,12 @@ export default function DistancesIndex({ distances, metrics, filters, perPageOpt
         (overrides: {
             search?: string;
             routeType?: string;
-            tollRoad?: string;
-            heavyVehicleRestricted?: string;
-            distanceMin?: string;
-            distanceMax?: string;
-            timeMin?: string;
-            timeMax?: string;
             region?: string;
+            zone?: string;
+            woreda?: string;
             sort?: string;
             direction?: 'asc' | 'desc';
             page?: number;
-            per_page?: number;
         } = {}) => {
             const hasOverride = (key: keyof typeof overrides) => Object.prototype.hasOwnProperty.call(overrides, key);
 
@@ -377,48 +336,25 @@ export default function DistancesIndex({ distances, metrics, filters, perPageOpt
                     ? selectedRouteType
                     : undefined;
 
-            const nextTollRoad = hasOverride('tollRoad')
-                ? overrides.tollRoad
-                : selectedTollRoad !== 'all'
-                    ? selectedTollRoad
-                    : undefined;
-
-            const nextHeavyRestriction = hasOverride('heavyVehicleRestricted')
-                ? overrides.heavyVehicleRestricted
-                : selectedHeavyRestriction !== 'all'
-                    ? selectedHeavyRestriction
-                    : undefined;
-
             const coerceOptionalInput = (value?: string) => (value && value.trim() !== '' ? value.trim() : undefined);
 
-            const nextDistanceMin = hasOverride('distanceMin') ? overrides.distanceMin : coerceOptionalInput(distanceMin);
-            const nextDistanceMax = hasOverride('distanceMax') ? overrides.distanceMax : coerceOptionalInput(distanceMax);
-            const nextTimeMin = hasOverride('timeMin') ? overrides.timeMin : coerceOptionalInput(timeMin);
-            const nextTimeMax = hasOverride('timeMax') ? overrides.timeMax : coerceOptionalInput(timeMax);
             const nextRegion = hasOverride('region') ? overrides.region : coerceOptionalInput(regionQuery);
+            const nextZone = hasOverride('zone') ? overrides.zone : coerceOptionalInput(zoneQuery);
+            const nextWoreda = hasOverride('woreda') ? overrides.woreda : coerceOptionalInput(woredaQuery);
 
             const nextSort = hasOverride('sort') ? overrides.sort ?? sortColumn : sortColumn;
             const nextDirection = hasOverride('direction') ? overrides.direction ?? sortDirection : sortDirection;
-            const nextPerPage = hasOverride('per_page') ? overrides.per_page : Number(perPage);
             const nextPage = hasOverride('page') ? overrides.page : undefined;
 
             const params: Record<string, string | number | undefined> = {
                 search: nextSearch,
                 routeType: nextRouteType,
-                tollRoad: nextTollRoad,
-                heavyVehicleRestricted: nextHeavyRestriction,
-                distanceMin: nextDistanceMin,
-                distanceMax: nextDistanceMax,
-                timeMin: nextTimeMin,
-                timeMax: nextTimeMax,
                 region: nextRegion,
+                zone: nextZone,
+                woreda: nextWoreda,
                 sort: nextSort,
                 direction: nextDirection,
                 page: nextPage,
-                per_page:
-                    typeof nextPerPage === 'number' && Number.isFinite(nextPerPage) && nextPerPage > 0
-                        ? nextPerPage
-                        : undefined,
             };
 
             Object.keys(params).forEach((key) => {
@@ -433,20 +369,7 @@ export default function DistancesIndex({ distances, metrics, filters, perPageOpt
 
             router.get('/distances', params, { preserveState: true, preserveScroll: true, replace: false });
         },
-        [
-            perPage,
-            searchTerm,
-            selectedRouteType,
-            selectedTollRoad,
-            selectedHeavyRestriction,
-            distanceMin,
-            distanceMax,
-            timeMin,
-            timeMax,
-            regionQuery,
-            sortColumn,
-            sortDirection,
-        ],
+        [searchTerm, selectedRouteType, regionQuery, zoneQuery, woredaQuery, sortColumn, sortDirection],
     );
 
     const handleSearchChange = (value: string) => {
@@ -459,30 +382,19 @@ export default function DistancesIndex({ distances, metrics, filters, perPageOpt
         handleNavigate({ routeType: value !== 'all' ? value : undefined, page: 1 });
     };
 
-    const handleTollRoadChange = (value: string) => {
-        setSelectedTollRoad(value);
-        handleNavigate({ tollRoad: value !== 'all' ? value : undefined, page: 1 });
-    };
-
-    const handleHeavyRestrictionChange = (value: string) => {
-        setSelectedHeavyRestriction(value);
-        handleNavigate({ heavyVehicleRestricted: value !== 'all' ? value : undefined, page: 1 });
-    };
-
-    const handlePerPageChange = (value: string) => {
-        setPerPage(value);
-        const numericValue = Number(value);
-        handleNavigate({ per_page: Number.isNaN(numericValue) ? undefined : numericValue, page: 1 });
-    };
-
-    const handleRangeChange = (setter: (value: string) => void, key: 'distanceMin' | 'distanceMax' | 'timeMin' | 'timeMax', value: string) => {
-        setter(value);
-        handleNavigate({ [key]: value.trim() !== '' ? value : undefined, page: 1 });
-    };
-
     const handleRegionChange = (value: string) => {
         setRegionQuery(value);
         handleNavigate({ region: value.trim() !== '' ? value : undefined, page: 1 });
+    };
+
+    const handleZoneChange = (value: string) => {
+        setZoneQuery(value);
+        handleNavigate({ zone: value.trim() !== '' ? value : undefined, page: 1 });
+    };
+
+    const handleWoredaChange = (value: string) => {
+        setWoredaQuery(value);
+        handleNavigate({ woreda: value.trim() !== '' ? value : undefined, page: 1 });
     };
 
     const handleSort = React.useCallback(
@@ -828,15 +740,6 @@ export default function DistancesIndex({ distances, metrics, filters, perPageOpt
                 onChange: handleSearchChange,
                 icon: <Search className="h-4 w-4" />,
             }}
-            perPage={{
-                value: perPage,
-                label: 'Rows',
-                onChange: handlePerPageChange,
-                options: availablePerPageOptions.map((option) => ({
-                    value: String(option),
-                    label: `${option} / page`,
-                })),
-            }}
         >
             <Select value={selectedRouteType} onValueChange={handleRouteTypeChange}>
                 <SelectTrigger className="w-full min-w-[150px] sm:w-auto">
@@ -851,73 +754,25 @@ export default function DistancesIndex({ distances, metrics, filters, perPageOpt
                 </SelectContent>
             </Select>
 
-            <Select value={selectedTollRoad} onValueChange={handleTollRoadChange}>
-                <SelectTrigger className="w-full min-w-[120px] sm:w-auto">
-                    <SelectValue placeholder="Toll" />
-                </SelectTrigger>
-                <SelectContent>
-                    {BOOLEAN_OPTIONS.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                        </SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
-
-            <Select value={selectedHeavyRestriction} onValueChange={handleHeavyRestrictionChange}>
-                <SelectTrigger className="w-full min-w-[150px] sm:w-auto">
-                    <SelectValue placeholder="Heavy vehicle" />
-                </SelectTrigger>
-                <SelectContent>
-                    {BOOLEAN_OPTIONS.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                        </SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
-
-            <Input
-                className="w-28"
-                type="number"
-                inputMode="decimal"
-                placeholder="Min km"
-                value={distanceMin}
-                onChange={(event) => handleRangeChange(setDistanceMin, 'distanceMin', event.target.value)}
-            />
-
-            <Input
-                className="w-28"
-                type="number"
-                inputMode="decimal"
-                placeholder="Max km"
-                value={distanceMax}
-                onChange={(event) => handleRangeChange(setDistanceMax, 'distanceMax', event.target.value)}
-            />
-
-            <Input
-                className="w-28"
-                type="number"
-                inputMode="decimal"
-                placeholder="Min hrs"
-                value={timeMin}
-                onChange={(event) => handleRangeChange(setTimeMin, 'timeMin', event.target.value)}
-            />
-
-            <Input
-                className="w-28"
-                type="number"
-                inputMode="decimal"
-                placeholder="Max hrs"
-                value={timeMax}
-                onChange={(event) => handleRangeChange(setTimeMax, 'timeMax', event.target.value)}
-            />
-
             <Input
                 className="w-40"
                 placeholder="Filter by region"
                 value={regionQuery}
                 onChange={(event) => handleRegionChange(event.target.value)}
+            />
+
+            <Input
+                className="w-40"
+                placeholder="Filter by zone"
+                value={zoneQuery}
+                onChange={(event) => handleZoneChange(event.target.value)}
+            />
+
+            <Input
+                className="w-40"
+                placeholder="Filter by woreda"
+                value={woredaQuery}
+                onChange={(event) => handleWoredaChange(event.target.value)}
             />
         </ListingFilterBar>
     );

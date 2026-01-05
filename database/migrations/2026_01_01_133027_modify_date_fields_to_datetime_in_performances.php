@@ -13,9 +13,14 @@ return new class extends Migration
     public function up(): void
     {
         // First, update existing NULL values to have a default time
-        DB::statement("UPDATE performances SET DateDispach = CONCAT(DateDispach, ' 00:00:00') WHERE DateDispach IS NOT NULL");
-        DB::statement("UPDATE performances SET returned_date = CONCAT(returned_date, ' 00:00:00') WHERE returned_date IS NOT NULL");
-        
+        if (DB::getDriverName() === 'sqlite') {
+            DB::statement("UPDATE performances SET DateDispach = DateDispach || ' 00:00:00' WHERE DateDispach IS NOT NULL");
+            DB::statement("UPDATE performances SET returned_date = returned_date || ' 00:00:00' WHERE returned_date IS NOT NULL");
+        } else {
+            DB::statement("UPDATE performances SET DateDispach = CONCAT(DateDispach, ' 00:00:00') WHERE DateDispach IS NOT NULL");
+            DB::statement("UPDATE performances SET returned_date = CONCAT(returned_date, ' 00:00:00') WHERE returned_date IS NOT NULL");
+        }
+
         // Now modify the columns to datetime
         Schema::table('performances', function (Blueprint $table) {
             $table->dateTime('DateDispach')->change();

@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
-import { ArrowLeft, Edit, Trash2, BarChart3, Target, FileText, Building2, Handshake, TrendingUp, History, Lock, Unlock, Package, MapPin, ExternalLink } from 'lucide-react';
+import { Activity, ArrowLeft, Edit, Trash2, BarChart3, Target, FileText, Building2, Handshake, TrendingUp, History, Lock, Unlock, Package, MapPin, ExternalLink, Truck } from 'lucide-react';
 import { Area, AreaChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis } from 'recharts';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useMemo, useState } from 'react';

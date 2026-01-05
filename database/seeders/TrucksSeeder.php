@@ -24,8 +24,6 @@ class TrucksSeeder extends Seeder
         $truckDataset = collect(json_decode(File::get($dataPath), true, 512, JSON_THROW_ON_ERROR));
         $vehicleTypeIds = VehicleType::withTrashed()->pluck('id')->all();
 
-        Truck::withTrashed()->forceDelete();
-
         $records = $truckDataset->map(function (array $truck) use ($vehicleTypeIds): array {
             $legacyId = (int) ($truck['legacy_id'] ?? 0);
             $plate = Str::of($truck['plate'] ?? '')->trim()->squish();
@@ -62,7 +60,25 @@ class TrucksSeeder extends Seeder
         });
 
         $records->chunk(500)->each(static function ($chunk): void {
-            Truck::query()->insert($chunk->all());
+            Truck::query()->upsert(
+                $chunk->all(),
+                ['id'],
+                [
+                    'plate',
+                    'vehicletype_id',
+                    'chasisNumber',
+                    'engineNumber',
+                    'tyreSyze',
+                    'serviceIntervalKM',
+                    'purchasePrice',
+                    'productionDate',
+                    'serviceStartDate',
+                    'status',
+                    'created_at',
+                    'updated_at',
+                    'deleted_at',
+                ]
+            );
         });
     }
 

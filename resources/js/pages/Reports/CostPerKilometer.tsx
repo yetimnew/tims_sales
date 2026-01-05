@@ -351,7 +351,7 @@ export default function CostPerKilometer({ filters, rows = [], summary, options,
                         </Card>
                     )}
 
-                    <ReportSummaryGrid items={summaryItems} />
+                    {/* <ReportSummaryGrid items={summaryItems} /> */}
 
                     {cpkChartData.length > 0 && (
                         <div className="grid gap-6 lg:grid-cols-2">

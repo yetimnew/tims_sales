@@ -362,57 +362,6 @@ export default function LoadFactorUtilization({ filters, rows = [], summary, opt
             contentClassName="p-0"
         >
             <div className="space-y-6 p-6">
-                <header className="space-y-4 rounded-xl border border-slate-200 bg-white/95 p-4 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
-                    <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                        <div className="space-y-1">
-                            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-50">Utilization overview</h2>
-                            <p className="text-sm text-muted-foreground">
-                                Compare load factor, empty miles, and utilization trends across your fleet.
-                            </p>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2">
-                            {canExport ? (
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button type="button" variant="outline" className="gap-2">
-                                            <Download className="h-4 w-4" />
-                                            Export
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end" className="w-44">
-                                        <DropdownMenuItem onSelect={() => handleExport('csv')} className="gap-2">
-                                            <FileDigit className="h-4 w-4 text-amber-500" />
-                                            CSV
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onSelect={() => handleExport('xlsx')} className="gap-2">
-                                            <FileSpreadsheet className="h-4 w-4 text-emerald-500" />
-                                            Excel
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onSelect={() => handleExport('pdf')} className="gap-2">
-                                            <FileType2 className="h-4 w-4 text-rose-500" />
-                                            PDF
-                                        </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            ) : null}
-                            <Button type="button" variant="outline" className="gap-2" onClick={handleReset}>
-                                <RefreshCcw className="h-4 w-4" />
-                                Reset
-                            </Button>
-                            <Button type="button" className="gap-2" onClick={handleApplyFilters}>
-                                Generate report
-                            </Button>
-                        </div>
-                    </div>
-                    <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                        {headerBadges.map((badge) => (
-                            <Badge key={badge} variant="outline">
-                                {badge}
-                            </Badge>
-                        ))}
-                    </div>
-                </header>
-
                     {comparisonData && (
                         <Card className="border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
                             <CardHeader>
@@ -447,63 +396,8 @@ export default function LoadFactorUtilization({ filters, rows = [], summary, opt
                         </Card>
                     )}
 
-                    <ReportSummaryGrid items={summaryItems} />
+                    {/* <ReportSummaryGrid items={summaryItems} /> */}
 
-                    {loadFactorChartData.length > 0 && (
-                        <div className="grid gap-6 lg:grid-cols-2">
-                            <Card className="border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
-                                <CardHeader>
-                                    <CardTitle className="text-lg font-semibold">Load Factor vs Empty Miles</CardTitle>
-                                    <CardDescription>Top 10 {groupByLabel.toLowerCase()}s by load factor</CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                    <ResponsiveContainer width="100%" height={300}>
-                                        <BarChart data={loadFactorChartData}>
-                                            <CartesianGrid strokeDasharray="3 3" />
-                                            <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} />
-                                            <YAxis />
-                                            <Tooltip />
-                                            <Legend />
-                                            <Bar dataKey="Load Factor %" fill="#10b981" />
-                                            <Bar dataKey="Empty Miles %" fill="#ef4444" />
-                                        </BarChart>
-                                    </ResponsiveContainer>
-                                </CardContent>
-                            </Card>
-
-                            <Card className="border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
-                                <CardHeader>
-                                    <CardTitle className="text-lg font-semibold">Distance Distribution</CardTitle>
-                                    <CardDescription>Loaded vs Empty distance breakdown</CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                    <ResponsiveContainer width="100%" height={300}>
-                                        <PieChart>
-                                            <Pie
-                                                data={distancePieData}
-                                                cx="50%"
-                                                cy="50%"
-                                                labelLine={false}
-                                                label={(props: PieLabelRenderProps) => {
-                                                    const name = typeof props?.name === 'string' ? props.name : String(props?.name ?? '');
-                                                    const percent = typeof props?.percent === 'number' ? props.percent : 0;
-                                                    return `${name} ${(percent * 100).toFixed(0)}%`;
-                                                }}
-                                                outerRadius={100}
-                                                fill="#8884d8"
-                                                dataKey="value"
-                                            >
-                                                {distancePieData.map((entry, index) => (
-                                                    <Cell key={`cell-${index}`} fill={entry.color} />
-                                                ))}
-                                            </Pie>
-                                            <Tooltip />
-                                        </PieChart>
-                                    </ResponsiveContainer>
-                                </CardContent>
-                            </Card>
-                        </div>
-                    )}
 
                     <Card className="border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
                         <CardHeader className="space-y-3 border-b border-slate-200/60 pb-5 dark:border-slate-700/60">

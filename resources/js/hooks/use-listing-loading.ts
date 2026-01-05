@@ -1,6 +1,43 @@
 import { router } from '@inertiajs/react';
 import * as React from 'react';
 
+function readSessionStorage(key: string): string | null {
+    if (typeof window === 'undefined') {
+        return null;
+    }
+
+    try {
+        return window.sessionStorage.getItem(key);
+    } catch (error) {
+        console.warn('Failed to read sessionStorage', { key, error });
+        return null;
+    }
+}
+
+function writeSessionStorage(key: string, value: string): void {
+    if (typeof window === 'undefined') {
+        return;
+    }
+
+    try {
+        window.sessionStorage.setItem(key, value);
+    } catch (error) {
+        console.warn('Failed to write sessionStorage', { key, error });
+    }
+}
+
+function removeSessionStorage(key: string): void {
+    if (typeof window === 'undefined') {
+        return;
+    }
+
+    try {
+        window.sessionStorage.removeItem(key);
+    } catch (error) {
+        console.warn('Failed to remove sessionStorage key', { key, error });
+    }
+}
+
 interface UseListingLoadingOptions {
     storageKey: string;
     isDataReady: boolean;
@@ -43,7 +80,7 @@ export function useListingLoading({
             return initialIsLoading;
         }
 
-        const stored = window.sessionStorage.getItem(storageKey);
+        const stored = readSessionStorage(storageKey);
         if (stored === 'true') {
             return true;
         }
@@ -183,7 +220,7 @@ export function useListingLoading({
             }
 
             if (typeof window !== 'undefined') {
-                window.sessionStorage.setItem(storageKey, 'true');
+                writeSessionStorage(storageKey, 'true');
             }
 
             beginLoading();
@@ -217,9 +254,7 @@ export function useListingLoading({
 
         finishLoading();
 
-        if (typeof window !== 'undefined') {
-            window.sessionStorage.removeItem(storageKey);
-        }
+        removeSessionStorage(storageKey);
     }, [finishLoading, isDataReady, storageKey]);
 
     return {

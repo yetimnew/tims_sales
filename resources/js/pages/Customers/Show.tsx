@@ -109,10 +109,22 @@ export default function CustomersShow({ customer, activityLogs = [], activeOpera
 
   const formatNumber = (value?: number | null, options?: Intl.NumberFormatOptions) => {
     if (value === null || value === undefined) return 'N/A';
+
+    const { minimumFractionDigits, maximumFractionDigits, ...rest } = options ?? {};
+    let minDigits = minimumFractionDigits ?? 2;
+    let maxDigits = maximumFractionDigits ?? (minimumFractionDigits ?? 2);
+
+    if (maxDigits < minDigits) {
+      minDigits = maxDigits;
+    }
+
+    minDigits = Math.min(Math.max(minDigits, 0), 20);
+    maxDigits = Math.min(Math.max(maxDigits, minDigits), 20);
+
     return Number(value).toLocaleString('en-US', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-      ...options,
+      minimumFractionDigits: minDigits,
+      maximumFractionDigits: maxDigits,
+      ...rest,
     });
   };
 

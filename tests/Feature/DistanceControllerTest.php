@@ -8,8 +8,11 @@ use App\Events\DistanceUpdated;
 use App\Models\Distance;
 use App\Models\Place;
 use App\Models\User;
+use App\Models\Woreda;
+use App\Models\Zone;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
+use Inertia\Testing\AssertableInertia as Assert;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -29,7 +32,69 @@ class DistanceControllerTest extends TestCase
             'distances.store',
             'distances.update',
             'distances.destroy',
+            'distances.view',
         ]);
+    }
+
+    #[Test]
+    public function it_filters_distances_by_zone_and_woreda(): void
+    {
+        $matchingZone = Zone::factory()->create(['name' => 'Lasta Corridor']);
+        $otherZone = Zone::factory()->create(['name' => 'Shewa Highlands']);
+
+        $matchingWoreda = Woreda::factory()->create([
+            'zone_id' => $matchingZone->id,
+            'name' => 'Gashena',
+        ]);
+        $otherWoreda = Woreda::factory()->create([
+            'zone_id' => $otherZone->id,
+            'name' => 'Debre Markos',
+        ]);
+
+        $matchingOrigin = Place::factory()->create(['woreda_id' => $matchingWoreda->id]);
+        $matchingDestination = Place::factory()->create(['woreda_id' => $matchingWoreda->id]);
+        $otherOrigin = Place::factory()->create(['woreda_id' => $otherWoreda->id]);
+        $otherDestination = Place::factory()->create(['woreda_id' => $otherWoreda->id]);
+
+        $matchingDistance = Distance::query()->create([
+            'from_place_id' => $matchingOrigin->id,
+            'to_place_id' => $matchingDestination->id,
+            'distance_km' => 150,
+            'estimated_time_hours' => 3.5,
+            'route_type' => 'primary',
+            'status' => 'active',
+        ]);
+
+        Distance::query()->create([
+            'from_place_id' => $otherOrigin->id,
+            'to_place_id' => $otherDestination->id,
+            'distance_km' => 220,
+            'estimated_time_hours' => 4.8,
+            'route_type' => 'secondary',
+            'status' => 'active',
+        ]);
+
+        $zoneResponse = $this->actingAs($this->user)
+            ->get(route('distances.index', ['zone' => 'Lasta Corridor']));
+
+        $zoneResponse->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Distances/Index')
+                ->where('filters.zone', 'Lasta Corridor')
+                ->has('distances.data', 1)
+                ->where('distances.data.0.id', $matchingDistance->id)
+            );
+
+        $woredaResponse = $this->actingAs($this->user)
+            ->get(route('distances.index', ['woreda' => 'Gashena']));
+
+        $woredaResponse->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Distances/Index')
+                ->where('filters.woreda', 'Gashena')
+                ->has('distances.data', 1)
+                ->where('distances.data.0.id', $matchingDistance->id)
+            );
     }
 
     #[Test]

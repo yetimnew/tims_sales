@@ -42,26 +42,8 @@ class DistanceController extends Controller
         }
 
         // Advanced filters
-        if ($request->filled('distanceMin')) {
-            $query->where('distance_km', '>=', $request->get('distanceMin'));
-        }
-        if ($request->filled('distanceMax')) {
-            $query->where('distance_km', '<=', $request->get('distanceMax'));
-        }
-        if ($request->filled('timeMin')) {
-            $query->where('estimated_time_hours', '>=', $request->get('timeMin'));
-        }
-        if ($request->filled('timeMax')) {
-            $query->where('estimated_time_hours', '<=', $request->get('timeMax'));
-        }
         if ($request->filled('routeType') && $request->get('routeType') !== 'all') {
             $query->where('route_type', $request->get('routeType'));
-        }
-        if ($request->filled('tollRoad') && $request->get('tollRoad') !== 'all') {
-            $query->where('toll_road', $request->get('tollRoad') === 'true');
-        }
-        if ($request->filled('heavyVehicleRestricted') && $request->get('heavyVehicleRestricted') !== 'all') {
-            $query->where('restricted_for_heavy_vehicles', $request->get('heavyVehicleRestricted') === 'true');
         }
         if ($request->filled('region')) {
             $query->where(function ($q) use ($request) {
@@ -70,6 +52,26 @@ class DistanceController extends Controller
                 })
                     ->orWhereHas('toPlace.woreda.zone.region', function ($regionQuery) use ($request) {
                         $regionQuery->where('name', 'like', "%{$request->get('region')}%");
+                    });
+            });
+        }
+        if ($request->filled('zone')) {
+            $query->where(function ($q) use ($request) {
+                $q->whereHas('fromPlace.woreda.zone', function ($zoneQuery) use ($request) {
+                    $zoneQuery->where('name', 'like', "%{$request->get('zone')}%");
+                })
+                    ->orWhereHas('toPlace.woreda.zone', function ($zoneQuery) use ($request) {
+                        $zoneQuery->where('name', 'like', "%{$request->get('zone')}%");
+                    });
+            });
+        }
+        if ($request->filled('woreda')) {
+            $query->where(function ($q) use ($request) {
+                $q->whereHas('fromPlace.woreda', function ($woredaQuery) use ($request) {
+                    $woredaQuery->where('name', 'like', "%{$request->get('woreda')}%");
+                })
+                    ->orWhereHas('toPlace.woreda', function ($woredaQuery) use ($request) {
+                        $woredaQuery->where('name', 'like', "%{$request->get('woreda')}%");
                     });
             });
         }
@@ -93,10 +95,8 @@ class DistanceController extends Controller
         // Cache metrics only when no filters applied (1 hour)
         $search = $request->get('search');
         $cacheKey = 'distances.metrics';
-        if (empty($search) && ! $request->filled('distanceMin') && ! $request->filled('distanceMax') &&
-            ! $request->filled('timeMin') && ! $request->filled('timeMax') &&
-            ! $request->filled('routeType') && ! $request->filled('tollRoad') &&
-            ! $request->filled('heavyVehicleRestricted') && ! $request->filled('region')) {
+        if (empty($search) && ! $request->filled('routeType') && ! $request->filled('region') &&
+            ! $request->filled('zone') && ! $request->filled('woreda')) {
             $metrics = Cache::remember($cacheKey, 3600, function () use ($metricsQuery) {
                 return [
                     'averageSpeed' => round((float) (((clone $metricsQuery)->avg('average_speed_kmph')) ?? 0), 2),
@@ -115,13 +115,9 @@ class DistanceController extends Controller
         $filters = [
             'search' => $request->get('search'),
             'routeType' => $request->get('routeType', 'all'),
-            'tollRoad' => $request->get('tollRoad', 'all'),
-            'heavyVehicleRestricted' => $request->get('heavyVehicleRestricted', 'all'),
-            'distanceMin' => $request->get('distanceMin'),
-            'distanceMax' => $request->get('distanceMax'),
-            'timeMin' => $request->get('timeMin'),
-            'timeMax' => $request->get('timeMax'),
             'region' => $request->get('region'),
+            'zone' => $request->get('zone'),
+            'woreda' => $request->get('woreda'),
             'sort' => $sortColumn,
             'direction' => $sortDirection,
         ];

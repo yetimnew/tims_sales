@@ -11,7 +11,7 @@ import { toast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePermissions } from '@/hooks/use-permissions';
-import { ArrowLeft, ArrowUpRight, Ban, BarChart3, Calendar, CheckCircle, Edit, History, Sparkles, Target, Truck, Trash2, Wrench, Clock, User, TrendingUp, DollarSign, Package, ExternalLink, MapPin, Route, Gauge } from 'lucide-react';
+import { ArrowLeft, ArrowUpRight, Ban, BarChart3, Calendar, CheckCircle, Edit, History, Sparkles, Target, Truck as TruckIcon, Trash2, Wrench, Clock, User, TrendingUp, DollarSign, Package, ExternalLink, MapPin, Route, Gauge } from 'lucide-react';
 import { Area, AreaChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Legend, Line, LineChart } from 'recharts';
 
 type VehicleType = { id: number; name: string };
@@ -289,7 +289,7 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
       subtitle="Comprehensive truck profile and performance tracking"
       breadcrumbs={breadcrumbs}
       headTitle={`Truck - ${truck.plate}`}
-      icon={<Truck className="h-6 w-6 text-blue-700 dark:text-blue-300" />}
+      icon={<TruckIcon className="h-6 w-6 text-blue-700 dark:text-blue-300" />}
       iconWrapperClassName="bg-blue-100 dark:bg-blue-900/30"
       leading={
         <Button variant="outline" size="sm" onClick={() => router.get('/trucks')}>
@@ -336,7 +336,7 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
           
           <div className="grid gap-6 lg:grid-cols-[1fr,20rem]">
             <div className="space-y-6">
-              <DetailSectionCard icon={<Truck className="h-5 w-5" />} title="Basic Information" description="Truck details and specifications">
+              <DetailSectionCard icon={<TruckIcon className="h-5 w-5" />} title="Basic Information" description="Truck details and specifications">
                 <div className="grid gap-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="rounded-lg border p-3">

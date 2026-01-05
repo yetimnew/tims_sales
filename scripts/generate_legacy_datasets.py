@@ -6,6 +6,7 @@ from typing import Any, Dict, Iterable, List
 
 ROOT = Path(__file__).resolve().parents[1]
 SQL_CANDIDATES = [
+    ROOT / "eletderashcom_tims (3).sql",
     ROOT / "database" / "eletderashcom_tims_12_19.sql",
     ROOT / "eletderashcom_tims.sql" / "eletderashcom_tims.sql",
     ROOT / "eletderashcom_tims (1).sql",
