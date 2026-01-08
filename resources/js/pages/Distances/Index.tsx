@@ -49,8 +49,7 @@ type ColumnKey =
     | 'average_speed_kmph'
     | 'road_quality_index'
     | 'toll_road'
-    | 'restricted_for_heavy_vehicles'
-    | 'created_at';
+    | 'restricted_for_heavy_vehicles';
 
 interface RegionSummary {
     name?: string | null;
@@ -84,7 +83,6 @@ interface DistanceRecord {
     road_quality_index?: number | string | null;
     from_place?: PlaceSummary | null;
     to_place?: PlaceSummary | null;
-    created_at?: string | null;
 }
 
 interface DistancesIndexProps {
@@ -135,7 +133,6 @@ const COLUMN_DEFINITIONS: Array<{
     { id: 'road_quality_index', label: 'Road Quality', sortKey: 'road_quality_index', align: 'right' },
     { id: 'toll_road', label: 'Toll Road', align: 'center' },
     { id: 'restricted_for_heavy_vehicles', label: 'Heavy Vehicle', align: 'center' },
-    { id: 'created_at', label: 'Created', sortKey: 'created_at' },
 ];
 
 const ROUTE_TYPE_OPTIONS = [
@@ -172,23 +169,6 @@ const formatCount = (value?: number | string | null): string => {
     }
 
     return numeric.toLocaleString();
-};
-
-const formatDateValue = (value?: string | null): string => {
-    if (!value) {
-        return '—';
-    }
-
-    const parsed = new Date(value);
-    if (Number.isNaN(parsed.getTime())) {
-        return '—';
-    }
-
-    return parsed.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-    });
 };
 
 const formatDistanceValue = (value?: number | string | null): string => {
@@ -579,8 +559,6 @@ export default function DistancesIndex({ distances, metrics, filters }: Distance
                 return getBooleanBadge(Boolean(distance.toll_road), 'Toll', 'No Toll');
             case 'restricted_for_heavy_vehicles':
                 return getBooleanBadge(Boolean(distance.restricted_for_heavy_vehicles), 'Restricted', 'Allowed');
-            case 'created_at':
-                return formatDateValue(distance.created_at);
             default:
                 return '—';
         }

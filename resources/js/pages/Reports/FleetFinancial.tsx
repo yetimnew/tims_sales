@@ -243,7 +243,6 @@ export default function FleetFinancial({
     return (
         <ReportPageLayout
             title="Fleet Financial Dashboard"
-            description="Strategic financial KPIs and performance metrics for executive decision-making. Comprehensive view of profitability, cash flow, and capital efficiency."
             breadcrumbs={breadcrumbs}
             icon={<CircleDollarSign className="h-6 w-6" />}
             filters={

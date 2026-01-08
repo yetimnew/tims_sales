@@ -250,7 +250,6 @@ export default function NetworkOptimization({
     return (
         <ReportPageLayout
             title="Network Optimization & Backhaul"
-            description="Reduce empty miles, identify backhaul opportunities, optimize lane balance, and capture additional revenue through strategic network planning."
             breadcrumbs={breadcrumbs}
             icon={<Navigation className="h-6 w-6" />}
             filters={

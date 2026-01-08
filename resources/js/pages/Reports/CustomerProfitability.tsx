@@ -300,7 +300,6 @@ export default function CustomerProfitability({ filters, rows = [], summary, tre
     return (
         <ReportPageLayout
             title="Customer Profitability"
-            description="Analyse profitability, tonnage mix, and utilisation across customers. Combine internal and outsourced execution to see who delivers the strongest contribution."
             breadcrumbs={breadcrumbs}
             icon={<Users className="h-6 w-6" />}
             filters={

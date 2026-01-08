@@ -340,7 +340,6 @@ export default function OperationProfitability({ filters, totals, operations, op
     return (
         <ReportPageLayout
             title="Operation Profitability"
-            description="Analyse profitability, margin, and cost efficiency by operation. Review revenue, expenses, and contribution across your operational portfolio."
             breadcrumbs={breadcrumbs}
             icon={<ClipboardList className="h-6 w-6" />}
             filters={

@@ -7,8 +7,8 @@ import { ScrollToTopFab } from '@/components/forms/scroll-to-top-fab';
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEventHandler } from 'react';
 import { Link, useForm } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -20,7 +20,7 @@ import { search as operationsSearch } from '@/routes/operations';
 import { validateOutsourcePerformance, type ValidationErrors } from '@/lib/validation';
 import { cn } from '@/lib/utils';
 import type { BreadcrumbItem } from '@/types';
-import { AlertCircle, CheckCircle, ClipboardList, Loader2, MapPin, Package, Save, Wallet } from 'lucide-react';
+import { AlertCircle, ArrowLeft, CheckCircle, ClipboardList, Loader2, MapPin, Package, Save, Wallet } from 'lucide-react';
 
 interface OutsourceOption {
   id: number;
@@ -39,6 +39,7 @@ interface OperationOption {
 interface PlaceOption {
   id: number;
   name: string;
+  fullName?: string;
 }
 
 interface StatusOption {
@@ -202,17 +203,6 @@ export default function OutsourcePerformancesCreate({ outsources, statusOptions,
         return;
       }
 
-      if (originId === destinationId) {
-        setData('distance_km', '');
-        recalculateTonKilometers({ ...nextState, distance_km: '' });
-        setDistanceStatus({
-          found: false,
-          message: 'Origin and destination are the same. Distance cleared for manual entry.',
-        });
-        setDistanceLoading(false);
-        return;
-      }
-
       setDistanceLoading(true);
       setDistanceStatus(null);
 
@@ -249,20 +239,22 @@ export default function OutsourcePerformancesCreate({ outsources, statusOptions,
             message: `Distance auto-filled from registered route (${formattedDistance} km).`,
           });
         } else {
-          setData('distance_km', '');
-          recalculateTonKilometers({ ...nextState, distance_km: '' });
+          setData('distance_km', '0.00');
+          recalculateTonKilometers({ ...nextState, distance_km: '0.00' });
           setDistanceStatus({
             found: false,
-            message: result.note ?? 'No registered distance for this route. Please enter it manually.',
+            message:
+              result.note ??
+              'Distance for this origin and destination is not registered yet. Values defaulted to 0 km.',
           });
         }
       } catch (error) {
         console.error('Distance auto-fill failed:', error);
-        setData('distance_km', '');
-        recalculateTonKilometers({ ...nextState, distance_km: '' });
+        setData('distance_km', '0.00');
+        recalculateTonKilometers({ ...nextState, distance_km: '0.00' });
         setDistanceStatus({
           found: false,
-          message: 'Unable to resolve distance automatically. Please enter it manually.',
+          message: 'Unable to resolve distance. Distance was set to 0 km.',
         });
       } finally {
         setDistanceLoading(false);
@@ -324,22 +316,14 @@ export default function OutsourcePerformancesCreate({ outsources, statusOptions,
       }
 
       if (field === 'from_place_id' || field === 'to_place_id') {
-        if (!nextState.from_place_id || !nextState.to_place_id || nextState.from_place_id === nextState.to_place_id) {
-          setDistanceStatus(
-            nextState.from_place_id && nextState.to_place_id && nextState.from_place_id === nextState.to_place_id
-              ? {
-                  found: false,
-                  message: 'Origin and destination match. Distance cleared for manual entry.',
-                }
-              : null,
-          );
+        setDistanceStatus(null);
+        if (!nextState.from_place_id || !nextState.to_place_id) {
           setDistanceLoading(false);
           setData('distance_km', '');
           recalculateTonKilometers({ ...nextState, distance_km: '' });
-          return;
+        } else {
+          void handleDistanceAutoFill(nextState.from_place_id, nextState.to_place_id, nextState);
         }
-
-        void handleDistanceAutoFill(nextState.from_place_id, nextState.to_place_id, nextState);
       }
     },
     [clientErrors, data, handleDistanceAutoFill, recalculateTonKilometers, setData, setFieldError],
@@ -415,6 +399,7 @@ export default function OutsourcePerformancesCreate({ outsources, statusOptions,
   }, [data]);
 
   const generalError = errors.error ? String(errors.error) : '';
+  const hasErrors = Object.keys(clientErrors).length > 0 || Object.keys(errors).length > 0;
 
   return (
     <FormPageLayout
@@ -423,192 +408,221 @@ export default function OutsourcePerformancesCreate({ outsources, statusOptions,
       description="Capture vendor dispatch metrics, route details, and cost insights in one streamlined form."
       breadcrumbs={breadcrumbs}
       icon={<CheckCircle className="h-5 w-5" />}
-      headerAside={isDirty && <UnsavedChangesBadge />}
+      headerAside={
+        <>
+          <Button variant="ghost" size="sm" asChild>
+            <Link href="/outsource-performances">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Outsource Trips
+            </Link>
+          </Button>
+          {isDirty && <UnsavedChangesBadge />}
+          <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+            Vendor Ledger
+          </Badge>
+        </>
+      }
     >
-      <form onSubmit={submit} className="flex flex-1 flex-col gap-6 overflow-y-auto p-6 pb-24" noValidate>
-        {generalError && (
+      {hasErrors && (
+        <div className="px-6 pt-6">
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>Please resolve the highlighted fields before submitting the form.</AlertDescription>
+          </Alert>
+        </div>
+      )}
+
+      {generalError && (
+        <div className="px-6">
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>{generalError}</AlertDescription>
           </Alert>
-        )}
+        </div>
+      )}
 
-        <FormSection title="Trip Overview" description="Link the vendor, operation, and trip identifiers." icon={<ClipboardList className="h-4 w-4" />}>
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            <div className="space-y-2">
-              <FormField label="Vendor" required error={clientErrors.outsource_id}>
-                <Select value={data.outsource_id} onValueChange={value => handleFieldChange('outsource_id', value)}>
-                  <SelectTrigger id="outsource_id" className={clientErrors.outsource_id ? 'border-red-500' : ''}>
-                    <SelectValue placeholder="Select vendor" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {outsources.map(option => (
-                      <SelectItem key={option.id} value={option.id.toString()}>
-                        {option.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </FormField>
-              {recent.outsources.length > 0 && (
-                <div className="flex flex-wrap gap-1 pt-1">
-                  {recent.outsources.map(id => {
-                    const option = outsources.find(outsource => outsource.id.toString() === id);
-                    if (!option) {
-                      return null;
-                    }
+      <form
+        onSubmit={submit}
+        className="flex flex-1 flex-col gap-8 overflow-y-auto p-6 pb-24"
+        style={{ minHeight: 0 }}
+        noValidate
+      >
 
-                    const isActive = data.outsource_id === id;
-                    return (
-                      <button
-                        type="button"
-                        key={id}
-                        onClick={() => handleFieldChange('outsource_id', id)}
-                        className={`rounded px-2 py-0.5 text-xs transition ${
-                          isActive
-                            ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm'
-                            : 'border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
-                        }`}
-                      >
-                        {option.name}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
+        <FormSection
+          title="Trip Overview"
+          description="Link the vendor, operation, and trip identifiers."
+          icon={
+            <div className="rounded-lg bg-indigo-100 p-2 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400">
+              <ClipboardList className="h-4 w-4" />
             </div>
-
-            <div className="space-y-2">
-              <SearchableEntityCombobox
-                id="operation_id"
-                label="Operation"
-                required
-                value={data.operation_id}
-                items={operationsLookup.items}
-                getValue={operation => operation.id}
-                getLabel={operation => operation.operationid}
-                getDescription={operation => operation.customer?.name}
-                getKeywords={operation => [operation.operationid, operation.customer?.name]}
-                placeholder="Search operation..."
-                searchPlaceholder="Search operations..."
-                searchValue={operationsLookup.query}
-                onSearchChange={operationsLookup.setQuery}
-                isLoading={operationsLookup.isLoading}
-                loadingMessage="Searching operations..."
-                onSelect={value => {
-                  handleFieldChange('operation_id', value);
-                  operationsLookup.setQuery('');
-                }}
-                error={typeof clientErrors.operation_id === 'string' ? clientErrors.operation_id : undefined}
-              />
-              {recent.operations.length > 0 && (
-                <div className="flex flex-wrap gap-1 pt-1">
-                  {recent.operations.map(id => {
-                    const option = operationsLookup.getCachedItem(id);
-                    if (!option) {
-                      return null;
-                    }
-
-                    const label = option.customer?.name ? `${option.operationid} — ${option.customer.name}` : option.operationid;
-
-                    const isActive = data.operation_id === id;
-                    return (
-                      <button
-                        type="button"
-                        key={id}
-                        onClick={() => handleFieldChange('operation_id', id)}
-                        className={`rounded px-2 py-0.5 text-xs transition ${
-                          isActive
-                            ? 'border-emerald-600 bg-emerald-600 text-white shadow-sm'
-                            : 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-                        }`}
-                      >
-                        {label}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            <FormField label="Trip Number" required error={clientErrors.trip_number}>
-              <Input
-                id="trip_number"
-                value={data.trip_number}
-                onChange={event => handleFieldChange('trip_number', event.target.value)}
-                placeholder="e.g., OUT-TRIP-2309"
-              />
-            </FormField>
-          </div>
-
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            <div className="space-y-2">
-              <Label>
-                Dispatch Date & Time <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                type="datetime-local"
-                value={data.dispatch_date || ''}
-                onChange={event => handleFieldChange('dispatch_date', event.target.value)}
-                className={cn(
-                  'w-full h-11',
-                  clientErrors.dispatch_date ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500/20' : undefined,
-                )}
-              />
-              {clientErrors.dispatch_date && (
-                <p className="flex items-center gap-1 text-xs text-destructive">
-                  <AlertCircle className="h-3 w-3" />
-                  {clientErrors.dispatch_date}
-                </p>
-              )}
-            </div>
-
-            <FormField label="Trip Status" required error={clientErrors.status}>
-              <Select value={data.status} onValueChange={value => handleFieldChange('status', value)}>
-                <SelectTrigger id="status" className={clientErrors.status ? 'border-red-500' : ''}>
-                  <SelectValue placeholder="Select status" />
+          }
+          contentClassName="gap-6 md:grid-cols-3"
+        >
+          <div className="space-y-2">
+            <FormField label="Vendor" required error={clientErrors.outsource_id}>
+              <Select value={data.outsource_id} onValueChange={value => handleFieldChange('outsource_id', value)}>
+                <SelectTrigger id="outsource_id" className={clientErrors.outsource_id ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-200' : ''}>
+                  <SelectValue placeholder="Select vendor" />
                 </SelectTrigger>
                 <SelectContent>
-                  {statusOptionValues.map(option => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
+                  {outsources.map(option => (
+                    <SelectItem key={option.id} value={option.id.toString()}>
+                      {option.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </FormField>
+            {recent.outsources.length > 0 && (
+              <div className="flex flex-wrap gap-1 pt-1">
+                {recent.outsources.map(id => {
+                  const option = outsources.find(outsource => outsource.id.toString() === id);
+                  if (!option) {
+                    return null;
+                  }
+
+                  const isActive = data.outsource_id === id;
+                  return (
+                    <button
+                      type="button"
+                      key={id}
+                      onClick={() => handleFieldChange('outsource_id', id)}
+                      className={`rounded px-2 py-0.5 text-xs transition ${
+                        isActive
+                          ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm'
+                          : 'border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
+                      }`}
+                    >
+                      {option.name}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
+
+          <div className="space-y-2">
+            <SearchableEntityCombobox
+              id="operation_id"
+              label="Operation"
+              required
+              value={data.operation_id}
+              items={operationsLookup.items}
+              getValue={operation => operation.id}
+              getLabel={operation => operation.operationid}
+              getDescription={operation => operation.customer?.name}
+              getKeywords={operation => [operation.operationid, operation.customer?.name]}
+              placeholder="Search operation..."
+              searchPlaceholder="Search operations..."
+              searchValue={operationsLookup.query}
+              onSearchChange={operationsLookup.setQuery}
+              isLoading={operationsLookup.isLoading}
+              loadingMessage="Searching operations..."
+              onSelect={value => {
+                handleFieldChange('operation_id', value);
+                operationsLookup.setQuery('');
+              }}
+              error={typeof clientErrors.operation_id === 'string' ? clientErrors.operation_id : undefined}
+            />
+            {recent.operations.length > 0 && (
+              <div className="flex flex-wrap gap-1 pt-1">
+                {recent.operations.map(id => {
+                  const option = operationsLookup.getCachedItem(id);
+                  if (!option) {
+                    return null;
+                  }
+
+                  const label = option.customer?.name ? `${option.operationid} — ${option.customer.name}` : option.operationid;
+
+                  const isActive = data.operation_id === id;
+                  return (
+                    <button
+                      type="button"
+                      key={id}
+                      onClick={() => handleFieldChange('operation_id', id)}
+                      className={`rounded px-2 py-0.5 text-xs transition ${
+                        isActive
+                          ? 'border-emerald-600 bg-emerald-600 text-white shadow-sm'
+                          : 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <FormField label="Trip Number" required error={clientErrors.trip_number}>
+            <Input
+              id="trip_number"
+              value={data.trip_number}
+              onChange={event => handleFieldChange('trip_number', event.target.value)}
+              placeholder="e.g., OUT-TRIP-2309"
+            />
+          </FormField>
+
+          <FormField label="Dispatch Date & Time" required error={clientErrors.dispatch_date}>
+            <Input
+              id="dispatch_date"
+              type="datetime-local"
+              value={data.dispatch_date || ''}
+              onChange={event => handleFieldChange('dispatch_date', event.target.value)}
+              className={cn(
+                'w-full h-11',
+                clientErrors.dispatch_date ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-200' : undefined,
+              )}
+            />
+          </FormField>
+
+          <FormField label="Trip Status" required error={clientErrors.status}>
+            <Select value={data.status} onValueChange={value => handleFieldChange('status', value)}>
+              <SelectTrigger id="status" className={clientErrors.status ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-200' : ''}>
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+              <SelectContent>
+                {statusOptionValues.map(option => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FormField>
         </FormSection>
 
         <FormSection
           title="Route & Distance"
           description="Select the origin and destination to auto-resolve registered distances."
-          icon={<MapPin className="h-4 w-4" />}
-        >
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-              <PlaceCombobox
-                id="from_place_id"
-                label="Origin"
-                required
-                value={data.from_place_id}
-                places={places}
-                placeholder="Select origin"
-                onSelect={value => handleFieldChange('from_place_id', value)}
-                error={clientErrors.from_place_id}
-              />
-              <PlaceCombobox
-                id="to_place_id"
-                label="Destination"
-                required
-                value={data.to_place_id}
-                places={places}
-                placeholder="Select destination"
-                onSelect={value => handleFieldChange('to_place_id', value)}
-                error={clientErrors.to_place_id}
-              />
+          icon={
+            <div className="rounded-lg bg-sky-100 p-2 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400">
+              <MapPin className="h-4 w-4" />
             </div>
-
+          }
+          contentClassName="gap-6 md:grid-cols-2"
+        >
+          <PlaceCombobox
+            id="from_place_id"
+            label="Origin"
+            required
+            value={data.from_place_id}
+            places={places}
+            placeholder="Select origin"
+            onSelect={value => handleFieldChange('from_place_id', value)}
+            error={clientErrors.from_place_id}
+          />
+          <PlaceCombobox
+            id="to_place_id"
+            label="Destination"
+            required
+            value={data.to_place_id}
+            places={places}
+            placeholder="Select destination"
+            onSelect={value => handleFieldChange('to_place_id', value)}
+            error={clientErrors.to_place_id}
+          />
+          <div className="space-y-4 md:col-span-2">
             {distanceLoading && (
               <p className="flex items-center gap-2 rounded-lg border border-dashed bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
                 <Loader2 className="h-3 w-3 animate-spin" />
@@ -650,29 +664,36 @@ export default function OutsourcePerformancesCreate({ outsources, statusOptions,
           </div>
         </FormSection>
 
-        <FormSection title="Cost & Notes" description="Record spend and supporting remarks for context." icon={<Wallet className="h-4 w-4" />}>
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <FormField label="Trip Cost" error={clientErrors.cost}>
-              <Input
-                id="cost"
-                value={data.cost}
-                onChange={event => handleFieldChange('cost', event.target.value)}
-                placeholder="e.g., 125000"
-              />
-            </FormField>
+        <FormSection
+          title="Cost & Notes"
+          description="Record spend and supporting remarks for context."
+          icon={
+            <div className="rounded-lg bg-amber-100 p-2 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
+              <Wallet className="h-4 w-4" />
+            </div>
+          }
+          contentClassName="gap-6 md:grid-cols-2"
+        >
+          <FormField label="Trip Cost" error={clientErrors.cost}>
+            <Input
+              id="cost"
+              value={data.cost}
+              onChange={event => handleFieldChange('cost', event.target.value)}
+              placeholder="e.g., 125000"
+            />
+          </FormField>
 
-            <FormField label="Remarks">
-              <Textarea
-                id="remarks"
-                value={data.remarks}
-                onChange={event => handleFieldChange('remarks', event.target.value)}
-                placeholder="Add optional context such as special conditions or vendor notes"
-                className="min-h-[112px]"
-              />
-            </FormField>
-          </div>
+          <FormField label="Remarks">
+            <Textarea
+              id="remarks"
+              value={data.remarks}
+              onChange={event => handleFieldChange('remarks', event.target.value)}
+              placeholder="Add optional context such as special conditions or vendor notes"
+              className="min-h-[112px]"
+            />
+          </FormField>
 
-          <div className="rounded-lg border border-dashed bg-muted/50 p-4 text-sm text-muted-foreground">
+          <div className="rounded-lg border border-dashed bg-muted/50 p-4 text-sm text-muted-foreground md:col-span-2">
             <div className="flex items-center gap-2">
               <Package className="h-4 w-4" />
               <span>Tip: leave cost and cargo fields blank if they are not yet confirmed. You can update them after the trip closes.</span>

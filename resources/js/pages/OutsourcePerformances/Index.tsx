@@ -6,7 +6,6 @@ import { useListingLoading } from '@/hooks/use-listing-loading';
 import ListPageLayout from '@/components/layouts/list-page-layout';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { Button } from '@/components/ui/button';
-import { DatePicker } from '@/components/ui/date-picker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -89,15 +88,11 @@ interface OutsourcePerformanceIndexProps {
     };
     filters?: {
         search?: string | null;
-        status?: string | null;
         outsource_id?: number | string | null;
-        dispatched_from?: string | null;
-        dispatched_to?: string | null;
         sort?: string | null;
         direction?: 'asc' | 'desc' | null;
         per_page?: number | null;
     };
-    statusOptions?: Array<{ label: string; value: string }>;
     outsourceOptions?: Array<{ label: string; value: number }>;
     perPageOptions?: number[];
 }
@@ -225,7 +220,6 @@ export default function OutsourcePerformancesIndex({
     outsourcePerformances,
     metrics,
     filters,
-    statusOptions,
     outsourceOptions,
     perPageOptions,
 }: OutsourcePerformanceIndexProps) {
@@ -236,12 +230,9 @@ export default function OutsourcePerformancesIndex({
     const canDelete = hasPermission('outsource-performances.destroy');
 
     const [searchTerm, setSearchTerm] = useState(filters?.search ?? '');
-    const [selectedStatus, setSelectedStatus] = useState(filters?.status ?? 'all');
     const [selectedOutsource, setSelectedOutsource] = useState(
         filters?.outsource_id ? String(filters.outsource_id) : 'all',
     );
-    const [dateFrom, setDateFrom] = useState(filters?.dispatched_from ?? '');
-    const [dateTo, setDateTo] = useState(filters?.dispatched_to ?? '');
     const [sortColumn, setSortColumn] = useState<string>(filters?.sort ?? 'dispatch_date');
     const [sortDirection, setSortDirection] = useState<SortDirection>(filters?.direction ?? 'desc');
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -307,10 +298,7 @@ export default function OutsourcePerformancesIndex({
 
     const handleNavigate = useCallback((overrides: Partial<{
         search?: string;
-        status?: string;
         outsource_id?: string | number;
-        dispatched_from?: string;
-        dispatched_to?: string;
         sort?: string;
         direction?: SortDirection;
         page?: number;
@@ -323,22 +311,12 @@ export default function OutsourcePerformancesIndex({
                     : searchTerm.trim()
                         ? searchTerm.trim()
                         : undefined,
-            status:
-                overrides.status !== undefined
-                    ? overrides.status
-                    : selectedStatus !== 'all'
-                        ? selectedStatus
-                        : undefined,
             outsource_id:
                 overrides.outsource_id !== undefined
                     ? overrides.outsource_id
                     : selectedOutsource !== 'all'
                         ? selectedOutsource
                         : undefined,
-            dispatched_from:
-                overrides.dispatched_from !== undefined ? overrides.dispatched_from : dateFrom || undefined,
-            dispatched_to:
-                overrides.dispatched_to !== undefined ? overrides.dispatched_to : dateTo || undefined,
             sort: overrides.sort ?? sortColumn,
             direction: overrides.direction ?? sortDirection,
             page: overrides.page,
@@ -366,31 +344,16 @@ export default function OutsourcePerformancesIndex({
             preserveScroll: true,
             replace: false,
         });
-    }, [dateFrom, dateTo, perPage, searchTerm, selectedOutsource, selectedStatus, sortColumn, sortDirection]);
+    }, [perPage, searchTerm, selectedOutsource, sortColumn, sortDirection]);
 
     const handleSearchChange = (value: string) => {
         setSearchTerm(value);
         handleNavigate({ search: value.trim() ? value.trim() : undefined, page: 1 });
     };
 
-    const handleStatusChange = (value: string) => {
-        setSelectedStatus(value);
-        handleNavigate({ status: value !== 'all' ? value : undefined, page: 1 });
-    };
-
     const handleOutsourceChange = (value: string) => {
         setSelectedOutsource(value);
         handleNavigate({ outsource_id: value !== 'all' ? value : undefined, page: 1 });
-    };
-
-    const handleDateChange = (type: 'from' | 'to', value: string) => {
-        if (type === 'from') {
-            setDateFrom(value);
-            handleNavigate({ dispatched_from: value || undefined, page: 1 });
-        } else {
-            setDateTo(value);
-            handleNavigate({ dispatched_to: value || undefined, page: 1 });
-        }
     };
 
     const handlePerPageChange = (value: string) => {
@@ -805,32 +768,6 @@ export default function OutsourcePerformancesIndex({
                         ))}
                     </SelectContent>
                 </Select>
-                <Select value={selectedStatus} onValueChange={handleStatusChange}>
-                    <SelectTrigger className="w-[150px]">
-                        <SelectValue placeholder="Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">All statuses</SelectItem>
-                        {statusOptions?.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                                {option.label}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-                <div className="flex items-center gap-2">
-                    <DatePicker
-                        className="w-[150px] h-9 justify-start text-left"
-                        value={dateFrom}
-                        onChange={(next) => handleDateChange('from', next ?? '')}
-                    />
-                    <span className="text-muted-foreground">–</span>
-                    <DatePicker
-                        className="w-[150px] h-9 justify-start text-left"
-                        value={dateTo}
-                        onChange={(next) => handleDateChange('to', next ?? '')}
-                    />
-                </div>
             </div>
         </ListingFilterBar>
     );

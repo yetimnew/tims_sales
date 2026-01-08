@@ -341,7 +341,6 @@ export default function DriverTruckGradingReport({ filters, filterOptions, pagin
     return (
         <ReportPageLayout
             title="Driver-truck grading report"
-            description="Review graded driver-truck assignments, compare performance categories, and audit attachment trends after adjusting grading settings."
             breadcrumbs={breadcrumbs}
             icon={<LinkIcon className="h-6 w-6" />}
             filters={

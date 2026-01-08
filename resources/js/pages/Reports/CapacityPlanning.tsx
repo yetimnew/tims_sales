@@ -281,7 +281,6 @@ export default function CapacityPlanning({
     return (
         <ReportPageLayout
             title="Capacity Planning & Fleet Optimization"
-            description="Analyze fleet utilization, identify overcapacity or undercapacity, and receive data-driven recommendations to right-size your fleet for optimal performance and cost efficiency."
             breadcrumbs={breadcrumbs}
             icon={<Target className="h-6 w-6" />}
             filters={

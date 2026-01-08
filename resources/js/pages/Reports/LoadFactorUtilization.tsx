@@ -312,7 +312,6 @@ export default function LoadFactorUtilization({ filters, rows = [], summary, opt
     return (
         <ReportPageLayout
             title="Load Factor & Utilization Analysis"
-            description="Analyse capacity utilization, empty miles, and deadhead ratios. Identify opportunities to reduce empty runs and improve fleet efficiency."
             breadcrumbs={breadcrumbs}
             icon={<Gauge className="h-6 w-6" />}
             filters={

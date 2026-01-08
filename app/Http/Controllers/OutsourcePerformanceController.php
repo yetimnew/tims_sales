@@ -50,22 +50,9 @@ class OutsourcePerformanceController extends Controller
             });
         }
 
-        $status = $request->string('status')->trim()->value();
-        if ($status !== '' && $status !== 'all') {
-            $query->where('status', $status);
-        }
-
         $outsourceId = $request->integer('outsource_id');
         if ($outsourceId > 0) {
             $query->where('outsource_id', $outsourceId);
-        }
-
-        if ($request->filled('dispatched_from')) {
-            $query->whereDate('dispatch_date', '>=', $request->date('dispatched_from'));
-        }
-
-        if ($request->filled('dispatched_to')) {
-            $query->whereDate('dispatch_date', '<=', $request->date('dispatched_to'));
         }
 
         $allowedSortColumns = [
@@ -117,21 +104,6 @@ class OutsourcePerformanceController extends Controller
         ];
 
         // Cache status options (1 hour) - rarely changes
-        $statusOptions = Cache::remember('outsource_performances.status_options', 3600, function () {
-            return OutsourcePerformance::query()
-                ->select('status')
-                ->distinct()
-                ->orderBy('status')
-                ->pluck('status')
-                ->filter()
-                ->map(fn ($status) => [
-                    'label' => Str::headline((string) $status),
-                    'value' => $status,
-                ])
-                ->values()
-                ->all();
-        });
-
         // Cache outsource options (1 hour) - changes when outsources are added/removed
         $outsourceOptions = Cache::remember('outsource_performances.outsource_options', 3600, function () {
             return Outsource::query()
@@ -148,10 +120,7 @@ class OutsourcePerformanceController extends Controller
 
         $filters = [
             'search' => $search !== '' ? $search : null,
-            'status' => $status !== '' ? $status : null,
             'outsource_id' => $outsourceId > 0 ? $outsourceId : null,
-            'dispatched_from' => $request->get('dispatched_from'),
-            'dispatched_to' => $request->get('dispatched_to'),
             'sort' => $sortColumn,
             'direction' => $direction,
             'per_page' => $perPage,
@@ -161,7 +130,6 @@ class OutsourcePerformanceController extends Controller
             'outsourcePerformances' => $outsourcePerformances,
             'metrics' => $metrics,
             'filters' => $filters,
-            'statusOptions' => $statusOptions,
             'outsourceOptions' => $outsourceOptions,
             'perPageOptions' => $perPageOptions,
             'can' => [
@@ -187,15 +155,40 @@ class OutsourcePerformanceController extends Controller
             ])
             ->values();
 
-        $places = Place::query()
-            ->select('id', 'name')
-            ->orderBy('name')
-            ->get()
-            ->map(fn (Place $place) => [
-                'id' => $place->id,
-                'name' => $place->name,
-            ])
-            ->values();
+        $places = Cache::remember('outsource_performances.create_places', 3600, function () {
+            return Place::query()
+                ->select(['id', 'name', 'woreda_id'])
+                ->with([
+                    'woreda:id,name,zone_id',
+                    'woreda.zone:id,name,region_id',
+                    'woreda.zone.region:id,name',
+                ])
+                ->orderBy('name')
+                ->get()
+                ->map(function (Place $place) {
+                    $hierarchy = [];
+                    $hierarchy[] = $place->name;
+
+                    if ($place->woreda) {
+                        $hierarchy[] = $place->woreda->name;
+
+                        if ($place->woreda->zone) {
+                            $hierarchy[] = $place->woreda->zone->name;
+
+                            if ($place->woreda->zone->region) {
+                                $hierarchy[] = $place->woreda->zone->region->name;
+                            }
+                        }
+                    }
+
+                    return [
+                        'id' => $place->id,
+                        'name' => $place->name,
+                        'fullName' => implode(' → ', $hierarchy),
+                    ];
+                })
+                ->values();
+        });
 
         $statusOptions = $this->resolveStatusOptions();
 

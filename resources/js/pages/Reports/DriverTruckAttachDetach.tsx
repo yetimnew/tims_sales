@@ -257,7 +257,6 @@ export default function DriverTruckAttachDetach({ rows, summary, currentAssignme
     return (
         <ReportPageLayout
             title="Driver-Truck Attach / Detach History"
-            description="Track driver-truck assignment history, monitor attachment patterns, and review assignment lifecycle across your fleet."
             breadcrumbs={breadcrumbs}
             icon={<Link2 className="h-6 w-6" />}
             summarySection={

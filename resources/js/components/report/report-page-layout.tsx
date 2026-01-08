@@ -60,7 +60,7 @@ export function ReportPageLayout({
           )}
         >
           <CardHeader className="border-b border-slate-200/50 px-6 pb-4 dark:border-slate-800/50">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="grid gap-4 lg:grid-cols-[3fr_7fr] lg:items-start">
               <div className="flex items-start gap-4">
                 {icon && (
                   <div className="rounded-xl bg-blue-100 p-2 text-blue-600 shadow-sm dark:bg-blue-900/30 dark:text-blue-400">
@@ -70,13 +70,13 @@ export function ReportPageLayout({
                 <div>
                   <CardTitle className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{title}</CardTitle>
                   {description && (
-                    <CardDescription className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+                    <CardDescription className="sr-only">
                       {description}
                     </CardDescription>
                   )}
                 </div>
               </div>
-              <div className="flex flex-wrap items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3 lg:justify-end">
                 {filters}
                 {onRefresh && (
                   <Button

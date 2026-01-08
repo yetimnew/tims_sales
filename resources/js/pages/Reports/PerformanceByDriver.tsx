@@ -202,7 +202,6 @@ export default function PerformanceByDriver({ filters, rows = [], summary, drive
     return (
         <ReportPageLayout
             title="Performance by Driver"
-            description="Compare utilisation, earnings, and cost efficiency for each driver. Refine the window, focus on specific drivers, and export polished reports for your operational reviews."
             breadcrumbs={breadcrumbs}
             icon={<Activity className="h-6 w-6" />}
             filters={

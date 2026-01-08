@@ -445,7 +445,7 @@ export default function OutsourcesIndex({
             }}
         >
             <Select value={selectedStatus} onValueChange={handleStatusChange}>
-                <SelectTrigger className="min-w-[150px]">
+                <SelectTrigger className="w-full min-w-[140px] sm:w-auto">
                     <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -458,7 +458,7 @@ export default function OutsourcesIndex({
                 </SelectContent>
             </Select>
             <Select value={selectedServiceType} onValueChange={handleServiceTypeChange}>
-                <SelectTrigger className="min-w-[180px]">
+                <SelectTrigger className="w-full min-w-[160px] sm:w-auto">
                     <SelectValue placeholder="Service type" />
                 </SelectTrigger>
                 <SelectContent>

@@ -90,7 +90,7 @@ class DistanceController extends Controller
         $sortDirection = $request->get('direction', 'asc');
 
         // Validate sort column to prevent SQL injection
-        $allowedSortColumns = ['id', 'distance_km', 'estimated_time_hours', 'route_type', 'created_at', 'average_speed_kmph', 'road_quality_index'];
+        $allowedSortColumns = ['id', 'distance_km', 'estimated_time_hours', 'route_type', 'average_speed_kmph', 'road_quality_index'];
         if (! in_array($sortColumn, $allowedSortColumns)) {
             $sortColumn = 'distance_km';
         }
@@ -99,7 +99,47 @@ class DistanceController extends Controller
 
         $metricsQuery = clone $query;
 
-        $distances = $query->paginate(15)->withQueryString();
+        $formatPlace = static function (?Place $place): ?array {
+            if ($place === null) {
+                return null;
+            }
+
+            return [
+                'id' => $place->id,
+                'name' => $place->name,
+                'woreda' => $place->woreda ? [
+                    'id' => $place->woreda->id,
+                    'name' => $place->woreda->name,
+                    'zone' => $place->woreda->zone ? [
+                        'id' => $place->woreda->zone->id,
+                        'name' => $place->woreda->zone->name,
+                        'region' => $place->woreda->zone->region ? [
+                            'id' => $place->woreda->zone->region->id,
+                            'name' => $place->woreda->zone->region->name,
+                        ] : null,
+                    ] : null,
+                ] : null,
+            ];
+        };
+
+        $distances = $query
+            ->paginate(15)
+            ->withQueryString()
+            ->through(function (Distance $distance) use ($formatPlace) {
+                return [
+                    'id' => $distance->id,
+                    'status' => $distance->status,
+                    'distance_km' => $distance->distance_km,
+                    'estimated_time_hours' => $distance->estimated_time_hours,
+                    'route_type' => $distance->route_type,
+                    'average_speed_kmph' => $distance->average_speed_kmph,
+                    'road_quality_index' => $distance->road_quality_index,
+                    'toll_road' => $distance->toll_road,
+                    'restricted_for_heavy_vehicles' => $distance->restricted_for_heavy_vehicles,
+                    'from_place' => $formatPlace($distance->fromPlace),
+                    'to_place' => $formatPlace($distance->toPlace),
+                ];
+            });
 
         // Cache metrics only when no filters applied (1 hour)
         $search = $request->get('search');

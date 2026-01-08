@@ -547,7 +547,6 @@ export default function TruckGradingReport({
     return (
         <ReportPageLayout
             title="Truck grading report"
-            description="Review the graded leaderboard, compare category scores, and identify outliers after adjusting the configuration."
             breadcrumbs={breadcrumbs}
             icon={<Truck className="h-6 w-6" />}
             filters={

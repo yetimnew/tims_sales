@@ -297,7 +297,6 @@ export default function DriverSafetyReport({
     return (
         <ReportPageLayout
             title="Driver Safety"
-            description="Monitor incident trends, severity mix, and driver exposure across the reporting window."
             breadcrumbs={breadcrumbs}
             icon={<ShieldAlert className="h-6 w-6" />}
             filters={

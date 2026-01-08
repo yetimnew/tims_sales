@@ -213,7 +213,6 @@ export default function GeographyHeatmaps({ filters, regions, zones, woredas, pl
     return (
         <ReportPageLayout
             title="Geographic Heatmaps"
-            description="Surface the corridors that deliver the strongest contribution. Blend spatial and financial metrics, explore hotspots, and spot momentum shifts before they ripple into your operations."
             breadcrumbs={breadcrumbs}
             icon={<Globe className="h-6 w-6" />}
             filters={

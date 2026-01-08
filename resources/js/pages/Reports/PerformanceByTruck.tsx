@@ -317,7 +317,6 @@ export default function PerformanceByTruck({ filters, rows = [], summary, trucks
     return (
         <ReportPageLayout
             title="Performance by Truck"
-            description="Monitor utilisation, cost, and profitability for each truck. Refine the window, focus on specific vehicles, and export polished reports for finance and operations."
             breadcrumbs={breadcrumbs}
             icon={<BarChart3 className="h-6 w-6" />}
             filters={

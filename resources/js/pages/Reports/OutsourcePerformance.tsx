@@ -315,7 +315,6 @@ export default function OutsourcePerformance({ filters, rows = [], summary, opti
     return (
         <ReportPageLayout
             title="Outsource Dispatch Performance"
-            description="Review every outsource dispatch alongside internal benchmarks. Filter by vendor, route, and status to reconcile spend, revenue, and profitability."
             breadcrumbs={breadcrumbs}
             icon={<Building2 className="h-6 w-6" />}
             filters={

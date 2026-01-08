@@ -284,7 +284,6 @@ export default function DriverGradingReport({ filters, filterOptions, paginator,
     return (
         <ReportPageLayout
             title="Driver grading report"
-            description="Review graded drivers, compare categories, and identify outliers after adjusting the configuration."
             breadcrumbs={breadcrumbs}
             icon={<User className="h-6 w-6" />}
             filters={

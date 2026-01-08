@@ -234,7 +234,6 @@ export default function PerformanceByStatus({ filters, summary = [], latest = []
     return (
         <ReportPageLayout
             title="Performance by Status"
-            description="Track how operational statuses evolve throughout the day. Filter by reporting date, focus on the statuses you care about, and surface the dominant state across the fleet."
             breadcrumbs={breadcrumbs}
             icon={<PieChart className="h-6 w-6" />}
             filters={

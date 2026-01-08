@@ -496,7 +496,6 @@ export default function MaintenanceReport({
     return (
         <ReportPageLayout
             title="Maintenance Operations"
-            description="Track workshop throughput, completion performance, and supplier spend to keep assets road-ready. Adjust the window, focus on specific trucks or job types, and share consistent reporting with your teams."
             breadcrumbs={breadcrumbs}
             icon={<Wrench className="h-6 w-6" />}
             filters={

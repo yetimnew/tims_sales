@@ -391,7 +391,6 @@ export default function FuelEfficiency({
     return (
         <ReportPageLayout
             title="Fuel Efficiency & Cost"
-            description="Benchmark trucks by trip performance, fuel spend, and loaded versus empty kilometres. Blend performance runs with fuel metrics to surface outliers and spot opportunities to rebalance assignments."
             breadcrumbs={breadcrumbs}
             icon={<Droplet className="h-6 w-6" />}
             filters={

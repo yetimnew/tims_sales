@@ -358,7 +358,6 @@ export default function DailyStatus({ filters, summary, statusSummary, daily, op
     return (
         <ReportPageLayout
             title="Daily Status Report"
-            description="Review daily operational statuses for selected trucks and periods. Compare status distribution, spot activity peaks, and export summaries for your teams."
             breadcrumbs={breadcrumbs}
             icon={<Filter className="h-6 w-6" />}
             filters={

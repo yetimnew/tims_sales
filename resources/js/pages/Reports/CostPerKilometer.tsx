@@ -283,7 +283,6 @@ export default function CostPerKilometer({ filters, rows = [], summary, options,
     return (
         <ReportPageLayout
             title="Cost Per Kilometer Analysis"
-            description="Analyse cost efficiency by breaking down expenses per kilometer. Identify cost drivers and optimize operational expenses across your fleet."
             breadcrumbs={breadcrumbs}
             icon={<DollarSign className="h-6 w-6" />}
             filters={

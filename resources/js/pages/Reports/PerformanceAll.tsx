@@ -328,7 +328,6 @@ export default function PerformanceAll({ filters, performances, summary, perPage
     return (
         <ReportPageLayout
             title="Performance (All Dispatches)"
-            description="Review every dispatch outcome across drivers, trucks, operations, and destinations. Refine the window, focus on specific assets, and export ready-to-share reports for your operations team."
             breadcrumbs={breadcrumbs}
             icon={<ClipboardList className="h-6 w-6" />}
             filters={

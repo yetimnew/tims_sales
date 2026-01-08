@@ -420,7 +420,6 @@ export default function RouteProfitability({ filters, rows = [], summary, option
     return (
         <ReportPageLayout
             title="Route Profitability Matrix"
-            description="Analyse profitability by origin-destination route pairs. Identify high-performing routes, optimise pricing, and discover opportunities to improve underperforming corridors."
             breadcrumbs={breadcrumbs}
             icon={<Route className="h-6 w-6" />}
             filters={
