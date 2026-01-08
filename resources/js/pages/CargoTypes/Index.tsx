@@ -28,7 +28,6 @@ import {
     Scale,
     ClipboardList,
     ChevronRight,
-    Download,
 } from 'lucide-react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -130,7 +129,6 @@ export default function CargoTypesIndex({
     const canEditCargoType = hasPermission('cargotypes.edit');
     const canDeleteCargoType = hasPermission('cargotypes.destroy');
     const canCreateCargoType = hasPermission('cargotypes.create');
-    const canExportCargoTypes = hasPermission('cargotypes.export');
 
     const [searchTerm, setSearchTerm] = React.useState(filters?.search ?? '');
     const [selectedCategory, setSelectedCategory] = React.useState(filters?.category ?? 'all');
@@ -331,24 +329,6 @@ export default function CargoTypesIndex({
             },
         });
     };
-
-    const handleExport = React.useCallback(() => {
-        const params = new URLSearchParams();
-        if (searchTerm.trim()) {
-            params.set('search', searchTerm.trim());
-        }
-        if (selectedCategory !== 'all') {
-            params.set('category', selectedCategory);
-        }
-        if (selectedSpecialEquipment !== 'all') {
-            params.set('requires_special_equipment', selectedSpecialEquipment);
-        }
-        params.set('sort', sortColumn);
-        params.set('direction', sortDirection);
-
-        const queryString = params.toString();
-        window.location.href = queryString ? `/cargo-types/export?${queryString}` : '/cargo-types/export';
-    }, [searchTerm, selectedCategory, selectedSpecialEquipment, sortColumn, sortDirection]);
 
     const getCategoryBadgeClass = (category: string): string => {
         const normalized = category.toLowerCase();
@@ -738,12 +718,6 @@ export default function CargoTypesIndex({
 
     const headerActions = (
         <>
-            {canExportCargoTypes && (
-                <Button variant="outline" onClick={handleExport} className="gap-2">
-                    <Download className="h-4 w-4" />
-                    Export CSV
-                </Button>
-            )}
             {canCreateCargoType && (
                 <Button asChild>
                     <Link href="/cargo-types/create">
@@ -805,4 +779,3 @@ export default function CargoTypesIndex({
         </>
     );
 }
-

@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
 use Inertia\Response;
 use Spatie\Activitylog\Facades\Activity as ActivityLogger;
@@ -38,6 +39,14 @@ class DistanceController extends Controller
                     })
                     ->orWhere('route_description', 'like', "%{$search}%")
                     ->orWhere('route_notes', 'like', "%{$search}%");
+
+                if (Schema::hasColumn('distances', 'origin_name')) {
+                    $q->orWhere('origin_name', 'like', "%{$search}%");
+                }
+
+                if (Schema::hasColumn('distances', 'destination_name')) {
+                    $q->orWhere('destination_name', 'like', "%{$search}%");
+                }
             });
         }
 

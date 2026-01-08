@@ -71,6 +71,7 @@ interface OperationInsights {
   economics?: OperationEconomics | null;
   tripEconomics?: TripEconomics | null;
   performanceShare: PerformanceShare;
+  timing?: { averageDurationMinutes: number | null; actualDurationMinutes: number | null; delayMinutes: number | null };
   trends: {
     recentTrips: Array<{ id: number; foNumber: string; date: string; tonnage: number; distance: number; cost: number; highlight: boolean }>;
     statusBreakdown: Array<{ label: string; value: number }>;
@@ -192,6 +193,7 @@ export default function PerformancesShow({ performance, activityLogs, operationI
   const tripEconomics = operationInsights?.tripEconomics ?? null;
   const operationTrends = operationInsights?.trends;
   const performanceShare = operationInsights?.performanceShare ?? null;
+  const timingInsights = operationInsights?.timing ?? null;
 
   const tariff = tripEconomics?.tariff ?? operationRef?.tariff ?? null;
   const actualRevenueRaw = tripEconomics?.actualRevenue ?? (tariff !== null ? Number((tonKm * tariff).toFixed(2)) : null);
@@ -202,6 +204,11 @@ export default function PerformancesShow({ performance, activityLogs, operationI
   const statusData = operationTrends?.statusBreakdown ?? [];
   const hasStatusData = statusData.some(item => item.value > 0);
   const timelineData = operationTrends?.recentTrips ?? [];
+  const timelineChartData = timelineData.map((item, index) => ({
+    ...item,
+    tripLabel: `Trip ${index + 1}`,
+    dateLabel: item.date ?? 'N/A',
+  }));
   const hasTimelineData = timelineData.length > 0;
   const piePalette = ['#6366f1', '#22c55e', '#f97316'];
 
@@ -210,6 +217,28 @@ export default function PerformancesShow({ performance, activityLogs, operationI
   const actualRevenueLabel = formatCurrencyDisplay(actualRevenueRaw);
   const grossMarginValueLabel = formatCurrencyDisplay(grossMarginValueRaw);
   const costPerTonKmLabel = formatCurrencyPerUnit(costPerTonKmRaw, 'ton-km');
+  const averageDurationMinutes = timingInsights?.averageDurationMinutes ?? null;
+  const actualDurationMinutes = timingInsights?.actualDurationMinutes ?? null;
+  const delayMinutes = timingInsights?.delayMinutes ?? null;
+
+  const formatDuration = (minutes?: number | null) => {
+    if (minutes === null || minutes === undefined) return 'N/A';
+    if (!Number.isFinite(Number(minutes))) return 'N/A';
+    const totalMinutes = Math.max(0, Math.round(minutes));
+    const hours = Math.floor(totalMinutes / 60);
+    const mins = totalMinutes % 60;
+    if (hours === 0) {
+      return `${mins} min`;
+    }
+    return `${hours}h ${mins}m`;
+  };
+
+  const resolveDelayLabel = (minutes?: number | null) => {
+    if (minutes === null || minutes === undefined) return 'N/A';
+    if (minutes === 0) return 'On time';
+    if (minutes > 0) return `Late by ${formatDuration(minutes)}`;
+    return `Early by ${formatDuration(Math.abs(minutes))}`;
+  };
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
@@ -353,6 +382,18 @@ export default function PerformancesShow({ performance, activityLogs, operationI
                       <p className="mt-2 font-semibold capitalize">{performance.load_completion}</p>
                     </div>
                   )}
+                  <div className="rounded-lg border p-3">
+                    <p className="text-xs font-semibold uppercase text-muted-foreground">Avg Duration (Route)</p>
+                    <p className="mt-2 font-semibold">{formatDuration(averageDurationMinutes)}</p>
+                  </div>
+                  <div className="rounded-lg border p-3">
+                    <p className="text-xs font-semibold uppercase text-muted-foreground">Actual Duration</p>
+                    <p className="mt-2 font-semibold">{formatDuration(actualDurationMinutes)}</p>
+                  </div>
+                  <div className="rounded-lg border p-3">
+                    <p className="text-xs font-semibold uppercase text-muted-foreground">Delay vs Average</p>
+                    <p className="mt-2 font-semibold">{resolveDelayLabel(delayMinutes)}</p>
+                  </div>
                   <div className="rounded-lg border p-3">
                     <p className="text-xs font-semibold uppercase text-muted-foreground">Distance W/Cargo</p>
                     <p className="mt-2 font-semibold">{formatNumberDisplay(dwc, 0)} km</p>
@@ -711,10 +752,23 @@ export default function PerformancesShow({ performance, activityLogs, operationI
                   <DetailSectionCard title="Recent Trips Trend" icon={<BarChart3 className="h-5 w-5" />}>
                     <div className="h-48">
                       <ResponsiveContainer>
-                        <AreaChart data={timelineData}>
+                        <AreaChart data={timelineChartData}>
                           <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="foNumber" />
-                          <Tooltip />
+                          <XAxis
+                            dataKey="dateLabel"
+                            interval="preserveStartEnd"
+                            minTickGap={12}
+                            tick={{ fontSize: 11 }}
+                            tickMargin={8}
+                            angle={-20}
+                            textAnchor="end"
+                          />
+                          <Tooltip
+                            labelFormatter={(label, payload) => {
+                              const item = payload?.[0]?.payload as { tripLabel?: string; dateLabel?: string } | undefined;
+                              return item ? `${item.tripLabel} • ${item.dateLabel}` : String(label);
+                            }}
+                          />
                           <Area type="monotone" dataKey="cost" stroke="#6366f1" fill="#6366f1" fillOpacity={0.2} />
                         </AreaChart>
                       </ResponsiveContainer>

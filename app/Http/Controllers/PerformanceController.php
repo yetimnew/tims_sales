@@ -114,7 +114,25 @@ class PerformanceController extends Controller
         if ($search !== '') {
             $baseQuery->where(function ($query) use ($search) {
                 $query->where('FOnumber', 'like', "%{$search}%")
-                    ->orWhere('comment', 'like', "%{$search}%");
+                    ->orWhere('comment', 'like', "%{$search}%")
+                    ->orWhere('DateDispach', 'like', "%{$search}%")
+                    ->orWhereHas('driverTruck.driver', static function ($driverQuery) use ($search) {
+                        $driverQuery->where('name', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('driverTruck.truck', static function ($truckQuery) use ($search) {
+                        $truckQuery->where('plate', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('origin', static function ($placeQuery) use ($search) {
+                        $placeQuery->where('name', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('destination', static function ($placeQuery) use ($search) {
+                        $placeQuery->where('name', 'like', "%{$search}%");
+                    });
+
+                if (is_numeric($search)) {
+                    $query->orWhere('DistanceWCargo', $search)
+                        ->orWhere('DistanceWOCargo', $search);
+                }
             });
         }
 
@@ -470,6 +488,27 @@ class PerformanceController extends Controller
                     ? round(($performanceTonnage / $operationPlannedVolume) * 100, 2)
                     : null);
 
+            $averageDurationMinutes = (clone $operationPerformancesQuery)
+                ->where('orgion_id', $performance->orgion_id)
+                ->where('destination_id', $performance->destination_id)
+                ->where('is_returned', 1)
+                ->whereNotNull('returned_date')
+                ->whereNotNull('DateDispach')
+                ->where('id', '!=', $performance->id)
+                ->selectRaw('AVG(TIMESTAMPDIFF(MINUTE, DateDispach, returned_date)) as avg_duration_minutes')
+                ->value('avg_duration_minutes');
+
+            $actualDurationMinutes = null;
+            if ($performance->DateDispach && $performance->returned_date) {
+                $actualDurationMinutes = Carbon::parse($performance->DateDispach)
+                    ->diffInMinutes(Carbon::parse($performance->returned_date));
+            }
+
+            $delayMinutes = null;
+            if ($actualDurationMinutes !== null && $averageDurationMinutes !== null) {
+                $delayMinutes = (int) round($actualDurationMinutes - $averageDurationMinutes);
+            }
+
             $recentPerformances = (clone $operationPerformancesQuery)
                 ->select(['id', 'FOnumber', 'DateDispach', 'CargoVolumMT', 'DistanceWCargo', 'DistanceWOCargo', 'fuelInBirr', 'perdiem', 'other'])
                 ->orderByDesc('DateDispach')
@@ -555,6 +594,11 @@ class PerformanceController extends Controller
                     'cost' => round($performanceCost, 2),
                     'tonKm' => round($performanceTonKm, 2),
                 ],
+                'timing' => [
+                    'averageDurationMinutes' => $averageDurationMinutes !== null ? (int) round($averageDurationMinutes) : null,
+                    'actualDurationMinutes' => $actualDurationMinutes,
+                    'delayMinutes' => $delayMinutes,
+                ],
                 'trends' => [
                     'recentTrips' => $recentPerformances,
                     'statusBreakdown' => $statusBreakdown,
@@ -618,8 +662,8 @@ class PerformanceController extends Controller
         });
 
         $performanceData = $performance->toArray();
-        $performanceData['DateDispach'] = optional($performance->DateDispach)->toIso8601String();
-        $performanceData['returned_date'] = optional($performance->returned_date)->toIso8601String();
+        $performanceData['DateDispach'] = optional($performance->DateDispach)->format('Y-m-d\TH:i');
+        $performanceData['returned_date'] = optional($performance->returned_date)->format('Y-m-d\TH:i');
 
         return Inertia::render('Performances/Edit', [
             'performance' => $performanceData,

@@ -140,10 +140,50 @@ const toStringOrEmpty = (value: string | number | null | undefined): string => {
     return normalized === 'null' ? '' : normalized;
 };
 
+const normalizeDateTimeLocal = (value: string | number | null | undefined): string => {
+    if (value === null || value === undefined) {
+        return '';
+    }
+
+    const raw = typeof value === 'string' ? value : String(value);
+    const trimmed = raw.trim();
+
+    if (trimmed === '') {
+        return '';
+    }
+
+    const directMatch = trimmed.match(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})/);
+    if (directMatch) {
+        return directMatch[1];
+    }
+
+    const fallbackMatch = trimmed.replace(' ', 'T').match(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})/);
+    if (fallbackMatch) {
+        return fallbackMatch[1];
+    }
+
+    const parsed = new Date(trimmed);
+    if (Number.isNaN(parsed.getTime())) {
+        return '';
+    }
+
+    const pad = (input: number) => input.toString().padStart(2, '0');
+
+    const year = parsed.getFullYear();
+    const month = pad(parsed.getMonth() + 1);
+    const day = pad(parsed.getDate());
+    const hours = pad(parsed.getHours());
+    const minutes = pad(parsed.getMinutes());
+
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
+
 const buildInitialForm = (performance: Performance): PerformanceFormData => {
     const distanceWithCargo = toStringOrEmpty(performance.DistanceWCargo);
     const cargoVolume = toStringOrEmpty(performance.CargoVolumMT);
     const existingTonKm = toStringOrEmpty(performance.tonkm);
+    const normalizedDispatchDate = normalizeDateTimeLocal(performance.DateDispach);
+    const normalizedReturnedDate = normalizeDateTimeLocal(performance.returned_date);
 
     const resolvedTonKm = (() => {
         const numericTonKm = Number.parseFloat(existingTonKm || '0');
@@ -175,7 +215,7 @@ const buildInitialForm = (performance: Performance): PerformanceFormData => {
         FOnumber: performance.FOnumber ?? '',
         operation_id: performance.operation_id ? String(performance.operation_id) : '',
         driver_truck_id: performance.driver_truck_id ? String(performance.driver_truck_id) : '',
-        DateDispach: performance.DateDispach ?? '',
+        DateDispach: normalizedDispatchDate,
         orgion_id: performance.orgion_id ? String(performance.orgion_id) : '',
         destination_id: performance.destination_id ? String(performance.destination_id) : '',
         DistanceWCargo: distanceWithCargo,
@@ -188,7 +228,7 @@ const buildInitialForm = (performance: Performance): PerformanceFormData => {
         comment: performance.comment ?? '',
         satus: normalizedStatus,
         is_returned: Boolean(performance.is_returned),
-        returned_date: performance.returned_date ?? '',
+        returned_date: normalizedReturnedDate,
         tonkm: resolvedTonKm,
     };
 };

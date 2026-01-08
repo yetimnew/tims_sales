@@ -69,7 +69,7 @@ class UpdateDriverRequest extends FormRequest
     {
         $this->merge([
             'driverid' => trim($this->driverid ?? ''),
-            'name' => trim($this->name ?? ''),
+            'name' => mb_strtoupper(trim($this->name ?? ''), 'UTF-8'),
             'mobile' => trim($this->mobile ?? ''),
             'zone' => trim($this->zone ?? ''),
             'woreda' => trim($this->woreda ?? ''),

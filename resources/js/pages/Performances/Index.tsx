@@ -519,7 +519,14 @@ export default function PerformancesIndex({
                   return (
                       <TableRow key={performance.id} className="hover:bg-muted/50">
                           <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
-                          <TableCell className="font-medium">{performance.foNumber}</TableCell>
+                          <TableCell className="font-medium">
+                              <Link
+                                  href={`/performances/${performance.id}`}
+                                  className="text-foreground underline-offset-4 hover:underline"
+                              >
+                                  {performance.foNumber}
+                              </Link>
+                          </TableCell>
                           <TableCell className="text-muted-foreground">{formatDateValue(performance.dispatchDate)}</TableCell>
                           <TableCell>
                               <div className="flex flex-col gap-1">
@@ -835,4 +842,3 @@ export default function PerformancesIndex({
         </>
     );
 }
-
