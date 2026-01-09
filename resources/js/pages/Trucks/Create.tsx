@@ -12,14 +12,15 @@ import { Link, useForm } from '@inertiajs/react';
 import { toast } from '@/hooks/use-toast';
 import { validateTruck, type ValidationErrors, truckValidation } from '@/lib/validation';
 import { Info, Wrench, DollarSign, CheckCircle, Save, Truck, Hash, ArrowLeft, AlertCircle } from 'lucide-react';
-import { FormEventHandler, useEffect, useRef, useState } from 'react';
+import { FormEventHandler, useEffect, useMemo, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { type BreadcrumbItem } from '@/types';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useTranslation } from 'react-i18next';
 
-const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Trucks', href: '/trucks' },
-    { title: 'Create', href: '/trucks/create' },
+const getBreadcrumbs = (translate: (key: string) => string): BreadcrumbItem[] => [
+    { title: translate('trucks.breadcrumb'), href: '/trucks' },
+    { title: translate('trucks.form.create.breadcrumb'), href: '/trucks/create' },
 ];
 
 interface VehicleType {
@@ -47,6 +48,8 @@ type TruckFormData = {
 type TruckFormField = keyof TruckFormData;
 
 export default function TrucksCreate({ vehicleTypes }: TrucksCreateProps) {
+    const { t } = useTranslation();
+    const breadcrumbs = useMemo(() => getBreadcrumbs(t), [t]);
     const { data, setData, post, processing, errors, clearErrors } = useForm<TruckFormData>({
         plate: '',
         vehicletype_id: '',
@@ -94,9 +97,13 @@ export default function TrucksCreate({ vehicleTypes }: TrucksCreateProps) {
     useEffect(() => {
         const errorMessages = Object.entries(errors).map(([, message]) => typeof message === 'string' ? message : String(message));
         if (errorMessages.length > 0) {
-            toast({ title: '⚠️ Validation Error', description: errorMessages.join(', '), variant: 'destructive' });
+            toast({
+                title: t('trucks.form.validation.title'),
+                description: errorMessages.join(', '),
+                variant: 'destructive',
+            });
         }
-    }, [errors]);
+    }, [errors, t]);
 
     useEffect(() => {
         const container = scrollContainerRef.current;
@@ -126,7 +133,11 @@ export default function TrucksCreate({ vehicleTypes }: TrucksCreateProps) {
         delete allErrors.serviceStartDate;
         if (Object.keys(allErrors).length > 0) {
             setFrontendErrors(allErrors);
-            toast({ title: '⚠️ Validation Error', description: 'Please fix the validation errors before submitting', variant: 'destructive' });
+            toast({
+                title: t('trucks.form.validation.title'),
+                description: t('trucks.form.validation.fixErrors'),
+                variant: 'destructive',
+            });
             return;
         }
         post('/trucks', {
@@ -136,8 +147,8 @@ export default function TrucksCreate({ vehicleTypes }: TrucksCreateProps) {
                 setFrontendErrors({});
                 setIsDirty(false);
                 toast({
-                    title: '✅ Truck Created',
-                    description: 'The truck has been added to the fleet successfully.',
+                    title: t('trucks.form.create.successTitle'),
+                    description: t('trucks.form.create.successDescription'),
                 });
             },
         });
@@ -148,8 +159,8 @@ export default function TrucksCreate({ vehicleTypes }: TrucksCreateProps) {
 
     return (
         <FormPageLayout
-            title="Create New Truck"
-            description="Complete a unified intake covering identification, specifications, and lifecycle financials."
+            title={t('trucks.form.create.title')}
+            description={t('trucks.form.create.description')}
             breadcrumbs={breadcrumbs}
             icon={<Truck className="h-5 w-5" />}
             headerAside={
@@ -157,13 +168,13 @@ export default function TrucksCreate({ vehicleTypes }: TrucksCreateProps) {
                     <Button variant="ghost" size="sm" asChild>
                         <Link href="/trucks">
                             <ArrowLeft className="mr-2 h-4 w-4" />
-                            Back to Trucks
+                            {t('trucks.form.create.backToList')}
                         </Link>
                     </Button>
                     {isDirty && <UnsavedChangesBadge />}
                     <div className="flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1.5 text-sm font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
                         <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-500"></div>
-                        Fleet Operations
+                        {t('trucks.form.badge')}
                     </div>
                 </>
             }
@@ -172,7 +183,7 @@ export default function TrucksCreate({ vehicleTypes }: TrucksCreateProps) {
                 <div className="px-6 pt-6">
                     <Alert variant="destructive">
                         <AlertCircle className="h-4 w-4" />
-                        <AlertDescription>Please resolve the highlighted fields before submitting the form.</AlertDescription>
+                        <AlertDescription>{t('trucks.form.validation.resolve')}</AlertDescription>
                     </Alert>
                 </div>
             )}
@@ -184,8 +195,8 @@ export default function TrucksCreate({ vehicleTypes }: TrucksCreateProps) {
                 style={{ minHeight: 0 }}
             >
                 <FormSection
-                    title="General Details"
-                    description="Primary identification and status information."
+                    title={t('trucks.form.sections.general.title')}
+                    description={t('trucks.form.sections.general.description')}
                     icon={
                         <div className="rounded-lg bg-blue-100 p-2 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
                             <Info className="h-4 w-4" />
@@ -194,9 +205,9 @@ export default function TrucksCreate({ vehicleTypes }: TrucksCreateProps) {
                 >
                     <FormField
                         id="plate"
-                        label="Plate Number"
+                        label={t('trucks.form.fields.plate.label')}
                         required
-                        tooltip="Official license plate number"
+                        tooltip={t('trucks.form.fields.plate.tooltip')}
                         error={getFieldError('plate')}
                     >
                         <div className="relative">
@@ -206,14 +217,14 @@ export default function TrucksCreate({ vehicleTypes }: TrucksCreateProps) {
                                 type="text"
                                 value={data.plate}
                                 onChange={(e) => handleFieldChange('plate', e.target.value.toUpperCase())}
-                                placeholder="e.g., AA-1234"
+                                placeholder={t('trucks.form.fields.plate.placeholder')}
                                 className={`pl-10 transition-all duration-200 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 ${getFieldError('plate') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : 'focus:ring-blue-500/20 focus:border-blue-500 hover:border-slate-400 dark:hover:border-slate-500'}`}
                             />
                         </div>
                     </FormField>
                     <FormField
                         id="vehicletype_id"
-                        label="Vehicle Type"
+                        label={t('trucks.form.fields.vehicleType.label')}
                         required
                         error={getFieldError('vehicletype_id')}
                     >
@@ -222,7 +233,7 @@ export default function TrucksCreate({ vehicleTypes }: TrucksCreateProps) {
                             onValueChange={(value) => handleFieldChange('vehicletype_id', value)}
                         >
                             <SelectTrigger className={`transition-all duration-200 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 focus:ring-blue-500/20 focus:border-blue-500 ${getFieldError('vehicletype_id') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}>
-                                <SelectValue placeholder="Select vehicle type" />
+                                <SelectValue placeholder={t('trucks.form.fields.vehicleType.placeholder')} />
                             </SelectTrigger>
                             <SelectContent className="z-50 bg-white shadow-lg dark:bg-slate-800">
                                 {vehicleTypes.map((type) => (
@@ -239,7 +250,7 @@ export default function TrucksCreate({ vehicleTypes }: TrucksCreateProps) {
                     </FormField>
                     <FormField
                         id="status"
-                        label="Status"
+                        label={t('trucks.form.fields.status.label')}
                         required
                         error={getFieldError('status')}
                     >
@@ -248,85 +259,109 @@ export default function TrucksCreate({ vehicleTypes }: TrucksCreateProps) {
                             onValueChange={(value) => handleFieldChange('status', value)}
                         >
                             <SelectTrigger className={`transition-all duration-200 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 focus:ring-blue-500/20 focus:border-blue-500 ${getFieldError('status') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}>
-                                <SelectValue placeholder="Select status" />
+                                <SelectValue placeholder={t('trucks.form.fields.status.placeholder')} />
                             </SelectTrigger>
                             <SelectContent className="z-50 bg-white shadow-lg dark:bg-slate-800">
-                                <SelectItem value="active" className="hover:bg-slate-100 focus:bg-slate-100 dark:hover:bg-slate-700 dark:focus:bg-slate-700">Active</SelectItem>
-                                <SelectItem value="inactive" className="hover:bg-slate-100 focus:bg-slate-100 dark:hover:bg-slate-700 dark:focus:bg-slate-700">Inactive</SelectItem>
+                                <SelectItem value="active" className="hover:bg-slate-100 focus:bg-slate-100 dark:hover:bg-slate-700 dark:focus:bg-slate-700">
+                                    {t('trucks.status.active')}
+                                </SelectItem>
+                                <SelectItem value="inactive" className="hover:bg-slate-100 focus:bg-slate-100 dark:hover:bg-slate-700 dark:focus:bg-slate-700">
+                                    {t('trucks.status.inactive')}
+                                </SelectItem>
                             </SelectContent>
                         </Select>
                     </FormField>
                 </FormSection>
 
                 <FormSection
-                    title="Technical Specifications"
-                    description="Detailed build and maintenance metadata."
+                    title={t('trucks.form.sections.technical.title')}
+                    description={t('trucks.form.sections.technical.description')}
                     icon={
                         <div className="rounded-lg bg-amber-100 p-2 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
                             <Wrench className="h-4 w-4" />
                         </div>
                     }
                 >
-                    <FormField id="chasisNumber" label="Chassis Number" helperText="Optional - Factory assigned identifier">
+                    <FormField
+                        id="chasisNumber"
+                        label={t('trucks.form.fields.chassis.label')}
+                        helperText={t('trucks.form.fields.chassis.helper')}
+                    >
                         <Input
                             id="chasisNumber"
                             type="text"
                             value={data.chasisNumber}
                             onChange={(e) => handleFieldChange('chasisNumber', e.target.value)}
-                            placeholder="Chassis number"
+                            placeholder={t('trucks.form.fields.chassis.placeholder')}
                         />
                     </FormField>
-                    <FormField id="engineNumber" label="Engine Number" helperText="Optional - Engine identifier">
+                    <FormField
+                        id="engineNumber"
+                        label={t('trucks.form.fields.engine.label')}
+                        helperText={t('trucks.form.fields.engine.helper')}
+                    >
                         <Input
                             id="engineNumber"
                             type="text"
                             value={data.engineNumber}
                             onChange={(e) => handleFieldChange('engineNumber', e.target.value)}
-                            placeholder="Engine number"
+                            placeholder={t('trucks.form.fields.engine.placeholder')}
                         />
                     </FormField>
-                    <FormField id="tyreSyze" label="Tyre Size" helperText="Optional - Standard tire specification">
+                    <FormField
+                        id="tyreSyze"
+                        label={t('trucks.form.fields.tyre.label')}
+                        helperText={t('trucks.form.fields.tyre.helper')}
+                    >
                         <Input
                             id="tyreSyze"
                             type="text"
                             value={data.tyreSyze}
                             onChange={(e) => handleFieldChange('tyreSyze', e.target.value)}
-                            placeholder="e.g., 315/80R22.5"
+                            placeholder={t('trucks.form.fields.tyre.placeholder')}
                         />
                     </FormField>
-                    <FormField id="serviceIntervalKM" label="Service Interval (KM)" error={getFieldError('serviceIntervalKM')}>
+                    <FormField
+                        id="serviceIntervalKM"
+                        label={t('trucks.form.fields.serviceInterval.label')}
+                        error={getFieldError('serviceIntervalKM')}
+                    >
                         <Input
                             id="serviceIntervalKM"
                             type="number"
                             value={data.serviceIntervalKM}
                             onChange={(e) => handleFieldChange('serviceIntervalKM', e.target.value)}
-                            placeholder="e.g., 10000"
+                            placeholder={t('trucks.form.fields.serviceInterval.placeholder')}
                             className={getFieldError('serviceIntervalKM') ? 'border-red-500 focus:border-red-500' : ''}
                         />
                     </FormField>
                 </FormSection>
 
                 <FormSection
-                    title="Operational & Financial"
-                    description="Track lifecycle dates and investment values."
+                    title={t('trucks.form.sections.financial.title')}
+                    description={t('trucks.form.sections.financial.description')}
                     icon={
                         <div className="rounded-lg bg-emerald-100 p-2 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
                             <DollarSign className="h-4 w-4" />
                         </div>
                     }
                 >
-                    <FormField id="purchasePrice" label="Purchase Price" error={getFieldError('purchasePrice')}>
+                    <FormField
+                        id="purchasePrice"
+                        label={t('trucks.form.fields.purchasePrice.label')}
+                        error={getFieldError('purchasePrice')}
+                    >
                         <Input
                             id="purchasePrice"
                             type="number"
                             step="1"
                             value={data.purchasePrice}
                             onChange={(e) => handleFieldChange('purchasePrice', e.target.value)}
-                            placeholder="e.g., 2500000.00"
+                            placeholder={t('trucks.form.fields.purchasePrice.placeholder')}
                             className={getFieldError('purchasePrice') ? 'border-red-500 focus:border-red-500' : ''}
                         />
                     </FormField>
-                    <FormField id="productionDate" label="Production Date">
+                    <FormField id="productionDate" label={t('trucks.form.fields.productionDate.label')}>
                         <DatePicker
                             value={data.productionDate ?? ''}
                             onChange={(next) => handleFieldChange('productionDate', next ?? '')}
@@ -336,7 +371,7 @@ export default function TrucksCreate({ vehicleTypes }: TrucksCreateProps) {
                             )}
                         />
                     </FormField>
-                    <FormField id="serviceStartDate" label="Service Start Date">
+                    <FormField id="serviceStartDate" label={t('trucks.form.fields.serviceStartDate.label')}>
                         <DatePicker
                             value={data.serviceStartDate ?? ''}
                             onChange={(next) => handleFieldChange('serviceStartDate', next ?? '')}
@@ -353,14 +388,19 @@ export default function TrucksCreate({ vehicleTypes }: TrucksCreateProps) {
                     left={
                         <>
                             <span className="text-red-500">*</span>
-                            <span>All required fields must be completed</span>
-                            {isDirty && <span className="flex items-center gap-2 text-amber-600 dark:text-amber-400"><Save className="h-3 w-3" />You have unsaved changes</span>}
+                            <span>{t('trucks.form.required')}</span>
+                            {isDirty && (
+                                <span className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                                    <Save className="h-3 w-3" />
+                                    {t('trucks.form.unsaved')}
+                                </span>
+                            )}
                         </>
                     }
                     right={
                         <>
                             <Button type="button" variant="outline" asChild className="border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700">
-                                <Link href="/trucks">Cancel</Link>
+                                <Link href="/trucks">{t('trucks.actions.cancel')}</Link>
                             </Button>
                             <Button
                                 type="submit"
@@ -370,12 +410,12 @@ export default function TrucksCreate({ vehicleTypes }: TrucksCreateProps) {
                                 {processing ? (
                                     <>
                                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                        Creating...
+                                        {t('trucks.form.create.submitting')}
                                     </>
                                 ) : (
                                     <>
                                         <CheckCircle className="h-4 w-4 mr-2" />
-                                        Create Truck
+                                        {t('trucks.form.create.submit')}
                                     </>
                                 )}
                             </Button>

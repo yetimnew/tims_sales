@@ -19,10 +19,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Skeleton } from '@/components/ui/skeleton';
 import * as React from 'react';
+import { useTranslation } from 'react-i18next';
 
-const breadcrumbs: BreadcrumbItem[] = [
+const getBreadcrumbs = (translate: (key: string) => string): BreadcrumbItem[] => [
     {
-        title: 'Drivers',
+        title: translate('drivers.breadcrumb'),
         href: '/drivers',
     },
 ];
@@ -81,14 +82,14 @@ interface DriversIndexProps {
 
 const TABLE_LOADING_STORAGE_KEY = 'drivers.index.table-loading';
 
-const COLUMN_DEFINITIONS: Array<{ key: keyof DriverData | 'status'; label: string }> = [
-    { key: 'name', label: 'Name' },
-    { key: 'driverid', label: 'Driver ID' },
-    { key: 'sex', label: 'Gender' },
-    { key: 'zone', label: 'Location' },
-    { key: 'mobile', label: 'Phone' },
-    { key: 'hireddate', label: 'Hired Date' },
-    { key: 'status', label: 'Status' },
+const getColumnDefinitions = (translate: (key: string) => string): Array<{ key: keyof DriverData | 'status'; label: string }> => [
+    { key: 'name', label: translate('drivers.columns.name') },
+    { key: 'driverid', label: translate('drivers.columns.driverId') },
+    { key: 'sex', label: translate('drivers.columns.gender') },
+    { key: 'zone', label: translate('drivers.columns.location') },
+    { key: 'mobile', label: translate('drivers.columns.phone') },
+    { key: 'hireddate', label: translate('drivers.columns.hiredDate') },
+    { key: 'status', label: translate('drivers.columns.status') },
 ];
 
 type NavigateOverrides = {
@@ -103,6 +104,9 @@ type NavigateOverrides = {
 
 export default function DriversIndex({ drivers, metrics, filters, statusOptions, genderOptions, perPageOptions }: DriversIndexProps) {
     const { hasPermission } = usePermissions();
+    const { t } = useTranslation();
+    const breadcrumbs = React.useMemo(() => getBreadcrumbs(t), [t]);
+    const columnDefinitions = React.useMemo(() => getColumnDefinitions(t), [t]);
     const canViewDriverDetails = hasPermission('drivers.show');
     const [searchTerm, setSearchTerm] = React.useState(filters?.search ?? '');
     const [selectedStatus, setSelectedStatus] = React.useState(() => (filters?.status ?? 'all'));
@@ -124,17 +128,17 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
             seen.add(value);
         };
 
-        pushSegment('active', statusOptions.find((option) => option.value === 'active')?.label ?? 'Active');
-        pushSegment('inactive', statusOptions.find((option) => option.value === 'inactive')?.label ?? 'Inactive');
+        pushSegment('active', statusOptions.find((option) => option.value === 'active')?.label ?? t('drivers.status.active'));
+        pushSegment('inactive', statusOptions.find((option) => option.value === 'inactive')?.label ?? t('drivers.status.inactive'));
 
         statusOptions.forEach((option) => {
             pushSegment(option.value, option.label);
         });
 
-        pushSegment('all', 'All');
+        pushSegment('all', t('drivers.filters.all'));
 
         return segments;
-    }, [statusOptions]);
+    }, [statusOptions, t]);
     const resolvedPerPage = React.useMemo(() => {
         const candidate = filters?.per_page;
         if (typeof candidate === 'number' && availablePerPageOptions.includes(candidate)) {
@@ -213,25 +217,45 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
         const baseClasses = 'flex items-center gap-1 w-fit border px-2 py-1 text-xs font-medium rounded-full';
 
         if (status === 'active') {
-            return <span className={`${baseClasses} border-green-200 bg-green-100 text-green-700`}>Active</span>;
+            return <span className={`${baseClasses} border-green-200 bg-green-100 text-green-700`}>{t('drivers.status.active')}</span>;
         }
 
         if (status === 'inactive') {
-            return <span className={`${baseClasses} border-red-200 bg-red-100 text-red-700`}>Inactive</span>;
+            return <span className={`${baseClasses} border-red-200 bg-red-100 text-red-700`}>{t('drivers.status.inactive')}</span>;
         }
 
-        return <span className={`${baseClasses} border-muted bg-muted/60 text-muted-foreground capitalize`}>{status}</span>;
+        return (
+            <span className={`${baseClasses} border-muted bg-muted/60 text-muted-foreground capitalize`}>
+                {status || t('drivers.status.unknown')}
+            </span>
+        );
     };
 
     const getSexBadge = (sex: string) => {
-        const label = sex?.charAt(0).toUpperCase() + sex?.slice(1);
+        const label = sex === 'male'
+            ? t('drivers.gender.male')
+            : sex === 'female'
+                ? t('drivers.gender.female')
+                : t('drivers.gender.unknown');
         return (
             <Badge variant="outline" className="gap-1">
                 {sex === 'male' ? '👨' : sex === 'female' ? '👩' : '👤'}
-                {label || 'N/A'}
+                {label}
             </Badge>
         );
     };
+
+    const getGenderOptionLabel = React.useCallback((value: string, fallback: string) => {
+        if (value === 'male') {
+            return t('drivers.gender.male');
+        }
+
+        if (value === 'female') {
+            return t('drivers.gender.female');
+        }
+
+        return fallback;
+    }, [t]);
 
     const handleSearchChange = (value: string) => {
         setSearchTerm(value);
@@ -294,20 +318,20 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
                         .filter((value) => Boolean(value))
                         .join('\n');
 
-                    const fallback = 'Failed to delete driver. Please review the requirements and try again.';
+                    const fallback = t('drivers.delete.errorKnown');
                     setDeleteError(messages || fallback);
 
                     toast({
-                        title: '❌ Delete Failed',
+                        title: t('drivers.delete.failedTitle'),
                         description: messages || fallback,
                         variant: 'destructive',
                     });
                 } else {
-                    const fallback = 'An unexpected error occurred while deleting the driver. Please try again.';
+                    const fallback = t('drivers.delete.errorUnknown');
                     setDeleteError(fallback);
 
                     toast({
-                        title: '❌ Delete Failed',
+                        title: t('drivers.delete.failedTitle'),
                         description: fallback,
                         variant: 'destructive',
                     });
@@ -322,7 +346,7 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
                 <Button asChild>
                     <Link href="/drivers/create">
                         <Plus className="mr-2 h-4 w-4" />
-                        Add Driver
+                        {t('drivers.actions.add')}
                     </Link>
                 </Button>
             )}
@@ -337,7 +361,7 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
     const statsDefinitions = [
         {
             id: 'total-drivers',
-            label: 'Total Drivers',
+            label: t('drivers.stats.total.label'),
             icon: <Users className="h-3.5 w-3.5 text-blue-600" />,
             className: 'min-w-[220px] flex-shrink-0',
             value: isTableLoading ? (
@@ -348,13 +372,13 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
             description: isTableLoading ? (
                 <Skeleton className="h-3 w-28" aria-hidden="true" />
             ) : (
-                'Workforce size'
+                t('drivers.stats.total.description')
             ),
             valueClassName: isTableLoading ? undefined : 'text-blue-600',
         },
         {
             id: 'active-drivers',
-            label: 'Active',
+            label: t('drivers.stats.active.label'),
             icon: <UserCheck className="h-3.5 w-3.5 text-green-600" />,
             className: 'min-w-[220px] flex-shrink-0',
             value: isTableLoading ? (
@@ -365,13 +389,13 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
             description: isTableLoading ? (
                 <Skeleton className="h-3 w-24" aria-hidden="true" />
             ) : (
-                'Currently active'
+                t('drivers.stats.active.description')
             ),
             valueClassName: isTableLoading ? undefined : 'text-green-600',
         },
         {
             id: 'inactive-drivers',
-            label: 'Inactive',
+            label: t('drivers.stats.inactive.label'),
             icon: <UserX className="h-3.5 w-3.5 text-red-600" />,
             className: 'min-w-[220px] flex-shrink-0',
             value: isTableLoading ? (
@@ -382,13 +406,13 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
             description: isTableLoading ? (
                 <Skeleton className="h-3 w-24" aria-hidden="true" />
             ) : (
-                'Off duty'
+                t('drivers.stats.inactive.description')
             ),
             valueClassName: isTableLoading ? undefined : 'text-red-600',
         },
         {
             id: 'male-drivers',
-            label: 'Male',
+            label: t('drivers.stats.male.label'),
             icon: <User className="h-3.5 w-3.5 text-blue-500" />,
             className: 'min-w-[220px] flex-shrink-0',
             value: isTableLoading ? (
@@ -399,13 +423,13 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
             description: isTableLoading ? (
                 <Skeleton className="h-3 w-24" aria-hidden="true" />
             ) : (
-                '👨 Male drivers'
+                t('drivers.stats.male.description')
             ),
             valueClassName: isTableLoading ? undefined : 'text-blue-500',
         },
         {
             id: 'female-drivers',
-            label: 'Female',
+            label: t('drivers.stats.female.label'),
             icon: <User className="h-3.5 w-3.5 text-pink-500" />,
             className: 'min-w-[220px] flex-shrink-0',
             value: isTableLoading ? (
@@ -416,7 +440,7 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
             description: isTableLoading ? (
                 <Skeleton className="h-3 w-24" aria-hidden="true" />
             ) : (
-                '👩 Female drivers'
+                t('drivers.stats.female.description')
             ),
             valueClassName: isTableLoading ? undefined : 'text-pink-500',
         },
@@ -428,23 +452,23 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
         () =>
             availablePerPageOptions.map((option) => ({
                 value: String(option),
-                label: `${option} / page`,
+                label: t('drivers.filters.perPageOption', { value: option }),
             })),
-        [availablePerPageOptions],
+        [availablePerPageOptions, t],
     );
 
     const tableColumns = React.useMemo(
         () => [
             { id: 'index', label: '#', align: 'center' as const },
-            ...COLUMN_DEFINITIONS.map(({ key, label }) => ({
+            ...columnDefinitions.map(({ key, label }) => ({
                 id: String(key),
                 label,
                 sortable: true,
                 sortKey: String(key),
             })),
-            { id: 'actions', label: 'Actions', align: 'center' as const },
+            { id: 'actions', label: t('drivers.table.actions'), align: 'center' as const },
         ],
-        [],
+        [columnDefinitions, t],
     );
 
     const tableRows = isTableLoading
@@ -489,7 +513,7 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
                       <TableCell className="text-muted-foreground">
                           <div className="flex items-center gap-1">
                               <MapPinIcon className="h-3 w-3" />
-                              {driver.zone || '—'}
+                              {driver.zone || t('drivers.fallbacks.notAvailable')}
                           </div>
                       </TableCell>
                       <TableCell className="text-muted-foreground">
@@ -499,28 +523,28 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
                                   {driver.mobile}
                               </div>
                           ) : (
-                              '—'
+                              t('drivers.fallbacks.notAvailable')
                           )}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
-                          {driver.hireddate ? new Date(driver.hireddate).toLocaleDateString() : '—'}
+                          {driver.hireddate ? new Date(driver.hireddate).toLocaleDateString() : t('drivers.fallbacks.notAvailable')}
                       </TableCell>
                       <TableCell>{getStatusBadge(driver.status)}</TableCell>
                       <TableCell className="text-center">
                           <ListingRowActionsMenu
                               actions={[
                                   canViewDriverDetails && {
-                                      label: 'View',
+                                      label: t('drivers.actions.view'),
                                       icon: <Eye className="h-4 w-4" />,
                                       href: `/drivers/${driver.id}`,
                                   },
                                   hasPermission('drivers.edit') && {
-                                      label: 'Edit',
+                                      label: t('drivers.actions.edit'),
                                       icon: <Edit className="h-4 w-4" />,
                                       href: `/drivers/${driver.id}/edit`,
                                   },
                                   hasPermission('drivers.destroy') && {
-                                      label: 'Delete',
+                                      label: t('drivers.actions.delete'),
                                       icon: <Trash2 className="h-4 w-4" />,
                                       danger: true,
                                       onSelect: () => handleDeleteClick(driver),
@@ -533,10 +557,10 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
             : (
                 <TableRow>
                     <TableCell colSpan={tableColumns.length} className="py-8 text-center text-muted-foreground">
-                        No drivers found.
+                        {t('drivers.empty.title')}
                         {hasPermission('drivers.create') && (
                             <Link href="/drivers/create" className="ml-1 text-primary underline">
-                                Create one
+                                {t('drivers.empty.createAction')}
                             </Link>
                         )}
                     </TableCell>
@@ -598,40 +622,42 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
             getKey={(item) => item.driver.id}
             renderTitle={(item) => (
                 <div className="flex items-center gap-2">
-                    <span className="text-xs uppercase tracking-wide text-muted-foreground">#{item.position}</span>
+                    <span className="text-xs uppercase tracking-wide text-muted-foreground">
+                        {t('drivers.mobile.position', { value: item.position })}
+                    </span>
                     <span className="text-base">{item.driver.name}</span>
                 </div>
             )}
-            renderSubtitle={(item) => item.driver.driverid || 'Driver ID pending'}
+            renderSubtitle={(item) => item.driver.driverid || t('drivers.mobile.driverIdPending')}
             renderContent={(item) => (
                 <div className="space-y-3 text-sm text-muted-foreground">
                     <div className="flex items-center justify-between text-sm">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Status</span>
+                        <span className="font-medium text-slate-600 dark:text-slate-300">{t('drivers.mobile.status')}</span>
                         {getStatusBadge(item.driver.status)}
                     </div>
                     <div className="space-y-2">
                         <div className="flex items-center justify-between">
-                            <span className="font-medium text-slate-600 dark:text-slate-300">Gender</span>
+                            <span className="font-medium text-slate-600 dark:text-slate-300">{t('drivers.mobile.gender')}</span>
                             {getSexBadge(item.driver.sex)}
                         </div>
                         <div className="flex items-center justify-between">
-                            <span className="font-medium text-slate-600 dark:text-slate-300">Location</span>
+                            <span className="font-medium text-slate-600 dark:text-slate-300">{t('drivers.mobile.location')}</span>
                             <span className="text-right font-semibold text-slate-900 dark:text-slate-100">
-                                {item.driver.zone || '—'}
+                                {item.driver.zone || t('drivers.fallbacks.notAvailable')}
                             </span>
                         </div>
                         <div className="flex items-center justify-between">
-                            <span className="font-medium text-slate-600 dark:text-slate-300">Phone</span>
+                            <span className="font-medium text-slate-600 dark:text-slate-300">{t('drivers.mobile.phone')}</span>
                             <span className="text-right font-semibold text-slate-900 dark:text-slate-100">
-                                {item.driver.mobile || '—'}
+                                {item.driver.mobile || t('drivers.fallbacks.notAvailable')}
                             </span>
                         </div>
                         <div className="flex items-center justify-between">
-                            <span className="font-medium text-slate-600 dark:text-slate-300">Hired</span>
+                            <span className="font-medium text-slate-600 dark:text-slate-300">{t('drivers.mobile.hired')}</span>
                             <span className="text-right font-semibold text-slate-900 dark:text-slate-100">
                                 {item.driver.hireddate
                                     ? new Date(item.driver.hireddate).toLocaleDateString()
-                                    : '—'}
+                                    : t('drivers.fallbacks.notAvailable')}
                             </span>
                         </div>
                     </div>
@@ -643,7 +669,7 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
                         <Button asChild size="sm" variant="outline" className="flex-1 sm:flex-auto">
                             <Link href={`/drivers/${item.driver.id}`}>
                                 <Eye className="mr-2 h-4 w-4" />
-                                View
+                                {t('drivers.actions.view')}
                             </Link>
                         </Button>
                     )}
@@ -651,7 +677,7 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
                         <Button asChild size="sm" variant="secondary" className="flex-1 sm:flex-none">
                             <Link href={`/drivers/${item.driver.id}/edit`}>
                                 <Edit className="mr-2 h-4 w-4" />
-                                Edit
+                                {t('drivers.actions.edit')}
                             </Link>
                         </Button>
                     )}
@@ -664,17 +690,17 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
                             disabled={isDeleting && selectedDriver?.id === item.driver.id}
                         >
                             <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
+                            {t('drivers.actions.delete')}
                         </Button>
                     )}
                 </div>
             )}
             emptyState={(
                 <div className="py-8 text-center text-muted-foreground">
-                    No drivers found.
+                    {t('drivers.empty.title')}
                     {hasPermission('drivers.create') && (
                         <Link href="/drivers/create" className="ml-1 text-primary underline">
-                            Create one
+                            {t('drivers.empty.createAction')}
                         </Link>
                     )}
                 </div>
@@ -686,13 +712,13 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
         <ListingFilterBar
             search={{
                 value: searchTerm,
-                placeholder: 'Search drivers...',
+                placeholder: t('drivers.filters.searchPlaceholder'),
                 onChange: handleSearchChange,
                 icon: <Search className="h-4 w-4" />,
             }}
             perPage={{
                 value: perPage,
-                label: 'Rows',
+                label: t('drivers.filters.rowsLabel'),
                 onChange: handlePerPageChange,
                 options: perPageSelectOptions,
             }}
@@ -711,19 +737,19 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
                         value={segment.value}
                         className="px-3 py-1 text-sm font-medium capitalize data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
                     >
-                        {segment.value === 'all' ? 'All' : segment.label}
+                        {segment.label}
                     </ToggleGroupItem>
                 ))}
             </ToggleGroup>
             <Select value={selectedGender} onValueChange={handleGenderChange}>
                 <SelectTrigger className="w-full min-w-[140px] sm:w-auto">
-                    <SelectValue placeholder="Gender" />
+                    <SelectValue placeholder={t('drivers.filters.gender')} />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="all">All genders</SelectItem>
+                    <SelectItem value="all">{t('drivers.filters.allGenders')}</SelectItem>
                     {genderOptions.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
-                            {option.label}
+                            {getGenderOptionLabel(option.value, option.label)}
                         </SelectItem>
                     ))}
                 </SelectContent>
@@ -734,14 +760,14 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
     return (
         <>
             <ListPageLayout
-                headTitle="Drivers"
-                title="Drivers"
-                description={`Manage your workforce of ${totalDrivers} driver${totalDrivers !== 1 ? 's' : ''}`}
+                headTitle={t('drivers.title')}
+                title={t('drivers.title')}
+                description={t('drivers.description', { count: totalDrivers, plural: totalDrivers !== 1 ? 's' : '' })}
                 breadcrumbs={breadcrumbs}
                 actions={headerActions}
                 stats={statsSection}
-                tableTitle="Driver Directory"
-                tableDescription="Complete list of all drivers in your workforce"
+                tableTitle={t('drivers.table.title')}
+                tableDescription={t('drivers.table.description')}
                 tableHeaderExtras={tableHeaderExtras}
                   pagination={
                       drivers?.links ? (
@@ -778,8 +804,8 @@ export default function DriversIndex({ drivers, metrics, filters, statusOptions,
                         setDeleteError(null);
                     }
                 }}
-                title="Delete Driver"
-                description="Are you sure you want to delete this driver? This action cannot be undone."
+                title={t('drivers.delete.title')}
+                description={t('drivers.delete.description')}
                 itemName={selectedDriver?.name}
                 onConfirm={handleDeleteConfirm}
                 isLoading={isDeleting}

@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
+import { useTranslation } from 'react-i18next';
 import {
     Sidebar,
     SidebarContent,
@@ -66,15 +67,18 @@ const filterNavItems = (items: NavItem[], permissions: Set<string>): NavItem[] =
     }, []);
 };
 
-const getMainNavItems = (currentUrl: string): NavItem[] => {
+const getMainNavItems = (
+    currentUrl: string,
+    translate: (key: string) => string,
+): NavItem[] => {
     return [
             {
-                title: 'Dashboard',
+                title: translate('sidebar.dashboard'),
                 href: '/dashboard',
                 icon: LayoutGrid,
             },
             {
-                title: 'Fleet Management',
+                title: translate('sidebar.fleetManagement'),
                 icon: Truck,
                 isActive:
                     currentUrl.startsWith('/trucks') ||
@@ -88,25 +92,25 @@ const getMainNavItems = (currentUrl: string): NavItem[] => {
                     currentUrl.startsWith('/truck-status-board'),
                 items: [
                     {
-                        title: 'Trucks',
+                        title: translate('sidebar.trucks'),
                         href: '/trucks',
                         icon: Truck,
                         requiredPermissions: ['trucks.view', 'trucks.show'],
                     },
                     {
-                        title: 'Drivers',
+                        title: translate('sidebar.drivers'),
                         href: '/drivers',
                         icon: Users,
                         requiredPermissions: ['drivers.view', 'drivers.show'],
                     },
                     {
-                        title: 'Driver-Truck Assignments',
+                        title: translate('sidebar.driverTruckAssignments'),
                         href: '/driver-trucks',
                         icon: UserCheck,
                         requiredPermissions: ['driver-trucks.view', 'driver-trucks.show'],
                     },
                     {
-                        title: 'Vehicle Types',
+                        title: translate('sidebar.vehicleTypes'),
                         href: '/vehicletypes',
                         icon: Settings,
                         requiredPermissions: ['vehicletypes.view', 'vehicletypes.show'],
@@ -120,13 +124,13 @@ const getMainNavItems = (currentUrl: string): NavItem[] => {
                     },
                     */
                     {
-                        title: 'Driver Safety',
+                        title: translate('sidebar.driverSafety'),
                         href: '/driver-safety',
                         icon: Shield,
                         requiredPermissions: ['driver-safety.view', 'driver-safety.show'],
                     },
                     {
-                        title: 'Cargo Types',
+                        title: translate('sidebar.cargoTypes'),
                         href: '/cargo-types',
                         icon: Package,
                         requiredPermissions: ['cargotypes.view', 'cargotypes.show'],
@@ -134,7 +138,7 @@ const getMainNavItems = (currentUrl: string): NavItem[] => {
                 ],
             },
             {
-                title: 'Maintenance',
+                title: translate('sidebar.maintenance'),
                 icon: Wrench,
                 isActive:
                     currentUrl.startsWith('/maintenance') ||
@@ -142,25 +146,25 @@ const getMainNavItems = (currentUrl: string): NavItem[] => {
                     currentUrl.startsWith('/maintenance-types'),
                 items: [
                     {
-                        title: 'Maintenance Records',
+                        title: translate('sidebar.maintenanceRecords'),
                         href: '/maintenance',
                         icon: ClipboardCheck,
                         requiredPermissions: ['maintenance.view', 'maintenance.show'],
                     },
                     {
-                        title: 'Overview',
+                        title: translate('sidebar.overview'),
                         href: '/maintenance-overview',
                         icon: LineChart,
                         requiredPermissions: ['maintenance.view', 'maintenance.show'],
                     },
                     {
-                        title: 'Maintenance Types',
+                        title: translate('sidebar.maintenanceTypes'),
                         href: '/maintenance-types',
                         icon: Settings,
                         requiredPermissions: ['maintenance-types.view', 'maintenance-types.show'],
                     },
                     {
-                        title: 'Overdue & Alerts',
+                        title: translate('sidebar.overdueAlerts'),
                         href: '/maintenance/alerts',
                         icon: AlertTriangle,
                         requiredPermissions: ['maintenance.view', 'maintenance.show'],
@@ -190,7 +194,7 @@ const getMainNavItems = (currentUrl: string): NavItem[] => {
             },
             */
             {
-                title: 'Operations',
+                title: translate('sidebar.operations'),
                 icon: Activity,
                 isActive:
                     currentUrl.startsWith('/operations') ||
@@ -198,19 +202,19 @@ const getMainNavItems = (currentUrl: string): NavItem[] => {
                     currentUrl.startsWith('/customers'),
                 items: [
                     {
-                        title: 'Operations',
+                        title: translate('sidebar.operations'),
                         href: '/operations',
                         icon: Activity,
                         requiredPermissions: ['operations.view', 'operations.show'],
                     },
                     {
-                        title: 'Performances',
+                        title: translate('sidebar.performances'),
                         href: '/performances',
                         icon: BarChart3,
                         requiredPermissions: ['performances.view', 'performances.show'],
                     },
                     {
-                        title: 'Customers',
+                        title: translate('sidebar.customers'),
                         href: '/customers',
                         icon: Building2,
                         requiredPermissions: ['customers.view', 'customers.show'],
@@ -218,7 +222,7 @@ const getMainNavItems = (currentUrl: string): NavItem[] => {
                 ],
             },
             {
-                title: 'Geographic Management',
+                title: translate('sidebar.geographicManagement'),
                 icon: Globe,
                 isActive:
                     currentUrl.startsWith('/regions') ||
@@ -228,31 +232,31 @@ const getMainNavItems = (currentUrl: string): NavItem[] => {
                     currentUrl.startsWith('/distances'),
                 items: [
                     {
-                        title: 'Regions',
+                        title: translate('sidebar.regions'),
                         href: '/regions',
                         icon: Globe,
                         requiredPermissions: ['regions.view', 'regions.show'],
                     },
                     {
-                        title: 'Zones',
+                        title: translate('sidebar.zones'),
                         href: '/zones',
                         icon: Navigation,
                         requiredPermissions: ['zones.view', 'zones.show'],
                     },
                     {
-                        title: 'Woredas',
+                        title: translate('sidebar.woredas'),
                         href: '/woredas',
                         icon: Map,
                         requiredPermissions: ['woredas.view', 'woredas.show'],
                     },
                     {
-                        title: 'Places',
+                        title: translate('sidebar.places'),
                         href: '/places',
                         icon: MapPin,
                         requiredPermissions: ['places.view', 'places.show'],
                     },
                     {
-                        title: 'Distances',
+                        title: translate('sidebar.distances'),
                         href: '/distances',
                         icon: Target,
                         requiredPermissions: ['distances.view', 'distances.show'],
@@ -260,20 +264,20 @@ const getMainNavItems = (currentUrl: string): NavItem[] => {
                 ],
             },
             {
-                title: 'Status Management',
+                title: translate('sidebar.statusManagement'),
                 icon: Settings,
                 isActive:
                     currentUrl.startsWith('/statustypes') ||
                     currentUrl.startsWith('/truck-status-board'),
                 items: [
                     {
-                        title: 'Status Type Registration',
+                        title: translate('sidebar.statusTypeRegistration'),
                         href: '/statustypes',
                         icon: Settings,
                         requiredPermissions: ['statustypes.view', 'statustypes.show'],
                     },
                     {
-                        title: 'Daily Truck Status Registration',
+                        title: translate('sidebar.dailyTruckStatusRegistration'),
                         href: '/truck-status-board',
                         icon: Activity,
                         requiredPermissions: ['truck-status-board.view'],
@@ -281,20 +285,20 @@ const getMainNavItems = (currentUrl: string): NavItem[] => {
                 ],
             },
             {
-                title: 'Outsourcing',
+                title: translate('sidebar.outsourcing'),
                 icon: UserCheck,
                 isActive:
                     currentUrl.startsWith('/outsources') ||
                     currentUrl.startsWith('/outsource-performances'),
                 items: [
                     {
-                        title: 'Outsources',
+                        title: translate('sidebar.outsources'),
                         href: '/outsources',
                         icon: UserCheck,
                         requiredPermissions: ['outsources.view', 'outsources.show'],
                     },
                     {
-                        title: 'Outsource Performances',
+                        title: translate('sidebar.outsourcePerformances'),
                         href: '/outsource-performances',
                         icon: Activity,
                         requiredPermissions: ['outsource-performances.view', 'outsource-performances.show'],
@@ -302,120 +306,120 @@ const getMainNavItems = (currentUrl: string): NavItem[] => {
                 ],
             },
             {
-                title: 'Reports',
+                title: translate('sidebar.reports'),
                 icon: FileText,
                 isActive: currentUrl.startsWith('/reports'),
                 items: [
                     {
-                        title: 'Maintenance Reports',
+                        title: translate('sidebar.maintenanceReports'),
                         href: '/reports/maintenance',
                         icon: Wrench,
                         requiredPermissions: ['reports.maintenance.view'],
                     },
                     {
-                        title: 'Fuel Efficiency & Cost',
+                        title: translate('sidebar.fuelEfficiencyCost'),
                         href: '/reports/fuel-efficiency',
                         icon: Fuel,
                         requiredPermissions: ['reports.fuel-efficiency.view'],
                     },
                     {
-                        title: 'Customer Profitability',
+                        title: translate('sidebar.customerProfitability'),
                         href: '/reports/customer-profitability',
                         icon: DollarSign,
                         requiredPermissions: ['reports.customer-profitability.view'],
                     },
                     {
-                        title: 'Outsource Performance',
+                        title: translate('sidebar.outsourcePerformance'),
                         href: '/reports/outsource-performance',
                         icon: Activity,
                         requiredPermissions: ['reports.outsource-performance.view'],
                     },
                     {
-                        title: 'Operation Profitability',
+                        title: translate('sidebar.operationProfitability'),
                         href: '/reports/operation-profitability',
                         icon: DollarSign,
                         requiredPermissions: ['reports.operation-profitability.view'],
                     },
                     {
-                        title: 'Route Profitability',
+                        title: translate('sidebar.routeProfitability'),
                         href: '/reports/route-profitability',
                         icon: Navigation,
                         requiredPermissions: ['reports.route-profitability.view'],
                     },
                     {
-                        title: 'Cost Per Kilometer',
+                        title: translate('sidebar.costPerKilometer'),
                         href: '/reports/cost-per-kilometer',
                         icon: MapPin,
                         requiredPermissions: ['reports.cost-per-kilometer.view'],
                     },
                     {
-                        title: 'Load Factor & Utilization',
+                        title: translate('sidebar.loadFactorUtilization'),
                         href: '/reports/load-factor-utilization',
                         icon: Map,
                         requiredPermissions: ['reports.load-factor-utilization.view'],
                     },
                     {
-                        title: 'Geographic Heatmaps',
+                        title: translate('sidebar.geographicHeatmaps'),
                         href: '/reports/geography-heatmaps',
                         icon: Globe,
                         requiredPermissions: ['reports.geography-heatmaps.view'],
                     },
                     {
-                        title: 'Truck Grading',
+                        title: translate('sidebar.truckGrading'),
                         href: '/reports/truck-grading',
                         icon: BarChart3,
                         requiredPermissions: ['reports.truck-grading.view'],
                     },
                     {
-                        title: 'Driver Grading',
+                        title: translate('sidebar.driverGrading'),
                         href: '/reports/driver-grading',
                         icon: User,
                         requiredPermissions: ['reports.driver-grading.view'],
                     },
                     {
-                        title: 'Driver-Truck Grading',
+                        title: translate('sidebar.driverTruckGrading'),
                         href: '/reports/driver-truck-grading',
                         icon: Users,
                         requiredPermissions: ['reports.driver-truck-grading.view'],
                     },
                     {
-                        title: 'Driver Safety',
+                        title: translate('sidebar.driverSafetyReport'),
                         href: '/reports/driver-safety',
                         icon: Shield,
                         requiredPermissions: ['reports.driver-safety.view'],
                     },
                     {
-                        title: 'Performance (All)',
+                        title: translate('sidebar.performanceAll'),
                         href: '/reports/performance-all',
                         icon: Activity,
                         requiredPermissions: ['reports.performance-all.view'],
                     },
                     {
-                        title: 'Performance by Driver',
+                        title: translate('sidebar.performanceByDriver'),
                         href: '/reports/performance-by-driver',
                         icon: Users,
                         requiredPermissions: ['reports.performance-by-driver.view'],
                     },
                     {
-                        title: 'Performance by Truck',
+                        title: translate('sidebar.performanceByTruck'),
                         href: '/reports/performance-by-truck',
                         icon: Truck,
                         requiredPermissions: ['reports.performance-by-truck.view'],
                     },
                     {
-                        title: 'Performance by Status',
+                        title: translate('sidebar.performanceByStatus'),
                         href: '/reports/performance-by-status',
                         icon: Activity,
                         requiredPermissions: ['reports.performance-by-status.view'],
                     },
                     {
-                        title: 'Attach / Detach History',
+                        title: translate('sidebar.attachDetachHistory'),
                         href: '/reports/driver-truck-attach-detach',
                         icon: Users,
                         requiredPermissions: ['reports.attach-detach.view'],
                     },
                     {
-                        title: 'Daily Status Report',
+                        title: translate('sidebar.dailyStatusReport'),
                         href: '/reports/daily-status',
                         icon: BarChart3,
                         requiredPermissions: ['reports.daily-status.view'],
@@ -423,7 +427,7 @@ const getMainNavItems = (currentUrl: string): NavItem[] => {
                 ],
             },
             {
-                title: 'Grading',
+                title: translate('sidebar.grading'),
                 icon: LineChart,
                 isActive:
                     currentUrl.startsWith('/settings/truck-grading') ||
@@ -431,19 +435,19 @@ const getMainNavItems = (currentUrl: string): NavItem[] => {
                     currentUrl.startsWith('/settings/driver-truck-grading'),
                 items: [
                     {
-                        title: 'Truck Grading',
+                        title: translate('sidebar.truckGrading'),
                         href: '/settings/truck-grading',
                         icon: BarChart3,
                         requiredPermissions: ['performances.view', 'performances.show'],
                     },
                     {
-                        title: 'Driver Grading',
+                        title: translate('sidebar.driverGrading'),
                         href: '/settings/driver-grading',
                         icon: UserCheck,
                         requiredPermissions: ['drivers.view', 'drivers.show'],
                     },
                     {
-                        title: 'Driver-Truck Grading',
+                        title: translate('sidebar.driverTruckGrading'),
                         href: '/settings/driver-truck-grading',
                         icon: Users,
                         requiredPermissions: ['driver-trucks.view', 'driver-trucks.show'],
@@ -451,14 +455,14 @@ const getMainNavItems = (currentUrl: string): NavItem[] => {
                 ],
             },
             {
-                title: 'Activity Logs',
+                title: translate('sidebar.activityLogs'),
                 href: '/activity-logs',
                 icon: History,
                 requiredPermissions: ['activity-logs.view'],
                 isActive: currentUrl.startsWith('/activity-logs'),
             },
             {
-                title: 'User Management',
+                title: translate('sidebar.userManagement'),
                 icon: Shield,
                 isActive:
                     currentUrl.startsWith('/users') ||
@@ -467,25 +471,25 @@ const getMainNavItems = (currentUrl: string): NavItem[] => {
                     currentUrl.startsWith('/notifications/preferences'),
                 items: [
                     {
-                        title: 'Users',
+                        title: translate('sidebar.users'),
                         href: '/users',
                         icon: Users,
                         requiredPermissions: ['users.view', 'users.show'],
                     },
                     {
-                        title: 'Roles',
+                        title: translate('sidebar.roles'),
                         href: '/roles',
                         icon: Shield,
                         requiredPermissions: ['roles.view', 'roles.show'],
                     },
                     {
-                        title: 'Permissions',
+                        title: translate('sidebar.permissions'),
                         href: '/permissions',
                         icon: UserCheck,
                         requiredPermissions: ['permissions.view', 'permissions.show'],
                     },
                     {
-                        title: 'Notification Assignments',
+                        title: translate('sidebar.notificationAssignments'),
                         href: '/notifications/preferences',
                         icon: Bell,
                         requiredPermissions: ['users.update'],
@@ -493,14 +497,14 @@ const getMainNavItems = (currentUrl: string): NavItem[] => {
                 ],
             },
             {
-                title: 'System Backups',
+                title: translate('sidebar.systemBackups'),
                 href: '/settings/backups',
                 icon: Database,
                 requiredPermissions: ['system.backup'],
                 isActive: currentUrl.startsWith('/settings/backups'),
             },
             {
-                title: 'Help & Documentation',
+                title: translate('sidebar.helpDocumentation'),
                 href: '/help',
                 icon: HelpCircle,
                 requiredPermissions: undefined, // Available to all users - no permission check
@@ -528,11 +532,12 @@ interface AppSidebarProps {
 
 export const AppSidebar = React.memo(function AppSidebar({ className }: AppSidebarProps) {
     const { permissions } = usePermissions();
+    const { t } = useTranslation();
     const page = usePage();
     const currentUrl = page?.url ?? (typeof window !== 'undefined' ? window.location.pathname : '/');
 
     // Memoize nav items to prevent recreation on every render
-    const mainNavItems = React.useMemo(() => getMainNavItems(currentUrl), [currentUrl]);
+    const mainNavItems = React.useMemo(() => getMainNavItems(currentUrl, t), [currentUrl, t]);
 
     // Memoize permissions set to prevent recreation
     const permissionsSet = React.useMemo(() => new Set(permissions), [permissions]);

@@ -1,0 +1,1507 @@
+{
+    "nav": {
+        "dashboard": "Dashboard",
+        "repository": "Repository",
+        "documentation": "Documentation",
+        "menu": "Navigation menu",
+        "language": "Language"
+    },
+    "languages": {
+        "english": "English",
+        "amharic": "Amharic"
+    },
+    "sidebar": {
+        "dashboard": "Dashboard",
+        "fleetManagement": "Fleet Management",
+        "trucks": "Trucks",
+        "drivers": "Drivers",
+        "driverTruckAssignments": "Driver-Truck Assignments",
+        "vehicleTypes": "Vehicle Types",
+        "driverSafety": "Driver Safety",
+        "cargoTypes": "Cargo Types",
+        "maintenance": "Maintenance",
+        "maintenanceRecords": "Maintenance Records",
+        "overview": "Overview",
+        "maintenanceTypes": "Maintenance Types",
+        "overdueAlerts": "Overdue & Alerts",
+        "operations": "Operations",
+        "performances": "Performances",
+        "customers": "Customers",
+        "geographicManagement": "Geographic Management",
+        "regions": "Regions",
+        "zones": "Zones",
+        "woredas": "Woredas",
+        "places": "Places",
+        "distances": "Distances",
+        "statusManagement": "Status Management",
+        "statusTypeRegistration": "Status Type Registration",
+        "dailyTruckStatusRegistration": "Daily Truck Status Registration",
+        "outsourcing": "Outsourcing",
+        "outsources": "Outsources",
+        "outsourcePerformances": "Outsource Performances",
+        "reports": "Reports",
+        "maintenanceReports": "Maintenance Reports",
+        "fuelEfficiencyCost": "Fuel Efficiency & Cost",
+        "customerProfitability": "Customer Profitability",
+        "outsourcePerformance": "Outsource Performance",
+        "operationProfitability": "Operation Profitability",
+        "routeProfitability": "Route Profitability",
+        "costPerKilometer": "Cost Per Kilometer",
+        "loadFactorUtilization": "Load Factor & Utilization",
+        "geographicHeatmaps": "Geographic Heatmaps",
+        "truckGrading": "Truck Grading",
+        "driverGrading": "Driver Grading",
+        "driverTruckGrading": "Driver-Truck Grading",
+        "driverSafetyReport": "Driver Safety",
+        "performanceAll": "Performance (All)",
+        "performanceByDriver": "Performance by Driver",
+        "performanceByTruck": "Performance by Truck",
+        "performanceByStatus": "Performance by Status",
+        "attachDetachHistory": "Attach / Detach History",
+        "dailyStatusReport": "Daily Status Report",
+        "grading": "Grading",
+        "activityLogs": "Activity Logs",
+        "userManagement": "User Management",
+        "users": "Users",
+        "roles": "Roles",
+        "permissions": "Permissions",
+        "notificationAssignments": "Notification Assignments",
+        "systemBackups": "System Backups",
+        "helpDocumentation": "Help & Documentation"
+    },
+    "dashboard": {
+        "title": "Dashboard",
+        "breadcrumb": "Dashboard",
+        "header": {
+            "title": "Executive Dashboard",
+            "subtitle": "Real-time fleet & financial intelligence",
+            "description": "Monitor network performance, cost recovery, and operational excellence across your fleet."
+        },
+        "accessRestricted": {
+            "imageAlt": "Dashboard access restricted",
+            "title": "Dashboard Access Restricted",
+            "description": "You need the dashboard permission to explore fleet and financial insights. Please contact an administrator if you believe this is a mistake."
+        },
+        "kpi": {
+            "changeUnavailable": "Change unavailable"
+        },
+        "status": {
+            "unknown": "Unknown",
+            "active": "Active",
+            "pending": "Pending",
+            "in_progress": "In progress",
+            "completed": "Completed",
+            "cancelled": "Cancelled",
+            "returned": "Returned",
+            "maintenance": "Maintenance"
+        },
+        "financialPulse": {
+            "revenue": "Revenue (30d)",
+            "operatingCost": "Operating cost (30d)",
+            "margin": "Margin (30d)",
+            "fareboxRecovery": "Farebox recovery"
+        },
+        "sections": {
+            "networkPerformance": {
+                "title": "Network Performance",
+                "subtitle": "Demand coverage, corridor performance, and status mix."
+            },
+            "financialOverview": {
+                "title": "Financial Overview",
+                "subtitle": "Revenue, costs, and financial metrics."
+            },
+            "assetMaintenance": {
+                "title": "Asset & Maintenance",
+                "subtitle": "Maintenance workload and upcoming jobs."
+            },
+            "safetyCompliance": {
+                "title": "Safety & Compliance",
+                "subtitle": "Incident rate, severity mix, and leading themes."
+            },
+            "customersOperations": {
+                "title": "Customers & Operations",
+                "subtitle": "Top partners by tonnage and recent trip activity."
+            }
+        },
+        "network": {
+            "tonnageTrips": {
+                "title": "Tonnage & Trips (30d)",
+                "subtitle": "Daily tonnage with trip count and ton-km productivity overlays.",
+                "tonnageLabel": "Tonnage (MT)",
+                "tripsLabel": "Trips",
+                "tonkmLabel": "Ton-km (000s)"
+            },
+            "loadPhase": {
+                "title": "Load Phase Mix",
+                "subtitle": "Trips grouped by main vs return loads (30d).",
+                "capturedTrips": "Captured trips",
+                "shareLabel": "{{share}}% share",
+                "tripCountLabel": "{{countValue}} trips",
+                "legend": "{{shareValue}}% · {{countValue}}",
+                "labels": {
+                    "main": "Main load trips",
+                    "return": "Return load trips"
+                }
+            },
+            "corridors": {
+                "title": "Top Corridors",
+                "subtitle": "Tonnage handled on major origin-destination pairs (30d).",
+                "tonnageLabel": "Tonnage (MT)",
+                "tripsLabel": "Trips"
+            }
+        },
+        "financial": {
+            "trend": {
+                "title": "Revenue vs Cost Trend",
+                "subtitle": "Six-month view across revenue, cost, and net contribution.",
+                "revenue": "Revenue",
+                "operatingCost": "Operating cost",
+                "net": "Net"
+            },
+            "breakdown": {
+                "title": "Cost Breakdown",
+                "subtitle": "Share of spend across cost categories (30d).",
+                "avgRevenuePerTon": "Average revenue per ton",
+                "avgCostPerTon": "Average cost per ton"
+            },
+            "pulse": {
+                "title": "Financial Pulse",
+                "subtitle": "Month-over-month shifts in core financials.",
+                "deltaLabel": "Vs previous 30d"
+            },
+            "fuel": {
+                "title": "Fuel Exposure",
+                "subtitle": "Spend and uplift trend.",
+                "costLabel": "Fuel cost",
+                "volumeLabel": "Volume (L)"
+            }
+        },
+        "statusBreakdown": {
+            "title": "Status Breakdown",
+            "subtitle": "Today's operational status distribution",
+            "pending": "Pending",
+            "entries": "{{countValue}} entries"
+        },
+        "maintenance": {
+            "pulse": {
+                "title": "Maintenance Pulse",
+                "subtitle": "Current status of maintenance queue.",
+                "scheduled": "Scheduled",
+                "bookedInCalendar": "Booked in calendar",
+                "overdue": "Overdue",
+                "pastSchedule": "Past schedule",
+                "completed": "Completed (30d)",
+                "closedWorkOrders": "Closed work orders",
+                "avgTurnaround": "Avg turnaround",
+                "scheduledToComplete": "Scheduled to complete",
+                "daysLabel": "{{days}} days"
+            },
+            "trend": {
+                "title": "Maintenance Trend & Upcoming Jobs",
+                "subtitle": "Monthly completions vs scheduled jobs, with next five assignments.",
+                "scheduledSeries": "Scheduled",
+                "completedSeries": "Completed",
+                "nextJobs": "Next jobs",
+                "notScheduled": "Not scheduled",
+                "inDays": "in {{count}} day",
+                "today": "Today",
+                "overdueDays": "{{count}} day overdue",
+                "truckLabel": "Truck {{truck}}",
+                "scheduledDateLabel": "Scheduled {{date}}",
+                "tbc": "TBC",
+                "scheduledStatus": "scheduled"
+            }
+        },
+        "safety": {
+            "summary": {
+                "title": "Incident Summary (90d)",
+                "subtitle": "Rate normalised per 100 trips.",
+                "recordedIncidents": "Recorded incidents",
+                "ratePer100": "Rate per 100 trips"
+            },
+            "severity": {
+                "title": "Severity Mix",
+                "subtitle": "Distribution by severity level."
+            },
+            "trend": {
+                "title": "Incident Trend",
+                "subtitle": "Rolling six-month incident volume."
+            }
+        },
+        "customers": {
+            "top": {
+                "title": "Top Customers (90d)",
+                "subtitle": "Trips and tonnage delivered per customer."
+            },
+            "table": {
+                "customer": "Customer",
+                "trips": "Trips",
+                "tonnage": "Tonnage (MT)"
+            }
+        },
+        "performances": {
+            "title": "Recent Performances",
+            "subtitle": "Latest recorded trips with fleet and route details.",
+            "table": {
+                "trip": "Trip",
+                "fleet": "Fleet",
+                "route": "Route",
+                "cargo": "Cargo (MT)",
+                "dispatched": "Dispatched",
+                "status": "Status"
+            },
+            "tripFallback": "Trip #{{id}}",
+            "unknownDriver": "Unknown driver",
+            "unknownTruck": "Unknown truck",
+            "unknownOrigin": "Unknown origin",
+            "unknownDestination": "Unknown destination",
+            "routeLabel": "{{origin}} → {{destination}}"
+        },
+        "kpis": {
+            "tonnage30d": "Tonnage (30d)",
+            "trips30d": "Trips (30d)",
+            "avgLoadPerTrip": "Avg load per trip",
+            "margin30d": "Margin (30d)",
+            "fareboxRecovery": "Farebox recovery",
+            "fleetUtilisation": "Fleet utilisation"
+        },
+        "empty": {
+            "kpis": "No KPI insights available yet.",
+            "performanceData": "No performance data recorded for the selected window.",
+            "loadPhaseData": "Load phase data unavailable – capture trips with load phase details to populate.",
+            "corridors": "No corridor flows recorded in the period.",
+            "financialTrend": "No financial entries captured yet.",
+            "costBreakdown": "Cost breakdown unavailable. Add financial records to populate.",
+            "statusUpdates": "No truck status updates yet.",
+            "fuelRecords": "Fuel records unavailable for the selected window.",
+            "maintenanceTrend": "Maintenance trend not yet recorded.",
+            "upcomingMaintenance": "No upcoming maintenance within the planning horizon.",
+            "safetyEvents": "No safety events reported in this window.",
+            "trendData": "Trend data unavailable.",
+            "customers": "No customer movements captured in the window.",
+            "performances": "No recorded performances yet."
+        }
+    },
+    "trucks": {
+        "title": "Trucks",
+        "breadcrumb": "Trucks",
+        "description": "Manage your fleet of {{count}} truck{{plural}}",
+        "columns": {
+            "plate": "Plate",
+            "vehicleType": "Vehicle Type",
+            "driver": "Driver",
+            "chassis": "Chassis",
+            "engine": "Engine",
+            "serviceInterval": "Service (KM)",
+            "price": "Price",
+            "status": "Status"
+        },
+        "table": {
+            "title": "Truck Inventory",
+            "description": "Manage and track all vehicles in your fleet",
+            "actions": "Actions"
+        },
+        "actions": {
+            "add": "Add Truck",
+            "view": "View",
+            "edit": "Edit",
+            "delete": "Delete",
+            "cancel": "Cancel",
+            "back": "Back"
+        },
+        "labels": {
+            "status": "Status",
+            "driver": "Driver",
+            "chassis": "Chassis",
+            "engine": "Engine",
+            "serviceInterval": "Service Interval",
+            "purchasePrice": "Purchase Price"
+        },
+        "filters": {
+            "searchPlaceholder": "Search trucks...",
+            "rowsLabel": "Rows",
+            "all": "All",
+            "vehicleType": "Vehicle type",
+            "allVehicleTypes": "All vehicle types",
+            "perPageOption": "{{value}} / page"
+        },
+        "mobile": {
+            "position": "#{{value}}"
+        },
+        "empty": {
+            "title": "No trucks found.",
+            "createAction": "Create one"
+        },
+        "stats": {
+            "total": {
+                "label": "Total Trucks",
+                "description": "All vehicles"
+            },
+            "active": {
+                "label": "Active",
+                "description": "{{count}} in maintenance"
+            },
+            "fleetValue": {
+                "label": "Fleet Value",
+                "description": "Total fleet value"
+            },
+            "revenue": {
+                "label": "Revenue ({{days}}d)",
+                "tonKmPerBirr": "{{value}} ton-km / ETB",
+                "tonKmPerBirrPending": "Ton-km per birr pending"
+            },
+            "churn": {
+                "label": "Driver Churn ({{days}}d)",
+                "averageTenure": "{{days}} days",
+                "averageTenurePending": "Average tenure pending",
+                "highChurn": "{{count}} truck(s) below {{days}}d",
+                "stable": "Stable driver assignments"
+            },
+            "utilization": {
+                "label": "Utilization ({{days}}d)",
+                "detail": "Service {{serviceDays}}d · Idle {{idleDays}}d · Unknown {{unknownDays}}d",
+                "pending": "Utilization data pending"
+            }
+        },
+        "status": {
+            "active": "Active",
+            "inactive": "Inactive",
+            "maintenance": "Maintenance",
+            "unknown": "Unknown"
+        },
+        "fallbacks": {
+            "notAvailable": "N/A",
+            "noDriverAssigned": "No driver assigned",
+            "vehicleTypePending": "Vehicle type pending"
+        },
+        "units": {
+            "kilometers": "{{value}} km"
+        },
+        "delete": {
+            "failedTitle": "❌ Delete Failed",
+            "errorKnown": "Failed to delete truck. Please review the requirements and try again.",
+            "errorUnknown": "An unexpected error occurred while deleting the truck. Please try again.",
+            "title": "Delete Truck",
+            "description": "Are you sure you want to delete this truck? This action cannot be undone.",
+            "confirm": "Delete Truck"
+        },
+        "form": {
+            "badge": "Fleet Operations",
+            "required": "All required fields must be completed",
+            "unsaved": "You have unsaved changes",
+            "validation": {
+                "title": "⚠️ Validation Error",
+                "fixErrors": "Please fix the validation errors before submitting",
+                "resolve": "Please resolve the highlighted fields before submitting the form."
+            },
+            "sections": {
+                "general": {
+                    "title": "General Details",
+                    "description": "Primary identification and status information."
+                },
+                "technical": {
+                    "title": "Technical Specifications",
+                    "description": "Detailed build and maintenance metadata."
+                },
+                "financial": {
+                    "title": "Operational & Financial",
+                    "description": "Track lifecycle dates and investment values."
+                }
+            },
+            "fields": {
+                "plate": {
+                    "label": "Plate Number",
+                    "tooltip": "Official license plate number",
+                    "placeholder": "e.g., AA-1234"
+                },
+                "vehicleType": {
+                    "label": "Vehicle Type",
+                    "placeholder": "Select vehicle type"
+                },
+                "status": {
+                    "label": "Status",
+                    "placeholder": "Select status"
+                },
+                "chassis": {
+                    "label": "Chassis Number",
+                    "helper": "Optional - Factory assigned identifier",
+                    "placeholder": "Chassis number"
+                },
+                "engine": {
+                    "label": "Engine Number",
+                    "helper": "Optional - Engine identifier",
+                    "placeholder": "Engine number"
+                },
+                "tyre": {
+                    "label": "Tyre Size",
+                    "helper": "Optional - Standard tire specification",
+                    "placeholder": "e.g., 315/80R22.5"
+                },
+                "serviceInterval": {
+                    "label": "Service Interval (KM)",
+                    "placeholder": "e.g., 10000"
+                },
+                "purchasePrice": {
+                    "label": "Purchase Price",
+                    "placeholder": "e.g., 2500000.00"
+                },
+                "productionDate": {
+                    "label": "Production Date"
+                },
+                "serviceStartDate": {
+                    "label": "Service Start Date"
+                }
+            },
+            "create": {
+                "breadcrumb": "Create",
+                "title": "Create New Truck",
+                "description": "Complete a unified intake covering identification, specifications, and lifecycle financials.",
+                "backToList": "Back to Trucks",
+                "submit": "Create Truck",
+                "submitting": "Creating...",
+                "successTitle": "✅ Truck Created",
+                "successDescription": "The truck has been added to the fleet successfully."
+            },
+            "edit": {
+                "breadcrumb": "Edit",
+                "title": "Update Truck",
+                "description": "Make adjustments to identification, technical specifications, or financial milestones.",
+                "headTitle": "Edit {{plate}}",
+                "backToTruck": "Back to Truck",
+                "submit": "Update Truck",
+                "submitting": "Updating...",
+                "successTitle": "✅ Truck Updated",
+                "successDescription": "The truck has been updated successfully."
+            }
+        },
+        "show": {
+            "subtitle": "Comprehensive truck profile and performance tracking",
+            "headTitle": "Truck - {{plate}}",
+            "actions": {
+                "deactivate": "Deactivate",
+                "viewAll": "View all",
+                "viewAllAssignments": "View All Assignments",
+                "viewAllPerformances": "View All Performances"
+            },
+            "tabs": {
+                "overview": "Overview",
+                "performance": "Performance",
+                "analytics": "Analytics",
+                "maintenance": "Maintenance",
+                "history": "History"
+            },
+            "summary": {
+                "completedTrips": "Completed Trips",
+                "openTrips": "{{count}} open trips",
+                "totalDistance": "Total Distance",
+                "loadFactor": "Load Factor: {{value}}%",
+                "fuelEfficiency": "Fuel Efficiency",
+                "totalFuel": "{{value}} L total",
+                "totalCost": "Total Cost",
+                "costPerKm": "{{value}} per KM"
+            },
+            "sections": {
+                "basic": {
+                    "title": "Basic Information",
+                    "description": "Truck details and specifications"
+                },
+                "quickLinks": "Quick Links",
+                "utilization": "Utilization Metrics",
+                "assignments": {
+                    "title": "Driver Assignments",
+                    "description": "Recent drivers assigned to this truck"
+                }
+            },
+            "fields": {
+                "vehicleType": "Vehicle Type",
+                "plate": "Plate Number",
+                "chassis": "Chassis Number",
+                "engine": "Engine Number",
+                "created": "Created"
+            },
+            "utilization": {
+                "loadFactor": "Load Factor",
+                "emptyRunning": "Empty Running",
+                "avgPayload": "Avg Payload",
+                "perTrip": "Per trip"
+            },
+            "assignments": {
+                "assignmentLabel": "Assignment #{{id}}",
+                "attached": "Attached",
+                "detached": "Detached",
+                "assigned": "Assigned",
+                "detachedAt": "Detached",
+                "empty": "No driver assignments recorded for this truck yet."
+            },
+            "grade": {
+                "title": "Truck Grade",
+                "description": "Performance rating",
+                "overallScore": "Overall Score"
+            },
+            "performance": {
+                "summaryTitle": "Performance Summary",
+                "totalDistance": "Total Distance",
+                "completedTrips": "Completed Trips",
+                "fuelEfficiency": "Fuel Efficiency",
+                "tonKm": "Ton-Km",
+                "totalCost": "Total Cost",
+                "costPerKm": "Cost per KM",
+                "tripLabel": "Trip {{index}}",
+                "recordsTitle": "Performance Records",
+                "recordsDescription": "Recent operational trips",
+                "recordLabel": "Performance #{{id}}",
+                "routeLabel": "{{origin}} → {{destination}}",
+                "distance": "Distance",
+                "cargo": "Cargo",
+                "fuel": "Fuel",
+                "empty": "No performance records found for this truck yet.",
+                "cards": {
+                    "totalRecords": "Total Records",
+                    "mainTrips": "{{count}} main trips",
+                    "completed": "Completed",
+                    "completionRate": "{{value}}% rate",
+                    "openTrips": "Open Trips",
+                    "inProgress": "In progress",
+                    "tonKm": "Ton-Km",
+                    "avgTonKm": "{{value}} avg",
+                    "cargoVolume": "Cargo Volume",
+                    "avgCargoVolume": "{{value}} MT avg"
+                }
+            },
+            "analytics": {
+                "fuelCost": "Fuel Cost",
+                "maintenanceCost": "Maintenance Cost",
+                "totalOperationalCost": "Total Operational Cost",
+                "totalFuel": "{{value}} L total",
+                "records": "{{count}} records",
+                "costPerKm": "{{value}} per KM",
+                "tripStatusDistribution": "Trip Status Distribution",
+                "costBreakdown": "Cost Breakdown",
+                "recentTrends": "Recent Performance Trends",
+                "distance": "Distance (KM)",
+                "tonnage": "Tonnage (MT)",
+                "fuel": "Fuel (L)",
+                "efficiency": "Efficiency Metrics",
+                "avgDistance": "Avg Distance/Trip",
+                "fuelEfficiency": "Fuel Efficiency",
+                "costPerTrip": "Cost per Trip",
+                "avgTripDuration": "Avg Trip Duration",
+                "tripDurationValue": "{{value}} days"
+            },
+            "maintenance": {
+                "title": "Maintenance Overview",
+                "description": "Service and maintenance history",
+                "total": "Total",
+                "completed": "Completed",
+                "scheduled": "Scheduled",
+                "overdue": "Overdue",
+                "cost": "Cost",
+                "odometer": "Odometer",
+                "empty": "No maintenance data available for this truck yet."
+            },
+            "history": {
+                "title": "Activity History",
+                "description": "Audit trail of truck changes",
+                "empty": "No activity history available for this truck yet."
+            },
+            "charts": {
+                "loaded": "Loaded",
+                "empty": "Empty",
+                "completed": "Completed",
+                "open": "Open",
+                "fuelCost": "Fuel Cost",
+                "maintenance": "Maintenance",
+                "distanceSplit": "Distance Split"
+            },
+            "fallbacks": {
+                "unknownDriver": "Unknown Driver"
+            },
+            "delete": {
+                "successTitle": "✅ Truck Deleted",
+                "successDescription": "The truck has been removed successfully.",
+                "failedTitle": "❌ Delete Failed",
+                "failedDescription": "Unable to delete this truck."
+            },
+            "deactivate": {
+                "title": "Deactivate Truck",
+                "description": "This truck will be marked as inactive.",
+                "confirm": "Deactivate",
+                "successTitle": "✅ Truck Deactivated",
+                "successDescription": "The truck has been deactivated successfully.",
+                "failedTitle": "❌ Deactivation Failed",
+                "failedDescription": "Unable to deactivate this truck."
+            },
+            "assignmentPerformances": {
+                "breadcrumb": "Assignment performances",
+                "headTitle": "{{plate}} · Assignment {{assignmentId}} · Performances",
+                "actions": {
+                    "backToTruck": "Back to truck"
+                },
+                "header": {
+                    "description": "Performance history for this driver pairing on the truck"
+                },
+                "status": {
+                    "active": "Active",
+                    "detached": "Detached",
+                    "activeAssignment": "Active assignment",
+                    "inactiveAssignment": "Inactive assignment"
+                },
+                "timeline": {
+                    "title": "Assignment timeline",
+                    "description": "Lifecycle for this truck-driver pairing",
+                    "truck": "Truck",
+                    "status": "Status: {{value}}",
+                    "driver": "Driver",
+                    "driverId": "Driver ID: {{value}}",
+                    "assignedOn": "Assigned on",
+                    "detachedOn": "Detached on"
+                },
+                "summary": {
+                    "title": "Summary snapshot",
+                    "totalRecords": "Total records",
+                    "completedTrips": "Completed trips",
+                    "activeTrips": "Active trips",
+                    "distance": "Distance (KM)",
+                    "cargoMoved": "Cargo moved",
+                    "fuelEfficiency": "Fuel efficiency"
+                },
+                "records": {
+                    "title": "Performance records",
+                    "description": "Operational history for this driver assignment",
+                    "dispatchWindow": "Dispatch window: {{from}} – {{to}}",
+                    "perPage": "Per page",
+                    "showPerPage": "Show {{value}}"
+                },
+                "metrics": {
+                    "loadedDistance": "Loaded distance",
+                    "emptyDistance": "Empty distance",
+                    "fuelUsed": "Fuel used",
+                    "tonKm": "Ton-KM"
+                },
+                "table": {
+                    "dispatch": "Dispatch",
+                    "route": "Route",
+                    "distance": "Distance",
+                    "fuel": "Fuel",
+                    "cargo": "Cargo",
+                    "status": "Status",
+                    "tonKm": "Ton-KM",
+                    "actions": "Actions",
+                    "duration": "Duration {{value}}",
+                    "operation": "Op #{{value}}",
+                    "loadedDistance": "Loaded {{value}}",
+                    "returned": "Returned",
+                    "inTransit": "In transit",
+                    "view": "View"
+                },
+                "duration": {
+                    "single": "1 day",
+                    "plural": "{{count}} days"
+                },
+                "empty": {
+                    "title": "No performance records found",
+                    "description": "Records will appear here once performances are captured for this assignment."
+                },
+                "fallbacks": {
+                    "driverAssignment": "Driver assignment",
+                    "unknownDriver": "Unknown driver"
+                },
+                "loading": {
+                    "alt": "Loading performances",
+                    "label": "Loading performances..."
+                }
+            }
+        }
+    },
+    "driverTrucks": {
+        "title": "Driver-Truck Assignments",
+        "breadcrumb": "Driver-Truck Assignments",
+        "description": "Manage all driver-truck assignments. Total: {{count}}",
+        "columns": {
+            "driver": "Driver",
+            "truck": "Truck",
+            "assignedDate": "Assigned Date",
+            "created": "Created",
+            "status": "Status"
+        },
+        "table": {
+            "title": "Assignments",
+            "description": "All driver-truck assignment records",
+            "actions": "Actions",
+            "detachedAt": "Detached: {{value}}"
+        },
+        "actions": {
+            "add": "Add Assignment",
+            "view": "View",
+            "edit": "Edit",
+            "delete": "Delete",
+            "cancel": "Cancel"
+        },
+        "filters": {
+            "searchPlaceholder": "Search assignments...",
+            "rowsLabel": "Rows",
+            "status": "Status",
+            "allStatuses": "All statuses",
+            "perPageOption": "{{value}} / page"
+        },
+        "mobile": {
+            "position": "#{{value}}",
+            "truckPending": "Truck pending",
+            "status": "Status",
+            "assigned": "Assigned",
+            "created": "Created",
+            "detached": "Detached"
+        },
+        "empty": {
+            "title": "No assignments found.",
+            "createAction": "Create one"
+        },
+        "stats": {
+            "total": {
+                "label": "Assignments",
+                "description": "Driver-truck pairs"
+            },
+            "attached": {
+                "label": "Attached",
+                "description": "Currently active links"
+            },
+            "detached": {
+                "label": "Detached",
+                "description": "Awaiting reassignment"
+            },
+            "availableDrivers": {
+                "label": "Free Drivers",
+                "description": "Ready to deploy"
+            },
+            "availableTrucks": {
+                "label": "Free Trucks",
+                "description": "Available fleet"
+            }
+        },
+        "status": {
+            "attached": "Attached",
+            "detached": "Detached",
+            "active": "Active",
+            "inactive": "Inactive",
+            "activeAssignment": "Active Assignment",
+            "inactiveAssignment": "Inactive Assignment"
+        },
+        "delete": {
+            "title": "Delete Assignment",
+            "description": "Are you sure you want to delete this driver-truck assignment? This action cannot be undone.",
+            "failedTitle": "❌ Delete Failed",
+            "errorKnown": "Failed to delete assignment. Please review the requirements and try again.",
+            "itemName": "{{driver}} ↔ {{plate}}"
+        },
+        "fallbacks": {
+            "notAvailable": "N/A"
+        },
+        "form": {
+            "badge": "Assignment Operations",
+            "required": "All required fields must be completed",
+            "unsaved": "You have unsaved changes",
+            "validation": {
+                "errorTitle": "⚠️ Error",
+                "title": "⚠️ Validation Error",
+                "fixErrors": "Please fix the validation errors before submitting.",
+                "resolve": "Please resolve the highlighted fields before submitting the form."
+            },
+            "sections": {
+                "selection": {
+                    "title": "Assignment Selection",
+                    "description": "Select the active truck and driver you want to pair together.",
+                    "descriptionEdit": "Choose the active truck and driver to keep paired together."
+                },
+                "details": {
+                    "title": "Assignment Details",
+                    "description": "Set the official handover date and review the pairing before submission.",
+                    "descriptionEdit": "Confirm the effective date for this assignment and review the pairing summary."
+                }
+            },
+            "fields": {
+                "truck": {
+                    "label": "Available Trucks",
+                    "tooltip": "Only trucks currently marked as active are shown in this list.",
+                    "placeholder": "Choose a truck",
+                    "searchPlaceholder": "Search trucks...",
+                    "empty": "No available trucks found"
+                },
+                "driver": {
+                    "label": "Available Drivers",
+                    "tooltip": "Drivers already attached to another active truck are filtered out automatically.",
+                    "placeholder": "Choose a driver",
+                    "searchPlaceholder": "Search drivers...",
+                    "optionLabel": "{{name}} (ID: {{id}})",
+                    "empty": "No available drivers found"
+                },
+                "date": {
+                    "label": "Assignment Date",
+                    "helper": "Must be today or within the last 30 days."
+                }
+            },
+            "selectedTruck": {
+                "title": "Selected Truck",
+                "plate": "Plate",
+                "status": "Status"
+            },
+            "selectedDriver": {
+                "title": "Selected Driver",
+                "name": "Name",
+                "driverId": "Driver ID",
+                "status": "Status"
+            },
+            "summary": {
+                "title": "Assignment Summary",
+                "driver": "Driver",
+                "truck": "Truck",
+                "date": "Assignment Date",
+                "status": "Status"
+            },
+            "create": {
+                "breadcrumb": "Create Assignment",
+                "title": "Assign Driver to Truck",
+                "headTitle": "Create Driver-Truck Assignment",
+                "description": "Pair an active driver with an available truck and record the assignment start date.",
+                "backToList": "Back to Assignments",
+                "submit": "Create Assignment",
+                "submitting": "Creating...",
+                "successTitle": "✅ Assignment Created",
+                "successDescription": "Driver and truck have been paired successfully."
+            },
+            "edit": {
+                "breadcrumb": "Edit",
+                "title": "Update Driver-Truck Assignment",
+                "headTitle": "Edit Driver-Truck Assignment #{{id}}",
+                "description": "Adjust the pairing between an active driver and truck, including the assignment date.",
+                "backToAssignment": "Back to Assignment",
+                "submit": "Update Assignment",
+                "submitting": "Updating...",
+                "successTitle": "✅ Assignment Updated",
+                "successDescription": "Driver and truck pairing has been updated successfully.",
+                "fallbackAssignment": "Assignment"
+            }
+        },
+        "show": {
+            "loading": "Loading...",
+            "breadcrumbItem": "{{driver}} – {{plate}}",
+            "title": "{{driver}} · {{plate}}",
+            "subtitle": "Detailed overview of the driver-truck assignment lifecycle",
+            "headTitle": "Assignment: {{driver}} - {{plate}}",
+            "actions": {
+                "back": "Back",
+                "detach": "Detach"
+            },
+            "tabs": {
+                "overview": "Overview",
+                "performances": "Performances ({{count}})",
+                "activity": "Activity"
+            },
+            "summary": {
+                "assignmentId": "Assignment ID",
+                "driverId": "Driver ID {{value}}",
+                "performances": "Performances",
+                "linkedRecords": "Linked performance records",
+                "duration": "Duration",
+                "assignedOn": "Assigned {{value}}",
+                "statusNote": "Note: {{value}}",
+                "noStatusNotes": "No status notes recorded"
+            },
+            "sections": {
+                "summary": {
+                    "title": "Assignment Summary",
+                    "description": "Snapshot of timeline and status"
+                },
+                "metadata": {
+                    "title": "System Metadata",
+                    "description": "Audit information"
+                },
+                "currentStatus": "Current Status",
+                "operationalNotes": "Operational Notes",
+                "noOperationalNotes": "No additional status notes recorded.",
+                "driverSnapshot": "Driver Snapshot",
+                "truckSnapshot": "Truck Snapshot"
+            },
+            "fields": {
+                "driverId": "ID: {{value}}",
+                "assignmentPlate": "Assignment plate: {{value}}",
+                "assignedOn": "Assigned On",
+                "detachedOn": "Detached On",
+                "duration": "Duration",
+                "detachmentReason": "Detachment Reason",
+                "createdAt": "Created At",
+                "updatedAt": "Last Updated",
+                "name": "Name",
+                "identifier": "Identifier",
+                "plate": "Plate",
+                "assignmentPlateLabel": "Assignment Plate"
+            },
+            "grade": {
+                "title": "Assignment Grade",
+                "description": "Performance compared with similar pairings",
+                "fallbackDescription": "Performance analytics",
+                "overallScore": "Overall Score",
+                "scoreOutOf": "{{score}} / 100",
+                "waiting": "Waiting",
+                "weight": "Weight {{value}}",
+                "empty": "Grade insights will appear once enough performance data has been recorded.",
+                "fallbackEmpty": "Grade analytics will become available after more performance data is captured.",
+                "performance": {
+                    "label": "Performance",
+                    "description": "Trips completed, distance covered, and ton-kilometres delivered.",
+                    "trips": "Trips",
+                    "distance": "Distance",
+                    "avgDistance": "Avg Trip Distance",
+                    "tonKmPerTrip": "Ton-KM / Trip"
+                },
+                "efficiency": {
+                    "label": "Efficiency",
+                    "description": "Fuel usage and cost efficiency across trips.",
+                    "kmPerLiter": "KM per Liter",
+                    "fuelCostPerKm": "Fuel Cost / KM",
+                    "avgDistance": "Avg Trip Distance"
+                },
+                "consistency": {
+                    "label": "Consistency",
+                    "description": "Trip completion and turnaround performance.",
+                    "completionRate": "Completion Rate",
+                    "avgTripDuration": "Avg Trip Duration"
+                }
+            },
+            "duration": {
+                "single": "1 day",
+                "plural": "{{count}} days"
+            },
+            "performance": {
+                "title": "Performance Records",
+                "description": "Operational history for this pairing",
+                "tripLabel": "Trip #{{id}}",
+                "routeLabel": "{{origin}} → {{destination}}",
+                "unknownOrigin": "Unknown origin",
+                "unknownDestination": "Unknown destination",
+                "table": {
+                    "trip": "Trip",
+                    "date": "Date",
+                    "customer": "Customer",
+                    "route": "Route",
+                    "volume": "Volume (MT)"
+                },
+                "empty": {
+                    "title": "No performance records found for this assignment.",
+                    "description": "Performance entries will appear once linked operations are recorded."
+                }
+            },
+            "activity": {
+                "title": "Activity Log",
+                "description": "Recent events for this assignment",
+                "by": "by {{name}}",
+                "empty": {
+                    "title": "No activity recorded for this assignment yet.",
+                    "description": "Updates will appear here as changes are made."
+                }
+            },
+            "delete": {
+                "successTitle": "✅ Assignment Deleted",
+                "successDescription": "The driver-truck assignment has been removed successfully.",
+                "failedTitle": "❌ Delete Failed",
+                "failedDescription": "Unable to delete this assignment. Please resolve any blocking records first.",
+                "failedDescriptionUnknown": "An unexpected error occurred while deleting the assignment. Please try again."
+            }
+        },
+        "detach": {
+            "breadcrumb": "Detach Driver",
+            "headTitle": "Detach: {{driver}} - {{plate}}",
+            "actions": {
+                "backToAssignment": "Back to Assignment"
+            },
+            "title": "Detach Driver from Truck",
+            "workflow": "Detachment Workflow",
+            "selectDate": "Select a date",
+            "metrics": {
+                "driver": "Driver",
+                "truck": "Truck",
+                "assignedOn": "Assigned On",
+                "currentDuration": "Current Duration"
+            },
+            "currentDetails": {
+                "title": "Current Assignment Details",
+                "description": "Review the active pairing before completing the detachment workflow.",
+                "driver": "Driver",
+                "driverId": "ID: {{value}}",
+                "truck": "Truck",
+                "recordedPlate": "Recorded Plate: {{value}}",
+                "assignedOn": "Assigned On",
+                "detachmentDate": "Detachment Date",
+                "totalDuration": "Total Duration"
+            },
+            "notice": {
+                "title": "Important Detachment Notice",
+                "line1": "Detaching this driver will mark the assignment as inactive, free the truck for new allocations, and return the driver to the available pool.",
+                "line2": "Ensure the detachment reason is descriptive enough for future audits. This action will be logged in the activity timeline."
+            },
+            "form": {
+                "title": "Complete Detachment",
+                "description": "Provide the detachment date and capture the operational reason for the change.",
+                "dateLabel": "Detachment Date",
+                "datePlaceholder": "Select detachment date",
+                "reasonLabel": "Detachment Reason",
+                "reasonPlaceholder": "Explain why this driver is being detached from the truck...",
+                "reasonHelper": "The reason is stored for audits and appears in the assignment activity log.",
+                "submitting": "Detaching...",
+                "submit": "Detach Driver"
+            },
+            "summary": {
+                "title": "Detachment Summary",
+                "driver": "Driver",
+                "truck": "Truck",
+                "date": "Detachment Date",
+                "duration": "Total Duration",
+                "reason": "Reason",
+                "note": "After confirmation, this assignment will be marked as detached and both resources will become available for redeployment."
+            },
+            "successTitle": "✅ Driver detached",
+            "successDescription": "The assignment has been updated successfully.",
+            "duration": {
+                "waiting": "Waiting for detachment date",
+                "unable": "Unable to calculate",
+                "invalid": "Detachment date must be after assignment date",
+                "lessThanMinute": "Less than a minute",
+                "day": "day",
+                "days": "days",
+                "hour": "hour",
+                "hours": "hours",
+                "minute": "minute",
+                "minutes": "minutes"
+            }
+        }
+    },
+    "drivers": {
+        "title": "Drivers",
+        "breadcrumb": "Drivers",
+        "description": "Manage your workforce of {{count}} driver{{plural}}",
+        "columns": {
+            "name": "Name",
+            "driverId": "Driver ID",
+            "gender": "Gender",
+            "location": "Location",
+            "phone": "Phone",
+            "hiredDate": "Hired Date",
+            "status": "Status"
+        },
+        "table": {
+            "title": "Driver Directory",
+            "description": "Complete list of all drivers in your workforce",
+            "actions": "Actions"
+        },
+        "actions": {
+            "add": "Add Driver",
+            "view": "View",
+            "edit": "Edit",
+            "delete": "Delete",
+            "cancel": "Cancel"
+        },
+        "filters": {
+            "searchPlaceholder": "Search drivers...",
+            "rowsLabel": "Rows",
+            "all": "All",
+            "gender": "Gender",
+            "allGenders": "All genders",
+            "perPageOption": "{{value}} / page"
+        },
+        "mobile": {
+            "position": "#{{value}}",
+            "driverIdPending": "Driver ID pending",
+            "status": "Status",
+            "gender": "Gender",
+            "location": "Location",
+            "phone": "Phone",
+            "hired": "Hired"
+        },
+        "empty": {
+            "title": "No drivers found.",
+            "createAction": "Create one"
+        },
+        "stats": {
+            "total": {
+                "label": "Total Drivers",
+                "description": "Workforce size"
+            },
+            "active": {
+                "label": "Active",
+                "description": "Currently active"
+            },
+            "inactive": {
+                "label": "Inactive",
+                "description": "Off duty"
+            },
+            "male": {
+                "label": "Male",
+                "description": "👨 Male drivers"
+            },
+            "female": {
+                "label": "Female",
+                "description": "👩 Female drivers"
+            }
+        },
+        "status": {
+            "active": "Active",
+            "inactive": "Inactive",
+            "suspended": "Suspended",
+            "unknown": "Unknown"
+        },
+        "gender": {
+            "male": "Male",
+            "female": "Female",
+            "unknown": "Unknown"
+        },
+        "labels": {
+            "status": "Status",
+            "gender": "Gender",
+            "driverId": "Driver ID",
+            "mobile": "Mobile",
+            "zone": "Zone",
+            "woreda": "Woreda",
+            "kebele": "Kebele",
+            "housenumber": "House Number"
+        },
+        "show": {
+            "subtitle": "Comprehensive driver profile and performance",
+            "headTitle": "View Driver - {{name}}",
+            "actions": {
+                "back": "Back",
+                "deactivate": "Deactivate",
+                "activate": "Activate",
+                "viewAll": "View all",
+                "viewAllAssignments": "View All Assignments",
+                "viewAllPerformances": "View All Performances"
+            },
+            "tabs": {
+                "overview": "Overview",
+                "performance": "Performance",
+                "analytics": "Analytics",
+                "safety": "Safety",
+                "history": "History"
+            },
+            "sections": {
+                "basic": {
+                    "title": "Basic Information",
+                    "description": "Personal and professional details"
+                },
+                "assignments": {
+                    "title": "Truck Assignments",
+                    "description": "Recent vehicles paired with this driver"
+                },
+                "employment": {
+                    "title": "Employment Information",
+                    "description": "Hiring and employment details"
+                },
+                "quickLinks": "Quick Links"
+            },
+            "fields": {
+                "birthdate": "Birthdate",
+                "hireddate": "Hired Date"
+            },
+            "summary": {
+                "completedTrips": "Completed Trips",
+                "distanceHelper": "Distance {{value}}",
+                "noPerformanceData": "No performance data yet",
+                "fuelEfficiency": "Fuel Efficiency",
+                "fuelHelper": "{{value}} L total",
+                "noFuelData": "No fuel data",
+                "totalCargo": "Total Cargo",
+                "cargoHelper": "Avg {{value}} per trip",
+                "noCargoData": "No cargo data",
+                "safetyScore": "Safety Score",
+                "damageHelper": "Damage {{value}}",
+                "noIncidents": "No incidents"
+            },
+            "grade": {
+                "title": "Driver Grade",
+                "description": "Performance rating",
+                "overallScore": "Overall Score",
+                "scoreOutOf": "{{score}} / 100"
+            },
+            "assignments": {
+                "assignmentLabel": "Assignment #{{id}}",
+                "attached": "Attached",
+                "detached": "Detached",
+                "assigned": "Assigned",
+                "detachedAt": "Detached",
+                "empty": "No truck assignments recorded for this driver yet."
+            },
+            "performance": {
+                "summaryTitle": "Performance Summary",
+                "distance": "Distance",
+                "trips": "Trips",
+                "cargo": "Cargo",
+                "fuelEfficiency": "Fuel Efficiency",
+                "fuelCost": "Fuel Cost",
+                "costPerKm": "Cost per KM",
+                "avgRating": "Avg Rating",
+                "cards": {
+                    "totalDistance": "Total Distance",
+                    "tripCount": "{{count}} trips",
+                    "totalCargo": "Total Cargo",
+                    "cargoAvg": "{{value}} avg",
+                    "fuelEfficiency": "Fuel Efficiency",
+                    "fuelTotal": "{{value}} L total",
+                    "fuelCost": "Fuel Cost",
+                    "costPerKm": "{{value}} per KM"
+                },
+                "recordsTitle": "Performance Records",
+                "recordsDescription": "Recent operational trips",
+                "recordLabel": "Performance #{{id}}",
+                "viewOperation": "View Operation",
+                "tonKm": "Ton-KM",
+                "fuel": "Fuel",
+                "tripLabel": "Trip {{index}}",
+                "empty": "No performance records found for this driver yet."
+            },
+            "analytics": {
+                "recentTrends": "Recent Performance Trends",
+                "distance": "Distance (KM)",
+                "tonnage": "Tonnage (MT)",
+                "fuel": "Fuel (L)",
+                "safetyByType": "Safety Incidents by Type",
+                "severity": "Incidents by Severity",
+                "incidents": "Incidents",
+                "efficiency": "Efficiency Metrics",
+                "avgDistance": "Avg Distance/Trip",
+                "fuelEfficiency": "Fuel Efficiency",
+                "costPerTrip": "Cost per Trip",
+                "avgPayload": "Avg Payload",
+                "safetyPerformance": "Safety Performance",
+                "totalIncidents": "Total Incidents",
+                "totalDamage": "Total Damage"
+            },
+            "safety": {
+                "overviewTitle": "Safety Overview",
+                "overviewDescription": "Incidents and safety performance",
+                "total": "Total",
+                "accidents": "Accidents",
+                "violations": "Violations",
+                "warnings": "Warnings",
+                "critical": "Critical",
+                "major": "Major",
+                "minor": "Minor",
+                "empty": "No safety data available for this driver yet.",
+                "incident": "Incident",
+                "location": "Location",
+                "damage": "Damage"
+            },
+            "history": {
+                "title": "Activity History",
+                "description": "Audit trail of driver changes",
+                "empty": "No activity history available for this driver yet."
+            },
+            "delete": {
+                "title": "Delete Driver",
+                "description": "Are you sure you want to delete this driver? This action cannot be undone.",
+                "successTitle": "✅ Driver Deleted",
+                "successDescription": "The driver has been removed successfully.",
+                "failedTitle": "❌ Delete Failed",
+                "failedDescription": "Unable to delete this driver."
+            },
+            "deactivate": {
+                "title": "Deactivate Driver",
+                "description": "This driver will be marked as inactive.",
+                "confirm": "Deactivate",
+                "successTitle": "✅ Driver Deactivated",
+                "successDescription": "The driver has been deactivated successfully.",
+                "failedTitle": "❌ Deactivation Failed",
+                "failedDescription": "Unable to deactivate this driver."
+            },
+            "activate": {
+                "title": "Activate Driver",
+                "description": "This driver will be marked as active.",
+                "confirm": "Activate",
+                "successTitle": "✅ Driver Activated",
+                "successDescription": "The driver has been activated successfully.",
+                "failedTitle": "❌ Activation Failed",
+                "failedDescription": "Unable to activate this driver."
+            },
+            "fallbacks": {
+                "unknownDriver": "Unknown Driver"
+            }
+        },
+        "assignmentPerformances": {
+            "breadcrumb": "Assignment performances",
+            "headTitle": "{{name}} · {{plate}} · Performances",
+            "actions": {
+                "backToDriver": "Back to driver"
+            },
+            "header": {
+                "description": "Performance records for this driver and truck pairing"
+            },
+            "status": {
+                "attached": "Attached",
+                "detached": "Detached"
+            },
+            "timeline": {
+                "title": "Assignment timeline",
+                "description": "Lifecycle information for this pairing",
+                "driver": "Driver",
+                "truck": "Truck",
+                "driverId": "ID: {{value}}",
+                "truckId": "Truck ID: {{value}}",
+                "assignedOn": "Assigned on",
+                "detachedOn": "Detached on"
+            },
+            "summary": {
+                "title": "Summary snapshot",
+                "totalRecords": "Total records",
+                "completedTrips": "Completed trips",
+                "activeTrips": "Active trips",
+                "distance": "Distance (KM)",
+                "cargoMoved": "Cargo moved",
+                "fuelEfficiency": "Fuel efficiency"
+            },
+            "records": {
+                "title": "Performance records",
+                "description": "Operational history for the selected assignment",
+                "dispatchWindow": "Dispatch window: {{from}} – {{to}}",
+                "perPage": "Per page",
+                "showPerPage": "Show {{value}}"
+            },
+            "metrics": {
+                "loadedDistance": "Loaded distance",
+                "emptyDistance": "Empty distance",
+                "fuelUsed": "Fuel used",
+                "tonKm": "Ton-KM"
+            },
+            "table": {
+                "dispatch": "Dispatch",
+                "route": "Route",
+                "distance": "Distance",
+                "fuel": "Fuel",
+                "cargo": "Cargo",
+                "status": "Status",
+                "tonKm": "Ton-KM",
+                "actions": "Actions",
+                "duration": "Duration {{value}}",
+                "operation": "Op #{{value}}",
+                "loadedDistance": "Loaded {{value}}",
+                "returned": "Returned",
+                "inTransit": "In transit",
+                "view": "View"
+            },
+            "duration": {
+                "single": "1 day",
+                "plural": "{{count}} days"
+            },
+            "empty": {
+                "title": "No performance records found",
+                "description": "Records will appear here once performances are captured for this assignment."
+            },
+            "fallbacks": {
+                "assignment": "Assignment",
+                "unknownTruck": "Unknown truck"
+            }
+        },
+        "delete": {
+            "failedTitle": "❌ Delete Failed",
+            "errorKnown": "Failed to delete driver. Please review the requirements and try again.",
+            "errorUnknown": "An unexpected error occurred while deleting the driver. Please try again.",
+            "title": "Delete Driver",
+            "description": "Are you sure you want to delete this driver? This action cannot be undone.",
+            "confirm": "Delete Driver"
+        },
+        "form": {
+            "badge": "Fleet Operations",
+            "required": "All required fields must be completed",
+            "unsaved": "You have unsaved changes",
+            "validation": {
+                "title": "⚠️ Validation Error",
+                "fixErrors": "Please fix the validation errors before submitting",
+                "resolve": "Please resolve the highlighted fields before submitting the form."
+            },
+            "sections": {
+                "general": {
+                    "title": "General Details",
+                    "description": "Core identification and status information for the driver."
+                },
+                "personal": {
+                    "title": "Personal Details",
+                    "description": "Capture birth and employment lifecycle information."
+                },
+                "contact": {
+                    "title": "Contact & Address",
+                    "description": "Ensure we can reach the driver and locate their residence."
+                }
+            },
+            "fields": {
+                "driverId": {
+                    "label": "Driver ID",
+                    "tooltip": "Unique identifier for the driver",
+                    "placeholder": "e.g., DRV001"
+                },
+                "name": {
+                    "label": "Full Name",
+                    "placeholder": "Enter full name"
+                },
+                "gender": {
+                    "label": "Gender",
+                    "placeholder": "Select gender"
+                },
+                "status": {
+                    "label": "Status",
+                    "placeholder": "Select status"
+                },
+                "birthdate": {
+                    "label": "Date of Birth"
+                },
+                "hireddate": {
+                    "label": "Hire Date"
+                },
+                "mobile": {
+                    "label": "Mobile Number",
+                    "placeholder": "e.g., +251911123456"
+                },
+                "zone": {
+                    "label": "Zone",
+                    "helper": "Optional - Administrative zone",
+                    "placeholder": "Zone/District"
+                },
+                "woreda": {
+                    "label": "Woreda",
+                    "helper": "Optional - Sub-district",
+                    "placeholder": "Woreda/Sub-district"
+                },
+                "kebele": {
+                    "label": "Kebele",
+                    "helper": "Optional - Neighborhood",
+                    "placeholder": "Kebele/Neighborhood"
+                },
+                "housenumber": {
+                    "label": "House Number",
+                    "helper": "Optional - House/building number",
+                    "placeholder": "House number"
+                }
+            },
+            "create": {
+                "breadcrumb": "Create",
+                "title": "Create New Driver",
+                "description": "Add a new driver with complete identification, employment, and contact details.",
+                "backToList": "Back to Drivers",
+                "submit": "Create Driver",
+                "submitting": "Creating...",
+                "successTitle": "✅ Driver Created",
+                "successDescription": "The driver has been added to the workforce successfully."
+            },
+            "edit": {
+                "breadcrumb": "Edit",
+                "title": "Update Driver",
+                "description": "Modify identification, employment, and contact details for {{name}}.",
+                "headTitle": "Edit {{name}}",
+                "backToList": "Back to Drivers",
+                "submit": "Update Driver",
+                "submitting": "Updating...",
+                "successTitle": "✅ Driver Updated",
+                "successDescription": "{{name}} has been updated successfully.",
+                "fallbackName": "Driver"
+            }
+        },
+        "fallbacks": {
+            "notAvailable": "N/A"
+        }
+    }
+}

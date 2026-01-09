@@ -9,21 +9,18 @@ import AppLayout from '@/layouts/app-layout';
 import { usePermissions } from '@/hooks/use-permissions';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
+import { useTranslation } from 'react-i18next';
 import {
     ArrowDownRight,
     ArrowUpRight,
     BarChart3,
-    ClipboardList,
-    Clock3,
     DollarSign,
     Flame,
     Gauge,
     Minus,
     Package,
-    RefreshCcw,
     ShieldCheck,
     Target,
-    TrendingUp,
     Truck,
     Users,
     Wrench,
@@ -31,7 +28,6 @@ import {
 } from 'lucide-react';
 import {
     Area,
-    AreaChart,
     Bar,
     BarChart,
     CartesianGrid,
@@ -58,9 +54,9 @@ const STATUS_COLOR_MAP: Record<string, string> = {
     active: 'bg-indigo-500/20 text-indigo-700 border border-indigo-200 dark:border-indigo-900/60 dark:text-indigo-300',
 };
 
-const breadcrumbs: BreadcrumbItem[] = [
+const getBreadcrumbs = (translate: (key: string) => string): BreadcrumbItem[] => [
     {
-        title: 'Dashboard',
+        title: translate('dashboard.breadcrumb'),
         href: '/dashboard',
     },
 ];
@@ -73,7 +69,6 @@ interface ExecutiveMetric {
     change: number | null;
 }
 
-type MetricIconMap = Record<string, ComponentType<{ className?: string }>>;
 type KpiFormat = 'currency' | 'percent' | 'integer' | 'number';
 
 interface PrimaryKpi {
@@ -201,13 +196,6 @@ interface DashboardProps {
     }>;
 }
 
-const METRIC_ICONS: MetricIconMap = {
-    tonnage: Package,
-    avgDailyTonnage: BarChart3,
-    returnRate: RefreshCcw,
-    avgCycle: Clock3,
-};
-
 const PRIMARY_KPI_ICONS: Record<string, ComponentType<{ className?: string }>> = {
     tonnage30d: Package,
     trips30d: Truck,
@@ -220,8 +208,6 @@ const PRIMARY_KPI_ICONS: Record<string, ComponentType<{ className?: string }>> =
 const numberFormatter = new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 });
 const integerFormatter = new Intl.NumberFormat('en-US');
 const dateFormatter = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-const timeFormatter = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: 'numeric' });
-
 const formatNumber = (value: number | null | undefined, options?: Intl.NumberFormatOptions): string => {
     if (value === null || value === undefined || Number.isNaN(value)) {
         return '—';
@@ -361,33 +347,15 @@ const formatPrimaryKpiValue = (kpi: PrimaryKpi): string => {
     }
 };
 
-const parseDateTime = (value: string | null | undefined): Date | null => {
-    if (!value) {
-        return null;
-    }
-
-    const normalized = value.includes('T') ? value : value.replace(' ', 'T');
-    const parsed = new Date(normalized);
-
-    return Number.isNaN(parsed.getTime()) ? null : parsed;
-};
-
-const formatTimeOnly = (value: string | null | undefined): string => {
-    const parsed = parseDateTime(value);
-
-    if (!parsed) {
-        return '—';
-    }
-
-    return timeFormatter.format(parsed);
-};
-
-const renderTrendIndicator = (value: number | null | undefined) => {
+const renderTrendIndicator = (
+    value: number | null | undefined,
+    translate: (key: string, options?: Record<string, unknown>) => string,
+) => {
     if (value === null || value === undefined || Number.isNaN(value)) {
         return (
             <span className="flex items-center gap-1 text-sm text-muted-foreground">
                 <Minus className="h-4 w-4" />
-                Change unavailable
+                {translate('dashboard.kpi.changeUnavailable')}
             </span>
         );
     }
@@ -412,17 +380,21 @@ const renderTrendIndicator = (value: number | null | undefined) => {
     );
 };
 
-const renderStatusBadge = (status?: string | null) => {
+const renderStatusBadge = (
+    status: string | null | undefined,
+    translate: (key: string, options?: Record<string, unknown>) => string,
+) => {
     if (!status) {
-        return <Badge variant="outline">Unknown</Badge>;
+        return <Badge variant="outline">{translate('dashboard.status.unknown')}</Badge>;
     }
 
     const normalized = status.toLowerCase();
     const badgeClass = STATUS_COLOR_MAP[normalized] ?? 'bg-slate-500/15 text-slate-600 border border-slate-200 dark:text-slate-300 dark:border-slate-700';
+    const fallbackLabel = normalized.replaceAll('_', ' ');
 
     return (
         <span className={cn('inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium capitalize', badgeClass)}>
-            {normalized.replaceAll('_', ' ')}
+            {translate(`dashboard.status.${normalized}`, { defaultValue: fallbackLabel })}
         </span>
     );
 };
@@ -433,18 +405,19 @@ const renderEmptyState = (message: string) => (
     </div>
 );
 
-const renderDelta = (label: string, value: number | null | undefined) => (
+const renderDelta = (
+    label: string,
+    value: number | null | undefined,
+    translate: (key: string, options?: Record<string, unknown>) => string,
+) => (
     <div className="flex flex-col gap-1">
         <span className="text-xs text-muted-foreground">{label}</span>
-        {renderTrendIndicator(value)}
+        {renderTrendIndicator(value, translate)}
     </div>
 );
 
-const getProgressWidth = (value: number) => `${Math.min(Math.max(value, 0), 100)}%`;
-
 export default function Dashboard({
     primaryKpis,
-    executiveSummary,
     networkOverview,
     financialOverview,
     assetOverview,
@@ -454,6 +427,8 @@ export default function Dashboard({
     recentPerformances,
 }: DashboardProps) {
     const { hasPermission } = usePermissions();
+    const { t } = useTranslation();
+    const breadcrumbs = React.useMemo(() => getBreadcrumbs(t), [t]);
     const canViewDashboard = hasPermission('dashboard.view');
     const [isVisible, setIsVisible] = React.useState(false);
 
@@ -461,35 +436,12 @@ export default function Dashboard({
         setIsVisible(true);
     }, []);
 
-    if (!canViewDashboard) {
-        return (
-            <AppLayout breadcrumbs={breadcrumbs}>
-                <Head title="Dashboard" />
-                <div className="flex flex-1 flex-col items-center justify-center gap-6 p-8 text-center">
-                    <img src="/images/dashboard-permission.svg" alt="Dashboard access restricted" className="h-60 w-auto max-w-full" />
-                    <div className="space-y-2">
-                        <h1 className="text-3xl font-semibold text-slate-900 dark:text-white">Dashboard Access Restricted</h1>
-                        <p className="text-sm text-slate-600 dark:text-slate-400 max-w-md">
-                            You need the dashboard permission to explore fleet and financial insights. Please contact an administrator if you
-                            believe this is a mistake.
-                        </p>
-                    </div>
-                </div>
-            </AppLayout>
-        );
-    }
-
     const statusSummary = latestTruckStatusSummary;
     const totalStatusEntries = statusSummary?.overview.totalEntries ?? 0;
     const hasLatestStatusData = totalStatusEntries > 0;
     const statusSummaryDateLabel = statusSummary?.date
         ? dateFormatter.format(new Date(statusSummary.date))
         : null;
-
-    const statusBreakdownTotal = React.useMemo(
-        () => networkOverview.statusBreakdown.reduce((sum, entry) => sum + entry.count, 0),
-        [networkOverview.statusBreakdown]
-    );
 
     const loadPhaseTotal = React.useMemo(
         () => networkOverview.loadPhaseBreakdown.reduce((sum, entry) => sum + entry.count, 0),
@@ -509,39 +461,62 @@ export default function Dashboard({
         () => [
             {
                 key: 'revenue',
-                label: 'Revenue (30d)',
+                label: t('dashboard.financialPulse.revenue'),
                 value: financialOverview.revenue30d,
                 change: financialOverview.change.revenue,
                 type: 'currency' as const,
             },
             {
                 key: 'operatingCost',
-                label: 'Operating cost (30d)',
+                label: t('dashboard.financialPulse.operatingCost'),
                 value: financialOverview.operatingCost30d,
                 change: financialOverview.change.operatingCost,
                 type: 'currency' as const,
             },
             {
                 key: 'margin',
-                label: 'Margin (30d)',
+                label: t('dashboard.financialPulse.margin'),
                 value: financialOverview.margin30d,
                 change: financialOverview.change.margin,
                 type: 'currency' as const,
             },
             {
                 key: 'fareboxRecovery',
-                label: 'Farebox recovery',
+                label: t('dashboard.financialPulse.fareboxRecovery'),
                 value: financialOverview.fareboxRecovery,
                 change: financialOverview.change.fareboxRecovery,
                 type: 'percent' as const,
             },
         ],
-        [financialOverview]
+        [financialOverview, t]
     );
+
+    if (!canViewDashboard) {
+        return (
+            <AppLayout breadcrumbs={breadcrumbs}>
+                <Head title={t('dashboard.title')} />
+                <div className="flex flex-1 flex-col items-center justify-center gap-6 p-8 text-center">
+                    <img
+                        src="/images/dashboard-permission.svg"
+                        alt={t('dashboard.accessRestricted.imageAlt')}
+                        className="h-60 w-auto max-w-full"
+                    />
+                    <div className="space-y-2">
+                        <h1 className="text-3xl font-semibold text-slate-900 dark:text-white">
+                            {t('dashboard.accessRestricted.title')}
+                        </h1>
+                        <p className="text-sm text-slate-600 dark:text-slate-400 max-w-md">
+                            {t('dashboard.accessRestricted.description')}
+                        </p>
+                    </div>
+                </div>
+            </AppLayout>
+        );
+    }
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Dashboard" />
+            <Head title={t('dashboard.title')} />
             <div className={cn(
                 'flex flex-1 flex-col gap-8 p-4 lg:p-8',
                 'bg-gradient-to-br from-slate-50 via-slate-50 to-blue-50/30 dark:from-slate-950 dark:via-slate-900 dark:to-slate-900',
@@ -557,10 +532,10 @@ export default function Dashboard({
                                 </div>
                                 <div>
                                     <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-                                        Executive Dashboard
+                                        {t('dashboard.header.title')}
                                     </h1>
                                     <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mt-1">
-                                        Real-time fleet & financial intelligence
+                                        {t('dashboard.header.subtitle')}
                                     </p>
                                 </div>
                             </div>
@@ -568,7 +543,7 @@ export default function Dashboard({
                     </div>
                     <div className="max-w-3xl">
                         <p className="text-base text-slate-600 dark:text-slate-400">
-                            Monitor network performance, cost recovery, and operational excellence across your fleet.
+                            {t('dashboard.header.description')}
                         </p>
                     </div>
                 </header>
@@ -578,7 +553,7 @@ export default function Dashboard({
                     {primaryKpis.length === 0 && (
                         <Card className="sm:col-span-2 lg:col-span-3 xl:col-span-6 border-dashed border-slate-300/70 dark:border-slate-700/70 bg-white dark:bg-slate-800">
                             <CardContent className="flex h-32 items-center justify-center text-sm text-slate-500 dark:text-slate-400">
-                                No KPI insights available yet.
+                                {t('dashboard.empty.kpis')}
                             </CardContent>
                         </Card>
                     )}
@@ -624,7 +599,7 @@ export default function Dashboard({
                                     <div className="flex items-start justify-between gap-3">
                                         <div className="space-y-2 flex-1">
                                             <p className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">
-                                                {kpi.label}
+                                                {t(`dashboard.kpis.${kpi.key}`, { defaultValue: kpi.label })}
                                             </p>
                                             <div className="flex items-baseline gap-2">
                                                 <span className="text-2xl font-bold text-slate-900 dark:text-white leading-none">
@@ -637,7 +612,7 @@ export default function Dashboard({
                                                 )}
                                             </div>
                                             <div className="text-xs">
-                                                {renderTrendIndicator(kpi.change)}
+                                                {renderTrendIndicator(kpi.change, t)}
                                             </div>
                                         </div>
                                         <div className={cn('flex h-11 w-11 items-center justify-center rounded-lg bg-gradient-to-br shadow-sm', iconGradients[index % iconGradients.length])}>
@@ -657,8 +632,8 @@ export default function Dashboard({
                                 <Package className="h-5 w-5 text-white" />
                             </div>
                             <div>
-                                <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Network Performance</h2>
-                                <p className="text-sm text-slate-600 dark:text-slate-400">Demand coverage, corridor performance, and status mix.</p>
+                                <h2 className="text-2xl font-bold text-slate-900 dark:text-white">{t('dashboard.sections.networkPerformance.title')}</h2>
+                                <p className="text-sm text-slate-600 dark:text-slate-400">{t('dashboard.sections.networkPerformance.subtitle')}</p>
                             </div>
                         </div>
                     </div>
@@ -666,12 +641,12 @@ export default function Dashboard({
                     <div className="grid gap-4 xl:grid-cols-3">
                         <Card className="xl:col-span-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-all duration-200 rounded-xl">
                             <CardHeader className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-                                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">Tonnage & Trips (30d)</CardTitle>
-                                <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Daily tonnage with trip count and ton-km productivity overlays.</CardDescription>
+                                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">{t('dashboard.network.tonnageTrips.title')}</CardTitle>
+                                <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">{t('dashboard.network.tonnageTrips.subtitle')}</CardDescription>
                             </CardHeader>
                             <CardContent className="pt-6">
                                 {dailyTrendWithProductivity.length === 0 ? (
-                                    renderEmptyState('No performance data recorded for the selected window.')
+                                    renderEmptyState(t('dashboard.empty.performanceData'))
                                 ) : (
                                     <ResponsiveContainer width="100%" height={360}>
                                         <ComposedChart data={dailyTrendWithProductivity}>
@@ -682,9 +657,9 @@ export default function Dashboard({
                                             <YAxis yAxisId="productivity" orientation="right" stroke="#f97316" hide />
                                             <Tooltip />
                                             <Legend />
-                                            <Area yAxisId="left" type="monotone" name="Tonnage (MT)" dataKey="tonnage" stroke="#4338ca" fill="#4338ca" fillOpacity={0.18} />
-                                            <Line yAxisId="right" type="monotone" name="Trips" dataKey="trips" stroke="#14b8a6" strokeWidth={2} />
-                                            <Line yAxisId="productivity" type="monotone" name="Ton-km (000s)" dataKey="tonkmThousands" stroke="#f97316" strokeWidth={2} dot={false} />
+                                            <Area yAxisId="left" type="monotone" name={t('dashboard.network.tonnageTrips.tonnageLabel')} dataKey="tonnage" stroke="#4338ca" fill="#4338ca" fillOpacity={0.18} />
+                                            <Line yAxisId="right" type="monotone" name={t('dashboard.network.tonnageTrips.tripsLabel')} dataKey="trips" stroke="#14b8a6" strokeWidth={2} />
+                                            <Line yAxisId="productivity" type="monotone" name={t('dashboard.network.tonnageTrips.tonkmLabel')} dataKey="tonkmThousands" stroke="#f97316" strokeWidth={2} dot={false} />
                                         </ComposedChart>
                                     </ResponsiveContainer>
                                 )}
@@ -693,16 +668,16 @@ export default function Dashboard({
 
                         <Card className="border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-all duration-200 rounded-xl">
                             <CardHeader className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-                                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">Load Phase Mix</CardTitle>
-                                <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Trips grouped by main vs return loads (30d).</CardDescription>
+                                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">{t('dashboard.network.loadPhase.title')}</CardTitle>
+                                <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">{t('dashboard.network.loadPhase.subtitle')}</CardDescription>
                             </CardHeader>
                             <CardContent className="pt-6">
                                 {networkOverview.loadPhaseBreakdown.length === 0 ? (
-                                    renderEmptyState('Load phase data unavailable – capture trips with load phase details to populate.')
+                                    renderEmptyState(t('dashboard.empty.loadPhaseData'))
                                 ) : (
                                     <div className="flex flex-col gap-6">
                                         <div className="text-center">
-                                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Captured trips</p>
+                                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{t('dashboard.network.loadPhase.capturedTrips')}</p>
                                             <p className="text-2xl font-semibold text-slate-900 dark:text-white">
                                                 {integerFormatter.format(loadPhaseTotal)}
                                             </p>
@@ -727,10 +702,24 @@ export default function Dashboard({
                                                         formatter={(value: unknown, _name: string, context) => {
                                                             const payload = context?.payload as typeof networkOverview.loadPhaseBreakdown[number] | undefined;
                                                             const formattedCount = typeof value === 'number' ? integerFormatter.format(value) : value;
-                                                            const shareLabel = payload ? `${numberFormatter.format(payload.share)}% share` : '';
-                                                            return [`${formattedCount} trips`, shareLabel];
+                                                            const shareLabel = payload
+                                                                ? t('dashboard.network.loadPhase.shareLabel', {
+                                                                    share: numberFormatter.format(payload.share),
+                                                                })
+                                                                : '';
+                                                            return [
+                                                                t('dashboard.network.loadPhase.tripCountLabel', { countValue: formattedCount }),
+                                                                shareLabel,
+                                                            ];
                                                         }}
-                                                        labelFormatter={(label: string) => label}
+                                                        labelFormatter={(_label: string, payload?: Array<{ payload?: { phase?: string; label?: string } }>) => {
+                                                            const rawLabel = payload?.[0]?.payload?.label ?? _label;
+                                                            const phaseKey = payload?.[0]?.payload?.phase ?? '';
+
+                                                            return t(`dashboard.network.loadPhase.labels.${phaseKey}`, {
+                                                                defaultValue: rawLabel,
+                                                            });
+                                                        }}
                                                     />
                                                 </PieChart>
                                             </ResponsiveContainer>
@@ -745,9 +734,16 @@ export default function Dashboard({
                                                         style={{ backgroundColor: item.color }}
                                                     />
                                                     <div className="flex flex-col">
-                                                        <span className="font-medium text-slate-800 dark:text-slate-100">{item.label}</span>
+                                                        <span className="font-medium text-slate-800 dark:text-slate-100">
+                                                            {t(`dashboard.network.loadPhase.labels.${item.phase}`, {
+                                                                defaultValue: item.label,
+                                                            })}
+                                                        </span>
                                                         <span className="text-slate-600 dark:text-slate-300">
-                                                            {numberFormatter.format(item.share)}% · {integerFormatter.format(item.count)}
+                                                            {t('dashboard.network.loadPhase.legend', {
+                                                                shareValue: numberFormatter.format(item.share),
+                                                                countValue: integerFormatter.format(item.count),
+                                                            })}
                                                         </span>
                                                     </div>
                                                 </li>
@@ -761,12 +757,12 @@ export default function Dashboard({
 
                     <Card className="border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-all duration-200 rounded-xl">
                         <CardHeader className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-                            <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">Top Corridors</CardTitle>
-                            <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Tonnage handled on major origin-destination pairs (30d).</CardDescription>
+                            <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">{t('dashboard.network.corridors.title')}</CardTitle>
+                            <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">{t('dashboard.network.corridors.subtitle')}</CardDescription>
                         </CardHeader>
                         <CardContent className="pt-6">
                             {networkOverview.corridors.length === 0 ? (
-                                renderEmptyState('No corridor flows recorded in the period.')
+                                renderEmptyState(t('dashboard.empty.corridors'))
                             ) : (
                                 <ResponsiveContainer width="100%" height={360}>
                                     <BarChart data={networkOverview.corridors} layout="vertical" margin={{ left: 24 }}>
@@ -775,8 +771,8 @@ export default function Dashboard({
                                         <YAxis dataKey="label" type="category" width={180} />
                                         <Tooltip />
                                         <Legend />
-                                        <Bar dataKey="tonnage" name="Tonnage (MT)" fill="#4338ca" radius={[0, 4, 4, 0]} />
-                                        <Bar dataKey="trips" name="Trips" fill="#14b8a6" radius={[0, 4, 4, 0]} />
+                                        <Bar dataKey="tonnage" name={t('dashboard.network.corridors.tonnageLabel')} fill="#4338ca" radius={[0, 4, 4, 0]} />
+                                        <Bar dataKey="trips" name={t('dashboard.network.corridors.tripsLabel')} fill="#14b8a6" radius={[0, 4, 4, 0]} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             )}
@@ -791,20 +787,20 @@ export default function Dashboard({
                                 <DollarSign className="h-5 w-5 text-white" />
                             </div>
                             <div>
-                                <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Financial Overview</h2>
-                                <p className="text-sm text-slate-600 dark:text-slate-400">Revenue, costs, and financial metrics.</p>
+                                <h2 className="text-2xl font-bold text-slate-900 dark:text-white">{t('dashboard.sections.financialOverview.title')}</h2>
+                                <p className="text-sm text-slate-600 dark:text-slate-400">{t('dashboard.sections.financialOverview.subtitle')}</p>
                             </div>
                         </div>
                     </div>
                     <div className="grid gap-4 xl:grid-cols-3">
                         <Card className="xl:col-span-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-all duration-200 rounded-xl">
                             <CardHeader className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-                                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">Revenue vs Cost Trend</CardTitle>
-                                <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Six-month view across revenue, cost, and net contribution.</CardDescription>
+                                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">{t('dashboard.financial.trend.title')}</CardTitle>
+                                <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">{t('dashboard.financial.trend.subtitle')}</CardDescription>
                             </CardHeader>
                             <CardContent className="pt-6">
                                 {financialOverview.trend.length === 0 ? (
-                                    renderEmptyState('No financial entries captured yet.')
+                                    renderEmptyState(t('dashboard.empty.financialTrend'))
                                 ) : (
                                     <ResponsiveContainer width="100%" height={360}>
                                         <ComposedChart data={financialOverview.trend}>
@@ -813,9 +809,9 @@ export default function Dashboard({
                                             <YAxis />
                                             <Tooltip />
                                             <Legend />
-                                            <Bar dataKey="revenue" name="Revenue" fill="#14b8a6" radius={[4, 4, 0, 0]} />
-                                            <Bar dataKey="cost" name="Operating cost" fill="#f59e0b" radius={[4, 4, 0, 0]} />
-                                            <Line type="monotone" dataKey="net" name="Net" stroke="#4338ca" strokeWidth={2} />
+                                            <Bar dataKey="revenue" name={t('dashboard.financial.trend.revenue')} fill="#14b8a6" radius={[4, 4, 0, 0]} />
+                                            <Bar dataKey="cost" name={t('dashboard.financial.trend.operatingCost')} fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                                            <Line type="monotone" dataKey="net" name={t('dashboard.financial.trend.net')} stroke="#4338ca" strokeWidth={2} />
                                         </ComposedChart>
                                     </ResponsiveContainer>
                                 )}
@@ -824,12 +820,12 @@ export default function Dashboard({
 
                         <Card className="border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-all duration-200 rounded-xl">
                             <CardHeader className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-                                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">Cost Breakdown</CardTitle>
-                                <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Share of spend across cost categories (30d).</CardDescription>
+                                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">{t('dashboard.financial.breakdown.title')}</CardTitle>
+                                <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">{t('dashboard.financial.breakdown.subtitle')}</CardDescription>
                             </CardHeader>
                             <CardContent className="pt-6">
                                 {financialOverview.costBreakdown.length === 0 ? (
-                                    renderEmptyState('Cost breakdown unavailable. Add financial records to populate.')
+                                    renderEmptyState(t('dashboard.empty.costBreakdown'))
                                 ) : (
                                     <>
                                         <ResponsiveContainer width="100%" height={280}>
@@ -844,11 +840,11 @@ export default function Dashboard({
                                         </ResponsiveContainer>
                                         <div className="mt-4 grid gap-2 text-sm">
                                             <div className="flex items-center justify-between">
-                                                <span>Average revenue per ton</span>
+                                                <span>{t('dashboard.financial.breakdown.avgRevenuePerTon')}</span>
                                                 <span className="font-medium">{formatCurrency(financialOverview.avgRevenuePerTon)}</span>
                                             </div>
                                             <div className="flex items-center justify-between">
-                                                <span>Average cost per ton</span>
+                                                <span>{t('dashboard.financial.breakdown.avgCostPerTon')}</span>
                                                 <span className="font-medium">{formatCurrency(financialOverview.avgCostPerTon)}</span>
                                             </div>
                                         </div>
@@ -859,8 +855,8 @@ export default function Dashboard({
 
                         <Card className="border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-all duration-200 rounded-xl">
                             <CardHeader className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-                                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">Financial Pulse</CardTitle>
-                                <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Month-over-month shifts in core financials.</CardDescription>
+                                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">{t('dashboard.financial.pulse.title')}</CardTitle>
+                                <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">{t('dashboard.financial.pulse.subtitle')}</CardDescription>
                             </CardHeader>
                             <CardContent className="pt-6">
                                 <div className="grid gap-3">
@@ -877,7 +873,7 @@ export default function Dashboard({
                                                     {formatFinancialValue(metric.value, metric.type)}
                                                 </p>
                                             </div>
-                                            {renderDelta('Vs previous 30d', metric.change)}
+                                            {renderDelta(t('dashboard.financial.pulse.deltaLabel'), metric.change, t)}
                                         </div>
                                     ))}
                                 </div>
@@ -887,12 +883,12 @@ export default function Dashboard({
                         <Card className="border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-all duration-300 rounded-xl">
                             <CardHeader className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
                                 <div className="flex items-center justify-between gap-2">
-                                    <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">Status Breakdown</CardTitle>
+                                    <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">{t('dashboard.statusBreakdown.title')}</CardTitle>
                                     <Badge className="bg-indigo-600 text-white border-0 text-xs font-semibold">
-                                        {statusSummaryDateLabel ?? 'Pending'}
+                                        {statusSummaryDateLabel ?? t('dashboard.statusBreakdown.pending')}
                                     </Badge>
                                 </div>
-                                <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Today's operational status distribution</CardDescription>
+                                <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">{t('dashboard.statusBreakdown.subtitle')}</CardDescription>
                             </CardHeader>
                             <CardContent className="pt-6">
                                 {hasLatestStatusData ? (
@@ -912,7 +908,9 @@ export default function Dashboard({
                                                     <div className="flex items-center justify-between gap-2">
                                                         <div>
                                                             <p className="text-sm font-semibold text-slate-900 dark:text-white">{entry.label}</p>
-                                                            <p className="text-xs text-slate-600 dark:text-slate-400">{integerFormatter.format(entry.count)} entries</p>
+                                                            <p className="text-xs text-slate-600 dark:text-slate-400">
+                                                                {t('dashboard.statusBreakdown.entries', { countValue: integerFormatter.format(entry.count) })}
+                                                            </p>
                                                         </div>
                                                         <span className="text-lg font-bold text-slate-900 dark:text-white">{share.toFixed(1)}%</span>
                                                     </div>
@@ -928,7 +926,7 @@ export default function Dashboard({
                                     </div>
                                 ) : (
                                     <div className="flex h-full min-h-[12rem] items-center justify-center text-sm text-muted-foreground">
-                                        No truck status updates yet.
+                                        {t('dashboard.empty.statusUpdates')}
                                     </div>
                                 )}
                             </CardContent>
@@ -939,8 +937,8 @@ export default function Dashboard({
                     <Card className="border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-all duration-200 rounded-xl">
                             <CardHeader className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
                                 <div>
-                                    <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">Fuel Exposure</CardTitle>
-                                    <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Spend and uplift trend.</CardDescription>
+                                    <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">{t('dashboard.financial.fuel.title')}</CardTitle>
+                                    <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">{t('dashboard.financial.fuel.subtitle')}</CardDescription>
                                 </div>
                                 {(() => {
                                     const fuelCost = getCurrencyParts(financialOverview.fuel.totalCost30d);
@@ -970,7 +968,7 @@ export default function Dashboard({
                         </CardHeader>
                         <CardContent className="pt-6">
                             {financialOverview.fuel.trend.length === 0 ? (
-                                renderEmptyState('Fuel records unavailable for the selected window.')
+                                renderEmptyState(t('dashboard.empty.fuelRecords'))
                             ) : (
                                 <ResponsiveContainer width="100%" height={360}>
                                     <ComposedChart data={financialOverview.fuel.trend}>
@@ -980,8 +978,8 @@ export default function Dashboard({
                                         <YAxis yAxisId="right" orientation="right" stroke="#14b8a6" />
                                         <Tooltip />
                                         <Legend />
-                                        <Bar yAxisId="left" dataKey="cost" name="Fuel cost" fill="#f59e0b" radius={[4, 4, 0, 0]} />
-                                        <Line yAxisId="right" type="monotone" dataKey="volume" name="Volume (L)" stroke="#14b8a6" strokeWidth={2} />
+                                        <Bar yAxisId="left" dataKey="cost" name={t('dashboard.financial.fuel.costLabel')} fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                                        <Line yAxisId="right" type="monotone" dataKey="volume" name={t('dashboard.financial.fuel.volumeLabel')} stroke="#14b8a6" strokeWidth={2} />
                                     </ComposedChart>
                                 </ResponsiveContainer>
                             )}
@@ -996,8 +994,8 @@ export default function Dashboard({
                                 <Wrench className="h-5 w-5 text-white" />
                             </div>
                             <div>
-                                <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Asset & Maintenance</h2>
-                                <p className="text-sm text-slate-600 dark:text-slate-400">Maintenance workload and upcoming jobs.</p>
+                                <h2 className="text-2xl font-bold text-slate-900 dark:text-white">{t('dashboard.sections.assetMaintenance.title')}</h2>
+                                <p className="text-sm text-slate-600 dark:text-slate-400">{t('dashboard.sections.assetMaintenance.subtitle')}</p>
                             </div>
                         </div>
                     </div>
@@ -1005,43 +1003,45 @@ export default function Dashboard({
                     <div className="grid gap-4 xl:grid-cols-3">
                         <Card className="border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-all duration-200 rounded-xl">
                             <CardHeader className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-                                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">Maintenance Pulse</CardTitle>
-                                <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Current status of maintenance queue.</CardDescription>
+                                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">{t('dashboard.maintenance.pulse.title')}</CardTitle>
+                                <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">{t('dashboard.maintenance.pulse.subtitle')}</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4 pt-6">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-3">
                                         <Wrench className="h-9 w-9 text-indigo-500" />
                                         <div>
-                                            <p className="text-sm font-medium">Scheduled</p>
-                                            <p className="text-muted-foreground">Booked in calendar</p>
+                                            <p className="text-sm font-medium">{t('dashboard.maintenance.pulse.scheduled')}</p>
+                                            <p className="text-muted-foreground">{t('dashboard.maintenance.pulse.bookedInCalendar')}</p>
                                         </div>
                                     </div>
                                     <span className="text-2xl font-semibold">{integerFormatter.format(assetOverview.maintenance.scheduled)}</span>
                                 </div>
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <p className="text-sm font-medium text-rose-600">Overdue</p>
-                                        <p className="text-xs text-muted-foreground">Past schedule</p>
+                                        <p className="text-sm font-medium text-rose-600">{t('dashboard.maintenance.pulse.overdue')}</p>
+                                        <p className="text-xs text-muted-foreground">{t('dashboard.maintenance.pulse.pastSchedule')}</p>
                                     </div>
                                     <span className="text-xl font-semibold text-rose-600">{integerFormatter.format(assetOverview.maintenance.overdue)}</span>
                                 </div>
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <p className="text-sm font-medium text-teal-600">Completed (30d)</p>
-                                        <p className="text-xs text-muted-foreground">Closed work orders</p>
+                                        <p className="text-sm font-medium text-teal-600">{t('dashboard.maintenance.pulse.completed')}</p>
+                                        <p className="text-xs text-muted-foreground">{t('dashboard.maintenance.pulse.closedWorkOrders')}</p>
                                     </div>
                                     <span className="text-xl font-semibold text-teal-600">{integerFormatter.format(assetOverview.maintenance.completed30d)}</span>
                                 </div>
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <p className="text-sm font-medium">Avg turnaround</p>
-                                        <p className="text-xs text-muted-foreground">Scheduled to complete</p>
+                                        <p className="text-sm font-medium">{t('dashboard.maintenance.pulse.avgTurnaround')}</p>
+                                        <p className="text-xs text-muted-foreground">{t('dashboard.maintenance.pulse.scheduledToComplete')}</p>
                                     </div>
                                     <span className="text-xl font-semibold">
                                         {assetOverview.maintenance.averageTurnaroundDays === null
                                             ? '—'
-                                            : `${formatNumber(assetOverview.maintenance.averageTurnaroundDays)} days`}
+                                            : t('dashboard.maintenance.pulse.daysLabel', {
+                                                days: formatNumber(assetOverview.maintenance.averageTurnaroundDays),
+                                            })}
                                     </span>
                                 </div>
                             </CardContent>
@@ -1049,12 +1049,12 @@ export default function Dashboard({
 
                         <Card className="xl:col-span-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-all duration-200 rounded-xl">
                             <CardHeader className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-                                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">Maintenance Trend & Upcoming Jobs</CardTitle>
-                                <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Monthly completions vs scheduled jobs, with next five assignments.</CardDescription>
+                                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">{t('dashboard.maintenance.trend.title')}</CardTitle>
+                                <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">{t('dashboard.maintenance.trend.subtitle')}</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-6 pt-6">
                                 {assetOverview.maintenance.trend.length === 0 ? (
-                                    renderEmptyState('Maintenance trend not yet recorded.')
+                                    renderEmptyState(t('dashboard.empty.maintenanceTrend'))
                                 ) : (
                                     <ResponsiveContainer width="100%" height={300}>
                                         <ComposedChart data={assetOverview.maintenance.trend}>
@@ -1063,41 +1063,45 @@ export default function Dashboard({
                                             <YAxis />
                                             <Tooltip />
                                             <Legend />
-                                            <Bar dataKey="scheduled" name="Scheduled" fill="#4338ca" radius={[4, 4, 0, 0]} />
-                                            <Bar dataKey="completed" name="Completed" fill="#14b8a6" radius={[4, 4, 0, 0]} />
+                                            <Bar dataKey="scheduled" name={t('dashboard.maintenance.trend.scheduledSeries')} fill="#4338ca" radius={[4, 4, 0, 0]} />
+                                            <Bar dataKey="completed" name={t('dashboard.maintenance.trend.completedSeries')} fill="#14b8a6" radius={[4, 4, 0, 0]} />
                                         </ComposedChart>
                                     </ResponsiveContainer>
                                 )}
 
                                 <div className="space-y-3">
-                                    <h3 className="text-sm font-semibold text-muted-foreground uppercase">Next jobs</h3>
+                                    <h3 className="text-sm font-semibold text-muted-foreground uppercase">{t('dashboard.maintenance.trend.nextJobs')}</h3>
                                     {assetOverview.maintenance.upcoming.length === 0 ? (
-                                        <p className="text-sm text-muted-foreground">No upcoming maintenance within the planning horizon.</p>
+                                        <p className="text-sm text-muted-foreground">{t('dashboard.empty.upcomingMaintenance')}</p>
                                     ) : (
                                         <div className="grid gap-3">
                                             {assetOverview.maintenance.upcoming.map(item => {
                                                 const daysUntil = item.daysUntil ?? null;
                                                 const relativeLabel = item.scheduledRelative
                                                     ?? (daysUntil === null
-                                                        ? 'Not scheduled'
+                                                        ? t('dashboard.maintenance.trend.notScheduled')
                                                         : daysUntil > 0
-                                                            ? `in ${daysUntil} day${daysUntil === 1 ? '' : 's'}`
+                                                            ? t('dashboard.maintenance.trend.inDays', { count: daysUntil })
                                                             : daysUntil === 0
-                                                                ? 'Today'
-                                                                : `${Math.abs(daysUntil)} day${Math.abs(daysUntil) === 1 ? '' : 's'} overdue`);
+                                                                ? t('dashboard.maintenance.trend.today')
+                                                                : t('dashboard.maintenance.trend.overdueDays', { count: Math.abs(daysUntil) }));
 
                                                 return (
                                                     <div key={item.id} className="flex items-center justify-between rounded-lg border px-3 py-2">
                                                         <div className="flex items-center gap-3">
                                                             <ShieldCheck className="h-5 w-5 text-indigo-500" />
                                                             <div>
-                                                                <p className="text-sm font-medium">Truck {item.truck}</p>
-                                                                <p className="text-xs text-muted-foreground">Scheduled {item.scheduledDate ? dateFormatter.format(new Date(item.scheduledDate)) : 'TBC'}</p>
+                                                                <p className="text-sm font-medium">{t('dashboard.maintenance.trend.truckLabel', { truck: item.truck })}</p>
+                                                                <p className="text-xs text-muted-foreground">
+                                                                    {t('dashboard.maintenance.trend.scheduledDateLabel', {
+                                                                        date: item.scheduledDate ? dateFormatter.format(new Date(item.scheduledDate)) : t('dashboard.maintenance.trend.tbc'),
+                                                                    })}
+                                                                </p>
                                                             </div>
                                                         </div>
                                                         <div className="text-right text-sm">
                                                             <p className="font-medium">{relativeLabel}</p>
-                                                            <p className="text-xs text-muted-foreground capitalize">{item.status ?? 'scheduled'}</p>
+                                                            <p className="text-xs text-muted-foreground capitalize">{item.status ?? t('dashboard.maintenance.trend.scheduledStatus')}</p>
                                                         </div>
                                                     </div>
                                                 );
@@ -1117,8 +1121,8 @@ export default function Dashboard({
                                 <ShieldCheck className="h-5 w-5 text-white" />
                             </div>
                             <div>
-                                <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Safety & Compliance</h2>
-                                <p className="text-sm text-slate-600 dark:text-slate-400">Incident rate, severity mix, and leading themes.</p>
+                                <h2 className="text-2xl font-bold text-slate-900 dark:text-white">{t('dashboard.sections.safetyCompliance.title')}</h2>
+                                <p className="text-sm text-slate-600 dark:text-slate-400">{t('dashboard.sections.safetyCompliance.subtitle')}</p>
                             </div>
                         </div>
                     </div>
@@ -1126,38 +1130,38 @@ export default function Dashboard({
                     <div className="grid gap-4 xl:grid-cols-3">
                         <Card className="border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-all duration-200 rounded-xl">
                             <CardHeader className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-                                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">Incident Summary (90d)</CardTitle>
-                                <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Rate normalised per 100 trips.</CardDescription>
+                                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">{t('dashboard.safety.summary.title')}</CardTitle>
+                                <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">{t('dashboard.safety.summary.subtitle')}</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4 pt-6">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-3">
                                         <ShieldCheck className="h-10 w-10 text-rose-500" />
                                         <div>
-                                            <p className="text-sm text-muted-foreground">Recorded incidents</p>
+                                            <p className="text-sm text-muted-foreground">{t('dashboard.safety.summary.recordedIncidents')}</p>
                                             <p className="text-3xl font-semibold">{integerFormatter.format(safetyOverview.incidents90d)}</p>
                                         </div>
                                     </div>
-                                    {renderTrendIndicator(safetyOverview.change.incidents)}
+                                    {renderTrendIndicator(safetyOverview.change.incidents, t)}
                                 </div>
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <p className="text-sm text-muted-foreground">Rate per 100 trips</p>
+                                        <p className="text-sm text-muted-foreground">{t('dashboard.safety.summary.ratePer100')}</p>
                                         <p className="text-2xl font-semibold">{formatPercent(safetyOverview.incidentRatePer100Trips, 2)}</p>
                                     </div>
-                                    {renderTrendIndicator(safetyOverview.change.incidentRate)}
+                                    {renderTrendIndicator(safetyOverview.change.incidentRate, t)}
                                 </div>
                             </CardContent>
                         </Card>
 
                         <Card className="border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-all duration-200 rounded-xl">
                             <CardHeader className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-                                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">Severity Mix</CardTitle>
-                                <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Distribution by severity level.</CardDescription>
+                                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">{t('dashboard.safety.severity.title')}</CardTitle>
+                                <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">{t('dashboard.safety.severity.subtitle')}</CardDescription>
                             </CardHeader>
                             <CardContent className="pt-6">
                                 {safetyOverview.severityMix.length === 0 ? (
-                                    renderEmptyState('No safety events reported in this window.')
+                                    renderEmptyState(t('dashboard.empty.safetyEvents'))
                                 ) : (
                                     <ResponsiveContainer width="100%" height={280}>
                                         <PieChart>
@@ -1175,12 +1179,12 @@ export default function Dashboard({
 
                         <Card className="border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-all duration-200 rounded-xl">
                             <CardHeader className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-                                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">Incident Trend</CardTitle>
-                                <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Rolling six-month incident volume.</CardDescription>
+                                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">{t('dashboard.safety.trend.title')}</CardTitle>
+                                <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">{t('dashboard.safety.trend.subtitle')}</CardDescription>
                             </CardHeader>
                             <CardContent className="pt-6">
                                 {safetyOverview.incidentTrend.length === 0 ? (
-                                    renderEmptyState('Trend data unavailable.')
+                                    renderEmptyState(t('dashboard.empty.trendData'))
                                 ) : (
                                     <ResponsiveContainer width="100%" height={280}>
                                         <LineChart data={safetyOverview.incidentTrend}>
@@ -1205,27 +1209,27 @@ export default function Dashboard({
                                 <Users className="h-5 w-5 text-white" />
                             </div>
                             <div>
-                                <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Customers & Operations</h2>
-                                <p className="text-sm text-slate-600 dark:text-slate-400">Top partners by tonnage and recent trip activity.</p>
+                                <h2 className="text-2xl font-bold text-slate-900 dark:text-white">{t('dashboard.sections.customersOperations.title')}</h2>
+                                <p className="text-sm text-slate-600 dark:text-slate-400">{t('dashboard.sections.customersOperations.subtitle')}</p>
                             </div>
                         </div>
                     </div>
 
                     <Card className="border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-all duration-200 rounded-xl">
                         <CardHeader className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-                            <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">Top Customers (90d)</CardTitle>
-                            <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Trips and tonnage delivered per customer.</CardDescription>
+                            <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">{t('dashboard.customers.top.title')}</CardTitle>
+                            <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">{t('dashboard.customers.top.subtitle')}</CardDescription>
                         </CardHeader>
                         <CardContent className="pt-6">
                             {topCustomers.length === 0 ? (
-                                renderEmptyState('No customer movements captured in the window.')
+                                renderEmptyState(t('dashboard.empty.customers'))
                             ) : (
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead>Customer</TableHead>
-                                            <TableHead className="text-right">Trips</TableHead>
-                                            <TableHead className="text-right">Tonnage (MT)</TableHead>
+                                            <TableHead>{t('dashboard.customers.table.customer')}</TableHead>
+                                            <TableHead className="text-right">{t('dashboard.customers.table.trips')}</TableHead>
+                                            <TableHead className="text-right">{t('dashboard.customers.table.tonnage')}</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -1245,41 +1249,46 @@ export default function Dashboard({
                     <Card className="border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-all duration-200 rounded-xl">
                         <CardHeader className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
                             <div>
-                                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">Recent Performances</CardTitle>
-                                <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Latest recorded trips with fleet and route details.</CardDescription>
+                                <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">{t('dashboard.performances.title')}</CardTitle>
+                                <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">{t('dashboard.performances.subtitle')}</CardDescription>
                             </div>
                         </CardHeader>
                         <CardContent className="pt-6">
                             {recentPerformances.length === 0 ? (
-                                <p className="text-sm text-muted-foreground">No recorded performances yet.</p>
+                                <p className="text-sm text-muted-foreground">{t('dashboard.empty.performances')}</p>
                             ) : (
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead>Trip</TableHead>
-                                            <TableHead>Fleet</TableHead>
-                                            <TableHead>Route</TableHead>
-                                            <TableHead className="text-right">Cargo (MT)</TableHead>
-                                            <TableHead className="text-right">Dispatched</TableHead>
-                                            <TableHead className="text-right">Status</TableHead>
+                                            <TableHead>{t('dashboard.performances.table.trip')}</TableHead>
+                                            <TableHead>{t('dashboard.performances.table.fleet')}</TableHead>
+                                            <TableHead>{t('dashboard.performances.table.route')}</TableHead>
+                                            <TableHead className="text-right">{t('dashboard.performances.table.cargo')}</TableHead>
+                                            <TableHead className="text-right">{t('dashboard.performances.table.dispatched')}</TableHead>
+                                            <TableHead className="text-right">{t('dashboard.performances.table.status')}</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                         {recentPerformances.map(performance => (
                                             <TableRow key={performance.id}>
-                                                <TableCell className="font-medium">{performance.trip ?? `Trip #${performance.id}`}</TableCell>
+                                                <TableCell className="font-medium">
+                                                    {performance.trip ?? t('dashboard.performances.tripFallback', { id: performance.id })}
+                                                </TableCell>
                                                 <TableCell>
                                                     <div className="flex flex-col text-sm">
-                                                        <span>{performance.driverTruck?.driver?.name ?? 'Unknown driver'}</span>
-                                                        <span className="text-muted-foreground">{performance.driverTruck?.truck?.plate ?? 'Unknown truck'}</span>
+                                                        <span>{performance.driverTruck?.driver?.name ?? t('dashboard.performances.unknownDriver')}</span>
+                                                        <span className="text-muted-foreground">{performance.driverTruck?.truck?.plate ?? t('dashboard.performances.unknownTruck')}</span>
                                                     </div>
                                                 </TableCell>
                                                 <TableCell className="text-sm text-muted-foreground">
-                                                    {(performance.origin?.name ?? 'Unknown origin')} → {(performance.destination?.name ?? 'Unknown destination')}
+                                                    {t('dashboard.performances.routeLabel', {
+                                                        origin: performance.origin?.name ?? t('dashboard.performances.unknownOrigin'),
+                                                        destination: performance.destination?.name ?? t('dashboard.performances.unknownDestination'),
+                                                    })}
                                                 </TableCell>
                                                 <TableCell className="text-right">{numberFormatter.format(performance.CargoVolumMT)}</TableCell>
                                                 <TableCell className="text-right">{performance.DateDispach ? dateFormatter.format(new Date(performance.DateDispach)) : '—'}</TableCell>
-                                                <TableCell className="text-right">{renderStatusBadge(performance.satus)}</TableCell>
+                                                <TableCell className="text-right">{renderStatusBadge(performance.satus, t)}</TableCell>
                                             </TableRow>
                                         ))}
                                     </TableBody>

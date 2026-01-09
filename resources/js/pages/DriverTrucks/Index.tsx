@@ -29,10 +29,11 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import * as React from 'react';
+import { useTranslation } from 'react-i18next';
 
-const breadcrumbs: BreadcrumbItem[] = [
+const getBreadcrumbs = (translate: (key: string) => string): BreadcrumbItem[] => [
     {
-        title: 'Driver-Truck Assignments',
+        title: translate('driverTrucks.breadcrumb'),
         href: '/driver-trucks',
     },
 ];
@@ -94,12 +95,12 @@ interface DriverTrucksIndexProps {
 const SKELETON_FLAG_KEY = 'driver-trucks.index.shouldShowSkeleton';
 const ALLOWED_STATUS_VALUES = ['attached', 'detached'];
 
-const COLUMN_DEFINITIONS: Array<{ id: string; label: string; sortKey: string }> = [
-    { id: 'driver', label: 'Driver', sortKey: 'driver_name' },
-    { id: 'truck', label: 'Truck', sortKey: 'truck_plate' },
-    { id: 'date_recived', label: 'Assigned Date', sortKey: 'date_recived' },
-    { id: 'created_at', label: 'Created', sortKey: 'created_at' },
-    { id: 'status', label: 'Status', sortKey: 'is_attached' },
+const getColumnDefinitions = (translate: (key: string) => string): Array<{ id: string; label: string; sortKey: string }> => [
+    { id: 'driver', label: translate('driverTrucks.columns.driver'), sortKey: 'driver_name' },
+    { id: 'truck', label: translate('driverTrucks.columns.truck'), sortKey: 'truck_plate' },
+    { id: 'date_recived', label: translate('driverTrucks.columns.assignedDate'), sortKey: 'date_recived' },
+    { id: 'created_at', label: translate('driverTrucks.columns.created'), sortKey: 'created_at' },
+    { id: 'status', label: translate('driverTrucks.columns.status'), sortKey: 'is_attached' },
 ];
 
 type NavigateOverrides = {
@@ -112,14 +113,14 @@ type NavigateOverrides = {
     truck_id?: number | string | null;
 };
 
-const formatDate = (value?: string | null): string => {
+const formatDate = (value?: string | null, fallbackLabel = '—'): string => {
     if (!value) {
-        return '—';
+        return fallbackLabel;
     }
 
     const parsed = new Date(value);
     if (Number.isNaN(parsed.getTime())) {
-        return '—';
+        return fallbackLabel;
     }
 
     return parsed.toLocaleDateString('en-US', {
@@ -129,20 +130,16 @@ const formatDate = (value?: string | null): string => {
     });
 };
 
-const getAttachmentBadge = (isAttached?: boolean) => {
-    if (isAttached) {
-        return <Badge className="border-green-200 bg-green-100 text-xs font-medium text-green-700">Attached</Badge>;
-    }
-
-    return <Badge className="border-red-200 bg-red-100 text-xs font-medium text-red-700">Detached</Badge>;
-};
-
 export default function DriverTrucksIndex({ driverTrucks, metrics, filters, statusOptions, perPageOptions }: DriverTrucksIndexProps) {
+    const { t } = useTranslation();
     const { hasPermission } = usePermissions();
     const canViewAssignment = hasPermission('driver-trucks.show');
     const canEditAssignment = hasPermission('driver-trucks.edit');
     const canDeleteAssignment = hasPermission('driver-trucks.destroy');
     const canCreateAssignment = hasPermission('driver-trucks.create');
+    const breadcrumbs = React.useMemo(() => getBreadcrumbs(t), [t]);
+    const columnDefinitions = React.useMemo(() => getColumnDefinitions(t), [t]);
+    const notAvailableLabel = t('driverTrucks.fallbacks.notAvailable');
 
     const [searchTerm, setSearchTerm] = React.useState(filters?.search ?? '');
     const [selectedStatus, setSelectedStatus] = React.useState(() => {
@@ -187,6 +184,34 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
         () => statusOptions.filter((option) => ALLOWED_STATUS_VALUES.includes(option.value)),
         [statusOptions],
     );
+
+    const getStatusOptionLabel = React.useCallback((value: string, fallback: string) => {
+        if (value === 'attached') {
+            return t('driverTrucks.status.attached');
+        }
+
+        if (value === 'detached') {
+            return t('driverTrucks.status.detached');
+        }
+
+        return fallback;
+    }, [t]);
+
+    const getAttachmentBadge = React.useCallback((isAttached?: boolean) => {
+        if (isAttached) {
+            return (
+                <Badge className="border-green-200 bg-green-100 text-xs font-medium text-green-700">
+                    {t('driverTrucks.status.attached')}
+                </Badge>
+            );
+        }
+
+        return (
+            <Badge className="border-red-200 bg-red-100 text-xs font-medium text-red-700">
+                {t('driverTrucks.status.detached')}
+            </Badge>
+        );
+    }, [t]);
 
     const isDataReady = Array.isArray(driverTrucks?.data);
     const { isLoading: isTableLoading } = useListingLoading({
@@ -320,7 +345,7 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
             onError: (errors) => {
                 setIsDeleting(false);
 
-                const fallback = 'Failed to delete assignment. Please review the requirements and try again.';
+                const fallback = t('driverTrucks.delete.errorKnown');
                 if (errors && typeof errors === 'object') {
                     const messages = Object.values(errors)
                         .flatMap((value) => (Array.isArray(value) ? value : [value]))
@@ -330,7 +355,7 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
                     setDeleteError(messages || fallback);
 
                     toast({
-                        title: '❌ Delete Failed',
+                        title: t('driverTrucks.delete.failedTitle'),
                         description: messages || fallback,
                         variant: 'destructive',
                     });
@@ -338,7 +363,7 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
                     setDeleteError(fallback);
 
                     toast({
-                        title: '❌ Delete Failed',
+                        title: t('driverTrucks.delete.failedTitle'),
                         description: fallback,
                         variant: 'destructive',
                     });
@@ -353,7 +378,7 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
                 <Button asChild>
                     <Link href="/driver-trucks/create">
                         <Plus className="mr-2 h-4 w-4" />
-                        Add Assignment
+                        {t('driverTrucks.actions.add')}
                     </Link>
                 </Button>
             )}
@@ -363,66 +388,66 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
     const statsDefinitions = [
         {
             id: 'total-assignments',
-            label: 'Assignments',
+            label: t('driverTrucks.stats.total.label'),
             icon: <UserCheck className="h-3.5 w-3.5 text-blue-600" />,
             className: 'min-w-[220px] flex-shrink-0',
             value: isTableLoading ? <Skeleton className="h-3.5 w-20" aria-hidden="true" /> : totalAssignments.toLocaleString(),
             description: isTableLoading ? (
                 <Skeleton className="h-3 w-28" aria-hidden="true" />
             ) : (
-                'Driver-truck pairs'
+                t('driverTrucks.stats.total.description')
             ),
             valueClassName: isTableLoading ? undefined : 'text-blue-600',
         },
         {
             id: 'attached-assignments',
-            label: 'Attached',
+            label: t('driverTrucks.stats.attached.label'),
             icon: <Truck className="h-3.5 w-3.5 text-green-600" />,
             className: 'min-w-[220px] flex-shrink-0',
             value: isTableLoading ? <Skeleton className="h-3.5 w-16" aria-hidden="true" /> : attachedAssignments.toLocaleString(),
             description: isTableLoading ? (
                 <Skeleton className="h-3 w-24" aria-hidden="true" />
             ) : (
-                'Currently active links'
+                t('driverTrucks.stats.attached.description')
             ),
             valueClassName: isTableLoading ? undefined : 'text-green-600',
         },
         {
             id: 'detached-assignments',
-            label: 'Detached',
+            label: t('driverTrucks.stats.detached.label'),
             icon: <UserX className="h-3.5 w-3.5 text-red-600" />,
             className: 'min-w-[220px] flex-shrink-0',
             value: isTableLoading ? <Skeleton className="h-3.5 w-16" aria-hidden="true" /> : detachedAssignments.toLocaleString(),
             description: isTableLoading ? (
                 <Skeleton className="h-3 w-24" aria-hidden="true" />
             ) : (
-                'Awaiting reassignment'
+                t('driverTrucks.stats.detached.description')
             ),
             valueClassName: isTableLoading ? undefined : 'text-red-600',
         },
         {
             id: 'available-drivers',
-            label: 'Free Drivers',
+            label: t('driverTrucks.stats.availableDrivers.label'),
             icon: <User className="h-3.5 w-3.5 text-purple-600" />,
             className: 'min-w-[220px] flex-shrink-0',
             value: isTableLoading ? <Skeleton className="h-3.5 w-16" aria-hidden="true" /> : availableDrivers.toLocaleString(),
             description: isTableLoading ? (
                 <Skeleton className="h-3 w-24" aria-hidden="true" />
             ) : (
-                'Ready to deploy'
+                t('driverTrucks.stats.availableDrivers.description')
             ),
             valueClassName: isTableLoading ? undefined : 'text-purple-600',
         },
         {
             id: 'available-trucks',
-            label: 'Free Trucks',
+            label: t('driverTrucks.stats.availableTrucks.label'),
             icon: <Truck className="h-3.5 w-3.5 text-amber-500" />,
             className: 'min-w-[220px] flex-shrink-0',
             value: isTableLoading ? <Skeleton className="h-3.5 w-16" aria-hidden="true" /> : availableTrucks.toLocaleString(),
             description: isTableLoading ? (
                 <Skeleton className="h-3 w-24" aria-hidden="true" />
             ) : (
-                'Available fleet'
+                t('driverTrucks.stats.availableTrucks.description')
             ),
             valueClassName: isTableLoading ? undefined : 'text-amber-600',
         },
@@ -434,23 +459,23 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
         () =>
             availablePerPageOptions.map((option) => ({
                 value: String(option),
-                label: `${option} / page`,
+                label: t('driverTrucks.filters.perPageOption', { value: option }),
             })),
-        [availablePerPageOptions],
+        [availablePerPageOptions, t],
     );
 
     const tableColumns = React.useMemo(
         () => [
             { id: 'index', label: '#', align: 'center' as const },
-            ...COLUMN_DEFINITIONS.map((column) => ({
+            ...columnDefinitions.map((column) => ({
                 id: column.id,
                 label: column.label,
                 sortable: true,
                 sortKey: column.sortKey,
             })),
-            { id: 'actions', label: 'Actions', align: 'center' as const },
+            { id: 'actions', label: t('driverTrucks.table.actions'), align: 'center' as const },
         ],
-        [],
+        [columnDefinitions, t],
     );
 
     const tableRows = isTableLoading
@@ -499,14 +524,14 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
                               </div>
                           </TableCell>
                           <TableCell className="font-mono text-muted-foreground">{assignment.truck.plate}</TableCell>
-                          <TableCell className="text-muted-foreground">{formatDate(assignedDate)}</TableCell>
-                          <TableCell className="text-muted-foreground">{formatDate(assignment.created_at)}</TableCell>
+                          <TableCell className="text-muted-foreground">{formatDate(assignedDate, notAvailableLabel)}</TableCell>
+                          <TableCell className="text-muted-foreground">{formatDate(assignment.created_at, notAvailableLabel)}</TableCell>
                           <TableCell>
                               <div className="flex flex-col items-start gap-1">
                                   {getAttachmentBadge(assignment.is_attached)}
                                   {assignment.date_detach && (
                                       <span className="text-xs text-muted-foreground">
-                                          Detached: {formatDate(assignment.date_detach)}
+                                          {t('driverTrucks.table.detachedAt', { value: formatDate(assignment.date_detach, notAvailableLabel) })}
                                       </span>
                                   )}
                               </div>
@@ -515,17 +540,17 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
                               <ListingRowActionsMenu
                                   actions={[
                                       canViewAssignment && {
-                                          label: 'View',
+                                          label: t('driverTrucks.actions.view'),
                                           icon: <Eye className="h-4 w-4" />,
                                           href: `/driver-trucks/${assignment.id}`,
                                       },
                                       canEditAssignment && {
-                                          label: 'Edit',
+                                          label: t('driverTrucks.actions.edit'),
                                           icon: <Edit className="h-4 w-4" />,
                                           href: `/driver-trucks/${assignment.id}/edit`,
                                       },
                                       canDeleteAssignment && {
-                                          label: 'Delete',
+                                          label: t('driverTrucks.actions.delete'),
                                           icon: <Trash2 className="h-4 w-4" />,
                                           danger: true,
                                           disabled: isDeleting && selectedAssignment?.id === assignment.id,
@@ -540,10 +565,10 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
             : (
                 <TableRow>
                     <TableCell colSpan={tableColumns.length} className="py-8 text-center text-muted-foreground">
-                        No assignments found.
+                        {t('driverTrucks.empty.title')}
                         {canCreateAssignment && (
                             <Link href="/driver-trucks/create" className="ml-1 text-primary underline">
-                                Create one
+                                {t('driverTrucks.empty.createAction')}
                             </Link>
                         )}
                     </TableCell>
@@ -607,36 +632,38 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
             getKey={(item) => item.assignment.id}
             renderTitle={(item) => (
                 <div className="flex items-center gap-2">
-                    <span className="text-xs uppercase tracking-wide text-muted-foreground">#{item.position}</span>
+                    <span className="text-xs uppercase tracking-wide text-muted-foreground">
+                        {t('driverTrucks.mobile.position', { value: item.position })}
+                    </span>
                     <span className="text-base">{item.assignment.driver.name}</span>
                     <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
                 </div>
             )}
-            renderSubtitle={(item) => item.assignment.truck.plate || 'Truck pending'}
+            renderSubtitle={(item) => item.assignment.truck.plate || t('driverTrucks.mobile.truckPending')}
             renderContent={(item) => (
                 <div className="space-y-3 text-sm text-muted-foreground">
                     <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Status</span>
+                        <span className="font-medium text-slate-600 dark:text-slate-300">{t('driverTrucks.mobile.status')}</span>
                         {getAttachmentBadge(item.assignment.is_attached)}
                     </div>
                     <div className="space-y-2">
                         <div className="flex items-center justify-between">
-                            <span className="font-medium text-slate-600 dark:text-slate-300">Assigned</span>
+                            <span className="font-medium text-slate-600 dark:text-slate-300">{t('driverTrucks.mobile.assigned')}</span>
                             <span className="text-right font-semibold text-slate-900 dark:text-slate-100">
-                                {formatDate(item.assignment.date_recived ?? item.assignment.assigned_at)}
+                                {formatDate(item.assignment.date_recived ?? item.assignment.assigned_at, notAvailableLabel)}
                             </span>
                         </div>
                         <div className="flex items-center justify-between">
-                            <span className="font-medium text-slate-600 dark:text-slate-300">Created</span>
+                            <span className="font-medium text-slate-600 dark:text-slate-300">{t('driverTrucks.mobile.created')}</span>
                             <span className="text-right font-semibold text-slate-900 dark:text-slate-100">
-                                {formatDate(item.assignment.created_at)}
+                                {formatDate(item.assignment.created_at, notAvailableLabel)}
                             </span>
                         </div>
                         {item.assignment.date_detach && (
                             <div className="flex items-center justify-between">
-                                <span className="font-medium text-slate-600 dark:text-slate-300">Detached</span>
+                                <span className="font-medium text-slate-600 dark:text-slate-300">{t('driverTrucks.mobile.detached')}</span>
                                 <span className="text-right font-semibold text-slate-900 dark:text-slate-100">
-                                    {formatDate(item.assignment.date_detach)}
+                                    {formatDate(item.assignment.date_detach, notAvailableLabel)}
                                 </span>
                             </div>
                         )}
@@ -649,7 +676,7 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
                         <Button asChild size="sm" variant="outline" className="flex-1 sm:flex-auto">
                             <Link href={`/driver-trucks/${item.assignment.id}`}>
                                 <Eye className="mr-2 h-4 w-4" />
-                                View
+                                {t('driverTrucks.actions.view')}
                             </Link>
                         </Button>
                     )}
@@ -657,7 +684,7 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
                         <Button asChild size="sm" variant="secondary" className="flex-1 sm:flex-none">
                             <Link href={`/driver-trucks/${item.assignment.id}/edit`}>
                                 <Edit className="mr-2 h-4 w-4" />
-                                Edit
+                                {t('driverTrucks.actions.edit')}
                             </Link>
                         </Button>
                     )}
@@ -670,17 +697,17 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
                             disabled={isDeleting && selectedAssignment?.id === item.assignment.id}
                         >
                             <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
+                            {t('driverTrucks.actions.delete')}
                         </Button>
                     )}
                 </div>
             )}
             emptyState={(
                 <div className="py-8 text-center text-muted-foreground">
-                    No assignments found.
+                    {t('driverTrucks.empty.title')}
                     {canCreateAssignment && (
                         <Link href="/driver-trucks/create" className="ml-1 text-primary underline">
-                            Create one
+                            {t('driverTrucks.empty.createAction')}
                         </Link>
                     )}
                 </div>
@@ -692,26 +719,26 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
         <ListingFilterBar
             search={{
                 value: searchTerm,
-                placeholder: 'Search assignments...',
+                placeholder: t('driverTrucks.filters.searchPlaceholder'),
                 onChange: handleSearchChange,
                 icon: <Search className="h-4 w-4" />,
             }}
             perPage={{
                 value: perPage,
-                label: 'Rows',
+                label: t('driverTrucks.filters.rowsLabel'),
                 onChange: handlePerPageChange,
                 options: perPageSelectOptions,
             }}
         >
             <Select value={selectedStatus} onValueChange={handleStatusChange}>
                 <SelectTrigger className="w-full min-w-[150px] sm:w-auto">
-                    <SelectValue placeholder="Status" />
+                    <SelectValue placeholder={t('driverTrucks.filters.status')} />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="all">All statuses</SelectItem>
+                    <SelectItem value="all">{t('driverTrucks.filters.allStatuses')}</SelectItem>
                     {filteredStatusOptions.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
-                            {option.label}
+                            {getStatusOptionLabel(option.value, option.label)}
                         </SelectItem>
                     ))}
                 </SelectContent>
@@ -722,14 +749,14 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
     return (
         <>
             <ListPageLayout
-                headTitle="Driver-Truck Assignments"
-                title="Driver-Truck Assignments"
-                description={`Manage all driver-truck assignments. Total: ${totalAssignments}`}
+                headTitle={t('driverTrucks.title')}
+                title={t('driverTrucks.title')}
+                description={t('driverTrucks.description', { count: totalAssignments })}
                 breadcrumbs={breadcrumbs}
                 actions={headerActions}
                 stats={statsSection}
-                tableTitle="Assignments"
-                tableDescription="All driver-truck assignment records"
+                tableTitle={t('driverTrucks.table.title')}
+                tableDescription={t('driverTrucks.table.description')}
                 tableHeaderExtras={tableHeaderExtras}
                 pagination={
                     !isTableLoading && driverTrucks?.links ? (
@@ -766,9 +793,9 @@ export default function DriverTrucksIndex({ driverTrucks, metrics, filters, stat
                         setDeleteError(null);
                     }
                 }}
-                title="Delete Assignment"
-                description="Are you sure you want to delete this driver-truck assignment? This action cannot be undone."
-                itemName={selectedAssignment ? `${selectedAssignment.driver.name} ↔ ${selectedAssignment.truck.plate}` : undefined}
+                title={t('driverTrucks.delete.title')}
+                description={t('driverTrucks.delete.description')}
+                itemName={selectedAssignment ? t('driverTrucks.delete.itemName', { driver: selectedAssignment.driver.name, plate: selectedAssignment.truck.plate }) : undefined}
                 onConfirm={handleDeleteConfirm}
                 isLoading={isDeleting}
                 errorMessage={deleteError}

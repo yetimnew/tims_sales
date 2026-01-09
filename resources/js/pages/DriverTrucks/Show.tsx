@@ -11,6 +11,7 @@ import { DetailPageLayout } from '@/components/detail/detail-page-layout';
 import { toast } from '@/hooks/use-toast';
 import { type BreadcrumbItem } from '@/types';
 import { Activity, AlertCircle, ArrowLeft, ArrowUpRight, Award, BarChart3, CheckCircle, Clock, Edit, History, Truck, User, UserX, XCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface DriverTruck {
   id: number;
@@ -123,104 +124,109 @@ const gradeCategoryOrder: GradeCategoryKey[] = ['performance', 'efficiency', 'co
 
 const numberFormatter = new Intl.NumberFormat('en-ET');
 
-const formatNumber = (value?: number | null, options?: Intl.NumberFormatOptions): string => {
-  if (value === null || value === undefined || Number.isNaN(Number(value))) return 'N/A';
+const formatNumber = (value?: number | null, options?: Intl.NumberFormatOptions, fallbackLabel = 'N/A'): string => {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return fallbackLabel;
   if (options) return new Intl.NumberFormat('en-ET', options).format(value);
   return numberFormatter.format(value);
 };
 
-const formatPercentFromRatio = (value?: number | null, maximumFractionDigits = 0): string => {
-  if (value === null || value === undefined || Number.isNaN(Number(value))) return 'N/A';
+const formatPercentFromRatio = (value?: number | null, maximumFractionDigits = 0, fallbackLabel = 'N/A'): string => {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return fallbackLabel;
   return `${(value * 100).toFixed(maximumFractionDigits)}%`;
 };
 
-const formatKilometers = (value?: number | null, maximumFractionDigits = 0): string => {
-  if (value === null || value === undefined || Number.isNaN(Number(value))) return 'N/A';
+const formatKilometers = (value?: number | null, maximumFractionDigits = 0, fallbackLabel = 'N/A'): string => {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return fallbackLabel;
   return `${formatNumber(value, {
     minimumFractionDigits: maximumFractionDigits,
     maximumFractionDigits,
-  })} KM`;
+  }, fallbackLabel)} KM`;
 };
 
-const formatCurrencyPerKm = (value?: number | null): string => {
-  if (value === null || value === undefined || Number.isNaN(Number(value))) return 'N/A';
+const formatCurrencyPerKm = (value?: number | null, fallbackLabel = 'N/A'): string => {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return fallbackLabel;
   return `${formatNumber(value, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  })} / KM`;
+  }, fallbackLabel)} / KM`;
 };
 
-const formatDays = (value?: number | null): string => {
-  if (value === null || value === undefined || Number.isNaN(Number(value))) return 'N/A';
+const formatDays = (value?: number | null, fallbackLabel = 'N/A', pluralLabel?: (countLabel: string) => string, singleLabel = '1 day'): string => {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return fallbackLabel;
   const rounded = Number(value.toFixed(1));
-  if (rounded === 1) return '1 day';
+  if (rounded === 1) return singleLabel;
   const formatted = rounded % 1 === 0 ? `${rounded}` : rounded.toFixed(1);
-  return `${formatted} days`;
+  return pluralLabel ? pluralLabel(formatted) : `${formatted} days`;
 };
 
-const formatScore = (value?: number | null, maximumFractionDigits = 1): string => {
-  if (value === null || value === undefined || Number.isNaN(Number(value))) return 'N/A';
+const formatScore = (value?: number | null, maximumFractionDigits = 1, fallbackLabel = 'N/A'): string => {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return fallbackLabel;
   return Number(value).toFixed(maximumFractionDigits);
 };
 
-const formatWeight = (value?: number | null): string => {
-  if (value === null || value === undefined || Number.isNaN(Number(value))) return 'N/A';
+const formatWeight = (value?: number | null, fallbackLabel = 'N/A'): string => {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return fallbackLabel;
   return `${Number(value).toFixed(0)}%`;
 };
 
-const buildTripLabel = (performance: Performance): string => {
-  if (performance.trip && performance.trip.trim().length > 0) return performance.trip.trim();
-  return `Trip #${performance.id}`;
-};
-
-const formatVolume = (value?: number | null): string => {
-  if (value === null || value === undefined || Number.isNaN(Number(value))) return 'N/A';
-  return `${formatNumber(value, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MT`;
-};
-
-const buildRouteLabel = (performance: Performance): string => {
-  const origin = performance.origin?.name?.trim();
-  const destination = performance.destination?.name?.trim();
-  if (!origin && !destination) return 'N/A';
-  return `${origin ?? 'Unknown origin'} → ${destination ?? 'Unknown destination'}`;
-};
-
-const gradeCategoryConfig: Record<GradeCategoryKey, GradeCategoryConfigEntry> = {
-  performance: {
-    label: 'Performance',
-    description: 'Trips completed, distance covered, and ton-kilometres delivered.',
-    metrics: [
-      { key: 'total_trips', label: 'Trips', formatter: value => formatNumber(value, { maximumFractionDigits: 0 }) },
-      { key: 'total_distance_km', label: 'Distance', formatter: value => formatKilometers(value, 0) },
-      { key: 'avg_trip_distance_km', label: 'Avg Trip Distance', formatter: value => formatKilometers(value, 1) },
-      { key: 'ton_km_per_trip', label: 'Ton-KM / Trip', formatter: value => formatNumber(value, { maximumFractionDigits: 1 }) },
-    ],
-  },
-  efficiency: {
-    label: 'Efficiency',
-    description: 'Fuel usage and cost efficiency across trips.',
-    metrics: [
-      { key: 'km_per_liter', label: 'KM per Liter', formatter: value => formatNumber(value, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) },
-      { key: 'fuel_cost_per_km', label: 'Fuel Cost / KM', formatter: formatCurrencyPerKm },
-      { key: 'avg_trip_distance_km', label: 'Avg Trip Distance', formatter: value => formatKilometers(value, 1) },
-    ],
-  },
-  consistency: {
-    label: 'Consistency',
-    description: 'Trip completion and turnaround performance.',
-    metrics: [
-      { key: 'trip_completion_rate', label: 'Completion Rate', formatter: value => formatPercentFromRatio(value, 0) },
-      { key: 'avg_trip_duration_days', label: 'Avg Trip Duration', formatter: formatDays },
-    ],
-  },
+const formatVolume = (value?: number | null, fallbackLabel = 'N/A'): string => {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return fallbackLabel;
+  return `${formatNumber(value, { minimumFractionDigits: 2, maximumFractionDigits: 2 }, fallbackLabel)} MT`;
 };
 
 export default function Show({ driverTruck, performances, dateDifference, activityLogs, gradeReport }: Props) {
+  const { t } = useTranslation();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const notAvailableLabel = t('driverTrucks.fallbacks.notAvailable');
 
   const overallGrade = gradeReport?.overall ?? null;
   const gradeWeights = gradeReport?.weights ?? null;
+
+  const buildTripLabel = (performance: Performance): string => {
+    if (performance.trip && performance.trip.trim().length > 0) return performance.trip.trim();
+    return t('driverTrucks.show.performance.tripLabel', { id: performance.id });
+  };
+
+  const buildRouteLabel = (performance: Performance): string => {
+    const origin = performance.origin?.name?.trim();
+    const destination = performance.destination?.name?.trim();
+    if (!origin && !destination) return notAvailableLabel;
+    return t('driverTrucks.show.performance.routeLabel', {
+      origin: origin ?? t('driverTrucks.show.performance.unknownOrigin'),
+      destination: destination ?? t('driverTrucks.show.performance.unknownDestination'),
+    });
+  };
+
+  const gradeCategoryConfig: Record<GradeCategoryKey, GradeCategoryConfigEntry> = {
+    performance: {
+      label: t('driverTrucks.show.grade.performance.label'),
+      description: t('driverTrucks.show.grade.performance.description'),
+      metrics: [
+        { key: 'total_trips', label: t('driverTrucks.show.grade.performance.trips'), formatter: value => formatNumber(value, { maximumFractionDigits: 0 }, notAvailableLabel) },
+        { key: 'total_distance_km', label: t('driverTrucks.show.grade.performance.distance'), formatter: value => formatKilometers(value, 0, notAvailableLabel) },
+        { key: 'avg_trip_distance_km', label: t('driverTrucks.show.grade.performance.avgDistance'), formatter: value => formatKilometers(value, 1, notAvailableLabel) },
+        { key: 'ton_km_per_trip', label: t('driverTrucks.show.grade.performance.tonKmPerTrip'), formatter: value => formatNumber(value, { maximumFractionDigits: 1 }, notAvailableLabel) },
+      ],
+    },
+    efficiency: {
+      label: t('driverTrucks.show.grade.efficiency.label'),
+      description: t('driverTrucks.show.grade.efficiency.description'),
+      metrics: [
+        { key: 'km_per_liter', label: t('driverTrucks.show.grade.efficiency.kmPerLiter'), formatter: value => formatNumber(value, { minimumFractionDigits: 2, maximumFractionDigits: 2 }, notAvailableLabel) },
+        { key: 'fuel_cost_per_km', label: t('driverTrucks.show.grade.efficiency.fuelCostPerKm'), formatter: value => formatCurrencyPerKm(value, notAvailableLabel) },
+        { key: 'avg_trip_distance_km', label: t('driverTrucks.show.grade.efficiency.avgDistance'), formatter: value => formatKilometers(value, 1, notAvailableLabel) },
+      ],
+    },
+    consistency: {
+      label: t('driverTrucks.show.grade.consistency.label'),
+      description: t('driverTrucks.show.grade.consistency.description'),
+      metrics: [
+        { key: 'trip_completion_rate', label: t('driverTrucks.show.grade.consistency.completionRate'), formatter: value => formatPercentFromRatio(value, 0, notAvailableLabel) },
+        { key: 'avg_trip_duration_days', label: t('driverTrucks.show.grade.consistency.avgTripDuration'), formatter: value => formatDays(value, notAvailableLabel, (countLabel) => t('driverTrucks.show.duration.plural', { count: countLabel }), t('driverTrucks.show.duration.single')) },
+      ],
+    },
+  };
 
   const gradeCategories: GradeCategoryView[] = useMemo(() => {
     if (!gradeReport?.categories) return [];
@@ -242,19 +248,19 @@ export default function Show({ driverTruck, performances, dateDifference, activi
         } satisfies GradeCategoryView;
       })
       .filter((category): category is GradeCategoryView => Boolean(category));
-  }, [gradeReport, gradeWeights]);
+  }, [gradeReport, gradeWeights, gradeCategoryConfig]);
 
   if (!driverTruck || !driverTruck.driver || !driverTruck.truck) {
-    return <div className="flex h-64 items-center justify-center"><p>Loading...</p></div>;
+    return <div className="flex h-64 items-center justify-center"><p>{t('driverTrucks.show.loading')}</p></div>;
   }
 
   const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Driver-Truck Assignments', href: '/driver-trucks' },
-    { title: `${driverTruck.driver.name} – ${driverTruck.truck.plate}`, href: `/driver-trucks/${driverTruck.id}` },
+    { title: t('driverTrucks.breadcrumb'), href: '/driver-trucks' },
+    { title: t('driverTrucks.show.breadcrumbItem', { driver: driverTruck.driver.name, plate: driverTruck.truck.plate }), href: `/driver-trucks/${driverTruck.id}` },
   ];
 
   const formatDate = (value?: string) => {
-    if (!value) return 'N/A';
+    if (!value) return notAvailableLabel;
     return new Date(value).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
@@ -263,7 +269,7 @@ export default function Show({ driverTruck, performances, dateDifference, activi
   };
 
   const formatDateTime = (value?: string) => {
-    if (!value) return 'N/A';
+    if (!value) return notAvailableLabel;
     return new Date(value).toLocaleString('en-US', {
       year: 'numeric',
       month: 'short',
@@ -273,30 +279,30 @@ export default function Show({ driverTruck, performances, dateDifference, activi
     });
   };
 
-  const assignmentStatus = driverTruck.is_attached ? 'Attached' : 'Detached';
+  const assignmentStatus = driverTruck.is_attached ? t('driverTrucks.status.attached') : t('driverTrucks.status.detached');
   const assignmentStatusBadgeClass = driverTruck.is_attached ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700';
   const overviewSummaryItems = [
     {
       key: 'assignment-id',
-      label: 'Assignment ID',
+      label: t('driverTrucks.show.summary.assignmentId'),
       value: `#${driverTruck.id}`,
-      helper: `Driver ID ${driverTruck.driver.driverid}`,
+      helper: t('driverTrucks.show.summary.driverId', { value: driverTruck.driver.driverid }),
     },
     {
       key: 'performances',
-      label: 'Performances',
-      value: formatNumber(performances.length, { maximumFractionDigits: 0 }),
-      helper: 'Linked performance records',
+      label: t('driverTrucks.show.summary.performances'),
+      value: formatNumber(performances.length, { maximumFractionDigits: 0 }, notAvailableLabel),
+      helper: t('driverTrucks.show.summary.linkedRecords'),
     },
     {
       key: 'duration',
-      label: 'Duration',
-      value: dateDifference ?? 'N/A',
-      helper: `Assigned ${formatDate(driverTruck.date_recived)}`,
+      label: t('driverTrucks.show.summary.duration'),
+      value: dateDifference ?? notAvailableLabel,
+      helper: t('driverTrucks.show.summary.assignedOn', { value: formatDate(driverTruck.date_recived) }),
     },
     {
       key: 'status',
-      label: 'Status',
+      label: t('driverTrucks.columns.status'),
       value: (
         <Badge className={`flex w-fit items-center gap-1 ${assignmentStatusBadgeClass}`}>
           {driverTruck.is_attached ? <CheckCircle className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
@@ -304,7 +310,9 @@ export default function Show({ driverTruck, performances, dateDifference, activi
         </Badge>
       ),
       valueClassName: 'text-base font-semibold',
-      helper: driverTruck.status ? `Note: ${String(driverTruck.status)}` : 'No status notes recorded',
+      helper: driverTruck.status
+        ? t('driverTrucks.show.summary.statusNote', { value: String(driverTruck.status) })
+        : t('driverTrucks.show.summary.noStatusNotes'),
     },
   ];
 
@@ -316,8 +324,8 @@ export default function Show({ driverTruck, performances, dateDifference, activi
         setDeleteDialogOpen(false);
         setIsDeleting(false);
         toast({
-          title: '✅ Assignment Deleted',
-          description: 'The driver-truck assignment has been removed successfully.',
+          title: t('driverTrucks.show.delete.successTitle'),
+          description: t('driverTrucks.show.delete.successDescription'),
         });
       },
       onError: errors => {
@@ -327,14 +335,14 @@ export default function Show({ driverTruck, performances, dateDifference, activi
             .flatMap(value => (Array.isArray(value) ? value : [value]))
             .filter((message): message is string => Boolean(message && message.length));
           toast({
-            title: '❌ Delete Failed',
-            description: errorMessages.length > 0 ? errorMessages.join('\n') : 'Unable to delete this assignment. Please resolve any blocking records first.',
+            title: t('driverTrucks.show.delete.failedTitle'),
+            description: errorMessages.length > 0 ? errorMessages.join('\n') : t('driverTrucks.show.delete.failedDescription'),
             variant: 'destructive',
           });
         } else {
           toast({
-            title: '❌ Delete Failed',
-            description: 'An unexpected error occurred while deleting the assignment. Please try again.',
+            title: t('driverTrucks.show.delete.failedTitle'),
+            description: t('driverTrucks.show.delete.failedDescriptionUnknown'),
             variant: 'destructive',
           });
         }
@@ -344,16 +352,16 @@ export default function Show({ driverTruck, performances, dateDifference, activi
 
   return (
     <DetailPageLayout
-      title={`${driverTruck.driver.name} · ${driverTruck.truck.plate}`}
-      subtitle="Detailed overview of the driver-truck assignment lifecycle"
+      title={t('driverTrucks.show.title', { driver: driverTruck.driver.name, plate: driverTruck.truck.plate })}
+      subtitle={t('driverTrucks.show.subtitle')}
       breadcrumbs={breadcrumbs}
-      headTitle={`Assignment: ${driverTruck.driver.name} - ${driverTruck.truck.plate}`}
+      headTitle={t('driverTrucks.show.headTitle', { driver: driverTruck.driver.name, plate: driverTruck.truck.plate })}
       icon={<Truck className="h-6 w-6 text-indigo-700 dark:text-indigo-300" />}
       iconWrapperClassName="bg-indigo-100 dark:bg-indigo-900/30"
       leading={
         <Button variant="outline" size="sm" onClick={() => router.get('/driver-trucks')}>
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
+          {t('driverTrucks.show.actions.back')}
         </Button>
       }
       actions={
@@ -361,20 +369,20 @@ export default function Show({ driverTruck, performances, dateDifference, activi
           <Button variant="outline" asChild>
             <Link href={`/driver-trucks/${driverTruck.id}/edit`}>
               <Edit className="h-4 w-4 mr-2" />
-              Edit
+              {t('driverTrucks.actions.edit')}
             </Link>
           </Button>
           {driverTruck.is_attached && (
             <Button variant="outline" asChild className="border-amber-200 text-amber-700 hover:bg-amber-50">
               <Link href={`/driver-trucks/${driverTruck.id}/detach`}>
                 <UserX className="h-4 w-4 mr-2" />
-                Detach
+                {t('driverTrucks.show.actions.detach')}
               </Link>
             </Button>
           )}
           <Button variant="outline" onClick={() => setDeleteDialogOpen(true)} className="border-red-200 text-red-600 hover:bg-red-50">
             <AlertCircle className="h-4 w-4 mr-2" />
-            Delete
+            {t('driverTrucks.actions.delete')}
           </Button>
         </div>
       }
@@ -385,64 +393,72 @@ export default function Show({ driverTruck, performances, dateDifference, activi
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="overview">
             <CheckCircle className="h-4 w-4 mr-2" />
-            Overview
+            {t('driverTrucks.show.tabs.overview')}
           </TabsTrigger>
           <TabsTrigger value="performances">
             <BarChart3 className="h-4 w-4 mr-2" />
-            Performances ({performances.length})
+            {t('driverTrucks.show.tabs.performances', { count: performances.length })}
           </TabsTrigger>
           <TabsTrigger value="activity">
             <History className="h-4 w-4 mr-2" />
-            Activity
+            {t('driverTrucks.show.tabs.activity')}
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
           <div className="grid gap-6 lg:grid-cols-[1fr,20rem]">
             <div className="space-y-6">
-              <DetailSectionCard icon={<CheckCircle className="h-5 w-5" />} title="Assignment Summary" description="Snapshot of timeline and status">
+              <DetailSectionCard
+                icon={<CheckCircle className="h-5 w-5" />}
+                title={t('driverTrucks.show.sections.summary.title')}
+                description={t('driverTrucks.show.sections.summary.description')}
+              >
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="rounded-lg border p-3">
-                    <p className="text-xs font-semibold uppercase text-muted-foreground">Driver</p>
+                    <p className="text-xs font-semibold uppercase text-muted-foreground">{t('driverTrucks.columns.driver')}</p>
                     <p className="mt-2 text-base font-semibold">{driverTruck.driver.name}</p>
-                    <p className="text-xs text-muted-foreground">ID: {driverTruck.driver.driverid}</p>
+                    <p className="text-xs text-muted-foreground">{t('driverTrucks.show.fields.driverId', { value: driverTruck.driver.driverid })}</p>
                   </div>
                   <div className="rounded-lg border p-3">
-                    <p className="text-xs font-semibold uppercase text-muted-foreground">Truck</p>
+                    <p className="text-xs font-semibold uppercase text-muted-foreground">{t('driverTrucks.columns.truck')}</p>
                     <p className="mt-2 text-base font-semibold">{driverTruck.truck.plate}</p>
-                    <p className="text-xs text-muted-foreground">Assignment plate: {driverTruck.plate}</p>
+                    <p className="text-xs text-muted-foreground">{t('driverTrucks.show.fields.assignmentPlate', { value: driverTruck.plate })}</p>
                   </div>
                   <div className="rounded-lg border p-3">
-                    <p className="text-xs font-semibold uppercase text-muted-foreground">Assigned On</p>
+                    <p className="text-xs font-semibold uppercase text-muted-foreground">{t('driverTrucks.show.fields.assignedOn')}</p>
                     <p className="mt-2 text-sm">{formatDate(driverTruck.date_recived)}</p>
                   </div>
                   <div className="rounded-lg border p-3">
-                    <p className="text-xs font-semibold uppercase text-muted-foreground">Detached On</p>
+                    <p className="text-xs font-semibold uppercase text-muted-foreground">{t('driverTrucks.show.fields.detachedOn')}</p>
                     <p className="mt-2 text-sm">{formatDate(driverTruck.date_detach)}</p>
                   </div>
                   {dateDifference && (
                     <div className="rounded-lg border p-3 md:col-span-2">
-                      <p className="text-xs font-semibold uppercase text-muted-foreground">Duration</p>
+                      <p className="text-xs font-semibold uppercase text-muted-foreground">{t('driverTrucks.show.fields.duration')}</p>
                       <p className="mt-2 text-sm font-semibold text-indigo-600">{dateDifference}</p>
                     </div>
                   )}
                   {driverTruck.reason && (
                     <div className="rounded-lg border p-3 md:col-span-2">
-                      <p className="text-xs font-semibold uppercase text-muted-foreground">Detachment Reason</p>
+                      <p className="text-xs font-semibold uppercase text-muted-foreground">{t('driverTrucks.show.fields.detachmentReason')}</p>
                       <p className="mt-2 text-sm">{driverTruck.reason}</p>
                     </div>
                   )}
                 </div>
               </DetailSectionCard>
 
-              <DetailSectionCard icon={<Clock className="h-5 w-5" />} title="System Metadata" description="Audit information">
+              <DetailSectionCard
+                icon={<Clock className="h-5 w-5" />}
+                title={t('driverTrucks.show.sections.metadata.title')}
+                description={t('driverTrucks.show.sections.metadata.description')}
+              >
                 <div className="grid gap-4 text-sm md:grid-cols-2">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Created At</span>
+                    <span className="text-muted-foreground">{t('driverTrucks.show.fields.createdAt')}</span>
                     <span className="font-semibold">{formatDateTime(driverTruck.created_at)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Last Updated</span>
+                    <span className="text-muted-foreground">{t('driverTrucks.show.fields.updatedAt')}</span>
                     <span className="font-semibold">{formatDateTime(driverTruck.updated_at)}</span>
                   </div>
                 </div>
@@ -451,13 +467,19 @@ export default function Show({ driverTruck, performances, dateDifference, activi
 
             <div className="space-y-4">
               {gradeReport ? (
-                <DetailSectionCard icon={<Award className="h-5 w-5 text-amber-600" />} title="Assignment Grade" description="Performance compared with similar pairings">
+                <DetailSectionCard
+                  icon={<Award className="h-5 w-5 text-amber-600" />}
+                  title={t('driverTrucks.show.grade.title')}
+                  description={t('driverTrucks.show.grade.description')}
+                >
                   <div className="flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 p-3">
                     <div>
-                      <p className="text-xs font-semibold uppercase text-amber-700">Overall Score</p>
+                      <p className="text-xs font-semibold uppercase text-amber-700">{t('driverTrucks.show.grade.overallScore')}</p>
                       <div className="mt-1 flex items-baseline gap-3">
-                        <span className="text-3xl font-bold text-amber-800">{overallGrade ? formatScore(overallGrade.score) : 'N/A'}</span>
-                        <span className="text-sm text-muted-foreground">{overallGrade ? `${formatScore(overallGrade.score)} / 100` : 'Waiting'}</span>
+                        <span className="text-3xl font-bold text-amber-800">{overallGrade ? formatScore(overallGrade.score, 1, notAvailableLabel) : notAvailableLabel}</span>
+                        <span className="text-sm text-muted-foreground">
+                          {overallGrade ? t('driverTrucks.show.grade.scoreOutOf', { score: formatScore(overallGrade.score, 1, notAvailableLabel) }) : t('driverTrucks.show.grade.waiting')}
+                        </span>
                       </div>
                     </div>
                     <div className="flex h-14 w-14 items-center justify-center rounded-full bg-amber-500/10 text-2xl font-semibold text-amber-700">{overallGrade?.letter ?? '—'}</div>
@@ -472,7 +494,7 @@ export default function Show({ driverTruck, performances, dateDifference, activi
                         return (
                           <div key={`weight-${key}`} className="rounded-md border border-amber-200 bg-white/70 p-2 text-center">
                             <p className="text-xs font-semibold text-amber-700">{config.label}</p>
-                            <p className="mt-1 font-medium">{formatWeight(weightValue)}</p>
+                            <p className="mt-1 font-medium">{formatWeight(weightValue, notAvailableLabel)}</p>
                           </div>
                         );
                       })}
@@ -489,8 +511,8 @@ export default function Show({ driverTruck, performances, dateDifference, activi
                               <p className="text-xs text-muted-foreground">{category.description}</p>
                             </div>
                             <div className="text-right">
-                              <p className="text-sm font-semibold text-amber-700">{formatScore(category.score)}</p>
-                              {category.weight !== null && <p className="text-xs text-muted-foreground">Weight {formatWeight(category.weight)}</p>}
+                              <p className="text-sm font-semibold text-amber-700">{formatScore(category.score, 1, notAvailableLabel)}</p>
+                              {category.weight !== null && <p className="text-xs text-muted-foreground">{t('driverTrucks.show.grade.weight', { value: formatWeight(category.weight, notAvailableLabel) })}</p>}
                             </div>
                           </div>
                           <div className="mt-3 grid gap-2">
@@ -505,46 +527,50 @@ export default function Show({ driverTruck, performances, dateDifference, activi
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-muted-foreground">Grade insights will appear once enough performance data has been recorded.</p>
+                    <p className="text-sm text-muted-foreground">{t('driverTrucks.show.grade.empty')}</p>
                   )}
                 </DetailSectionCard>
               ) : (
-                <DetailSectionCard icon={<Award className="h-5 w-5 text-amber-600" />} title="Assignment Grade" description="Performance analytics">
-                  <p className="text-sm text-muted-foreground">Grade analytics will become available after more performance data is captured.</p>
+                <DetailSectionCard
+                  icon={<Award className="h-5 w-5 text-amber-600" />}
+                  title={t('driverTrucks.show.grade.title')}
+                  description={t('driverTrucks.show.grade.fallbackDescription')}
+                >
+                  <p className="text-sm text-muted-foreground">{t('driverTrucks.show.grade.fallbackEmpty')}</p>
                 </DetailSectionCard>
               )}
 
-              <DetailSectionCard icon={<Activity className="h-5 w-5" />} title="Current Status">
+              <DetailSectionCard icon={<Activity className="h-5 w-5" />} title={t('driverTrucks.show.sections.currentStatus')}>
                 <div className={`rounded-lg border px-3 py-2 text-sm font-medium ${driverTruck.is_attached ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-rose-200 bg-rose-50 text-rose-700'}`}>
                   {assignmentStatus}
                 </div>
                 <div className="rounded-lg border p-3 text-sm">
-                  <p className="font-medium text-muted-foreground">Operational Notes</p>
-                  <p className="mt-1">{driverTruck.status ? String(driverTruck.status) : 'No additional status notes recorded.'}</p>
+                  <p className="font-medium text-muted-foreground">{t('driverTrucks.show.sections.operationalNotes')}</p>
+                  <p className="mt-1">{driverTruck.status ? String(driverTruck.status) : t('driverTrucks.show.sections.noOperationalNotes')}</p>
                 </div>
               </DetailSectionCard>
 
-              <DetailSectionCard icon={<User className="h-5 w-5" />} title="Driver Snapshot">
+              <DetailSectionCard icon={<User className="h-5 w-5" />} title={t('driverTrucks.show.sections.driverSnapshot')}>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Name</span>
+                    <span className="text-muted-foreground">{t('driverTrucks.show.fields.name')}</span>
                     <span className="font-semibold">{driverTruck.driver.name}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Identifier</span>
+                    <span className="text-muted-foreground">{t('driverTrucks.show.fields.identifier')}</span>
                     <span className="font-mono text-xs">{driverTruck.driver.driverid}</span>
                   </div>
                 </div>
               </DetailSectionCard>
 
-              <DetailSectionCard icon={<Truck className="h-5 w-5" />} title="Truck Snapshot">
+              <DetailSectionCard icon={<Truck className="h-5 w-5" />} title={t('driverTrucks.show.sections.truckSnapshot')}>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Plate</span>
+                    <span className="text-muted-foreground">{t('driverTrucks.show.fields.plate')}</span>
                     <span className="font-semibold">{driverTruck.truck.plate}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Assignment Plate</span>
+                    <span className="text-muted-foreground">{t('driverTrucks.show.fields.assignmentPlateLabel')}</span>
                     <span className="font-mono text-xs">{driverTruck.plate}</span>
                   </div>
                 </div>
@@ -554,17 +580,21 @@ export default function Show({ driverTruck, performances, dateDifference, activi
         </TabsContent>
 
         <TabsContent value="performances" className="space-y-6">
-          <DetailSectionCard icon={<BarChart3 className="h-5 w-5" />} title="Performance Records" description="Operational history for this pairing">
+          <DetailSectionCard
+            icon={<BarChart3 className="h-5 w-5" />}
+            title={t('driverTrucks.show.performance.title')}
+            description={t('driverTrucks.show.performance.description')}
+          >
             {performances.length > 0 ? (
               <div className="max-h-[520px] overflow-auto rounded-lg border">
                 <Table>
                   <TableHeader className="sticky top-0 bg-background/95 backdrop-blur">
                     <TableRow>
-                      <TableHead>Trip</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Customer</TableHead>
-                      <TableHead>Route</TableHead>
-                      <TableHead className="text-right">Volume (MT)</TableHead>
+                      <TableHead>{t('driverTrucks.show.performance.table.trip')}</TableHead>
+                      <TableHead>{t('driverTrucks.show.performance.table.date')}</TableHead>
+                      <TableHead>{t('driverTrucks.show.performance.table.customer')}</TableHead>
+                      <TableHead>{t('driverTrucks.show.performance.table.route')}</TableHead>
+                      <TableHead className="text-right">{t('driverTrucks.show.performance.table.volume')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -577,9 +607,9 @@ export default function Show({ driverTruck, performances, dateDifference, activi
                           </Link>
                         </TableCell>
                         <TableCell>{formatDate(performance.DateDispach ?? undefined)}</TableCell>
-                        <TableCell>{performance.operation?.customer?.name?.trim() || 'N/A'}</TableCell>
+                        <TableCell>{performance.operation?.customer?.name?.trim() || notAvailableLabel}</TableCell>
                         <TableCell>{buildRouteLabel(performance)}</TableCell>
-                        <TableCell className="text-right font-medium">{formatVolume(performance.CargoVolumMT)}</TableCell>
+                        <TableCell className="text-right font-medium">{formatVolume(performance.CargoVolumMT, notAvailableLabel)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -588,15 +618,19 @@ export default function Show({ driverTruck, performances, dateDifference, activi
             ) : (
               <div className="py-10 text-center text-muted-foreground">
                 <BarChart3 className="mx-auto mb-4 h-12 w-12 opacity-60" />
-                <p>No performance records found for this assignment.</p>
-                <p className="mt-2 text-sm">Performance entries will appear once linked operations are recorded.</p>
+                <p>{t('driverTrucks.show.performance.empty.title')}</p>
+                <p className="mt-2 text-sm">{t('driverTrucks.show.performance.empty.description')}</p>
               </div>
             )}
           </DetailSectionCard>
         </TabsContent>
 
         <TabsContent value="activity" className="space-y-6">
-          <DetailSectionCard icon={<History className="h-5 w-5" />} title="Activity Log" description="Recent events for this assignment">
+          <DetailSectionCard
+            icon={<History className="h-5 w-5" />}
+            title={t('driverTrucks.show.activity.title')}
+            description={t('driverTrucks.show.activity.description')}
+          >
             {activityLogs.length > 0 ? (
               <div className="space-y-3">
                 {activityLogs.map(log => (
@@ -612,7 +646,7 @@ export default function Show({ driverTruck, performances, dateDifference, activi
                         {log.causer?.name && (
                           <>
                             <span>•</span>
-                            <span>by {log.causer.name}</span>
+                            <span>{t('driverTrucks.show.activity.by', { name: log.causer.name })}</span>
                           </>
                         )}
                       </div>
@@ -623,15 +657,23 @@ export default function Show({ driverTruck, performances, dateDifference, activi
             ) : (
               <div className="py-10 text-center text-muted-foreground">
                 <Activity className="mx-auto mb-4 h-12 w-12 opacity-60" />
-                <p>No activity recorded for this assignment yet.</p>
-                <p className="mt-2 text-sm">Updates will appear here as changes are made.</p>
+                <p>{t('driverTrucks.show.activity.empty.title')}</p>
+                <p className="mt-2 text-sm">{t('driverTrucks.show.activity.empty.description')}</p>
               </div>
             )}
           </DetailSectionCard>
         </TabsContent>
       </Tabs>
 
-      <DeleteConfirmationDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen} title="Delete Assignment" description="Are you sure you want to delete this driver-truck assignment? This action cannot be undone." itemName={`${driverTruck.driver.name} ↔ ${driverTruck.truck.plate}`} onConfirm={handleDeleteConfirm} isLoading={isDeleting} />
+      <DeleteConfirmationDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title={t('driverTrucks.delete.title')}
+        description={t('driverTrucks.delete.description')}
+        itemName={t('driverTrucks.delete.itemName', { driver: driverTruck.driver.name, plate: driverTruck.truck.plate })}
+        onConfirm={handleDeleteConfirm}
+        isLoading={isDeleting}
+      />
     </DetailPageLayout>
   );
 }

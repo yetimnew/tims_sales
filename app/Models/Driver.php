@@ -9,12 +9,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Hash;
+use Laravel\Sanctum\HasApiTokens;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
 
 class Driver extends Model
 {
-    use HasFactory, SoftDeletes, LogsActivity, ClearsCacheOnModelEvents;
+    use HasFactory, SoftDeletes, LogsActivity, ClearsCacheOnModelEvents, HasApiTokens;
 
     protected $fillable = [
         'driverid',
@@ -28,6 +30,11 @@ class Driver extends Model
         'mobile',
         'hireddate',
         'status',
+        'password',
+    ];
+
+    protected $hidden = [
+        'password',
     ];
 
     protected $casts = [
@@ -83,6 +90,32 @@ class Driver extends Model
     public function fuelRecords(): HasMany
     {
         return $this->hasMany(FuelRecord::class);
+    }
+
+    /**
+     * Get the location records for the driver.
+     */
+    public function locations(): HasMany
+    {
+        return $this->hasMany(DriverLocation::class);
+    }
+
+    /**
+     * Get the status history for the driver.
+     */
+    public function statusHistory(): HasMany
+    {
+        return $this->hasMany(DriverStatusHistory::class);
+    }
+
+    /**
+     * Set the driver's password.
+     */
+    public function setPasswordAttribute($value)
+    {
+        if ($value) {
+            $this->attributes['password'] = Hash::make($value);
+        }
     }
 
     /**

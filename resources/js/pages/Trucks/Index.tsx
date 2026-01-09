@@ -15,6 +15,7 @@ import { useListingLoading } from '@/hooks/use-listing-loading';
 import { Link, router } from '@inertiajs/react';
 import { toast } from '@/hooks/use-toast';
 import { type BreadcrumbItem } from '@/types';
+import { useTranslation } from 'react-i18next';
 import {
     Plus,
     Eye,
@@ -35,9 +36,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import * as React from 'react';
 
-const breadcrumbs: BreadcrumbItem[] = [
+const getBreadcrumbs = (translate: (key: string) => string): BreadcrumbItem[] => [
     {
-        title: 'Trucks',
+        title: translate('trucks.breadcrumb'),
         href: '/trucks',
     },
 ];
@@ -149,15 +150,15 @@ type NavigateOverrides = {
     per_page?: number;
 };
 
-const columns: Array<{ key: string; label: string }> = [
-    { key: 'plate', label: 'Plate' },
-    { key: 'vehicleType', label: 'Vehicle Type' },
-    { key: 'currentDriverName', label: 'Driver' },
-    { key: 'chasisNumber', label: 'Chassis' },
-    { key: 'engineNumber', label: 'Engine' },
-    { key: 'serviceIntervalKM', label: 'Service (KM)' },
-    { key: 'purchasePrice', label: 'Price' },
-    { key: 'status', label: 'Status' },
+const getColumns = (translate: (key: string) => string): Array<{ key: string; label: string }> => [
+    { key: 'plate', label: translate('trucks.columns.plate') },
+    { key: 'vehicleType', label: translate('trucks.columns.vehicleType') },
+    { key: 'currentDriverName', label: translate('trucks.columns.driver') },
+    { key: 'chasisNumber', label: translate('trucks.columns.chassis') },
+    { key: 'engineNumber', label: translate('trucks.columns.engine') },
+    { key: 'serviceIntervalKM', label: translate('trucks.columns.serviceInterval') },
+    { key: 'purchasePrice', label: translate('trucks.columns.price') },
+    { key: 'status', label: translate('trucks.columns.status') },
 ];
 
 const etbCurrencyFormatter = new Intl.NumberFormat('en-ET', {
@@ -192,6 +193,9 @@ export default function TrucksIndex({
     perPageOptions,
 }: TrucksIndexProps) {
     const { hasPermission } = usePermissions();
+    const { t } = useTranslation();
+    const breadcrumbs = React.useMemo(() => getBreadcrumbs(t), [t]);
+    const columns = React.useMemo(() => getColumns(t), [t]);
     const isDataReady = React.useMemo(() => {
         // Check if we have valid data structure
         // Data is ready if trucks exists and has a data array (even if empty)
@@ -246,17 +250,23 @@ export default function TrucksIndex({
             seen.add(value);
         };
 
-        pushSegment('active', statusOptions.find((option) => option.value === 'active')?.label ?? 'Active');
-        pushSegment('inactive', statusOptions.find((option) => option.value === 'inactive')?.label ?? 'Inactive');
+        pushSegment(
+            'active',
+            statusOptions.find((option) => option.value === 'active')?.label ?? t('trucks.status.active'),
+        );
+        pushSegment(
+            'inactive',
+            statusOptions.find((option) => option.value === 'inactive')?.label ?? t('trucks.status.inactive'),
+        );
 
         statusOptions.forEach((option) => {
             pushSegment(option.value, option.label);
         });
 
-        pushSegment('all', 'All');
+        pushSegment('all', t('trucks.filters.all'));
 
         return segments;
-    }, [statusOptions]);
+    }, [statusOptions, t]);
 
     const resolvedPerPage = React.useMemo(() => {
         const candidate = filters?.per_page;
@@ -306,8 +316,12 @@ export default function TrucksIndex({
                     : 'text-red-600';
 
     const utilizationDescription = utilization
-        ? `Service ${utilization.service_days}d · Idle ${utilization.idle_days}d · Unknown ${utilization.unknown_days}d`
-        : 'Utilization data pending';
+        ? t('trucks.stats.utilization.detail', {
+            serviceDays: utilization.service_days,
+            idleDays: utilization.idle_days,
+            unknownDays: utilization.unknown_days,
+        })
+        : t('trucks.stats.utilization.pending');
 
     const financialWindowDays = financial?.window_days ?? 30;
     const revenueDisplay = formatETBCurrency(financial?.total_revenue ?? 0, {
@@ -317,22 +331,29 @@ export default function TrucksIndex({
 
     const tonKmPerBirrDisplay =
         financial?.ton_km_per_birr !== null && financial?.ton_km_per_birr !== undefined
-            ? `${financial.ton_km_per_birr.toFixed(2)} ton-km / ETB`
-            : 'Ton-km per birr pending';
+            ? t('trucks.stats.revenue.tonKmPerBirr', {
+                value: financial.ton_km_per_birr.toFixed(2),
+            })
+            : t('trucks.stats.revenue.tonKmPerBirrPending');
 
     const churnWindowDays = staffing?.window_days ?? 180;
     const averageTenureDisplay =
         staffing?.average_tenure_days !== null && staffing?.average_tenure_days !== undefined
-            ? `${staffing.average_tenure_days.toFixed(1)} days`
-            : 'Average tenure pending';
+            ? t('trucks.stats.churn.averageTenure', {
+                days: staffing.average_tenure_days.toFixed(1),
+            })
+            : t('trucks.stats.churn.averageTenurePending');
 
     const highChurnCount = staffing?.high_churn_truck_count ?? 0;
     const highChurnThreshold = staffing?.short_tenure_threshold_days ?? 0;
 
     const highChurnDescription =
         highChurnCount > 0
-            ? `${highChurnCount} truck${highChurnCount === 1 ? '' : 's'} below ${highChurnThreshold}d`
-            : 'Stable driver assignments';
+            ? t('trucks.stats.churn.highChurn', {
+                count: highChurnCount,
+                days: highChurnThreshold,
+            })
+            : t('trucks.stats.churn.stable');
 
     const churnValueClass = highChurnCount > 0 ? 'text-rose-600' : 'text-slate-600';
 
@@ -447,20 +468,20 @@ export default function TrucksIndex({
                         .filter((value) => Boolean(value))
                         .join('\n');
 
-                    const fallback = 'Failed to delete truck. Please review the requirements and try again.';
+                    const fallback = t('trucks.delete.errorKnown');
                     setDeleteError(messages || fallback);
 
                     toast({
-                        title: '❌ Delete Failed',
+                        title: t('trucks.delete.failedTitle'),
                         description: messages || fallback,
                         variant: 'destructive',
                     });
                 } else {
-                    const fallback = 'An unexpected error occurred while deleting the truck. Please try again.';
+                    const fallback = t('trucks.delete.errorUnknown');
                     setDeleteError(fallback);
 
                     toast({
-                        title: '❌ Delete Failed',
+                        title: t('trucks.delete.failedTitle'),
                         description: fallback,
                         variant: 'destructive',
                     });
@@ -475,7 +496,7 @@ export default function TrucksIndex({
                 <Button asChild>
                     <Link href="/trucks/create">
                         <Plus className="mr-2 h-4 w-4" />
-                        Add Truck
+                        {t('trucks.actions.add')}
                     </Link>
                 </Button>
             )}
@@ -490,7 +511,7 @@ export default function TrucksIndex({
     const statsDefinitions = [
         {
             id: 'total-trucks',
-            label: 'Total Trucks',
+            label: t('trucks.stats.total.label'),
             icon: <Truck className="h-3.5 w-3.5 text-blue-600" />,
             className: 'min-w-[220px] flex-shrink-0',
             value: isTableLoading ? (
@@ -501,13 +522,13 @@ export default function TrucksIndex({
             description: isTableLoading ? (
                 <Skeleton className="h-3 w-24" aria-hidden="true" />
             ) : (
-                'All vehicles'
+                t('trucks.stats.total.description')
             ),
             valueClassName: isTableLoading ? undefined : 'text-blue-600',
         },
         {
             id: 'active-trucks',
-            label: 'Active',
+            label: t('trucks.stats.active.label'),
             icon: <CheckCircle className="h-3.5 w-3.5 text-green-600" />,
             className: 'min-w-[220px] flex-shrink-0',
             value: isTableLoading ? (
@@ -518,13 +539,15 @@ export default function TrucksIndex({
             description: isTableLoading ? (
                 <Skeleton className="h-3 w-28" aria-hidden="true" />
             ) : (
-                `${maintenanceCount.toLocaleString()} in maintenance`
+                t('trucks.stats.active.description', {
+                    count: maintenanceCount.toLocaleString(),
+                })
             ),
             valueClassName: isTableLoading ? undefined : 'text-green-600',
         },
         {
             id: 'fleet-value',
-            label: 'Fleet Value',
+            label: t('trucks.stats.fleetValue.label'),
             icon: <DollarSign className="h-3.5 w-3.5 text-purple-600" />,
             className: 'min-w-[220px] flex-shrink-0',
             value: isTableLoading ? (
@@ -535,13 +558,13 @@ export default function TrucksIndex({
             description: isTableLoading ? (
                 <Skeleton className="h-3 w-24" aria-hidden="true" />
             ) : (
-                'Total fleet value'
+                t('trucks.stats.fleetValue.description')
             ),
             valueClassName: isTableLoading ? undefined : 'text-purple-600',
         },
         {
             id: 'revenue',
-            label: `Revenue (${financialWindowDays}d)`,
+            label: t('trucks.stats.revenue.label', { days: financialWindowDays }),
             icon: <TrendingUp className="h-3.5 w-3.5 text-emerald-600" />,
             className: 'min-w-[220px] flex-shrink-0',
             value: isTableLoading ? (
@@ -558,7 +581,7 @@ export default function TrucksIndex({
         },
         {
             id: 'driver-churn',
-            label: `Driver Churn (${churnWindowDays}d)`,
+            label: t('trucks.stats.churn.label', { days: churnWindowDays }),
             icon: <Users className="h-3.5 w-3.5 text-rose-600" />,
             className: 'min-w-[220px] flex-shrink-0',
             value: isTableLoading ? (
@@ -575,7 +598,7 @@ export default function TrucksIndex({
         },
         {
             id: 'utilization',
-            label: `Utilization (${utilization?.window_days ?? 30}d)`,
+            label: t('trucks.stats.utilization.label', { days: utilization?.window_days ?? 30 }),
             icon: <Gauge className="h-3.5 w-3.5 text-slate-600" />,
             className: 'min-w-[220px] flex-shrink-0',
             value: isTableLoading ? (
@@ -604,9 +627,9 @@ export default function TrucksIndex({
                 label,
                 sortable: true,
             })),
-            { id: 'actions', label: 'Actions', align: 'center' as const },
+            { id: 'actions', label: t('trucks.table.actions'), align: 'center' as const },
         ],
-        [],
+        [columns, t],
     );
 
     const renderStatusBadge = (status: string) => {
@@ -616,7 +639,7 @@ export default function TrucksIndex({
             return (
                 <Badge className={`${baseClasses} bg-green-100 text-green-800 border-green-200 hover:bg-green-200`}>
                     <CheckCircle className="h-3 w-3" />
-                    Active
+                    {t('trucks.status.active')}
                 </Badge>
             );
         }
@@ -625,7 +648,7 @@ export default function TrucksIndex({
             return (
                 <Badge className={`${baseClasses} bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200`}>
                     <Wrench className="h-3 w-3" />
-                    Maintenance
+                    {t('trucks.status.maintenance')}
                 </Badge>
             );
         }
@@ -633,7 +656,9 @@ export default function TrucksIndex({
         return (
             <Badge className={`${baseClasses} bg-red-100 text-red-800 border-red-200 hover:bg-red-200`}>
                 <XCircle className="h-3 w-3" />
-                {status.charAt(0).toUpperCase() + status.slice(1)}
+                {t(`trucks.status.${status}`, {
+                    defaultValue: status.charAt(0).toUpperCase() + status.slice(1),
+                })}
             </Badge>
         );
     };
@@ -681,10 +706,10 @@ export default function TrucksIndex({
                   </TableCell>
                   <TableCell className="font-medium">{truck.plate}</TableCell>
                   <TableCell className="text-muted-foreground">
-                      {truck.vehicleType?.name || 'N/A'}
+                      {truck.vehicleType?.name || t('trucks.fallbacks.notAvailable')}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
-                      {truck.currentDriverName || 'No driver assigned'}
+                      {truck.currentDriverName || t('trucks.fallbacks.noDriverAssigned')}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                       {truck.chasisNumber || '—'}
@@ -694,7 +719,7 @@ export default function TrucksIndex({
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                       {truck.serviceIntervalKM
-                          ? `${truck.serviceIntervalKM.toLocaleString()} km`
+                          ? t('trucks.units.kilometers', { value: truck.serviceIntervalKM.toLocaleString() })
                           : '—'}
                   </TableCell>
                   <TableCell className="font-medium">
@@ -705,17 +730,17 @@ export default function TrucksIndex({
                       <ListingRowActionsMenu
                           actions={[
                               canViewTruckDetails && {
-                                  label: 'View',
+                                  label: t('trucks.actions.view'),
                                   icon: <Eye className="h-4 w-4" />,
                                   href: `/trucks/${truck.id}`,
                               },
                               hasPermission('trucks.edit') && {
-                                  label: 'Edit',
+                                  label: t('trucks.actions.edit'),
                                   icon: <Edit className="h-4 w-4" />,
                                   href: `/trucks/${truck.id}/edit`,
                               },
                               hasPermission('trucks.destroy') && {
-                                  label: 'Delete',
+                                  label: t('trucks.actions.delete'),
                                   icon: <Trash2 className="h-4 w-4" />,
                                   danger: true,
                                   onSelect: () => handleDeleteClick(truck),
@@ -728,10 +753,10 @@ export default function TrucksIndex({
         : (
               <TableRow>
                   <TableCell colSpan={tableColumns.length} className="py-8 text-center text-muted-foreground">
-                      No trucks found.
+                      {t('trucks.empty.title')}
                       {hasPermission('trucks.create') && (
                           <Link href="/trucks/create" className="ml-1 text-primary underline">
-                              Create one
+                              {t('trucks.empty.createAction')}
                           </Link>
                       )}
                   </TableCell>
@@ -798,47 +823,49 @@ export default function TrucksIndex({
             getKey={(item) => item.truck.id}
             renderTitle={(item) => (
                 <div className="flex items-center gap-2">
-                    <span className="text-xs uppercase tracking-wide text-muted-foreground">#{item.position}</span>
+                    <span className="text-xs uppercase tracking-wide text-muted-foreground">
+                        {t('trucks.mobile.position', { value: item.position })}
+                    </span>
                     <span className="text-base">{item.truck.plate}</span>
                     <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
                 </div>
             )}
-            renderSubtitle={(item) => item.truck.vehicleType?.name || 'Vehicle type pending'}
+            renderSubtitle={(item) => item.truck.vehicleType?.name || t('trucks.fallbacks.vehicleTypePending')}
             renderContent={(item) => (
                 <div className="space-y-3">
                     <div className="flex items-center justify-between text-sm">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Status</span>
+                        <span className="font-medium text-slate-600 dark:text-slate-300">{t('trucks.labels.status')}</span>
                         {renderStatusBadge(item.truck.status)}
                     </div>
                     <div className="grid grid-cols-1 gap-3 text-sm text-muted-foreground">
                         <div className="flex items-center justify-between">
-                            <span className="font-medium text-slate-600 dark:text-slate-300">Driver</span>
+                            <span className="font-medium text-slate-600 dark:text-slate-300">{t('trucks.labels.driver')}</span>
                             <span className="text-right font-semibold text-slate-900 dark:text-slate-100">
-                                {item.truck.currentDriverName || 'No driver assigned'}
+                                {item.truck.currentDriverName || t('trucks.fallbacks.noDriverAssigned')}
                             </span>
                         </div>
                         <div className="flex items-center justify-between">
-                            <span className="font-medium text-slate-600 dark:text-slate-300">Chassis</span>
+                            <span className="font-medium text-slate-600 dark:text-slate-300">{t('trucks.labels.chassis')}</span>
                             <span className="text-right font-semibold text-slate-900 dark:text-slate-100">
                                 {item.truck.chasisNumber || '—'}
                             </span>
                         </div>
                         <div className="flex items-center justify-between">
-                            <span className="font-medium text-slate-600 dark:text-slate-300">Engine</span>
+                            <span className="font-medium text-slate-600 dark:text-slate-300">{t('trucks.labels.engine')}</span>
                             <span className="text-right font-semibold text-slate-900 dark:text-slate-100">
                                 {item.truck.engineNumber || '—'}
                             </span>
                         </div>
                         <div className="flex items-center justify-between">
-                            <span className="font-medium text-slate-600 dark:text-slate-300">Service Interval</span>
+                            <span className="font-medium text-slate-600 dark:text-slate-300">{t('trucks.labels.serviceInterval')}</span>
                             <span className="text-right font-semibold text-slate-900 dark:text-slate-100">
                                 {item.truck.serviceIntervalKM
-                                    ? `${item.truck.serviceIntervalKM.toLocaleString()} km`
+                                    ? t('trucks.units.kilometers', { value: item.truck.serviceIntervalKM.toLocaleString() })
                                     : '—'}
                             </span>
                         </div>
                         <div className="flex items-center justify-between">
-                            <span className="font-medium text-slate-600 dark:text-slate-300">Purchase Price</span>
+                            <span className="font-medium text-slate-600 dark:text-slate-300">{t('trucks.labels.purchasePrice')}</span>
                             <span className="text-right font-semibold text-slate-900 dark:text-slate-100">
                                 {formatETBCurrency(item.truck.purchasePrice)}
                             </span>
@@ -852,7 +879,7 @@ export default function TrucksIndex({
                         <Button asChild size="sm" variant="outline" className="flex-1 sm:flex-auto">
                             <Link href={`/trucks/${item.truck.id}`}>
                                 <Eye className="mr-2 h-4 w-4" />
-                                View
+                                {t('trucks.actions.view')}
                             </Link>
                         </Button>
                     )}
@@ -860,7 +887,7 @@ export default function TrucksIndex({
                         <Button asChild size="sm" variant="secondary" className="flex-1 sm:flex-none">
                             <Link href={`/trucks/${item.truck.id}/edit`}>
                                 <Edit className="mr-2 h-4 w-4" />
-                                Edit
+                                {t('trucks.actions.edit')}
                             </Link>
                         </Button>
                     )}
@@ -873,17 +900,17 @@ export default function TrucksIndex({
                             disabled={isDeleting && selectedTruck?.id === item.truck.id}
                         >
                             <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
+                            {t('trucks.actions.delete')}
                         </Button>
                     )}
                 </div>
             )}
             emptyState={(
                 <div className="py-8 text-center text-muted-foreground">
-                    No trucks found.
+                    {t('trucks.empty.title')}
                     {hasPermission('trucks.create') && (
                         <Link href="/trucks/create" className="ml-1 text-primary underline">
-                            Create one
+                            {t('trucks.empty.createAction')}
                         </Link>
                     )}
                 </div>
@@ -895,22 +922,22 @@ export default function TrucksIndex({
         () =>
             availablePerPageOptions.map((option) => ({
                 value: String(option),
-                label: `${option} / page`,
+                label: t('trucks.filters.perPageOption', { value: option }),
             })),
-        [availablePerPageOptions],
+        [availablePerPageOptions, t],
     );
 
     const tableHeaderExtras = (
         <ListingFilterBar
             search={{
                 value: searchTerm,
-                placeholder: 'Search trucks...',
+                placeholder: t('trucks.filters.searchPlaceholder'),
                 onChange: handleSearchChange,
                 icon: <Search className="h-4 w-4" />,
             }}
             perPage={{
                 value: perPage,
-                label: 'Rows',
+                label: t('trucks.filters.rowsLabel'),
                 onChange: handlePerPageChange,
                 options: perPageSelectOptions,
             }}
@@ -935,16 +962,16 @@ export default function TrucksIndex({
                         value={segment.value}
                         className="px-3 py-1 text-sm font-medium capitalize data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
                     >
-                        {segment.value === 'all' ? 'All' : segment.label}
+                        {segment.value === 'all' ? t('trucks.filters.all') : segment.label}
                     </ToggleGroupItem>
                 ))}
             </ToggleGroup>
             <Select value={selectedVehicleType} onValueChange={handleVehicleTypeChange}>
                 <SelectTrigger className="w-full min-w-[180px] sm:w-auto">
-                    <SelectValue placeholder="Vehicle type" />
+                    <SelectValue placeholder={t('trucks.filters.vehicleType')} />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="all">All vehicle types</SelectItem>
+                    <SelectItem value="all">{t('trucks.filters.allVehicleTypes')}</SelectItem>
                     {vehicleTypes.map((type) => (
                         <SelectItem key={type.id} value={String(type.id)}>
                             {type.name}
@@ -959,14 +986,14 @@ export default function TrucksIndex({
     return (
         <>
             <ListPageLayout
-                headTitle="Trucks"
-                title="Trucks"
-                description={`Manage your fleet of ${truckCount} truck${truckCount !== 1 ? 's' : ''}`}
+                headTitle={t('trucks.title')}
+                title={t('trucks.title')}
+                description={t('trucks.description', { count: truckCount, plural: truckCount === 1 ? '' : 's' })}
                 breadcrumbs={breadcrumbs}
                 actions={headerActions}
                 stats={statsSection}
-                tableTitle="Truck Inventory"
-                tableDescription="Manage and track all vehicles in your fleet"
+                tableTitle={t('trucks.table.title')}
+                tableDescription={t('trucks.table.description')}
                 tableHeaderExtras={tableHeaderExtras}
                 pagination={
                     trucks?.links ? (
@@ -1000,13 +1027,13 @@ export default function TrucksIndex({
                         setDeleteError(null);
                     }
                 }}
-                title="Delete Truck"
-                description="Are you sure you want to delete this truck? This action cannot be undone."
+                title={t('trucks.delete.title')}
+                description={t('trucks.delete.description')}
                 itemName={selectedTruck?.plate}
                 onConfirm={handleDeleteConfirm}
                 isLoading={isDeleting}
                 errorMessage={deleteError}
-                confirmLabel="Delete Truck"
+                confirmLabel={t('trucks.delete.confirm')}
             />
         </>
     );

@@ -1,5 +1,6 @@
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { Icon } from '@/components/icon';
+import { LanguageSwitcher } from '@/components/language-switcher';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -32,15 +33,16 @@ import { cn, isSameUrl, resolveUrl } from '@/lib/utils';
 import { type BreadcrumbItem, type NavItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
 import { BookOpen, Folder, LayoutGrid, Menu, Search } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import AppLogo from './app-logo';
 import AppLogoIcon from './app-logo-icon';
 import NotificationBell from './notification-bell';
 
-const getMainNavItems = (): NavItem[] => {
+const getMainNavItems = (translate: (key: string) => string): NavItem[] => {
     try {
         return [
             {
-                title: 'Dashboard',
+                title: translate('nav.dashboard'),
                 href: '/dashboard',
                 icon: LayoutGrid,
             },
@@ -51,14 +53,14 @@ const getMainNavItems = (): NavItem[] => {
     }
 };
 
-const rightNavItems: NavItem[] = [
+const getRightNavItems = (translate: (key: string) => string): NavItem[] => [
     {
-        title: 'Repository',
+        title: translate('nav.repository'),
         href: 'https://github.com/laravel/react-starter-kit',
         icon: Folder,
     },
     {
-        title: 'Documentation',
+        title: translate('nav.documentation'),
         href: 'https://laravel.com/docs/starter-kits#react',
         icon: BookOpen,
     },
@@ -75,6 +77,7 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
     const page = usePage<SharedData>();
     const { auth } = page.props;
     const getInitials = useInitials();
+    const { t } = useTranslation();
 
     // Safety check - page.component should always exist in Inertia.js
     const currentUrl = page.url || '/';
@@ -100,7 +103,7 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
                                 className="flex h-full w-64 flex-col items-stretch justify-between bg-sidebar"
                             >
                                 <SheetTitle className="sr-only">
-                                    Navigation Menu
+                                    {t('nav.menu')}
                                 </SheetTitle>
                                 <SheetHeader className="flex justify-start text-left">
                                     <AppLogoIcon className="h-6 w-6 fill-current text-black dark:text-white" />
@@ -108,7 +111,7 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
                                 <div className="flex h-full flex-1 flex-col space-y-4 p-4">
                                     <div className="flex h-full flex-col justify-between text-sm">
                                         <div className="flex flex-col space-y-4">
-                                            {getMainNavItems().map((item) => {
+                                            {getMainNavItems(t).map((item) => {
                                                 const targetHref = item.href ?? '#';
 
                                                 return (
@@ -130,7 +133,7 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
                                         </div>
 
                                         <div className="flex flex-col space-y-4">
-                                            {rightNavItems.map((item) => {
+                                            {getRightNavItems(t).map((item) => {
                                                 const targetHref = item.href ?? '#';
 
                                                 return (
@@ -170,7 +173,7 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
                     <div className="ml-6 hidden h-full items-center space-x-6 lg:flex">
                         <NavigationMenu className="flex h-full items-stretch">
                             <NavigationMenuList className="flex h-full items-stretch space-x-2">
-                                {getMainNavItems().map((item, index) => {
+                                {getMainNavItems(t).map((item, index) => {
                                     const targetHref = item.href ?? '#';
                                     const isActive = item.href
                                         ? isSameUrl(currentUrl, item.href)
@@ -216,9 +219,10 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
                             >
                                 <Search className="!size-5 opacity-80 group-hover:opacity-100" />
                             </Button>
+                            <LanguageSwitcher />
                             <NotificationBell />
                             <div className="hidden lg:flex">
-                                {rightNavItems.map((item) => {
+                                {getRightNavItems(t).map((item) => {
                                     const targetHref = item.href ?? '#';
 
                                     return (

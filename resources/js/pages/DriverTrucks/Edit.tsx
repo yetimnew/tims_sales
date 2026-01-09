@@ -18,6 +18,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { type FormEventHandler } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { parseISO } from 'date-fns';
+import { useTranslation } from 'react-i18next';
 
 interface DriverSummary {
     id: number;
@@ -57,17 +58,19 @@ type DriverTruckFormData = {
 type DriverTruckFormField = keyof DriverTruckFormData;
 
 export default function DriverTrucksEdit({ driverTruck, drivers, trucks, error }: DriverTruckEditProps) {
+    const { t } = useTranslation();
+    const assignmentLabel = driverTruck?.driver?.name || driverTruck?.driver?.driverid || t('driverTrucks.form.edit.fallbackAssignment');
     const breadcrumbs: BreadcrumbItem[] = [
         {
-            title: 'Driver-Truck Assignments',
+            title: t('driverTrucks.breadcrumb'),
             href: '/driver-trucks',
         },
         {
-            title: driverTruck?.driver?.name || driverTruck?.driver?.driverid || 'Assignment',
+            title: assignmentLabel,
             href: `/driver-trucks/${driverTruck.id}`,
         },
         {
-            title: 'Edit',
+            title: t('driverTrucks.form.edit.breadcrumb'),
             href: `/driver-trucks/${driverTruck.id}/edit`,
         },
     ];
@@ -104,11 +107,11 @@ export default function DriverTrucksEdit({ driverTruck, drivers, trucks, error }
         }
 
         toast({
-            title: '⚠️ Error',
+            title: t('driverTrucks.form.validation.errorTitle'),
             description: error,
             variant: 'destructive',
         });
-    }, [error]);
+    }, [error, t]);
 
     useEffect(() => {
         const messages = Object.values(errors)
@@ -120,11 +123,11 @@ export default function DriverTrucksEdit({ driverTruck, drivers, trucks, error }
         }
 
         toast({
-            title: '⚠️ Validation Error',
+            title: t('driverTrucks.form.validation.title'),
             description: messages.join(', '),
             variant: 'destructive',
         });
-    }, [errors]);
+    }, [errors, t]);
 
     useEffect(() => {
         const container = scrollContainerRef.current;
@@ -145,10 +148,10 @@ export default function DriverTrucksEdit({ driverTruck, drivers, trucks, error }
         }
 
         toast({
-            title: '✅ Assignment Updated',
-            description: 'Driver and truck pairing has been updated successfully.',
+            title: t('driverTrucks.form.edit.successTitle'),
+            description: t('driverTrucks.form.edit.successDescription'),
         });
-    }, [wasSuccessful]);
+    }, [wasSuccessful, t]);
 
     const handleScrollToTop = () => {
         const container = scrollContainerRef.current;
@@ -192,8 +195,8 @@ export default function DriverTrucksEdit({ driverTruck, drivers, trucks, error }
         if (Object.keys(validationResult).length > 0) {
             setFrontendErrors(validationResult as Partial<Record<DriverTruckFormField, string>>);
             toast({
-                title: '⚠️ Validation Error',
-                description: 'Please fix the validation errors before submitting.',
+                title: t('driverTrucks.form.validation.title'),
+                description: t('driverTrucks.form.validation.fixErrors'),
                 variant: 'destructive',
             });
             return;
@@ -253,9 +256,9 @@ export default function DriverTrucksEdit({ driverTruck, drivers, trucks, error }
 
     return (
         <FormPageLayout
-            title="Update Driver-Truck Assignment"
-            headTitle={`Edit Driver-Truck Assignment #${driverTruck.id}`}
-            description="Adjust the pairing between an active driver and truck, including the assignment date."
+            title={t('driverTrucks.form.edit.title')}
+            headTitle={t('driverTrucks.form.edit.headTitle', { id: driverTruck.id })}
+            description={t('driverTrucks.form.edit.description')}
             breadcrumbs={breadcrumbs}
             icon={<Share2 className="h-5 w-5" />}
             headerAside={
@@ -263,13 +266,13 @@ export default function DriverTrucksEdit({ driverTruck, drivers, trucks, error }
                     <Button variant="ghost" size="sm" asChild>
                         <Link href={`/driver-trucks/${driverTruck.id}`}>
                             <ArrowLeft className="mr-2 h-4 w-4" />
-                            Back to Assignment
+                            {t('driverTrucks.form.edit.backToAssignment')}
                         </Link>
                     </Button>
                     {isDirty && <UnsavedChangesBadge />}
                     <div className="flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1.5 text-sm font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
                         <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
-                        Assignment Operations
+                        {t('driverTrucks.form.badge')}
                     </div>
                 </>
             }
@@ -278,7 +281,7 @@ export default function DriverTrucksEdit({ driverTruck, drivers, trucks, error }
                 <div className="px-6 pt-6">
                     <Alert variant="destructive">
                         <AlertCircle className="h-4 w-4" />
-                        <AlertDescription>Please resolve the highlighted fields before submitting the form.</AlertDescription>
+                        <AlertDescription>{t('driverTrucks.form.validation.resolve')}</AlertDescription>
                     </Alert>
                 </div>
             )}
@@ -290,8 +293,8 @@ export default function DriverTrucksEdit({ driverTruck, drivers, trucks, error }
                 style={{ minHeight: 0 }}
             >
                 <FormSection
-                    title="Assignment Selection"
-                    description="Choose the active truck and driver to keep paired together."
+                    title={t('driverTrucks.form.sections.selection.title')}
+                    description={t('driverTrucks.form.sections.selection.descriptionEdit')}
                     icon={
                         <div className="rounded-lg bg-blue-100 p-2 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
                             <Info className="h-4 w-4" />
@@ -300,9 +303,9 @@ export default function DriverTrucksEdit({ driverTruck, drivers, trucks, error }
                 >
                     <FormField
                         id="truck_id"
-                        label="Available Trucks"
+                        label={t('driverTrucks.form.fields.truck.label')}
                         required
-                        tooltip="Only trucks currently marked as active are shown in this list."
+                        tooltip={t('driverTrucks.form.fields.truck.tooltip')}
                         error={getFieldError('truck_id')}
                     >
                         <Select
@@ -317,7 +320,7 @@ export default function DriverTrucksEdit({ driverTruck, drivers, trucks, error }
                             <SelectTrigger
                                 className={`transition-all duration-200 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 focus:ring-blue-500/20 focus:border-blue-500 ${getFieldError('truck_id') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}
                             >
-                                <SelectValue placeholder="Choose a truck" />
+                                <SelectValue placeholder={t('driverTrucks.form.fields.truck.placeholder')} />
                             </SelectTrigger>
                             <SelectContent className="z-50 bg-white shadow-lg dark:bg-slate-800">
                                 <div className="sticky top-0 z-10 bg-white p-2 dark:bg-slate-800 dark:shadow-[0_1px_0_0_rgba(148,163,184,0.35)] shadow-[0_1px_0_0_rgba(148,163,184,0.35)]">
@@ -325,7 +328,7 @@ export default function DriverTrucksEdit({ driverTruck, drivers, trucks, error }
                                         autoComplete="off"
                                         value={truckSearch}
                                         onChange={(event) => setTruckSearch(event.target.value)}
-                                        placeholder="Search trucks..."
+                                        placeholder={t('driverTrucks.form.fields.truck.searchPlaceholder')}
                                         className="h-9 w-full border-slate-200 bg-slate-50 text-sm focus-visible:ring-1 focus-visible:ring-blue-500 dark:border-slate-700 dark:bg-slate-900"
                                     />
                                 </div>
@@ -341,19 +344,19 @@ export default function DriverTrucksEdit({ driverTruck, drivers, trucks, error }
                                     ))
                                 ) : (
                                     <SelectItem value="no-trucks" disabled>
-                                        No available trucks found
+                                        {t('driverTrucks.form.fields.truck.empty')}
                                     </SelectItem>
                                 )}
                             </SelectContent>
                         </Select>
                         {selectedTruck && (
                             <div className="rounded-lg border border-slate-200 bg-white/70 p-4 text-sm shadow-sm dark:border-slate-700 dark:bg-slate-900/50">
-                                <h4 className="mb-2 font-semibold text-slate-800 dark:text-slate-200">Selected Truck</h4>
+                                <h4 className="mb-2 font-semibold text-slate-800 dark:text-slate-200">{t('driverTrucks.form.selectedTruck.title')}</h4>
                                 <p className="text-slate-600 dark:text-slate-400">
-                                    <strong>Plate:</strong> {selectedTruck.plate}
+                                    <strong>{t('driverTrucks.form.selectedTruck.plate')}:</strong> {selectedTruck.plate}
                                 </p>
                                 <p className="text-slate-600 dark:text-slate-400">
-                                    <strong>Status:</strong> {String(selectedTruck.status).toLowerCase() === '1' ? 'Active' : selectedTruck.status}
+                                    <strong>{t('driverTrucks.form.selectedTruck.status')}:</strong> {String(selectedTruck.status).toLowerCase() === '1' ? t('driverTrucks.status.active') : String(selectedTruck.status)}
                                 </p>
                             </div>
                         )}
@@ -361,9 +364,9 @@ export default function DriverTrucksEdit({ driverTruck, drivers, trucks, error }
 
                     <FormField
                         id="driver_id"
-                        label="Available Drivers"
+                        label={t('driverTrucks.form.fields.driver.label')}
                         required
-                        tooltip="Drivers already attached to another active truck are filtered out automatically."
+                        tooltip={t('driverTrucks.form.fields.driver.tooltip')}
                         error={getFieldError('driver_id')}
                     >
                         <Select
@@ -378,7 +381,7 @@ export default function DriverTrucksEdit({ driverTruck, drivers, trucks, error }
                             <SelectTrigger
                                 className={`transition-all duration-200 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 focus:ring-blue-500/20 focus:border-blue-500 ${getFieldError('driver_id') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}
                             >
-                                <SelectValue placeholder="Choose a driver" />
+                                <SelectValue placeholder={t('driverTrucks.form.fields.driver.placeholder')} />
                             </SelectTrigger>
                             <SelectContent className="z-50 bg-white shadow-lg dark:bg-slate-800">
                                 <div className="sticky top-0 z-10 bg-white p-2 dark:bg-slate-800 dark:shadow-[0_1px_0_0_rgba(148,163,184,0.35)] shadow-[0_1px_0_0_rgba(148,163,184,0.35)]">
@@ -386,7 +389,7 @@ export default function DriverTrucksEdit({ driverTruck, drivers, trucks, error }
                                         autoComplete="off"
                                         value={driverSearch}
                                         onChange={(event) => setDriverSearch(event.target.value)}
-                                        placeholder="Search drivers..."
+                                        placeholder={t('driverTrucks.form.fields.driver.searchPlaceholder')}
                                         className="h-9 w-full border-slate-200 bg-slate-50 text-sm focus-visible:ring-1 focus-visible:ring-blue-500 dark:border-slate-700 dark:bg-slate-900"
                                     />
                                 </div>
@@ -397,27 +400,27 @@ export default function DriverTrucksEdit({ driverTruck, drivers, trucks, error }
                                             value={driver.id.toString()}
                                             className="hover:bg-slate-100 focus:bg-slate-100 dark:hover:bg-slate-700 dark:focus:bg-slate-700"
                                         >
-                                            {driver.name} (ID: {driver.driverid})
+                                            {t('driverTrucks.form.fields.driver.optionLabel', { name: driver.name, id: driver.driverid })}
                                         </SelectItem>
                                     ))
                                 ) : (
                                     <SelectItem value="no-drivers" disabled>
-                                        No available drivers found
+                                        {t('driverTrucks.form.fields.driver.empty')}
                                     </SelectItem>
                                 )}
                             </SelectContent>
                         </Select>
                         {selectedDriver && (
                             <div className="rounded-lg border border-slate-200 bg-white/70 p-4 text-sm shadow-sm dark:border-slate-700 dark:bg-slate-900/50">
-                                <h4 className="mb-2 font-semibold text-slate-800 dark:text-slate-200">Selected Driver</h4>
+                                <h4 className="mb-2 font-semibold text-slate-800 dark:text-slate-200">{t('driverTrucks.form.selectedDriver.title')}</h4>
                                 <p className="text-slate-600 dark:text-slate-400">
-                                    <strong>Name:</strong> {selectedDriver.name}
+                                    <strong>{t('driverTrucks.form.selectedDriver.name')}:</strong> {selectedDriver.name}
                                 </p>
                                 <p className="text-slate-600 dark:text-slate-400">
-                                    <strong>Driver ID:</strong> {selectedDriver.driverid}
+                                    <strong>{t('driverTrucks.form.selectedDriver.driverId')}:</strong> {selectedDriver.driverid}
                                 </p>
                                 <p className="text-slate-600 dark:text-slate-400">
-                                    <strong>Status:</strong> {String(selectedDriver.status).toLowerCase() === '1' ? 'Active' : selectedDriver.status}
+                                    <strong>{t('driverTrucks.form.selectedDriver.status')}:</strong> {String(selectedDriver.status).toLowerCase() === '1' ? t('driverTrucks.status.active') : String(selectedDriver.status)}
                                 </p>
                             </div>
                         )}
@@ -425,8 +428,8 @@ export default function DriverTrucksEdit({ driverTruck, drivers, trucks, error }
                 </FormSection>
 
                 <FormSection
-                    title="Assignment Details"
-                    description="Confirm the effective date for this assignment and review the pairing summary."
+                    title={t('driverTrucks.form.sections.details.title')}
+                    description={t('driverTrucks.form.sections.details.descriptionEdit')}
                     icon={
                         <div className="rounded-lg bg-emerald-100 p-2 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
                             <Calendar className="h-4 w-4" />
@@ -435,9 +438,9 @@ export default function DriverTrucksEdit({ driverTruck, drivers, trucks, error }
                 >
                     <FormField
                         id="date_recived"
-                        label="Assignment Date"
+                        label={t('driverTrucks.form.fields.date.label')}
                         required
-                        helperText="Must be today or within the last 30 days."
+                        helperText={t('driverTrucks.form.fields.date.helper')}
                         error={getFieldError('date_recived')}
                     >
                         <DatePicker
@@ -455,25 +458,25 @@ export default function DriverTrucksEdit({ driverTruck, drivers, trucks, error }
 
                     {(selectedTruck || selectedDriver) && (
                         <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm shadow-sm dark:border-blue-800/60 dark:bg-blue-900/40">
-                            <h4 className="mb-3 font-semibold text-blue-900 dark:text-blue-200">Assignment Summary</h4>
+                            <h4 className="mb-3 font-semibold text-blue-900 dark:text-blue-200">{t('driverTrucks.form.summary.title')}</h4>
                             <div className="space-y-2 text-blue-900 dark:text-blue-100">
                                 {selectedDriver && (
                                     <p>
-                                        <strong>Driver:</strong> {selectedDriver.name} ({selectedDriver.driverid})
+                                        <strong>{t('driverTrucks.form.summary.driver')}:</strong> {selectedDriver.name} ({selectedDriver.driverid})
                                     </p>
                                 )}
                                 {selectedTruck && (
                                     <p>
-                                        <strong>Truck:</strong> {selectedTruck.plate}
+                                        <strong>{t('driverTrucks.form.summary.truck')}:</strong> {selectedTruck.plate}
                                     </p>
                                 )}
                                 {data.date_recived && (
                                     <p>
-                                        <strong>Assignment Date:</strong> {new Date(data.date_recived).toLocaleDateString()}
+                                        <strong>{t('driverTrucks.form.summary.date')}:</strong> {new Date(data.date_recived).toLocaleDateString()}
                                     </p>
                                 )}
                                 <p>
-                                    <strong>Status:</strong> Active Assignment
+                                    <strong>{t('driverTrucks.form.summary.status')}:</strong> {t('driverTrucks.status.activeAssignment')}
                                 </p>
                             </div>
                         </div>
@@ -484,11 +487,11 @@ export default function DriverTrucksEdit({ driverTruck, drivers, trucks, error }
                     left={
                         <>
                             <span className="text-red-500">*</span>
-                            <span>All required fields must be completed</span>
+                            <span>{t('driverTrucks.form.required')}</span>
                             {isDirty && (
                                 <span className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
                                     <Save className="h-3 w-3" />
-                                    You have unsaved changes
+                                    {t('driverTrucks.form.unsaved')}
                                 </span>
                             )}
                         </>
@@ -496,7 +499,7 @@ export default function DriverTrucksEdit({ driverTruck, drivers, trucks, error }
                     right={
                         <>
                             <Button type="button" variant="outline" asChild className="border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700">
-                                <Link href={`/driver-trucks/${driverTruck.id}`}>Cancel</Link>
+                                <Link href={`/driver-trucks/${driverTruck.id}`}>{t('driverTrucks.actions.cancel')}</Link>
                             </Button>
                             <Button
                                 type="submit"
@@ -512,12 +515,12 @@ export default function DriverTrucksEdit({ driverTruck, drivers, trucks, error }
                                 {processing ? (
                                     <>
                                         <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white"></div>
-                                        Updating...
+                                        {t('driverTrucks.form.edit.submitting')}
                                     </>
                                 ) : (
                                     <>
                                         <CheckCircle className="mr-2 h-4 w-4" />
-                                        Update Assignment
+                                        {t('driverTrucks.form.edit.submit')}
                                     </>
                                 )}
                             </Button>

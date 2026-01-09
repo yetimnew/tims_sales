@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
@@ -11,8 +11,9 @@ import { toast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePermissions } from '@/hooks/use-permissions';
-import { ArrowLeft, ArrowUpRight, Ban, BarChart3, Calendar, CheckCircle, Edit, History, Sparkles, Target, Truck as TruckIcon, Trash2, Wrench, Clock, User, TrendingUp, DollarSign, Package, ExternalLink, MapPin, Route, Gauge } from 'lucide-react';
-import { Area, AreaChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Legend, Line, LineChart } from 'recharts';
+import { ArrowLeft, ArrowUpRight, Ban, BarChart3, CheckCircle, Edit, History, Sparkles, Target, Truck as TruckIcon, Trash2, Wrench, User, TrendingUp, DollarSign, Package, ExternalLink, MapPin, Route, Gauge } from 'lucide-react';
+import { CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Legend, Line, LineChart } from 'recharts';
+import { useTranslation } from 'react-i18next';
 
 type VehicleType = { id: number; name: string };
 type ActivityLog = { id: number; description: string; causer?: { name?: string }; created_at: string; properties?: Record<string, unknown> };
@@ -152,23 +153,31 @@ const getStatusBadgeColor = (status?: string | null): string => {
   }
 };
 
-export default function TrucksShow({ truck, activityLogs = [], counts, performanceSummary, maintenanceSummary, gradeReport }: TrucksShowProps) {
+export default function TrucksShow({ truck, activityLogs = [], performanceSummary, maintenanceSummary, gradeReport }: TrucksShowProps) {
   const { hasPermission } = usePermissions();
+  const { t } = useTranslation();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deactivateDialogOpen, setDeactivateDialogOpen] = useState(false);
   const [isDeactivating, setIsDeactivating] = useState(false);
 
-  const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Trucks', href: '/trucks' },
-    { title: truck.plate, href: `/trucks/${truck.id}` },
-  ];
+  const breadcrumbs: BreadcrumbItem[] = useMemo(
+    () => [
+      { title: t('trucks.breadcrumb'), href: '/trucks' },
+      { title: truck.plate, href: `/trucks/${truck.id}` },
+    ],
+    [t, truck.id, truck.plate],
+  );
 
   const canEditTruck = hasPermission('trucks.edit');
   const canDeleteTruck = hasPermission('trucks.destroy');
   const canDeactivateTruck = hasPermission('trucks.deactivate');
 
-  const statusLabel = truck.status ? truck.status.charAt(0).toUpperCase() + truck.status.slice(1) : 'Unknown';
+  const statusLabel = truck.status
+    ? t(`trucks.status.${truck.status}`, {
+        defaultValue: truck.status.charAt(0).toUpperCase() + truck.status.slice(1),
+      })
+    : t('trucks.status.unknown');
 
   // Calculate financial metrics from performance data
   const totalFuelCost = performanceSummary?.fuel_cost_birr ?? 0;
@@ -201,22 +210,22 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
 
   // Prepare chart data
   const distanceChartData = performanceSummary ? [
-    { name: 'Loaded', value: totalLoadedDistance, fill: '#22c55e' },
-    { name: 'Empty', value: totalEmptyDistance, fill: '#ef4444' },
+    { name: t('trucks.show.charts.loaded'), value: totalLoadedDistance, fill: '#22c55e' },
+    { name: t('trucks.show.charts.empty'), value: totalEmptyDistance, fill: '#ef4444' },
   ].filter(item => (item.value ?? 0) > 0) : [];
 
   const tripStatusData = performanceSummary ? [
-    { name: 'Completed', value: performanceSummary.completed_trips, fill: '#22c55e' },
-    { name: 'Open', value: openTrips, fill: '#3b82f6' },
+    { name: t('trucks.show.charts.completed'), value: performanceSummary.completed_trips, fill: '#22c55e' },
+    { name: t('trucks.show.charts.open'), value: openTrips, fill: '#3b82f6' },
   ].filter(item => (item.value ?? 0) > 0) : [];
 
   const costBreakdownData = [
-    { name: 'Fuel Cost', value: totalFuelCost, fill: '#f97316' },
-    { name: 'Maintenance', value: totalMaintenanceCost, fill: '#8b5cf6' },
+    { name: t('trucks.show.charts.fuelCost'), value: totalFuelCost, fill: '#f97316' },
+    { name: t('trucks.show.charts.maintenance'), value: totalMaintenanceCost, fill: '#8b5cf6' },
   ].filter(item => item.value > 0);
 
   const recentPerformances = truck.performances?.slice(0, 10).map((perf, index) => ({
-    name: `Trip ${index + 1}`,
+    name: t('trucks.show.performance.tripLabel', { index: index + 1 }),
     distance: (perf.DistanceWCargo ?? 0) + (perf.DistanceWOCargo ?? 0),
     tonnage: perf.cargo_volume_mt ?? 0,
     fuel: perf.fuelInLitter ?? 0,
@@ -225,27 +234,27 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
   const overviewSummaryCards = [
     {
       key: 'trips',
-      label: 'Completed Trips',
+      label: t('trucks.show.summary.completedTrips'),
       value: formatNumber(performanceSummary?.completed_trips ?? 0, { maximumFractionDigits: 0 }),
-      helper: `${formatNumber(openTrips, { maximumFractionDigits: 0 })} open trips`,
+      helper: t('trucks.show.summary.openTrips', { count: formatNumber(openTrips, { maximumFractionDigits: 0 }) }),
     },
     {
       key: 'distance',
-      label: 'Total Distance',
+      label: t('trucks.show.summary.totalDistance'),
       value: formatKilometers(performanceSummary?.total_distance_km ?? 0, 0),
-      helper: `Load Factor: ${loadFactor.toFixed(1)}%`,
+      helper: t('trucks.show.summary.loadFactor', { value: loadFactor.toFixed(1) }),
     },
     {
       key: 'efficiency',
-      label: 'Fuel Efficiency',
+      label: t('trucks.show.summary.fuelEfficiency'),
       value: formatFuelEfficiency(performanceSummary?.avg_fuel_efficiency_km_per_liter ?? null),
-      helper: `${formatNumber(totalFuelLiters, { maximumFractionDigits: 0 })} L total`,
+      helper: t('trucks.show.summary.totalFuel', { value: formatNumber(totalFuelLiters, { maximumFractionDigits: 0 }) }),
     },
     {
       key: 'cost',
-      label: 'Total Cost',
+      label: t('trucks.show.summary.totalCost'),
       value: formatCurrency(totalOperationalCost),
-      helper: `${formatCurrency(avgCostPerKm)} per KM`,
+      helper: t('trucks.show.summary.costPerKm', { value: formatCurrency(avgCostPerKm) }),
     },
   ];
 
@@ -258,11 +267,11 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
       onSuccess: () => {
         setDeleteDialogOpen(false);
         setIsDeleting(false);
-        toast({ title: '✅ Truck Deleted', description: 'The truck has been removed successfully.' });
+        toast({ title: t('trucks.show.delete.successTitle'), description: t('trucks.show.delete.successDescription') });
       },
       onError: () => {
         setIsDeleting(false);
-        toast({ title: '❌ Delete Failed', description: 'Unable to delete this truck.', variant: 'destructive' });
+        toast({ title: t('trucks.show.delete.failedTitle'), description: t('trucks.show.delete.failedDescription'), variant: 'destructive' });
       },
     });
   };
@@ -274,11 +283,11 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
       onSuccess: () => {
         setDeactivateDialogOpen(false);
         setIsDeactivating(false);
-        toast({ title: '✅ Truck Deactivated', description: 'The truck has been deactivated successfully.' });
+        toast({ title: t('trucks.show.deactivate.successTitle'), description: t('trucks.show.deactivate.successDescription') });
       },
       onError: () => {
         setIsDeactivating(false);
-        toast({ title: '❌ Deactivation Failed', description: 'Unable to deactivate this truck.', variant: 'destructive' });
+        toast({ title: t('trucks.show.deactivate.failedTitle'), description: t('trucks.show.deactivate.failedDescription'), variant: 'destructive' });
       },
     });
   };
@@ -286,15 +295,15 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
   return (
     <DetailPageLayout
       title={truck.plate}
-      subtitle="Comprehensive truck profile and performance tracking"
+      subtitle={t('trucks.show.subtitle')}
       breadcrumbs={breadcrumbs}
-      headTitle={`Truck - ${truck.plate}`}
+      headTitle={t('trucks.show.headTitle', { plate: truck.plate })}
       icon={<TruckIcon className="h-6 w-6 text-blue-700 dark:text-blue-300" />}
       iconWrapperClassName="bg-blue-100 dark:bg-blue-900/30"
       leading={
         <Button variant="outline" size="sm" onClick={() => router.get('/trucks')}>
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
+          {t('trucks.actions.back')}
         </Button>
       }
       actions={
@@ -303,20 +312,20 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
             <Button variant="outline" asChild>
               <Link href={`/trucks/${truck.id}/edit`}>
                 <Edit className="h-4 w-4 mr-2" />
-                Edit
+                {t('trucks.actions.edit')}
               </Link>
             </Button>
           )}
           {showDeactivateButton && (
             <Button variant="outline" onClick={() => setDeactivateDialogOpen(true)} className="border-amber-200 text-amber-600 hover:bg-amber-50">
               <Ban className="h-4 w-4 mr-2" />
-              Deactivate
+              {t('trucks.show.actions.deactivate')}
             </Button>
           )}
           {canDeleteTruck && (
             <Button variant="outline" onClick={() => setDeleteDialogOpen(true)} className="border-red-200 text-red-600 hover:bg-red-50">
               <Trash2 className="h-4 w-4 mr-2" />
-              Delete
+              {t('trucks.actions.delete')}
             </Button>
           )}
         </div>
@@ -324,11 +333,11 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
     >
       <Tabs defaultValue="overview" className="space-y-6">
         <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="overview"><CheckCircle className="h-4 w-4 mr-2" /> Overview</TabsTrigger>
-          <TabsTrigger value="performance"><BarChart3 className="h-4 w-4 mr-2" /> Performance</TabsTrigger>
-          <TabsTrigger value="analytics"><TrendingUp className="h-4 w-4 mr-2" /> Analytics</TabsTrigger>
-          <TabsTrigger value="maintenance"><Wrench className="h-4 w-4 mr-2" /> Maintenance</TabsTrigger>
-          <TabsTrigger value="history"><History className="h-4 w-4 mr-2" /> History</TabsTrigger>
+          <TabsTrigger value="overview"><CheckCircle className="h-4 w-4 mr-2" /> {t('trucks.show.tabs.overview')}</TabsTrigger>
+          <TabsTrigger value="performance"><BarChart3 className="h-4 w-4 mr-2" /> {t('trucks.show.tabs.performance')}</TabsTrigger>
+          <TabsTrigger value="analytics"><TrendingUp className="h-4 w-4 mr-2" /> {t('trucks.show.tabs.analytics')}</TabsTrigger>
+          <TabsTrigger value="maintenance"><Wrench className="h-4 w-4 mr-2" /> {t('trucks.show.tabs.maintenance')}</TabsTrigger>
+          <TabsTrigger value="history"><History className="h-4 w-4 mr-2" /> {t('trucks.show.tabs.history')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
@@ -336,89 +345,93 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
 
           <div className="grid gap-6 lg:grid-cols-[1fr,20rem]">
             <div className="space-y-6">
-              <DetailSectionCard icon={<TruckIcon className="h-5 w-5" />} title="Basic Information" description="Truck details and specifications">
+              <DetailSectionCard
+                icon={<TruckIcon className="h-5 w-5" />}
+                title={t('trucks.show.sections.basic.title')}
+                description={t('trucks.show.sections.basic.description')}
+              >
                 <div className="grid gap-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="rounded-lg border p-3">
-                      <p className="text-xs font-semibold uppercase text-muted-foreground">Status</p>
+                      <p className="text-xs font-semibold uppercase text-muted-foreground">{t('trucks.labels.status')}</p>
                       <Badge className={`mt-2 flex w-fit items-center gap-1 ${getStatusBadgeColor(truck.status)}`}>{statusLabel}</Badge>
                     </div>
                     <div className="rounded-lg border p-3">
-                      <p className="text-xs font-semibold uppercase text-muted-foreground">Vehicle Type</p>
-                      <p className="mt-2 font-semibold">{truck.vehicleType?.name || 'N/A'}</p>
+                      <p className="text-xs font-semibold uppercase text-muted-foreground">{t('trucks.show.fields.vehicleType')}</p>
+                      <p className="mt-2 font-semibold">{truck.vehicleType?.name || t('trucks.fallbacks.notAvailable')}</p>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="rounded-lg border p-3">
-                      <p className="text-xs font-semibold uppercase text-muted-foreground">Plate Number</p>
+                      <p className="text-xs font-semibold uppercase text-muted-foreground">{t('trucks.show.fields.plate')}</p>
                       <p className="mt-2 font-mono text-lg font-bold">{truck.plate}</p>
                     </div>
                     <div className="rounded-lg border p-3">
-                      <p className="text-xs font-semibold uppercase text-muted-foreground">Chassis Number</p>
-                      <p className="mt-2 text-sm">{truck.chasisNumber || 'N/A'}</p>
+                      <p className="text-xs font-semibold uppercase text-muted-foreground">{t('trucks.show.fields.chassis')}</p>
+                      <p className="mt-2 text-sm">{truck.chasisNumber || t('trucks.fallbacks.notAvailable')}</p>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="rounded-lg border p-3">
-                      <p className="text-xs font-semibold uppercase text-muted-foreground">Engine Number</p>
-                      <p className="mt-2 text-sm">{truck.engineNumber || 'N/A'}</p>
+                      <p className="text-xs font-semibold uppercase text-muted-foreground">{t('trucks.show.fields.engine')}</p>
+                      <p className="mt-2 text-sm">{truck.engineNumber || t('trucks.fallbacks.notAvailable')}</p>
                     </div>
                     <div className="rounded-lg border p-3">
-                      <p className="text-xs font-semibold uppercase text-muted-foreground">Created</p>
+                      <p className="text-xs font-semibold uppercase text-muted-foreground">{t('trucks.show.fields.created')}</p>
                       <p className="mt-2 text-sm">{formatDate(truck.created_at)}</p>
                     </div>
                   </div>
                 </div>
               </DetailSectionCard>
 
-              <DetailSectionCard icon={<ExternalLink className="h-5 w-5" />} title="Quick Links">
+              <DetailSectionCard icon={<ExternalLink className="h-5 w-5" />} title={t('trucks.show.sections.quickLinks')}>
                 <div className="grid gap-3 md:grid-cols-2">
                   <Button variant="outline" asChild className="w-full">
                     <Link href={`/performances?truck=${truck.id}`}>
                       <Package className="h-4 w-4 mr-2" />
-                      View All Performances
+                      {t('trucks.show.actions.viewAllPerformances')}
                       <ExternalLink className="h-3 w-3 ml-auto" />
                     </Link>
                   </Button>
                   <Button variant="outline" asChild className="w-full">
                     <Link href={`/driver-trucks?truck_id=${truck.id}`}>
                       <User className="h-4 w-4 mr-2" />
-                      View All Assignments
+                      {t('trucks.show.actions.viewAllAssignments')}
                       <ExternalLink className="h-3 w-3 ml-auto" />
                     </Link>
                   </Button>
                 </div>
               </DetailSectionCard>
 
-              <DetailSectionCard icon={<Gauge className="h-5 w-5" />} title="Utilization Metrics">
+              <DetailSectionCard icon={<Gauge className="h-5 w-5" />} title={t('trucks.show.sections.utilization')}>
                 <div className="grid gap-4 md:grid-cols-3">
                   <div className="rounded-lg border border-green-200 bg-green-50 p-3 text-center">
-                    <p className="text-xs font-semibold uppercase text-muted-foreground">Load Factor</p>
+                    <p className="text-xs font-semibold uppercase text-muted-foreground">{t('trucks.show.utilization.loadFactor')}</p>
                     <p className="mt-2 text-2xl font-bold text-green-700">{loadFactor.toFixed(1)}%</p>
                     <p className="mt-1 text-xs text-muted-foreground">{formatKilometers(performanceSummary?.total_loaded_distance_km ?? 0, 0)}</p>
                   </div>
                   <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-center">
-                    <p className="text-xs font-semibold uppercase text-muted-foreground">Empty Running</p>
+                    <p className="text-xs font-semibold uppercase text-muted-foreground">{t('trucks.show.utilization.emptyRunning')}</p>
                     <p className="mt-2 text-2xl font-bold text-red-700">{emptyFactor.toFixed(1)}%</p>
                     <p className="mt-1 text-xs text-muted-foreground">{formatKilometers(performanceSummary?.total_empty_distance_km ?? 0, 0)}</p>
                   </div>
                   <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-center">
-                    <p className="text-xs font-semibold uppercase text-muted-foreground">Avg Payload</p>
+                    <p className="text-xs font-semibold uppercase text-muted-foreground">{t('trucks.show.utilization.avgPayload')}</p>
                     <p className="mt-2 text-2xl font-bold text-blue-700">{formatNumber(performanceSummary?.avg_payload_tons_per_trip ?? 0, { maximumFractionDigits: 1 })} T</p>
-                    <p className="mt-1 text-xs text-muted-foreground">Per trip</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{t('trucks.show.utilization.perTrip')}</p>
                   </div>
                 </div>
               </DetailSectionCard>
 
               <DetailSectionCard
                 icon={<User className="h-5 w-5" />}
-                title="Driver Assignments"
-                description="Recent drivers assigned to this truck"
+                title={t('trucks.show.sections.assignments.title')}
+                description={t('trucks.show.sections.assignments.description')}
                 actions={
                   truck.driverTrucks && truck.driverTrucks.length > 0 ? (
                     <Button variant="link" size="sm" className="px-0" asChild>
                       <Link href={`/driver-trucks?truck_id=${truck.id}`} className="flex items-center gap-1">
-                        View all
+                        {t('trucks.show.actions.viewAll')}
                         <ArrowUpRight className="h-4 w-4" />
                       </Link>
                     </Button>
@@ -428,19 +441,21 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
                 {truck.driverTrucks && truck.driverTrucks.length > 0 ? (
                   <div className="space-y-4">
                     {truck.driverTrucks.slice(0, 5).map(assignment => {
-                      const driverName = assignment.driver?.name ?? 'Unknown Driver';
+                      const driverName = assignment.driver?.name ?? t('trucks.show.fallbacks.unknownDriver');
                       return (
                         <div key={assignment.id} className="rounded-lg border p-4">
                           <div className="flex items-center justify-between">
                             <div>
                               <p className="font-semibold">{driverName}</p>
-                              <p className="text-xs text-muted-foreground">Assignment #{assignment.id}</p>
+                              <p className="text-xs text-muted-foreground">{t('trucks.show.assignments.assignmentLabel', { id: assignment.id })}</p>
                             </div>
-                            <Badge variant={assignment.is_attached ? 'default' : 'secondary'}>{assignment.is_attached ? 'Attached' : 'Detached'}</Badge>
+                            <Badge variant={assignment.is_attached ? 'default' : 'secondary'}>
+                              {assignment.is_attached ? t('trucks.show.assignments.attached') : t('trucks.show.assignments.detached')}
+                            </Badge>
                           </div>
                           <div className="mt-3 grid gap-2 text-xs text-muted-foreground md:grid-cols-2">
-                            <div><span className="font-medium">Assigned:</span> {formatDate(assignment.date_recived)}</div>
-                            <div><span className="font-medium">Detached:</span> {formatDate(assignment.date_detach)}</div>
+                            <div><span className="font-medium">{t('trucks.show.assignments.assigned')}:</span> {formatDate(assignment.date_recived)}</div>
+                            <div><span className="font-medium">{t('trucks.show.assignments.detachedAt')}:</span> {formatDate(assignment.date_detach)}</div>
                           </div>
                         </div>
                       );
@@ -449,7 +464,7 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
                 ) : (
                   <div className="py-8 text-center text-muted-foreground">
                     <User className="mx-auto mb-3 h-10 w-10 opacity-60" />
-                    <p>No driver assignments recorded for this truck yet.</p>
+                    <p>{t('trucks.show.assignments.empty')}</p>
                   </div>
                 )}
               </DetailSectionCard>
@@ -457,10 +472,14 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
 
             <div className="space-y-4">
               {gradeReport && gradeReport.overall && (
-                <DetailSectionCard icon={<Sparkles className="h-5 w-5 text-amber-600" />} title="Truck Grade" description="Performance rating">
+                <DetailSectionCard
+                  icon={<Sparkles className="h-5 w-5 text-amber-600" />}
+                  title={t('trucks.show.grade.title')}
+                  description={t('trucks.show.grade.description')}
+                >
                   <div className="flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 p-3">
                     <div>
-                      <p className="text-xs font-semibold uppercase text-amber-700">Overall Score</p>
+                      <p className="text-xs font-semibold uppercase text-amber-700">{t('trucks.show.grade.overallScore')}</p>
                       <div className="mt-1 flex items-baseline gap-3">
                         <span className="text-3xl font-bold text-amber-800">{gradeReport.overall.score.toFixed(1)}</span>
                         <span className="text-sm text-muted-foreground">{gradeReport.overall.score.toFixed(1)} / 100</span>
@@ -472,30 +491,30 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
               )}
 
               {performanceSummary && (
-                <DetailSectionCard icon={<BarChart3 className="h-5 w-5" />} title="Performance Summary">
+                <DetailSectionCard icon={<BarChart3 className="h-5 w-5" />} title={t('trucks.show.performance.summaryTitle')}>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Total Distance</span>
+                      <span className="text-muted-foreground">{t('trucks.show.performance.totalDistance')}</span>
                       <span className="font-semibold">{formatKilometers(performanceSummary.total_distance_km, 0)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Completed Trips</span>
+                      <span className="text-muted-foreground">{t('trucks.show.performance.completedTrips')}</span>
                       <span className="font-semibold">{formatNumber(performanceSummary.completed_trips, { maximumFractionDigits: 0 })}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Fuel Efficiency</span>
+                      <span className="text-muted-foreground">{t('trucks.show.performance.fuelEfficiency')}</span>
                       <span className="font-semibold">{formatFuelEfficiency(performanceSummary.avg_fuel_efficiency_km_per_liter)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Ton-Km</span>
+                      <span className="text-muted-foreground">{t('trucks.show.performance.tonKm')}</span>
                       <span className="font-semibold">{formatNumber(performanceSummary.total_ton_km)}</span>
                     </div>
                     <div className="flex justify-between border-t pt-2">
-                      <span className="text-muted-foreground">Total Cost</span>
+                      <span className="text-muted-foreground">{t('trucks.show.performance.totalCost')}</span>
                       <span className="font-semibold">{formatCurrency(totalOperationalCost)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Cost per KM</span>
+                      <span className="text-muted-foreground">{t('trucks.show.performance.costPerKm')}</span>
                       <span className="font-semibold">{formatCurrency(avgCostPerKm)}</span>
                     </div>
                   </div>
@@ -503,7 +522,7 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
               )}
 
               {distanceChartData.length > 0 && (
-                <DetailSectionCard icon={<Route className="h-5 w-5" />} title="Distance Split">
+                <DetailSectionCard icon={<Route className="h-5 w-5" />} title={t('trucks.show.charts.distanceSplit')}>
                   <div className="h-48">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
@@ -537,39 +556,52 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
           {performanceSummary && (
             <div className="grid gap-4 md:grid-cols-5">
               <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-center">
-                <p className="text-xs font-semibold uppercase text-muted-foreground">Total Records</p>
+                <p className="text-xs font-semibold uppercase text-muted-foreground">{t('trucks.show.performance.cards.totalRecords')}</p>
                 <p className="mt-2 text-3xl font-bold text-blue-700">{performanceSummary.total_records}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{formatNumber(mainTripRecords, { maximumFractionDigits: 0 })} main trips</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {t('trucks.show.performance.cards.mainTrips', { count: formatNumber(mainTripRecords, { maximumFractionDigits: 0 }) })}
+                </p>
               </div>
               <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-center">
-                <p className="text-xs font-semibold uppercase text-muted-foreground">Completed</p>
+                <p className="text-xs font-semibold uppercase text-muted-foreground">{t('trucks.show.performance.cards.completed')}</p>
                 <p className="mt-2 text-3xl font-bold text-green-700">{performanceSummary.completed_trips}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{tripCompletionRate ? (tripCompletionRate * 100).toFixed(1) : '0'}% rate</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {t('trucks.show.performance.cards.completionRate', {
+                    value: tripCompletionRate ? (tripCompletionRate * 100).toFixed(1) : '0',
+                  })}
+                </p>
               </div>
               <div className="rounded-lg border border-orange-200 bg-orange-50 p-4 text-center">
-                <p className="text-xs font-semibold uppercase text-muted-foreground">Open Trips</p>
+                <p className="text-xs font-semibold uppercase text-muted-foreground">{t('trucks.show.performance.cards.openTrips')}</p>
                 <p className="mt-2 text-3xl font-bold text-orange-700">{formatNumber(openTrips, { maximumFractionDigits: 0 })}</p>
-                <p className="mt-1 text-xs text-muted-foreground">In progress</p>
+                <p className="mt-1 text-xs text-muted-foreground">{t('trucks.show.performance.cards.inProgress')}</p>
               </div>
               <div className="rounded-lg border border-purple-200 bg-purple-50 p-4 text-center">
-                <p className="text-xs font-semibold uppercase text-muted-foreground">Ton-Km</p>
+                <p className="text-xs font-semibold uppercase text-muted-foreground">{t('trucks.show.performance.cards.tonKm')}</p>
                 <p className="mt-2 text-3xl font-bold text-purple-700">{formatNumber(performanceSummary.total_ton_km, { maximumFractionDigits: 0 })}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{formatNumber(avgTonKmPerTrip, { maximumFractionDigits: 1 })} avg</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {t('trucks.show.performance.cards.avgTonKm', { value: formatNumber(avgTonKmPerTrip, { maximumFractionDigits: 1 }) })}
+                </p>
               </div>
               <div className="rounded-lg border border-teal-200 bg-teal-50 p-4 text-center">
-                <p className="text-xs font-semibold uppercase text-muted-foreground">Cargo Volume</p>
+                <p className="text-xs font-semibold uppercase text-muted-foreground">{t('trucks.show.performance.cards.cargoVolume')}</p>
                 <p className="mt-2 text-3xl font-bold text-teal-700">{formatNumber(totalCargoVolumeMt, { maximumFractionDigits: 0 })}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{formatNumber(avgCargoVolumePerTrip, { maximumFractionDigits: 1 })} MT avg</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {t('trucks.show.performance.cards.avgCargoVolume', { value: formatNumber(avgCargoVolumePerTrip, { maximumFractionDigits: 1 }) })}
+                </p>
               </div>
             </div>
           )}
 
-          <DetailSectionCard icon={<BarChart3 className="h-5 w-5" />} title="Performance Records" description="Recent operational trips"
+          <DetailSectionCard
+            icon={<BarChart3 className="h-5 w-5" />}
+            title={t('trucks.show.performance.recordsTitle')}
+            description={t('trucks.show.performance.recordsDescription')}
             actions={
               truck.performances && truck.performances.length > 0 ? (
                 <Button variant="link" size="sm" className="px-0" asChild>
                   <Link href={`/performances?truck=${truck.id}`} className="flex items-center gap-1">
-                    View all
+                    {t('trucks.show.actions.viewAll')}
                     <ArrowUpRight className="h-4 w-4" />
                   </Link>
                 </Button>
@@ -583,32 +615,35 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
                         <Link href={`/performances/${perf.id}`} className="font-semibold text-blue-600 hover:underline">
-                          Performance #{perf.id}
+                          {t('trucks.show.performance.recordLabel', { id: perf.id })}
                         </Link>
                         <p className="text-xs text-muted-foreground">{formatDate(perf.DateDispach)}</p>
                         {perf.origin && perf.destination && (
                           <p className="text-xs text-muted-foreground mt-1">
                             <MapPin className="h-3 w-3 inline mr-1" />
-                            {perf.origin.name} → {perf.destination.name}
+                            {t('trucks.show.performance.routeLabel', {
+                              origin: perf.origin.name,
+                              destination: perf.destination.name,
+                            })}
                           </p>
                         )}
                       </div>
                     </div>
                     <div className="mt-3 grid gap-2 text-xs md:grid-cols-4">
                       <div className="rounded-lg bg-muted p-2">
-                        <span className="font-medium text-muted-foreground">Distance:</span>
+                        <span className="font-medium text-muted-foreground">{t('trucks.show.performance.distance')}:</span>
                         <span className="ml-1 font-semibold">{formatKilometers((perf.DistanceWCargo ?? 0) + (perf.DistanceWOCargo ?? 0), 0)}</span>
                       </div>
                       <div className="rounded-lg bg-muted p-2">
-                        <span className="font-medium text-muted-foreground">Cargo:</span>
+                        <span className="font-medium text-muted-foreground">{t('trucks.show.performance.cargo')}:</span>
                         <span className="ml-1 font-semibold">{formatNumber(perf.cargo_volume_mt ?? null)} MT</span>
                       </div>
                       <div className="rounded-lg bg-muted p-2">
-                        <span className="font-medium text-muted-foreground">Ton-KM:</span>
+                        <span className="font-medium text-muted-foreground">{t('trucks.show.performance.tonKm')}:</span>
                         <span className="ml-1 font-semibold">{formatNumber(perf.tonkm ?? null)}</span>
                       </div>
                       <div className="rounded-lg bg-muted p-2">
-                        <span className="font-medium text-muted-foreground">Fuel:</span>
+                        <span className="font-medium text-muted-foreground">{t('trucks.show.performance.fuel')}:</span>
                         <span className="ml-1 font-semibold">{formatNumber(perf.fuelInLitter ?? null)} L</span>
                       </div>
                     </div>
@@ -618,7 +653,7 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
             ) : (
               <div className="py-8 text-center text-muted-foreground">
                 <BarChart3 className="mx-auto mb-4 h-12 w-12 opacity-60" />
-                <p>No performance records found for this truck yet.</p>
+                <p>{t('trucks.show.performance.empty')}</p>
               </div>
             )}
           </DetailSectionCard>
@@ -627,25 +662,31 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
         <TabsContent value="analytics" className="space-y-6">
           <div className="grid gap-4 md:grid-cols-3">
             <div className="rounded-lg border border-orange-200 bg-orange-50 p-4">
-              <p className="text-xs font-semibold uppercase text-muted-foreground">Fuel Cost</p>
+              <p className="text-xs font-semibold uppercase text-muted-foreground">{t('trucks.show.analytics.fuelCost')}</p>
               <p className="mt-2 text-2xl font-bold text-orange-700">{formatCurrency(totalFuelCost)}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{formatNumber(totalFuelLiters, { maximumFractionDigits: 0 })} L total</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {t('trucks.show.analytics.totalFuel', { value: formatNumber(totalFuelLiters, { maximumFractionDigits: 0 }) })}
+              </p>
             </div>
             <div className="rounded-lg border border-purple-200 bg-purple-50 p-4">
-              <p className="text-xs font-semibold uppercase text-muted-foreground">Maintenance Cost</p>
+              <p className="text-xs font-semibold uppercase text-muted-foreground">{t('trucks.show.analytics.maintenanceCost')}</p>
               <p className="mt-2 text-2xl font-bold text-purple-700">{formatCurrency(totalMaintenanceCost)}</p>
-              <p className="mt-1 text-xs text-muted-foreground">{maintenanceSummary?.total_records ?? 0} records</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {t('trucks.show.analytics.records', { count: maintenanceSummary?.total_records ?? 0 })}
+              </p>
             </div>
             <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-              <p className="text-xs font-semibold uppercase text-muted-foreground">Total Operational Cost</p>
+              <p className="text-xs font-semibold uppercase text-muted-foreground">{t('trucks.show.analytics.totalOperationalCost')}</p>
               <p className="mt-2 text-2xl font-bold text-blue-700">{formatCurrency(totalOperationalCost)}</p>
-              <p className="mt-1 text-xs text-muted-foreground">{formatCurrency(avgCostPerKm)} per KM</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {t('trucks.show.analytics.costPerKm', { value: formatCurrency(avgCostPerKm) })}
+              </p>
             </div>
           </div>
 
           <div className="grid gap-6 lg:grid-cols-2">
             {tripStatusData.length > 0 && (
-              <DetailSectionCard title="Trip Status Distribution" icon={<Target className="h-5 w-5" />}>
+              <DetailSectionCard title={t('trucks.show.analytics.tripStatusDistribution')} icon={<Target className="h-5 w-5" />}>
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
@@ -673,7 +714,7 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
             )}
 
             {costBreakdownData.length > 0 && (
-              <DetailSectionCard title="Cost Breakdown" icon={<DollarSign className="h-5 w-5" />}>
+              <DetailSectionCard title={t('trucks.show.analytics.costBreakdown')} icon={<DollarSign className="h-5 w-5" />}>
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
@@ -702,7 +743,7 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
           </div>
 
           {recentPerformances.length > 0 && (
-            <DetailSectionCard title="Recent Performance Trends" icon={<TrendingUp className="h-5 w-5" />}>
+            <DetailSectionCard title={t('trucks.show.analytics.recentTrends')} icon={<TrendingUp className="h-5 w-5" />}>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={recentPerformances}>
@@ -712,62 +753,70 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
                     <YAxis yAxisId="right" orientation="right" />
                     <Tooltip />
                     <Legend />
-                    <Line yAxisId="left" type="monotone" dataKey="distance" stroke="#3b82f6" name="Distance (KM)" />
-                    <Line yAxisId="right" type="monotone" dataKey="tonnage" stroke="#22c55e" name="Tonnage (MT)" />
-                    <Line yAxisId="right" type="monotone" dataKey="fuel" stroke="#f97316" name="Fuel (L)" />
+                    <Line yAxisId="left" type="monotone" dataKey="distance" stroke="#3b82f6" name={t('trucks.show.analytics.distance')} />
+                    <Line yAxisId="right" type="monotone" dataKey="tonnage" stroke="#22c55e" name={t('trucks.show.analytics.tonnage')} />
+                    <Line yAxisId="right" type="monotone" dataKey="fuel" stroke="#f97316" name={t('trucks.show.analytics.fuel')} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
             </DetailSectionCard>
           )}
 
-          <DetailSectionCard title="Efficiency Metrics" icon={<Gauge className="h-5 w-5" />}>
+          <DetailSectionCard title={t('trucks.show.analytics.efficiency')} icon={<Gauge className="h-5 w-5" />}>
             <div className="grid gap-4 md:grid-cols-4">
               <div className="rounded-lg border p-3">
-                <p className="text-xs font-semibold uppercase text-muted-foreground">Avg Distance/Trip</p>
+                <p className="text-xs font-semibold uppercase text-muted-foreground">{t('trucks.show.analytics.avgDistance')}</p>
                 <p className="mt-2 font-semibold">{formatKilometers(avgTripDistance ?? 0, 1)}</p>
               </div>
               <div className="rounded-lg border p-3">
-                <p className="text-xs font-semibold uppercase text-muted-foreground">Fuel Efficiency</p>
+                <p className="text-xs font-semibold uppercase text-muted-foreground">{t('trucks.show.analytics.fuelEfficiency')}</p>
                 <p className="mt-2 font-semibold">{formatFuelEfficiency(performanceSummary?.avg_fuel_efficiency_km_per_liter ?? null)}</p>
               </div>
               <div className="rounded-lg border p-3">
-                <p className="text-xs font-semibold uppercase text-muted-foreground">Cost per Trip</p>
+                <p className="text-xs font-semibold uppercase text-muted-foreground">{t('trucks.show.analytics.costPerTrip')}</p>
                 <p className="mt-2 font-semibold">{formatCurrency(avgCostPerTrip)}</p>
               </div>
               <div className="rounded-lg border p-3">
-                <p className="text-xs font-semibold uppercase text-muted-foreground">Avg Trip Duration</p>
-                <p className="mt-2 font-semibold">{avgTripDurationDays ? `${avgTripDurationDays.toFixed(1)} days` : 'N/A'}</p>
+                <p className="text-xs font-semibold uppercase text-muted-foreground">{t('trucks.show.analytics.avgTripDuration')}</p>
+                <p className="mt-2 font-semibold">
+                  {avgTripDurationDays
+                    ? t('trucks.show.analytics.tripDurationValue', { value: avgTripDurationDays.toFixed(1) })
+                    : t('trucks.fallbacks.notAvailable')}
+                </p>
               </div>
             </div>
           </DetailSectionCard>
         </TabsContent>
 
         <TabsContent value="maintenance" className="space-y-6">
-          <DetailSectionCard icon={<Wrench className="h-5 w-5" />} title="Maintenance Overview" description="Service and maintenance history">
+          <DetailSectionCard
+            icon={<Wrench className="h-5 w-5" />}
+            title={t('trucks.show.maintenance.title')}
+            description={t('trucks.show.maintenance.description')}
+          >
             {maintenanceSummary ? (
               <div className="grid gap-4 md:grid-cols-4">
                 <div className="rounded-lg border p-3 text-center">
-                  <p className="text-xs text-muted-foreground">Total</p>
+                  <p className="text-xs text-muted-foreground">{t('trucks.show.maintenance.total')}</p>
                   <p className="text-lg font-semibold">{maintenanceSummary.total_records}</p>
                 </div>
                 <div className="rounded-lg border border-green-200 bg-green-50 p-3 text-center">
-                  <p className="text-xs text-muted-foreground">Completed</p>
+                  <p className="text-xs text-muted-foreground">{t('trucks.show.maintenance.completed')}</p>
                   <p className="text-lg font-semibold text-green-600">{maintenanceSummary.completed}</p>
                 </div>
                 <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-center">
-                  <p className="text-xs text-muted-foreground">Scheduled</p>
+                  <p className="text-xs text-muted-foreground">{t('trucks.show.maintenance.scheduled')}</p>
                   <p className="text-lg font-semibold text-blue-600">{maintenanceSummary.scheduled}</p>
                 </div>
                 <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-center">
-                  <p className="text-xs text-muted-foreground">Overdue</p>
+                  <p className="text-xs text-muted-foreground">{t('trucks.show.maintenance.overdue')}</p>
                   <p className="text-lg font-semibold text-red-600">{maintenanceSummary.overdue}</p>
                 </div>
               </div>
             ) : (
               <div className="py-8 text-center text-muted-foreground">
                 <Wrench className="mx-auto mb-4 h-12 w-12 opacity-60" />
-                <p>No maintenance data available for this truck yet.</p>
+                <p>{t('trucks.show.maintenance.empty')}</p>
               </div>
             )}
 
@@ -776,13 +825,13 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
                 {truck.maintenanceRecords.slice(0, 10).map(rec => (
                   <div key={rec.id} className="rounded-lg border p-4">
                     <div className="flex items-center justify-between">
-                      <Badge variant="secondary">{rec.status ?? 'Unknown'}</Badge>
+                      <Badge variant="secondary">{rec.status ?? t('trucks.status.unknown')}</Badge>
                       <span className="text-xs text-muted-foreground">{formatDate(rec.scheduled_date)}</span>
                     </div>
                     {rec.description && <p className="mt-2 text-xs">{rec.description}</p>}
                     <div className="mt-3 grid gap-2 text-xs text-muted-foreground md:grid-cols-2">
-                      <div><span className="font-medium">Cost:</span> {formatCurrency(rec.cost ?? null)}</div>
-                      <div><span className="font-medium">Odometer:</span> {formatKilometers(rec.odometer_reading ?? null, 0)}</div>
+                      <div><span className="font-medium">{t('trucks.show.maintenance.cost')}:</span> {formatCurrency(rec.cost ?? null)}</div>
+                      <div><span className="font-medium">{t('trucks.show.maintenance.odometer')}:</span> {formatKilometers(rec.odometer_reading ?? null, 0)}</div>
                     </div>
                   </div>
                 ))}
@@ -792,21 +841,46 @@ export default function TrucksShow({ truck, activityLogs = [], counts, performan
         </TabsContent>
 
         <TabsContent value="history" className="space-y-6">
-          <DetailSectionCard icon={<History className="h-5 w-5" />} title="Activity History" description="Audit trail of truck changes">
+          <DetailSectionCard
+            icon={<History className="h-5 w-5" />}
+            title={t('trucks.show.history.title')}
+            description={t('trucks.show.history.description')}
+          >
             {activityLogs && activityLogs.length > 0 ? (
               <ActivityLogTable logs={activityLogs} />
             ) : (
               <div className="py-8 text-center text-muted-foreground">
                 <History className="mx-auto mb-4 h-12 w-12 opacity-60" />
-                <p>No activity history available for this truck yet.</p>
+                <p>{t('trucks.show.history.empty')}</p>
               </div>
             )}
           </DetailSectionCard>
         </TabsContent>
       </Tabs>
 
-      {canDeleteTruck && <DeleteConfirmationDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen} title="Delete Truck" description="Are you sure you want to delete this truck? This action cannot be undone." itemName={truck.plate} onConfirm={handleDeleteConfirm} isLoading={isDeleting} />}
-      {canDeactivateTruck && <DeleteConfirmationDialog open={deactivateDialogOpen} onOpenChange={setDeactivateDialogOpen} title="Deactivate Truck" description="This truck will be marked as inactive." itemName={truck.plate} onConfirm={handleDeactivateConfirm} confirmLabel="Deactivate" isLoading={isDeactivating} />}
+      {canDeleteTruck && (
+        <DeleteConfirmationDialog
+          open={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          title={t('trucks.delete.title')}
+          description={t('trucks.delete.description')}
+          itemName={truck.plate}
+          onConfirm={handleDeleteConfirm}
+          isLoading={isDeleting}
+        />
+      )}
+      {canDeactivateTruck && (
+        <DeleteConfirmationDialog
+          open={deactivateDialogOpen}
+          onOpenChange={setDeactivateDialogOpen}
+          title={t('trucks.show.deactivate.title')}
+          description={t('trucks.show.deactivate.description')}
+          itemName={truck.plate}
+          onConfirm={handleDeactivateConfirm}
+          confirmLabel={t('trucks.show.deactivate.confirm')}
+          isLoading={isDeactivating}
+        />
+      )}
     </DetailPageLayout>
   );
 }

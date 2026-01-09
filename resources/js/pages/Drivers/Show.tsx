@@ -13,6 +13,7 @@ import { DetailPageLayout } from '@/components/detail/detail-page-layout';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useState, useMemo } from 'react';
 import { Area, AreaChart, Bar, BarChart as RechartsBarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Legend, Line, LineChart } from 'recharts';
+import { useTranslation } from 'react-i18next';
 
 interface ActivityLog {
   id: number;
@@ -152,47 +153,46 @@ interface GradeReport {
 const numberFormatter = new Intl.NumberFormat('en-ET');
 const currencyFormatter = new Intl.NumberFormat('en-ET', { style: 'currency', currency: 'ETB', maximumFractionDigits: 2 });
 
-const formatNumber = (value?: number | null, options?: Intl.NumberFormatOptions): string => {
-  if (value === null || value === undefined || Number.isNaN(Number(value))) return 'N/A';
+const formatNumber = (value?: number | null, options?: Intl.NumberFormatOptions, fallbackLabel = 'N/A'): string => {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return fallbackLabel;
   if (options) return new Intl.NumberFormat('en-ET', options).format(value);
   return numberFormatter.format(value);
 };
 
-const formatKilometers = (value?: number | null, maximumFractionDigits = 0): string => {
-  const formatted = formatNumber(value, { minimumFractionDigits: maximumFractionDigits, maximumFractionDigits });
-  return formatted === 'N/A' ? formatted : `${formatted} KM`;
+const formatKilometers = (value?: number | null, maximumFractionDigits = 0, fallbackLabel = 'N/A'): string => {
+  const formatted = formatNumber(value, { minimumFractionDigits: maximumFractionDigits, maximumFractionDigits }, fallbackLabel);
+  return formatted === fallbackLabel ? formatted : `${formatted} KM`;
 };
 
-const formatTons = (value?: number | null, maximumFractionDigits = 1): string => {
-  if (value === null || value === undefined || Number.isNaN(Number(value))) return 'N/A';
-  return `${formatNumber(value, { minimumFractionDigits: value > 0 && value < 1 ? maximumFractionDigits : 0, maximumFractionDigits })} t`;
+const formatTons = (value?: number | null, maximumFractionDigits = 1, fallbackLabel = 'N/A'): string => {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return fallbackLabel;
+  return `${formatNumber(
+    value,
+    { minimumFractionDigits: value > 0 && value < 1 ? maximumFractionDigits : 0, maximumFractionDigits },
+    fallbackLabel,
+  )} t`;
 };
 
-const formatFuelEfficiency = (value?: number | null): string => {
-  if (value === null || value === undefined || Number.isNaN(Number(value))) return 'N/A';
-  return `${formatNumber(value, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} KM/L`;
+const formatFuelEfficiency = (value?: number | null, fallbackLabel = 'N/A'): string => {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return fallbackLabel;
+  return `${formatNumber(value, { minimumFractionDigits: 2, maximumFractionDigits: 2 }, fallbackLabel)} KM/L`;
 };
 
-const formatCurrency = (value?: number | null): string => {
-  if (value === null || value === undefined || Number.isNaN(Number(value))) return 'N/A';
+const formatCurrency = (value?: number | null, fallbackLabel = 'N/A'): string => {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return fallbackLabel;
   return currencyFormatter.format(value);
 };
 
-const formatRating = (value?: number | null): string => {
-  if (value === null || value === undefined || Number.isNaN(Number(value))) return 'N/A';
-  return `${formatNumber(value, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} / 5`;
+const formatRating = (value?: number | null, fallbackLabel = 'N/A'): string => {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return fallbackLabel;
+  return `${formatNumber(value, { minimumFractionDigits: 1, maximumFractionDigits: 1 }, fallbackLabel)} / 5`;
 };
 
-const formatDateDisplay = (value?: string | null): string => {
-  if (!value) return 'N/A';
+const formatDateDisplay = (value?: string | null, fallbackLabel = 'N/A'): string => {
+  if (!value) return fallbackLabel;
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return 'N/A';
+  if (Number.isNaN(date.getTime())) return fallbackLabel;
   return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-};
-
-const formatDateTime = (value?: string): string => {
-  if (!value) return 'N/A';
-  return new Date(value).toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 };
 
 const getStatusBadgeColor = (status?: string | null): string => {
@@ -219,7 +219,8 @@ const getSexBadgeColor = (sex?: string | null): string => {
   }
 };
 
-export default function DriversShow({ driver, activityLogs = [], performanceSummary, safetySummary, counts, gradeReport }: DriversShowProps) {
+export default function DriversShow({ driver, activityLogs = [], performanceSummary, safetySummary, gradeReport }: DriversShowProps) {
+  const { t } = useTranslation();
   const { hasPermission } = usePermissions();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -228,9 +229,12 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
   const [activateDialogOpen, setActivateDialogOpen] = useState(false);
   const [isActivating, setIsActivating] = useState(false);
 
+  const driverName = driver.name || t('drivers.show.fallbacks.unknownDriver');
+  const notAvailableLabel = t('drivers.fallbacks.notAvailable');
+
   const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Drivers', href: '/drivers' },
-    { title: driver.name, href: `/drivers/${driver.id}` },
+    { title: t('drivers.breadcrumb'), href: '/drivers' },
+    { title: driverName, href: `/drivers/${driver.id}` },
   ];
 
   const canEditDriver = hasPermission('drivers.edit');
@@ -239,17 +243,28 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
   const canActivateDriver = hasPermission('drivers.activate');
   const canViewDriverTruckAssignments = hasPermission('driver-trucks.view');
 
-  const statusLabel = driver.status ? driver.status.charAt(0).toUpperCase() + driver.status.slice(1) : 'Unknown';
-  const sexLabel = driver.sex ? driver.sex.charAt(0).toUpperCase() + driver.sex.slice(1) : 'Unknown';
+  const statusLabel = driver.status
+    ? driver.status === 'active'
+      ? t('drivers.status.active')
+      : driver.status === 'inactive'
+        ? t('drivers.status.inactive')
+        : driver.status === 'suspended'
+          ? t('drivers.status.suspended')
+          : driver.status
+    : t('drivers.status.unknown');
+  const sexLabel = driver.sex
+    ? driver.sex === 'male'
+      ? t('drivers.gender.male')
+      : driver.sex === 'female'
+        ? t('drivers.gender.female')
+        : t('drivers.gender.unknown')
+    : t('drivers.gender.unknown');
 
-  const totalAssignments = counts?.assignments ?? driver.driverTrucks?.length ?? 0;
-  const activeAssignmentsCount = driver.driverTrucks?.filter(assignment => assignment.is_attached).length ?? 0;
-  const totalDistanceLabel = performanceSummary ? formatKilometers(performanceSummary.total_distance_km, 0) : 'N/A';
-  const totalTripsLabel = performanceSummary ? formatNumber(performanceSummary.total_trips, { maximumFractionDigits: 0 }) : 'N/A';
-  const fuelEfficiencyLabel = performanceSummary ? formatFuelEfficiency(performanceSummary.avg_fuel_efficiency) : 'N/A';
-  const averageRatingLabel = performanceSummary ? formatRating(performanceSummary.avg_customer_rating) : 'N/A';
-  const safetyIncidentCountLabel = safetySummary ? formatNumber(safetySummary.total_records, { maximumFractionDigits: 0 }) : 'N/A';
-  const totalDamageCostLabel = safetySummary ? formatCurrency(safetySummary.total_damage_cost ?? null) : null;
+  const totalDistanceLabel = performanceSummary ? formatKilometers(performanceSummary.total_distance_km, 0, notAvailableLabel) : notAvailableLabel;
+  const totalTripsLabel = performanceSummary ? formatNumber(performanceSummary.total_trips, { maximumFractionDigits: 0 }, notAvailableLabel) : notAvailableLabel;
+  const fuelEfficiencyLabel = performanceSummary ? formatFuelEfficiency(performanceSummary.avg_fuel_efficiency, notAvailableLabel) : notAvailableLabel;
+  const safetyIncidentCountLabel = safetySummary ? formatNumber(safetySummary.total_records, { maximumFractionDigits: 0 }, notAvailableLabel) : notAvailableLabel;
+  const totalDamageCostLabel = safetySummary ? formatCurrency(safetySummary.total_damage_cost ?? null, notAvailableLabel) : null;
 
   // Calculate cost metrics
   const totalFuelCost = performanceSummary?.total_fuel_cost ?? 0;
@@ -262,19 +277,19 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
 
   // Prepare chart data
   const safetyChartData = safetySummary ? [
-    { name: 'Accidents', value: safetySummary.accidents, fill: '#ef4444' },
-    { name: 'Violations', value: safetySummary.violations, fill: '#f97316' },
-    { name: 'Warnings', value: safetySummary.warnings, fill: '#eab308' },
+    { name: t('drivers.show.safety.accidents'), value: safetySummary.accidents, fill: '#ef4444' },
+    { name: t('drivers.show.safety.violations'), value: safetySummary.violations, fill: '#f97316' },
+    { name: t('drivers.show.safety.warnings'), value: safetySummary.warnings, fill: '#eab308' },
   ].filter(item => item.value > 0) : [];
 
   const severityChartData = safetySummary ? [
-    { name: 'Critical', value: safetySummary.critical, fill: '#dc2626' },
-    { name: 'Major', value: safetySummary.major, fill: '#f97316' },
-    { name: 'Minor', value: safetySummary.minor, fill: '#facc15' },
+    { name: t('drivers.show.safety.critical'), value: safetySummary.critical, fill: '#dc2626' },
+    { name: t('drivers.show.safety.major'), value: safetySummary.major, fill: '#f97316' },
+    { name: t('drivers.show.safety.minor'), value: safetySummary.minor, fill: '#facc15' },
   ].filter(item => item.value > 0) : [];
 
   const recentPerformances = driver.performances?.slice(0, 10).map((perf, index) => ({
-    name: `Trip ${index + 1}`,
+    name: t('drivers.show.performance.tripLabel', { index: index + 1 }),
     distance: (perf.DistanceWCargo ?? 0) + (perf.DistanceWOCargo ?? 0),
     tonnage: perf.cargo_volume_mt ?? 0,
     fuel: perf.fuelInLitter ?? 0,
@@ -283,27 +298,39 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
   const overviewSummaryCards = [
     {
       key: 'trips',
-      label: 'Completed Trips',
+      label: t('drivers.show.summary.completedTrips'),
       value: totalTripsLabel,
-      helper: performanceSummary ? `Distance ${totalDistanceLabel}` : 'No performance data yet',
+      helper: performanceSummary
+        ? t('drivers.show.summary.distanceHelper', { value: totalDistanceLabel })
+        : t('drivers.show.summary.noPerformanceData'),
     },
     {
       key: 'efficiency',
-      label: 'Fuel Efficiency',
+      label: t('drivers.show.summary.fuelEfficiency'),
       value: fuelEfficiencyLabel,
-      helper: performanceSummary ? `${formatNumber(performanceSummary.total_fuel_liters, { maximumFractionDigits: 0 })} L total` : 'No fuel data',
+      helper: performanceSummary
+        ? t('drivers.show.summary.fuelHelper', {
+          value: formatNumber(performanceSummary.total_fuel_liters, { maximumFractionDigits: 0 }, notAvailableLabel),
+        })
+        : t('drivers.show.summary.noFuelData'),
     },
     {
       key: 'cargo',
-      label: 'Total Cargo',
-      value: performanceSummary ? formatTons(performanceSummary.total_cargo_tonnage, 1) : 'N/A',
-      helper: performanceSummary ? `Avg ${formatTons(performanceSummary.total_cargo_tonnage / Math.max(performanceSummary.total_trips, 1), 1)} per trip` : 'No cargo data',
+      label: t('drivers.show.summary.totalCargo'),
+      value: performanceSummary ? formatTons(performanceSummary.total_cargo_tonnage, 1, notAvailableLabel) : notAvailableLabel,
+      helper: performanceSummary
+        ? t('drivers.show.summary.cargoHelper', {
+          value: formatTons(performanceSummary.total_cargo_tonnage / Math.max(performanceSummary.total_trips, 1), 1, notAvailableLabel),
+        })
+        : t('drivers.show.summary.noCargoData'),
     },
     {
       key: 'safety',
-      label: 'Safety Score',
+      label: t('drivers.show.summary.safetyScore'),
       value: safetyIncidentCountLabel,
-      helper: totalDamageCostLabel ? `Damage ${totalDamageCostLabel}` : 'No incidents',
+      helper: totalDamageCostLabel
+        ? t('drivers.show.summary.damageHelper', { value: totalDamageCostLabel })
+        : t('drivers.show.summary.noIncidents'),
     },
   ];
 
@@ -317,11 +344,11 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
       onSuccess: () => {
         setDeleteDialogOpen(false);
         setIsDeleting(false);
-        toast({ title: '✅ Driver Deleted', description: 'The driver has been removed successfully.' });
+        toast({ title: t('drivers.show.delete.successTitle'), description: t('drivers.show.delete.successDescription') });
       },
       onError: () => {
         setIsDeleting(false);
-        toast({ title: '❌ Delete Failed', description: 'Unable to delete this driver.', variant: 'destructive' });
+        toast({ title: t('drivers.show.delete.failedTitle'), description: t('drivers.show.delete.failedDescription'), variant: 'destructive' });
       },
     });
   };
@@ -333,11 +360,11 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
       onSuccess: () => {
         setDeactivateDialogOpen(false);
         setIsDeactivating(false);
-        toast({ title: '✅ Driver Deactivated', description: 'The driver has been deactivated successfully.' });
+        toast({ title: t('drivers.show.deactivate.successTitle'), description: t('drivers.show.deactivate.successDescription') });
       },
       onError: () => {
         setIsDeactivating(false);
-        toast({ title: '❌ Deactivation Failed', description: 'Unable to deactivate this driver.', variant: 'destructive' });
+        toast({ title: t('drivers.show.deactivate.failedTitle'), description: t('drivers.show.deactivate.failedDescription'), variant: 'destructive' });
       },
     });
   };
@@ -349,27 +376,27 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
       onSuccess: () => {
         setActivateDialogOpen(false);
         setIsActivating(false);
-        toast({ title: '✅ Driver Activated', description: 'The driver has been activated successfully.' });
+        toast({ title: t('drivers.show.activate.successTitle'), description: t('drivers.show.activate.successDescription') });
       },
       onError: () => {
         setIsActivating(false);
-        toast({ title: '❌ Activation Failed', description: 'Unable to activate this driver.', variant: 'destructive' });
+        toast({ title: t('drivers.show.activate.failedTitle'), description: t('drivers.show.activate.failedDescription'), variant: 'destructive' });
       },
     });
   };
 
   return (
     <DetailPageLayout
-      title={driver.name}
-      subtitle="Comprehensive driver profile and performance"
+      title={driverName}
+      subtitle={t('drivers.show.subtitle')}
       breadcrumbs={breadcrumbs}
-      headTitle={`View Driver - ${driver.name}`}
+      headTitle={t('drivers.show.headTitle', { name: driverName })}
       icon={<User className="h-6 w-6 text-indigo-700 dark:text-indigo-300" />}
       iconWrapperClassName="bg-indigo-100 dark:bg-indigo-900/30"
       leading={
         <Button variant="outline" size="sm" onClick={() => router.get('/drivers')}>
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
+          {t('drivers.show.actions.back')}
         </Button>
       }
       actions={
@@ -378,26 +405,26 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
             <Button variant="outline" asChild>
               <Link href={`/drivers/${driver.id}/edit`}>
                 <Edit className="h-4 w-4 mr-2" />
-                Edit
+                {t('drivers.actions.edit')}
               </Link>
             </Button>
           )}
           {showDeactivateButton && (
             <Button variant="outline" onClick={() => setDeactivateDialogOpen(true)} className="border-amber-200 text-amber-600 hover:bg-amber-50">
               <Ban className="h-4 w-4 mr-2" />
-              Deactivate
+              {t('drivers.show.actions.deactivate')}
             </Button>
           )}
           {showActivateButton && (
             <Button variant="outline" onClick={() => setActivateDialogOpen(true)} className="border-emerald-200 text-emerald-600 hover:bg-emerald-50">
               <CheckCircle className="h-4 w-4 mr-2" />
-              Activate
+              {t('drivers.show.actions.activate')}
             </Button>
           )}
           {canDeleteDriver && (
             <Button variant="outline" onClick={() => setDeleteDialogOpen(true)} className="border-red-200 text-red-600 hover:bg-red-50">
               <Trash2 className="h-4 w-4 mr-2" />
-              Delete
+              {t('drivers.actions.delete')}
             </Button>
           )}
         </div>
@@ -405,57 +432,61 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
     >
       <Tabs defaultValue="overview" className="space-y-6">
         <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="overview"><CheckCircle className="h-4 w-4 mr-2" /> Overview</TabsTrigger>
-          <TabsTrigger value="performance"><BarChart3 className="h-4 w-4 mr-2" /> Performance</TabsTrigger>
-          <TabsTrigger value="analytics"><TrendingUp className="h-4 w-4 mr-2" /> Analytics</TabsTrigger>
-          <TabsTrigger value="safety"><ShieldCheck className="h-4 w-4 mr-2" /> Safety</TabsTrigger>
-          <TabsTrigger value="history"><History className="h-4 w-4 mr-2" /> History</TabsTrigger>
+          <TabsTrigger value="overview"><CheckCircle className="h-4 w-4 mr-2" /> {t('drivers.show.tabs.overview')}</TabsTrigger>
+          <TabsTrigger value="performance"><BarChart3 className="h-4 w-4 mr-2" /> {t('drivers.show.tabs.performance')}</TabsTrigger>
+          <TabsTrigger value="analytics"><TrendingUp className="h-4 w-4 mr-2" /> {t('drivers.show.tabs.analytics')}</TabsTrigger>
+          <TabsTrigger value="safety"><ShieldCheck className="h-4 w-4 mr-2" /> {t('drivers.show.tabs.safety')}</TabsTrigger>
+          <TabsTrigger value="history"><History className="h-4 w-4 mr-2" /> {t('drivers.show.tabs.history')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
           <DetailSummaryGrid items={overviewSummaryCards} />
           <div className="grid gap-6 lg:grid-cols-[1fr,20rem]">
             <div className="space-y-6">
-              <DetailSectionCard icon={<User className="h-5 w-5" />} title="Basic Information" description="Personal and professional details">
+              <DetailSectionCard
+                icon={<User className="h-5 w-5" />}
+                title={t('drivers.show.sections.basic.title')}
+                description={t('drivers.show.sections.basic.description')}
+              >
                 <div className="grid gap-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="rounded-lg border p-3">
-                      <p className="text-xs font-semibold uppercase text-muted-foreground">Status</p>
+                      <p className="text-xs font-semibold uppercase text-muted-foreground">{t('drivers.labels.status')}</p>
                       <Badge className={`mt-2 flex w-fit items-center gap-1 ${getStatusBadgeColor(driver.status)}`}>{statusLabel}</Badge>
                     </div>
                     <div className="rounded-lg border p-3">
-                      <p className="text-xs font-semibold uppercase text-muted-foreground">Gender</p>
+                      <p className="text-xs font-semibold uppercase text-muted-foreground">{t('drivers.labels.gender')}</p>
                       <Badge className={`mt-2 flex w-fit items-center gap-1 ${getSexBadgeColor(driver.sex)}`}>{sexLabel}</Badge>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="rounded-lg border p-3">
-                      <p className="text-xs font-semibold uppercase text-muted-foreground">Driver ID</p>
+                      <p className="text-xs font-semibold uppercase text-muted-foreground">{t('drivers.labels.driverId')}</p>
                       <p className="mt-2 font-mono text-sm">{driver.driverid}</p>
                     </div>
                     <div className="rounded-lg border p-3">
-                      <p className="text-xs font-semibold uppercase text-muted-foreground">Mobile</p>
-                      <p className="mt-2 text-sm">{driver.mobile || 'N/A'}</p>
+                      <p className="text-xs font-semibold uppercase text-muted-foreground">{t('drivers.labels.mobile')}</p>
+                      <p className="mt-2 text-sm">{driver.mobile || notAvailableLabel}</p>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="rounded-lg border p-3">
-                      <p className="text-xs font-semibold uppercase text-muted-foreground">Zone</p>
-                      <p className="mt-2 text-sm">{driver.zone || 'N/A'}</p>
+                      <p className="text-xs font-semibold uppercase text-muted-foreground">{t('drivers.labels.zone')}</p>
+                      <p className="mt-2 text-sm">{driver.zone || notAvailableLabel}</p>
                     </div>
                     <div className="rounded-lg border p-3">
-                      <p className="text-xs font-semibold uppercase text-muted-foreground">Woreda</p>
-                      <p className="mt-2 text-sm">{driver.woreda || 'N/A'}</p>
+                      <p className="text-xs font-semibold uppercase text-muted-foreground">{t('drivers.labels.woreda')}</p>
+                      <p className="mt-2 text-sm">{driver.woreda || notAvailableLabel}</p>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="rounded-lg border p-3">
-                      <p className="text-xs font-semibold uppercase text-muted-foreground">Kebele</p>
-                      <p className="mt-2 text-sm">{driver.kebele || 'N/A'}</p>
+                      <p className="text-xs font-semibold uppercase text-muted-foreground">{t('drivers.labels.kebele')}</p>
+                      <p className="mt-2 text-sm">{driver.kebele || notAvailableLabel}</p>
                     </div>
                     <div className="rounded-lg border p-3">
-                      <p className="text-xs font-semibold uppercase text-muted-foreground">House Number</p>
-                      <p className="mt-2 text-sm">{driver.housenumber || 'N/A'}</p>
+                      <p className="text-xs font-semibold uppercase text-muted-foreground">{t('drivers.labels.housenumber')}</p>
+                      <p className="mt-2 text-sm">{driver.housenumber || notAvailableLabel}</p>
                     </div>
                   </div>
                 </div>
@@ -463,13 +494,13 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
 
               <DetailSectionCard
                 icon={<Truck className="h-5 w-5" />}
-                title="Truck Assignments"
-                description="Recent vehicles paired with this driver"
+                title={t('drivers.show.sections.assignments.title')}
+                description={t('drivers.show.sections.assignments.description')}
                 actions={
                   canViewDriverTruckAssignments && driver.driverTrucks && driver.driverTrucks.length > 0 ? (
                     <Button variant="link" size="sm" className="px-0" asChild>
                       <Link href={`/driver-trucks?driver_id=${driver.id}`} className="flex items-center gap-1">
-                        View all
+                        {t('drivers.show.actions.viewAll')}
                         <ArrowUpRight className="h-4 w-4" />
                       </Link>
                     </Button>
@@ -479,19 +510,21 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
                 {driver.driverTrucks && driver.driverTrucks.length > 0 ? (
                   <div className="space-y-4">
                     {driver.driverTrucks.slice(0, 5).map(assignment => {
-                      const plate = assignment.truck?.plate ?? assignment.plate ?? 'N/A';
+                      const plate = assignment.truck?.plate ?? assignment.plate ?? notAvailableLabel;
                       return (
                         <div key={assignment.id} className="rounded-lg border p-4">
                           <div className="flex items-center justify-between">
                             <div>
                               <p className="font-semibold">{plate}</p>
-                              <p className="text-xs text-muted-foreground">Assignment #{assignment.id}</p>
+                              <p className="text-xs text-muted-foreground">{t('drivers.show.assignments.assignmentLabel', { id: assignment.id })}</p>
                             </div>
-                            <Badge variant={assignment.is_attached ? 'default' : 'secondary'}>{assignment.is_attached ? 'Attached' : 'Detached'}</Badge>
+                            <Badge variant={assignment.is_attached ? 'default' : 'secondary'}>
+                              {assignment.is_attached ? t('drivers.show.assignments.attached') : t('drivers.show.assignments.detached')}
+                            </Badge>
                           </div>
                           <div className="mt-3 grid gap-2 text-xs text-muted-foreground md:grid-cols-2">
-                            <div><span className="font-medium">Assigned:</span> {formatDateDisplay(assignment.date_recived)}</div>
-                            <div><span className="font-medium">Detached:</span> {formatDateDisplay(assignment.date_detach)}</div>
+                            <div><span className="font-medium">{t('drivers.show.assignments.assigned')}:</span> {formatDateDisplay(assignment.date_recived, notAvailableLabel)}</div>
+                            <div><span className="font-medium">{t('drivers.show.assignments.detachedAt')}:</span> {formatDateDisplay(assignment.date_detach, notAvailableLabel)}</div>
                           </div>
                         </div>
                       );
@@ -500,30 +533,34 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
                 ) : (
                   <div className="py-8 text-center text-muted-foreground">
                     <Truck className="mx-auto mb-3 h-10 w-10 opacity-60" />
-                    <p>No truck assignments recorded for this driver yet.</p>
+                    <p>{t('drivers.show.assignments.empty')}</p>
                   </div>
                 )}
               </DetailSectionCard>
 
-              <DetailSectionCard icon={<Calendar className="h-5 w-5" />} title="Employment Information" description="Hiring and employment details">
+              <DetailSectionCard
+                icon={<Calendar className="h-5 w-5" />}
+                title={t('drivers.show.sections.employment.title')}
+                description={t('drivers.show.sections.employment.description')}
+              >
                 <div className="grid gap-4 text-sm md:grid-cols-2">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Birthdate</span>
-                    <span className="font-semibold">{formatDateDisplay(driver.birthdate)}</span>
+                    <span className="text-muted-foreground">{t('drivers.show.fields.birthdate')}</span>
+                    <span className="font-semibold">{formatDateDisplay(driver.birthdate, notAvailableLabel)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Hired Date</span>
-                    <span className="font-semibold">{formatDateDisplay(driver.hireddate)}</span>
+                    <span className="text-muted-foreground">{t('drivers.show.fields.hireddate')}</span>
+                    <span className="font-semibold">{formatDateDisplay(driver.hireddate, notAvailableLabel)}</span>
                   </div>
                 </div>
               </DetailSectionCard>
 
-              <DetailSectionCard icon={<ExternalLink className="h-5 w-5" />} title="Quick Links">
+              <DetailSectionCard icon={<ExternalLink className="h-5 w-5" />} title={t('drivers.show.sections.quickLinks')}>
                 <div className="grid gap-3 md:grid-cols-2">
                   <Button variant="outline" asChild className="w-full">
                     <Link href={`/performances?driver=${driver.id}`}>
                       <Package className="h-4 w-4 mr-2" />
-                      View All Performances
+                      {t('drivers.show.actions.viewAllPerformances')}
                       <ExternalLink className="h-3 w-3 ml-auto" />
                     </Link>
                   </Button>
@@ -531,7 +568,7 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
                     <Button variant="outline" asChild className="w-full">
                       <Link href={`/driver-trucks?driver_id=${driver.id}`}>
                         <Truck className="h-4 w-4 mr-2" />
-                        View All Assignments
+                        {t('drivers.show.actions.viewAllAssignments')}
                         <ExternalLink className="h-3 w-3 ml-auto" />
                       </Link>
                     </Button>
@@ -542,13 +579,19 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
 
             <div className="space-y-4">
               {gradeReport && (
-                <DetailSectionCard icon={<Award className="h-5 w-5 text-amber-600" />} title="Driver Grade" description="Performance rating">
+                <DetailSectionCard
+                  icon={<Award className="h-5 w-5 text-amber-600" />}
+                  title={t('drivers.show.grade.title')}
+                  description={t('drivers.show.grade.description')}
+                >
                   <div className="flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 p-3">
                     <div>
-                      <p className="text-xs font-semibold uppercase text-amber-700">Overall Score</p>
+                      <p className="text-xs font-semibold uppercase text-amber-700">{t('drivers.show.grade.overallScore')}</p>
                       <div className="mt-1 flex items-baseline gap-3">
                         <span className="text-3xl font-bold text-amber-800">{gradeReport.overall.score.toFixed(1)}</span>
-                        <span className="text-sm text-muted-foreground">{gradeReport.overall.score.toFixed(1)} / 100</span>
+                        <span className="text-sm text-muted-foreground">
+                          {t('drivers.show.grade.scoreOutOf', { score: gradeReport.overall.score.toFixed(1) })}
+                        </span>
                       </div>
                     </div>
                     <div className="flex h-14 w-14 items-center justify-center rounded-full bg-amber-500/10 text-2xl font-semibold text-amber-700">{gradeReport.overall.letter}</div>
@@ -557,36 +600,36 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
               )}
 
               {performanceSummary && (
-                <DetailSectionCard icon={<BarChart3 className="h-5 w-5" />} title="Performance Summary">
+                <DetailSectionCard icon={<BarChart3 className="h-5 w-5" />} title={t('drivers.show.performance.summaryTitle')}>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Distance</span>
-                      <span className="font-semibold">{formatKilometers(performanceSummary.total_distance_km, 0)}</span>
+                      <span className="text-muted-foreground">{t('drivers.show.performance.distance')}</span>
+                      <span className="font-semibold">{formatKilometers(performanceSummary.total_distance_km, 0, notAvailableLabel)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Trips</span>
-                      <span className="font-semibold">{formatNumber(performanceSummary.total_trips)}</span>
+                      <span className="text-muted-foreground">{t('drivers.show.performance.trips')}</span>
+                      <span className="font-semibold">{formatNumber(performanceSummary.total_trips, undefined, notAvailableLabel)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Cargo</span>
-                      <span className="font-semibold">{formatTons(performanceSummary.total_cargo_tonnage, 1)}</span>
+                      <span className="text-muted-foreground">{t('drivers.show.performance.cargo')}</span>
+                      <span className="font-semibold">{formatTons(performanceSummary.total_cargo_tonnage, 1, notAvailableLabel)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Fuel Efficiency</span>
-                      <span className="font-semibold">{formatFuelEfficiency(performanceSummary.avg_fuel_efficiency)}</span>
+                      <span className="text-muted-foreground">{t('drivers.show.performance.fuelEfficiency')}</span>
+                      <span className="font-semibold">{formatFuelEfficiency(performanceSummary.avg_fuel_efficiency, notAvailableLabel)}</span>
                     </div>
                     <div className="flex justify-between border-t pt-2">
-                      <span className="text-muted-foreground">Fuel Cost</span>
-                      <span className="font-semibold">{formatCurrency(totalFuelCost)}</span>
+                      <span className="text-muted-foreground">{t('drivers.show.performance.fuelCost')}</span>
+                      <span className="font-semibold">{formatCurrency(totalFuelCost, notAvailableLabel)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Cost per KM</span>
-                      <span className="font-semibold">{formatCurrency(avgCostPerKm)}</span>
+                      <span className="text-muted-foreground">{t('drivers.show.performance.costPerKm')}</span>
+                      <span className="font-semibold">{formatCurrency(avgCostPerKm, notAvailableLabel)}</span>
                     </div>
                     {performanceSummary.avg_customer_rating && (
                       <div className="flex justify-between border-t pt-2">
-                        <span className="text-muted-foreground">Avg Rating</span>
-                        <span className="font-semibold">{formatRating(performanceSummary.avg_customer_rating)}</span>
+                        <span className="text-muted-foreground">{t('drivers.show.performance.avgRating')}</span>
+                        <span className="font-semibold">{formatRating(performanceSummary.avg_customer_rating, notAvailableLabel)}</span>
                       </div>
                     )}
                   </div>
@@ -594,7 +637,7 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
               )}
 
               {safetyChartData.length > 0 && (
-                <DetailSectionCard icon={<ShieldCheck className="h-5 w-5" />} title="Safety Overview">
+                <DetailSectionCard icon={<ShieldCheck className="h-5 w-5" />} title={t('drivers.show.safety.overviewTitle')}>
                   <div className="h-48">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
@@ -628,34 +671,49 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
           {performanceSummary && (
             <div className="grid gap-4 md:grid-cols-4">
               <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-center">
-                <p className="text-xs font-semibold uppercase text-muted-foreground">Total Distance</p>
-                <p className="mt-2 text-3xl font-bold text-blue-700">{formatKilometers(performanceSummary.total_distance_km, 0)}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{performanceSummary.total_trips} trips</p>
+                <p className="text-xs font-semibold uppercase text-muted-foreground">{t('drivers.show.performance.cards.totalDistance')}</p>
+                <p className="mt-2 text-3xl font-bold text-blue-700">{formatKilometers(performanceSummary.total_distance_km, 0, notAvailableLabel)}</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {t('drivers.show.performance.cards.tripCount', { count: performanceSummary.total_trips })}
+                </p>
               </div>
               <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-center">
-                <p className="text-xs font-semibold uppercase text-muted-foreground">Total Cargo</p>
-                <p className="mt-2 text-3xl font-bold text-green-700">{formatTons(performanceSummary.total_cargo_tonnage, 0)}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{formatTons(performanceSummary.total_cargo_tonnage / Math.max(performanceSummary.total_trips, 1), 1)} avg</p>
+                <p className="text-xs font-semibold uppercase text-muted-foreground">{t('drivers.show.performance.cards.totalCargo')}</p>
+                <p className="mt-2 text-3xl font-bold text-green-700">{formatTons(performanceSummary.total_cargo_tonnage, 0, notAvailableLabel)}</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {t('drivers.show.performance.cards.cargoAvg', {
+                    value: formatTons(performanceSummary.total_cargo_tonnage / Math.max(performanceSummary.total_trips, 1), 1, notAvailableLabel),
+                  })}
+                </p>
               </div>
               <div className="rounded-lg border border-orange-200 bg-orange-50 p-4 text-center">
-                <p className="text-xs font-semibold uppercase text-muted-foreground">Fuel Efficiency</p>
-                <p className="mt-2 text-3xl font-bold text-orange-700">{formatFuelEfficiency(performanceSummary.avg_fuel_efficiency)}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{formatNumber(performanceSummary.total_fuel_liters, { maximumFractionDigits: 0 })} L total</p>
+                <p className="text-xs font-semibold uppercase text-muted-foreground">{t('drivers.show.performance.cards.fuelEfficiency')}</p>
+                <p className="mt-2 text-3xl font-bold text-orange-700">{formatFuelEfficiency(performanceSummary.avg_fuel_efficiency, notAvailableLabel)}</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {t('drivers.show.performance.cards.fuelTotal', {
+                    value: formatNumber(performanceSummary.total_fuel_liters, { maximumFractionDigits: 0 }, notAvailableLabel),
+                  })}
+                </p>
               </div>
               <div className="rounded-lg border border-purple-200 bg-purple-50 p-4 text-center">
-                <p className="text-xs font-semibold uppercase text-muted-foreground">Fuel Cost</p>
-                <p className="mt-2 text-3xl font-bold text-purple-700">{formatCurrency(totalFuelCost)}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{formatCurrency(avgCostPerKm)} per KM</p>
+                <p className="text-xs font-semibold uppercase text-muted-foreground">{t('drivers.show.performance.cards.fuelCost')}</p>
+                <p className="mt-2 text-3xl font-bold text-purple-700">{formatCurrency(totalFuelCost, notAvailableLabel)}</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {t('drivers.show.performance.cards.costPerKm', { value: formatCurrency(avgCostPerKm, notAvailableLabel) })}
+                </p>
               </div>
             </div>
           )}
 
-          <DetailSectionCard icon={<BarChart3 className="h-5 w-5" />} title="Performance Records" description="Recent operational trips"
+          <DetailSectionCard
+            icon={<BarChart3 className="h-5 w-5" />}
+            title={t('drivers.show.performance.recordsTitle')}
+            description={t('drivers.show.performance.recordsDescription')}
             actions={
               driver.performances && driver.performances.length > 0 ? (
                 <Button variant="link" size="sm" className="px-0" asChild>
                   <Link href={`/performances?driver=${driver.id}`} className="flex items-center gap-1">
-                    View all
+                    {t('drivers.show.actions.viewAll')}
                     <ArrowUpRight className="h-4 w-4" />
                   </Link>
                 </Button>
@@ -669,9 +727,9 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
                         <Link href={`/performances/${perf.id}`} className="font-semibold text-blue-600 hover:underline">
-                          Performance #{perf.id}
+                          {t('drivers.show.performance.recordLabel', { id: perf.id })}
                         </Link>
-                        <p className="text-xs text-muted-foreground">{formatDateDisplay(perf.DateDispach)}</p>
+                        <p className="text-xs text-muted-foreground">{formatDateDisplay(perf.DateDispach, notAvailableLabel)}</p>
                         {perf.origin && perf.destination && (
                           <p className="text-xs text-muted-foreground mt-1">
                             <MapPin className="h-3 w-3 inline mr-1" />
@@ -681,26 +739,26 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
                       </div>
                       {perf.operation && (
                         <Link href={`/operations/${perf.operation.id}`} className="text-sm text-blue-600 hover:underline">
-                          View Operation
+                          {t('drivers.show.performance.viewOperation')}
                         </Link>
                       )}
                     </div>
                     <div className="mt-3 grid gap-2 text-xs md:grid-cols-4">
                       <div className="rounded-lg bg-muted p-2">
-                        <span className="font-medium text-muted-foreground">Distance:</span>
-                        <span className="ml-1 font-semibold">{formatKilometers((perf.DistanceWCargo ?? 0) + (perf.DistanceWOCargo ?? 0), 0)}</span>
+                        <span className="font-medium text-muted-foreground">{t('drivers.show.performance.distance')}:</span>
+                        <span className="ml-1 font-semibold">{formatKilometers((perf.DistanceWCargo ?? 0) + (perf.DistanceWOCargo ?? 0), 0, notAvailableLabel)}</span>
                       </div>
                       <div className="rounded-lg bg-muted p-2">
-                        <span className="font-medium text-muted-foreground">Cargo:</span>
-                        <span className="ml-1 font-semibold">{formatTons(perf.cargo_volume_mt ?? null, 1)}</span>
+                        <span className="font-medium text-muted-foreground">{t('drivers.show.performance.cargo')}:</span>
+                        <span className="ml-1 font-semibold">{formatTons(perf.cargo_volume_mt ?? null, 1, notAvailableLabel)}</span>
                       </div>
                       <div className="rounded-lg bg-muted p-2">
-                        <span className="font-medium text-muted-foreground">Ton-KM:</span>
-                        <span className="ml-1 font-semibold">{formatNumber(perf.tonkm ?? null)}</span>
+                        <span className="font-medium text-muted-foreground">{t('drivers.show.performance.tonKm')}:</span>
+                        <span className="ml-1 font-semibold">{formatNumber(perf.tonkm ?? null, undefined, notAvailableLabel)}</span>
                       </div>
                       <div className="rounded-lg bg-muted p-2">
-                        <span className="font-medium text-muted-foreground">Fuel:</span>
-                        <span className="ml-1 font-semibold">{formatNumber(perf.fuelInLitter ?? null)} L</span>
+                        <span className="font-medium text-muted-foreground">{t('drivers.show.performance.fuel')}:</span>
+                        <span className="ml-1 font-semibold">{formatNumber(perf.fuelInLitter ?? null, undefined, notAvailableLabel)} L</span>
                       </div>
                     </div>
                   </div>
@@ -709,7 +767,7 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
             ) : (
               <div className="py-8 text-center text-muted-foreground">
                 <BarChart3 className="mx-auto mb-4 h-12 w-12 opacity-60" />
-                <p>No performance records found for this driver yet.</p>
+                <p>{t('drivers.show.performance.empty')}</p>
               </div>
             )}
           </DetailSectionCard>
@@ -719,7 +777,7 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
           {performanceSummary && (
             <div className="grid gap-6 lg:grid-cols-2">
               {recentPerformances.length > 0 && (
-                <DetailSectionCard title="Recent Performance Trends" icon={<TrendingUp className="h-5 w-5" />}>
+                <DetailSectionCard title={t('drivers.show.analytics.recentTrends')} icon={<TrendingUp className="h-5 w-5" />}>
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={recentPerformances}>
@@ -729,9 +787,9 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
                         <YAxis yAxisId="right" orientation="right" />
                         <Tooltip />
                         <Legend />
-                        <Line yAxisId="left" type="monotone" dataKey="distance" stroke="#3b82f6" name="Distance (KM)" />
-                        <Line yAxisId="right" type="monotone" dataKey="tonnage" stroke="#22c55e" name="Tonnage (MT)" />
-                        <Line yAxisId="right" type="monotone" dataKey="fuel" stroke="#f97316" name="Fuel (L)" />
+                        <Line yAxisId="left" type="monotone" dataKey="distance" stroke="#3b82f6" name={t('drivers.show.analytics.distance')} />
+                        <Line yAxisId="right" type="monotone" dataKey="tonnage" stroke="#22c55e" name={t('drivers.show.analytics.tonnage')} />
+                        <Line yAxisId="right" type="monotone" dataKey="fuel" stroke="#f97316" name={t('drivers.show.analytics.fuel')} />
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
@@ -739,7 +797,7 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
               )}
 
               {safetyChartData.length > 0 && (
-                <DetailSectionCard title="Safety Incidents by Type" icon={<ShieldCheck className="h-5 w-5" />}>
+                <DetailSectionCard title={t('drivers.show.analytics.safetyByType')} icon={<ShieldCheck className="h-5 w-5" />}>
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
@@ -769,7 +827,7 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
           )}
 
           {severityChartData.length > 0 && (
-            <DetailSectionCard title="Incidents by Severity" icon={<AlertCircle className="h-5 w-5" />}>
+            <DetailSectionCard title={t('drivers.show.analytics.severity')} icon={<AlertCircle className="h-5 w-5" />}>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <RechartsBarChart data={severityChartData}>
@@ -778,7 +836,7 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
                     <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Bar dataKey="value" name="Incidents">
+                    <Bar dataKey="value" name={t('drivers.show.analytics.incidents')}>
                       {severityChartData.map((entry, index) => (
                         <Cell key={index} fill={entry.fill} />
                       ))}
@@ -789,45 +847,57 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
             </DetailSectionCard>
           )}
 
-          <DetailSectionCard title="Efficiency Metrics" icon={<Gauge className="h-5 w-5" />}>
+          <DetailSectionCard title={t('drivers.show.analytics.efficiency')} icon={<Gauge className="h-5 w-5" />}>
             <div className="grid gap-4 md:grid-cols-4">
               <div className="rounded-lg border p-3">
-                <p className="text-xs font-semibold uppercase text-muted-foreground">Avg Distance/Trip</p>
-                <p className="mt-2 font-semibold">{formatKilometers(performanceSummary ? performanceSummary.total_distance_km / Math.max(performanceSummary.total_trips, 1) : 0, 1)}</p>
+                <p className="text-xs font-semibold uppercase text-muted-foreground">{t('drivers.show.analytics.avgDistance')}</p>
+                <p className="mt-2 font-semibold">
+                  {formatKilometers(
+                    performanceSummary ? performanceSummary.total_distance_km / Math.max(performanceSummary.total_trips, 1) : 0,
+                    1,
+                    notAvailableLabel,
+                  )}
+                </p>
               </div>
               <div className="rounded-lg border p-3">
-                <p className="text-xs font-semibold uppercase text-muted-foreground">Fuel Efficiency</p>
-                <p className="mt-2 font-semibold">{formatFuelEfficiency(performanceSummary?.avg_fuel_efficiency)}</p>
+                <p className="text-xs font-semibold uppercase text-muted-foreground">{t('drivers.show.analytics.fuelEfficiency')}</p>
+                <p className="mt-2 font-semibold">{formatFuelEfficiency(performanceSummary?.avg_fuel_efficiency, notAvailableLabel)}</p>
               </div>
               <div className="rounded-lg border p-3">
-                <p className="text-xs font-semibold uppercase text-muted-foreground">Cost per Trip</p>
-                <p className="mt-2 font-semibold">{formatCurrency(avgCostPerTrip)}</p>
+                <p className="text-xs font-semibold uppercase text-muted-foreground">{t('drivers.show.analytics.costPerTrip')}</p>
+                <p className="mt-2 font-semibold">{formatCurrency(avgCostPerTrip, notAvailableLabel)}</p>
               </div>
               <div className="rounded-lg border p-3">
-                <p className="text-xs font-semibold uppercase text-muted-foreground">Avg Payload</p>
-                <p className="mt-2 font-semibold">{formatTons(performanceSummary ? performanceSummary.total_cargo_tonnage / Math.max(performanceSummary.total_trips, 1) : 0, 1)}</p>
+                <p className="text-xs font-semibold uppercase text-muted-foreground">{t('drivers.show.analytics.avgPayload')}</p>
+                <p className="mt-2 font-semibold">
+                  {formatTons(
+                    performanceSummary ? performanceSummary.total_cargo_tonnage / Math.max(performanceSummary.total_trips, 1) : 0,
+                    1,
+                    notAvailableLabel,
+                  )}
+                </p>
               </div>
             </div>
           </DetailSectionCard>
 
           {safetySummary && (
-            <DetailSectionCard title="Safety Performance" icon={<ShieldCheck className="h-5 w-5" />}>
+            <DetailSectionCard title={t('drivers.show.analytics.safetyPerformance')} icon={<ShieldCheck className="h-5 w-5" />}>
               <div className="grid gap-4 md:grid-cols-4">
                 <div className={`rounded-lg border p-3 ${safetySummary.total_records === 0 ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}>
-                  <p className="text-xs font-semibold uppercase text-muted-foreground">Total Incidents</p>
+                  <p className="text-xs font-semibold uppercase text-muted-foreground">{t('drivers.show.analytics.totalIncidents')}</p>
                   <p className={`mt-2 text-2xl font-bold ${safetySummary.total_records === 0 ? 'text-green-700' : 'text-red-700'}`}>{safetySummary.total_records}</p>
                 </div>
                 <div className="rounded-lg border border-orange-200 bg-orange-50 p-3">
-                  <p className="text-xs font-semibold uppercase text-muted-foreground">Accidents</p>
+                  <p className="text-xs font-semibold uppercase text-muted-foreground">{t('drivers.show.safety.accidents')}</p>
                   <p className="mt-2 text-2xl font-bold text-orange-700">{safetySummary.accidents}</p>
                 </div>
                 <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-3">
-                  <p className="text-xs font-semibold uppercase text-muted-foreground">Violations</p>
+                  <p className="text-xs font-semibold uppercase text-muted-foreground">{t('drivers.show.safety.violations')}</p>
                   <p className="mt-2 text-2xl font-bold text-yellow-700">{safetySummary.violations}</p>
                 </div>
                 <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
-                  <p className="text-xs font-semibold uppercase text-muted-foreground">Total Damage</p>
-                  <p className="mt-2 text-lg font-bold text-blue-700">{formatCurrency(safetySummary.total_damage_cost)}</p>
+                  <p className="text-xs font-semibold uppercase text-muted-foreground">{t('drivers.show.analytics.totalDamage')}</p>
+                  <p className="mt-2 text-lg font-bold text-blue-700">{formatCurrency(safetySummary.total_damage_cost, notAvailableLabel)}</p>
                 </div>
               </div>
             </DetailSectionCard>
@@ -835,30 +905,34 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
         </TabsContent>
 
         <TabsContent value="safety" className="space-y-6">
-          <DetailSectionCard icon={<ShieldCheck className="h-5 w-5" />} title="Safety Overview" description="Incidents and safety performance">
+          <DetailSectionCard
+            icon={<ShieldCheck className="h-5 w-5" />}
+            title={t('drivers.show.safety.overviewTitle')}
+            description={t('drivers.show.safety.overviewDescription')}
+          >
             {safetySummary ? (
               <div className="grid gap-4 md:grid-cols-4">
                 <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-center">
-                  <p className="text-xs text-muted-foreground">Total</p>
+                  <p className="text-xs text-muted-foreground">{t('drivers.show.safety.total')}</p>
                   <p className="text-lg font-semibold">{safetySummary.total_records}</p>
                 </div>
                 <div className="rounded-lg border border-orange-200 bg-orange-50 p-3 text-center">
-                  <p className="text-xs text-muted-foreground">Accidents</p>
+                  <p className="text-xs text-muted-foreground">{t('drivers.show.safety.accidents')}</p>
                   <p className="text-lg font-semibold">{safetySummary.accidents}</p>
                 </div>
                 <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-3 text-center">
-                  <p className="text-xs text-muted-foreground">Violations</p>
+                  <p className="text-xs text-muted-foreground">{t('drivers.show.safety.violations')}</p>
                   <p className="text-lg font-semibold">{safetySummary.violations}</p>
                 </div>
                 <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-center">
-                  <p className="text-xs text-muted-foreground">Warnings</p>
+                  <p className="text-xs text-muted-foreground">{t('drivers.show.safety.warnings')}</p>
                   <p className="text-lg font-semibold">{safetySummary.warnings}</p>
                 </div>
               </div>
             ) : (
               <div className="py-8 text-center text-muted-foreground">
                 <ShieldCheck className="mx-auto mb-4 h-12 w-12 opacity-60" />
-                <p>No safety data available for this driver yet.</p>
+                <p>{t('drivers.show.safety.empty')}</p>
               </div>
             )}
 
@@ -867,13 +941,13 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
                 {driver.safetyRecords.slice(0, 10).map(rec => (
                   <div key={rec.id} className="rounded-lg border p-4">
                     <div className="flex items-center justify-between">
-                      <Badge variant="secondary">{rec.incident_type ?? 'Incident'}</Badge>
-                      <span className="text-xs text-muted-foreground">{formatDateDisplay(rec.incident_date)}</span>
+                      <Badge variant="secondary">{rec.incident_type ?? t('drivers.show.safety.incident')}</Badge>
+                      <span className="text-xs text-muted-foreground">{formatDateDisplay(rec.incident_date, notAvailableLabel)}</span>
                     </div>
                     {rec.description && <p className="mt-2 text-xs">{rec.description}</p>}
                     <div className="mt-3 grid gap-2 text-xs text-muted-foreground md:grid-cols-2">
-                      <div><span className="font-medium">Location:</span> {rec.location || 'N/A'}</div>
-                      <div><span className="font-medium">Damage:</span> {formatCurrency(rec.damage_cost ?? null)}</div>
+                      <div><span className="font-medium">{t('drivers.show.safety.location')}:</span> {rec.location || notAvailableLabel}</div>
+                      <div><span className="font-medium">{t('drivers.show.safety.damage')}:</span> {formatCurrency(rec.damage_cost ?? null, notAvailableLabel)}</div>
                     </div>
                   </div>
                 ))}
@@ -883,22 +957,59 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
         </TabsContent>
 
         <TabsContent value="history" className="space-y-6">
-          <DetailSectionCard icon={<History className="h-5 w-5" />} title="Activity History" description="Audit trail of driver changes">
+          <DetailSectionCard
+            icon={<History className="h-5 w-5" />}
+            title={t('drivers.show.history.title')}
+            description={t('drivers.show.history.description')}
+          >
             {activityLogs && activityLogs.length > 0 ? (
               <ActivityLogTable logs={activityLogs} />
             ) : (
               <div className="py-8 text-center text-muted-foreground">
                 <History className="mx-auto mb-4 h-12 w-12 opacity-60" />
-                <p>No activity history available for this driver yet.</p>
+                <p>{t('drivers.show.history.empty')}</p>
               </div>
             )}
           </DetailSectionCard>
         </TabsContent>
       </Tabs>
 
-      {canDeleteDriver && <DeleteConfirmationDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen} title="Delete Driver" description="Are you sure you want to delete this driver? This action cannot be undone." itemName={driver.name} onConfirm={handleDeleteConfirm} isLoading={isDeleting} />}
-      {canDeactivateDriver && <DeleteConfirmationDialog open={deactivateDialogOpen} onOpenChange={setDeactivateDialogOpen} title="Deactivate Driver" description="This driver will be marked as inactive." itemName={driver.name} onConfirm={handleDeactivateConfirm} confirmLabel="Deactivate" isLoading={isDeactivating} />}
-      {canActivateDriver && <DeleteConfirmationDialog open={activateDialogOpen} onOpenChange={setActivateDialogOpen} title="Activate Driver" description="This driver will be marked as active." itemName={driver.name} onConfirm={handleActivateConfirm} confirmLabel="Activate" isLoading={isActivating} isDangerous={false} />}
+      {canDeleteDriver && (
+        <DeleteConfirmationDialog
+          open={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          title={t('drivers.show.delete.title')}
+          description={t('drivers.show.delete.description')}
+          itemName={driverName}
+          onConfirm={handleDeleteConfirm}
+          isLoading={isDeleting}
+        />
+      )}
+      {canDeactivateDriver && (
+        <DeleteConfirmationDialog
+          open={deactivateDialogOpen}
+          onOpenChange={setDeactivateDialogOpen}
+          title={t('drivers.show.deactivate.title')}
+          description={t('drivers.show.deactivate.description')}
+          itemName={driverName}
+          onConfirm={handleDeactivateConfirm}
+          confirmLabel={t('drivers.show.deactivate.confirm')}
+          isLoading={isDeactivating}
+        />
+      )}
+      {canActivateDriver && (
+        <DeleteConfirmationDialog
+          open={activateDialogOpen}
+          onOpenChange={setActivateDialogOpen}
+          title={t('drivers.show.activate.title')}
+          description={t('drivers.show.activate.description')}
+          itemName={driverName}
+          onConfirm={handleActivateConfirm}
+          confirmLabel={t('drivers.show.activate.confirm')}
+          isLoading={isActivating}
+          isDangerous={false}
+        />
+      )}
     </DetailPageLayout>
   );
 }

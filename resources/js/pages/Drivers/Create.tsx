@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 import { Info, User, MapPin, CheckCircle, Save, User as UserIcon, Hash, ArrowLeft, AlertCircle } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useTranslation } from 'react-i18next';
 
 type DriverFormData = {
     driverid: string;
@@ -33,12 +34,12 @@ type DriverFormData = {
 
 type DriverFormField = keyof DriverFormData;
 
-const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Drivers', href: '/drivers' },
-    { title: 'Create', href: '/drivers/create' },
-];
-
 export default function DriversCreate() {
+    const { t } = useTranslation();
+    const breadcrumbs: BreadcrumbItem[] = [
+        { title: t('drivers.breadcrumb'), href: '/drivers' },
+        { title: t('drivers.form.create.breadcrumb'), href: '/drivers/create' },
+    ];
     const { data, setData, post, processing, errors, clearErrors } = useForm<DriverFormData>({
         driverid: '',
         name: '',
@@ -82,12 +83,12 @@ export default function DriversCreate() {
 
         if (errorMessages.length > 0) {
             toast({
-                title: '⚠️ Validation Error',
+                title: t('drivers.form.validation.title'),
                 description: errorMessages.join(', '),
                 variant: 'destructive',
             });
         }
-    }, [errors]);
+    }, [errors, t]);
 
     useEffect(() => {
         const container = scrollContainerRef.current;
@@ -131,8 +132,8 @@ export default function DriversCreate() {
         if (Object.keys(allErrors).length > 0) {
             setFrontendErrors(allErrors);
             toast({
-                title: '⚠️ Validation Error',
-                description: 'Please fix the validation errors before submitting',
+                title: t('drivers.form.validation.title'),
+                description: t('drivers.form.validation.fixErrors'),
                 variant: 'destructive',
             });
             return;
@@ -145,8 +146,8 @@ export default function DriversCreate() {
                 setFrontendErrors({});
                 setIsDirty(false);
                 toast({
-                    title: '✅ Driver Created',
-                    description: 'The driver has been added to the workforce successfully.',
+                    title: t('drivers.form.create.successTitle'),
+                    description: t('drivers.form.create.successDescription'),
                 });
             },
         });
@@ -157,8 +158,8 @@ export default function DriversCreate() {
 
     return (
         <FormPageLayout
-            title="Create New Driver"
-            description="Add a new driver with complete identification, employment, and contact details."
+            title={t('drivers.form.create.title')}
+            description={t('drivers.form.create.description')}
             breadcrumbs={breadcrumbs}
             icon={<UserIcon className="h-5 w-5" />}
             headerAside={
@@ -166,13 +167,13 @@ export default function DriversCreate() {
                     <Button variant="ghost" size="sm" asChild>
                         <Link href="/drivers">
                             <ArrowLeft className="mr-2 h-4 w-4" />
-                            Back to Drivers
+                            {t('drivers.form.create.backToList')}
                         </Link>
                     </Button>
                     {isDirty && <UnsavedChangesBadge />}
                     <div className="flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1.5 text-sm font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
                         <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-500"></div>
-                        Fleet Operations
+                        {t('drivers.form.badge')}
                     </div>
                 </>
             }
@@ -181,7 +182,7 @@ export default function DriversCreate() {
                 <div className="px-6 pt-6">
                     <Alert variant="destructive">
                         <AlertCircle className="h-4 w-4" />
-                        <AlertDescription>Please resolve the highlighted fields before submitting the form.</AlertDescription>
+                        <AlertDescription>{t('drivers.form.validation.resolve')}</AlertDescription>
                     </Alert>
                 </div>
             )}
@@ -193,8 +194,8 @@ export default function DriversCreate() {
                 style={{ minHeight: 0 }}
             >
                 <FormSection
-                    title="General Details"
-                    description="Core identification and status information for the driver."
+                    title={t('drivers.form.sections.general.title')}
+                    description={t('drivers.form.sections.general.description')}
                     icon={
                         <div className="rounded-lg bg-blue-100 p-2 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
                             <Info className="h-4 w-4" />
@@ -203,9 +204,9 @@ export default function DriversCreate() {
                 >
                     <FormField
                         id="driverid"
-                        label="Driver ID"
+                        label={t('drivers.form.fields.driverId.label')}
                         required
-                        tooltip="Unique identifier for the driver"
+                        tooltip={t('drivers.form.fields.driverId.tooltip')}
                         error={getFieldError('driverid')}
                     >
                         <div className="relative">
@@ -215,7 +216,7 @@ export default function DriversCreate() {
                                 type="text"
                                 value={data.driverid}
                                 onChange={(e) => handleFieldChange('driverid', e.target.value)}
-                                placeholder="e.g., DRV001"
+                                placeholder={t('drivers.form.fields.driverId.placeholder')}
                                 maxLength={255}
                                 className={`pl-10 transition-all duration-200 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 ${getFieldError('driverid') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : 'focus:ring-blue-500/20 focus:border-blue-500 hover:border-slate-400 dark:hover:border-slate-500'}`}
                             />
@@ -223,7 +224,7 @@ export default function DriversCreate() {
                     </FormField>
                     <FormField
                         id="name"
-                        label="Full Name"
+                        label={t('drivers.form.fields.name.label')}
                         required
                         error={getFieldError('name')}
                     >
@@ -234,39 +235,47 @@ export default function DriversCreate() {
                                 type="text"
                                 value={data.name}
                                 onChange={(e) => handleFieldChange('name', e.target.value)}
-                                placeholder="Enter full name"
+                                placeholder={t('drivers.form.fields.name.placeholder')}
                                 maxLength={255}
                                 className={`pl-10 transition-all duration-200 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 ${getFieldError('name') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : 'focus:ring-blue-500/20 focus:border-blue-500 hover:border-slate-400 dark:hover:border-slate-500'}`}
                             />
                         </div>
                     </FormField>
-                    <FormField id="sex" label="Gender" required error={getFieldError('sex')}>
+                    <FormField id="sex" label={t('drivers.form.fields.gender.label')} required error={getFieldError('sex')}>
                         <Select value={data.sex} onValueChange={(value) => handleFieldChange('sex', value)}>
                             <SelectTrigger className={`transition-all duration-200 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 focus:ring-blue-500/20 focus:border-blue-500 ${getFieldError('sex') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}>
-                                <SelectValue placeholder="Select gender" />
+                                <SelectValue placeholder={t('drivers.form.fields.gender.placeholder')} />
                             </SelectTrigger>
                             <SelectContent className="z-50 bg-white shadow-lg dark:bg-slate-800">
-                                <SelectItem value="male" className="hover:bg-slate-100 focus:bg-slate-100 dark:hover:bg-slate-700 dark:focus:bg-slate-700">Male</SelectItem>
-                                <SelectItem value="female" className="hover:bg-slate-100 focus:bg-slate-100 dark:hover:bg-slate-700 dark:focus:bg-slate-700">Female</SelectItem>
+                                <SelectItem value="male" className="hover:bg-slate-100 focus:bg-slate-100 dark:hover:bg-slate-700 dark:focus:bg-slate-700">
+                                    {t('drivers.gender.male')}
+                                </SelectItem>
+                                <SelectItem value="female" className="hover:bg-slate-100 focus:bg-slate-100 dark:hover:bg-slate-700 dark:focus:bg-slate-700">
+                                    {t('drivers.gender.female')}
+                                </SelectItem>
                             </SelectContent>
                         </Select>
                     </FormField>
-                    <FormField id="status" label="Status" required error={getFieldError('status')}>
+                    <FormField id="status" label={t('drivers.form.fields.status.label')} required error={getFieldError('status')}>
                         <Select value={data.status} onValueChange={(value) => handleFieldChange('status', value)}>
                             <SelectTrigger className={`transition-all duration-200 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 focus:ring-blue-500/20 focus:border-blue-500 ${getFieldError('status') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}>
-                                <SelectValue placeholder="Select status" />
+                                <SelectValue placeholder={t('drivers.form.fields.status.placeholder')} />
                             </SelectTrigger>
                             <SelectContent className="z-50 bg-white shadow-lg dark:bg-slate-800">
-                                <SelectItem value="active" className="hover:bg-slate-100 focus:bg-slate-100 dark:hover:bg-slate-700 dark:focus:bg-slate-700">Active</SelectItem>
-                                <SelectItem value="inactive" className="hover:bg-slate-100 focus:bg-slate-100 dark:hover:bg-slate-700 dark:focus:bg-slate-700">Inactive</SelectItem>
+                                <SelectItem value="active" className="hover:bg-slate-100 focus:bg-slate-100 dark:hover:bg-slate-700 dark:focus:bg-slate-700">
+                                    {t('drivers.status.active')}
+                                </SelectItem>
+                                <SelectItem value="inactive" className="hover:bg-slate-100 focus:bg-slate-100 dark:hover:bg-slate-700 dark:focus:bg-slate-700">
+                                    {t('drivers.status.inactive')}
+                                </SelectItem>
                             </SelectContent>
                         </Select>
                     </FormField>
                 </FormSection>
 
                 <FormSection
-                    title="Personal Details"
-                    description="Capture birth and employment lifecycle information."
+                    title={t('drivers.form.sections.personal.title')}
+                    description={t('drivers.form.sections.personal.description')}
                     icon={
                         <div className="rounded-lg bg-amber-100 p-2 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
                             <User className="h-4 w-4" />
@@ -274,7 +283,7 @@ export default function DriversCreate() {
                     }
                     contentClassName="grid-cols-1 gap-4 md:grid-cols-2"
                 >
-                    <FormField id="birthdate" label="Date of Birth" error={getFieldError('birthdate')}>
+                    <FormField id="birthdate" label={t('drivers.form.fields.birthdate.label')} error={getFieldError('birthdate')}>
                         <DatePicker
                             value={data.birthdate || ''}
                             onChange={(next) => handleFieldChange('birthdate', next ?? '')}
@@ -284,7 +293,7 @@ export default function DriversCreate() {
                             )}
                         />
                     </FormField>
-                    <FormField id="hireddate" label="Hire Date" error={getFieldError('hireddate')}>
+                    <FormField id="hireddate" label={t('drivers.form.fields.hireddate.label')} error={getFieldError('hireddate')}>
                         <DatePicker
                             value={data.hireddate || ''}
                             onChange={(next) => handleFieldChange('hireddate', next ?? '')}
@@ -297,8 +306,8 @@ export default function DriversCreate() {
                 </FormSection>
 
                 <FormSection
-                    title="Contact & Address"
-                    description="Ensure we can reach the driver and locate their residence."
+                    title={t('drivers.form.sections.contact.title')}
+                    description={t('drivers.form.sections.contact.description')}
                     icon={
                         <div className="rounded-lg bg-emerald-100 p-2 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
                             <MapPin className="h-4 w-4" />
@@ -306,57 +315,77 @@ export default function DriversCreate() {
                     }
                     contentClassName="grid-cols-1 gap-4 md:grid-cols-2"
                 >
-                    <FormField id="mobile" label="Mobile Number" error={getFieldError('mobile')}>
+                    <FormField id="mobile" label={t('drivers.form.fields.mobile.label')} error={getFieldError('mobile')}>
                         <Input
                             id="mobile"
                             type="tel"
                             value={data.mobile}
                             onChange={(e) => handleFieldChange('mobile', e.target.value)}
-                            placeholder="e.g., +251911123456"
+                            placeholder={t('drivers.form.fields.mobile.placeholder')}
                             maxLength={20}
                             className={`transition-all duration-200 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 ${getFieldError('mobile') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : 'focus:ring-blue-500/20 focus:border-blue-500 hover:border-slate-400 dark:hover:border-slate-500'}`}
                         />
                     </FormField>
-                    <FormField id="zone" label="Zone" helperText="Optional - Administrative zone" error={getFieldError('zone')}>
+                    <FormField
+                        id="zone"
+                        label={t('drivers.form.fields.zone.label')}
+                        helperText={t('drivers.form.fields.zone.helper')}
+                        error={getFieldError('zone')}
+                    >
                         <Input
                             id="zone"
                             type="text"
                             value={data.zone}
                             onChange={(e) => handleFieldChange('zone', e.target.value)}
-                            placeholder="Zone/District"
+                            placeholder={t('drivers.form.fields.zone.placeholder')}
                             maxLength={255}
                             className="transition-all duration-200 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 focus:ring-blue-500/20 focus:border-blue-500"
                         />
                     </FormField>
-                    <FormField id="woreda" label="Woreda" helperText="Optional - Sub-district" error={getFieldError('woreda')}>
+                    <FormField
+                        id="woreda"
+                        label={t('drivers.form.fields.woreda.label')}
+                        helperText={t('drivers.form.fields.woreda.helper')}
+                        error={getFieldError('woreda')}
+                    >
                         <Input
                             id="woreda"
                             type="text"
                             value={data.woreda}
                             onChange={(e) => handleFieldChange('woreda', e.target.value)}
-                            placeholder="Woreda/Sub-district"
+                            placeholder={t('drivers.form.fields.woreda.placeholder')}
                             maxLength={255}
                             className="transition-all duration-200 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 focus:ring-blue-500/20 focus:border-blue-500"
                         />
                     </FormField>
-                    <FormField id="kebele" label="Kebele" helperText="Optional - Neighborhood" error={getFieldError('kebele')}>
+                    <FormField
+                        id="kebele"
+                        label={t('drivers.form.fields.kebele.label')}
+                        helperText={t('drivers.form.fields.kebele.helper')}
+                        error={getFieldError('kebele')}
+                    >
                         <Input
                             id="kebele"
                             type="text"
                             value={data.kebele}
                             onChange={(e) => handleFieldChange('kebele', e.target.value)}
-                            placeholder="Kebele/Neighborhood"
+                            placeholder={t('drivers.form.fields.kebele.placeholder')}
                             maxLength={255}
                             className="transition-all duration-200 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 focus:ring-blue-500/20 focus:border-blue-500"
                         />
                     </FormField>
-                    <FormField id="housenumber" label="House Number" helperText="Optional - House/building number" error={getFieldError('housenumber')}>
+                    <FormField
+                        id="housenumber"
+                        label={t('drivers.form.fields.housenumber.label')}
+                        helperText={t('drivers.form.fields.housenumber.helper')}
+                        error={getFieldError('housenumber')}
+                    >
                         <Input
                             id="housenumber"
                             type="text"
                             value={data.housenumber}
                             onChange={(e) => handleFieldChange('housenumber', e.target.value)}
-                            placeholder="House number"
+                            placeholder={t('drivers.form.fields.housenumber.placeholder')}
                             maxLength={255}
                             className="transition-all duration-200 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 focus:ring-blue-500/20 focus:border-blue-500"
                         />
@@ -367,11 +396,11 @@ export default function DriversCreate() {
                     left={
                         <>
                             <span className="text-red-500">*</span>
-                            <span>All required fields must be completed</span>
+                            <span>{t('drivers.form.required')}</span>
                             {isDirty && (
                                 <span className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
                                     <Save className="h-3 w-3" />
-                                    You have unsaved changes
+                                    {t('drivers.form.unsaved')}
                                 </span>
                             )}
                         </>
@@ -379,7 +408,7 @@ export default function DriversCreate() {
                     right={
                         <>
                             <Button type="button" variant="outline" asChild className="border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700">
-                                <Link href="/drivers">Cancel</Link>
+                                <Link href="/drivers">{t('drivers.actions.cancel')}</Link>
                             </Button>
                             <Button
                                 type="submit"
@@ -389,12 +418,12 @@ export default function DriversCreate() {
                                 {processing ? (
                                     <>
                                         <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white"></div>
-                                        Creating...
+                                        {t('drivers.form.create.submitting')}
                                     </>
                                 ) : (
                                     <>
                                         <CheckCircle className="mr-2 h-4 w-4" />
-                                        Create Driver
+                                        {t('drivers.form.create.submit')}
                                     </>
                                 )}
                             </Button>

@@ -1,0 +1,1507 @@
+{
+    "nav": {
+        "dashboard": "ዳሽቦርድ",
+        "repository": "መዝገብ",
+        "documentation": "ሰነዶች",
+        "menu": "የአሰሳ ምናሌ",
+        "language": "ቋንቋ"
+    },
+    "languages": {
+        "english": "እንግሊዝኛ",
+        "amharic": "አማርኛ"
+    },
+    "sidebar": {
+        "dashboard": "ዳሽቦርድ",
+        "fleetManagement": "የመኪና አስተዳደር",
+        "trucks": "ትራክቶች",
+        "drivers": "አሽከርካሪዎች",
+        "driverTruckAssignments": "የአሽከርካሪ-ትራክ መመደቦች",
+        "vehicleTypes": "የመኪና አይነቶች",
+        "driverSafety": "የአሽከርካሪ ደህንነት",
+        "cargoTypes": "የጭነት አይነቶች",
+        "maintenance": "ጥገና",
+        "maintenanceRecords": "የጥገና መዝገቦች",
+        "overview": "አጠቃላይ እይታ",
+        "maintenanceTypes": "የጥገና አይነቶች",
+        "overdueAlerts": "የዘገዩ እና ማስጠንቀቂያዎች",
+        "operations": "ኦፕሬሽኖች",
+        "performances": "አፈፃፀም",
+        "customers": "ደንበኞች",
+        "geographicManagement": "የአካባቢ አስተዳደር",
+        "regions": "ክልሎች",
+        "zones": "ዞኖች",
+        "woredas": "ወረዳዎች",
+        "places": "ቦታዎች",
+        "distances": "ርቀቶች",
+        "statusManagement": "የሁኔታ አስተዳደር",
+        "statusTypeRegistration": "የሁኔታ አይነት ምዝገባ",
+        "dailyTruckStatusRegistration": "ዕለታዊ የትራክ ሁኔታ ምዝገባ",
+        "outsourcing": "ውጭ አቅርቦት",
+        "outsources": "ውጭ አቅራቢዎች",
+        "outsourcePerformances": "የውጭ አቅራቢ አፈፃፀም",
+        "reports": "ሪፖርቶች",
+        "maintenanceReports": "የጥገና ሪፖርቶች",
+        "fuelEfficiencyCost": "የነዳጅ ውጤታማነት እና ወጪ",
+        "customerProfitability": "የደንበኛ ትርፋማነት",
+        "outsourcePerformance": "የውጭ አፈፃፀም",
+        "operationProfitability": "የኦፕሬሽን ትርፋማነት",
+        "routeProfitability": "የመንገድ ትርፋማነት",
+        "costPerKilometer": "በኪ.ሜ. የሚመነጨ ወጪ",
+        "loadFactorUtilization": "የጭነት መጠን እና ተጠቃሚነት",
+        "geographicHeatmaps": "የአካባቢ ሙቀት ካርታዎች",
+        "truckGrading": "የትራክ ደረጃ አሰጣጥ",
+        "driverGrading": "የአሽከርካሪ ደረጃ አሰጣጥ",
+        "driverTruckGrading": "የአሽከርካሪ-ትራክ ደረጃ አሰጣጥ",
+        "driverSafetyReport": "የአሽከርካሪ ደህንነት",
+        "performanceAll": "አፈፃፀም (ሁሉም)",
+        "performanceByDriver": "በአሽከርካሪ አፈፃፀም",
+        "performanceByTruck": "በትራክ አፈፃፀም",
+        "performanceByStatus": "በሁኔታ አፈፃፀም",
+        "attachDetachHistory": "የመያያዝ / መለያየት ታሪክ",
+        "dailyStatusReport": "ዕለታዊ የሁኔታ ሪፖርት",
+        "grading": "ደረጃ አሰጣጥ",
+        "activityLogs": "የእንቅስቃሴ መዝገቦች",
+        "userManagement": "የተጠቃሚ አስተዳደር",
+        "users": "ተጠቃሚዎች",
+        "roles": "ሚናዎች",
+        "permissions": "ፍቃዶች",
+        "notificationAssignments": "የማስታወቂያ መመደቦች",
+        "systemBackups": "የስርዓት ቅጂዎች",
+        "helpDocumentation": "እርዳታ እና ሰነዶች"
+    },
+    "dashboard": {
+        "title": "ዳሽቦርድ",
+        "breadcrumb": "ዳሽቦርድ",
+        "header": {
+            "title": "ዋና ዳሽቦርድ",
+            "subtitle": "የተንቀሳቃሽ ቡድን እና የገንዘብ መረጃ በቀጥታ",
+            "description": "የአውታረ መረብ አፈፃፀም፣ ወጪ መመለስ እና የኦፕሬሽን ጥራትን በመከታተል ቡድንዎን ይቆጣጠሩ።"
+        },
+        "accessRestricted": {
+            "imageAlt": "የዳሽቦርድ መዳረሻ ተገድቧል",
+            "title": "የዳሽቦርድ መዳረሻ ተገድቧል",
+            "description": "የመኪና ቡድን እና የገንዘብ እይታ ለማግኘት የዳሽቦርድ ፍቃድ ያስፈልጋል። ይህ ስህተት መሆኑን ካመኑ እባክዎ አስተዳዳሪውን ያነጋግሩ።"
+        },
+        "kpi": {
+            "changeUnavailable": "ለውጥ መረጃ የለም"
+        },
+        "status": {
+            "unknown": "ያልታወቀ",
+            "active": "ንቁ",
+            "pending": "በመጠበቅ ላይ",
+            "in_progress": "በሂደት ላይ",
+            "completed": "ተጠናቋል",
+            "cancelled": "ተሰርዟል",
+            "returned": "ተመልሷል",
+            "maintenance": "ጥገና"
+        },
+        "financialPulse": {
+            "revenue": "ገቢ (30ቀናት)",
+            "operatingCost": "የኦፕሬሽን ወጪ (30ቀናት)",
+            "margin": "ማርጅን (30ቀናት)",
+            "fareboxRecovery": "የገቢ መመለስ"
+        },
+        "sections": {
+            "networkPerformance": {
+                "title": "የአውታረ መረብ አፈፃፀም",
+                "subtitle": "የፍላጎት ሽፋን፣ የመንገድ አፈፃፀም እና የሁኔታ ድብደባ።"
+            },
+            "financialOverview": {
+                "title": "የፋይናንስ እይታ",
+                "subtitle": "ገቢ፣ ወጪ እና የፋይናንስ መለኪያዎች።"
+            },
+            "assetMaintenance": {
+                "title": "ንብረት እና ጥገና",
+                "subtitle": "የጥገና ስራ ጫና እና የሚመጡ ስራዎች።"
+            },
+            "safetyCompliance": {
+                "title": "ደህንነት እና መስፈርት",
+                "subtitle": "የክስተት መጠን፣ የክብደት ድብደባ እና ዋና ጉዳዮች።"
+            },
+            "customersOperations": {
+                "title": "ደንበኞች እና ኦፕሬሽኖች",
+                "subtitle": "በቶናጅ የተቀደሙ አጋሮች እና የቅርብ ጉዞ እንቅስቃሴ።"
+            }
+        },
+        "network": {
+            "tonnageTrips": {
+                "title": "ቶናጅ እና ጉዞዎች (30ቀናት)",
+                "subtitle": "የቀን ቶናጅ እና የጉዞ ቁጥር ከቶን-ኪ.ሜ. ምርታማነት ጋር።",
+                "tonnageLabel": "ቶናጅ (MT)",
+                "tripsLabel": "ጉዞዎች",
+                "tonkmLabel": "ቶን-ኪ.ሜ. (000s)"
+            },
+            "loadPhase": {
+                "title": "የጭነት ምዕራፍ ድብደባ",
+                "subtitle": "በዋና እና ተመላሽ ጭነቶች የተቆጠሩ ጉዞዎች (30ቀናት)።",
+                "capturedTrips": "የተመዘገቡ ጉዞዎች",
+                "shareLabel": "{{share}}% ድርሻ",
+                "tripCountLabel": "{{countValue}} ጉዞዎች",
+                "legend": "{{shareValue}}% · {{countValue}}",
+                "labels": {
+                    "main": "ዋና ጭነት ጉዞዎች",
+                    "return": "ተመላሽ ጭነት ጉዞዎች"
+                }
+            },
+            "corridors": {
+                "title": "ከፍተኛ መንገዶች",
+                "subtitle": "በዋና መነሻ-መድረሻ ጥንዶች ላይ የተሸከመ ቶናጅ (30ቀናት)።",
+                "tonnageLabel": "ቶናጅ (MT)",
+                "tripsLabel": "ጉዞዎች"
+            }
+        },
+        "financial": {
+            "trend": {
+                "title": "የገቢ እና ወጪ አዝማሚያ",
+                "subtitle": "የ6 ወር እይታ በገቢ፣ ወጪ እና ተጣራ ውጤት ላይ።",
+                "revenue": "ገቢ",
+                "operatingCost": "የኦፕሬሽን ወጪ",
+                "net": "ተጣራ"
+            },
+            "breakdown": {
+                "title": "የወጪ መከፋፈል",
+                "subtitle": "በወጪ ምድቦች ላይ የወጪ ድርሻ (30ቀናት)።",
+                "avgRevenuePerTon": "በቶን አማካይ ገቢ",
+                "avgCostPerTon": "በቶን አማካይ ወጪ"
+            },
+            "pulse": {
+                "title": "የፋይናንስ ማጠቃለያ",
+                "subtitle": "በዋና ፋይናንስ መለኪያዎች ላይ የወር-ወር ለውጥ።",
+                "deltaLabel": "ከቀድሞው 30 ቀናት ጋር"
+            },
+            "fuel": {
+                "title": "የነዳጅ ተጋላጭነት",
+                "subtitle": "ወጪ እና የዕድገት አዝማሚያ።",
+                "costLabel": "የነዳጅ ወጪ",
+                "volumeLabel": "መጠን (L)"
+            }
+        },
+        "statusBreakdown": {
+            "title": "የሁኔታ መከፋፈል",
+            "subtitle": "ዛሬ ያለው የኦፕሬሽን ሁኔታ መዳበር",
+            "pending": "በመጠበቅ ላይ",
+            "entries": "{{countValue}} መዝገቦች"
+        },
+        "maintenance": {
+            "pulse": {
+                "title": "የጥገና ሁኔታ",
+                "subtitle": "የጥገና ተሰርዟ ዝርዝር አሁን ያለው ሁኔታ።",
+                "scheduled": "ተይዟል",
+                "bookedInCalendar": "በካሌንደር ውስጥ ተይዟል",
+                "overdue": "ዘግይቷል",
+                "pastSchedule": "የተዘገየ መርሐ ግብር",
+                "completed": "ተጠናቋል (30ቀናት)",
+                "closedWorkOrders": "የተዘጉ የስራ ትእዛዞች",
+                "avgTurnaround": "አማካይ ጊዜ",
+                "scheduledToComplete": "ለመጨረስ የተያዘ",
+                "daysLabel": "{{days}} ቀናት"
+            },
+            "trend": {
+                "title": "የጥገና አዝማሚያ እና የሚመጡ ስራዎች",
+                "subtitle": "ወርሃዊ የተጠናቀቁ እና የተያዙ ስራዎች ማነፃፀር፣ ቀጣዩ 5 መመደቦች።",
+                "scheduledSeries": "ተይዟል",
+                "completedSeries": "ተጠናቋል",
+                "nextJobs": "ቀጣይ ስራዎች",
+                "notScheduled": "አልተያዘም",
+                "inDays": "በ{{count}} ቀን",
+                "today": "ዛሬ",
+                "overdueDays": "{{count}} ቀን ዘግይቷል",
+                "truckLabel": "ትራክ {{truck}}",
+                "scheduledDateLabel": "ተይዟል {{date}}",
+                "tbc": "በኋላ ይታያል",
+                "scheduledStatus": "ተይዟል"
+            }
+        },
+        "safety": {
+            "summary": {
+                "title": "የክስተት ማጠቃለያ (90ቀናት)",
+                "subtitle": "በ100 ጉዞዎች ላይ የተመዘነ መጠን።",
+                "recordedIncidents": "የተመዘገቡ ክስተቶች",
+                "ratePer100": "በ100 ጉዞዎች ላይ ያለ መጠን"
+            },
+            "severity": {
+                "title": "የክብደት ድብደባ",
+                "subtitle": "በክብደት ደረጃ የተለያዩ መስፋፋት።"
+            },
+            "trend": {
+                "title": "የክስተት አዝማሚያ",
+                "subtitle": "በስድስት ወር የክስተት መጠን።"
+            }
+        },
+        "customers": {
+            "top": {
+                "title": "ከፍተኛ ደንበኞች (90ቀናት)",
+                "subtitle": "በደንበኛ ላይ የተጠናቀቁ ጉዞዎች እና ቶናጅ።"
+            },
+            "table": {
+                "customer": "ደንበኛ",
+                "trips": "ጉዞዎች",
+                "tonnage": "ቶናጅ (MT)"
+            }
+        },
+        "performances": {
+            "title": "የቅርብ አፈፃፀሞች",
+            "subtitle": "የቅርብ ጊዜ የተመዘገቡ ጉዞዎች ከቡድን እና መንገድ ዝርዝር ጋር።",
+            "table": {
+                "trip": "ጉዞ",
+                "fleet": "ቡድን",
+                "route": "መንገድ",
+                "cargo": "ጭነት (MT)",
+                "dispatched": "ተሰደደ",
+                "status": "ሁኔታ"
+            },
+            "tripFallback": "ጉዞ #{{id}}",
+            "unknownDriver": "ያልታወቀ አሽከርካሪ",
+            "unknownTruck": "ያልታወቀ ትራክ",
+            "unknownOrigin": "ያልታወቀ መነሻ",
+            "unknownDestination": "ያልታወቀ መድረሻ",
+            "routeLabel": "{{origin}} → {{destination}}"
+        },
+        "kpis": {
+            "tonnage30d": "ቶናጅ (30ቀናት)",
+            "trips30d": "ጉዞዎች (30ቀናት)",
+            "avgLoadPerTrip": "በጉዞ አማካይ ጭነት",
+            "margin30d": "ማርጅን (30ቀናት)",
+            "fareboxRecovery": "የገቢ መመለስ",
+            "fleetUtilisation": "የቡድን ጥቅም ላይ አዋጪነት"
+        },
+        "empty": {
+            "kpis": "እስካሁን የKPI መረጃ የለም።",
+            "performanceData": "በተመረጠው ጊዜ መድረሻ ውስጥ የአፈፃፀም መረጃ የለም።",
+            "loadPhaseData": "የጭነት ምዕራፍ መረጃ የለም። ዝርዝር መረጃ ያላቸው ጉዞዎችን በመመዝገብ ይሙሉ።",
+            "corridors": "በዚህ ጊዜ ውስጥ የመንገድ ፍሰቶች አልተመዘገቡም።",
+            "financialTrend": "እስካሁን የፋይናንስ መዝገቦች አልተመዘገቡም።",
+            "costBreakdown": "የወጪ መከፋፈል አይገኝም። ለማሳየት የፋይናንስ መዝገቦችን ያስገቡ።",
+            "statusUpdates": "እስካሁን የትራክ ሁኔታ ማዘጋጃዎች የሉም።",
+            "fuelRecords": "በተመረጠው ጊዜ የነዳጅ መዝገቦች አይገኙም።",
+            "maintenanceTrend": "የጥገና አዝማሚያ እስካሁን አልተመዘገበም።",
+            "upcomingMaintenance": "በዕቅድ ጊዜ ውስጥ የሚመጣ ጥገና የለም።",
+            "safetyEvents": "በዚህ ጊዜ መስክ የደህንነት ክስተቶች አልተመዘገቡም።",
+            "trendData": "የአዝማሚያ መረጃ አይገኝም።",
+            "customers": "በዚህ ጊዜ ውስጥ የደንበኛ እንቅስቃሴ አልተመዘገበም።",
+            "performances": "እስካሁን የተመዘገቡ አፈፃፀሞች የሉም።"
+        }
+    },
+    "trucks": {
+        "title": "ትራክቶች",
+        "breadcrumb": "ትራክቶች",
+        "description": "የትራክ ቡድንዎን ከ{{count}} ትራክ{{plural}} ጋር ያስተዳድሩ",
+        "columns": {
+            "plate": "ፕሌት",
+            "vehicleType": "የመኪና አይነት",
+            "driver": "አሽከርካሪ",
+            "chassis": "ቻሲስ",
+            "engine": "ሞተር",
+            "serviceInterval": "አገልግሎት (ኪ.ሜ.)",
+            "price": "ዋጋ",
+            "status": "ሁኔታ"
+        },
+        "table": {
+            "title": "የትራክ ዝርዝር",
+            "description": "በቡድንዎ ውስጥ ያሉ መኪናዎችን ያስተዳድሩ እና ይከታተሉ",
+            "actions": "እርምጃዎች"
+        },
+        "actions": {
+            "add": "ትራክ ጨምር",
+            "view": "አሳይ",
+            "edit": "አርም",
+            "delete": "ሰርዝ",
+            "cancel": "ተወው",
+            "back": "ተመለስ"
+        },
+        "labels": {
+            "status": "ሁኔታ",
+            "driver": "አሽከርካሪ",
+            "chassis": "ቻሲስ",
+            "engine": "ሞተር",
+            "serviceInterval": "የአገልግሎት ጊዜ",
+            "purchasePrice": "የግዢ ዋጋ"
+        },
+        "filters": {
+            "searchPlaceholder": "ትራኮችን ይፈልጉ...",
+            "rowsLabel": "ረድፎች",
+            "all": "ሁሉም",
+            "vehicleType": "የመኪና አይነት",
+            "allVehicleTypes": "ሁሉም የመኪና አይነቶች",
+            "perPageOption": "{{value}} / ገጽ"
+        },
+        "mobile": {
+            "position": "#{{value}}"
+        },
+        "empty": {
+            "title": "ምንም ትራክ አልተገኘም።",
+            "createAction": "አንዱን ፍጠር"
+        },
+        "stats": {
+            "total": {
+                "label": "አጠቃላይ ትራኮች",
+                "description": "ሁሉም መኪናዎች"
+            },
+            "active": {
+                "label": "ንቁ",
+                "description": "{{count}} በጥገና ላይ"
+            },
+            "fleetValue": {
+                "label": "የቡድን ዋጋ",
+                "description": "ጠቅላላ የቡድን ዋጋ"
+            },
+            "revenue": {
+                "label": "ገቢ ({{days}}ቀናት)",
+                "tonKmPerBirr": "{{value}} ቶን-ኪ.ሜ. / ETB",
+                "tonKmPerBirrPending": "ቶን-ኪ.ሜ. በብር እስካሁን የለም"
+            },
+            "churn": {
+                "label": "የአሽከርካሪ ለውጥ ({{days}}ቀናት)",
+                "averageTenure": "{{days}} ቀናት",
+                "averageTenurePending": "አማካይ ቆይታ እስካሁን የለም",
+                "highChurn": "{{count}} ትራክ(ዎች) ከ{{days}}ቀን በታች",
+                "stable": "የተረጋጋ የአሽከርካሪ መመደብ"
+            },
+            "utilization": {
+                "label": "አጠቃቀም ({{days}}ቀናት)",
+                "detail": "አገልግሎት {{serviceDays}}ቀን · መቆም {{idleDays}}ቀን · ያልታወቀ {{unknownDays}}ቀን",
+                "pending": "የአጠቃቀም መረጃ እስካሁን የለም"
+            }
+        },
+        "status": {
+            "active": "ንቁ",
+            "inactive": "ቆሞ",
+            "maintenance": "ጥገና",
+            "unknown": "ያልታወቀ"
+        },
+        "fallbacks": {
+            "notAvailable": "አይገኝም",
+            "noDriverAssigned": "አሽከርካሪ አልተመደበም",
+            "vehicleTypePending": "የመኪና አይነት እስካሁን የለም"
+        },
+        "units": {
+            "kilometers": "{{value}} ኪ.ሜ."
+        },
+        "delete": {
+            "failedTitle": "❌ ማጥፋት አልተሳካም",
+            "errorKnown": "ትራኩን ማጥፋት አልተሳካም። መስፈርቶቹን ይመልከቱ እና እንደገና ይሞክሩ።",
+            "errorUnknown": "ትራኩን ሲያጠፉ ያልተጠበቀ ስህተት ተፈጥሯል። እባክዎ እንደገና ይሞክሩ።",
+            "title": "ትራክ ሰርዝ",
+            "description": "ይህን ትራክ ማጥፋት እንደሚፈልጉ እርግጠኛ ነዎት? ይህ እርምጃ አይመለስም።",
+            "confirm": "ትራክ ሰርዝ"
+        },
+        "form": {
+            "badge": "የቡድን ኦፕሬሽን",
+            "required": "ሁሉም የሚያስፈልጉ መስኮች መሙላት አለባቸው",
+            "unsaved": "ያልተቀመጡ ለውጦች አሉ",
+            "validation": {
+                "title": "⚠️ የማረጋገጫ ስህተት",
+                "fixErrors": "እባክዎ ከመላክዎ በፊት የማረጋገጫ ስህተቶችን ያስተካክሉ",
+                "resolve": "እባክዎ ተለይተው የታዩትን መስኮች ከመላክዎ በፊት ይሙሉ።"
+            },
+            "sections": {
+                "general": {
+                    "title": "አጠቃላይ መረጃ",
+                    "description": "ዋና መለያ እና የሁኔታ መረጃ።"
+                },
+                "technical": {
+                    "title": "ቴክኒካዊ መረጃ",
+                    "description": "ዝርዝር የግንባታ እና የጥገና መረጃ።"
+                },
+                "financial": {
+                    "title": "ኦፕሬሽን እና ፋይናንስ",
+                    "description": "የህይወት ዘመን ቀናትን እና የኢንቨስትመንት ዋጋዎችን ይከታተሉ።"
+                }
+            },
+            "fields": {
+                "plate": {
+                    "label": "የፕሌት ቁጥር",
+                    "tooltip": "የመኪና ህጋዊ ፕሌት ቁጥር",
+                    "placeholder": "ለምሳሌ፦ AA-1234"
+                },
+                "vehicleType": {
+                    "label": "የመኪና አይነት",
+                    "placeholder": "የመኪና አይነት ይምረጡ"
+                },
+                "status": {
+                    "label": "ሁኔታ",
+                    "placeholder": "ሁኔታ ይምረጡ"
+                },
+                "chassis": {
+                    "label": "ቻሲስ ቁጥር",
+                    "helper": "አማራጭ - የፋብሪካ መለያ",
+                    "placeholder": "የቻሲስ ቁጥር"
+                },
+                "engine": {
+                    "label": "የሞተር ቁጥር",
+                    "helper": "አማራጭ - የሞተር መለያ",
+                    "placeholder": "የሞተር ቁጥር"
+                },
+                "tyre": {
+                    "label": "የጎማ መጠን",
+                    "helper": "አማራጭ - መደበኛ የጎማ መጠን",
+                    "placeholder": "ለምሳሌ፦ 315/80R22.5"
+                },
+                "serviceInterval": {
+                    "label": "የአገልግሎት ጊዜ (ኪ.ሜ.)",
+                    "placeholder": "ለምሳሌ፦ 10000"
+                },
+                "purchasePrice": {
+                    "label": "የግዢ ዋጋ",
+                    "placeholder": "ለምሳሌ፦ 2500000.00"
+                },
+                "productionDate": {
+                    "label": "የምርት ቀን"
+                },
+                "serviceStartDate": {
+                    "label": "የአገልግሎት መጀመሪያ ቀን"
+                }
+            },
+            "create": {
+                "breadcrumb": "ፍጠር",
+                "title": "አዲስ ትራክ ፍጠር",
+                "description": "መለያ፣ ዝርዝር መረጃ እና የፋይናንስ የህይወት ዘመን መረጃ በአንድ ስፍራ ያስገቡ።",
+                "backToList": "ወደ ትራኮች ተመለስ",
+                "submit": "ትራክ ፍጠር",
+                "submitting": "በመፍጠር ላይ...",
+                "successTitle": "✅ ትራክ ተፈጥሯል",
+                "successDescription": "ትራኩ በቡድኑ ውስጥ ተጨምሯል።"
+            },
+            "edit": {
+                "breadcrumb": "አርም",
+                "title": "ትራክ አሻሽል",
+                "description": "መለያ፣ ቴክኒካዊ ዝርዝሮች ወይም የፋይናንስ መለኪያዎችን ያስተካክሉ።",
+                "headTitle": "አርም {{plate}}",
+                "backToTruck": "ወደ ትራክ ተመለስ",
+                "submit": "ትራክ አሻሽል",
+                "submitting": "በማሻሻል ላይ...",
+                "successTitle": "✅ ትራክ ተዘምኗል",
+                "successDescription": "ትራኩ በትክክል ተዘምኗል።"
+            }
+        },
+        "show": {
+            "subtitle": "ሙሉ የትራክ መገለጫ እና የአፈፃፀም ክትትል",
+            "headTitle": "ትራክ - {{plate}}",
+            "actions": {
+                "deactivate": "አቁም",
+                "viewAll": "ሁሉንም አሳይ",
+                "viewAllAssignments": "ሁሉንም መመደቦች አሳይ",
+                "viewAllPerformances": "ሁሉንም አፈፃፀሞች አሳይ"
+            },
+            "tabs": {
+                "overview": "አጠቃላይ",
+                "performance": "አፈፃፀም",
+                "analytics": "ትንታኔ",
+                "maintenance": "ጥገና",
+                "history": "ታሪክ"
+            },
+            "summary": {
+                "completedTrips": "የተጠናቀቁ ጉዞዎች",
+                "openTrips": "{{count}} ክፍት ጉዞዎች",
+                "totalDistance": "ጠቅላላ ርቀት",
+                "loadFactor": "የጭነት መጠን: {{value}}%",
+                "fuelEfficiency": "የነዳጅ ቁጠባ",
+                "totalFuel": "{{value}} L ጠቅላላ",
+                "totalCost": "ጠቅላላ ወጪ",
+                "costPerKm": "{{value}} በኪ.ሜ."
+            },
+            "sections": {
+                "basic": {
+                    "title": "መሰረታዊ መረጃ",
+                    "description": "የትራክ ዝርዝር እና መለኪያዎች"
+                },
+                "quickLinks": "ፈጣን አገናኞች",
+                "utilization": "የአጠቃቀም መለኪያዎች",
+                "assignments": {
+                    "title": "የአሽከርካሪ መመደቦች",
+                    "description": "ለዚህ ትራክ የተመደቡ የቅርብ አሽከርካሪዎች"
+                }
+            },
+            "fields": {
+                "vehicleType": "የመኪና አይነት",
+                "plate": "የፕሌት ቁጥር",
+                "chassis": "ቻሲስ ቁጥር",
+                "engine": "የሞተር ቁጥር",
+                "created": "የተፈጠረበት ቀን"
+            },
+            "utilization": {
+                "loadFactor": "የጭነት መጠን",
+                "emptyRunning": "ባዶ መጓጓዣ",
+                "avgPayload": "አማካይ ጭነት",
+                "perTrip": "በጉዞ"
+            },
+            "assignments": {
+                "assignmentLabel": "መመደብ #{{id}}",
+                "attached": "ተያይዟል",
+                "detached": "ተለይቷል",
+                "assigned": "ተመድቧል",
+                "detachedAt": "ተለይቷል",
+                "empty": "ለዚህ ትራክ የአሽከርካሪ መመደብ እስካሁን የለም።"
+            },
+            "grade": {
+                "title": "የትራክ ደረጃ",
+                "description": "የአፈፃፀም ውጤት",
+                "overallScore": "አጠቃላይ ውጤት"
+            },
+            "performance": {
+                "summaryTitle": "የአፈፃፀም ማጠቃለያ",
+                "totalDistance": "ጠቅላላ ርቀት",
+                "completedTrips": "የተጠናቀቁ ጉዞዎች",
+                "fuelEfficiency": "የነዳጅ ቁጠባ",
+                "tonKm": "ቶን-ኪ.ሜ.",
+                "totalCost": "ጠቅላላ ወጪ",
+                "costPerKm": "ወጪ በኪ.ሜ.",
+                "tripLabel": "ጉዞ {{index}}",
+                "recordsTitle": "የአፈፃፀም መዝገቦች",
+                "recordsDescription": "የቅርብ ኦፕሬሽን ጉዞዎች",
+                "recordLabel": "አፈፃፀም #{{id}}",
+                "routeLabel": "{{origin}} → {{destination}}",
+                "distance": "ርቀት",
+                "cargo": "ጭነት",
+                "fuel": "ነዳጅ",
+                "empty": "ለዚህ ትራክ የአፈፃፀም መዝገቦች እስካሁን የሉም።",
+                "cards": {
+                    "totalRecords": "ጠቅላላ መዝገቦች",
+                    "mainTrips": "{{count}} ዋና ጉዞዎች",
+                    "completed": "ተጠናቋል",
+                    "completionRate": "{{value}}% ደረጃ",
+                    "openTrips": "ክፍት ጉዞዎች",
+                    "inProgress": "በሂደት ላይ",
+                    "tonKm": "ቶን-ኪ.ሜ.",
+                    "avgTonKm": "{{value}} አማካይ",
+                    "cargoVolume": "የጭነት መጠን",
+                    "avgCargoVolume": "{{value}} MT አማካይ"
+                }
+            },
+            "analytics": {
+                "fuelCost": "የነዳጅ ወጪ",
+                "maintenanceCost": "የጥገና ወጪ",
+                "totalOperationalCost": "ጠቅላላ የኦፕሬሽን ወጪ",
+                "totalFuel": "{{value}} L ጠቅላላ",
+                "records": "{{count}} መዝገቦች",
+                "costPerKm": "{{value}} በኪ.ሜ.",
+                "tripStatusDistribution": "የጉዞ ሁኔታ መከፋፈል",
+                "costBreakdown": "የወጪ መከፋፈል",
+                "recentTrends": "የቅርብ አፈፃፀም አዝማሚያዎች",
+                "distance": "ርቀት (KM)",
+                "tonnage": "ቶናጅ (MT)",
+                "fuel": "ነዳጅ (L)",
+                "efficiency": "የውጤታማነት መለኪያዎች",
+                "avgDistance": "አማካይ ርቀት/ጉዞ",
+                "fuelEfficiency": "የነዳጅ ቁጠባ",
+                "costPerTrip": "ወጪ በጉዞ",
+                "avgTripDuration": "አማካይ የጉዞ ቆይታ",
+                "tripDurationValue": "{{value}} ቀናት"
+            },
+            "maintenance": {
+                "title": "የጥገና አጠቃላይ እይታ",
+                "description": "የአገልግሎት እና የጥገና ታሪክ",
+                "total": "ጠቅላላ",
+                "completed": "ተጠናቋል",
+                "scheduled": "ተይዟል",
+                "overdue": "ዘግይቷል",
+                "cost": "ወጪ",
+                "odometer": "ኦዶሚተር",
+                "empty": "ለዚህ ትራክ የጥገና መረጃ እስካሁን የለም።"
+            },
+            "history": {
+                "title": "የእንቅስቃሴ ታሪክ",
+                "description": "የትራክ ለውጦች መታወቂያ",
+                "empty": "ለዚህ ትራክ የእንቅስቃሴ ታሪክ እስካሁን የለም።"
+            },
+            "charts": {
+                "loaded": "ጭነት ያለው",
+                "empty": "ባዶ",
+                "completed": "ተጠናቋል",
+                "open": "ክፍት",
+                "fuelCost": "የነዳጅ ወጪ",
+                "maintenance": "ጥገና",
+                "distanceSplit": "የርቀት መከፋፈል"
+            },
+            "fallbacks": {
+                "unknownDriver": "ያልታወቀ አሽከርካሪ"
+            },
+            "delete": {
+                "successTitle": "✅ ትራክ ተሰርዟል",
+                "successDescription": "ትራኩ በተሳካ ሁኔታ ተወግዷል።",
+                "failedTitle": "❌ ማጥፋት አልተሳካም",
+                "failedDescription": "ይህን ትራክ ማጥፋት አልተቻለም።"
+            },
+            "deactivate": {
+                "title": "ትራክ አቁም",
+                "description": "ይህ ትራክ እንደ ቆመ ይታያል።",
+                "confirm": "አቁም",
+                "successTitle": "✅ ትራክ ተቋርጧል",
+                "successDescription": "ትራኩ ተቋርጧል።",
+                "failedTitle": "❌ ማቋረጥ አልተሳካም",
+                "failedDescription": "ይህን ትራክ ማቋረጥ አልተቻለም።"
+            },
+            "assignmentPerformances": {
+                "breadcrumb": "የመመደብ አፈፃፀሞች",
+                "headTitle": "{{plate}} · መመደብ {{assignmentId}} · አፈፃፀሞች",
+                "actions": {
+                    "backToTruck": "ወደ ትራክ ተመለስ"
+                },
+                "header": {
+                    "description": "ለዚህ ትራክ የአሽከርካሪ መጣመር የአፈፃፀም ታሪክ"
+                },
+                "status": {
+                    "active": "ንቁ",
+                    "detached": "ተለይቷል",
+                    "activeAssignment": "ንቁ መመደብ",
+                    "inactiveAssignment": "እንቅስቃሴ የለሽ መመደብ"
+                },
+                "timeline": {
+                    "title": "የመመደብ የጊዜ መስመር",
+                    "description": "ለዚህ ትራክ-አሽከርካሪ መጣመር የህይወት ዙር",
+                    "truck": "ትራክ",
+                    "status": "ሁኔታ፡ {{value}}",
+                    "driver": "አሽከርካሪ",
+                    "driverId": "የአሽከርካሪ መለያ፡ {{value}}",
+                    "assignedOn": "ተመድቦበት",
+                    "detachedOn": "ተለይቶበት"
+                },
+                "summary": {
+                    "title": "አጠቃላይ እይታ",
+                    "totalRecords": "ጠቅላላ መዝገቦች",
+                    "completedTrips": "የተጠናቀቁ ጉዞዎች",
+                    "activeTrips": "ንቁ ጉዞዎች",
+                    "distance": "ርቀት (ኪ.ሜ.)",
+                    "cargoMoved": "የተንቀሳቀሰ ጭነት",
+                    "fuelEfficiency": "የነዳጅ ውጤታማነት"
+                },
+                "records": {
+                    "title": "የአፈፃፀም መዝገቦች",
+                    "description": "ለዚህ የአሽከርካሪ መመደብ የእንቅስቃሴ ታሪክ",
+                    "dispatchWindow": "የመጀመሪያ ጊዜ: {{from}} – {{to}}",
+                    "perPage": "በገጽ",
+                    "showPerPage": "አሳይ {{value}}"
+                },
+                "metrics": {
+                    "loadedDistance": "የጭነት ርቀት",
+                    "emptyDistance": "ባዶ ርቀት",
+                    "fuelUsed": "የተጠቀሰ ነዳጅ",
+                    "tonKm": "ቶን-ኪ.ሜ."
+                },
+                "table": {
+                    "dispatch": "መጀመሪያ",
+                    "route": "መንገድ",
+                    "distance": "ርቀት",
+                    "fuel": "ነዳጅ",
+                    "cargo": "ጭነት",
+                    "status": "ሁኔታ",
+                    "tonKm": "ቶን-ኪ.ሜ.",
+                    "actions": "እርምጃዎች",
+                    "duration": "ቆይታ {{value}}",
+                    "operation": "ኦፕ #{{value}}",
+                    "loadedDistance": "ጭነት {{value}}",
+                    "returned": "ተመልሷል",
+                    "inTransit": "በመንገድ ላይ",
+                    "view": "አሳይ"
+                },
+                "duration": {
+                    "single": "1 ቀን",
+                    "plural": "{{count}} ቀናት"
+                },
+                "empty": {
+                    "title": "የአፈፃፀም መዝገቦች አልተገኙም",
+                    "description": "ለዚህ መመደብ አፈፃፀሞች ሲመዘገቡ እዚህ ይታያሉ።"
+                },
+                "fallbacks": {
+                    "driverAssignment": "የአሽከርካሪ መመደብ",
+                    "unknownDriver": "ያልታወቀ አሽከርካሪ"
+                },
+                "loading": {
+                    "alt": "አፈፃፀሞች በመጫን ላይ",
+                    "label": "አፈፃፀሞች በመጫን ላይ..."
+                }
+            }
+        }
+    },
+    "driverTrucks": {
+        "title": "የአሽከርካሪ-ትራክ መመደቦች",
+        "breadcrumb": "የአሽከርካሪ-ትራክ መመደቦች",
+        "description": "ሁሉንም የአሽከርካሪ-ትራክ መመደቦች ያስተዳድሩ። ጠቅላላ፡ {{count}}",
+        "columns": {
+            "driver": "አሽከርካሪ",
+            "truck": "ትራክ",
+            "assignedDate": "የተመደበበት ቀን",
+            "created": "የተፈጠረበት",
+            "status": "ሁኔታ"
+        },
+        "table": {
+            "title": "መመደቦች",
+            "description": "ሁሉም የአሽከርካሪ-ትራክ መመደብ መዝገቦች",
+            "actions": "እርምጃዎች",
+            "detachedAt": "ተለይቷል፡ {{value}}"
+        },
+        "actions": {
+            "add": "መመደብ ጨምር",
+            "view": "አሳይ",
+            "edit": "አርም",
+            "delete": "ሰርዝ",
+            "cancel": "ተወው"
+        },
+        "filters": {
+            "searchPlaceholder": "መመደቦችን ይፈልጉ...",
+            "rowsLabel": "ረድፎች",
+            "status": "ሁኔታ",
+            "allStatuses": "ሁሉም ሁኔታዎች",
+            "perPageOption": "{{value}} / ገጽ"
+        },
+        "mobile": {
+            "position": "#{{value}}",
+            "truckPending": "ትራክ እስካሁን የለም",
+            "status": "ሁኔታ",
+            "assigned": "ተመድቦበት",
+            "created": "የተፈጠረበት",
+            "detached": "ተለይቷል"
+        },
+        "empty": {
+            "title": "ምንም መመደብ አልተገኘም።",
+            "createAction": "አንዱን ፍጠር"
+        },
+        "stats": {
+            "total": {
+                "label": "መመደቦች",
+                "description": "የአሽከርካሪ-ትራክ ጥንዶች"
+            },
+            "attached": {
+                "label": "ተያይዟል",
+                "description": "አሁን ንቁ ግንኙነቶች"
+            },
+            "detached": {
+                "label": "ተለይቷል",
+                "description": "በመመደብ የሚጠብቁ"
+            },
+            "availableDrivers": {
+                "label": "ነፃ አሽከርካሪዎች",
+                "description": "ለመጀመር ዝግጁ"
+            },
+            "availableTrucks": {
+                "label": "ነፃ ትራኮች",
+                "description": "ዝግጁ የመኪና ክፍል"
+            }
+        },
+        "status": {
+            "attached": "ተያይዟል",
+            "detached": "ተለይቷል",
+            "active": "ንቁ",
+            "inactive": "እንቅስቃሴ የለሽ",
+            "activeAssignment": "ንቁ መመደብ",
+            "inactiveAssignment": "እንቅስቃሴ የለሽ መመደብ"
+        },
+        "delete": {
+            "title": "መመደብ ሰርዝ",
+            "description": "ይህን የአሽከርካሪ-ትራክ መመደብ መሰረዝ ትፈልጋለህ? ይህ እርምጃ መመለስ አይቻልም።",
+            "failedTitle": "❌ ማስወገድ አልተሳካም",
+            "errorKnown": "መመደቡን ማስወገድ አልተቻለም። እባክዎ መስፈርቶቹን ይፈትሹ እና ይሞክሩ።",
+            "itemName": "{{driver}} ↔ {{plate}}"
+        },
+        "fallbacks": {
+            "notAvailable": "የለም"
+        },
+        "form": {
+            "badge": "የመመደብ ስራዎች",
+            "required": "ሁሉም ያስፈልጉ መስኮች መሙላት ያስፈልጋል",
+            "unsaved": "ያልተቀመጡ ለውጦች አሉ",
+            "validation": {
+                "errorTitle": "⚠️ ስህተት",
+                "title": "⚠️ የማረጋገጫ ስህተት",
+                "fixErrors": "እባክዎ ከማስገባት በፊት የማረጋገጫ ስህተቶችን ያስተካክሉ።",
+                "resolve": "እባክዎ ከማስገባት በፊት የተመረጡ መስኮችን ያስተካክሉ።"
+            },
+            "sections": {
+                "selection": {
+                    "title": "የመመደብ ምርጫ",
+                    "description": "ሊጣመር የሚገባውን ንቁ ትራክ እና አሽከርካሪ ይምረጡ።",
+                    "descriptionEdit": "የንቁ ትራክ እና አሽከርካሪ እንዲቀጥሉ ይምረጡ።"
+                },
+                "details": {
+                    "title": "የመመደብ ዝርዝሮች",
+                    "description": "የእቅድ የተረካቸውን ቀን ያቀናብሩ እና ከመላክ በፊት መጣመሩን ይመልከቱ።",
+                    "descriptionEdit": "ለዚህ መመደብ ተግባራዊ ቀንን ያረጋግጡ እና መጣመሩን ይመልከቱ።"
+                }
+            },
+            "fields": {
+                "truck": {
+                    "label": "የሚገኙ ትራኮች",
+                    "tooltip": "በንቁ ሁኔታ ያሉ ትራኮች ብቻ ይታያሉ።",
+                    "placeholder": "ትራክ ይምረጡ",
+                    "searchPlaceholder": "ትራኮችን ይፈልጉ...",
+                    "empty": "የሚገኙ ትራኮች አልተገኙም"
+                },
+                "driver": {
+                    "label": "የሚገኙ አሽከርካሪዎች",
+                    "tooltip": "ሌላ ንቁ ትራክ ጋር የተጣመሩ አሽከርካሪዎች በራስ-ሰር ተለይተዋል።",
+                    "placeholder": "አሽከርካሪ ይምረጡ",
+                    "searchPlaceholder": "አሽከርካሪዎችን ይፈልጉ...",
+                    "optionLabel": "{{name}} (መለያ: {{id}})",
+                    "empty": "የሚገኙ አሽከርካሪዎች አልተገኙም"
+                },
+                "date": {
+                    "label": "የመመደብ ቀን",
+                    "helper": "ዛሬ ወይም ባለፉት 30 ቀናት ውስጥ መሆን አለበት።"
+                }
+            },
+            "selectedTruck": {
+                "title": "የተመረጠ ትራክ",
+                "plate": "ፕሌት",
+                "status": "ሁኔታ"
+            },
+            "selectedDriver": {
+                "title": "የተመረጠ አሽከርካሪ",
+                "name": "ስም",
+                "driverId": "የአሽከርካሪ መለያ",
+                "status": "ሁኔታ"
+            },
+            "summary": {
+                "title": "የመመደብ አጠቃላይ ግምገማ",
+                "driver": "አሽከርካሪ",
+                "truck": "ትራክ",
+                "date": "የመመደብ ቀን",
+                "status": "ሁኔታ"
+            },
+            "create": {
+                "breadcrumb": "መመደብ ፍጠር",
+                "title": "አሽከርካሪን ለትራክ መመደብ",
+                "headTitle": "የአሽከርካሪ-ትራክ መመደብ ፍጠር",
+                "description": "ንቁ አሽከርካሪን ከሚገኝ ትራክ ጋር ያጣመሩ እና የመመደብ መጀመሪያ ቀን ይመዝግቡ።",
+                "backToList": "ወደ መመደቦች ተመለስ",
+                "submit": "መመደብ ፍጠር",
+                "submitting": "በመፍጠር ላይ...",
+                "successTitle": "✅ መመደብ ተፈጥሯል",
+                "successDescription": "አሽከርካሪ እና ትራክ በተሳካ ሁኔታ ተጣመሩ።"
+            },
+            "edit": {
+                "breadcrumb": "አርም",
+                "title": "የአሽከርካሪ-ትራክ መመደብ አስተካክል",
+                "headTitle": "የአሽከርካሪ-ትራክ መመደብ #{{id}} አርም",
+                "description": "የአሽከርካሪ እና ትራክ መጣመርን እና የመመደብ ቀንን ያስተካክሉ።",
+                "backToAssignment": "ወደ መመደብ ተመለስ",
+                "submit": "መመደብ አዘምን",
+                "submitting": "በማዘመን ላይ...",
+                "successTitle": "✅ መመደብ ተዘምኗል",
+                "successDescription": "የአሽከርካሪ እና ትራክ መጣመር በተሳካ ሁኔታ ተዘምኗል።",
+                "fallbackAssignment": "መመደብ"
+            }
+        },
+        "show": {
+            "loading": "በመጫን ላይ...",
+            "breadcrumbItem": "{{driver}} – {{plate}}",
+            "title": "{{driver}} · {{plate}}",
+            "subtitle": "የአሽከርካሪ-ትራክ መመደብ የህይወት ዙር ዝርዝር እይታ",
+            "headTitle": "መመደብ፡ {{driver}} - {{plate}}",
+            "actions": {
+                "back": "ተመለስ",
+                "detach": "ለይ"
+            },
+            "tabs": {
+                "overview": "አጠቃላይ እይታ",
+                "performances": "አፈፃፀሞች ({{count}})",
+                "activity": "እንቅስቃሴ"
+            },
+            "summary": {
+                "assignmentId": "የመመደብ መለያ",
+                "driverId": "የአሽከርካሪ መለያ {{value}}",
+                "performances": "አፈፃፀሞች",
+                "linkedRecords": "የተገናኙ የአፈፃፀም መዝገቦች",
+                "duration": "ቆይታ",
+                "assignedOn": "ተመድቦ {{value}}",
+                "statusNote": "ማስታወሻ፡ {{value}}",
+                "noStatusNotes": "የሁኔታ ማስታወሻዎች የሉም"
+            },
+            "sections": {
+                "summary": {
+                    "title": "የመመደብ ማጠቃለያ",
+                    "description": "የጊዜ መስመርና ሁኔታ ማጠቃለያ"
+                },
+                "metadata": {
+                    "title": "የሲስተም መረጃ",
+                    "description": "የኦዲት መረጃ"
+                },
+                "currentStatus": "የአሁኑ ሁኔታ",
+                "operationalNotes": "የእንቅስቃሴ ማስታወሻዎች",
+                "noOperationalNotes": "ተጨማሪ የሁኔታ ማስታወሻዎች የሉም።",
+                "driverSnapshot": "የአሽከርካሪ አቅጣጫ",
+                "truckSnapshot": "የትራክ አቅጣጫ"
+            },
+            "fields": {
+                "driverId": "መለያ፡ {{value}}",
+                "assignmentPlate": "የመመደብ ፕሌት፡ {{value}}",
+                "assignedOn": "ተመድቦበት",
+                "detachedOn": "ተለይቶበት",
+                "duration": "ቆይታ",
+                "detachmentReason": "የመለያየት ምክንያት",
+                "createdAt": "የተፈጠረበት",
+                "updatedAt": "መጨረሻ የተዘምነበት",
+                "name": "ስም",
+                "identifier": "መለያ",
+                "plate": "ፕሌት",
+                "assignmentPlateLabel": "የመመደብ ፕሌት"
+            },
+            "grade": {
+                "title": "የመመደብ ደረጃ",
+                "description": "ከተመሳሳይ መጣመሮች ጋር የአፈፃፀም ንጽህና",
+                "fallbackDescription": "የአፈፃፀም ትንታኔዎች",
+                "overallScore": "አጠቃላይ ነጥብ",
+                "scoreOutOf": "{{score}} / 100",
+                "waiting": "በመጠበቅ ላይ",
+                "weight": "ክብደት {{value}}",
+                "empty": "በቂ የአፈፃፀም መረጃ ከተመዘገበ በኋላ የደረጃ መረጃ ይታያል።",
+                "fallbackEmpty": "ተጨማሪ የአፈፃፀም መረጃ ከተመዘገበ በኋላ የደረጃ ትንታኔ ይገኛል።",
+                "performance": {
+                    "label": "አፈፃፀም",
+                    "description": "የተጠናቀቁ ጉዞዎች፣ የተሸፈነ ርቀት እና የተደረሰ ቶን-ኪ.ሜ.",
+                    "trips": "ጉዞዎች",
+                    "distance": "ርቀት",
+                    "avgDistance": "አማካይ የጉዞ ርቀት",
+                    "tonKmPerTrip": "ቶን-ኪ.ሜ. / ጉዞ"
+                },
+                "efficiency": {
+                    "label": "ውጤታማነት",
+                    "description": "የነዳጅ አጠቃቀም እና የወጪ ውጤታማነት",
+                    "kmPerLiter": "ኪ.ሜ. በሊትር",
+                    "fuelCostPerKm": "የነዳጅ ወጪ / ኪ.ሜ.",
+                    "avgDistance": "አማካይ የጉዞ ርቀት"
+                },
+                "consistency": {
+                    "label": "ቋሚነት",
+                    "description": "የጉዞ ጨረሻ እና የማዞሪያ አፈፃፀም",
+                    "completionRate": "የጉዞ ጨረሻ መጠን",
+                    "avgTripDuration": "አማካይ የጉዞ ቆይታ"
+                }
+            },
+            "duration": {
+                "single": "1 ቀን",
+                "plural": "{{count}} ቀናት"
+            },
+            "performance": {
+                "title": "የአፈፃፀም መዝገቦች",
+                "description": "ለዚህ መጣመር የእንቅስቃሴ ታሪክ",
+                "tripLabel": "ጉዞ #{{id}}",
+                "routeLabel": "{{origin}} → {{destination}}",
+                "unknownOrigin": "ያልታወቀ መነሻ",
+                "unknownDestination": "ያልታወቀ መድረሻ",
+                "table": {
+                    "trip": "ጉዞ",
+                    "date": "ቀን",
+                    "customer": "ደንበኛ",
+                    "route": "መንገድ",
+                    "volume": "መጠን (MT)"
+                },
+                "empty": {
+                    "title": "ለዚህ መመደብ ምንም የአፈፃፀም መዝገብ አልተገኘም።",
+                    "description": "ከተገናኙ እንቅስቃሴዎች መመዝገብ በኋላ እዚህ ይታያሉ።"
+                }
+            },
+            "activity": {
+                "title": "የእንቅስቃሴ መዝገብ",
+                "description": "ለዚህ መመደብ የቅርብ ጊዜ ክስተቶች",
+                "by": "በ {{name}}",
+                "empty": {
+                    "title": "ለዚህ መመደብ እስካሁን ምንም እንቅስቃሴ አልተመዘገበም።",
+                    "description": "ለውጦች ሲደርሱ እዚህ ይታያሉ።"
+                }
+            },
+            "delete": {
+                "successTitle": "✅ መመደብ ተሰርዟል",
+                "successDescription": "የአሽከርካሪ-ትራክ መመደብ በተሳካ ሁኔታ ተወግዷል።",
+                "failedTitle": "❌ ማጥፋት አልተሳካም",
+                "failedDescription": "ይህን መመደብ ማጥፋት አልተቻለም። እባክዎ የሚከለክሉ መዝገቦችን መርምሩ።",
+                "failedDescriptionUnknown": "መመደቡን ሲሰርዙ ያልተጠበቀ ስህተት ተፈጥሯል። እባክዎ ይድገሙ።"
+            }
+        },
+        "detach": {
+            "breadcrumb": "አሽከርካሪ ለይ",
+            "headTitle": "ለይ፡ {{driver}} - {{plate}}",
+            "actions": {
+                "backToAssignment": "ወደ መመደብ ተመለስ"
+            },
+            "title": "አሽከርካሪን ከትራክ ለይ",
+            "workflow": "የመለያየት ሂደት",
+            "selectDate": "ቀን ይምረጡ",
+            "metrics": {
+                "driver": "አሽከርካሪ",
+                "truck": "ትራክ",
+                "assignedOn": "ተመድቦበት",
+                "currentDuration": "የአሁኑ ቆይታ"
+            },
+            "currentDetails": {
+                "title": "የአሁኑ መመደብ ዝርዝሮች",
+                "description": "የመለያየት ሂደት ከመጨረስ በፊት ንቁ መጣመሩን ይገምግሙ።",
+                "driver": "አሽከርካሪ",
+                "driverId": "መለያ፡ {{value}}",
+                "truck": "ትራክ",
+                "recordedPlate": "የተመዘገበ ፕሌት፡ {{value}}",
+                "assignedOn": "ተመድቦበት",
+                "detachmentDate": "የመለያየት ቀን",
+                "totalDuration": "ጠቅላላ ቆይታ"
+            },
+            "notice": {
+                "title": "አስፈላጊ የመለያየት ማስታወሻ",
+                "line1": "ይህን አሽከርካሪ መለየት መመደቡን እንደ እንቅስቃሴ የለሽ ያሳያል፣ ትራኩን ለአዲስ መመደቦች ነፃ ያደርጋል፣ እና አሽከርካሪውን ወደ የሚገኙ ክፍሎች ይመልሳል።",
+                "line2": "የመለያየት ምክንያቱ በመገለጽ ለወደፊት ኦዲት በቂ እንዲሆን ያረጋግጡ። ይህ እርምጃ በእንቅስቃሴ ጊዜ መስመር ውስጥ ይመዘገባል።"
+            },
+            "form": {
+                "title": "መለያየቱን ያጠናቅቁ",
+                "description": "የመለያየት ቀንን ይስጡ እና ለውጡን የእንቅስቃሴ ምክንያት ይመዝግቡ።",
+                "dateLabel": "የመለያየት ቀን",
+                "datePlaceholder": "የመለያየት ቀን ይምረጡ",
+                "reasonLabel": "የመለያየት ምክንያት",
+                "reasonPlaceholder": "ይህ አሽከርካሪ ከትራኩ ለምን እየተለየ ነው...",
+                "reasonHelper": "ምክንያቱ ለኦዲት ይቀመጣል እና በመመደብ እንቅስቃሴ መዝገብ ውስጥ ይታያል።",
+                "submitting": "በመለየት ላይ...",
+                "submit": "አሽከርካሪን ለይ"
+            },
+            "summary": {
+                "title": "የመለያየት ማጠቃለያ",
+                "driver": "አሽከርካሪ",
+                "truck": "ትራክ",
+                "date": "የመለያየት ቀን",
+                "duration": "ጠቅላላ ቆይታ",
+                "reason": "ምክንያት",
+                "note": "ከማረጋገጥ በኋላ ይህ መመደብ እንደ ተለየ ይመረጣል እና ሁለቱም ሀብቶች ለድጋሚ መመደብ ዝግጁ ይሆናሉ።"
+            },
+            "successTitle": "✅ አሽከርካሪ ተለይቷል",
+            "successDescription": "መመደቡ በተሳካ ሁኔታ ተዘምኗል።",
+            "duration": {
+                "waiting": "የመለያየት ቀን በመጠበቅ ላይ",
+                "unable": "ማስላት አልተቻለም",
+                "invalid": "የመለያየት ቀን ከመመደብ ቀን በኋላ መሆን አለበት",
+                "lessThanMinute": "ከአንድ ደቂቃ በታች",
+                "day": "ቀን",
+                "days": "ቀናት",
+                "hour": "ሰዓት",
+                "hours": "ሰዓታት",
+                "minute": "ደቂቃ",
+                "minutes": "ደቂቃዎች"
+            }
+        }
+    },
+    "drivers": {
+        "title": "አሽከርካሪዎች",
+        "breadcrumb": "አሽከርካሪዎች",
+        "description": "የአሽከርካሪ ቡድንዎን ከ{{count}} አሽከርካሪ{{plural}} ጋር ያስተዳድሩ",
+        "columns": {
+            "name": "ስም",
+            "driverId": "የአሽከርካሪ መለያ",
+            "gender": "ፆታ",
+            "location": "አካባቢ",
+            "phone": "ስልክ",
+            "hiredDate": "የተቀጠረበት ቀን",
+            "status": "ሁኔታ"
+        },
+        "table": {
+            "title": "የአሽከርካሪ መዝገብ",
+            "description": "በቡድንዎ ውስጥ ያሉ አሽከርካሪዎችን ሙሉ በሙሉ ዝርዝር",
+            "actions": "እርምጃዎች"
+        },
+        "actions": {
+            "add": "አሽከርካሪ ጨምር",
+            "view": "አሳይ",
+            "edit": "አርም",
+            "delete": "ሰርዝ",
+            "cancel": "ተወው"
+        },
+        "filters": {
+            "searchPlaceholder": "አሽከርካሪዎችን ይፈልጉ...",
+            "rowsLabel": "ረድፎች",
+            "all": "ሁሉም",
+            "gender": "ፆታ",
+            "allGenders": "ሁሉም ፆታዎች",
+            "perPageOption": "{{value}} / ገጽ"
+        },
+        "mobile": {
+            "position": "#{{value}}",
+            "driverIdPending": "የአሽከርካሪ መለያ እስካሁን የለም",
+            "status": "ሁኔታ",
+            "gender": "ፆታ",
+            "location": "አካባቢ",
+            "phone": "ስልክ",
+            "hired": "ተቀጥሯል"
+        },
+        "empty": {
+            "title": "ምንም አሽከርካሪ አልተገኘም።",
+            "createAction": "አንዱን ፍጠር"
+        },
+        "stats": {
+            "total": {
+                "label": "አጠቃላይ አሽከርካሪዎች",
+                "description": "የቡድን መጠን"
+            },
+            "active": {
+                "label": "ንቁ",
+                "description": "በአሁኑ ጊዜ ንቁ"
+            },
+            "inactive": {
+                "label": "እንቅስቃሴ የለሽ",
+                "description": "ስራ ላይ ያልሆኑ"
+            },
+            "male": {
+                "label": "ወንድ",
+                "description": "👨 ወንድ አሽከርካሪዎች"
+            },
+            "female": {
+                "label": "ሴት",
+                "description": "👩 ሴት አሽከርካሪዎች"
+            }
+        },
+        "status": {
+            "active": "ንቁ",
+            "inactive": "እንቅስቃሴ የለሽ",
+            "suspended": "ታግዷል",
+            "unknown": "ያልታወቀ"
+        },
+        "gender": {
+            "male": "ወንድ",
+            "female": "ሴት",
+            "unknown": "ያልታወቀ"
+        },
+        "labels": {
+            "status": "ሁኔታ",
+            "gender": "ፆታ",
+            "driverId": "የአሽከርካሪ መለያ",
+            "mobile": "ስልክ",
+            "zone": "ዞን",
+            "woreda": "ወረዳ",
+            "kebele": "ቀበሌ",
+            "housenumber": "የቤት ቁጥር"
+        },
+        "show": {
+            "subtitle": "የአሽከርካሪ ፕሮፋይልና አፈፃፀም ዝርዝር",
+            "headTitle": "አሽከርካሪ አሳይ - {{name}}",
+            "actions": {
+                "back": "ተመለስ",
+                "deactivate": "አቋርጥ",
+                "activate": "አንቃ",
+                "viewAll": "ሁሉን አሳይ",
+                "viewAllAssignments": "ሁሉን መመደቦች አሳይ",
+                "viewAllPerformances": "ሁሉን አፈፃፀሞች አሳይ"
+            },
+            "tabs": {
+                "overview": "አጠቃላይ",
+                "performance": "አፈፃፀም",
+                "analytics": "ትንታኔ",
+                "safety": "ደህንነት",
+                "history": "ታሪክ"
+            },
+            "sections": {
+                "basic": {
+                    "title": "መሰረታዊ መረጃ",
+                    "description": "የግል እና የሙያ ዝርዝሮች"
+                },
+                "assignments": {
+                    "title": "የትራክ መመደቦች",
+                    "description": "ከዚህ አሽከርካሪ ጋር የተያያዙ ቅርብ መኪናዎች"
+                },
+                "employment": {
+                    "title": "የቅጥር መረጃ",
+                    "description": "የቅጥር እና የስራ ዝርዝር"
+                },
+                "quickLinks": "ፈጣን አገናኞች"
+            },
+            "fields": {
+                "birthdate": "የትውልድ ቀን",
+                "hireddate": "የቅጥር ቀን"
+            },
+            "summary": {
+                "completedTrips": "የተጠናቀቁ ጉዞዎች",
+                "distanceHelper": "ርቀት {{value}}",
+                "noPerformanceData": "የአፈፃፀም መረጃ አልተመዘገበም",
+                "fuelEfficiency": "የነዳጅ ውጤታማነት",
+                "fuelHelper": "{{value}} L ጠቅላላ",
+                "noFuelData": "የነዳጅ መረጃ የለም",
+                "totalCargo": "ጠቅላላ ጭነት",
+                "cargoHelper": "አማካይ {{value}} በጉዞ",
+                "noCargoData": "የጭነት መረጃ የለም",
+                "safetyScore": "የደህንነት ውጤት",
+                "damageHelper": "ጉዳት {{value}}",
+                "noIncidents": "ምንም ክስተት የለም"
+            },
+            "grade": {
+                "title": "የአሽከርካሪ ደረጃ",
+                "description": "የአፈፃፀም ደረጃ",
+                "overallScore": "አጠቃላይ ውጤት",
+                "scoreOutOf": "{{score}} / 100"
+            },
+            "assignments": {
+                "assignmentLabel": "መመደብ #{{id}}",
+                "attached": "ተጣብቋል",
+                "detached": "ተለይቷል",
+                "assigned": "ተመድቧል",
+                "detachedAt": "ተለይቷል",
+                "empty": "ለዚህ አሽከርካሪ ምንም መመደብ የለም።"
+            },
+            "performance": {
+                "summaryTitle": "የአፈፃፀም ማጠቃለያ",
+                "distance": "ርቀት",
+                "trips": "ጉዞዎች",
+                "cargo": "ጭነት",
+                "fuelEfficiency": "የነዳጅ ውጤታማነት",
+                "fuelCost": "የነዳጅ ወጪ",
+                "costPerKm": "በኪ.ሜ. ወጪ",
+                "avgRating": "አማካይ ደረጃ",
+                "cards": {
+                    "totalDistance": "ጠቅላላ ርቀት",
+                    "tripCount": "{{count}} ጉዞዎች",
+                    "totalCargo": "ጠቅላላ ጭነት",
+                    "cargoAvg": "{{value}} አማካይ",
+                    "fuelEfficiency": "የነዳጅ ውጤታማነት",
+                    "fuelTotal": "{{value}} L ጠቅላላ",
+                    "fuelCost": "የነዳጅ ወጪ",
+                    "costPerKm": "{{value}} በኪ.ሜ."
+                },
+                "recordsTitle": "የአፈፃፀም መዝገቦች",
+                "recordsDescription": "ቅርብ የእንቅስቃሴ ጉዞዎች",
+                "recordLabel": "አፈፃፀም #{{id}}",
+                "viewOperation": "ኦፕሬሽን አሳይ",
+                "tonKm": "ቶን-ኪ.ሜ.",
+                "fuel": "ነዳጅ",
+                "tripLabel": "ጉዞ {{index}}",
+                "empty": "ለዚህ አሽከርካሪ የአፈፃፀም መዝገቦች አልተገኙም።"
+            },
+            "analytics": {
+                "recentTrends": "የቅርብ አፈፃፀም አዝማሚያዎች",
+                "distance": "ርቀት (ኪ.ሜ.)",
+                "tonnage": "ቶናጅ (MT)",
+                "fuel": "ነዳጅ (L)",
+                "safetyByType": "ክስተቶች በአይነት",
+                "severity": "ክስተቶች በደረጃ",
+                "incidents": "ክስተቶች",
+                "efficiency": "የብቃት መለኪያዎች",
+                "avgDistance": "አማካይ ርቀት/ጉዞ",
+                "fuelEfficiency": "የነዳጅ ውጤታማነት",
+                "costPerTrip": "በጉዞ ወጪ",
+                "avgPayload": "አማካይ ጭነት",
+                "safetyPerformance": "የደህንነት አፈፃፀም",
+                "totalIncidents": "ጠቅላላ ክስተቶች",
+                "totalDamage": "ጠቅላላ ጉዳት"
+            },
+            "safety": {
+                "overviewTitle": "የደህንነት አጠቃላይ",
+                "overviewDescription": "ክስተቶች እና የደህንነት አፈፃፀም",
+                "total": "ጠቅላላ",
+                "accidents": "አደጋዎች",
+                "violations": "ጥሰቶች",
+                "warnings": "ማስጠንቀቂያዎች",
+                "critical": "አስከፊ",
+                "major": "ከፍተኛ",
+                "minor": "ትንሽ",
+                "empty": "ለዚህ አሽከርካሪ የደህንነት መረጃ የለም።",
+                "incident": "ክስተት",
+                "location": "አካባቢ",
+                "damage": "ጉዳት"
+            },
+            "history": {
+                "title": "የእንቅስቃሴ ታሪክ",
+                "description": "የአሽከርካሪ ለውጦች መዝገብ",
+                "empty": "ለዚህ አሽከርካሪ የእንቅስቃሴ ታሪክ የለም።"
+            },
+            "delete": {
+                "title": "አሽከርካሪ ሰርዝ",
+                "description": "ይህን አሽከርካሪ ማጥፋት እርግጠኛ ነዎት? ይህ እርምጃ መመለስ አይችልም።",
+                "successTitle": "✅ አሽከርካሪ ተሰርዟል",
+                "successDescription": "አሽከርካሪው ተሰርዟል።",
+                "failedTitle": "❌ መሰረዝ አልተሳካም",
+                "failedDescription": "ይህን አሽከርካሪ መሰረዝ አልተቻለም።"
+            },
+            "deactivate": {
+                "title": "አሽከርካሪ አቋርጥ",
+                "description": "ይህ አሽከርካሪ እንደ እንቅስቃሴ የለሽ ይመለከታል።",
+                "confirm": "አቋርጥ",
+                "successTitle": "✅ አሽከርካሪ ታግዷል",
+                "successDescription": "አሽከርካሪው ታግዷል።",
+                "failedTitle": "❌ መቋረጥ አልተሳካም",
+                "failedDescription": "አሽከርካሪውን መቋረጥ አልተቻለም።"
+            },
+            "activate": {
+                "title": "አሽከርካሪ አንቃ",
+                "description": "ይህ አሽከርካሪ እንደ ንቁ ይመለከታል።",
+                "confirm": "አንቃ",
+                "successTitle": "✅ አሽከርካሪ ተንቀሳቅሷል",
+                "successDescription": "አሽከርካሪው ተንቀሳቅሷል።",
+                "failedTitle": "❌ ማንቃት አልተሳካም",
+                "failedDescription": "አሽከርካሪውን ማንቃት አልተቻለም።"
+            },
+            "fallbacks": {
+                "unknownDriver": "ያልታወቀ አሽከርካሪ"
+            }
+        },
+        "assignmentPerformances": {
+            "breadcrumb": "የመመደብ አፈፃፀሞች",
+            "headTitle": "{{name}} · {{plate}} · አፈፃፀሞች",
+            "actions": {
+                "backToDriver": "ወደ አሽከርካሪ ተመለስ"
+            },
+            "header": {
+                "description": "ለዚህ አሽከርካሪና ትራክ መጣመር የአፈፃፀም መዝገቦች"
+            },
+            "status": {
+                "attached": "ተጣብቋል",
+                "detached": "ተለይቷል"
+            },
+            "timeline": {
+                "title": "የመመደብ የጊዜ መስመር",
+                "description": "ለዚህ መጣመር የህይወት ዙር መረጃ",
+                "driver": "አሽከርካሪ",
+                "truck": "ትራክ",
+                "driverId": "መለያ፡ {{value}}",
+                "truckId": "የትራክ መለያ፡ {{value}}",
+                "assignedOn": "ተመድቦበት",
+                "detachedOn": "ተለይቶበት"
+            },
+            "summary": {
+                "title": "አጠቃላይ እይታ",
+                "totalRecords": "ጠቅላላ መዝገቦች",
+                "completedTrips": "የተጠናቀቁ ጉዞዎች",
+                "activeTrips": "ንቁ ጉዞዎች",
+                "distance": "ርቀት (ኪ.ሜ.)",
+                "cargoMoved": "የተንቀሳቀሰ ጭነት",
+                "fuelEfficiency": "የነዳጅ ውጤታማነት"
+            },
+            "records": {
+                "title": "የአፈፃፀም መዝገቦች",
+                "description": "ለተመረጠው መመደብ የእንቅስቃሴ ታሪክ",
+                "dispatchWindow": "የመጀመሪያ ጊዜ: {{from}} – {{to}}",
+                "perPage": "በገጽ",
+                "showPerPage": "አሳይ {{value}}"
+            },
+            "metrics": {
+                "loadedDistance": "የጭነት ርቀት",
+                "emptyDistance": "ባዶ ርቀት",
+                "fuelUsed": "የተጠቀሰ ነዳጅ",
+                "tonKm": "ቶን-ኪ.ሜ."
+            },
+            "table": {
+                "dispatch": "መጀመሪያ",
+                "route": "መንገድ",
+                "distance": "ርቀት",
+                "fuel": "ነዳጅ",
+                "cargo": "ጭነት",
+                "status": "ሁኔታ",
+                "tonKm": "ቶን-ኪ.ሜ.",
+                "actions": "እርምጃዎች",
+                "duration": "ቆይታ {{value}}",
+                "operation": "ኦፕ #{{value}}",
+                "loadedDistance": "ጭነት {{value}}",
+                "returned": "ተመልሷል",
+                "inTransit": "በመንገድ ላይ",
+                "view": "አሳይ"
+            },
+            "duration": {
+                "single": "1 ቀን",
+                "plural": "{{count}} ቀናት"
+            },
+            "empty": {
+                "title": "የአፈፃፀም መዝገቦች አልተገኙም",
+                "description": "ለዚህ መመደብ አፈፃፀሞች ሲመዘገቡ እዚህ ይታያሉ።"
+            },
+            "fallbacks": {
+                "assignment": "መመደብ",
+                "unknownTruck": "ያልታወቀ ትራክ"
+            }
+        },
+        "delete": {
+            "failedTitle": "❌ መሰረዝ አልተሳካም",
+            "errorKnown": "አሽከርካሪውን መሰረዝ አልተቻለም። መስፈርቶቹን ይመርሙ እና ደግመው ይሞክሩ።",
+            "errorUnknown": "አሽከርካሪውን ለመሰረዝ ስለሆነ ያልተጠበቀ ስህተት ተከስቷል። እባክዎ ደግመው ይሞክሩ።",
+            "title": "አሽከርካሪ ሰርዝ",
+            "description": "ይህን አሽከርካሪ ማጥፋት እርግጠኛ ነዎት? ይህ እርምጃ መመለስ አይችልም።",
+            "confirm": "አሽከርካሪ ሰርዝ"
+        },
+        "form": {
+            "badge": "የቡድን አስተዳደር",
+            "required": "ሁሉም አስፈላጊ መስኮች መሞላት አለባቸው",
+            "unsaved": "ያልተቀመጡ ለውጦች አሉ",
+            "validation": {
+                "title": "⚠️ የማረጋገጫ ስህተት",
+                "fixErrors": "እባክዎ ማስረጃውን ከማስገባት በፊት ስህተቶቹን ያስተካክሉ",
+                "resolve": "እባክዎ ከመላክዎ በፊት የተለዩ መስኮችን ያስተካክሉ።"
+            },
+            "sections": {
+                "general": {
+                    "title": "አጠቃላይ መረጃዎች",
+                    "description": "ለአሽከርካሪው የመለያ እና ሁኔታ መረጃዎች።"
+                },
+                "personal": {
+                    "title": "የግል መረጃዎች",
+                    "description": "የትውልድ እና የቅጥር መረጃዎችን ይመዝግቡ።"
+                },
+                "contact": {
+                    "title": "የእገናኝ እና አድራሻ",
+                    "description": "አሽከርካሪውን ማግኘት እና መኖሪያውን ማወቅ እንዲቻል ይረዱ።"
+                }
+            },
+            "fields": {
+                "driverId": {
+                    "label": "የአሽከርካሪ መለያ",
+                    "tooltip": "ለአሽከርካሪው የሚለዩ መለያ",
+                    "placeholder": "ምሳሌ፡ DRV001"
+                },
+                "name": {
+                    "label": "ሙሉ ስም",
+                    "placeholder": "ሙሉ ስም ያስገቡ"
+                },
+                "gender": {
+                    "label": "ፆታ",
+                    "placeholder": "ፆታ ይምረጡ"
+                },
+                "status": {
+                    "label": "ሁኔታ",
+                    "placeholder": "ሁኔታ ይምረጡ"
+                },
+                "birthdate": {
+                    "label": "የትውልድ ቀን"
+                },
+                "hireddate": {
+                    "label": "የቅጥር ቀን"
+                },
+                "mobile": {
+                    "label": "ሞባይል ቁጥር",
+                    "placeholder": "ምሳሌ፡ +251911123456"
+                },
+                "zone": {
+                    "label": "ዞን",
+                    "helper": "አስፈላጊ አይደለም - የአስተዳደር ዞን",
+                    "placeholder": "ዞን/ወረዳ"
+                },
+                "woreda": {
+                    "label": "ወረዳ",
+                    "helper": "አስፈላጊ አይደለም - ንዑስ ወረዳ",
+                    "placeholder": "ወረዳ/ንዑስ ወረዳ"
+                },
+                "kebele": {
+                    "label": "ቀበሌ",
+                    "helper": "አስፈላጊ አይደለም - ሰፈር",
+                    "placeholder": "ቀበሌ/ሰፈር"
+                },
+                "housenumber": {
+                    "label": "የቤት ቁጥር",
+                    "helper": "አስፈላጊ አይደለም - የቤት/ሕንፃ ቁጥር",
+                    "placeholder": "የቤት ቁጥር"
+                }
+            },
+            "create": {
+                "breadcrumb": "ፍጠር",
+                "title": "አዲስ አሽከርካሪ ፍጠር",
+                "description": "አዲስ አሽከርካሪን በሙሉ መለያ፣ ቅጥር እና የእገናኝ መረጃዎች ያክሉ።",
+                "backToList": "ወደ አሽከርካሪዎች ተመለስ",
+                "submit": "አሽከርካሪ ፍጠር",
+                "submitting": "በመፍጠር ላይ...",
+                "successTitle": "✅ አሽከርካሪ ተፈጥሯል",
+                "successDescription": "አሽከርካሪው በተሳካ ሁኔታ ተጨምሯል።"
+            },
+            "edit": {
+                "breadcrumb": "አርም",
+                "title": "አሽከርካሪ አዘምን",
+                "description": "ለ{{name}} የመለያ፣ የቅጥር እና የእገናኝ መረጃዎችን ያዘምኑ።",
+                "headTitle": "{{name}} አርም",
+                "backToList": "ወደ አሽከርካሪዎች ተመለስ",
+                "submit": "አሽከርካሪ አዘምን",
+                "submitting": "በማዘመን ላይ...",
+                "successTitle": "✅ አሽከርካሪ ተዘምኗል",
+                "successDescription": "{{name}} በተሳካ ሁኔታ ተዘምኗል።",
+                "fallbackName": "አሽከርካሪ"
+            }
+        },
+        "fallbacks": {
+            "notAvailable": "አይገኝም"
+        }
+    }
+}

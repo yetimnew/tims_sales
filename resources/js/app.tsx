@@ -4,6 +4,8 @@ import { createInertiaApp } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { I18nextProvider } from 'react-i18next';
+import i18n from './i18n';
 import { initializeTheme } from './hooks/use-appearance';
 
 // Lazy load routes to improve initial bundle size
@@ -37,7 +39,9 @@ createInertiaApp({
 
         root.render(
             <StrictMode>
-                <App {...props} />
+                <I18nextProvider i18n={i18n}>
+                    <App {...props} />
+                </I18nextProvider>
             </StrictMode>,
         );
     },
