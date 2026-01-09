@@ -24,9 +24,6 @@ class DashboardController extends Controller
      */
     public function index(): Response
     {
-        if (! auth()->user()?->can('dashboard.view')) {
-            return Inertia::render('Dashboard');
-        }
 
         $today = now();
         $start30 = $today->copy()->subDays(29)->startOfDay();

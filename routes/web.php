@@ -47,6 +47,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware('throttle:60,1')->group(function () {
         // Dashboard
         Route::get('dashboard', [DashboardController::class, 'index'])
+        ->middleware('can:dashboard.view')
             ->name('dashboard');
 
         // Fleet analytics cockpit
