@@ -201,7 +201,7 @@ const formatDays = (
     value?: number | null,
     maximumFractionDigits = 0,
     fallbackLabel = 'N/A',
-    pluralLabel?: (countLabel: string) => string,
+    pluralLabel?: (countLabel: number) => string,
     singleLabel = '1 day',
 ): string => {
     if (value === null || value === undefined || Number.isNaN(Number(value))) {
@@ -216,7 +216,7 @@ const formatDays = (
 
     const formatted = rounded % 1 === 0 ? `${rounded}` : rounded.toFixed(maximumFractionDigits);
 
-    return pluralLabel ? pluralLabel(formatted) : `${formatted} days`;
+    return pluralLabel ? pluralLabel(rounded) : `${formatted} days`;
 };
 
 const statusBadgeTone = (status?: string | null) => {

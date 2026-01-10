@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Traits\ClearsCacheOnModelEvents;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
@@ -19,6 +20,7 @@ class Driver extends Model
     use HasFactory, SoftDeletes, LogsActivity, ClearsCacheOnModelEvents, HasApiTokens;
 
     protected $fillable = [
+        'user_id',
         'driverid',
         'name',
         'sex',
@@ -109,6 +111,33 @@ class Driver extends Model
     }
 
     /**
+     * Get the user associated with this driver.
+     * A driver can optionally be linked to a user (nullable relationship).
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Get the active truck assignment for the driver.
+     * An active assignment has:
+     * - is_attached = 1 (true)
+     * - status = 'active'
+     * - date_detach IS NULL (not detached)
+     * - deleted_at IS NULL (not soft deleted)
+     */
+    public function activeTruckAssignment()
+    {
+        return $this->hasOne(DriverTruck::class)
+            ->where('is_attached', true)
+            ->where('status', 'active')
+            ->whereNull('date_detach')
+            ->whereNull('deleted_at')
+            ->latest('date_recived'); // Get the most recent assignment if multiple exist
+    }
+
+    /**
      * Set the driver's password.
      */
     public function setPasswordAttribute($value)
@@ -148,7 +177,7 @@ class Driver extends Model
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['driverid', 'name', 'sex', 'birthdate', 'zone', 'woreda', 'kebele', 'housenumber', 'mobile', 'hireddate', 'status'])
+            ->logOnly(['user_id', 'driverid', 'name', 'sex', 'birthdate', 'zone', 'woreda', 'kebele', 'housenumber', 'mobile', 'hireddate', 'status'])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs()
             ->useLogName('drivers');

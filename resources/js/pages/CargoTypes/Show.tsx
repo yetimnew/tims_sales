@@ -10,6 +10,7 @@ import { ActivityLogTable } from '@/components/activity-log-table';
 import { DetailPageLayout } from '@/components/detail/detail-page-layout';
 import { DetailSectionCard } from '@/components/detail/detail-section-card';
 import { DetailSummaryGrid, type DetailSummaryItem } from '@/components/detail/detail-summary-grid';
+import { useTranslation } from 'react-i18next';
 
 interface User {
   id: number;
@@ -42,19 +43,19 @@ interface CargoTypesShowProps {
   activityLogs?: ActivityLog[];
 }
 
-const formatDate = (value?: string | null) => {
-  if (!value) return 'Not recorded';
+const formatDate = (value: string | null | undefined, fallback: string, locale: string) => {
+  if (!value) return fallback;
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return 'Not recorded';
-  return date.toLocaleDateString('en-US', {
+  if (Number.isNaN(date.getTime())) return fallback;
+  return date.toLocaleDateString(locale, {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
   });
 };
 
-const formatWeight = (value?: number | null) => {
-  if (typeof value !== 'number' || Number.isNaN(value) || value <= 0) return 'Not provided';
+const formatWeight = (value: number | null | undefined, fallback: string) => {
+  if (typeof value !== 'number' || Number.isNaN(value) || value <= 0) return fallback;
   return `${value.toLocaleString(undefined, {
     minimumFractionDigits: value % 1 !== 0 ? 2 : 0,
     maximumFractionDigits: 2,
@@ -70,10 +71,14 @@ const getCategoryBadgeClasses = (category: string) => {
 };
 
 export default function CargoTypesShow({ cargoType, activityLogs = [] }: CargoTypesShowProps) {
-  const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Cargo Types', href: '/cargo-types' },
-    { title: cargoType.name, href: `/cargo-types/${cargoType.id}` },
-  ];
+  const { t, i18n } = useTranslation();
+  const breadcrumbs = useMemo<BreadcrumbItem[]>(
+    () => [
+      { title: t('cargoTypes.breadcrumb'), href: '/cargo-types' },
+      { title: cargoType.name, href: `/cargo-types/${cargoType.id}` },
+    ],
+    [cargoType.id, cargoType.name, t],
+  );
   const { hasPermission } = usePermissions();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -87,13 +92,13 @@ export default function CargoTypesShow({ cargoType, activityLogs = [] }: CargoTy
         action: log.event ?? 'updated',
         description: log.description,
         user: {
-          name: log.causer?.name ?? 'System',
+          name: log.causer?.name ?? t('cargoTypes.show.systemUser'),
         },
         created_at: log.created_at,
         old_values: (log.properties?.old as Record<string, unknown>) ?? undefined,
         new_values: (log.properties?.attributes as Record<string, unknown>) ?? undefined,
       })),
-    [activityLogs],
+    [activityLogs, t],
   );
 
   const handleDelete = () => {
@@ -117,7 +122,7 @@ export default function CargoTypesShow({ cargoType, activityLogs = [] }: CargoTy
                 .flatMap(value => (Array.isArray(value) ? value : [value]))
                 .filter((value): value is string => typeof value === 'string')
                 .join('\n')
-            : 'Unable to delete this cargo type. Please review any blockers and try again.';
+            : t('cargoTypes.delete.failedDescription');
 
         if (lastDeleteError.current !== description) {
           setDeleteError(description);
@@ -135,31 +140,35 @@ export default function CargoTypesShow({ cargoType, activityLogs = [] }: CargoTy
     }
   };
 
-  const weightDisplay = formatWeight(cargoType.weight_per_cubic_meter);
+  const weightDisplay = formatWeight(cargoType.weight_per_cubic_meter, t('cargoTypes.show.weightNotProvided'));
+  const notRecordedLabel = t('cargoTypes.show.notRecorded');
 
-  const kpiSummary: DetailSummaryItem[] = [
-    { label: 'Category', value: cargoType.category, helper: 'Cargo classification' },
-    { label: 'Weight Density', value: weightDisplay, helper: 'Per cubic meter' },
-    {
-      label: 'Special Equipment',
-      value: cargoType.requires_special_equipment ? 'Required' : 'Standard',
-      helper: cargoType.requires_special_equipment ? 'Handling equipment needed' : 'Standard handling',
-    },
-    { label: 'Last Updated', value: formatDate(cargoType.updated_at), helper: 'Most recent change' },
-  ];
+  const kpiSummary = useMemo<DetailSummaryItem[]>(
+    () => [
+      { label: t('cargoTypes.show.summary.category'), value: cargoType.category, helper: t('cargoTypes.show.summary.categoryHelper') },
+      { label: t('cargoTypes.show.summary.weightDensity'), value: weightDisplay, helper: t('cargoTypes.show.summary.weightDensityHelper') },
+      {
+        label: t('cargoTypes.show.summary.specialEquipment'),
+        value: cargoType.requires_special_equipment ? t('cargoTypes.show.summary.required') : t('cargoTypes.show.summary.standard'),
+        helper: cargoType.requires_special_equipment ? t('cargoTypes.show.summary.requiredHelper') : t('cargoTypes.show.summary.standardHelper'),
+      },
+      { label: t('cargoTypes.show.summary.updated'), value: formatDate(cargoType.updated_at, notRecordedLabel, i18n.language), helper: t('cargoTypes.show.summary.updatedHelper') },
+    ],
+    [cargoType.category, cargoType.requires_special_equipment, cargoType.updated_at, i18n.language, notRecordedLabel, t, weightDisplay],
+  );
 
   return (
     <DetailPageLayout
       title={cargoType.name}
-      subtitle="Comprehensive profile for this cargo classification."
+      subtitle={t('cargoTypes.show.subtitle')}
       breadcrumbs={breadcrumbs}
-      headTitle={`Cargo Type: ${cargoType.name}`}
+      headTitle={t('cargoTypes.show.headTitle', { name: cargoType.name })}
       icon={<Package className="h-6 w-6 text-rose-700 dark:text-rose-300" />}
       iconWrapperClassName="bg-rose-100 dark:bg-rose-900/30"
       leading={
         <Button variant="outline" size="sm" onClick={() => router.get('/cargo-types')}>
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
+          {t('cargoTypes.actions.back')}
         </Button>
       }
       actions={
@@ -171,14 +180,14 @@ export default function CargoTypesShow({ cargoType, activityLogs = [] }: CargoTy
                 <Button variant="outline" asChild>
                   <Link href={`/cargo-types/${cargoType.id}/edit`}>
                     <SquarePen className="h-4 w-4 mr-2" />
-                    Edit
+                    {t('cargoTypes.actions.edit')}
                   </Link>
                 </Button>
               )}
               {hasPermission('cargotypes.destroy') && (
                 <Button variant="outline" onClick={() => setDeleteDialogOpen(true)} className="border-red-200 text-red-600 hover:border-red-300 hover:bg-red-50">
                   <Trash2 className="h-4 w-4 mr-2" />
-                  Delete
+                  {t('cargoTypes.actions.delete')}
                 </Button>
               )}
             </div>
@@ -188,26 +197,35 @@ export default function CargoTypesShow({ cargoType, activityLogs = [] }: CargoTy
     >
       <DetailSummaryGrid items={kpiSummary} />
 
-      <DetailSectionCard title="Operational Guidance" description="Handling insight and safety protocols" icon={<ClipboardCheck className="h-5 w-5" />}>
+      <DetailSectionCard title={t('cargoTypes.show.sections.guidance.title')} description={t('cargoTypes.show.sections.guidance.description')} icon={<ClipboardCheck className="h-5 w-5" />}>
         <div className="space-y-4">
           <div>
-            <h3 className="mb-2 text-sm font-semibold">Handling Requirements</h3>
-            <p className="whitespace-pre-wrap rounded-lg border p-4 text-sm">{cargoType.handling_requirements || 'No special handling instructions documented.'}</p>
+            <h3 className="mb-2 text-sm font-semibold">{t('cargoTypes.show.sections.guidance.handlingTitle')}</h3>
+            <p className="whitespace-pre-wrap rounded-lg border p-4 text-sm">{cargoType.handling_requirements || t('cargoTypes.show.sections.guidance.handlingEmpty')}</p>
           </div>
           <div>
-            <h3 className="mb-2 text-sm font-semibold">Safety Requirements</h3>
-            <p className="whitespace-pre-wrap rounded-lg border p-4 text-sm">{cargoType.safety_requirements || 'No safety guidance has been provided for this cargo type yet.'}</p>
+            <h3 className="mb-2 text-sm font-semibold">{t('cargoTypes.show.sections.guidance.safetyTitle')}</h3>
+            <p className="whitespace-pre-wrap rounded-lg border p-4 text-sm">{cargoType.safety_requirements || t('cargoTypes.show.sections.guidance.safetyEmpty')}</p>
           </div>
         </div>
       </DetailSectionCard>
 
       {activityLogRows.length > 0 && (
-        <DetailSectionCard title="Activity Log" description="Recent actions and updates" icon={<Activity className="h-5 w-5" />}>
+        <DetailSectionCard title={t('cargoTypes.show.sections.activity.title')} description={t('cargoTypes.show.sections.activity.description')} icon={<Activity className="h-5 w-5" />}>
           <ActivityLogTable logs={activityLogRows} />
         </DetailSectionCard>
       )}
 
-      <DeleteConfirmationDialog open={deleteDialogOpen} onOpenChange={handleDialogChange} title="Delete Cargo Type" description={`Are you sure you want to delete "${cargoType.name}"? This action cannot be undone.`} itemName={cargoType.name} onConfirm={handleDelete} isLoading={isDeleting} errorMessage={deleteError} />
+      <DeleteConfirmationDialog
+        open={deleteDialogOpen}
+        onOpenChange={handleDialogChange}
+        title={t('cargoTypes.delete.title')}
+        description={t('cargoTypes.delete.descriptionWithName', { name: cargoType.name })}
+        itemName={cargoType.name}
+        onConfirm={handleDelete}
+        isLoading={isDeleting}
+        errorMessage={deleteError}
+      />
     </DetailPageLayout>
   );
 }

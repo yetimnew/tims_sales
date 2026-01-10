@@ -1074,6 +1074,746 @@
             }
         }
     },
+    "vehicleTypes": {
+        "title": "የተሽከርካሪ አይነቶች",
+        "breadcrumb": "የተሽከርካሪ አይነቶች",
+        "description": "የተሽከርካሪ አይነቶችን እና ምድቦችን ያስተዳድሩ። ጠቅላላ፡ {{count}}",
+        "columns": {
+            "name": "የተሽከርካሪ አይነት",
+            "description": "መግለጫ",
+            "totalTrucks": "ጠቅላላ ትራኮች",
+            "activeTrucks": "ንቁ ትራኮች",
+            "created": "የተፈጠረበት"
+        },
+        "table": {
+            "title": "የተሽከርካሪ አይነቶች",
+            "description": "የተሽከርካሪ አይነቶችን ያስተዳድሩ",
+            "index": "#",
+            "actions": "እርምጃዎች"
+        },
+        "actions": {
+            "add": "የተሽከርካሪ አይነት ጨምር",
+            "view": "አሳይ",
+            "edit": "አርም",
+            "delete": "ሰርዝ",
+            "cancel": "ተወው"
+        },
+        "filters": {
+            "searchPlaceholder": "የተሽከርካሪ አይነቶችን ይፈልጉ...",
+            "rowsLabel": "ረድፎች",
+            "perPageOption": "{{value}} / ገጽ"
+        },
+        "stats": {
+            "total": {
+                "label": "የተሽከርካሪ አይነቶች",
+                "description": "{{count}} አይነቶች ትራክ ያላቸው"
+            },
+            "totalTrucks": {
+                "label": "ጠቅላላ ትራኮች",
+                "description": "በተመረጡ አይነቶች ውስጥ"
+            },
+            "activeTrucks": {
+                "label": "ንቁ ትራኮች",
+                "description": "አሁን ንቁ"
+            },
+            "empty": {
+                "label": "ባዶ አይነቶች",
+                "description": "ምንም ትራክ አልተመደበላቸውም"
+            }
+        },
+        "mobile": {
+            "position": "#{{value}}",
+            "trucksCount": "{{value}} ትራኮች",
+            "description": "መግለጫ",
+            "noDescription": "መግለጫ አልተሰጠም።",
+            "activeTrucks": "ንቁ ትራኮች",
+            "totalTrucks": "ጠቅላላ ትራኮች",
+            "created": "የተፈጠረበት"
+        },
+        "empty": {
+            "title": "ምንም የተሽከርካሪ አይነት አልተገኘም።",
+            "createAction": "አንዱን ፍጠር"
+        },
+        "fallbacks": {
+            "notAvailable": "—"
+        },
+        "delete": {
+            "title": "የተሽከርካሪ አይነት ሰርዝ",
+            "description": "ይህን የተሽከርካሪ አይነት መሰረዝ ትፈልጋለህ? ይህ እርምጃ መመለስ አይቻልም።",
+            "descriptionWithName": "እርግጠኛ ነህ {{name}}ን መሰረዝ ትፈልጋለህ? ይህ እርምጃ መመለስ አይቻልም።",
+            "successTitle": "✅ የተሽከርካሪ አይነት ተሰርዟል",
+            "successDescription": "{{name}} ከተሽከርካሪ ምድቦች ተወግዷል።",
+            "failedTitle": "❌ ማጥፋት አልተሳካም",
+            "failedDescription": "የተሽከርካሪ አይነቱን ማጥፋት አልተቻለም። እባክዎ መስፈርቶቹን ይፈትሹ እና ይሞክሩ።",
+            "failedDescriptionUnknown": "የተሽከርካሪ አይነቱን ሲሰርዙ ያልተጠበቀ ስህተት ተፈጥሯል። እባክዎ ይድገሙ።"
+        },
+        "form": {
+            "badge": "የፍሊት እንቅስቃሴ",
+            "required": "ሁሉም ያስፈልጉ መስኮች መሙላት ያስፈልጋል",
+            "unsaved": "ያልተቀመጡ ለውጦች አሉ",
+            "validation": {
+                "title": "⚠️ የማረጋገጫ ስህተት",
+                "fixErrors": "እባክዎ ከማስገባት በፊት የማረጋገጫ ስህተቶችን ያስተካክሉ።",
+                "resolve": "እባክዎ ከማስገባት በፊት የተመረጡ መስኮችን ያስተካክሉ።"
+            },
+            "sections": {
+                "details": {
+                    "title": "የተሽከርካሪ አይነት ዝርዝሮች",
+                    "description": "ገላጭ ስም ያቅርቡ። መግለጫ አማራጭ ነው።",
+                    "descriptionEdit": "መዝገቦቹን ትክክል ለማድረግ ስም ወይም አማራጭ መግለጫ ያርሙ።"
+                }
+            },
+            "fields": {
+                "name": {
+                    "label": "ስም",
+                    "tooltip": "ለተሽከርካሪ ክፍል ገላጭ ስም ይጠቀሙ።",
+                    "placeholder": "ለምሳሌ፡ ከባድ ትራክ፣ ቀላል ትራክ"
+                },
+                "description": {
+                    "label": "መግለጫ",
+                    "helper": "አማራጭ። ይህ አይነት የሚጠቀምበትን ያብራራል።",
+                    "placeholder": "የተሽከርካሪ አይነት አማራጭ መግለጫ"
+                }
+            },
+            "create": {
+                "breadcrumb": "ፍጠር",
+                "title": "የተሽከርካሪ አይነት ፍጠር",
+                "headTitle": "የተሽከርካሪ አይነት ፍጠር",
+                "description": "ትራኮችን ሲመዘግቡ የሚጠቀሙበትን አዲስ መደብ ያብሩ።",
+                "backToList": "ወደ የተሽከርካሪ አይነቶች ተመለስ",
+                "submit": "የተሽከርካሪ አይነት ፍጠር",
+                "submitting": "በመፍጠር ላይ...",
+                "successTitle": "✅ የተሽከርካሪ አይነት ተፈጥሯል",
+                "successDescription": "የተሽከርካሪ አይነቱ በተሳካ ሁኔታ ተጨምሯል።"
+            },
+            "edit": {
+                "breadcrumb": "አርም",
+                "title": "የተሽከርካሪ አይነት አርም",
+                "headTitle": "{{name}} አርም",
+                "description": "በፍሊት ውስጥ የሚጠቀሙትን የተሽከርካሪ ምድብ ዝርዝሮችን ያስተካክሉ።",
+                "backToList": "ወደ የተሽከርካሪ አይነቶች ተመለስ",
+                "submit": "የተሽከርካሪ አይነት አዘምን",
+                "submitting": "በማዘመን ላይ...",
+                "successTitle": "✅ የተሽከርካሪ አይነት ተዘምኗል",
+                "successDescription": "የተሽከርካሪ አይነት ለውጦች በተሳካ ሁኔታ ተቀመጡ።"
+            }
+        },
+        "show": {
+            "subtitle": "የፍሊት ምድብ እና የእንቅስቃሴ ተሽከርካሪ መደብ",
+            "actions": {
+                "back": "ወደ የተሽከርካሪ አይነቶች ተመለስ"
+            },
+            "summary": {
+                "associatedTrucks": "ተያያዥ ትራኮች",
+                "singleTruck": "አሁን ይህን አይነት የሚጠቀም ትራክ",
+                "multipleTrucks": "አሁን ይህን አይነት የሚጠቀሙ ትራኮች",
+                "created": "የተፈጠረበት",
+                "createdHelper": "የመጀመሪያ መዝገብ",
+                "updated": "መጨረሻ የተዘምነበት",
+                "updatedHelper": "የቅርብ ጊዜ ማሻሻያ"
+            },
+            "sections": {
+                "associatedTrucks": {
+                    "title": "ተያያዥ ትራኮች",
+                    "description": "{{count}} ትራኮች በዚህ የተሽከርካሪ አይነት ተዋቅረዋል",
+                    "addedOn": "ተጨምሯል {{value}}",
+                    "empty": "ለዚህ የተሽከርካሪ አይነት እስካሁን ምንም ትራክ አልተመደበም።"
+                },
+                "activity": {
+                    "title": "የእንቅስቃሴ ታሪክ",
+                    "description": "የለውጦች የሚታወቅ የጊዜ መስመር"
+                },
+                "quickInfo": {
+                    "title": "ፈጣን መረጃ",
+                    "description": "የሲስተም ክትትል"
+                }
+            },
+            "fields": {
+                "id": "የተሽከርካሪ አይነት መለያ",
+                "totalTrucks": "ጠቅላላ ትራኮች"
+            }
+        }
+    },
+    "driverSafety": {
+        "title": "የአሽከርካሪ ደህንነት",
+        "breadcrumb": "የአሽከርካሪ ደህንነት",
+        "description": "በፍሊት ውስጥ ያሉ ክስተቶችን ይከታተሉ። ጠቅላላ፡ {{count}}",
+        "columns": {
+            "date": "ቀን",
+            "driver": "አሽከርካሪ",
+            "type": "አይነት",
+            "severity": "ግምት",
+            "description": "መግለጫ",
+            "damageCost": "የጉዳት ወጪ"
+        },
+        "table": {
+            "title": "የደህንነት መዝገቦች",
+            "description": "ክስተቶችን፣ ግምትን እና ተፅእኖን ይከታተሉ",
+            "index": "#",
+            "actions": "እርምጃዎች"
+        },
+        "actions": {
+            "add": "የደህንነት መዝገብ ጨምር",
+            "view": "አሳይ",
+            "edit": "አርም",
+            "delete": "ሰርዝ",
+            "cancel": "ተወው",
+            "back": "ተመለስ"
+        },
+        "filters": {
+            "searchPlaceholder": "የደህንነት መዝገቦችን ይፈልጉ...",
+            "rowsLabel": "ረድፎች",
+            "perPageOption": "{{value}} / ገጽ",
+            "incidentType": "የክስተት አይነት",
+            "allIncidentTypes": "ሁሉም የክስተት አይነቶች",
+            "severity": "ግምት",
+            "allSeverities": "ሁሉም ግምቶች",
+            "driver": "አሽከርካሪ",
+            "allDrivers": "ሁሉም አሽከርካሪዎች"
+        },
+        "stats": {
+            "total": {
+                "label": "ጠቅላላ መዝገቦች",
+                "description": "{{count}} ከፍተኛ ክስተቶች"
+            },
+            "accidents": {
+                "label": "አደጋዎች",
+                "description": "{{count}} ከባድ ክስተቶች"
+            },
+            "warnings": {
+                "label": "ማስጠንቀቂያዎች",
+                "description": "{{count}} ትንሽ ጉዳዮች"
+            },
+            "damageCost": {
+                "label": "የጉዳት ወጪ",
+                "description": "አማካይ {{value}}"
+            }
+        },
+        "empty": {
+            "title": "ምንም የደህንነት መዝገብ አልተገኘም።",
+            "createAction": "አንዱን ፍጠር"
+        },
+        "mobile": {
+            "position": "#{{value}}",
+            "unassigned": "ያልተመደበ አሽከርካሪ",
+            "date": "ቀን",
+            "description": "መግለጫ",
+            "damageCost": "የጉዳት ወጪ"
+        },
+        "loading": {
+            "alt": "የደህንነት መዝገቦችን በመጫን ላይ",
+            "label": "የደህንነት መዝገቦችን በመጫን ላይ..."
+        },
+        "delete": {
+            "title": "የደህንነት መዝገብ ሰርዝ",
+            "description": "ይህን የደህንነት መዝገብ መሰረዝ ትፈልጋለህ? ይህ እርምጃ መመለስ አይቻልም።",
+            "successTitle": "✅ የደህንነት መዝገብ ተሰርዟል",
+            "successDescription": "የአሽከርካሪ ደህንነት መዝገቡ ተሰርዟል።",
+            "failedTitle": "❌ ማጥፋት አልተሳካም",
+            "failedDescription": "የደህንነት መዝገቡን ማጥፋት አልተቻለም። እባክዎ መስፈርቶቹን ይፈትሹ እና ይሞክሩ።",
+            "itemName": "{{driver}} – {{date}}"
+        },
+        "fallbacks": {
+            "notAvailable": "—",
+            "driver": "አሽከርካሪ",
+            "notRecorded": "አልተመዘገበም",
+            "unknown": "ያልታወቀ"
+        },
+        "incidentTypes": {
+            "accident": "አደጋ",
+            "violation": "ጥሰት",
+            "warning": "ማስጠንቀቂያ"
+        },
+        "severity": {
+            "minor": "ትንሽ",
+            "major": "ከባድ",
+            "critical": "እጅግ ከፍተኛ",
+            "unknown": "ያልታወቀ"
+        },
+        "form": {
+            "validation": {
+                "title": "⚠️ የማረጋገጫ ስህተት",
+                "fixErrors": "እባክዎ ከማስቀመጥ በፊት ተጠቃሚ ስህተቶችን ያስተካክሉ።",
+                "resolve": "እባክዎ ከማስገባት በፊት የተመረጡ መስኮችን ያስተካክሉ።"
+            },
+            "sections": {
+                "overview": {
+                    "title": "የክስተት አጠቃላይ እይታ",
+                    "description": "ያካተቱትን ሰው እና ዋና ባህሪያትን ያረጋግጡ።"
+                },
+                "impact": {
+                    "title": "ተፅእኖ እና አካባቢ",
+                    "description": "የፋይናንስ ተፅእኖን እና ክስተቱ የተከሰተበትን ቦታ ያስመዝግቡ።"
+                },
+                "documentation": {
+                    "title": "ማስታወሻ እና ክትትል",
+                    "description": "ለደህንነት ቡድን ዝርዝሮችን እና የተከታታይ እርምጃዎችን ያብሩ።"
+                }
+            },
+            "fields": {
+                "driver": {
+                    "label": "አሽከርካሪ",
+                    "helper": "ንቁ አሽከርካሪዎች ብቻ ይታያሉ።",
+                    "placeholder": "አሽከርካሪ ይምረጡ"
+                },
+                "date": {
+                    "label": "የክስተት ቀን"
+                },
+                "type": {
+                    "label": "የክስተት አይነት",
+                    "placeholder": "የክስተት አይነት ይምረጡ"
+                },
+                "severity": {
+                    "label": "ግምት",
+                    "placeholder": "ግምት ይምረጡ"
+                },
+                "damageCost": {
+                    "label": "የጉዳት ወጪ ግምት",
+                    "helper": "የፋይናንስ ተፅእኖ ከሌለ ባዶ ይተዉ።",
+                    "placeholder": "0.00"
+                },
+                "location": {
+                    "label": "አካባቢ",
+                    "helper": "አማራጭ። ከ255 ቁምፊዎች በታች።",
+                    "placeholder": "ለምሳሌ፡ አዲስ አበባ – ሪንግ ሮድ"
+                },
+                "description": {
+                    "label": "የክስተት መግለጫ",
+                    "helper": "የተፈጠረውን ክስተት፣ ምክንያቶችን እና ተፅእኖዎችን ያብሩ።",
+                    "placeholder": "የተፈጠረውን ክስተት፣ ምክንያቶችን እና ተፅእኖዎችን ያብሩ።"
+                },
+                "resolution": {
+                    "label": "የማስተካከያ እርምጃ",
+                    "helper": "የሚደረጉ ማስተላለፊያዎችን፣ ጥገና ወይም የፖሊሲ ክትትል ይግለጹ።",
+                    "placeholder": "የሚደረጉ ማስተላለፊያዎችን፣ ጥገና ወይም የፖሊሲ ክትትል ይግለጹ።"
+                }
+            },
+            "incidentTypes": {
+                "accident": "መጋጨት፣ መገልበጥ ወይም ጉዳት ያስፈልጋል የሚለው ክስተት።",
+                "violation": "የትራፊክ ወይም የደህንነት ፖሊሲ ጥሰት ተመዝግቧል።",
+                "warning": "ለማስተላለፊያ ወይም ቀጣይ ክትትል የተጠቆመ ባህሪ።"
+            },
+            "severityLevels": {
+                "minor": "አሽከርካሪውን ተከታትሉ እና የማስተካከያ እርምጃዎችን ይመዝግቡ።",
+                "major": "ትልቅ ተፅእኖ እና ተጨማሪ አስተላለፊያ ያስፈልጋል።",
+                "critical": "አስቸኳይ እርምጃ ያስፈልጋል ለአሽከርካሪዎች እና ሀብቶች ጥበቃ።"
+            },
+            "snapshot": {
+                "title": "የአሁኑ ክስተት ማጠቃለያ",
+                "empty": "ተለይተው መመሪያዎችን ለማግኘት የክስተት አይነት ይምረጡ።",
+                "estimatedCost": "የተገመተ ወጪ"
+            },
+            "severityBadge": "{{label}} ግምት",
+            "severityPill": "{{label}} ግምት",
+            "required": "አስፈላጊ መስኮች ከማስቀመጥ በፊት መሙላት አለባቸው።",
+            "helperNote": "የተሟላ መዝገቦች ተወላጅ የደህንነት አስተላለፊያ ያበረታታሉ።",
+            "create": {
+                "breadcrumb": "ፍጠር",
+                "title": "የአሽከርካሪ ደህንነት ክስተት መመዝገብ",
+                "headTitle": "የደህንነት ክስተት መመዝገብ",
+                "description": "ክስተቶችን በመመዝገብ የሀይል አደጋ እና የአስተላለፊያ እቅድ ያዘጋጁ።",
+                "backToList": "ወደ የደህንነት መዝገብ ተመለስ",
+                "submit": "የደህንነት መዝገብ አስቀምጥ",
+                "submitting": "በመመዝገብ ላይ...",
+                "successTitle": "✅ የደህንነት መዝገብ ተፈጥሯል",
+                "successDescription": "የአሽከርካሪ ደህንነት ክስተቱ ተመዝግቧል።"
+            },
+            "edit": {
+                "breadcrumb": "አርም",
+                "recordBreadcrumb": "መዝገብ #{{id}}",
+                "title": "የአሽከርካሪ ደህንነት ክስተት አዘምን",
+                "headTitle": "የደህንነት መዝገብ #{{id}}",
+                "description": "ለትክክለኛ ትንታኔ ዝርዝሮችን ያስተካክሉ።",
+                "backToRecord": "ወደ መዝገብ ተመለስ",
+                "submit": "ለውጦችን አስቀምጥ",
+                "submitting": "በማስቀመጥ ላይ...",
+                "successTitle": "✅ የደህንነት መዝገብ ተዘምኗል",
+                "successDescription": "የአሽከርካሪ ደህንነት ክስተቱ ተዘምኗል።",
+                "helperNote": "ይህን መዝገብ ዘመናዊ ማድረግ ለአሽከርካሪ አስተላለፊያ እና ኦዲት ይረዳል።",
+                "changeNote": "ለወደፊት የደህንነት ትንታኔ ለውጦች ይመዘገባሉ።"
+            }
+        },
+        "show": {
+            "breadcrumbItem": "ክስተት #{{id}}",
+            "title": "የደህንነት ክስተት #{{id}}",
+            "subtitle": "አሽከርካሪ፡ {{driver}}",
+            "headTitle": "የአሽከርካሪ ደህንነት ክስተት #{{id}}",
+            "summary": {
+                "date": "የክስተት ቀን",
+                "dateHelper": "የተከሰተበት ጊዜ",
+                "severity": "ግምት",
+                "severityHelper": "የተፅእኖ ደረጃ",
+                "damageCost": "የጉዳት ወጪ",
+                "damageCostHelper": "የፋይናንስ ተፅእኖ",
+                "driver": "አሽከርካሪ",
+                "driverHelper": "የተጠቃሚ አካል"
+            },
+            "systemUser": "ስርዓት",
+            "sections": {
+                "details": {
+                    "title": "የክስተት ዝርዝሮች",
+                    "description": "መግለጫ እና ሁኔታ"
+                },
+                "resolution": {
+                    "title": "መፍትሄ",
+                    "description": "የተወሰዱ እርምጃዎች",
+                    "empty": "እስካሁን የመፍትሄ ዝርዝር የለም።"
+                },
+                "activity": {
+                    "title": "የእንቅስቃሴ ታሪክ",
+                    "description": "የመተንተኛ ጊዜ መስመር"
+                }
+            },
+            "fields": {
+                "description": "መግለጫ",
+                "location": "አካባቢ",
+                "date": "የክስተት ቀን",
+                "damageCost": "የጉዳት ወጪ"
+            },
+            "deleteItem": "ክስተት #{{id}}"
+        },
+        "report": {
+            "title": "የአሽከርካሪ ደህንነት",
+            "fallbacks": {
+                "driver": "አሽከርካሪ #{{id}}",
+                "notAvailable": "—",
+                "unassigned": "ያልተመደበ"
+            },
+            "badges": {
+                "from": "ከ {{value}}",
+                "to": "እስከ {{value}}",
+                "drivers": "{{count}} አሽከርካሪዎች",
+                "allDrivers": "ሁሉም አሽከርካሪዎች",
+                "incidentTypes": "{{count}} የክስተት አይነቶች",
+                "allIncidentTypes": "ሁሉም የክስተት አይነቶች",
+                "severities": "{{count}} የግምት ደረጃዎች",
+                "allSeverities": "ሁሉም ግምቶች"
+            },
+            "summary": {
+                "total": "ጠቅላላ ክስተቶች",
+                "critical": "ከፍተኛ ክስተቶች",
+                "driversAffected": "የተጎዱ አሽከርካሪዎች",
+                "damageCost": "ጠቅላላ የጉዳት ወጪ"
+            },
+            "days": {
+                "ahead": "{{count}} ቀናት ቀድሞ",
+                "today": "0 ቀናት (ዛሬ)",
+                "ago": "{{count}} ቀናት በፊት"
+            },
+            "filters": {
+                "title": "የአሽከርካሪ ደህንነት መረጃ ማጣሪያ",
+                "description": "የሪፖርት ጊዜን ያስተካክሉ እና በአሽከርካሪ፣ የክስተት አይነት ወይም ግምት ይጣሩ።",
+                "incidentTypes": {
+                    "label": "የክስተት አይነቶች",
+                    "all": "ሁሉም የክስተት አይነቶች",
+                    "summaryAll": "ሁሉም የክስተት አይነቶች ተካተቱ",
+                    "heading": "የክስተት አይነቶች",
+                    "search": "የክስተት አይነት ፈልግ..."
+                },
+                "severities": {
+                    "label": "ግምቶች",
+                    "all": "ሁሉም ግምቶች",
+                    "summaryAll": "ሁሉም ግምቶች ተካተቱ",
+                    "heading": "ግምቶች",
+                    "search": "ግምት ፈልግ..."
+                }
+            },
+            "overview": {
+                "title": "የደህንነት አጠቃላይ እይታ",
+                "description": "ለተመረጡ ማጣሪያዎች ክስተቶችን፣ የግምት ስርጭትን እና ተጎዱ አሽከርካሪዎችን ይገምግሙ።"
+            },
+            "actions": {
+                "export": "ወጪ አውጣ",
+                "excel": "ኤክሴል",
+                "pdf": "ፒዲኤፍ",
+                "reset": "ዳግም አስጀምር",
+                "generate": "ሪፖርት አሳሽ"
+            },
+            "trend": {
+                "title": "የክስተት እንቅስቃሴ",
+                "description": "በተመረጠው ጊዜ ክስተቶችና የጉዳት ወጪዎች።",
+                "columns": {
+                    "period": "ጊዜ",
+                    "incidents": "ክስተቶች",
+                    "damageCost": "የጉዳት ወጪ"
+                },
+                "empty": "በተመረጠው ጊዜ የእንቅስቃሴ መረጃ የለም።"
+            },
+            "highlights": {
+                "title": "ጠቃሚ ነጥቦች",
+                "description": "ለአመራሮች ትንሽ የደህንነት መረጃ",
+                "averageDamage": "አማካይ ጉዳት",
+                "categories": "የክስተት ምድቦች",
+                "daysSince": "ከመጨረሻ ክስተት በኋላ ያለፉ ቀናት",
+                "major": "ከባድ ክስተቶች",
+                "minor": "ትንሽ ክስተቶች"
+            },
+            "severity": {
+                "title": "የግምት መደብ",
+                "description": "ክስተቶችን በግምት እና ወጪ ያከፋፍሉ።",
+                "columns": {
+                    "severity": "ግምት",
+                    "incidents": "ክስተቶች",
+                    "damageCost": "የጉዳት ወጪ"
+                },
+                "empty": "ምንም ክስተት አልተመዘገበም።"
+            },
+            "types": {
+                "title": "የክስተት አይነት መደብ",
+                "description": "በየክስተት ምድብ የግምት እይታ ያግኙ።",
+                "columns": {
+                    "type": "የክስተት አይነት",
+                    "total": "ጠቅላላ",
+                    "critical": "ከፍተኛ",
+                    "major": "ከባድ",
+                    "minor": "ትንሽ",
+                    "damageCost": "የጉዳት ወጪ"
+                },
+                "empty": "የክስተት ዝርዝር የለም።"
+            },
+            "leaderboard": {
+                "title": "የአሽከርካሪ ተጋላጭነት",
+                "description": "በዚህ ጊዜ ውስጥ ክስተቶች ያላቸው ከፍተኛ አሽከርካሪዎች።",
+                "columns": {
+                    "driver": "አሽከርካሪ",
+                    "incidents": "ክስተቶች",
+                    "critical": "ከፍተኛ",
+                    "major": "ከባድ",
+                    "minor": "ትንሽ",
+                    "damageCost": "የጉዳት ወጪ"
+                },
+                "empty": "በዚህ ጊዜ ውስጥ ክስተት ያላቸው አሽከርካሪዎች የሉም።"
+            },
+            "recent": {
+                "title": "ቅርብ ክስተቶች",
+                "description": "የቅርብ ጊዜ ክስተቶች አጭር ዝርዝር።",
+                "columns": {
+                    "date": "ቀን",
+                    "driver": "አሽከርካሪ",
+                    "type": "አይነት",
+                    "severity": "ግምት",
+                    "damage": "ጉዳት"
+                },
+                "empty": "በተመረጠው ጊዜ ምንም ክስተት የለም።"
+            }
+        }
+    },
+    "cargoTypes": {
+        "title": "የጭነት አይነቶች",
+        "breadcrumb": "የጭነት አይነቶች",
+        "description": "የጭነት መደቦችን ያስተዳድሩ። ድምር: {{count}}",
+        "columns": {
+            "name": "የጭነት አይነት",
+            "category": "ምድብ",
+            "weight": "የክብደት አቀማመጥ",
+            "specialEquipment": "ልዩ መሳሪያ"
+        },
+        "table": {
+            "title": "የጭነት አይነቶች",
+            "description": "የጭነት መደቦችንና መስፈርቶችን ያስተዳድሩ",
+            "index": "#",
+            "actions": "እርምጃዎች"
+        },
+        "actions": {
+            "add": "የጭነት አይነት አክል",
+            "view": "ይመልከቱ",
+            "edit": "አስተካክል",
+            "delete": "ሰርዝ",
+            "cancel": "ይቅር",
+            "back": "ተመለስ"
+        },
+        "filters": {
+            "searchPlaceholder": "የጭነት አይነት ፈልግ...",
+            "rowsLabel": "ረድፎች",
+            "perPageOption": "{{value}} / ገጽ",
+            "category": "ምድብ",
+            "allCategories": "ሁሉም ምድቦች",
+            "specialEquipment": "ልዩ መሳሪያ",
+            "allTypes": "ሁሉም አይነቶች",
+            "requiresSpecialEquipment": "ልዩ መሳሪያ የሚፈልግ",
+            "noSpecialEquipment": "ልዩ መሳሪያ የሌለው"
+        },
+        "stats": {
+            "total": {
+                "label": "የጭነት አይነቶች",
+                "description": "{{count}} ንቁ አይነቶች"
+            },
+            "specialEquipment": {
+                "label": "ልዩ መሳሪያ",
+                "description": "{{count}} ልዩ መሳሪያ የሚፈልጉ"
+            },
+            "averageWeight": {
+                "label": "አማካይ የክብደት አቀማመጥ",
+                "fallback": "አይገኝም",
+                "description": "በተመረጡ አይነቶች ላይ"
+            },
+            "handlingNotes": {
+                "label": "የአያያዝ ማስታወሻዎች",
+                "description": "{{count}} የአያያዝ ማስታወሻ ያላቸው"
+            }
+        },
+        "specialEquipment": {
+            "required": "ያስፈልጋል",
+            "notRequired": "አያስፈልግም"
+        },
+        "mobile": {
+            "position": "#{{value}}",
+            "weight": "ክብደት",
+            "specialEquipment": "ልዩ መሳሪያ",
+            "handling": "አያያዝ",
+            "safety": "ደህንነት"
+        },
+        "empty": {
+            "title": "የጭነት አይነት አልተገኘም።",
+            "createAction": "አንዱን ይፍጠሩ"
+        },
+        "fallbacks": {
+            "notAvailable": "—"
+        },
+        "delete": {
+            "title": "የጭነት አይነት ሰርዝ",
+            "description": "ይህን የጭነት አይነት መሰረዝ እርግጠኛ ነዎት? ይህ እርምጃ መልሶ አይመለስም።",
+            "descriptionWithName": "\"{{name}}\"ን መሰረዝ እርግጠኛ ነዎት? ይህ እርምጃ መልሶ አይመለስም።",
+            "successTitle": "✅ የጭነት አይነት ተሰርዟል",
+            "successDescription": "{{name}} ከጭነት መዝገቡ ተወግዷል።",
+            "failedTitle": "❌ መሰረዝ አልተሳካም",
+            "failedDescription": "ይህን የጭነት አይነት ማስወገድ አልተቻለም። እባክዎ እንቅፋቶችን ያረጋግጡ እና እንደገና ይሞክሩ።"
+        },
+        "form": {
+            "badge": "የጭነት አይነት",
+            "required": "አስፈላጊ መስኮች ከመዳረስ በፊት መሙላት ይጠበቃል።",
+            "helperNote": "የተገባ የጭነት መደብ መግለጫ የጭነት እቅድ ትክክለኛ ያደርጋል።",
+            "validation": {
+                "maxLength": "{{field}} ከ{{max}} ቁምፊዎች በላይ መሆን አይችልም።",
+                "resolve": "እባክዎ ከመላክ በፊት የተጠቁ መስኮችን ያስተካክሉ።"
+            },
+            "sections": {
+                "overview": {
+                    "title": "የጭነት አጠቃላይ እይታ",
+                    "description": "ዋና መደብን እና የመሳሪያ ፍላጎቶችን ይግለጹ።",
+                    "descriptionEdit": "የመደብ ዝርዝሮችን እና የመሳሪያ ፍላጎቶችን ያረጋግጡ።"
+                },
+                "specifications": {
+                    "title": "መግለጫዎች",
+                    "description": "የክብደት አቀማመጥና የቁጥር መረጃ ይመዝግቡ።",
+                    "descriptionEdit": "የክብደት አቀማመጥና መረጃ ያዘምኑ።"
+                },
+                "handling": {
+                    "title": "አያያዝና ደህንነት",
+                    "description": "የአያያዝ እና የደህንነት መመሪያ ይጻፉ።",
+                    "descriptionEdit": "የአያያዝ እና የደህንነት መመሪያ ያሻሽሉ።"
+                }
+            },
+            "fields": {
+                "name": {
+                    "label": "የጭነት አይነት ስም",
+                    "helper": "አጭር እና ቀላል የሚታወቀውን ስም ይጠቀሙ።",
+                    "placeholder": "ለምሳሌ፦ ሲሚንቶ, ማዳበሪያ"
+                },
+                "category": {
+                    "label": "ምድብ",
+                    "helper": "ተገቢ የጭነት ምድብ ይምረጡ።",
+                    "noCategories": "ምድቦች አልተገኙም።",
+                    "placeholder": "ምድብ ይምረጡ"
+                },
+                "specialEquipment": {
+                    "label": "ልዩ መሳሪያ ይፈልጋል",
+                    "helper": "ልዩ መሳሪያ የሚፈልጉ ጭነቶችን ያመልክቱ።"
+                },
+                "weight": {
+                    "label": "በኩብ ሜትር የክብደት (ኪ.ግ.)",
+                    "helper": "አማራጭ። የጭነት አቀማመጥ ለመገመት ይጠቅማል።",
+                    "placeholder": "ለምሳሌ፦ 850"
+                },
+                "density": {
+                    "label": "የአቀማመጥ መመሪያ",
+                    "helper": "ከክብደት እሴት በተነሳ በራሱ ይቆጠራል።"
+                },
+                "handling": {
+                    "label": "የአያያዝ መስፈርቶች",
+                    "helper": "የመጫን/መውረድ መመሪያ ይጻፉ።",
+                    "placeholder": "የአያያዝ መስፈርቶችን ይጻፉ..."
+                },
+                "safety": {
+                    "label": "የደህንነት መስፈርቶች",
+                    "helper": "ለዚህ ጭነት የሚጠበቁ የደህንነት ስርዓቶችን ይግለጹ።",
+                    "placeholder": "የደህንነት መስፈርቶችን ይጻፉ..."
+                }
+            },
+            "specialHandling": {
+                "title": "ልዩ አያያዝ",
+                "description": "ተጨማሪ መሳሪያ ወይም ቁጥጥር የሚፈልጉ ጭነቶችን ያመልክቱ።",
+                "label": "የአያያዝ ሁኔታ",
+                "flagged": "ልዩ አያያዝ ይፈልጋል",
+                "standard": "መደበኛ አያያዝ",
+                "badgeSpecial": "ልዩ አያያዝ",
+                "badgeStandard": "መደበኛ አያያዝ"
+            },
+            "density": {
+                "awaiting": "የክብደት መግቢያ በመጠባበቅ",
+                "note": "ክብደት መረጃ ሲጨመር የአቀማመጥ መመሪያዎች ይታያሉ።",
+                "heavy": "ከባድ",
+                "medium": "መካከለኛ",
+                "light": "ቀላል"
+            },
+            "create": {
+                "breadcrumb": "ፍጠር",
+                "title": "የጭነት አይነት ፍጠር",
+                "headTitle": "የጭነት አይነት ፍጠር",
+                "description": "ስራ እና ሪፖርት ለማሻሻል የጭነት መደቦችን ይግለጹ።",
+                "backToList": "ወደ የጭነት አይነቶች ተመለስ",
+                "submit": "የጭነት አይነት አስቀምጥ",
+                "submitting": "በመቀመጥ ላይ...",
+                "successTitle": "✅ የጭነት አይነት ተፈጥሯል",
+                "successDescription": "{{name}} ወደ የጭነት መዝገብ ታክሏል።"
+            },
+            "edit": {
+                "breadcrumb": "አስተካክል",
+                "title": "የጭነት አይነት አዘምን",
+                "headTitle": "የጭነት አይነት: {{name}}",
+                "description": "ትክክለኛ እቅድ ለማድረግ መደቦችን ያዘምኑ።",
+                "backToDetails": "ወደ ዝርዝር ተመለስ",
+                "submit": "ለውጦችን አስቀምጥ",
+                "submitting": "በመቀመጥ ላይ...",
+                "successTitle": "✅ የጭነት አይነት ተዘምኗል",
+                "successDescription": "{{name}} ተዘምኗል።"
+            }
+        },
+        "show": {
+            "subtitle": "ለዚህ የጭነት መደብ የተጠናከረ መግለጫ።",
+            "headTitle": "የጭነት አይነት: {{name}}",
+            "systemUser": "ስርዓት",
+            "notRecorded": "አልተመዘገበም",
+            "weightNotProvided": "አልተሰጠም",
+            "summary": {
+                "category": "ምድብ",
+                "categoryHelper": "የጭነት መደብ",
+                "weightDensity": "የክብደት አቀማመጥ",
+                "weightDensityHelper": "በኩብ ሜትር",
+                "specialEquipment": "ልዩ መሳሪያ",
+                "required": "ያስፈልጋል",
+                "standard": "መደበኛ",
+                "requiredHelper": "የአያያዝ መሳሪያ ይፈልጋል",
+                "standardHelper": "መደበኛ አያያዝ",
+                "updated": "መጨረሻ የተዘምነበት",
+                "updatedHelper": "ቅርብ ጊዜ ማሻሻያ"
+            },
+            "sections": {
+                "guidance": {
+                    "title": "የአስፈፃሚ መመሪያ",
+                    "description": "የአያያዝ ማብራሪያ እና የደህንነት መመሪያዎች",
+                    "handlingTitle": "የአያያዝ መስፈርቶች",
+                    "handlingEmpty": "ልዩ የአያያዝ መመሪያ አልተመዘገበም።",
+                    "safetyTitle": "የደህንነት መስፈርቶች",
+                    "safetyEmpty": "ለዚህ ጭነት የደህንነት መመሪያ እስካሁን አልተሰጠም።"
+                },
+                "activity": {
+                    "title": "የእንቅስቃሴ ታሪክ",
+                    "description": "የቅርብ ጊዜ እርምጃዎች እና ማዘምኖች"
+                }
+            }
+        }
+    },
     "drivers": {
         "title": "አሽከርካሪዎች",
         "breadcrumb": "አሽከርካሪዎች",

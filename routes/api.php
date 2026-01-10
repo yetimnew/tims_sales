@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\Api\DriverAuthController;
+use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DriverController;
 use App\Http\Controllers\Api\DriverLocationController;
 use App\Http\Controllers\Api\DriverMaintenanceController;
@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\DriverNotificationController;
 use App\Http\Controllers\Api\DriverPerformanceController;
 use App\Http\Controllers\Api\DriverStatusController;
 use App\Http\Controllers\Api\DriverTripController;
+use App\Http\Controllers\Api\StorageController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -21,21 +22,32 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-// Public routes
-Route::post('/driver/login', [DriverAuthController::class, 'login'])->middleware('throttle:5,1');
+// Public routes - Authentication
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
+
+// Public routes - Storage (for images with CORS)
+Route::get('/storage/{path}', [StorageController::class, 'serve'])
+    ->where('path', '.*')
+    ->name('storage.serve');
 
 // Protected routes - require authentication
 Route::middleware(['auth:sanctum', 'throttle:60,1'])->group(function () {
-    // Authentication
-    Route::post('/driver/logout', [DriverAuthController::class, 'logout']);
+    // Authentication & Profile
+    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/profile', [AuthController::class, 'profile']);
+    Route::put('/profile', [AuthController::class, 'updateProfile']);
+    Route::post('/profile/picture', [AuthController::class, 'updateProfilePicture']);
+    Route::put('/profile/password', [AuthController::class, 'changePassword']);
 
     // Driver profile
     Route::get('/driver/profile', [DriverController::class, 'profile']);
 
     // Performance
     Route::get('/driver/performance', [DriverPerformanceController::class, 'index']);
+    Route::get('/driver/performance/history', [DriverPerformanceController::class, 'history']);
 
     // Status management
+    Route::get('/driver/status/current', [DriverStatusController::class, 'current']);
     Route::post('/driver/status', [DriverStatusController::class, 'update']);
     Route::get('/driver/status/history', [DriverStatusController::class, 'history']);
 

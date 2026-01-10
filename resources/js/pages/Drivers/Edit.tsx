@@ -20,6 +20,7 @@ import { useTranslation } from 'react-i18next';
 
 interface Driver {
     id: number;
+    user_id?: number | null;
     driverid: string;
     name: string;
     sex: string;
@@ -31,13 +32,26 @@ interface Driver {
     mobile?: string | null;
     hireddate?: string | null;
     status: string;
+    user?: {
+        id: number;
+        name: string;
+        email: string;
+    } | null;
+}
+
+interface AvailableUser {
+    id: number;
+    name: string;
+    email: string;
 }
 
 interface DriversEditProps {
     driver: Driver;
+    availableUsers?: AvailableUser[];
 }
 
 type DriverFormData = {
+    user_id: string | null;
     driverid: string;
     name: string;
     sex: string;
@@ -53,7 +67,7 @@ type DriverFormData = {
 
 type DriverFormField = keyof DriverFormData;
 
-export default function DriversEdit({ driver }: DriversEditProps) {
+export default function DriversEdit({ driver, availableUsers = [] }: DriversEditProps) {
     const { t } = useTranslation();
     const driverDisplayName = driver.name || driver.driverid || t('drivers.form.edit.fallbackName');
     const breadcrumbs: BreadcrumbItem[] = [
@@ -62,7 +76,8 @@ export default function DriversEdit({ driver }: DriversEditProps) {
         { title: t('drivers.form.edit.breadcrumb'), href: `/drivers/${driver.id}/edit` },
     ];
 
-    const { data, setData, put, processing, errors, clearErrors } = useForm<DriverFormData>({
+    const { data, setData, put, processing, errors, clearErrors, transform } = useForm<DriverFormData>({
+        user_id: driver.user_id?.toString() ?? null,
         driverid: driver.driverid ?? '',
         name: driver.name ?? '',
         sex: driver.sex ?? '',
@@ -130,20 +145,30 @@ export default function DriversEdit({ driver }: DriversEditProps) {
         container?.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    const handleFieldChange = (field: DriverFormField, value: string) => {
-        let nextValue = value;
+    const handleFieldChange = (field: DriverFormField, value: string | null) => {
+        let nextValue: string | null = value;
 
         if (field === 'driverid') {
-            nextValue = value.toUpperCase().slice(0, 255);
+            nextValue = typeof value === 'string' ? value.toUpperCase().slice(0, 255) : null;
         } else if (field === 'mobile') {
-            nextValue = value.slice(0, 20);
+            nextValue = typeof value === 'string' ? value.slice(0, 20) : null;
+        } else if (field === 'user_id') {
+            // user_id can be null or string - preserve null, convert __none__ to null
+            nextValue = value === '__none__' ? null : value;
         }
 
-        const nextState = { ...data, [field]: nextValue } as DriverFormData;
+        const nextState = { ...data, [field]: nextValue ?? '' } as DriverFormData;
 
-        setData(field, nextValue);
+        // For user_id, preserve null; for other fields, use empty string as fallback
+        if (field === 'user_id') {
+            setData(field, nextValue);
+        } else {
+            setData(field, nextValue ?? '');
+        }
         clearErrors(field);
-        validateField(field, nextState);
+        if (field !== 'user_id') {
+            validateField(field, nextState);
+        }
         setIsDirty(true);
     };
 
@@ -161,6 +186,12 @@ export default function DriversEdit({ driver }: DriversEditProps) {
             return;
         }
 
+        // Transform data before submission - ensure user_id is null or valid number string
+        transform((data) => ({
+            ...data,
+            user_id: data.user_id === null || data.user_id === '' || data.user_id === '__none__' ? null : data.user_id,
+        }));
+
         put(`/drivers/${driver.id}`, {
             preserveScroll: true,
             onSuccess: () => {
@@ -171,6 +202,12 @@ export default function DriversEdit({ driver }: DriversEditProps) {
                     title: t('drivers.form.edit.successTitle'),
                     description: t('drivers.form.edit.successDescription', { name: driverDisplayName }),
                 });
+            },
+            onError: () => {
+                transform((data) => data);
+            },
+            onFinish: () => {
+                transform((data) => data);
             },
         });
     };
@@ -289,6 +326,37 @@ export default function DriversEdit({ driver }: DriversEditProps) {
                             </SelectContent>
                         </Select>
                     </FormField>
+                    {availableUsers.length > 0 && (
+                        <FormField
+                            id="user_id"
+                            label="Link User Account"
+                            tooltip="Select a user account to link to this driver. This allows the user to access the mobile app as a driver."
+                            error={getFieldError('user_id')}
+                        >
+                            <Select
+                                value={data.user_id?.toString() || '__none__'}
+                                onValueChange={(value) => handleFieldChange('user_id', value === '__none__' ? null : value)}
+                            >
+                                <SelectTrigger className={`transition-all duration-200 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 focus:ring-blue-500/20 focus:border-blue-500 ${getFieldError('user_id') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}>
+                                    <SelectValue placeholder="Select a user (optional)" />
+                                </SelectTrigger>
+                                <SelectContent className="z-50 bg-white shadow-lg dark:bg-slate-800">
+                                    <SelectItem value="__none__" className="hover:bg-slate-100 focus:bg-slate-100 dark:hover:bg-slate-700 dark:focus:bg-slate-700">
+                                        None (No user linked)
+                                    </SelectItem>
+                                    {availableUsers.map((user) => (
+                                        <SelectItem
+                                            key={user.id}
+                                            value={user.id.toString()}
+                                            className="hover:bg-slate-100 focus:bg-slate-100 dark:hover:bg-slate-700 dark:focus:bg-slate-700"
+                                        >
+                                            {user.name} ({user.email})
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </FormField>
+                    )}
                 </FormSection>
 
                 <FormSection

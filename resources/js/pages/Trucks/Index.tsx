@@ -540,7 +540,7 @@ export default function TrucksIndex({
                 <Skeleton className="h-3 w-28" aria-hidden="true" />
             ) : (
                 t('trucks.stats.active.description', {
-                    count: maintenanceCount.toLocaleString(),
+                    count: maintenanceCount,
                 })
             ),
             valueClassName: isTableLoading ? undefined : 'text-green-600',

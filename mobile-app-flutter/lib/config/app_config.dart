@@ -1,22 +1,41 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
+
 class AppConfig {
   // API Configuration
-  // For Android Emulator use: http://10.0.2.2:8000/api
-  // For iOS Simulator use: http://localhost:8000/api
-  // For Physical Device use: http://YOUR_COMPUTER_IP:8000/api
-  static const String apiBaseUrl = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'http://10.0.2.2:8000/api',
-  );
+  // For Web (Chrome/Edge): http://localhost:8000/api
+  // For Android Emulator: http://10.0.2.2:8000/api
+  // For iOS Simulator: http://localhost:8000/api
+  // For Physical Device: http://YOUR_COMPUTER_IP:8000/api
+  
+  static String get apiBaseUrl {
+    // Override with environment variable if provided
+    const envUrl = String.fromEnvironment('API_BASE_URL', defaultValue: '');
+    if (envUrl.isNotEmpty) {
+      return envUrl;
+    }
+    
+    // Use localhost for web, 10.0.2.2 for Android emulator
+    if (kIsWeb) {
+      return 'http://localhost:8000/api';
+    }
+    
+    // Default for Android emulator (can be overridden with environment variable)
+    return 'http://10.0.2.2:8000/api';
+  }
 
   // App Configuration
   static const String appName = 'TIMS Driver';
   static const String appVersion = '1.0.0';
 
   // API Endpoints
-  static const String loginEndpoint = '/driver/login';
-  static const String logoutEndpoint = '/driver/logout';
-  static const String profileEndpoint = '/driver/profile';
+  static const String loginEndpoint = '/login';
+  static const String logoutEndpoint = '/logout';
+  static const String profileEndpoint = '/profile';
+  static const String profileUpdateEndpoint = '/profile';
+  static const String profilePictureEndpoint = '/profile/picture';
+  static const String passwordChangeEndpoint = '/profile/password';
   static const String performanceEndpoint = '/driver/performance';
+  static const String statusCurrentEndpoint = '/driver/status/current';
   static const String statusEndpoint = '/driver/status';
   static const String statusHistoryEndpoint = '/driver/status/history';
   static const String locationEndpoint = '/driver/location';

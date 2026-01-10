@@ -7,12 +7,12 @@ import 'api_service.dart';
 class AuthService {
   final ApiService _apiService = ApiService();
 
-  Future<Map<String, dynamic>> login(String driverId, String password) async {
+  Future<Map<String, dynamic>> login(String email, String password) async {
     try {
       final response = await _apiService.post(
         AppConfig.loginEndpoint,
         data: {
-          'driverid': driverId,
+          'email': email,
           'password': password,
         },
       );
@@ -20,17 +20,17 @@ class AuthService {
       if (response.statusCode == 200 && response.data['success'] == true) {
         final data = response.data['data'];
         final token = data['token'];
-        final driverData = data['driver'];
+        final userData = data['user'];
 
-        // Save token and driver data
+        // Save token and user data
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('auth_token', token);
-        await prefs.setString('driver_data', jsonEncode(driverData));
+        await prefs.setString('user_data', jsonEncode(userData));
 
         return {
           'success': true,
           'token': token,
-          'driver': Driver.fromJson(driverData),
+          'user': Driver.fromJson(userData), // Using Driver model but with User data structure
         };
       } else {
         throw Exception(response.data['message'] ?? 'Login failed');
@@ -58,7 +58,7 @@ class AuthService {
   Future<void> _clearAuth() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('auth_token');
-    await prefs.remove('driver_data');
+    await prefs.remove('user_data');
   }
 
   Future<bool> isAuthenticated() async {
@@ -67,13 +67,13 @@ class AuthService {
     return token != null && token.isNotEmpty;
   }
 
-  Future<Driver?> getCurrentDriver() async {
+  Future<Driver?> getCurrentUser() async {
     final prefs = await SharedPreferences.getInstance();
-    final driverDataJson = prefs.getString('driver_data');
-    if (driverDataJson != null) {
+    final userDataJson = prefs.getString('user_data');
+    if (userDataJson != null) {
       try {
-        final driverData = jsonDecode(driverDataJson);
-        return Driver.fromJson(driverData);
+        final userData = jsonDecode(userDataJson);
+        return Driver.fromJson(userData);
       } catch (e) {
         return null;
       }
@@ -81,9 +81,22 @@ class AuthService {
     return null;
   }
 
+  // Keep getCurrentDriver for backward compatibility
+  Future<Driver?> getCurrentDriver() async {
+    return getCurrentUser();
+  }
+
   Future<String?> getToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('auth_token');
+  }
+
+  Future<SharedPreferences?> getSharedPreferences() async {
+    try {
+      return await SharedPreferences.getInstance();
+    } catch (e) {
+      return null;
+    }
   }
 }
 

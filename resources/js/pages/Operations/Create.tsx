@@ -17,6 +17,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { validateOperation, type ValidationErrors } from '@/lib/validation';
 import { cn } from '@/lib/utils';
 import { AlertCircle, Calendar, ClipboardList, Rocket, CheckCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface Customer {
   id: number;
@@ -91,11 +92,6 @@ type OperationFormData = {
   destination_id: string;
 };
 
-const breadcrumbs: BreadcrumbItem[] = [
-  { title: 'Operations', href: '/operations' },
-  { title: 'Create', href: '/operations/create' },
-];
-
 type RecentSelections = {
   customers: string[];
   cargoTypes: string[];
@@ -113,6 +109,14 @@ export default function OperationsCreate({
   cargoTypes,
   cargoServiceTypes,
 }: OperationsCreateProps) {
+  const { t } = useTranslation();
+  const breadcrumbs = useMemo<BreadcrumbItem[]>(
+    () => [
+      { title: t('operations.breadcrumb'), href: '/operations' },
+      { title: t('operations.form.create.breadcrumb'), href: '/operations/create' },
+    ],
+    [t],
+  );
   const { data, setData, post, processing, errors, reset } = useForm<OperationFormData>({
     operationid: '',
     customer_id: '',
@@ -244,7 +248,7 @@ export default function OperationsCreate({
     const nextErrors: ValidationErrors = { ...validationResults };
 
     if (!destinationIsValid) {
-      nextErrors.destination_id = 'Destination selection is required';
+      nextErrors.destination_id = t('operations.form.validation.destinationRequired');
     }
 
     if (Object.keys(nextErrors).length > 0) {
@@ -271,7 +275,7 @@ export default function OperationsCreate({
   const getFieldError = (field: keyof OperationFormData) => {
     const baseError = errors[field] || frontendErrors[field] || '';
     if (field === 'destination_id' && !destinationIsValid) {
-      return baseError || 'Destination selection is required';
+      return baseError || t('operations.form.validation.destinationRequired');
     }
 
     return baseError;
@@ -314,9 +318,9 @@ export default function OperationsCreate({
 
   return (
     <FormPageLayout
-      title="Register New Operation"
-      headTitle="Create Operation"
-      description="Configure a customer engagement, logistics scope, and commercial profile in a single workflow."
+      title={t('operations.form.create.title')}
+      headTitle={t('operations.form.create.headTitle')}
+      description={t('operations.form.create.description')}
       breadcrumbs={breadcrumbs}
       icon={<ClipboardList className="h-5 w-5" />}
       headerAside={isDirty && <UnsavedChangesBadge />}
@@ -325,31 +329,31 @@ export default function OperationsCreate({
         {hasErrors && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription>Please review the highlighted fields and correct the validation errors before submitting.</AlertDescription>
+            <AlertDescription>{t('operations.form.validation.resolve')}</AlertDescription>
           </Alert>
         )}
 
         <FormSection
-          title="Operation Overview"
-          description="Identify the operation and connect it to the customer ecosystem."
+          title={t('operations.form.sections.overview.title')}
+          description={t('operations.form.sections.overview.description')}
           icon={<Rocket className="h-4 w-4" />}
         >
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <FormField label="Operation ID" required error={getFieldError('operationid')}>
+            <FormField label={t('operations.form.fields.operationId.label')} required error={getFieldError('operationid')}>
               <Input
                 id="operationid"
                 type="text"
                 value={data.operationid}
                 onChange={event => handleFieldChange('operationid', event.target.value)}
-                placeholder="e.g., OP-2025-0042"
+                placeholder={t('operations.form.fields.operationId.placeholder')}
               />
             </FormField>
 
             <div className="space-y-2">
-              <FormField label="Customer" required error={getFieldError('customer_id')}>
+              <FormField label={t('operations.form.fields.customer.label')} required error={getFieldError('customer_id')}>
                 <Select value={data.customer_id} onValueChange={value => handleFieldChange('customer_id', value)}>
                   <SelectTrigger className={getFieldError('customer_id') ? 'border-red-500' : ''}>
-                    <SelectValue placeholder="Select a customer" />
+                    <SelectValue placeholder={t('operations.form.fields.customer.placeholder')} />
                   </SelectTrigger>
                   <SelectContent className="max-h-72">
                     {safeCustomers.map(customer => (
@@ -362,7 +366,7 @@ export default function OperationsCreate({
               </FormField>
               {!getFieldError('customer_id') && recentCustomers.length > 0 && (
                 <div className="flex flex-wrap gap-2 pt-1">
-                  <p className="text-xs text-muted-foreground">Recent:</p>
+                  <p className="text-xs text-muted-foreground">{t('operations.form.fields.customer.recentLabel')}</p>
                   {recentCustomers
                     .map(customerId => safeCustomers.find(customer => customer.id.toString() === customerId))
                     .filter((customer): customer is Customer => Boolean(customer))
@@ -382,22 +386,22 @@ export default function OperationsCreate({
               )}
             </div>
 
-            <FormField label="Status" required error={getFieldError('status')}>
+            <FormField label={t('operations.form.fields.status.label')} required error={getFieldError('status')}>
               <Select value={data.status} onValueChange={value => handleFieldChange('status', value)}>
                 <SelectTrigger className={getFieldError('status') ? 'border-red-500' : ''}>
-                  <SelectValue placeholder="Select status" />
+                  <SelectValue placeholder={t('operations.form.fields.status.placeholder')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
+                  <SelectItem value="active">{t('operations.status.active')}</SelectItem>
+                  <SelectItem value="inactive">{t('operations.status.inactive')}</SelectItem>
                 </SelectContent>
               </Select>
             </FormField>
 
-            <FormField label="Destination Scope" required error={getFieldError('destination_scope')}>
+            <FormField label={t('operations.form.fields.destinationScope.label')} required error={getFieldError('destination_scope')}>
               <Select value={data.destination_scope} onValueChange={value => handleFieldChange('destination_scope', value)}>
                 <SelectTrigger className={getFieldError('destination_scope') ? 'border-red-500' : ''}>
-                  <SelectValue placeholder="Select scope" />
+                  <SelectValue placeholder={t('operations.form.fields.destinationScope.placeholder')} />
                 </SelectTrigger>
                 <SelectContent>
                   {destinationScopeOptions.map(scope => (
@@ -410,14 +414,14 @@ export default function OperationsCreate({
             </FormField>
 
             <div className="space-y-2">
-              <FormField label="Destination" required error={getFieldError('destination_id')}>
+              <FormField label={t('operations.form.fields.destination.label')} required error={getFieldError('destination_id')}>
                 <Select
                   value={destinationSelectValue}
                   onValueChange={value => handleFieldChange('destination_id', value)}
                   disabled={destinationOptions.length === 0}
                 >
                   <SelectTrigger className={getFieldError('destination_id') ? 'border-red-500' : ''}>
-                    <SelectValue placeholder="Select destination" />
+                    <SelectValue placeholder={t('operations.form.fields.destination.placeholder')} />
                   </SelectTrigger>
                   <SelectContent className="max-h-72">
                     {destinationOptions.length > 0 ? (
@@ -428,7 +432,7 @@ export default function OperationsCreate({
                       ))
                     ) : (
                       <SelectItem value="__empty" disabled>
-                        No options available
+                        {t('operations.form.fields.destination.empty')}
                       </SelectItem>
                     )}
                   </SelectContent>
@@ -436,27 +440,27 @@ export default function OperationsCreate({
               </FormField>
               <p className="text-xs text-muted-foreground">
                 {selectedDestinationScopeLabel
-                  ? `Showing ${selectedDestinationScopeLabel.toLowerCase()} destinations.`
-                  : 'Select a destination scope to populate options.'}
+                  ? t('operations.form.fields.destination.scopeHint', { scope: selectedDestinationScopeLabel.toLowerCase() })
+                  : t('operations.form.fields.destination.scopePlaceholder')}
               </p>
             </div>
           </div>
         </FormSection>
 
         <FormSection
-          title="Scheduling & Cargo Profile"
-          description="Define timelines, service type, and planned throughput for this engagement."
+          title={t('operations.form.sections.schedule.title')}
+          description={t('operations.form.sections.schedule.description')}
           icon={<Calendar className="h-4 w-4" />}
         >
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div className="space-y-2">
               <Label>
-                Start Date <span className="text-red-500">*</span>
+                {t('operations.form.fields.startDate.label')} <span className="text-red-500">*</span>
               </Label>
               <DatePicker
                 value={data.startdate || ''}
                 onChange={next => handleFieldChange('startdate', next ?? '')}
-                placeholder="Select start date"
+                placeholder={t('operations.form.fields.startDate.placeholder')}
                 className={cn(
                   'w-full justify-start text-left h-11',
                   getFieldError('startdate') ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500/20' : undefined,
@@ -470,10 +474,10 @@ export default function OperationsCreate({
               )}
             </div>
 
-            <FormField label="Cargo Service Type" required error={getFieldError('cargo_service_type')}>
+            <FormField label={t('operations.form.fields.cargoServiceType.label')} required error={getFieldError('cargo_service_type')}>
               <Select value={data.cargo_service_type} onValueChange={value => handleFieldChange('cargo_service_type', value)}>
                 <SelectTrigger className={getFieldError('cargo_service_type') ? 'border-red-500' : ''}>
-                  <SelectValue placeholder="Select service type" />
+                  <SelectValue placeholder={t('operations.form.fields.cargoServiceType.placeholder')} />
                 </SelectTrigger>
                 <SelectContent>
                   {safeCargoServiceTypes.map(service => (
@@ -486,10 +490,10 @@ export default function OperationsCreate({
             </FormField>
 
             <div className="space-y-2">
-              <FormField label="Cargo Type" required error={getFieldError('cargo_type_id')}>
+              <FormField label={t('operations.form.fields.cargoType.label')} required error={getFieldError('cargo_type_id')}>
                 <Select value={data.cargo_type_id} onValueChange={value => handleFieldChange('cargo_type_id', value)}>
                   <SelectTrigger className={getFieldError('cargo_type_id') ? 'border-red-500' : ''}>
-                    <SelectValue placeholder="Select cargo type" />
+                    <SelectValue placeholder={t('operations.form.fields.cargoType.placeholder')} />
                   </SelectTrigger>
                   <SelectContent className="max-h-72">
                     {safeCargoTypes.map(type => (
@@ -502,7 +506,7 @@ export default function OperationsCreate({
               </FormField>
               {recentCargoTypes.length > 0 && (
                 <div className="flex flex-wrap items-center gap-2 pt-1">
-                  <p className="text-xs text-muted-foreground">Recent:</p>
+                  <p className="text-xs text-muted-foreground">{t('operations.form.fields.cargoType.recentLabel')}</p>
                   {recentCargoTypes
                     .map(typeId => safeCargoTypes.find(type => type.id.toString() === typeId))
                     .filter((type): type is CargoTypeOption => Boolean(type))
@@ -522,54 +526,54 @@ export default function OperationsCreate({
               )}
             </div>
 
-            <FormField label="Planned Volume (MT)" required error={getFieldError('volume')}>
+            <FormField label={t('operations.form.fields.volume.label')} required error={getFieldError('volume')}>
               <Input
                 id="volume"
                 type="number"
                 step="0.01"
                 value={data.volume}
                 onChange={event => handleFieldChange('volume', event.target.value)}
-                placeholder="e.g., 1200"
+                placeholder={t('operations.form.fields.volume.placeholder')}
               />
             </FormField>
 
-            <FormField label="Distance (KM)" required error={getFieldError('km')}>
+            <FormField label={t('operations.form.fields.distance.label')} required error={getFieldError('km')}>
               <Input
                 id="km"
                 type="number"
                 step="0.01"
                 value={data.km}
                 onChange={event => handleFieldChange('km', event.target.value)}
-                placeholder="e.g., 520"
+                placeholder={t('operations.form.fields.distance.placeholder')}
               />
             </FormField>
           </div>
         </FormSection>
 
         <FormSection
-          title="Commercial Parameters"
-          description="Set tariff assumptions and capture supporting notes for the ops & finance teams."
+          title={t('operations.form.sections.commercial.title')}
+          description={t('operations.form.sections.commercial.description')}
           icon={<CheckCircle className="h-4 w-4" />}
         >
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <FormField label="Tariff (per ton-km)" required error={getFieldError('tariff')}>
+            <FormField label={t('operations.form.fields.tariff.label')} required error={getFieldError('tariff')}>
               <Input
                 id="tariff"
                 type="number"
                 step="0.01"
                 value={data.tariff}
                 onChange={event => handleFieldChange('tariff', event.target.value)}
-                placeholder="e.g., 2.75"
+                placeholder={t('operations.form.fields.tariff.placeholder')}
               />
             </FormField>
 
             <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="remark">Description / Notes</Label>
+              <Label htmlFor="remark">{t('operations.form.fields.remark.label')}</Label>
               <Textarea
                 id="remark"
                 value={data.remark}
                 onChange={event => handleFieldChange('remark', event.target.value)}
-                placeholder="Add any commercial clauses, delivery SLAs, or operational reminders"
+                placeholder={t('operations.form.fields.remark.placeholder')}
                 className="min-h-[120px]"
               />
               {getFieldError('remark') && (
@@ -585,7 +589,7 @@ export default function OperationsCreate({
 
       <FormActionsBar>
         <Button type="button" variant="outline" asChild>
-          <Link href="/operations">Cancel</Link>
+          <Link href="/operations">{t('operations.actions.cancel')}</Link>
         </Button>
         <Button
           type="submit"
@@ -595,12 +599,12 @@ export default function OperationsCreate({
           {processing ? (
             <>
               <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white" />
-              Creating...
+              {t('operations.form.create.submitting')}
             </>
           ) : (
             <>
               <CheckCircle className="mr-2 h-4 w-4" />
-              Create Operation
+              {t('operations.form.create.submit')}
             </>
           )}
         </Button>

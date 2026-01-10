@@ -1074,6 +1074,746 @@
             }
         }
     },
+    "vehicleTypes": {
+        "title": "Vehicle Types",
+        "breadcrumb": "Vehicle Types",
+        "description": "Manage vehicle types and categories. Total: {{count}}",
+        "columns": {
+            "name": "Vehicle Type",
+            "description": "Description",
+            "totalTrucks": "Total Trucks",
+            "activeTrucks": "Active Trucks",
+            "created": "Created"
+        },
+        "table": {
+            "title": "Vehicle Types",
+            "description": "Manage your fleet of vehicle types",
+            "index": "#",
+            "actions": "Actions"
+        },
+        "actions": {
+            "add": "Add Vehicle Type",
+            "view": "View",
+            "edit": "Edit",
+            "delete": "Delete",
+            "cancel": "Cancel"
+        },
+        "filters": {
+            "searchPlaceholder": "Search vehicle types...",
+            "rowsLabel": "Rows",
+            "perPageOption": "{{value}} / page"
+        },
+        "stats": {
+            "total": {
+                "label": "Vehicle Types",
+                "description": "{{count}} types with trucks"
+            },
+            "totalTrucks": {
+                "label": "Total Trucks",
+                "description": "Across filtered types"
+            },
+            "activeTrucks": {
+                "label": "Active Trucks",
+                "description": "Currently active"
+            },
+            "empty": {
+                "label": "Empty Types",
+                "description": "No trucks assigned"
+            }
+        },
+        "mobile": {
+            "position": "#{{value}}",
+            "trucksCount": "{{value}} trucks",
+            "description": "Description",
+            "noDescription": "No description provided.",
+            "activeTrucks": "Active Trucks",
+            "totalTrucks": "Total Trucks",
+            "created": "Created"
+        },
+        "empty": {
+            "title": "No vehicle types found.",
+            "createAction": "Create one"
+        },
+        "fallbacks": {
+            "notAvailable": "—"
+        },
+        "delete": {
+            "title": "Delete Vehicle Type",
+            "description": "Are you sure you want to delete this vehicle type? This action cannot be undone.",
+            "descriptionWithName": "Are you sure you want to delete {{name}}? This action cannot be undone.",
+            "successTitle": "✅ Vehicle Type Deleted",
+            "successDescription": "{{name}} has been removed from the fleet classifications.",
+            "failedTitle": "❌ Delete Failed",
+            "failedDescription": "Failed to delete vehicle type. Please review the requirements and try again.",
+            "failedDescriptionUnknown": "An unexpected error occurred while deleting the vehicle type. Please try again."
+        },
+        "form": {
+            "badge": "Fleet Operations",
+            "required": "All required fields must be completed",
+            "unsaved": "You have unsaved changes",
+            "validation": {
+                "title": "⚠️ Validation Error",
+                "fixErrors": "Please fix the validation errors before submitting.",
+                "resolve": "Please resolve the highlighted fields before submitting the form."
+            },
+            "sections": {
+                "details": {
+                    "title": "Vehicle Type Details",
+                    "description": "Provide a descriptive name. Description is optional.",
+                    "descriptionEdit": "Edit the name or optional description to keep records accurate."
+                }
+            },
+            "fields": {
+                "name": {
+                    "label": "Name",
+                    "tooltip": "Use a descriptive name for the vehicle class.",
+                    "placeholder": "e.g. Heavy Truck, Light Truck"
+                },
+                "description": {
+                    "label": "Description",
+                    "helper": "Optional. Helps others understand where this type should be used.",
+                    "placeholder": "Optional description of the vehicle type"
+                }
+            },
+            "create": {
+                "breadcrumb": "Create",
+                "title": "Create Vehicle Type",
+                "headTitle": "Create Vehicle Type",
+                "description": "Define a new vehicle classification used when registering trucks.",
+                "backToList": "Back to Vehicle Types",
+                "submit": "Create Vehicle Type",
+                "submitting": "Creating...",
+                "successTitle": "✅ Vehicle Type Created",
+                "successDescription": "Vehicle type has been added successfully."
+            },
+            "edit": {
+                "breadcrumb": "Edit",
+                "title": "Edit Vehicle Type",
+                "headTitle": "Edit {{name}}",
+                "description": "Update the vehicle classification details used across the fleet.",
+                "backToList": "Back to Vehicle Types",
+                "submit": "Update Vehicle Type",
+                "submitting": "Updating...",
+                "successTitle": "✅ Vehicle Type Updated",
+                "successDescription": "Vehicle type changes have been saved successfully."
+            }
+        },
+        "show": {
+            "subtitle": "Fleet classification and operational vehicle categorization.",
+            "actions": {
+                "back": "Back to Vehicle Types"
+            },
+            "summary": {
+                "associatedTrucks": "Associated Trucks",
+                "singleTruck": "Truck currently using this type",
+                "multipleTrucks": "Trucks currently using this type",
+                "created": "Created",
+                "createdHelper": "Initial catalogue entry",
+                "updated": "Last Updated",
+                "updatedHelper": "Most recent modification"
+            },
+            "sections": {
+                "associatedTrucks": {
+                    "title": "Associated Trucks",
+                    "description": "{{count}} trucks configured with this vehicle type",
+                    "addedOn": "Added {{value}}",
+                    "empty": "No trucks have been assigned to this vehicle type yet."
+                },
+                "activity": {
+                    "title": "Activity History",
+                    "description": "Auditable timeline of changes"
+                },
+                "quickInfo": {
+                    "title": "Quick Info",
+                    "description": "System tracking"
+                }
+            },
+            "fields": {
+                "id": "Vehicle Type ID",
+                "totalTrucks": "Total Trucks"
+            }
+        }
+    },
+    "driverSafety": {
+        "title": "Driver Safety",
+        "breadcrumb": "Driver Safety",
+        "description": "Monitor incidents across the fleet. Total: {{count}}",
+        "columns": {
+            "date": "Date",
+            "driver": "Driver",
+            "type": "Type",
+            "severity": "Severity",
+            "description": "Description",
+            "damageCost": "Damage Cost"
+        },
+        "table": {
+            "title": "Safety Records",
+            "description": "Track incidents, severity, and impact",
+            "index": "#",
+            "actions": "Actions"
+        },
+        "actions": {
+            "add": "Add Safety Record",
+            "view": "View",
+            "edit": "Edit",
+            "delete": "Delete",
+            "cancel": "Cancel",
+            "back": "Back"
+        },
+        "filters": {
+            "searchPlaceholder": "Search safety records...",
+            "rowsLabel": "Rows",
+            "perPageOption": "{{value}} / page",
+            "incidentType": "Incident type",
+            "allIncidentTypes": "All incident types",
+            "severity": "Severity",
+            "allSeverities": "All severities",
+            "driver": "Driver",
+            "allDrivers": "All drivers"
+        },
+        "stats": {
+            "total": {
+                "label": "Total Records",
+                "description": "{{count}} critical incidents"
+            },
+            "accidents": {
+                "label": "Accidents",
+                "description": "{{count}} major incidents"
+            },
+            "warnings": {
+                "label": "Warnings",
+                "description": "{{count}} minor cases"
+            },
+            "damageCost": {
+                "label": "Damage Cost",
+                "description": "Avg {{value}}"
+            }
+        },
+        "empty": {
+            "title": "No safety records found.",
+            "createAction": "Create one"
+        },
+        "mobile": {
+            "position": "#{{value}}",
+            "unassigned": "Unassigned driver",
+            "date": "Date",
+            "description": "Description",
+            "damageCost": "Damage Cost"
+        },
+        "loading": {
+            "alt": "Loading safety records",
+            "label": "Loading safety records..."
+        },
+        "delete": {
+            "title": "Delete Safety Record",
+            "description": "Are you sure you want to delete this safety record? This action cannot be undone.",
+            "successTitle": "✅ Safety Record Deleted",
+            "successDescription": "The driver safety record was removed successfully.",
+            "failedTitle": "❌ Delete Failed",
+            "failedDescription": "Failed to delete safety record. Please review the requirements and try again.",
+            "itemName": "{{driver}} – {{date}}"
+        },
+        "fallbacks": {
+            "notAvailable": "—",
+            "driver": "Driver",
+            "notRecorded": "Not recorded",
+            "unknown": "Unknown"
+        },
+        "incidentTypes": {
+            "accident": "Accident",
+            "violation": "Violation",
+            "warning": "Warning"
+        },
+        "severity": {
+            "minor": "Minor",
+            "major": "Major",
+            "critical": "Critical",
+            "unknown": "Unknown"
+        },
+        "form": {
+            "validation": {
+                "title": "⚠️ Validation Error",
+                "fixErrors": "Please resolve the highlighted issues before saving.",
+                "resolve": "Please resolve the highlighted fields before submitting the form."
+            },
+            "sections": {
+                "overview": {
+                    "title": "Incident Overview",
+                    "description": "Confirm who was involved and the key incident attributes."
+                },
+                "impact": {
+                    "title": "Impact & Context",
+                    "description": "Capture financial implications and where the incident occurred."
+                },
+                "documentation": {
+                    "title": "Documentation & Follow-up",
+                    "description": "Provide the narrative and planned corrective actions for the safety team."
+                }
+            },
+            "fields": {
+                "driver": {
+                    "label": "Driver",
+                    "helper": "Only active drivers are listed.",
+                    "placeholder": "Select driver"
+                },
+                "date": {
+                    "label": "Incident Date"
+                },
+                "type": {
+                    "label": "Incident Type",
+                    "placeholder": "Select incident type"
+                },
+                "severity": {
+                    "label": "Severity",
+                    "placeholder": "Select severity"
+                },
+                "damageCost": {
+                    "label": "Estimated Damage Cost",
+                    "helper": "Leave blank if no financial impact is recorded.",
+                    "placeholder": "0.00"
+                },
+                "location": {
+                    "label": "Location",
+                    "helper": "Optional. Max 255 characters.",
+                    "placeholder": "e.g. Addis Ababa – Ring Road"
+                },
+                "description": {
+                    "label": "Incident Description",
+                    "helper": "Describe what happened, contributing factors, and immediate impacts.",
+                    "placeholder": "Describe what happened, contributing factors, and immediate impacts."
+                },
+                "resolution": {
+                    "label": "Corrective Action",
+                    "helper": "Outline coaching, maintenance, or policy follow-up planned for this incident.",
+                    "placeholder": "Outline coaching, maintenance, or policy follow-up planned for this incident."
+                }
+            },
+            "incidentTypes": {
+                "accident": "Collision, rollover, or damage event requiring investigation.",
+                "violation": "Traffic or safety policy breach recorded against the driver.",
+                "warning": "Behaviour flagged for coaching or future follow-up."
+            },
+            "severityLevels": {
+                "minor": "Monitor the driver and document corrective actions.",
+                "major": "Significant disruption with recommended coaching and review.",
+                "critical": "Immediate escalation required to protect drivers and assets."
+            },
+            "snapshot": {
+                "title": "Current Incident Snapshot",
+                "empty": "Choose an incident type to unlock tailored follow-up guidance.",
+                "estimatedCost": "Estimated cost"
+            },
+            "severityBadge": "{{label}} Severity",
+            "severityPill": "{{label}} severity",
+            "required": "Required fields must be completed before saving.",
+            "helperNote": "Complete records enable targeted safety coaching.",
+            "create": {
+                "breadcrumb": "Create",
+                "title": "Record Driver Safety Incident",
+                "headTitle": "Record Safety Incident",
+                "description": "Document incidents to monitor risk trends and coordinate targeted coaching.",
+                "backToList": "Back to Safety Log",
+                "submit": "Save Safety Record",
+                "submitting": "Recording...",
+                "successTitle": "✅ Safety Record Created",
+                "successDescription": "The driver safety incident has been recorded."
+            },
+            "edit": {
+                "breadcrumb": "Edit",
+                "recordBreadcrumb": "Record #{{id}}",
+                "title": "Update Driver Safety Incident",
+                "headTitle": "Safety Record #{{id}}",
+                "description": "Refine the documented details to keep your safety insights accurate and actionable.",
+                "backToRecord": "Back to Record",
+                "submit": "Save Changes",
+                "submitting": "Saving...",
+                "successTitle": "✅ Safety Record Updated",
+                "successDescription": "The driver safety incident has been updated.",
+                "helperNote": "Keep this record current to support driver coaching and auditing.",
+                "changeNote": "Changes are tracked for future safety analytics."
+            }
+        },
+        "show": {
+            "breadcrumbItem": "Incident #{{id}}",
+            "title": "Safety Incident #{{id}}",
+            "subtitle": "Driver: {{driver}}",
+            "headTitle": "Driver Safety Incident #{{id}}",
+            "summary": {
+                "date": "Incident Date",
+                "dateHelper": "When it occurred",
+                "severity": "Severity",
+                "severityHelper": "Impact level",
+                "damageCost": "Damage Cost",
+                "damageCostHelper": "Financial impact",
+                "driver": "Driver",
+                "driverHelper": "Involved party"
+            },
+            "systemUser": "System",
+            "sections": {
+                "details": {
+                    "title": "Incident Details",
+                    "description": "Description and circumstances"
+                },
+                "resolution": {
+                    "title": "Resolution",
+                    "description": "Actions taken and outcome",
+                    "empty": "No resolution details recorded yet."
+                },
+                "activity": {
+                    "title": "Activity History",
+                    "description": "Auditable timeline"
+                }
+            },
+            "fields": {
+                "description": "Description",
+                "location": "Location",
+                "date": "Incident Date",
+                "damageCost": "Damage Cost"
+            },
+            "deleteItem": "Incident #{{id}}"
+        },
+        "report": {
+            "title": "Driver Safety",
+            "fallbacks": {
+                "driver": "Driver #{{id}}",
+                "notAvailable": "—",
+                "unassigned": "Unassigned"
+            },
+            "badges": {
+                "from": "From {{value}}",
+                "to": "To {{value}}",
+                "drivers": "{{count}} drivers",
+                "allDrivers": "All drivers",
+                "incidentTypes": "{{count}} incident types",
+                "allIncidentTypes": "All incident types",
+                "severities": "{{count}} severity levels",
+                "allSeverities": "All severities"
+            },
+            "summary": {
+                "total": "Total incidents",
+                "critical": "Critical incidents",
+                "driversAffected": "Drivers affected",
+                "damageCost": "Total damage cost"
+            },
+            "days": {
+                "ahead": "{{count}} days ahead",
+                "today": "0 days (today)",
+                "ago": "{{count}} days ago"
+            },
+            "filters": {
+                "title": "Filter driver safety data",
+                "description": "Adjust the reporting window and filter by driver, incident type, or severity.",
+                "incidentTypes": {
+                    "label": "Incident types",
+                    "all": "All incident types",
+                    "summaryAll": "All incident types included",
+                    "heading": "Incident types",
+                    "search": "Search incident type..."
+                },
+                "severities": {
+                    "label": "Severities",
+                    "all": "All severities",
+                    "summaryAll": "All severities included",
+                    "heading": "Severities",
+                    "search": "Search severity..."
+                }
+            },
+            "overview": {
+                "title": "Driver safety overview",
+                "description": "Review incidents, severity mix, and exposed drivers for the selected filters."
+            },
+            "actions": {
+                "export": "Export",
+                "excel": "Excel",
+                "pdf": "PDF",
+                "reset": "Reset",
+                "generate": "Generate report"
+            },
+            "trend": {
+                "title": "Incident trend",
+                "description": "Period-by-period incidents and damage cost for the selected range.",
+                "columns": {
+                    "period": "Period",
+                    "incidents": "Incidents",
+                    "damageCost": "Damage cost"
+                },
+                "empty": "No trend data in the selected window."
+            },
+            "highlights": {
+                "title": "Highlights",
+                "description": "Quick safety metrics for leadership review.",
+                "averageDamage": "Average damage",
+                "categories": "Incident categories",
+                "daysSince": "Days since last incident",
+                "major": "Major incidents",
+                "minor": "Minor incidents"
+            },
+            "severity": {
+                "title": "Severity breakdown",
+                "description": "Incident counts and damage grouped by severity.",
+                "columns": {
+                    "severity": "Severity",
+                    "incidents": "Incidents",
+                    "damageCost": "Damage cost"
+                },
+                "empty": "No incidents recorded."
+            },
+            "types": {
+                "title": "Incident type breakdown",
+                "description": "Assess severity mix by incident category.",
+                "columns": {
+                    "type": "Incident type",
+                    "total": "Total",
+                    "critical": "Critical",
+                    "major": "Major",
+                    "minor": "Minor",
+                    "damageCost": "Damage cost"
+                },
+                "empty": "No incident detail available."
+            },
+            "leaderboard": {
+                "title": "Driver exposure",
+                "description": "Top drivers with recorded incidents for the filtered window.",
+                "columns": {
+                    "driver": "Driver",
+                    "incidents": "Incidents",
+                    "critical": "Critical",
+                    "major": "Major",
+                    "minor": "Minor",
+                    "damageCost": "Damage cost"
+                },
+                "empty": "No drivers with incidents in this period."
+            },
+            "recent": {
+                "title": "Recent incidents",
+                "description": "Most recent safety incidents with headline details.",
+                "columns": {
+                    "date": "Date",
+                    "driver": "Driver",
+                    "type": "Type",
+                    "severity": "Severity",
+                    "damage": "Damage"
+                },
+                "empty": "No incidents in the selected period."
+            }
+        }
+    },
+    "cargoTypes": {
+        "title": "Cargo Types",
+        "breadcrumb": "Cargo Types",
+        "description": "Manage cargo classifications. Total: {{count}}",
+        "columns": {
+            "name": "Cargo Type",
+            "category": "Category",
+            "weight": "Weight Density",
+            "specialEquipment": "Special Equipment"
+        },
+        "table": {
+            "title": "Cargo Types",
+            "description": "Manage cargo classifications and requirements",
+            "index": "#",
+            "actions": "Actions"
+        },
+        "actions": {
+            "add": "Add Cargo Type",
+            "view": "View",
+            "edit": "Edit",
+            "delete": "Delete",
+            "cancel": "Cancel",
+            "back": "Back"
+        },
+        "filters": {
+            "searchPlaceholder": "Search cargo types...",
+            "rowsLabel": "Rows",
+            "perPageOption": "{{value}} / page",
+            "category": "Category",
+            "allCategories": "All categories",
+            "specialEquipment": "Special equipment",
+            "allTypes": "All types",
+            "requiresSpecialEquipment": "Requires equipment",
+            "noSpecialEquipment": "No special equipment"
+        },
+        "stats": {
+            "total": {
+                "label": "Cargo Types",
+                "description": "{{count}} active types"
+            },
+            "specialEquipment": {
+                "label": "Special Equipment",
+                "description": "{{count}} require equipment"
+            },
+            "averageWeight": {
+                "label": "Avg Weight Density",
+                "fallback": "Not available",
+                "description": "Across filtered types"
+            },
+            "handlingNotes": {
+                "label": "Handling Notes",
+                "description": "{{count}} with handling notes"
+            }
+        },
+        "specialEquipment": {
+            "required": "Required",
+            "notRequired": "Not required"
+        },
+        "mobile": {
+            "position": "#{{value}}",
+            "weight": "Weight",
+            "specialEquipment": "Special equipment",
+            "handling": "Handling",
+            "safety": "Safety"
+        },
+        "empty": {
+            "title": "No cargo types found.",
+            "createAction": "Create one"
+        },
+        "fallbacks": {
+            "notAvailable": "—"
+        },
+        "delete": {
+            "title": "Delete Cargo Type",
+            "description": "Are you sure you want to delete this cargo type? This action cannot be undone.",
+            "descriptionWithName": "Are you sure you want to delete \"{{name}}\"? This action cannot be undone.",
+            "successTitle": "✅ Cargo Type Deleted",
+            "successDescription": "{{name}} has been removed from the cargo catalog.",
+            "failedTitle": "❌ Delete Failed",
+            "failedDescription": "Unable to delete this cargo type. Please review any blockers and try again."
+        },
+        "form": {
+            "badge": "Cargo Type",
+            "required": "Required fields must be completed before saving.",
+            "helperNote": "Well-defined cargo types keep load planning accurate.",
+            "validation": {
+                "maxLength": "{{field}} must be {{max}} characters or fewer.",
+                "resolve": "Please resolve the highlighted fields before submitting the form."
+            },
+            "sections": {
+                "overview": {
+                    "title": "Cargo Overview",
+                    "description": "Define the core classification and equipment needs.",
+                    "descriptionEdit": "Review the classification details and equipment needs."
+                },
+                "specifications": {
+                    "title": "Specifications",
+                    "description": "Capture weight density and volume details.",
+                    "descriptionEdit": "Update weight density and volume details."
+                },
+                "handling": {
+                    "title": "Handling & Safety",
+                    "description": "Document handling and safety guidance.",
+                    "descriptionEdit": "Refine handling and safety guidance."
+                }
+            },
+            "fields": {
+                "name": {
+                    "label": "Cargo Type Name",
+                    "helper": "Keep this name concise and easy to recognize.",
+                    "placeholder": "e.g. Cement, Fertilizer"
+                },
+                "category": {
+                    "label": "Category",
+                    "helper": "Select the most fitting cargo category.",
+                    "noCategories": "No categories available.",
+                    "placeholder": "Select category"
+                },
+                "specialEquipment": {
+                    "label": "Requires Special Equipment",
+                    "helper": "Flag cargo that needs specific handling tools."
+                },
+                "weight": {
+                    "label": "Weight per Cubic Meter (kg)",
+                    "helper": "Optional. Used to estimate load density.",
+                    "placeholder": "e.g. 850"
+                },
+                "density": {
+                    "label": "Density Guidance",
+                    "helper": "Auto-calculated based on weight value."
+                },
+                "handling": {
+                    "label": "Handling Requirements",
+                    "helper": "Outline any loading or unloading guidance.",
+                    "placeholder": "Document handling requirements..."
+                },
+                "safety": {
+                    "label": "Safety Requirements",
+                    "helper": "Highlight safety protocols for this cargo.",
+                    "placeholder": "Document safety requirements..."
+                }
+            },
+            "specialHandling": {
+                "title": "Special Handling",
+                "description": "Mark cargo that requires additional equipment or oversight.",
+                "label": "Handling status",
+                "flagged": "Special handling required",
+                "standard": "Standard handling",
+                "badgeSpecial": "Special Handling",
+                "badgeStandard": "Standard Handling"
+            },
+            "density": {
+                "awaiting": "Awaiting weight input",
+                "note": "Density insights update as you add weight information.",
+                "heavy": "Heavy",
+                "medium": "Medium",
+                "light": "Light"
+            },
+            "create": {
+                "breadcrumb": "Create",
+                "title": "Create Cargo Type",
+                "headTitle": "Create Cargo Type",
+                "description": "Define cargo classifications to streamline operations and reporting.",
+                "backToList": "Back to Cargo Types",
+                "submit": "Save Cargo Type",
+                "submitting": "Saving...",
+                "successTitle": "✅ Cargo Type Created",
+                "successDescription": "{{name}} has been added to the cargo catalog."
+            },
+            "edit": {
+                "breadcrumb": "Edit",
+                "title": "Update Cargo Type",
+                "headTitle": "Cargo Type: {{name}}",
+                "description": "Keep cargo classifications current for accurate planning.",
+                "backToDetails": "Back to Details",
+                "submit": "Save Changes",
+                "submitting": "Saving...",
+                "successTitle": "✅ Cargo Type Updated",
+                "successDescription": "{{name}} has been updated."
+            }
+        },
+        "show": {
+            "subtitle": "Comprehensive profile for this cargo classification.",
+            "headTitle": "Cargo Type: {{name}}",
+            "systemUser": "System",
+            "notRecorded": "Not recorded",
+            "weightNotProvided": "Not provided",
+            "summary": {
+                "category": "Category",
+                "categoryHelper": "Cargo classification",
+                "weightDensity": "Weight Density",
+                "weightDensityHelper": "Per cubic meter",
+                "specialEquipment": "Special Equipment",
+                "required": "Required",
+                "standard": "Standard",
+                "requiredHelper": "Handling equipment needed",
+                "standardHelper": "Standard handling",
+                "updated": "Last Updated",
+                "updatedHelper": "Most recent change"
+            },
+            "sections": {
+                "guidance": {
+                    "title": "Operational Guidance",
+                    "description": "Handling insight and safety protocols",
+                    "handlingTitle": "Handling Requirements",
+                    "handlingEmpty": "No special handling instructions documented.",
+                    "safetyTitle": "Safety Requirements",
+                    "safetyEmpty": "No safety guidance has been provided for this cargo type yet."
+                },
+                "activity": {
+                    "title": "Activity Log",
+                    "description": "Recent actions and updates"
+                }
+            }
+        }
+    },
     "drivers": {
         "title": "Drivers",
         "breadcrumb": "Drivers",

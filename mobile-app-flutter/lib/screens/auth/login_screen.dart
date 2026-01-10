@@ -11,7 +11,7 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _driverIdController = TextEditingController();
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final AuthService _authService = AuthService();
   bool _isLoading = false;
@@ -19,9 +19,20 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   void dispose() {
-    _driverIdController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  String? _validateEmail(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Please enter your email address';
+    }
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    if (!emailRegex.hasMatch(value)) {
+      return 'Please enter a valid email address';
+    }
+    return null;
   }
 
   Future<void> _handleLogin() async {
@@ -35,7 +46,7 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     final result = await _authService.login(
-      _driverIdController.text.trim(),
+      _emailController.text.trim().toLowerCase(),
       _passwordController.text,
     );
 
@@ -89,23 +100,19 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 48),
 
-                  // Driver ID Field
+                  // Email Field
                   TextFormField(
-                    controller: _driverIdController,
+                    controller: _emailController,
                     decoration: const InputDecoration(
-                      labelText: 'Driver ID',
-                      hintText: 'Enter your driver ID',
-                      prefixIcon: Icon(Icons.person),
+                      labelText: 'Email',
+                      hintText: 'Enter your email address',
+                      prefixIcon: Icon(Icons.email),
                       border: OutlineInputBorder(),
                     ),
-                    keyboardType: TextInputType.text,
+                    keyboardType: TextInputType.emailAddress,
                     textCapitalization: TextCapitalization.none,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter your driver ID';
-                      }
-                      return null;
-                    },
+                    autocorrect: false,
+                    validator: _validateEmail,
                   ),
                   const SizedBox(height: 16),
 

@@ -11,6 +11,7 @@ import { toast } from '@/hooks/use-toast';
 import { validateVehicleType } from '@/lib/validation';
 import { type BreadcrumbItem } from '@/types';
 import { Link, useForm } from '@inertiajs/react';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, CheckCircle, Info, Package, Save, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { type FormEventHandler, useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -26,13 +27,14 @@ interface VehicleTypesEditProps {
 }
 
 export default function VehicleTypesEdit({ vehicleType }: VehicleTypesEditProps) {
+    const { t } = useTranslation();
     const breadcrumbs: BreadcrumbItem[] = [
         {
-            title: 'Vehicle Types',
+            title: t('vehicleTypes.breadcrumb'),
             href: '/vehicletypes',
         },
         {
-            title: 'Edit',
+            title: t('vehicleTypes.form.edit.breadcrumb'),
             href: `/vehicletypes/${vehicleType.id}/edit`,
         },
     ];
@@ -53,12 +55,12 @@ export default function VehicleTypesEdit({ vehicleType }: VehicleTypesEditProps)
 
         if (errorMessages.length > 0) {
             toast({
-                title: '⚠️ Validation Error',
+                title: t('vehicleTypes.form.validation.title'),
                 description: errorMessages.join(', '),
                 variant: 'destructive',
             });
         }
-    }, [errors]);
+    }, [errors, t]);
 
     useEffect(() => {
         const container = scrollContainerRef.current;
@@ -104,8 +106,8 @@ export default function VehicleTypesEdit({ vehicleType }: VehicleTypesEditProps)
         if (Object.keys(validationResult).length > 0) {
             setFrontendErrors(validationResult as Partial<Record<VehicleTypeFormField, string>>);
             toast({
-                title: '⚠️ Validation Error',
-                description: 'Please fix the validation errors before submitting.',
+                title: t('vehicleTypes.form.validation.title'),
+                description: t('vehicleTypes.form.validation.fixErrors'),
                 variant: 'destructive',
             });
             return;
@@ -118,8 +120,8 @@ export default function VehicleTypesEdit({ vehicleType }: VehicleTypesEditProps)
                 setIsDirty(false);
                 clearErrors();
                 toast({
-                    title: '✅ Vehicle Type Updated',
-                    description: 'Vehicle type changes have been saved successfully.',
+                    title: t('vehicleTypes.form.edit.successTitle'),
+                    description: t('vehicleTypes.form.edit.successDescription'),
                 });
             },
         });
@@ -140,9 +142,9 @@ export default function VehicleTypesEdit({ vehicleType }: VehicleTypesEditProps)
 
     return (
         <FormPageLayout
-            title="Edit Vehicle Type"
-            headTitle={`Edit ${vehicleType.name}`}
-            description="Update the vehicle classification details used across the fleet."
+            title={t('vehicleTypes.form.edit.title')}
+            headTitle={t('vehicleTypes.form.edit.headTitle', { name: vehicleType.name })}
+            description={t('vehicleTypes.form.edit.description')}
             breadcrumbs={breadcrumbs}
             icon={<Package className="h-5 w-5" />}
             headerAside={
@@ -150,13 +152,13 @@ export default function VehicleTypesEdit({ vehicleType }: VehicleTypesEditProps)
                     <Button variant="ghost" size="sm" asChild>
                         <Link href="/vehicletypes">
                             <ArrowLeft className="mr-2 h-4 w-4" />
-                            Back to Vehicle Types
+                            {t('vehicleTypes.form.edit.backToList')}
                         </Link>
                     </Button>
                     {isDirty && <UnsavedChangesBadge />}
                     <div className="flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1.5 text-sm font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
                         <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-500"></div>
-                        Fleet Operations
+                        {t('vehicleTypes.form.badge')}
                     </div>
                 </>
             }
@@ -165,7 +167,7 @@ export default function VehicleTypesEdit({ vehicleType }: VehicleTypesEditProps)
                 <div className="px-6 pt-6">
                     <Alert variant="destructive">
                         <AlertCircle className="h-4 w-4" />
-                        <AlertDescription>Please resolve the highlighted fields before submitting the form.</AlertDescription>
+                        <AlertDescription>{t('vehicleTypes.form.validation.resolve')}</AlertDescription>
                     </Alert>
                 </div>
             )}
@@ -177,8 +179,8 @@ export default function VehicleTypesEdit({ vehicleType }: VehicleTypesEditProps)
                 style={{ minHeight: 0 }}
             >
                 <FormSection
-                    title="Vehicle Type Details"
-                    description="Edit the name or optional description to keep records accurate."
+                    title={t('vehicleTypes.form.sections.details.title')}
+                    description={t('vehicleTypes.form.sections.details.descriptionEdit')}
                     icon={
                         <div className="rounded-lg bg-blue-100 p-2 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
                             <Info className="h-4 w-4" />
@@ -186,29 +188,35 @@ export default function VehicleTypesEdit({ vehicleType }: VehicleTypesEditProps)
                     }
                     contentClassName="gap-6 md:grid-cols-2"
                 >
-                    <FormField id="name" label="Name" required tooltip="Use a descriptive name for the vehicle class." error={nameError}>
+                    <FormField
+                        id="name"
+                        label={t('vehicleTypes.form.fields.name.label')}
+                        required
+                        tooltip={t('vehicleTypes.form.fields.name.tooltip')}
+                        error={nameError}
+                    >
                         <Input
                             id="name"
                             type="text"
                             value={data.name}
                             onChange={(event) => handleFieldChange('name', event.target.value)}
-                            placeholder="e.g. Heavy Truck, Light Truck"
+                            placeholder={t('vehicleTypes.form.fields.name.placeholder')}
                             className={`transition-all duration-200 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 focus:ring-blue-500/20 focus:border-blue-500 ${nameError ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}
                             autoComplete="off"
                         />
                     </FormField>
                     <FormField
                         id="description"
-                        label="Description"
+                        label={t('vehicleTypes.form.fields.description.label')}
                         error={descriptionError}
-                        helperText="Optional. Helps others understand where this type should be used."
+                        helperText={t('vehicleTypes.form.fields.description.helper')}
                         contentClassName="md:col-span-1"
                     >
                         <Textarea
                             id="description"
                             value={data.description}
                             onChange={(event) => handleFieldChange('description', event.target.value)}
-                            placeholder="Optional description of the vehicle type"
+                            placeholder={t('vehicleTypes.form.fields.description.placeholder')}
                             rows={4}
                             className={`resize-none transition-all duration-200 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 focus:ring-blue-500/20 focus:border-blue-500 ${descriptionError ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}
                         />
@@ -220,12 +228,12 @@ export default function VehicleTypesEdit({ vehicleType }: VehicleTypesEditProps)
                         <>
                             <span className="flex items-center gap-2">
                                 <span className="text-red-500">*</span>
-                                All required fields must be completed
+                                {t('vehicleTypes.form.required')}
                             </span>
                             {isDirty && (
                                 <span className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
                                     <Save className="h-3 w-3" />
-                                    You have unsaved changes
+                                    {t('vehicleTypes.form.unsaved')}
                                 </span>
                             )}
                         </>
@@ -233,7 +241,7 @@ export default function VehicleTypesEdit({ vehicleType }: VehicleTypesEditProps)
                     right={
                         <>
                             <Button type="button" variant="outline" asChild className="border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700">
-                                <Link href="/vehicletypes">Cancel</Link>
+                                <Link href="/vehicletypes">{t('vehicleTypes.actions.cancel')}</Link>
                             </Button>
                             <Button
                                 type="submit"
@@ -243,12 +251,12 @@ export default function VehicleTypesEdit({ vehicleType }: VehicleTypesEditProps)
                                 {processing ? (
                                     <>
                                         <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white"></div>
-                                        Updating...
+                                        {t('vehicleTypes.form.edit.submitting')}
                                     </>
                                 ) : (
                                     <>
                                         <CheckCircle className="mr-2 h-4 w-4" />
-                                        Update Vehicle Type
+                                        {t('vehicleTypes.form.edit.submit')}
                                     </>
                                 )}
                             </Button>
@@ -267,6 +275,4 @@ type VehicleTypeFormData = {
 };
 
 type VehicleTypeFormField = keyof VehicleTypeFormData;
-
-
 

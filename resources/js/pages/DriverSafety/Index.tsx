@@ -16,6 +16,7 @@ import { Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useTranslation } from 'react-i18next';
 import * as React from 'react';
 import {
     Plus,
@@ -29,13 +30,6 @@ import {
     DollarSign,
     ChevronRight,
 } from 'lucide-react';
-
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Driver Safety',
-        href: '/driver-safety',
-    },
-];
 
 interface DriverSummary {
     id: number;
@@ -97,7 +91,7 @@ interface DriverSafetyIndexProps {
 
 const SKELETON_FLAG_KEY = 'driver-safety.index.shouldShowSkeleton';
 
-const COLUMN_DEFINITIONS: Array<{
+type ColumnDefinition = {
     id:
         | 'incident_date'
         | 'driver'
@@ -108,14 +102,7 @@ const COLUMN_DEFINITIONS: Array<{
     label: string;
     sortKey?: string;
     align?: 'left' | 'center' | 'right';
-}> = [
-    { id: 'incident_date', label: 'Date', sortKey: 'incident_date' },
-    { id: 'driver', label: 'Driver' },
-    { id: 'incident_type', label: 'Type', sortKey: 'incident_type', align: 'center' },
-    { id: 'severity', label: 'Severity', sortKey: 'severity', align: 'center' },
-    { id: 'description', label: 'Description' },
-    { id: 'damage_cost', label: 'Damage Cost', sortKey: 'damage_cost', align: 'right' },
-];
+};
 
 type NavigateOverrides = {
     search?: string;
@@ -128,14 +115,14 @@ type NavigateOverrides = {
     per_page?: number;
 };
 
-const formatDate = (value?: string | null): string => {
+const formatDate = (value?: string | null, fallback = '—'): string => {
     if (!value) {
-        return '—';
+        return fallback;
     }
 
     const parsed = new Date(value);
     if (Number.isNaN(parsed.getTime())) {
-        return '—';
+        return fallback;
     }
 
     return parsed.toLocaleDateString();
@@ -199,6 +186,7 @@ export default function DriverSafetyIndex({
     driverOptions,
     perPageOptions,
 }: DriverSafetyIndexProps) {
+    const { t } = useTranslation();
     const { hasPermission } = usePermissions();
     const canViewRecord = hasPermission('driver-safety.show');
     const canEditRecord = hasPermission('driver-safety.edit');
@@ -230,6 +218,28 @@ export default function DriverSafetyIndex({
     const [isDeleting, setIsDeleting] = React.useState(false);
     const [deleteError, setDeleteError] = React.useState<string | null>(null);
 
+    const breadcrumbs = React.useMemo<BreadcrumbItem[]>(
+        () => [
+            {
+                title: t('driverSafety.breadcrumb'),
+                href: '/driver-safety',
+            },
+        ],
+        [t],
+    );
+
+    const columnDefinitions = React.useMemo<ColumnDefinition[]>(
+        () => [
+            { id: 'incident_date', label: t('driverSafety.columns.date'), sortKey: 'incident_date' },
+            { id: 'driver', label: t('driverSafety.columns.driver') },
+            { id: 'incident_type', label: t('driverSafety.columns.type'), sortKey: 'incident_type', align: 'center' },
+            { id: 'severity', label: t('driverSafety.columns.severity'), sortKey: 'severity', align: 'center' },
+            { id: 'description', label: t('driverSafety.columns.description') },
+            { id: 'damage_cost', label: t('driverSafety.columns.damageCost'), sortKey: 'damage_cost', align: 'right' },
+        ],
+        [t],
+    );
+
     const isDataReady = Array.isArray(safetyRecords?.data);
     const { isLoading: isTableLoading } = useListingLoading({
         storageKey: SKELETON_FLAG_KEY,
@@ -257,7 +267,24 @@ export default function DriverSafetyIndex({
     const totalDamageCost = metrics?.total_damage_cost ?? 0;
     const averageDamageCost = metrics?.average_damage_cost ?? 0;
 
+    const notAvailableLabel = t('driverSafety.fallbacks.notAvailable');
     const rowOffset = Math.max((safetyRecords?.from ?? 1) - 1, 0);
+    const formatIncidentTypeLabel = React.useCallback(
+        (value?: string | null) => {
+            if (!value) return notAvailableLabel;
+            const key = value.toLowerCase();
+            return t(`driverSafety.incidentTypes.${key}`, { defaultValue: value });
+        },
+        [notAvailableLabel, t],
+    );
+    const formatSeverityLabel = React.useCallback(
+        (value?: string | null) => {
+            if (!value) return notAvailableLabel;
+            const key = value.toLowerCase();
+            return t(`driverSafety.severity.${key}`, { defaultValue: value });
+        },
+        [notAvailableLabel, t],
+    );
 
     const handleNavigate = React.useCallback(
         (overrides: NavigateOverrides = {}) => {
@@ -379,14 +406,14 @@ export default function DriverSafetyIndex({
                 setIsDeleting(false);
                 setDeleteError(null);
                 toast({
-                    title: 'Safety record deleted',
-                    description: 'The driver safety record was removed successfully.',
+                    title: t('driverSafety.delete.successTitle'),
+                    description: t('driverSafety.delete.successDescription'),
                 });
             },
             onError: (errors) => {
                 setIsDeleting(false);
 
-                const fallback = 'Failed to delete safety record. Please review the requirements and try again.';
+                const fallback = t('driverSafety.delete.failedDescription');
                 if (errors && typeof errors === 'object') {
                     const messages = Object.values(errors)
                         .flatMap((value) => (Array.isArray(value) ? value : [value]))
@@ -396,7 +423,7 @@ export default function DriverSafetyIndex({
                     setDeleteError(messages || fallback);
 
                     toast({
-                        title: '❌ Delete Failed',
+                        title: t('driverSafety.delete.failedTitle'),
                         description: messages || fallback,
                         variant: 'destructive',
                     });
@@ -404,7 +431,7 @@ export default function DriverSafetyIndex({
                     setDeleteError(fallback);
 
                     toast({
-                        title: '❌ Delete Failed',
+                        title: t('driverSafety.delete.failedTitle'),
                         description: fallback,
                         variant: 'destructive',
                     });
@@ -419,7 +446,7 @@ export default function DriverSafetyIndex({
                 <Button asChild>
                     <Link href="/driver-safety/create">
                         <Plus className="mr-2 h-4 w-4" />
-                        Add Safety Record
+                        {t('driverSafety.actions.add')}
                     </Link>
                 </Button>
             )}
@@ -429,7 +456,7 @@ export default function DriverSafetyIndex({
     const statsDefinitions = [
         {
             id: 'total-records',
-            label: 'Total Records',
+            label: t('driverSafety.stats.total.label'),
             icon: <ShieldAlert className="h-3.5 w-3.5 text-blue-600" />,
             className: 'min-w-[220px] flex-shrink-0',
             value: isTableLoading ? (
@@ -440,13 +467,13 @@ export default function DriverSafetyIndex({
             description: isTableLoading ? (
                 <Skeleton className="h-3 w-40" aria-hidden="true" />
             ) : (
-                `${formatCount(critical)} critical incidents`
+                t('driverSafety.stats.total.description', { count: critical })
             ),
             valueClassName: isTableLoading ? undefined : 'text-blue-600',
         },
         {
             id: 'accidents',
-            label: 'Accidents',
+            label: t('driverSafety.stats.accidents.label'),
             icon: <AlertTriangle className="h-3.5 w-3.5 text-rose-600" />,
             className: 'min-w-[220px] flex-shrink-0',
             value: isTableLoading ? (
@@ -457,13 +484,13 @@ export default function DriverSafetyIndex({
             description: isTableLoading ? (
                 <Skeleton className="h-3 w-36" aria-hidden="true" />
             ) : (
-                `${formatCount(major)} major incidents`
+                t('driverSafety.stats.accidents.description', { count: major })
             ),
             valueClassName: isTableLoading ? undefined : 'text-rose-600',
         },
         {
             id: 'warnings',
-            label: 'Warnings',
+            label: t('driverSafety.stats.warnings.label'),
             icon: <Megaphone className="h-3.5 w-3.5 text-amber-600" />,
             className: 'min-w-[220px] flex-shrink-0',
             value: isTableLoading ? (
@@ -474,13 +501,13 @@ export default function DriverSafetyIndex({
             description: isTableLoading ? (
                 <Skeleton className="h-3 w-36" aria-hidden="true" />
             ) : (
-                `${formatCount(minor)} minor cases`
+                t('driverSafety.stats.warnings.description', { count: minor })
             ),
             valueClassName: isTableLoading ? undefined : 'text-amber-600',
         },
         {
             id: 'damage-cost',
-            label: 'Damage Cost',
+            label: t('driverSafety.stats.damageCost.label'),
             icon: <DollarSign className="h-3.5 w-3.5 text-purple-600" />,
             className: 'min-w-[220px] flex-shrink-0',
             value: isTableLoading ? (
@@ -491,7 +518,7 @@ export default function DriverSafetyIndex({
             description: isTableLoading ? (
                 <Skeleton className="h-3 w-32" aria-hidden="true" />
             ) : (
-                `Avg ${formatCurrency(averageDamageCost)}`
+                t('driverSafety.stats.damageCost.description', { value: formatCurrency(averageDamageCost) })
             ),
             valueClassName: isTableLoading ? undefined : 'text-purple-600',
         },
@@ -503,24 +530,24 @@ export default function DriverSafetyIndex({
         () =>
             availablePerPageOptions.map((option) => ({
                 value: String(option),
-                label: `${option} / page`,
+                label: t('driverSafety.filters.perPageOption', { value: option }),
             })),
-        [availablePerPageOptions],
+        [availablePerPageOptions, t],
     );
 
     const tableColumns = React.useMemo(
         () => [
-            { id: 'index', label: '#', align: 'center' as const },
-            ...COLUMN_DEFINITIONS.map((column) => ({
+            { id: 'index', label: t('driverSafety.table.index'), align: 'center' as const },
+            ...columnDefinitions.map((column) => ({
                 id: column.id,
                 label: column.label,
                 sortable: Boolean(column.sortKey),
                 sortKey: column.sortKey,
                 align: column.align,
             })),
-            { id: 'actions', label: 'Actions', align: 'center' as const },
+            { id: 'actions', label: t('driverSafety.table.actions'), align: 'center' as const },
         ],
-        [],
+        [columnDefinitions, t],
     );
 
     const tableRows = isTableLoading
@@ -556,33 +583,37 @@ export default function DriverSafetyIndex({
             ? safetyData.map((record, index) => (
                   <TableRow key={record.id} className="hover:bg-muted/50">
                       <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
-                      <TableCell className="font-medium">{formatDate(record.incident_date)}</TableCell>
-                      <TableCell className="text-muted-foreground">{record.driver?.name || '—'}</TableCell>
+                      <TableCell className="font-medium">{formatDate(record.incident_date, notAvailableLabel)}</TableCell>
+                      <TableCell className="text-muted-foreground">{record.driver?.name || notAvailableLabel}</TableCell>
                       <TableCell className="text-center">
-                          <Badge className={getIncidentTypeBadgeClass(record.incident_type)}>{record.incident_type}</Badge>
+                          <Badge className={getIncidentTypeBadgeClass(record.incident_type)}>
+                              {formatIncidentTypeLabel(record.incident_type)}
+                          </Badge>
                       </TableCell>
                       <TableCell className="text-center">
-                          <Badge className={getSeverityBadgeClass(record.severity)}>{record.severity}</Badge>
+                          <Badge className={getSeverityBadgeClass(record.severity)}>
+                              {formatSeverityLabel(record.severity)}
+                          </Badge>
                       </TableCell>
                       <TableCell className="max-w-sm truncate text-muted-foreground" title={record.description}>
-                          {record.description || '—'}
+                          {record.description || notAvailableLabel}
                       </TableCell>
                       <TableCell className="text-right font-semibold">{formatCurrency(record.damage_cost ?? 0)}</TableCell>
                       <TableCell className="text-center">
                           <ListingRowActionsMenu
                               actions={[
                                   canViewRecord && {
-                                      label: 'View',
+                                      label: t('driverSafety.actions.view'),
                                       icon: <Eye className="h-4 w-4" />,
                                       href: `/driver-safety/${record.id}`,
                                   },
                                   canEditRecord && {
-                                      label: 'Edit',
+                                      label: t('driverSafety.actions.edit'),
                                       icon: <Edit className="h-4 w-4" />,
                                       href: `/driver-safety/${record.id}/edit`,
                                   },
                                   canDeleteRecord && {
-                                      label: 'Delete',
+                                      label: t('driverSafety.actions.delete'),
                                       icon: <Trash2 className="h-4 w-4" />,
                                       danger: true,
                                       disabled: isDeleting && selectedRecord?.id === record.id,
@@ -596,10 +627,10 @@ export default function DriverSafetyIndex({
             : (
                 <TableRow>
                     <TableCell colSpan={tableColumns.length} className="py-8 text-center text-muted-foreground">
-                        No safety records found.
+                        {t('driverSafety.empty.title')}
                         {canCreateRecord && (
                             <Link href="/driver-safety/create" className="ml-1 text-primary underline">
-                                Create one
+                                {t('driverSafety.empty.createAction')}
                             </Link>
                         )}
                     </TableCell>
@@ -665,26 +696,38 @@ export default function DriverSafetyIndex({
             getKey={(item) => item.record.id}
             renderTitle={(item) => (
                 <div className="flex items-center gap-2">
-                    <span className="text-xs uppercase tracking-wide text-muted-foreground">#{item.position}</span>
-                    <span className="text-base">{item.record.driver?.name || 'Unassigned driver'}</span>
+                    <span className="text-xs uppercase tracking-wide text-muted-foreground">
+                        {t('driverSafety.mobile.position', { value: item.position })}
+                    </span>
+                    <span className="text-base">
+                        {item.record.driver?.name || t('driverSafety.mobile.unassigned')}
+                    </span>
                     <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
                 </div>
             )}
-            renderSubtitle={(item) => `${item.record.incident_type} • ${item.record.severity}`}
+            renderSubtitle={(item) => `${formatIncidentTypeLabel(item.record.incident_type)} • ${formatSeverityLabel(item.record.severity)}`}
             renderContent={(item) => (
                 <div className="space-y-3 text-sm text-muted-foreground">
                     <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Date</span>
-                        <span className="text-right text-slate-900 dark:text-slate-100">{formatDate(item.record.incident_date)}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Description</span>
-                        <span className="ml-3 text-right text-slate-900 dark:text-slate-100">
-                            {item.record.description || '—'}
+                        <span className="font-medium text-slate-600 dark:text-slate-300">
+                            {t('driverSafety.mobile.date')}
+                        </span>
+                        <span className="text-right text-slate-900 dark:text-slate-100">
+                            {formatDate(item.record.incident_date, notAvailableLabel)}
                         </span>
                     </div>
                     <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Damage Cost</span>
+                        <span className="font-medium text-slate-600 dark:text-slate-300">
+                            {t('driverSafety.mobile.description')}
+                        </span>
+                        <span className="ml-3 text-right text-slate-900 dark:text-slate-100">
+                            {item.record.description || notAvailableLabel}
+                        </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <span className="font-medium text-slate-600 dark:text-slate-300">
+                            {t('driverSafety.mobile.damageCost')}
+                        </span>
                         <span className="text-right text-slate-900 dark:text-slate-100">{formatCurrency(item.record.damage_cost ?? 0)}</span>
                     </div>
                 </div>
@@ -695,7 +738,7 @@ export default function DriverSafetyIndex({
                         <Button asChild size="sm" variant="outline" className="flex-1 sm:flex-auto">
                             <Link href={`/driver-safety/${item.record.id}`}>
                                 <Eye className="mr-2 h-4 w-4" />
-                                View
+                                {t('driverSafety.actions.view')}
                             </Link>
                         </Button>
                     )}
@@ -703,7 +746,7 @@ export default function DriverSafetyIndex({
                         <Button asChild size="sm" variant="secondary" className="flex-1 sm:flex-none">
                             <Link href={`/driver-safety/${item.record.id}/edit`}>
                                 <Edit className="mr-2 h-4 w-4" />
-                                Edit
+                                {t('driverSafety.actions.edit')}
                             </Link>
                         </Button>
                     )}
@@ -716,17 +759,17 @@ export default function DriverSafetyIndex({
                             disabled={isDeleting && selectedRecord?.id === item.record.id}
                         >
                             <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
+                            {t('driverSafety.actions.delete')}
                         </Button>
                     )}
                 </div>
             )}
             emptyState={(
                 <div className="py-8 text-center text-muted-foreground">
-                    No safety records found.
+                    {t('driverSafety.empty.title')}
                     {canCreateRecord && (
                         <Link href="/driver-safety/create" className="ml-1 text-primary underline">
-                            Create one
+                            {t('driverSafety.empty.createAction')}
                         </Link>
                     )}
                 </div>
@@ -738,23 +781,23 @@ export default function DriverSafetyIndex({
         <ListingFilterBar
             search={{
                 value: searchTerm,
-                placeholder: 'Search safety records...',
+                placeholder: t('driverSafety.filters.searchPlaceholder'),
                 onChange: handleSearchChange,
                 icon: <Search className="h-4 w-4" />,
             }}
             perPage={{
                 value: perPage,
-                label: 'Rows',
+                label: t('driverSafety.filters.rowsLabel'),
                 onChange: handlePerPageChange,
                 options: perPageSelectOptions,
             }}
         >
             <Select value={selectedIncidentType} onValueChange={handleIncidentTypeChange}>
                 <SelectTrigger className="w-full min-w-[160px] sm:w-auto">
-                    <SelectValue placeholder="Incident type" />
+                    <SelectValue placeholder={t('driverSafety.filters.incidentType')} />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="all">All incident types</SelectItem>
+                    <SelectItem value="all">{t('driverSafety.filters.allIncidentTypes')}</SelectItem>
                     {incidentTypeOptions.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                             {option.label}
@@ -764,10 +807,10 @@ export default function DriverSafetyIndex({
             </Select>
             <Select value={selectedSeverity} onValueChange={handleSeverityChange}>
                 <SelectTrigger className="w-full min-w-[150px] sm:w-auto">
-                    <SelectValue placeholder="Severity" />
+                    <SelectValue placeholder={t('driverSafety.filters.severity')} />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="all">All severities</SelectItem>
+                    <SelectItem value="all">{t('driverSafety.filters.allSeverities')}</SelectItem>
                     {severityOptions.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                             {option.label}
@@ -777,10 +820,10 @@ export default function DriverSafetyIndex({
             </Select>
             <Select value={selectedDriver} onValueChange={handleDriverChange}>
                 <SelectTrigger className="w-full min-w-[200px] sm:w-auto">
-                    <SelectValue placeholder="Driver" />
+                    <SelectValue placeholder={t('driverSafety.filters.driver')} />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="all">All drivers</SelectItem>
+                    <SelectItem value="all">{t('driverSafety.filters.allDrivers')}</SelectItem>
                     {driverOptions.map((driver) => (
                         <SelectItem key={driver.id} value={String(driver.id)}>
                             {driver.name}
@@ -794,14 +837,14 @@ export default function DriverSafetyIndex({
     return (
         <>
             <ListPageLayout
-                headTitle="Driver Safety"
-                title="Driver Safety"
-                description={`Monitor incidents across the fleet. Total: ${formatCount(totalRecords)}`}
+                headTitle={t('driverSafety.title')}
+                title={t('driverSafety.title')}
+                description={t('driverSafety.description', { count: totalRecords })}
                 breadcrumbs={breadcrumbs}
                 actions={headerActions}
                 stats={statsSection}
-                tableTitle="Safety Records"
-                tableDescription="Track incidents, severity, and impact"
+                tableTitle={t('driverSafety.table.title')}
+                tableDescription={t('driverSafety.table.description')}
                 tableHeaderExtras={tableHeaderExtras}
                 pagination={
                     !isTableLoading && safetyRecords?.links ? (
@@ -822,8 +865,8 @@ export default function DriverSafetyIndex({
 
                     {isTableLoading && (
                         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
-                            <img src="/images/loading-spinner.svg" alt="Loading safety records" className="h-10 w-10" />
-                            <span className="text-sm text-muted-foreground">Loading safety records...</span>
+                            <img src="/images/loading-spinner.svg" alt={t('driverSafety.loading.alt')} className="h-10 w-10" />
+                            <span className="text-sm text-muted-foreground">{t('driverSafety.loading.label')}</span>
                         </div>
                     )}
                 </div>
@@ -838,11 +881,14 @@ export default function DriverSafetyIndex({
                         setDeleteError(null);
                     }
                 }}
-                title="Delete Safety Record"
-                description="Are you sure you want to delete this safety record? This action cannot be undone."
+                title={t('driverSafety.delete.title')}
+                description={t('driverSafety.delete.description')}
                 itemName={
                     selectedRecord
-                        ? `${selectedRecord.driver?.name || 'Driver'} – ${formatDate(selectedRecord.incident_date)}`
+                        ? t('driverSafety.delete.itemName', {
+                              driver: selectedRecord.driver?.name ?? t('driverSafety.fallbacks.driver'),
+                              date: formatDate(selectedRecord.incident_date, notAvailableLabel),
+                          })
                         : undefined
                 }
                 onConfirm={handleDeleteConfirm}
@@ -852,4 +898,3 @@ export default function DriverSafetyIndex({
         </>
     );
 }
-

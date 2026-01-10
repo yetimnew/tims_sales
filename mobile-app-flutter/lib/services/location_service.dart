@@ -1,14 +1,23 @@
 import 'dart:async';
-import 'package:geolocator/geolocator.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+// import 'package:geolocator/geolocator.dart'; // Temporarily commented - web compatibility issues. Uncomment for Android/iOS builds
 import '../config/app_config.dart';
 import 'api_service.dart';
 
 class LocationService {
   final ApiService _apiService = ApiService();
-  StreamSubscription<Position>? _positionStream;
-  bool _isTracking = false;
+  StreamSubscription? _positionStream; // Changed from StreamSubscription<Position>?
+  // bool _isTracking = false; // Temporarily commented - will be used when geolocator is re-enabled
 
   Future<bool> checkPermission() async {
+    // Location services not available on web
+    if (kIsWeb) {
+      return false;
+    }
+
+    // Temporarily disabled - geolocator commented out for web compatibility
+    // Uncomment when adding geolocator back for mobile builds
+    /*
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       return false;
@@ -25,8 +34,9 @@ class LocationService {
     if (permission == LocationPermission.deniedForever) {
       return false;
     }
+    */
 
-    return true;
+    return false; // Temporarily returns false until geolocator is re-enabled
   }
 
   Future<bool> sendLocation(double latitude, double longitude, {
@@ -53,6 +63,14 @@ class LocationService {
   }
 
   Future<void> startBackgroundTracking() async {
+    // Background location tracking not available on web
+    if (kIsWeb) {
+      return;
+    }
+
+    // Temporarily disabled - geolocator commented out for web compatibility
+    // Uncomment when adding geolocator back for mobile builds
+    /*
     if (_isTracking) return;
 
     final hasPermission = await checkPermission();
@@ -77,31 +95,49 @@ class LocationService {
         heading: position.heading,
       );
     });
+    */
   }
 
   Future<void> stopBackgroundTracking() async {
     await _positionStream?.cancel();
     _positionStream = null;
-    _isTracking = false;
+    // _isTracking = false; // Temporarily commented - will be used when geolocator is re-enabled
   }
 
-  Future<Position?> getCurrentLocation() async {
+  Future<Map<String, double>?> getCurrentLocation() async {
+    // Location services not available on web
+    if (kIsWeb) {
+      return null;
+    }
+
+    // Temporarily disabled - geolocator commented out for web compatibility
+    // Uncomment when adding geolocator back for mobile builds
+    /*
     final hasPermission = await checkPermission();
     if (!hasPermission) {
       return null;
     }
 
     try {
-      return await Geolocator.getCurrentPosition(
+      final position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       );
+      return {
+        'latitude': position.latitude,
+        'longitude': position.longitude,
+        'accuracy': position.accuracy,
+        'speed': position.speed,
+        'heading': position.heading,
+      };
     } catch (e) {
       return null;
     }
+    */
+
+    return null; // Temporarily returns null until geolocator is re-enabled
   }
 
   void dispose() {
     stopBackgroundTracking();
   }
 }
-

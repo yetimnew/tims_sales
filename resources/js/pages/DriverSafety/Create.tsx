@@ -17,6 +17,7 @@ import { validateDriverSafety } from '@/lib/validation';
 import { cn } from '@/lib/utils';
 import { type BreadcrumbItem } from '@/types';
 import { Link, useForm } from '@inertiajs/react';
+import { useTranslation } from 'react-i18next';
 import type { LucideIcon } from 'lucide-react';
 import {
     AlertCircle,
@@ -51,56 +52,6 @@ interface SeverityOption {
     icon: LucideIcon;
 }
 
-const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Driver Safety', href: '/driver-safety' },
-    { title: 'Create', href: '/driver-safety/create' },
-];
-
-const incidentTypes: IncidentOption[] = [
-    {
-        value: 'accident',
-        label: 'Accident',
-        description: 'Collision, rollover, or damage event requiring investigation.',
-        icon: ShieldAlert,
-    },
-    {
-        value: 'violation',
-        label: 'Violation',
-        description: 'Traffic or safety policy breach recorded against the driver.',
-        icon: AlertTriangle,
-    },
-    {
-        value: 'warning',
-        label: 'Warning',
-        description: 'Behaviour flagged for coaching or future follow-up.',
-        icon: ClipboardList,
-    },
-];
-
-const severityLevels: SeverityOption[] = [
-    {
-        value: 'minor',
-        label: 'Minor',
-        description: 'Monitor the driver and document corrective actions.',
-        tone: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400',
-        icon: ShieldCheck,
-    },
-    {
-        value: 'major',
-        label: 'Major',
-        description: 'Significant disruption with recommended coaching and review.',
-        tone: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400',
-        icon: AlertTriangle,
-    },
-    {
-        value: 'critical',
-        label: 'Critical',
-        description: 'Immediate escalation required to protect drivers and assets.',
-        tone: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400',
-        icon: ShieldAlert,
-    },
-];
-
 type DriverSafetyFormData = {
     driver_id: string;
     incident_date: string;
@@ -115,6 +66,60 @@ type DriverSafetyFormData = {
 type DriverSafetyFormField = keyof DriverSafetyFormData;
 
 export default function DriverSafetyCreate({ drivers }: DriverSafetyCreateProps) {
+    const { t } = useTranslation();
+    const breadcrumbs: BreadcrumbItem[] = [
+        { title: t('driverSafety.breadcrumb'), href: '/driver-safety' },
+        { title: t('driverSafety.form.create.breadcrumb'), href: '/driver-safety/create' },
+    ];
+    const incidentTypes: IncidentOption[] = useMemo(
+        () => [
+            {
+                value: 'accident',
+                label: t('driverSafety.incidentTypes.accident'),
+                description: t('driverSafety.form.incidentTypes.accident'),
+                icon: ShieldAlert,
+            },
+            {
+                value: 'violation',
+                label: t('driverSafety.incidentTypes.violation'),
+                description: t('driverSafety.form.incidentTypes.violation'),
+                icon: AlertTriangle,
+            },
+            {
+                value: 'warning',
+                label: t('driverSafety.incidentTypes.warning'),
+                description: t('driverSafety.form.incidentTypes.warning'),
+                icon: ClipboardList,
+            },
+        ],
+        [t],
+    );
+    const severityLevels: SeverityOption[] = useMemo(
+        () => [
+            {
+                value: 'minor',
+                label: t('driverSafety.severity.minor'),
+                description: t('driverSafety.form.severityLevels.minor'),
+                tone: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400',
+                icon: ShieldCheck,
+            },
+            {
+                value: 'major',
+                label: t('driverSafety.severity.major'),
+                description: t('driverSafety.form.severityLevels.major'),
+                tone: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400',
+                icon: AlertTriangle,
+            },
+            {
+                value: 'critical',
+                label: t('driverSafety.severity.critical'),
+                description: t('driverSafety.form.severityLevels.critical'),
+                tone: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400',
+                icon: ShieldAlert,
+            },
+        ],
+        [t],
+    );
     const { data, setData, post, processing, errors, clearErrors, reset } = useForm<DriverSafetyFormData>({
         driver_id: '',
         incident_date: new Date().toISOString().split('T')[0],
@@ -150,12 +155,12 @@ export default function DriverSafetyCreate({ drivers }: DriverSafetyCreateProps)
 
         if (errorMessages.length > 0) {
             toast({
-                title: '⚠️ Validation Error',
+                title: t('driverSafety.form.validation.title'),
                 description: errorMessages.join(', '),
                 variant: 'destructive',
             });
         }
-    }, [errors]);
+    }, [errors, t]);
 
     const backendErrors = useMemo(
         () =>
@@ -231,8 +236,8 @@ export default function DriverSafetyCreate({ drivers }: DriverSafetyCreateProps)
         if (Object.keys(validationResult).length > 0) {
             setFrontendErrors(validationResult as Partial<Record<DriverSafetyFormField, string>>);
             toast({
-                title: '⚠️ Validation Error',
-                description: 'Please resolve the highlighted issues before saving.',
+                title: t('driverSafety.form.validation.title'),
+                description: t('driverSafety.form.validation.fixErrors'),
                 variant: 'destructive',
             });
             return;
@@ -245,8 +250,8 @@ export default function DriverSafetyCreate({ drivers }: DriverSafetyCreateProps)
                 setIsDirty(false);
                 clearErrors();
                 toast({
-                    title: '✅ Safety Record Created',
-                    description: 'The driver safety incident has been recorded.',
+                    title: t('driverSafety.form.create.successTitle'),
+                    description: t('driverSafety.form.create.successDescription'),
                 });
                 reset();
                 formRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
@@ -262,9 +267,9 @@ export default function DriverSafetyCreate({ drivers }: DriverSafetyCreateProps)
 
     return (
         <FormPageLayout
-            title="Record Driver Safety Incident"
-            headTitle="Record Safety Incident"
-            description="Document incidents to monitor risk trends and coordinate targeted coaching."
+            title={t('driverSafety.form.create.title')}
+            headTitle={t('driverSafety.form.create.headTitle')}
+            description={t('driverSafety.form.create.description')}
             breadcrumbs={breadcrumbs}
             icon={<ShieldAlert className="h-5 w-5" />}
             headerAside={
@@ -272,14 +277,14 @@ export default function DriverSafetyCreate({ drivers }: DriverSafetyCreateProps)
                     <Button variant="ghost" size="sm" asChild>
                         <Link href="/driver-safety">
                             <ArrowLeft className="mr-2 h-4 w-4" />
-                            Back to Safety Log
+                            {t('driverSafety.form.create.backToList')}
                         </Link>
                     </Button>
                     {isDirty && <UnsavedChangesBadge />}
                     {selectedSeverity && (
                         <div className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium ${selectedSeverity.tone}`}>
                             <SeverityIcon className="h-3 w-3" />
-                            {selectedSeverity.label} Severity
+                            {t('driverSafety.form.severityBadge', { label: selectedSeverity.label })}
                         </div>
                     )}
                 </>
@@ -289,7 +294,7 @@ export default function DriverSafetyCreate({ drivers }: DriverSafetyCreateProps)
                 <div className="px-6 pt-6">
                     <Alert variant="destructive">
                         <AlertCircle className="h-4 w-4" />
-                        <AlertDescription>Please resolve the highlighted fields before submitting the form.</AlertDescription>
+                        <AlertDescription>{t('driverSafety.form.validation.resolve')}</AlertDescription>
                     </Alert>
                 </div>
             )}
@@ -301,8 +306,8 @@ export default function DriverSafetyCreate({ drivers }: DriverSafetyCreateProps)
                 style={{ minHeight: 0 }}
             >
                 <FormSection
-                    title="Incident Overview"
-                    description="Confirm who was involved and the key incident attributes."
+                    title={t('driverSafety.form.sections.overview.title')}
+                    description={t('driverSafety.form.sections.overview.description')}
                     icon={
                         <div className="rounded-lg bg-rose-100 p-2 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300">
                             <Shield className="h-4 w-4" />
@@ -312,9 +317,9 @@ export default function DriverSafetyCreate({ drivers }: DriverSafetyCreateProps)
                 >
                     <FormField
                         id="driver_id"
-                        label="Driver"
+                        label={t('driverSafety.form.fields.driver.label')}
                         required
-                        helperText="Only active drivers are listed."
+                        helperText={t('driverSafety.form.fields.driver.helper')}
                         error={getFieldError('driver_id')}
                     >
                         <Select value={data.driver_id} onValueChange={(value) => handleFieldChange('driver_id', value)}>
@@ -322,7 +327,7 @@ export default function DriverSafetyCreate({ drivers }: DriverSafetyCreateProps)
                                 id="driver_id"
                                 className={`border-slate-300 focus:border-rose-500 focus:ring-rose-500/20 dark:border-slate-700 dark:focus:border-rose-400 ${getFieldError('driver_id') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20 dark:border-red-500' : ''}`}
                             >
-                                <SelectValue placeholder="Select driver" />
+                                <SelectValue placeholder={t('driverSafety.form.fields.driver.placeholder')} />
                             </SelectTrigger>
                             <SelectContent>
                                 {drivers.map((driver) => (
@@ -337,7 +342,12 @@ export default function DriverSafetyCreate({ drivers }: DriverSafetyCreateProps)
                         </Select>
                     </FormField>
 
-                    <FormField id="incident_date" label="Incident Date" required error={getFieldError('incident_date')}>
+                    <FormField
+                        id="incident_date"
+                        label={t('driverSafety.form.fields.date.label')}
+                        required
+                        error={getFieldError('incident_date')}
+                    >
                         <DatePicker
                             value={data.incident_date}
                             onChange={(next) => handleFieldChange('incident_date', next ?? '')}
@@ -350,13 +360,18 @@ export default function DriverSafetyCreate({ drivers }: DriverSafetyCreateProps)
                         />
                     </FormField>
 
-                    <FormField id="incident_type" label="Incident Type" required error={getFieldError('incident_type')}>
+                    <FormField
+                        id="incident_type"
+                        label={t('driverSafety.form.fields.type.label')}
+                        required
+                        error={getFieldError('incident_type')}
+                    >
                         <Select value={data.incident_type} onValueChange={(value) => handleFieldChange('incident_type', value)}>
                             <SelectTrigger
                                 id="incident_type"
                                 className={`border-slate-300 focus:border-rose-500 focus:ring-rose-500/20 dark:border-slate-700 dark:focus:border-rose-400 ${getFieldError('incident_type') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20 dark:border-red-500' : ''}`}
                             >
-                                <SelectValue placeholder="Select incident type" />
+                                <SelectValue placeholder={t('driverSafety.form.fields.type.placeholder')} />
                             </SelectTrigger>
                             <SelectContent className="max-h-60">
                                 {incidentTypes.map((item) => (
@@ -374,13 +389,18 @@ export default function DriverSafetyCreate({ drivers }: DriverSafetyCreateProps)
                         </Select>
                     </FormField>
 
-                    <FormField id="severity" label="Severity" required error={getFieldError('severity')}>
+                    <FormField
+                        id="severity"
+                        label={t('driverSafety.form.fields.severity.label')}
+                        required
+                        error={getFieldError('severity')}
+                    >
                         <Select value={data.severity} onValueChange={(value) => handleFieldChange('severity', value)}>
                             <SelectTrigger
                                 id="severity"
                                 className={`border-slate-300 focus:border-rose-500 focus:ring-rose-500/20 dark:border-slate-700 dark:focus:border-rose-400 ${getFieldError('severity') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20 dark:border-red-500' : ''}`}
                             >
-                                <SelectValue placeholder="Select severity" />
+                                <SelectValue placeholder={t('driverSafety.form.fields.severity.placeholder')} />
                             </SelectTrigger>
                             <SelectContent className="max-h-56">
                                 {severityLevels.map((item) => (
@@ -400,8 +420,8 @@ export default function DriverSafetyCreate({ drivers }: DriverSafetyCreateProps)
                 </FormSection>
 
                 <FormSection
-                    title="Impact & Context"
-                    description="Capture financial implications and where the incident occurred."
+                    title={t('driverSafety.form.sections.impact.title')}
+                    description={t('driverSafety.form.sections.impact.description')}
                     icon={
                         <div className="rounded-lg bg-amber-100 p-2 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
                             <ClipboardList className="h-4 w-4" />
@@ -411,8 +431,8 @@ export default function DriverSafetyCreate({ drivers }: DriverSafetyCreateProps)
                 >
                     <FormField
                         id="damage_cost"
-                        label="Estimated Damage Cost"
-                        helperText="Leave blank if no financial impact is recorded."
+                        label={t('driverSafety.form.fields.damageCost.label')}
+                        helperText={t('driverSafety.form.fields.damageCost.helper')}
                         error={getFieldError('damage_cost')}
                     >
                         <Input
@@ -423,15 +443,15 @@ export default function DriverSafetyCreate({ drivers }: DriverSafetyCreateProps)
                             step="0.01"
                             value={data.damage_cost}
                             onChange={(event) => handleFieldChange('damage_cost', event.target.value)}
-                            placeholder="0.00"
+                            placeholder={t('driverSafety.form.fields.damageCost.placeholder')}
                             className={`border-slate-300 focus:border-rose-500 focus:ring-rose-500/20 dark:border-slate-700 dark:focus:border-rose-400 ${getFieldError('damage_cost') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20 dark:border-red-500' : ''}`}
                         />
                     </FormField>
 
                     <FormField
                         id="location"
-                        label="Location"
-                        helperText="Optional. Max 255 characters."
+                        label={t('driverSafety.form.fields.location.label')}
+                        helperText={t('driverSafety.form.fields.location.helper')}
                         error={getFieldError('location')}
                     >
                         <div className="relative">
@@ -443,7 +463,7 @@ export default function DriverSafetyCreate({ drivers }: DriverSafetyCreateProps)
                                 value={data.location}
                                 onChange={(event) => handleFieldChange('location', event.target.value, { validate: false })}
                                 onBlur={() => validateField('location', data.location)}
-                                placeholder="e.g. Addis Ababa – Ring Road"
+                                placeholder={t('driverSafety.form.fields.location.placeholder')}
                                 className={`pl-10 border-slate-300 focus:border-rose-500 focus:ring-rose-500/20 dark:border-slate-700 dark:focus:border-rose-400 ${getFieldError('location') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20 dark:border-red-500' : ''}`}
                             />
                         </div>
@@ -456,9 +476,11 @@ export default function DriverSafetyCreate({ drivers }: DriverSafetyCreateProps)
                                     <IncidentIcon className="h-4 w-4" />
                                 </div>
                                 <div>
-                                    <p className="text-sm font-semibold text-rose-700 dark:text-rose-200">Current Incident Snapshot</p>
+                                    <p className="text-sm font-semibold text-rose-700 dark:text-rose-200">
+                                        {t('driverSafety.form.snapshot.title')}
+                                    </p>
                                     <p className="text-xs text-rose-700/80 dark:text-rose-200/80">
-                                        {selectedIncident?.description ?? 'Choose an incident type to unlock tailored follow-up guidance.'}
+                                        {selectedIncident?.description ?? t('driverSafety.form.snapshot.empty')}
                                     </p>
                                 </div>
                             </div>
@@ -466,7 +488,7 @@ export default function DriverSafetyCreate({ drivers }: DriverSafetyCreateProps)
                                 {selectedSeverity && (
                                     <Badge variant="secondary" className={`flex items-center gap-2 border-0 px-3 py-2 text-sm ${selectedSeverity.tone}`}>
                                         <SeverityIcon className="h-3 w-3" />
-                                        {selectedSeverity.label} severity
+                                        {t('driverSafety.form.severityPill', { label: selectedSeverity.label })}
                                     </Badge>
                                 )}
                                 {estimatedDamageCost !== null && (
@@ -474,7 +496,7 @@ export default function DriverSafetyCreate({ drivers }: DriverSafetyCreateProps)
                                         variant="outline"
                                         className="flex items-center gap-1 border-rose-200/80 bg-white/75 px-3 py-2 text-sm text-rose-700 dark:border-rose-400/50 dark:bg-transparent dark:text-rose-200"
                                     >
-                                        Estimated cost&nbsp;
+                                        {t('driverSafety.form.snapshot.estimatedCost')}&nbsp;
                                         {estimatedDamageCost.toLocaleString(undefined, {
                                             minimumFractionDigits: 2,
                                             maximumFractionDigits: 2,
@@ -487,8 +509,8 @@ export default function DriverSafetyCreate({ drivers }: DriverSafetyCreateProps)
                 </FormSection>
 
                 <FormSection
-                    title="Documentation & Follow-up"
-                    description="Provide the narrative and planned corrective actions for the safety team."
+                    title={t('driverSafety.form.sections.documentation.title')}
+                    description={t('driverSafety.form.sections.documentation.description')}
                     icon={
                         <div className="rounded-lg bg-slate-100 p-2 text-slate-600 dark:bg-slate-800/60 dark:text-slate-200">
                             <NotebookPen className="h-4 w-4" />
@@ -498,9 +520,9 @@ export default function DriverSafetyCreate({ drivers }: DriverSafetyCreateProps)
                 >
                     <FormField
                         id="description"
-                        label="Incident Description"
+                        label={t('driverSafety.form.fields.description.label')}
                         required
-                        helperText="Describe what happened, contributing factors, and immediate impacts."
+                        helperText={t('driverSafety.form.fields.description.helper')}
                         error={getFieldError('description')}
                         className="md:col-span-2"
                     >
@@ -511,14 +533,14 @@ export default function DriverSafetyCreate({ drivers }: DriverSafetyCreateProps)
                             onChange={(event) => handleFieldChange('description', event.target.value)}
                             rows={5}
                             className={`resize-y border-slate-300 focus:border-rose-500 focus:ring-rose-500/20 dark:border-slate-700 dark:focus:border-rose-400 ${getFieldError('description') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20 dark:border-red-500' : ''}`}
-                            placeholder="Describe what happened, contributing factors, and immediate impacts."
+                            placeholder={t('driverSafety.form.fields.description.placeholder')}
                         />
                     </FormField>
 
                     <FormField
                         id="resolution"
-                        label="Corrective Action"
-                        helperText="Outline coaching, maintenance, or policy follow-up planned for this incident."
+                        label={t('driverSafety.form.fields.resolution.label')}
+                        helperText={t('driverSafety.form.fields.resolution.helper')}
                         error={getFieldError('resolution')}
                         className="md:col-span-2"
                     >
@@ -530,7 +552,7 @@ export default function DriverSafetyCreate({ drivers }: DriverSafetyCreateProps)
                             onBlur={() => validateField('resolution', data.resolution)}
                             rows={4}
                             className={`resize-y border-slate-300 focus:border-rose-500 focus:ring-rose-500/20 dark:border-slate-700 dark:focus:border-rose-400 ${getFieldError('resolution') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20 dark:border-red-500' : ''}`}
-                            placeholder="Outline coaching, maintenance, or policy follow-up planned for this incident."
+                            placeholder={t('driverSafety.form.fields.resolution.placeholder')}
                         />
                     </FormField>
                 </FormSection>
@@ -540,18 +562,18 @@ export default function DriverSafetyCreate({ drivers }: DriverSafetyCreateProps)
                         <>
                             <span className="flex items-center gap-2 text-sm">
                                 <span className="text-red-500">*</span>
-                                Required fields must be completed before saving.
+                                {t('driverSafety.form.required')}
                             </span>
                             <span className="flex items-center gap-2 text-xs text-muted-foreground">
                                 <ClipboardList className="h-3 w-3" />
-                                Complete records enable targeted safety coaching.
+                                {t('driverSafety.form.helperNote')}
                             </span>
                         </>
                     }
                     right={
                         <>
                             <Button type="button" variant="outline" asChild className="border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800">
-                                <Link href="/driver-safety">Cancel</Link>
+                                <Link href="/driver-safety">{t('driverSafety.actions.cancel')}</Link>
                             </Button>
                             <Button
                                 type="submit"
@@ -561,12 +583,12 @@ export default function DriverSafetyCreate({ drivers }: DriverSafetyCreateProps)
                                 {processing ? (
                                     <>
                                         <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white" />
-                                        Recording...
+                                        {t('driverSafety.form.create.submitting')}
                                     </>
                                 ) : (
                                     <>
                                         <ShieldCheck className="mr-2 h-4 w-4" />
-                                        Save Safety Record
+                                        {t('driverSafety.form.create.submit')}
                                     </>
                                 )}
                             </Button>

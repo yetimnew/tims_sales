@@ -24,8 +24,9 @@ return Application::configure(basePath: dirname(__DIR__))
             AddLinkHeadersForPreloadedAssets::class,
         ]);
 
-        // API rate limiting
+        // API CORS and rate limiting
         $middleware->api(prepend: [
+            \App\Http\Middleware\CorsMiddleware::class,
             \Illuminate\Http\Middleware\HandleCors::class,
         ]);
     })

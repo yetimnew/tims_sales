@@ -14,6 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { validateCargoType } from '@/lib/validation';
 import { type BreadcrumbItem } from '@/types';
 import { Link, useForm } from '@inertiajs/react';
+import { useTranslation } from 'react-i18next';
 import { useEffect, useMemo, useRef, useState, type FormEventHandler } from 'react';
 import {
     AlertTriangle,
@@ -41,23 +42,22 @@ type CargoTypeFormField = keyof CargoTypeFormData;
 
 type FieldErrorMap = Partial<Record<CargoTypeFormField, string>>;
 
-const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Cargo Types', href: '/cargo-types' },
-    { title: 'Create', href: '/cargo-types/create' },
-];
-
-const customValidationMessage = (field: CargoTypeFormField, value: string | boolean): string => {
-    if (field === 'handling_requirements' || field === 'safety_requirements') {
-        if (typeof value === 'string' && value.length > 2000) {
-            return 'Details cannot exceed 2,000 characters.';
-        }
-    }
-
-    return '';
-};
-
 export default function CargoTypesCreate({ categories }: CargoTypeCreateProps) {
+    const { t } = useTranslation();
     const defaultCategory = categories[0]?.value ?? '';
+    const breadcrumbs: BreadcrumbItem[] = [
+        { title: t('cargoTypes.breadcrumb'), href: '/cargo-types' },
+        { title: t('cargoTypes.form.create.breadcrumb'), href: '/cargo-types/create' },
+    ];
+    const customValidationMessage = (field: CargoTypeFormField, value: string | boolean): string => {
+        if (field === 'handling_requirements' || field === 'safety_requirements') {
+            if (typeof value === 'string' && value.length > 2000) {
+                return t('cargoTypes.form.validation.maxLength');
+            }
+        }
+
+        return '';
+    };
 
     const { data, setData, post, processing, errors, clearErrors, reset } = useForm<CargoTypeFormData>({
         name: '',
@@ -118,13 +118,13 @@ export default function CargoTypesCreate({ categories }: CargoTypeCreateProps) {
         }
 
         if (value >= 1200) {
-            return { label: 'Heavy Density', tone: 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900' };
+            return { label: t('cargoTypes.form.density.heavy'), tone: 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900' };
         }
         if (value >= 600) {
-            return { label: 'Medium Density', tone: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200' };
+            return { label: t('cargoTypes.form.density.medium'), tone: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200' };
         }
-        return { label: 'Light Density', tone: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' };
-    }, [data.weight_per_cubic_meter]);
+        return { label: t('cargoTypes.form.density.light'), tone: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' };
+    }, [data.weight_per_cubic_meter, t]);
 
     const handleScrollToTop = () => {
         formRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
@@ -210,18 +210,20 @@ export default function CargoTypesCreate({ categories }: CargoTypeCreateProps) {
 
     return (
         <FormPageLayout
-            title="Register Cargo Type"
-            headTitle="Create Cargo Type"
-            description="Standardize cargo classifications to improve dispatch planning and safety compliance."
+            title={t('cargoTypes.form.create.title')}
+            headTitle={t('cargoTypes.form.create.headTitle')}
+            description={t('cargoTypes.form.create.description')}
             breadcrumbs={breadcrumbs}
             icon={<Package className="h-5 w-5" />}
             headerAside={
                 <>
                     <Button variant="ghost" size="sm" asChild>
-                        <Link href="/cargo-types">Back to Cargo Types</Link>
+                        <Link href="/cargo-types">{t('cargoTypes.form.create.backToList')}</Link>
                     </Button>
                     {isDirty && <UnsavedChangesBadge />}
-                    <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">Inventory Standards</Badge>
+                    <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+                        {t('cargoTypes.form.badge')}
+                    </Badge>
                 </>
             }
         >
@@ -229,7 +231,7 @@ export default function CargoTypesCreate({ categories }: CargoTypeCreateProps) {
                 <div className="px-6 pt-6">
                     <Alert variant="destructive">
                         <AlertTriangle className="h-4 w-4" />
-                        <AlertDescription>Please resolve the highlighted fields before submitting the form.</AlertDescription>
+                        <AlertDescription>{t('cargoTypes.form.validation.resolve')}</AlertDescription>
                     </Alert>
                 </div>
             )}
@@ -241,8 +243,8 @@ export default function CargoTypesCreate({ categories }: CargoTypeCreateProps) {
                 style={{ minHeight: 0 }}
             >
                 <FormSection
-                    title="Cargo Overview"
-                    description="Define the core identity and classification for this cargo type."
+                    title={t('cargoTypes.form.sections.overview.title')}
+                    description={t('cargoTypes.form.sections.overview.description')}
                     icon={
                         <div className="rounded-lg bg-rose-100 p-2 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300">
                             <Boxes className="h-4 w-4" />
@@ -250,13 +252,19 @@ export default function CargoTypesCreate({ categories }: CargoTypeCreateProps) {
                     }
                     contentClassName="gap-6 md:grid-cols-2"
                 >
-                    <FormField id="name" label="Cargo Name" required helperText="Maximum 255 characters." error={getFieldError('name')}>
+                    <FormField
+                        id="name"
+                        label={t('cargoTypes.form.fields.name.label')}
+                        required
+                        helperText={t('cargoTypes.form.fields.name.helper')}
+                        error={getFieldError('name')}
+                    >
                         <Input
                             id="name"
                             name="name"
                             value={data.name}
                             onChange={(event) => handleFieldChange('name', event.target.value)}
-                            placeholder="e.g. Bagged Cement"
+                            placeholder={t('cargoTypes.form.fields.name.placeholder')}
                             maxLength={255}
                             className={`border-slate-300 focus:border-rose-500 focus:ring-rose-500/20 dark:border-slate-700 dark:focus:border-rose-400 ${getFieldError('name') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20 dark:border-red-500' : ''}`}
                         />
@@ -264,9 +272,13 @@ export default function CargoTypesCreate({ categories }: CargoTypeCreateProps) {
 
                     <FormField
                         id="category"
-                        label="Category"
+                        label={t('cargoTypes.form.fields.category.label')}
                         required
-                        helperText={hasCategories ? 'Choose the category that best fits this cargo.' : 'No categories available. Please add one in the admin panel.'}
+                        helperText={
+                            hasCategories
+                                ? t('cargoTypes.form.fields.category.helper')
+                                : t('cargoTypes.form.fields.category.noCategories')
+                        }
                         error={getFieldError('category')}
                     >
                         <Select
@@ -278,7 +290,7 @@ export default function CargoTypesCreate({ categories }: CargoTypeCreateProps) {
                                 id="category"
                                 className={`border-slate-300 focus:border-rose-500 focus:ring-rose-500/20 dark:border-slate-700 dark:focus:border-rose-400 ${getFieldError('category') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20 dark:border-red-500' : ''}`}
                             >
-                                <SelectValue placeholder="Select category" />
+                                <SelectValue placeholder={t('cargoTypes.form.fields.category.placeholder')} />
                             </SelectTrigger>
                             <SelectContent className="max-h-60">
                                 {categories.map((option) => (
@@ -292,8 +304,8 @@ export default function CargoTypesCreate({ categories }: CargoTypeCreateProps) {
 
                     <FormField
                         id="requires_special_equipment"
-                        label="Special Equipment"
-                        helperText="Flag cargos that need forklifts, refrigeration, or dedicated containment."
+                        label={t('cargoTypes.form.fields.specialEquipment.label')}
+                        helperText={t('cargoTypes.form.fields.specialEquipment.helper')}
                         error={getFieldError('requires_special_equipment')}
                         className="md:col-span-2"
                     >
@@ -303,9 +315,11 @@ export default function CargoTypesCreate({ categories }: CargoTypeCreateProps) {
                                     <Package className="h-4 w-4" />
                                 </div>
                                 <div>
-                                    <p className="text-sm font-semibold text-rose-700 dark:text-rose-200">Requires special handling?</p>
+                                    <p className="text-sm font-semibold text-rose-700 dark:text-rose-200">
+                                        {t('cargoTypes.form.specialHandling.title')}
+                                    </p>
                                     <p className="text-xs text-rose-700/80 dark:text-rose-200/80">
-                                        Mark this to alert dispatch teams about extra preparation needs.
+                                        {t('cargoTypes.form.specialHandling.description')}
                                     </p>
                                 </div>
                             </div>
@@ -316,9 +330,13 @@ export default function CargoTypesCreate({ categories }: CargoTypeCreateProps) {
                                     onCheckedChange={handleCheckboxChange}
                                     className="border-slate-300 text-rose-600 focus-visible:ring-rose-500 dark:border-slate-600"
                                 />
-                                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Requires special equipment</span>
+                                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                                    {t('cargoTypes.form.specialHandling.label')}
+                                </span>
                                 <Badge variant="secondary" className={`border-0 ${data.requires_special_equipment ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-200' : 'bg-slate-100 text-slate-600 dark:bg-slate-800/60 dark:text-slate-300'}`}>
-                                    {data.requires_special_equipment ? 'Flagged' : 'Standard Handling'}
+                                    {data.requires_special_equipment
+                                        ? t('cargoTypes.form.specialHandling.flagged')
+                                        : t('cargoTypes.form.specialHandling.standard')}
                                 </Badge>
                             </div>
                         </div>
@@ -326,8 +344,8 @@ export default function CargoTypesCreate({ categories }: CargoTypeCreateProps) {
                 </FormSection>
 
                 <FormSection
-                    title="Specifications"
-                    description="Capture physical characteristics that influence transport planning."
+                    title={t('cargoTypes.form.sections.specifications.title')}
+                    description={t('cargoTypes.form.sections.specifications.description')}
                     icon={
                         <div className="rounded-lg bg-blue-100 p-2 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300">
                             <ClipboardCheck className="h-4 w-4" />
@@ -337,8 +355,8 @@ export default function CargoTypesCreate({ categories }: CargoTypeCreateProps) {
                 >
                     <FormField
                         id="weight_per_cubic_meter"
-                        label="Weight per m³ (kg)"
-                        helperText="Optional but improves stacking and load balancing recommendations."
+                        label={t('cargoTypes.form.fields.weight.label')}
+                        helperText={t('cargoTypes.form.fields.weight.helper')}
                         error={getFieldError('weight_per_cubic_meter')}
                     >
                         <Input
@@ -349,12 +367,17 @@ export default function CargoTypesCreate({ categories }: CargoTypeCreateProps) {
                             step="0.01"
                             value={data.weight_per_cubic_meter}
                             onChange={(event) => handleFieldChange('weight_per_cubic_meter', event.target.value)}
-                            placeholder="0.00"
+                            placeholder={t('cargoTypes.form.fields.weight.placeholder')}
                             className={`border-slate-300 focus:border-rose-500 focus:ring-rose-500/20 dark:border-slate-700 dark:focus:border-rose-400 ${getFieldError('weight_per_cubic_meter') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20 dark:border-red-500' : ''}`}
                         />
                     </FormField>
 
-                    <FormField id="density_insight" label="Density Insight" helperText="Helps scheduling teams understand cargo stacking constraints." className="md:col-span-1">
+                    <FormField
+                        id="density_insight"
+                        label={t('cargoTypes.form.fields.density.label')}
+                        helperText={t('cargoTypes.form.fields.density.helper')}
+                        className="md:col-span-1"
+                    >
                         <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-300">
                             {densityInsight ? (
                                 <Badge className={`mb-2 inline-flex items-center gap-2 border-0 px-3 py-1.5 text-sm font-medium ${densityInsight.tone}`}>
@@ -363,19 +386,19 @@ export default function CargoTypesCreate({ categories }: CargoTypeCreateProps) {
                                 </Badge>
                             ) : (
                                 <Badge variant="secondary" className="mb-2 border-0 bg-slate-100 text-slate-600 dark:bg-slate-800/60 dark:text-slate-300">
-                                    Awaiting data
+                                    {t('cargoTypes.form.density.awaiting')}
                                 </Badge>
                             )}
                             <p className="text-xs text-muted-foreground">
-                                Provide weight per cubic meter to unlock automated stacking and payload recommendations.
+                                {t('cargoTypes.form.density.note')}
                             </p>
                         </div>
                     </FormField>
                 </FormSection>
 
                 <FormSection
-                    title="Handling & Safety"
-                    description="Outline the operational and safety expectations for this cargo."
+                    title={t('cargoTypes.form.sections.handling.title')}
+                    description={t('cargoTypes.form.sections.handling.description')}
                     icon={
                         <div className="rounded-lg bg-slate-100 p-2 text-slate-600 dark:bg-slate-800/60 dark:text-slate-200">
                             <MapPin className="h-4 w-4" />
@@ -385,8 +408,8 @@ export default function CargoTypesCreate({ categories }: CargoTypeCreateProps) {
                 >
                     <FormField
                         id="handling_requirements"
-                        label="Handling Notes"
-                        helperText="Optional. Describe packaging, stacking order, or temperature controls."
+                        label={t('cargoTypes.form.fields.handling.label')}
+                        helperText={t('cargoTypes.form.fields.handling.helper')}
                         error={getFieldError('handling_requirements')}
                     >
                         <Textarea
@@ -398,14 +421,14 @@ export default function CargoTypesCreate({ categories }: CargoTypeCreateProps) {
                             rows={4}
                             maxLength={2000}
                             className={`resize-y border-slate-300 focus:border-rose-500 focus:ring-rose-500/20 dark:border-slate-700 dark:focus:border-rose-400 ${getFieldError('handling_requirements') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20 dark:border-red-500' : ''}`}
-                            placeholder="Include palletisation, stacking, or temperature guidance."
+                            placeholder={t('cargoTypes.form.fields.handling.placeholder')}
                         />
                     </FormField>
 
                     <FormField
                         id="safety_requirements"
-                        label="Safety Guidance"
-                        helperText="Optional. Highlight protective equipment or risk mitigation steps."
+                        label={t('cargoTypes.form.fields.safety.label')}
+                        helperText={t('cargoTypes.form.fields.safety.helper')}
                         error={getFieldError('safety_requirements')}
                     >
                         <Textarea
@@ -417,7 +440,7 @@ export default function CargoTypesCreate({ categories }: CargoTypeCreateProps) {
                             rows={4}
                             maxLength={2000}
                             className={`resize-y border-slate-300 focus:border-rose-500 focus:ring-rose-500/20 dark:border-slate-700 dark:focus:border-rose-400 ${getFieldError('safety_requirements') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20 dark:border-red-500' : ''}`}
-                            placeholder="Document PPE needs, hazard markings, or emergency contacts."
+                            placeholder={t('cargoTypes.form.fields.safety.placeholder')}
                         />
                     </FormField>
                 </FormSection>
@@ -427,25 +450,25 @@ export default function CargoTypesCreate({ categories }: CargoTypeCreateProps) {
                         <>
                             <span className="flex items-center gap-2 text-sm">
                                 <span className="text-red-500">*</span>
-                                Required fields keep cargo cataloging consistent across the fleet.
+                                {t('cargoTypes.form.required')}
                             </span>
                             <span className="flex items-center gap-2 text-xs text-muted-foreground">
                                 <ClipboardCheck className="h-3 w-3" />
-                                Accurate specs unlock safer loading playbooks.
+                                {t('cargoTypes.form.helperNote')}
                             </span>
                         </>
                     }
                     right={
                         <>
                             <Button type="button" variant="outline" asChild className="border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800">
-                                <Link href="/cargo-types">Cancel</Link>
+                                <Link href="/cargo-types">{t('cargoTypes.actions.cancel')}</Link>
                             </Button>
                             <Button
                                 type="submit"
                                 disabled={processing || hasErrors}
                                 className="min-w-[180px] bg-gradient-to-r from-rose-600 to-rose-700 text-white shadow-lg transition hover:from-rose-700 hover:to-rose-800"
                             >
-                                {processing ? 'Saving…' : 'Save Cargo Type'}
+                                {processing ? t('cargoTypes.form.create.submitting') : t('cargoTypes.form.create.submit')}
                             </Button>
                         </>
                     }

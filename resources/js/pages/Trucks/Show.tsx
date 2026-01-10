@@ -236,7 +236,7 @@ export default function TrucksShow({ truck, activityLogs = [], performanceSummar
       key: 'trips',
       label: t('trucks.show.summary.completedTrips'),
       value: formatNumber(performanceSummary?.completed_trips ?? 0, { maximumFractionDigits: 0 }),
-      helper: t('trucks.show.summary.openTrips', { count: formatNumber(openTrips, { maximumFractionDigits: 0 }) }),
+      helper: t('trucks.show.summary.openTrips', { count: openTrips }),
     },
     {
       key: 'distance',
@@ -559,7 +559,7 @@ export default function TrucksShow({ truck, activityLogs = [], performanceSummar
                 <p className="text-xs font-semibold uppercase text-muted-foreground">{t('trucks.show.performance.cards.totalRecords')}</p>
                 <p className="mt-2 text-3xl font-bold text-blue-700">{performanceSummary.total_records}</p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {t('trucks.show.performance.cards.mainTrips', { count: formatNumber(mainTripRecords, { maximumFractionDigits: 0 }) })}
+                  {t('trucks.show.performance.cards.mainTrips', { count: mainTripRecords })}
                 </p>
               </div>
               <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-center">

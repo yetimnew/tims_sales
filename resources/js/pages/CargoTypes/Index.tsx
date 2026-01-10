@@ -16,6 +16,7 @@ import { Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useTranslation } from 'react-i18next';
 import * as React from 'react';
 import {
     Plus,
@@ -29,13 +30,6 @@ import {
     ClipboardList,
     ChevronRight,
 } from 'lucide-react';
-
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Cargo Types',
-        href: '/cargo-types',
-    },
-];
 
 interface CargoTypeSummary {
     id: number;
@@ -83,27 +77,16 @@ interface CargoTypesIndexProps {
 
 const SKELETON_FLAG_KEY = 'cargo-types.index.shouldShowSkeleton';
 
-const COLUMN_DEFINITIONS: Array<{
+type ColumnDefinition = {
     id: keyof CargoTypeSummary | 'weight';
     label: string;
     sortKey?: string;
     align?: 'center' | 'right';
-}> = [
-    { id: 'name', label: 'Name', sortKey: 'name' },
-    { id: 'category', label: 'Category', sortKey: 'category' },
-    { id: 'weight', label: 'Weight / m³', sortKey: 'weight_per_cubic_meter', align: 'right' },
-    { id: 'requires_special_equipment', label: 'Special Equipment', sortKey: 'requires_special_equipment', align: 'center' },
-];
+};
 
-const SPECIAL_EQUIPMENT_OPTIONS: Array<{ label: string; value: string }> = [
-    { label: 'All types', value: 'all' },
-    { label: 'Requires special equipment', value: '1' },
-    { label: 'No special equipment', value: '0' },
-];
-
-const formatWeight = (value?: number | null): string => {
+const formatWeight = (value?: number | null, fallback = '—'): string => {
     if (typeof value !== 'number' || Number.isNaN(value)) {
-        return '—';
+        return fallback;
     }
 
     return `${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg`;
@@ -124,6 +107,7 @@ export default function CargoTypesIndex({
     categoryOptions,
     perPageOptions,
 }: CargoTypesIndexProps) {
+    const { t } = useTranslation();
     const { hasPermission } = usePermissions();
     const canViewCargoType = hasPermission('cargotypes.show');
     const canEditCargoType = hasPermission('cargotypes.edit');
@@ -156,6 +140,35 @@ export default function CargoTypesIndex({
     const [isDeleting, setIsDeleting] = React.useState(false);
     const [deleteError, setDeleteError] = React.useState<string | null>(null);
 
+    const breadcrumbs = React.useMemo<BreadcrumbItem[]>(
+        () => [
+            {
+                title: t('cargoTypes.breadcrumb'),
+                href: '/cargo-types',
+            },
+        ],
+        [t],
+    );
+
+    const columnDefinitions = React.useMemo<ColumnDefinition[]>(
+        () => [
+            { id: 'name', label: t('cargoTypes.columns.name'), sortKey: 'name' },
+            { id: 'category', label: t('cargoTypes.columns.category'), sortKey: 'category' },
+            { id: 'weight', label: t('cargoTypes.columns.weight'), sortKey: 'weight_per_cubic_meter', align: 'right' },
+            { id: 'requires_special_equipment', label: t('cargoTypes.columns.specialEquipment'), sortKey: 'requires_special_equipment', align: 'center' },
+        ],
+        [t],
+    );
+
+    const specialEquipmentOptions = React.useMemo(
+        () => [
+            { label: t('cargoTypes.filters.allTypes'), value: 'all' },
+            { label: t('cargoTypes.filters.requiresSpecialEquipment'), value: '1' },
+            { label: t('cargoTypes.filters.noSpecialEquipment'), value: '0' },
+        ],
+        [t],
+    );
+
     const isDataReady = Array.isArray(cargoTypes?.data);
     const { isLoading: isTableLoading } = useListingLoading({
         storageKey: SKELETON_FLAG_KEY,
@@ -179,6 +192,7 @@ export default function CargoTypesIndex({
             ? Number(perPageCountRaw)
             : cargoTypeData.length || 1;
     const rowOffset = (currentPage - 1) * perPageCount;
+    const notAvailableLabel = t('cargoTypes.fallbacks.notAvailable');
 
     const handleNavigate = React.useCallback(
         (overrides: {
@@ -296,14 +310,14 @@ export default function CargoTypesIndex({
                 setIsDeleting(false);
                 setDeleteError(null);
                 toast({
-                    title: 'Cargo type deleted',
-                    description: 'The cargo type was removed successfully.',
+                    title: t('cargoTypes.delete.successTitle'),
+                    description: t('cargoTypes.delete.successDescription'),
                 });
             },
             onError: (errors) => {
                 setIsDeleting(false);
 
-                const fallback = 'Failed to delete cargo type. Please review the requirements and try again.';
+                const fallback = t('cargoTypes.delete.failedDescription');
                 if (errors && typeof errors === 'object') {
                     const messages = Object.values(errors)
                         .flatMap((value) => (Array.isArray(value) ? value : [value]))
@@ -313,7 +327,7 @@ export default function CargoTypesIndex({
                     setDeleteError(messages || fallback);
 
                     toast({
-                        title: '❌ Delete Failed',
+                        title: t('cargoTypes.delete.failedTitle'),
                         description: messages || fallback,
                         variant: 'destructive',
                     });
@@ -321,7 +335,7 @@ export default function CargoTypesIndex({
                     setDeleteError(fallback);
 
                     toast({
-                        title: '❌ Delete Failed',
+                        title: t('cargoTypes.delete.failedTitle'),
                         description: fallback,
                         variant: 'destructive',
                     });
@@ -356,7 +370,7 @@ export default function CargoTypesIndex({
     const statsDefinitions = [
         {
             id: 'cargo-types',
-            label: 'Cargo Types',
+            label: t('cargoTypes.stats.total.label'),
             icon: <Boxes className="h-3.5 w-3.5 text-blue-600" />,
             className: 'min-w-[220px] flex-shrink-0',
             value: isTableLoading ? (
@@ -367,13 +381,13 @@ export default function CargoTypesIndex({
             description: isTableLoading ? (
                 <Skeleton className="h-3 w-36" aria-hidden="true" />
             ) : (
-                `${formatNumber(metrics?.distinct_categories)} categories`
+                t('cargoTypes.stats.total.description', { count: metrics?.distinct_categories ?? 0 })
             ),
             valueClassName: isTableLoading ? undefined : 'text-blue-600',
         },
         {
             id: 'special-equipment',
-            label: 'Special Equipment',
+            label: t('cargoTypes.stats.specialEquipment.label'),
             icon: <Package className="h-3.5 w-3.5 text-purple-600" />,
             className: 'min-w-[220px] flex-shrink-0',
             value: isTableLoading ? (
@@ -384,13 +398,13 @@ export default function CargoTypesIndex({
             description: isTableLoading ? (
                 <Skeleton className="h-3 w-36" aria-hidden="true" />
             ) : (
-                `${formatNumber(metrics?.without_special_equipment)} standard`
+                t('cargoTypes.stats.specialEquipment.description', { count: metrics?.without_special_equipment ?? 0 })
             ),
             valueClassName: isTableLoading ? undefined : 'text-purple-600',
         },
         {
             id: 'average-weight',
-            label: 'Average Weight',
+            label: t('cargoTypes.stats.averageWeight.label'),
             icon: <Scale className="h-3.5 w-3.5 text-emerald-600" />,
             className: 'min-w-[220px] flex-shrink-0',
             value: isTableLoading ? (
@@ -398,18 +412,18 @@ export default function CargoTypesIndex({
             ) : (
                 metrics?.average_weight
                     ? `${metrics.average_weight.toFixed(2)} kg`
-                    : '0.00 kg'
+                    : t('cargoTypes.stats.averageWeight.fallback')
             ),
             description: isTableLoading ? (
                 <Skeleton className="h-3 w-28" aria-hidden="true" />
             ) : (
-                'Per cubic meter'
+                t('cargoTypes.stats.averageWeight.description')
             ),
             valueClassName: isTableLoading ? undefined : 'text-emerald-600',
         },
         {
             id: 'handling-notes',
-            label: 'Handling Notes',
+            label: t('cargoTypes.stats.handlingNotes.label'),
             icon: <ClipboardList className="h-3.5 w-3.5 text-amber-600" />,
             className: 'min-w-[220px] flex-shrink-0',
             value: isTableLoading ? (
@@ -420,7 +434,7 @@ export default function CargoTypesIndex({
             description: isTableLoading ? (
                 <Skeleton className="h-3 w-32" aria-hidden="true" />
             ) : (
-                'Review safety requirements'
+                t('cargoTypes.stats.handlingNotes.description')
             ),
             valueClassName: isTableLoading ? undefined : 'text-amber-600',
         },
@@ -432,24 +446,24 @@ export default function CargoTypesIndex({
         () =>
             availablePerPageOptions.map((option) => ({
                 value: String(option),
-                label: `${option} / page`,
+                label: t('cargoTypes.filters.perPageOption', { value: option }),
             })),
-        [availablePerPageOptions],
+        [availablePerPageOptions, t],
     );
 
     const tableColumns = React.useMemo(
         () => [
-            { id: 'index', label: '#', align: 'center' as const },
-            ...COLUMN_DEFINITIONS.map((column) => ({
+            { id: 'index', label: t('cargoTypes.table.index'), align: 'center' as const },
+            ...columnDefinitions.map((column) => ({
                 id: String(column.id),
                 label: column.label,
                 sortable: Boolean(column.sortKey),
                 sortKey: column.sortKey,
                 align: column.align,
             })),
-            { id: 'actions', label: 'Actions', align: 'center' as const },
+            { id: 'actions', label: t('cargoTypes.table.actions'), align: 'center' as const },
         ],
-        [],
+        [columnDefinitions, t],
     );
 
     const tableRows = isTableLoading
@@ -484,30 +498,30 @@ export default function CargoTypesIndex({
                           <Badge className={getCategoryBadgeClass(type.category)}>{type.category}</Badge>
                       </TableCell>
                       <TableCell className="text-right text-muted-foreground">
-                          {formatWeight(type.weight_per_cubic_meter)}
+                          {formatWeight(type.weight_per_cubic_meter, notAvailableLabel)}
                       </TableCell>
                       <TableCell className="text-center">
                           {type.requires_special_equipment ? (
-                              <Badge className="bg-rose-500 text-white hover:bg-rose-600">Required</Badge>
+                              <Badge className="bg-rose-500 text-white hover:bg-rose-600">{t('cargoTypes.specialEquipment.required')}</Badge>
                           ) : (
-                              <span className="text-muted-foreground">Not required</span>
+                              <span className="text-muted-foreground">{t('cargoTypes.specialEquipment.notRequired')}</span>
                           )}
                       </TableCell>
                       <TableCell className="text-center">
                           <ListingRowActionsMenu
                               actions={[
                                   canViewCargoType && {
-                                      label: 'View',
+                                      label: t('cargoTypes.actions.view'),
                                       icon: <Eye className="h-4 w-4" />,
                                       href: `/cargo-types/${type.id}`,
                                   },
                                   canEditCargoType && {
-                                      label: 'Edit',
+                                      label: t('cargoTypes.actions.edit'),
                                       icon: <Edit className="h-4 w-4" />,
                                       href: `/cargo-types/${type.id}/edit`,
                                   },
                                   canDeleteCargoType && {
-                                      label: 'Delete',
+                                      label: t('cargoTypes.actions.delete'),
                                       icon: <Trash2 className="h-4 w-4" />,
                                       danger: true,
                                       disabled: isDeleting && selectedType?.id === type.id,
@@ -521,10 +535,10 @@ export default function CargoTypesIndex({
             : (
                 <TableRow>
                     <TableCell colSpan={tableColumns.length} className="py-8 text-center text-muted-foreground">
-                        No cargo types found.
+                        {t('cargoTypes.empty.title')}
                         {canCreateCargoType && (
                             <Link href="/cargo-types/create" className="ml-1 text-primary underline">
-                                Create one
+                                {t('cargoTypes.empty.createAction')}
                             </Link>
                         )}
                     </TableCell>
@@ -586,7 +600,9 @@ export default function CargoTypesIndex({
             getKey={(item) => item.record.id}
             renderTitle={(item) => (
                 <div className="flex items-center gap-2">
-                    <span className="text-xs uppercase tracking-wide text-muted-foreground">#{item.position}</span>
+                    <span className="text-xs uppercase tracking-wide text-muted-foreground">
+                        {t('cargoTypes.mobile.position', { value: item.position })}
+                    </span>
                     <span className="text-base">{item.record.name}</span>
                     <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
                 </div>
@@ -595,22 +611,30 @@ export default function CargoTypesIndex({
             renderContent={(item) => (
                 <div className="space-y-3 text-sm text-muted-foreground">
                     <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Weight / m³</span>
+                        <span className="font-medium text-slate-600 dark:text-slate-300">
+                            {t('cargoTypes.mobile.weight')}
+                        </span>
                         <span className="text-right text-slate-900 dark:text-slate-100">
-                            {formatWeight(item.record.weight_per_cubic_meter)}
+                            {formatWeight(item.record.weight_per_cubic_meter, notAvailableLabel)}
                         </span>
                     </div>
                     <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Special equipment</span>
+                        <span className="font-medium text-slate-600 dark:text-slate-300">
+                            {t('cargoTypes.mobile.specialEquipment')}
+                        </span>
                         <span className="text-right text-slate-900 dark:text-slate-100">
-                            {item.record.requires_special_equipment ? 'Required' : 'Not required'}
+                            {item.record.requires_special_equipment
+                                ? t('cargoTypes.specialEquipment.required')
+                                : t('cargoTypes.specialEquipment.notRequired')}
                         </span>
                     </div>
                     {(item.record.handling_requirements || item.record.safety_requirements) && (
                         <div className="space-y-1">
                             {item.record.handling_requirements && (
                                 <div>
-                                    <span className="text-xs uppercase text-muted-foreground">Handling</span>
+                                    <span className="text-xs uppercase text-muted-foreground">
+                                        {t('cargoTypes.mobile.handling')}
+                                    </span>
                                     <p className="text-sm text-slate-900 dark:text-slate-100">
                                         {item.record.handling_requirements}
                                     </p>
@@ -618,7 +642,9 @@ export default function CargoTypesIndex({
                             )}
                             {item.record.safety_requirements && (
                                 <div>
-                                    <span className="text-xs uppercase text-muted-foreground">Safety</span>
+                                    <span className="text-xs uppercase text-muted-foreground">
+                                        {t('cargoTypes.mobile.safety')}
+                                    </span>
                                     <p className="text-sm text-slate-900 dark:text-slate-100">
                                         {item.record.safety_requirements}
                                     </p>
@@ -634,7 +660,7 @@ export default function CargoTypesIndex({
                         <Button asChild size="sm" variant="outline" className="flex-1 sm:flex-auto">
                             <Link href={`/cargo-types/${item.record.id}`}>
                                 <Eye className="mr-2 h-4 w-4" />
-                                View
+                                {t('cargoTypes.actions.view')}
                             </Link>
                         </Button>
                     )}
@@ -642,7 +668,7 @@ export default function CargoTypesIndex({
                         <Button asChild size="sm" variant="secondary" className="flex-1 sm:flex-none">
                             <Link href={`/cargo-types/${item.record.id}/edit`}>
                                 <Edit className="mr-2 h-4 w-4" />
-                                Edit
+                                {t('cargoTypes.actions.edit')}
                             </Link>
                         </Button>
                     )}
@@ -655,17 +681,17 @@ export default function CargoTypesIndex({
                             disabled={isDeleting && selectedType?.id === item.record.id}
                         >
                             <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
+                            {t('cargoTypes.actions.delete')}
                         </Button>
                     )}
                 </div>
             )}
             emptyState={(
                 <div className="py-8 text-center text-muted-foreground">
-                    No cargo types found.
+                    {t('cargoTypes.empty.title')}
                     {canCreateCargoType && (
                         <Link href="/cargo-types/create" className="ml-1 text-primary underline">
-                            Create one
+                            {t('cargoTypes.empty.createAction')}
                         </Link>
                     )}
                 </div>
@@ -677,23 +703,23 @@ export default function CargoTypesIndex({
         <ListingFilterBar
             search={{
                 value: searchTerm,
-                placeholder: 'Search cargo types...',
+                placeholder: t('cargoTypes.filters.searchPlaceholder'),
                 onChange: handleSearchChange,
                 icon: <Search className="h-4 w-4" />,
             }}
             perPage={{
                 value: perPage,
-                label: 'Rows',
+                label: t('cargoTypes.filters.rowsLabel'),
                 onChange: handlePerPageChange,
                 options: perPageSelectOptions,
             }}
         >
             <Select value={selectedCategory} onValueChange={handleCategoryChange}>
                 <SelectTrigger className="w-full min-w-[200px] sm:w-auto">
-                    <SelectValue placeholder="Category" />
+                    <SelectValue placeholder={t('cargoTypes.filters.category')} />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="all">All categories</SelectItem>
+                    <SelectItem value="all">{t('cargoTypes.filters.allCategories')}</SelectItem>
                     {categoryOptions.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                             {option.label}
@@ -703,10 +729,10 @@ export default function CargoTypesIndex({
             </Select>
             <Select value={selectedSpecialEquipment} onValueChange={handleSpecialEquipmentChange}>
                 <SelectTrigger className="w-full min-w-[200px] sm:w-auto">
-                    <SelectValue placeholder="Special equipment" />
+                    <SelectValue placeholder={t('cargoTypes.filters.specialEquipment')} />
                 </SelectTrigger>
                 <SelectContent>
-                    {SPECIAL_EQUIPMENT_OPTIONS.map((option) => (
+                    {specialEquipmentOptions.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                             {option.label}
                         </SelectItem>
@@ -722,7 +748,7 @@ export default function CargoTypesIndex({
                 <Button asChild>
                     <Link href="/cargo-types/create">
                         <Plus className="mr-2 h-4 w-4" />
-                        Add Cargo Type
+                        {t('cargoTypes.actions.add')}
                     </Link>
                 </Button>
             )}
@@ -732,14 +758,14 @@ export default function CargoTypesIndex({
     return (
         <>
             <ListPageLayout
-                headTitle="Cargo Types"
-                title="Cargo Types"
-                description={`Manage cargo configurations. Total: ${formatNumber(totalRecords)}`}
+                headTitle={t('cargoTypes.title')}
+                title={t('cargoTypes.title')}
+                description={t('cargoTypes.description', { count: totalRecords })}
                 breadcrumbs={breadcrumbs}
                 actions={headerActions}
                 stats={statsSection}
-                tableTitle="Cargo Types"
-                tableDescription="All registered cargo categories"
+                tableTitle={t('cargoTypes.table.title')}
+                tableDescription={t('cargoTypes.table.description')}
                 tableHeaderExtras={tableHeaderExtras}
                 pagination={
                     !isTableLoading && cargoTypes?.links ? (
@@ -769,8 +795,8 @@ export default function CargoTypesIndex({
                         setDeleteError(null);
                     }
                 }}
-                title="Delete Cargo Type"
-                description="Are you sure you want to delete this cargo type? This action cannot be undone."
+                title={t('cargoTypes.delete.title')}
+                description={t('cargoTypes.delete.description')}
                 itemName={selectedType ? selectedType.name : undefined}
                 onConfirm={handleDeleteConfirm}
                 isLoading={isDeleting}

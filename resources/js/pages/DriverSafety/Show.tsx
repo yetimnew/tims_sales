@@ -11,6 +11,7 @@ import { ActivityLogTable } from '@/components/activity-log-table';
 import { DetailPageLayout } from '@/components/detail/detail-page-layout';
 import { DetailSectionCard } from '@/components/detail/detail-section-card';
 import { DetailSummaryGrid, type DetailSummaryItem } from '@/components/detail/detail-summary-grid';
+import { useTranslation } from 'react-i18next';
 
 interface Driver {
   id: number;
@@ -55,10 +56,10 @@ interface DriverSafetyShowProps {
   activityLogs?: ActivityLog[];
 }
 
-const formatDate = (value?: string | null) => {
-  if (!value) return 'Not recorded';
+const formatDate = (value?: string | null, fallback = 'Not recorded') => {
+  if (!value) return fallback;
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return 'Not recorded';
+  if (Number.isNaN(date.getTime())) return fallback;
   return date.toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
@@ -95,18 +96,31 @@ const getIncidentTypeBadgeClass = (incidentType: string) => {
 };
 
 export default function DriverSafetyShow({ driverSafety, activityLogs = [] }: DriverSafetyShowProps) {
+  const { t } = useTranslation();
   const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Driver Safety', href: '/driver-safety' },
-    { title: `Incident #${driverSafety.id}`, href: `/driver-safety/${driverSafety.id}` },
+    { title: t('driverSafety.breadcrumb'), href: '/driver-safety' },
+    { title: t('driverSafety.show.breadcrumbItem', { id: driverSafety.id }), href: `/driver-safety/${driverSafety.id}` },
   ];
   const { hasPermission } = usePermissions();
   const { toast } = useToast();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const lastDeleteToast = useRef<string | null>(null);
+  const notRecordedLabel = t('driverSafety.fallbacks.notRecorded');
+  const unknownLabel = t('driverSafety.fallbacks.unknown');
+  const formatIncidentTypeLabel = (value?: string | null) => {
+    if (!value) return unknownLabel;
+    const key = value.toLowerCase();
+    return t(`driverSafety.incidentTypes.${key}`, { defaultValue: value });
+  };
+  const formatSeverityLabel = (value?: string | null) => {
+    if (!value) return unknownLabel;
+    const key = value.toLowerCase();
+    return t(`driverSafety.severity.${key}`, { defaultValue: value });
+  };
 
-  const severityLabel = driverSafety.severity ? driverSafety.severity.charAt(0).toUpperCase() + driverSafety.severity.slice(1) : 'Unknown';
-  const incidentLabel = driverSafety.incident_type ? driverSafety.incident_type.charAt(0).toUpperCase() + driverSafety.incident_type.slice(1) : 'Unknown';
+  const severityLabel = formatSeverityLabel(driverSafety.severity);
+  const incidentLabel = formatIncidentTypeLabel(driverSafety.incident_type);
 
   const activityLogRows = useMemo(
     () =>
@@ -115,20 +129,20 @@ export default function DriverSafetyShow({ driverSafety, activityLogs = [] }: Dr
         action: log.event ?? 'updated',
         description: log.description,
         user: {
-          name: log.causer?.name ?? 'System',
+          name: log.causer?.name ?? t('driverSafety.show.systemUser'),
         },
         created_at: log.created_at,
         old_values: log.properties?.old,
         new_values: log.properties?.attributes,
       })),
-    [activityLogs],
+    [activityLogs, t],
   );
 
   const kpiSummary: DetailSummaryItem[] = [
-    { label: 'Incident Date', value: formatDate(driverSafety.incident_date), helper: 'When it occurred' },
-    { label: 'Severity', value: severityLabel, helper: 'Impact level', valueClassName: driverSafety.severity === 'critical' ? 'text-red-600' : driverSafety.severity === 'major' ? 'text-orange-600' : 'text-amber-600' },
-    { label: 'Damage Cost', value: formatCurrency(driverSafety.damage_cost), helper: 'Financial impact' },
-    { label: 'Driver', value: driverSafety.driver?.name || 'Unknown', helper: 'Involved party' },
+    { label: t('driverSafety.show.summary.date'), value: formatDate(driverSafety.incident_date, notRecordedLabel), helper: t('driverSafety.show.summary.dateHelper') },
+    { label: t('driverSafety.show.summary.severity'), value: severityLabel, helper: t('driverSafety.show.summary.severityHelper'), valueClassName: driverSafety.severity === 'critical' ? 'text-red-600' : driverSafety.severity === 'major' ? 'text-orange-600' : 'text-amber-600' },
+    { label: t('driverSafety.show.summary.damageCost'), value: formatCurrency(driverSafety.damage_cost), helper: t('driverSafety.show.summary.damageCostHelper') },
+    { label: t('driverSafety.show.summary.driver'), value: driverSafety.driver?.name || unknownLabel, helper: t('driverSafety.show.summary.driverHelper') },
   ];
 
   const handleDelete = () => {
@@ -140,8 +154,8 @@ export default function DriverSafetyShow({ driverSafety, activityLogs = [] }: Dr
         setDeleteDialogOpen(false);
         setIsDeleting(false);
         toast({
-          title: '✅ Safety Record Deleted',
-          description: 'The driver safety record was removed successfully.',
+          title: t('driverSafety.delete.successTitle'),
+          description: t('driverSafety.delete.successDescription'),
         });
       },
       onError: errors => {
@@ -152,11 +166,11 @@ export default function DriverSafetyShow({ driverSafety, activityLogs = [] }: Dr
                 .flatMap(value => (Array.isArray(value) ? value : [value]))
                 .filter((value): value is string => typeof value === 'string')
                 .join('\n')
-            : 'Unable to delete this safety record. Please review any blockers and try again.';
+            : t('driverSafety.delete.failedDescription');
 
         if (lastDeleteToast.current !== description) {
           toast({
-            title: '❌ Delete Failed',
+            title: t('driverSafety.delete.failedTitle'),
             description,
             variant: 'destructive',
           });
@@ -168,16 +182,16 @@ export default function DriverSafetyShow({ driverSafety, activityLogs = [] }: Dr
 
   return (
     <DetailPageLayout
-      title={`Safety Incident #${driverSafety.id}`}
-      subtitle={`Driver: ${driverSafety.driver?.name || 'Unknown'}`}
+      title={t('driverSafety.show.title', { id: driverSafety.id })}
+      subtitle={t('driverSafety.show.subtitle', { driver: driverSafety.driver?.name || unknownLabel })}
       breadcrumbs={breadcrumbs}
-      headTitle={`Driver Safety Incident #${driverSafety.id}`}
+      headTitle={t('driverSafety.show.headTitle', { id: driverSafety.id })}
       icon={<ShieldAlert className="h-6 w-6 text-red-700 dark:text-red-300" />}
       iconWrapperClassName="bg-red-100 dark:bg-red-900/30"
       leading={
         <Button variant="outline" size="sm" onClick={() => router.get('/driver-safety')}>
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
+          {t('driverSafety.actions.back')}
         </Button>
       }
       actions={
@@ -190,14 +204,14 @@ export default function DriverSafetyShow({ driverSafety, activityLogs = [] }: Dr
                 <Button variant="outline" asChild>
                   <Link href={`/driver-safety/${driverSafety.id}/edit`}>
                     <SquarePen className="h-4 w-4 mr-2" />
-                    Edit
+                    {t('driverSafety.actions.edit')}
                   </Link>
                 </Button>
               )}
               {hasPermission('driver-safety.destroy') && (
                 <Button variant="outline" onClick={() => setDeleteDialogOpen(true)} className="border-red-200 text-red-600 hover:border-red-300 hover:bg-red-50">
                   <Trash2 className="h-4 w-4 mr-2" />
-                  Delete
+                  {t('driverSafety.actions.delete')}
                 </Button>
               )}
             </div>
@@ -208,47 +222,55 @@ export default function DriverSafetyShow({ driverSafety, activityLogs = [] }: Dr
       <DetailSummaryGrid items={kpiSummary} />
 
       <div className="grid gap-6 lg:grid-cols-[1fr,1fr]">
-        <DetailSectionCard title="Incident Details" description="Description and circumstances" icon={<AlertTriangle className="h-5 w-5" />}>
+        <DetailSectionCard title={t('driverSafety.show.sections.details.title')} description={t('driverSafety.show.sections.details.description')} icon={<AlertTriangle className="h-5 w-5" />}>
           <div className="space-y-4">
             <div className="rounded-lg border p-4">
-              <p className="text-xs font-semibold uppercase text-muted-foreground">Description</p>
+              <p className="text-xs font-semibold uppercase text-muted-foreground">{t('driverSafety.show.fields.description')}</p>
               <p className="mt-2 whitespace-pre-wrap text-sm">{driverSafety.description}</p>
             </div>
             {driverSafety.location && (
               <div className="rounded-lg border p-4">
-                <p className="text-xs font-semibold uppercase text-muted-foreground">Location</p>
+                <p className="text-xs font-semibold uppercase text-muted-foreground">{t('driverSafety.show.fields.location')}</p>
                 <p className="mt-2 text-sm">{driverSafety.location}</p>
               </div>
             )}
             <div className="rounded-lg border p-4">
-              <p className="text-xs font-semibold uppercase text-muted-foreground">Incident Date</p>
-              <p className="mt-2 text-sm font-semibold">{formatDate(driverSafety.incident_date)}</p>
+              <p className="text-xs font-semibold uppercase text-muted-foreground">{t('driverSafety.show.fields.date')}</p>
+              <p className="mt-2 text-sm font-semibold">{formatDate(driverSafety.incident_date, notRecordedLabel)}</p>
             </div>
             <div className="rounded-lg border p-4">
-              <p className="text-xs font-semibold uppercase text-muted-foreground">Damage Cost</p>
+              <p className="text-xs font-semibold uppercase text-muted-foreground">{t('driverSafety.show.fields.damageCost')}</p>
               <p className="mt-2 text-sm font-semibold">{formatCurrency(driverSafety.damage_cost)}</p>
             </div>
           </div>
         </DetailSectionCard>
 
-        <DetailSectionCard title="Resolution" description="Actions taken and outcome" icon={<Shield className="h-5 w-5" />}>
+        <DetailSectionCard title={t('driverSafety.show.sections.resolution.title')} description={t('driverSafety.show.sections.resolution.description')} icon={<Shield className="h-5 w-5" />}>
           {driverSafety.resolution ? (
             <div className="rounded-lg border p-4">
               <p className="whitespace-pre-wrap text-sm">{driverSafety.resolution}</p>
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">No resolution details recorded yet.</p>
+            <p className="text-sm text-muted-foreground">{t('driverSafety.show.sections.resolution.empty')}</p>
           )}
         </DetailSectionCard>
       </div>
 
       {activityLogRows.length > 0 && (
-        <DetailSectionCard title="Activity History" description="Auditable timeline" icon={<Activity className="h-5 w-5" />}>
+        <DetailSectionCard title={t('driverSafety.show.sections.activity.title')} description={t('driverSafety.show.sections.activity.description')} icon={<Activity className="h-5 w-5" />}>
           <ActivityLogTable logs={activityLogRows} />
         </DetailSectionCard>
       )}
 
-      <DeleteConfirmationDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen} title="Delete Safety Record" description="Are you sure you want to delete this safety record? This action cannot be undone." itemName={`Incident #${driverSafety.id}`} onConfirm={handleDelete} isLoading={isDeleting} />
+      <DeleteConfirmationDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title={t('driverSafety.delete.title')}
+        description={t('driverSafety.delete.description')}
+        itemName={t('driverSafety.show.deleteItem', { id: driverSafety.id })}
+        onConfirm={handleDelete}
+        isLoading={isDeleting}
+      />
     </DetailPageLayout>
   );
 }

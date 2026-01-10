@@ -466,8 +466,8 @@ function formatDate(value?: string, fallbackLabel = 'N/A') {
 }
 
 function formatDuration(
-    startValue?: string,
-    endValue?: string,
+    startValue: string | undefined,
+    endValue: string | undefined,
     labels: {
         waiting: string;
         unable: string;

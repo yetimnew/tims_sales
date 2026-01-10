@@ -14,6 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { validateCargoType } from '@/lib/validation';
 import { type BreadcrumbItem } from '@/types';
 import { Link, useForm } from '@inertiajs/react';
+import { useTranslation } from 'react-i18next';
 import { useEffect, useMemo, useRef, useState, type FormEventHandler } from 'react';
 import { AlertTriangle, Boxes, ClipboardCheck, Package, Shield, ShieldCheck, SquarePen } from 'lucide-react';
 
@@ -48,21 +49,23 @@ type CargoTypeFormField = keyof CargoTypeFormData;
 
 type FieldErrorMap = Partial<Record<CargoTypeFormField, string>>;
 
-const breadcrumbs = (cargoType: CargoTypesEditProps['cargoType']): BreadcrumbItem[] => [
-    { title: 'Cargo Types', href: '/cargo-types' },
-    { title: cargoType.name, href: `/cargo-types/${cargoType.id}` },
-    { title: 'Edit', href: `/cargo-types/${cargoType.id}/edit` },
-];
-
-const customValidationMessage = (field: CargoTypeFormField, value: string | boolean): string => {
-    if ((field === 'handling_requirements' || field === 'safety_requirements') && typeof value === 'string' && value.length > 2000) {
-        return 'Details cannot exceed 2,000 characters.';
-    }
-
-    return '';
-};
-
 export default function CargoTypesEdit({ cargoType, categories }: CargoTypesEditProps) {
+    const { t } = useTranslation();
+    const breadcrumbs = useMemo<BreadcrumbItem[]>(
+        () => [
+            { title: t('cargoTypes.breadcrumb'), href: '/cargo-types' },
+            { title: cargoType.name, href: `/cargo-types/${cargoType.id}` },
+            { title: t('cargoTypes.form.edit.breadcrumb'), href: `/cargo-types/${cargoType.id}/edit` },
+        ],
+        [cargoType.id, cargoType.name, t],
+    );
+    const customValidationMessage = (field: CargoTypeFormField, value: string | boolean): string => {
+        if ((field === 'handling_requirements' || field === 'safety_requirements') && typeof value === 'string' && value.length > 2000) {
+            return t('cargoTypes.form.validation.maxLength');
+        }
+
+        return '';
+    };
     const categoryOptions = useMemo<CargoCategoryOption[]>(() => {
         if (!cargoType.category) {
             return categories;
@@ -172,15 +175,15 @@ export default function CargoTypesEdit({ cargoType, categories }: CargoTypesEdit
         }
 
         if (value >= 1200) {
-            return { label: 'Heavy Density', tone: 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900' };
+            return { label: t('cargoTypes.form.density.heavy'), tone: 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900' };
         }
 
         if (value >= 600) {
-            return { label: 'Medium Density', tone: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200' };
+            return { label: t('cargoTypes.form.density.medium'), tone: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200' };
         }
 
-        return { label: 'Light Density', tone: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' };
-    }, [data.weight_per_cubic_meter]);
+        return { label: t('cargoTypes.form.density.light'), tone: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' };
+    }, [data.weight_per_cubic_meter, t]);
 
     const handleScrollToTop = () => {
         formRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
@@ -262,15 +265,15 @@ export default function CargoTypesEdit({ cargoType, categories }: CargoTypesEdit
 
     return (
         <FormPageLayout
-            title="Update Cargo Type"
-            headTitle={`Edit Cargo Type: ${cargoType.name}`}
-            description="Keep cargo classifications aligned with the latest handling procedures and compliance guidance."
-            breadcrumbs={breadcrumbs(cargoType)}
+            title={t('cargoTypes.form.edit.title')}
+            headTitle={t('cargoTypes.form.edit.headTitle', { name: cargoType.name })}
+            description={t('cargoTypes.form.edit.description')}
+            breadcrumbs={breadcrumbs}
             icon={<SquarePen className="h-5 w-5" />}
             headerAside={
                 <>
                     <Button variant="ghost" size="sm" asChild>
-                        <Link href={`/cargo-types/${cargoType.id}`}>Back to Details</Link>
+                        <Link href={`/cargo-types/${cargoType.id}`}>{t('cargoTypes.form.edit.backToDetails')}</Link>
                     </Button>
                     {isDirty && <UnsavedChangesBadge />}
                     <Badge
@@ -280,7 +283,9 @@ export default function CargoTypesEdit({ cargoType, categories }: CargoTypesEdit
                                 : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
                         }`}
                     >
-                        {data.requires_special_equipment ? 'Special Handling' : 'Standard Handling'}
+                        {data.requires_special_equipment
+                            ? t('cargoTypes.form.specialHandling.badgeSpecial')
+                            : t('cargoTypes.form.specialHandling.badgeStandard')}
                     </Badge>
                 </>
             }
@@ -289,7 +294,7 @@ export default function CargoTypesEdit({ cargoType, categories }: CargoTypesEdit
                 <div className="px-6 pt-6">
                     <Alert variant="destructive">
                         <AlertTriangle className="h-4 w-4" />
-                        <AlertDescription>Please resolve the highlighted fields before submitting the form.</AlertDescription>
+                        <AlertDescription>{t('cargoTypes.form.validation.resolve')}</AlertDescription>
                     </Alert>
                 </div>
             )}
@@ -301,8 +306,8 @@ export default function CargoTypesEdit({ cargoType, categories }: CargoTypesEdit
                 style={{ minHeight: 0 }}
             >
                 <FormSection
-                    title="Cargo Overview"
-                    description="Ensure naming and category assignments reflect the latest operating context."
+                    title={t('cargoTypes.form.sections.overview.title')}
+                    description={t('cargoTypes.form.sections.overview.descriptionEdit')}
                     icon={
                         <div className="rounded-lg bg-rose-100 p-2 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300">
                             <Boxes className="h-4 w-4" />
@@ -310,14 +315,20 @@ export default function CargoTypesEdit({ cargoType, categories }: CargoTypesEdit
                     }
                     contentClassName="gap-6 md:grid-cols-2"
                 >
-                    <FormField id="name" label="Cargo Name" required helperText="Maximum 255 characters." error={getFieldError('name')}>
+                    <FormField
+                        id="name"
+                        label={t('cargoTypes.form.fields.name.label')}
+                        required
+                        helperText={t('cargoTypes.form.fields.name.helper')}
+                        error={getFieldError('name')}
+                    >
                         <Input
                             id="name"
                             name="name"
                             value={data.name}
                             onChange={(event) => handleFieldChange('name', event.target.value)}
                             maxLength={255}
-                            placeholder="e.g. Bagged Cement"
+                            placeholder={t('cargoTypes.form.fields.name.placeholder')}
                             className={`border-slate-300 focus:border-rose-500 focus:ring-rose-500/20 dark:border-slate-700 dark:focus:border-rose-400 ${
                                 getFieldError('name') ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20 dark:border-red-500' : ''
                             }`}
@@ -326,12 +337,12 @@ export default function CargoTypesEdit({ cargoType, categories }: CargoTypesEdit
 
                     <FormField
                         id="category"
-                        label="Category"
+                        label={t('cargoTypes.form.fields.category.label')}
                         required
                         helperText={
                             hasCategories
-                                ? 'Choose the category that best fits this cargo.'
-                                : 'No categories available. Please add one in the admin panel.'
+                                ? t('cargoTypes.form.fields.category.helper')
+                                : t('cargoTypes.form.fields.category.noCategories')
                         }
                         error={getFieldError('category')}
                     >
@@ -348,7 +359,7 @@ export default function CargoTypesEdit({ cargoType, categories }: CargoTypesEdit
                                         : ''
                                 }`}
                             >
-                                <SelectValue placeholder="Select category" />
+                                <SelectValue placeholder={t('cargoTypes.form.fields.category.placeholder')} />
                             </SelectTrigger>
                             <SelectContent className="max-h-60">
                                 {categoryOptions.map((option) => (
@@ -362,8 +373,8 @@ export default function CargoTypesEdit({ cargoType, categories }: CargoTypesEdit
 
                     <FormField
                         id="requires_special_equipment"
-                        label="Special Equipment"
-                        helperText="Flag cargos that need forklifts, refrigeration, or dedicated containment."
+                        label={t('cargoTypes.form.fields.specialEquipment.label')}
+                        helperText={t('cargoTypes.form.fields.specialEquipment.helper')}
                         error={getFieldError('requires_special_equipment')}
                         className="md:col-span-2"
                     >
@@ -373,9 +384,11 @@ export default function CargoTypesEdit({ cargoType, categories }: CargoTypesEdit
                                     <Package className="h-4 w-4" />
                                 </div>
                                 <div>
-                                    <p className="text-sm font-semibold text-rose-700 dark:text-rose-200">Requires special handling?</p>
+                                    <p className="text-sm font-semibold text-rose-700 dark:text-rose-200">
+                                        {t('cargoTypes.form.specialHandling.title')}
+                                    </p>
                                     <p className="text-xs text-rose-700/80 dark:text-rose-200/80">
-                                        Mark this to alert dispatch teams about extra preparation needs.
+                                        {t('cargoTypes.form.specialHandling.description')}
                                     </p>
                                 </div>
                             </div>
@@ -386,7 +399,9 @@ export default function CargoTypesEdit({ cargoType, categories }: CargoTypesEdit
                                     onCheckedChange={handleCheckboxChange}
                                     className="border-slate-300 text-rose-600 focus-visible:ring-rose-500 dark:border-slate-600"
                                 />
-                                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Requires special equipment</span>
+                                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                                    {t('cargoTypes.form.specialHandling.label')}
+                                </span>
                                 <Badge
                                     variant="secondary"
                                     className={`border-0 ${
@@ -395,7 +410,9 @@ export default function CargoTypesEdit({ cargoType, categories }: CargoTypesEdit
                                             : 'bg-slate-100 text-slate-600 dark:bg-slate-800/60 dark:text-slate-300'
                                     }`}
                                 >
-                                    {data.requires_special_equipment ? 'Flagged' : 'Standard Handling'}
+                                    {data.requires_special_equipment
+                                        ? t('cargoTypes.form.specialHandling.flagged')
+                                        : t('cargoTypes.form.specialHandling.standard')}
                                 </Badge>
                             </div>
                         </div>
@@ -403,8 +420,8 @@ export default function CargoTypesEdit({ cargoType, categories }: CargoTypesEdit
                 </FormSection>
 
                 <FormSection
-                    title="Specifications"
-                    description="Update the quantitative attributes that influence transport planning."
+                    title={t('cargoTypes.form.sections.specifications.title')}
+                    description={t('cargoTypes.form.sections.specifications.descriptionEdit')}
                     icon={
                         <div className="rounded-lg bg-blue-100 p-2 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300">
                             <ClipboardCheck className="h-4 w-4" />
@@ -414,8 +431,8 @@ export default function CargoTypesEdit({ cargoType, categories }: CargoTypesEdit
                 >
                     <FormField
                         id="weight_per_cubic_meter"
-                        label="Weight per m³ (kg)"
-                        helperText="Optional but improves stacking and load balancing recommendations."
+                        label={t('cargoTypes.form.fields.weight.label')}
+                        helperText={t('cargoTypes.form.fields.weight.helper')}
                         error={getFieldError('weight_per_cubic_meter')}
                     >
                         <Input
@@ -426,7 +443,7 @@ export default function CargoTypesEdit({ cargoType, categories }: CargoTypesEdit
                             step="0.01"
                             value={data.weight_per_cubic_meter}
                             onChange={(event) => handleFieldChange('weight_per_cubic_meter', event.target.value)}
-                            placeholder="0.00"
+                            placeholder={t('cargoTypes.form.fields.weight.placeholder')}
                             className={`border-slate-300 focus:border-rose-500 focus:ring-rose-500/20 dark:border-slate-700 dark:focus:border-rose-400 ${
                                 getFieldError('weight_per_cubic_meter')
                                     ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20 dark:border-red-500'
@@ -437,8 +454,8 @@ export default function CargoTypesEdit({ cargoType, categories }: CargoTypesEdit
 
                     <FormField
                         id="density_insight"
-                        label="Density Insight"
-                        helperText="Helps scheduling teams understand cargo stacking constraints."
+                        label={t('cargoTypes.form.fields.density.label')}
+                        helperText={t('cargoTypes.form.fields.density.helper')}
                         className="md:col-span-1"
                     >
                         <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-300">
@@ -451,19 +468,19 @@ export default function CargoTypesEdit({ cargoType, categories }: CargoTypesEdit
                                 </Badge>
                             ) : (
                                 <Badge variant="secondary" className="mb-2 border-0 bg-slate-100 text-slate-600 dark:bg-slate-800/60 dark:text-slate-300">
-                                    Awaiting data
+                                    {t('cargoTypes.form.density.awaiting')}
                                 </Badge>
                             )}
                             <p className="text-xs text-muted-foreground">
-                                Provide weight per cubic meter to unlock automated stacking and payload recommendations.
+                                {t('cargoTypes.form.density.note')}
                             </p>
                         </div>
                     </FormField>
                 </FormSection>
 
                 <FormSection
-                    title="Handling & Safety Guidance"
-                    description="Document operational procedures and compliance instructions for your crews."
+                    title={t('cargoTypes.form.sections.handling.title')}
+                    description={t('cargoTypes.form.sections.handling.descriptionEdit')}
                     icon={
                         <div className="rounded-lg bg-slate-100 p-2 text-slate-600 dark:bg-slate-800/60 dark:text-slate-200">
                             <Shield className="h-4 w-4" />
@@ -473,8 +490,8 @@ export default function CargoTypesEdit({ cargoType, categories }: CargoTypesEdit
                 >
                     <FormField
                         id="handling_requirements"
-                        label="Handling Requirements"
-                        helperText="Optional. Share instructions that improve handling consistency."
+                        label={t('cargoTypes.form.fields.handling.label')}
+                        helperText={t('cargoTypes.form.fields.handling.helper')}
                         error={getFieldError('handling_requirements')}
                     >
                         <Textarea
@@ -490,14 +507,14 @@ export default function CargoTypesEdit({ cargoType, categories }: CargoTypesEdit
                                     ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20 dark:border-red-500'
                                     : ''
                             }`}
-                            placeholder="Include palletisation, stacking, or temperature guidance."
+                            placeholder={t('cargoTypes.form.fields.handling.placeholder')}
                         />
                     </FormField>
 
                     <FormField
                         id="safety_requirements"
-                        label="Safety Guidance"
-                        helperText="Optional. Highlight protective equipment or risk mitigation steps."
+                        label={t('cargoTypes.form.fields.safety.label')}
+                        helperText={t('cargoTypes.form.fields.safety.helper')}
                         error={getFieldError('safety_requirements')}
                     >
                         <Textarea
@@ -513,7 +530,7 @@ export default function CargoTypesEdit({ cargoType, categories }: CargoTypesEdit
                                     ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20 dark:border-red-500'
                                     : ''
                             }`}
-                            placeholder="Document PPE needs, hazard markings, or emergency contacts."
+                            placeholder={t('cargoTypes.form.fields.safety.placeholder')}
                         />
                     </FormField>
                 </FormSection>
@@ -523,11 +540,11 @@ export default function CargoTypesEdit({ cargoType, categories }: CargoTypesEdit
                         <>
                             <span className="flex items-center gap-2 text-sm">
                                 <span className="text-red-500">*</span>
-                                Required fields keep cargo cataloging consistent across the fleet.
+                                {t('cargoTypes.form.required')}
                             </span>
                             <span className="flex items-center gap-2 text-xs text-muted-foreground">
                                 <ClipboardCheck className="h-3 w-3" />
-                                Accurate specs unlock safer loading playbooks.
+                                {t('cargoTypes.form.helperNote')}
                             </span>
                         </>
                     }
@@ -539,14 +556,14 @@ export default function CargoTypesEdit({ cargoType, categories }: CargoTypesEdit
                                 asChild
                                 className="border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
                             >
-                                <Link href={`/cargo-types/${cargoType.id}`}>Cancel</Link>
+                                <Link href={`/cargo-types/${cargoType.id}`}>{t('cargoTypes.actions.cancel')}</Link>
                             </Button>
                             <Button
                                 type="submit"
                                 disabled={processing || hasErrors}
                                 className="min-w-[180px] bg-gradient-to-r from-rose-600 to-rose-700 text-white shadow-lg transition hover:from-rose-700 hover:to-rose-800"
                             >
-                                {processing ? 'Saving…' : 'Save Changes'}
+                                {processing ? t('cargoTypes.form.edit.submitting') : t('cargoTypes.form.edit.submit')}
                             </Button>
                         </>
                     }
@@ -557,4 +574,3 @@ export default function CargoTypesEdit({ cargoType, categories }: CargoTypesEdit
         </FormPageLayout>
     );
 }
-

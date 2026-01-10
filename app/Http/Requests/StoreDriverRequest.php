@@ -22,6 +22,12 @@ class StoreDriverRequest extends FormRequest
         $adultCutoffDate = now()->subYears(18)->toDateString();
 
         return [
+            'user_id' => [
+                'nullable',
+                'integer',
+                'exists:users,id',
+                'unique:drivers,user_id',
+            ],
             'driverid' => 'required|string|max:255|unique:drivers',
             'name' => 'required|string|max:255',
             'sex' => 'required|string|in:male,female',
@@ -59,6 +65,8 @@ class StoreDriverRequest extends FormRequest
             'mobile.regex' => 'Mobile number must be a valid Ethiopian Ethio Telecom or Safaricom number.',
             'hireddate.before_or_equal' => 'Hired date cannot be in the future.',
             'status.in' => 'Status must be either active or inactive.',
+            'user_id.exists' => 'Selected user does not exist.',
+            'user_id.unique' => 'This user is already linked to another driver.',
         ];
     }
 

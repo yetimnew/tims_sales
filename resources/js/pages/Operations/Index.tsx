@@ -21,6 +21,7 @@ import { type BreadcrumbItem } from '@/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import * as React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     CheckCircle,
     Eye,
@@ -35,13 +36,6 @@ import {
     Lock,
     Unlock,
 } from 'lucide-react';
-
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Operations',
-        href: '/operations',
-    },
-];
 
 interface OperationCustomer {
     id: number;
@@ -102,116 +96,7 @@ interface OperationsIndexProps {
 
 const SKELETON_FLAG_KEY = 'operations.index.shouldShowSkeleton';
 
-const COLUMN_DEFINITIONS: Array<{
-    id:
-        | 'operationid'
-        | 'customer'
-        | 'startdate'
-        | 'volume'
-        | 'km'
-        | 'tonnageProgress'
-        | 'closed';
-    label: string;
-    sortKey?: string;
-    align?: 'center' | 'right';
-}> = [
-    { id: 'operationid', label: 'Operation ID', sortKey: 'operationid' },
-    { id: 'customer', label: 'Customer' },
-    { id: 'startdate', label: 'Start Date', sortKey: 'startdate' },
-    { id: 'volume', label: 'Volume (MT)', sortKey: 'volume', align: 'right' },
-    { id: 'km', label: 'Distance (KM)', sortKey: 'km', align: 'right' },
-    { id: 'tonnageProgress', label: 'Uplift Progress' },
-    { id: 'closed', label: 'Closed', sortKey: 'closed', align: 'center' },
-];
-
-const formatNumberValue = (value?: number | null, fractionDigits = 2): string => {
-    if (value === null || value === undefined || Number.isNaN(Number(value))) {
-        return '—';
-    }
-
-    return Number(value).toLocaleString('en-US', {
-        minimumFractionDigits: fractionDigits,
-        maximumFractionDigits: fractionDigits,
-    });
-};
-
 const clampPercentage = (value: number) => Math.max(0, Math.min(value, 100));
-
-const formatDateValue = (value?: string | null): string => {
-    if (!value) {
-        return '—';
-    }
-
-    const parsed = new Date(value);
-    if (Number.isNaN(parsed.getTime())) {
-        return '—';
-    }
-
-    return parsed.toLocaleDateString();
-};
-
-const formatDateForInput = (value?: string | null): string => {
-    if (!value) {
-        return new Date().toISOString().slice(0, 10);
-    }
-
-    const parsed = new Date(value);
-    if (Number.isNaN(parsed.getTime())) {
-        return new Date().toISOString().slice(0, 10);
-    }
-
-    return parsed.toISOString().slice(0, 10);
-};
-
-const formatCount = (value?: number | null): string => {
-    if (typeof value !== 'number' || Number.isNaN(value)) {
-        return '0';
-    }
-
-    return value.toLocaleString();
-};
-
-const renderTonnageProgress = (operation: OperationData): React.ReactNode => {
-    const planned = operation.volume ?? null;
-    const delivered = operation.deliveredVolume ?? null;
-    const remaining = operation.remainingVolume ?? null;
-    const completion = operation.volumeCompletion ?? null;
-    const progressWidth = completion !== null ? `${clampPercentage(completion)}%` : '0%';
-
-    if ((planned === null || planned === 0) && (delivered === null || delivered === 0)) {
-        return <span className="text-muted-foreground">—</span>;
-    }
-
-    return (
-        <div className="min-w-[200px] space-y-2">
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>Delivered</span>
-                <span className="font-medium text-foreground">
-                    {delivered !== null ? `${formatNumberValue(delivered)} MT` : 'N/A'}
-                </span>
-            </div>
-            <div className="relative h-2 w-full overflow-hidden rounded-full bg-muted">
-                <div className="h-2 rounded-full bg-primary transition-all" style={{ width: progressWidth }} />
-            </div>
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>{completion !== null ? `${completion.toFixed(1)}%` : 'No plan set'}</span>
-                {planned !== null && remaining !== null ? (
-                    <span>Remaining {formatNumberValue(Math.max(remaining, 0))} MT</span>
-                ) : (
-                    <span className="invisible">placeholder</span>
-                )}
-            </div>
-        </div>
-    );
-};
-
-const getClosedBadge = (closed?: boolean | null): React.ReactNode => {
-    if (closed) {
-        return <Badge className="bg-slate-500 text-white hover:bg-slate-600">Closed</Badge>;
-    }
-
-    return <Badge className="bg-blue-500 text-white hover:bg-blue-600">Open</Badge>;
-};
 
 export default function OperationsIndex({
     operations,
@@ -222,6 +107,16 @@ export default function OperationsIndex({
     perPageOptions,
     totalCount,
 }: OperationsIndexProps) {
+    const { t, i18n } = useTranslation();
+    const breadcrumbs = React.useMemo<BreadcrumbItem[]>(
+        () => [
+            {
+                title: t('operations.breadcrumb'),
+                href: '/operations',
+            },
+        ],
+        [t],
+    );
     const { hasPermission } = usePermissions();
     const canCreateOperation = hasPermission('operations.create');
     const canViewOperation = hasPermission('operations.show');
@@ -229,6 +124,131 @@ export default function OperationsIndex({
     const canDeleteOperation = hasPermission('operations.destroy');
     const canCloseOperation = hasPermission('operations.close');
     const canReopenOperation = hasPermission('operations.reopen');
+    const notAvailableLabel = t('operations.fallbacks.notAvailable');
+
+    const columnDefinitions = React.useMemo(
+        () => [
+            { id: 'operationid', label: t('operations.columns.operationId'), sortKey: 'operationid' },
+            { id: 'customer', label: t('operations.columns.customer') },
+            { id: 'startdate', label: t('operations.columns.startDate'), sortKey: 'startdate' },
+            { id: 'volume', label: t('operations.columns.volume'), sortKey: 'volume', align: 'right' as const },
+            { id: 'km', label: t('operations.columns.distance'), sortKey: 'km', align: 'right' as const },
+            { id: 'tonnageProgress', label: t('operations.columns.upliftProgress') },
+            { id: 'closed', label: t('operations.columns.closed'), sortKey: 'closed', align: 'center' as const },
+        ],
+        [t],
+    );
+
+    const formatNumberValue = React.useCallback(
+        (value?: number | null, fractionDigits = 2): string => {
+            if (value === null || value === undefined || Number.isNaN(Number(value))) {
+                return notAvailableLabel;
+            }
+
+            return Number(value).toLocaleString(i18n.language, {
+                minimumFractionDigits: fractionDigits,
+                maximumFractionDigits: fractionDigits,
+            });
+        },
+        [i18n.language, notAvailableLabel],
+    );
+
+    const formatDateValue = React.useCallback(
+        (value?: string | null): string => {
+            if (!value) {
+                return notAvailableLabel;
+            }
+
+            const parsed = new Date(value);
+            if (Number.isNaN(parsed.getTime())) {
+                return notAvailableLabel;
+            }
+
+            return parsed.toLocaleDateString(i18n.language);
+        },
+        [i18n.language, notAvailableLabel],
+    );
+
+    const formatDateForInput = React.useCallback((value?: string | null): string => {
+        if (!value) {
+            return new Date().toISOString().slice(0, 10);
+        }
+
+        const parsed = new Date(value);
+        if (Number.isNaN(parsed.getTime())) {
+            return new Date().toISOString().slice(0, 10);
+        }
+
+        return parsed.toISOString().slice(0, 10);
+    }, []);
+
+    const formatCount = React.useCallback(
+        (value?: number | null): string => {
+            if (typeof value !== 'number' || Number.isNaN(value)) {
+                return '0';
+            }
+
+            return value.toLocaleString(i18n.language);
+        },
+        [i18n.language],
+    );
+
+    const renderTonnageProgress = React.useCallback(
+        (operation: OperationData): React.ReactNode => {
+            const planned = operation.volume ?? null;
+            const delivered = operation.deliveredVolume ?? null;
+            const remaining = operation.remainingVolume ?? null;
+            const completion = operation.volumeCompletion ?? null;
+            const progressWidth = completion !== null ? `${clampPercentage(completion)}%` : '0%';
+
+            if ((planned === null || planned === 0) && (delivered === null || delivered === 0)) {
+                return <span className="text-muted-foreground">{notAvailableLabel}</span>;
+            }
+
+            return (
+                <div className="min-w-[200px] space-y-2">
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span>{t('operations.progress.delivered')}</span>
+                        <span className="font-medium text-foreground">
+                            {delivered !== null
+                                ? t('operations.progress.deliveredValue', { value: formatNumberValue(delivered) })
+                                : t('operations.progress.notAvailable')}
+                        </span>
+                    </div>
+                    <div className="relative h-2 w-full overflow-hidden rounded-full bg-muted">
+                        <div className="h-2 rounded-full bg-primary transition-all" style={{ width: progressWidth }} />
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span>
+                            {completion !== null
+                                ? t('operations.progress.completionValue', { value: completion.toFixed(1) })
+                                : t('operations.progress.noPlan')}
+                        </span>
+                        {planned !== null && remaining !== null ? (
+                            <span>
+                                {t('operations.progress.remainingValue', {
+                                    value: formatNumberValue(Math.max(remaining, 0)),
+                                })}
+                            </span>
+                        ) : (
+                            <span className="invisible">{t('operations.progress.placeholder')}</span>
+                        )}
+                    </div>
+                </div>
+            );
+        },
+        [formatNumberValue, notAvailableLabel, t],
+    );
+
+    const getClosedBadge = React.useCallback(
+        (closed?: boolean | null): React.ReactNode =>
+            closed ? (
+                <Badge className="bg-slate-500 text-white hover:bg-slate-600">{t('operations.status.closed')}</Badge>
+            ) : (
+                <Badge className="bg-blue-500 text-white hover:bg-blue-600">{t('operations.status.open')}</Badge>
+            ),
+        [t],
+    );
 
     const [searchTerm, setSearchTerm] = React.useState(filters?.search ?? '');
     const [selectedStatus, setSelectedStatus] = React.useState(filters?.status ?? 'all');
@@ -404,14 +424,14 @@ export default function OperationsIndex({
                 setSelectedOperation(null);
                 setIsDeleting(false);
                 toast({
-                    title: '✅ Operation Deleted',
-                    description: 'The operation was removed successfully.',
+                    title: t('operations.delete.successTitle'),
+                    description: t('operations.delete.successDescription'),
                 });
             },
             onError: (errors) => {
                 setIsDeleting(false);
 
-                const fallback = 'Failed to delete operation. Please try again.';
+                const fallback = t('operations.delete.failedDescription');
                 if (errors && typeof errors === 'object') {
                     const errorMessages = Object.values(errors)
                         .flatMap((value) => (Array.isArray(value) ? value : [value]))
@@ -419,13 +439,13 @@ export default function OperationsIndex({
                         .join('\n');
 
                     toast({
-                        title: '❌ Delete Failed',
+                        title: t('operations.delete.failedTitle'),
                         description: errorMessages || fallback,
                         variant: 'destructive',
                     });
                 } else {
                     toast({
-                        title: '❌ Delete Failed',
+                        title: t('operations.delete.failedTitle'),
                         description: fallback,
                         variant: 'destructive',
                     });
@@ -465,13 +485,13 @@ export default function OperationsIndex({
             preserveScroll: true,
             onSuccess: () => {
                 toast({
-                    title: '✅ Operation Closed',
-                    description: `${operationToClose.operationid} marked as closed.`,
+                    title: t('operations.close.successTitle'),
+                    description: t('operations.close.successDescription', { id: operationToClose.operationid }),
                 });
                 handleCloseDialogChange(false);
             },
             onError: (errors) => {
-                const fallback = 'Failed to close operation. Please review the form and try again.';
+                const fallback = t('operations.close.failedDescription');
 
                 if (errors && typeof errors === 'object') {
                     const errorMessages = Object.values(errors)
@@ -480,13 +500,13 @@ export default function OperationsIndex({
                         .join('\n');
 
                     toast({
-                        title: '❌ Close Failed',
+                        title: t('operations.close.failedTitle'),
                         description: errorMessages || fallback,
                         variant: 'destructive',
                     });
                 } else {
                     toast({
-                        title: '❌ Close Failed',
+                        title: t('operations.close.failedTitle'),
                         description: fallback,
                         variant: 'destructive',
                     });
@@ -525,13 +545,13 @@ export default function OperationsIndex({
             preserveScroll: true,
             onSuccess: () => {
                 toast({
-                    title: '✅ Operation Reopened',
-                    description: `${operationToReopen.operationid} is active again.`,
+                    title: t('operations.reopen.successTitle'),
+                    description: t('operations.reopen.successDescription', { id: operationToReopen.operationid }),
                 });
                 handleReopenDialogChange(false);
             },
             onError: (errors) => {
-                const fallback = 'Failed to reopen operation. Please try again.';
+                const fallback = t('operations.reopen.failedDescription');
 
                 if (errors && typeof errors === 'object') {
                     const errorMessages = Object.values(errors)
@@ -540,13 +560,13 @@ export default function OperationsIndex({
                         .join('\n');
 
                     toast({
-                        title: '❌ Reopen Failed',
+                        title: t('operations.reopen.failedTitle'),
                         description: errorMessages || fallback,
                         variant: 'destructive',
                     });
                 } else {
                     toast({
-                        title: '❌ Reopen Failed',
+                        title: t('operations.reopen.failedTitle'),
                         description: fallback,
                         variant: 'destructive',
                     });
@@ -558,7 +578,7 @@ export default function OperationsIndex({
     const statsDefinitions = [
         {
             id: 'total-operations',
-            label: 'Total Operations',
+            label: t('operations.stats.total.label'),
             icon: <Square className="h-3.5 w-3.5 text-slate-500" />,
             className: 'min-w-0',
             value: isTableLoading ? (
@@ -569,13 +589,13 @@ export default function OperationsIndex({
             description: isTableLoading ? (
                 <Skeleton className="h-3 w-32" aria-hidden="true" />
             ) : (
-                `${formatCount(metrics?.open)} currently open`
+                t('operations.stats.total.description', { count: formatCount(metrics?.open) })
             ),
             valueClassName: isTableLoading ? undefined : 'text-slate-600',
         },
         {
             id: 'active-operations',
-            label: 'Active',
+            label: t('operations.stats.active.label'),
             icon: <CheckCircle className="h-3.5 w-3.5 text-emerald-600" />,
             className: 'min-w-0',
             value: isTableLoading ? (
@@ -586,13 +606,13 @@ export default function OperationsIndex({
             description: isTableLoading ? (
                 <Skeleton className="h-3 w-28" aria-hidden="true" />
             ) : (
-                'Operations in motion'
+                t('operations.stats.active.description')
             ),
             valueClassName: isTableLoading ? undefined : 'text-emerald-600',
         },
         {
             id: 'inactive-operations',
-            label: 'Inactive',
+            label: t('operations.stats.inactive.label'),
             icon: <XCircle className="h-3.5 w-3.5 text-rose-500" />,
             className: 'min-w-0',
             value: isTableLoading ? (
@@ -603,13 +623,13 @@ export default function OperationsIndex({
             description: isTableLoading ? (
                 <Skeleton className="h-3 w-28" aria-hidden="true" />
             ) : (
-                'Temporarily paused'
+                t('operations.stats.inactive.description')
             ),
             valueClassName: isTableLoading ? undefined : 'text-rose-500',
         },
         {
             id: 'closed-operations',
-            label: 'Closed',
+            label: t('operations.stats.closed.label'),
             icon: <Gauge className="h-3.5 w-3.5 text-purple-600" />,
             className: 'min-w-0',
             value: isTableLoading ? (
@@ -620,7 +640,7 @@ export default function OperationsIndex({
             description: isTableLoading ? (
                 <Skeleton className="h-3 w-32" aria-hidden="true" />
             ) : (
-                'Completed and archived'
+                t('operations.stats.closed.description')
             ),
             valueClassName: isTableLoading ? undefined : 'text-purple-600',
         },
@@ -632,24 +652,24 @@ export default function OperationsIndex({
         () =>
             availablePerPageOptions.map((option) => ({
                 value: String(option),
-                label: `${option} / page`,
+                label: t('operations.filters.perPageOption', { value: option }),
             })),
-        [availablePerPageOptions],
+        [availablePerPageOptions, t],
     );
 
     const tableColumns = React.useMemo(
         () => [
-            { id: 'index', label: '#', align: 'center' as const },
-            ...COLUMN_DEFINITIONS.map((column) => ({
+            { id: 'index', label: t('operations.table.index'), align: 'center' as const },
+            ...columnDefinitions.map((column) => ({
                 id: column.id,
                 label: column.label,
                 sortable: Boolean(column.sortKey),
                 sortKey: column.sortKey,
                 align: column.align,
             })),
-            { id: 'actions', label: 'Actions', align: 'center' as const },
+            { id: 'actions', label: t('operations.table.actions'), align: 'center' as const },
         ],
-        [],
+        [columnDefinitions, t],
     );
 
     const tableRows = isTableLoading
@@ -689,7 +709,7 @@ export default function OperationsIndex({
                   <TableRow key={operation.id} className="hover:bg-muted/50">
                       <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
                       <TableCell className="font-medium">{operation.operationid}</TableCell>
-                      <TableCell className="text-muted-foreground">{operation.customer?.name || '—'}</TableCell>
+                      <TableCell className="text-muted-foreground">{operation.customer?.name || notAvailableLabel}</TableCell>
                       <TableCell className="text-muted-foreground">{formatDateValue(operation.startdate)}</TableCell>
                       <TableCell className="text-right font-medium">{formatNumberValue(operation.volume)}</TableCell>
                       <TableCell className="text-right text-muted-foreground">{formatNumberValue(operation.km)}</TableCell>
@@ -699,27 +719,27 @@ export default function OperationsIndex({
                           <ListingRowActionsMenu
                               actions={[
                                   canViewOperation && {
-                                      label: 'View',
+                                      label: t('operations.actions.view'),
                                       icon: <Eye className="h-4 w-4" />,
                                       href: `/operations/${operation.id}`,
                                   },
                                   canEditOperation && {
-                                      label: 'Edit',
+                                      label: t('operations.actions.edit'),
                                       icon: <SquarePen className="h-4 w-4" />,
                                       href: `/operations/${operation.id}/edit`,
                                   },
                                   canCloseOperation && !operation.closed && {
-                                      label: 'Close',
+                                      label: t('operations.actions.close'),
                                       icon: <Lock className="h-4 w-4" />,
                                       onSelect: () => handleCloseOperationClick(operation),
                                   },
                                   canReopenOperation && operation.closed && {
-                                      label: 'Reopen',
+                                      label: t('operations.actions.reopen'),
                                       icon: <Unlock className="h-4 w-4" />,
                                       onSelect: () => handleReopenOperationClick(operation),
                                   },
                                   canDeleteOperation && {
-                                      label: 'Delete',
+                                      label: t('operations.actions.delete'),
                                       icon: <Trash2 className="h-4 w-4" />,
                                       danger: true,
                                       disabled: isDeleting && selectedOperation?.id === operation.id,
@@ -733,10 +753,10 @@ export default function OperationsIndex({
             : (
                 <TableRow>
                     <TableCell colSpan={tableColumns.length} className="py-8 text-center text-muted-foreground">
-                        No operations found.
+                        {t('operations.empty.title')}
                         {canCreateOperation && (
                             <Link href="/operations/create" className="ml-1 text-primary underline">
-                                Create one
+                                {t('operations.empty.createAction')}
                             </Link>
                         )}
                     </TableCell>
@@ -794,30 +814,38 @@ export default function OperationsIndex({
             getKey={(item) => item.record.id}
             renderTitle={(item) => (
                 <div className="flex items-center gap-2">
-                    <span className="text-xs uppercase tracking-wide text-muted-foreground">#{item.position}</span>
+                    <span className="text-xs uppercase tracking-wide text-muted-foreground">
+                        {t('operations.mobile.position', { value: item.position })}
+                    </span>
                     <span className="text-base">{item.record.operationid}</span>
                     <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
                 </div>
             )}
-            renderSubtitle={(item) => item.record.customer?.name || 'Unassigned customer'}
+            renderSubtitle={(item) => item.record.customer?.name || t('operations.fallbacks.unassignedCustomer')}
             renderContent={(item) => (
                 <div className="space-y-3 text-sm text-muted-foreground">
                     <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Start Date</span>
+                        <span className="font-medium text-slate-600 dark:text-slate-300">
+                            {t('operations.mobile.startDate')}
+                        </span>
                         <span className="text-right text-slate-900 dark:text-slate-100">
                             {formatDateValue(item.record.startdate)}
                         </span>
                     </div>
                     <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Volume</span>
+                        <span className="font-medium text-slate-600 dark:text-slate-300">
+                            {t('operations.mobile.volume')}
+                        </span>
                         <span className="text-right text-slate-900 dark:text-slate-100">
-                            {formatNumberValue(item.record.volume)} MT
+                            {t('operations.mobile.volumeValue', { value: formatNumberValue(item.record.volume) })}
                         </span>
                     </div>
                     <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Distance</span>
+                        <span className="font-medium text-slate-600 dark:text-slate-300">
+                            {t('operations.mobile.distance')}
+                        </span>
                         <span className="text-right text-slate-900 dark:text-slate-100">
-                            {formatNumberValue(item.record.km, 0)} KM
+                            {t('operations.mobile.distanceValue', { value: formatNumberValue(item.record.km, 0) })}
                         </span>
                     </div>
                     <div>{renderTonnageProgress(item.record)}</div>
@@ -829,7 +857,7 @@ export default function OperationsIndex({
                         <Button asChild size="sm" variant="outline" className="flex-1 sm:flex-auto">
                             <Link href={`/operations/${item.record.id}`}>
                                 <Eye className="mr-2 h-4 w-4" />
-                                View
+                                {t('operations.actions.view')}
                             </Link>
                         </Button>
                     )}
@@ -837,7 +865,7 @@ export default function OperationsIndex({
                         <Button asChild size="sm" variant="secondary" className="flex-1 sm:flex-none">
                             <Link href={`/operations/${item.record.id}/edit`}>
                                 <SquarePen className="mr-2 h-4 w-4" />
-                                Edit
+                                {t('operations.actions.edit')}
                             </Link>
                         </Button>
                     )}
@@ -849,7 +877,7 @@ export default function OperationsIndex({
                             onClick={() => handleCloseOperationClick(item.record)}
                         >
                             <Lock className="mr-2 h-4 w-4" />
-                            Close
+                            {t('operations.actions.close')}
                         </Button>
                     )}
                     {canReopenOperation && item.record.closed && (
@@ -860,7 +888,7 @@ export default function OperationsIndex({
                             onClick={() => handleReopenOperationClick(item.record)}
                         >
                             <Unlock className="mr-2 h-4 w-4" />
-                            Reopen
+                            {t('operations.actions.reopen')}
                         </Button>
                     )}
                     {canDeleteOperation && (
@@ -872,17 +900,17 @@ export default function OperationsIndex({
                             disabled={isDeleting && selectedOperation?.id === item.record.id}
                         >
                             <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
+                            {t('operations.actions.delete')}
                         </Button>
                     )}
                 </div>
             )}
             emptyState={(
                 <div className="py-8 text-center text-muted-foreground">
-                    No operations found.
+                    {t('operations.empty.title')}
                     {canCreateOperation && (
                         <Link href="/operations/create" className="ml-1 text-primary underline">
-                            Create one
+                            {t('operations.empty.createAction')}
                         </Link>
                     )}
                 </div>
@@ -903,23 +931,23 @@ export default function OperationsIndex({
         <ListingFilterBar
             search={{
                 value: searchTerm,
-                placeholder: 'Search operations...',
+                placeholder: t('operations.filters.searchPlaceholder'),
                 onChange: handleSearchChange,
                 icon: <Search className="h-4 w-4" />,
             }}
             perPage={{
                 value: perPage,
-                label: 'Rows',
+                label: t('operations.filters.rowsLabel'),
                 onChange: handlePerPageChange,
                 options: perPageSelectOptions,
             }}
         >
             <Select value={selectedStatus} onValueChange={handleStatusChange}>
                 <SelectTrigger className="w-full min-w-[180px] sm:w-auto">
-                    <SelectValue placeholder="Status" />
+                    <SelectValue placeholder={t('operations.filters.statusPlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="all">All statuses</SelectItem>
+                    <SelectItem value="all">{t('operations.filters.allStatuses')}</SelectItem>
                     {statusOptions.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                             {option.label}
@@ -929,10 +957,10 @@ export default function OperationsIndex({
             </Select>
             <Select value={selectedCustomer} onValueChange={handleCustomerChange}>
                 <SelectTrigger className="w-full min-w-[220px] sm:w-auto">
-                    <SelectValue placeholder="Customer" />
+                    <SelectValue placeholder={t('operations.filters.customerPlaceholder')} />
                 </SelectTrigger>
                 <SelectContent className="max-h-72">
-                    <SelectItem value="all">All customers</SelectItem>
+                    <SelectItem value="all">{t('operations.filters.allCustomers')}</SelectItem>
                     {customerOptions.map((customer) => (
                         <SelectItem key={customer.id} value={String(customer.id)}>
                             {customer.name}
@@ -949,7 +977,7 @@ export default function OperationsIndex({
                 <Button asChild>
                     <Link href="/operations/create">
                         <Plus className="mr-2 h-4 w-4" />
-                        Add Operation
+                        {t('operations.actions.add')}
                     </Link>
                 </Button>
             )}
@@ -959,14 +987,14 @@ export default function OperationsIndex({
     return (
         <>
             <ListPageLayout
-                headTitle="Operations"
-                title="Operations"
-                description={`Manage your operations (${formatCount(totalRecords)})`}
+                headTitle={t('operations.title')}
+                title={t('operations.title')}
+                description={t('operations.description', { count: formatCount(totalRecords) })}
                 breadcrumbs={breadcrumbs}
                 actions={headerActions}
                 stats={statsSection}
-                tableTitle="Operations Directory"
-                tableDescription="Complete list of all operations"
+                tableTitle={t('operations.table.title')}
+                tableDescription={t('operations.table.description')}
                 tableHeaderExtras={tableHeaderExtras}
                 pagination={
                     !isTableLoading && operations?.links ? (
@@ -990,17 +1018,17 @@ export default function OperationsIndex({
             <Dialog open={closeDialogOpen} onOpenChange={handleCloseDialogChange}>
                 <DialogContent className="sm:max-w-lg">
                     <DialogHeader>
-                        <DialogTitle>Close Operation</DialogTitle>
+                        <DialogTitle>{t('operations.close.title')}</DialogTitle>
                         <DialogDescription>
-                            Provide the closure details for
-                            {' '}
-                            {operationToClose ? operationToClose.operationid : 'this operation'}.
+                            {t('operations.close.description', {
+                                id: operationToClose ? operationToClose.operationid : t('operations.close.fallbackId'),
+                            })}
                         </DialogDescription>
                     </DialogHeader>
 
                     <form onSubmit={handleCloseSubmit} className="space-y-4">
                         <div className="space-y-2">
-                            <Label htmlFor="closed_date">Closed Date</Label>
+                            <Label htmlFor="closed_date">{t('operations.close.fields.closedDate')}</Label>
                             <Input
                                 id="closed_date"
                                 type="date"
@@ -1015,12 +1043,12 @@ export default function OperationsIndex({
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="closure-comment">Comment</Label>
+                            <Label htmlFor="closure-comment">{t('operations.close.fields.comment')}</Label>
                             <Textarea
                                 id="closure-comment"
                                 value={closeForm.data.comment}
                                 onChange={(event) => closeForm.setData('comment', event.target.value)}
-                                placeholder="Summarise why this operation is closing"
+                                placeholder={t('operations.close.fields.commentPlaceholder')}
                                 rows={4}
                                 required
                             />
@@ -1036,10 +1064,10 @@ export default function OperationsIndex({
                                 onClick={() => handleCloseDialogChange(false)}
                                 disabled={closeForm.processing}
                             >
-                                Cancel
+                                {t('operations.actions.cancel')}
                             </Button>
                             <Button type="submit" disabled={closeForm.processing}>
-                                {closeForm.processing ? 'Closing...' : 'Close Operation'}
+                                {closeForm.processing ? t('operations.close.submitting') : t('operations.close.submit')}
                             </Button>
                         </DialogFooter>
                     </form>
@@ -1049,22 +1077,22 @@ export default function OperationsIndex({
             <Dialog open={reopenDialogOpen} onOpenChange={handleReopenDialogChange}>
                 <DialogContent className="sm:max-w-lg">
                     <DialogHeader>
-                        <DialogTitle>Reopen Operation</DialogTitle>
+                        <DialogTitle>{t('operations.reopen.title')}</DialogTitle>
                         <DialogDescription>
-                            Confirm that you want to reopen
-                            {' '}
-                            {operationToReopen ? operationToReopen.operationid : 'this operation'}.
+                            {t('operations.reopen.description', {
+                                id: operationToReopen ? operationToReopen.operationid : t('operations.reopen.fallbackId'),
+                            })}
                         </DialogDescription>
                     </DialogHeader>
 
                     <form onSubmit={handleReopenSubmit} className="space-y-4">
                         <div className="space-y-2">
-                            <Label htmlFor="reopen-comment">Comment (optional)</Label>
+                            <Label htmlFor="reopen-comment">{t('operations.reopen.fields.comment')}</Label>
                             <Textarea
                                 id="reopen-comment"
                                 value={reopenForm.data.comment}
                                 onChange={(event) => reopenForm.setData('comment', event.target.value)}
-                                placeholder="Share context for reopening"
+                                placeholder={t('operations.reopen.fields.commentPlaceholder')}
                                 rows={3}
                             />
                             {reopenForm.errors.comment && (
@@ -1079,10 +1107,10 @@ export default function OperationsIndex({
                                 onClick={() => handleReopenDialogChange(false)}
                                 disabled={reopenForm.processing}
                             >
-                                Cancel
+                                {t('operations.actions.cancel')}
                             </Button>
                             <Button type="submit" disabled={reopenForm.processing}>
-                                {reopenForm.processing ? 'Reopening...' : 'Reopen Operation'}
+                                {reopenForm.processing ? t('operations.reopen.submitting') : t('operations.reopen.submit')}
                             </Button>
                         </DialogFooter>
                     </form>
@@ -1098,8 +1126,8 @@ export default function OperationsIndex({
                         setIsDeleting(false);
                     }
                 }}
-                title="Delete Operation"
-                description="Are you sure you want to delete this operation? This action cannot be undone."
+                title={t('operations.delete.title')}
+                description={t('operations.delete.description')}
                 itemName={selectedOperation ? selectedOperation.operationid : undefined}
                 onConfirm={handleDeleteConfirm}
                 isLoading={isDeleting}
@@ -1107,4 +1135,3 @@ export default function OperationsIndex({
         </>
     );
 }
-

@@ -13,6 +13,7 @@ import { useListingLoading } from '@/hooks/use-listing-loading';
 import { toast } from '@/hooks/use-toast';
 import { Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
+import { useTranslation } from 'react-i18next';
 import {
     Plus,
     Eye,
@@ -27,13 +28,6 @@ import {
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import * as React from 'react';
-
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Vehicle Types',
-        href: '/vehicletypes',
-    },
-];
 
 interface VehicleType {
     id: number;
@@ -77,13 +71,7 @@ interface VehicleTypesIndexProps {
 
 const SKELETON_FLAG_KEY = 'vehicle-types.index.shouldShowSkeleton';
 
-const COLUMN_DEFINITIONS: Array<{ id: keyof VehicleType | 'description'; label: string; sortKey?: string }> = [
-    { id: 'name', label: 'Vehicle Type', sortKey: 'name' },
-    { id: 'description', label: 'Description' },
-    { id: 'trucks_count', label: 'Total Trucks', sortKey: 'trucks_count' },
-    { id: 'active_trucks_count', label: 'Active Trucks', sortKey: 'active_trucks_count' },
-    { id: 'created_at', label: 'Created', sortKey: 'created_at' },
-];
+type ColumnDefinition = { id: keyof VehicleType | 'description'; label: string; sortKey?: string };
 
 type NavigateOverrides = {
     search?: string;
@@ -101,20 +89,21 @@ const formatNumber = (value: number | null | undefined): string => {
     return value.toLocaleString();
 };
 
-const formatDate = (value?: string | null): string => {
+const formatDate = (value?: string | null, fallback = '—'): string => {
     if (!value) {
-        return '—';
+        return fallback;
     }
 
     const parsed = new Date(value);
     if (Number.isNaN(parsed.getTime())) {
-        return '—';
+        return fallback;
     }
 
     return parsed.toLocaleDateString();
 };
 
 export default function VehicleTypesIndex({ vehicleTypes, metrics, filters, perPageOptions }: VehicleTypesIndexProps) {
+    const { t } = useTranslation();
     const { hasPermission } = usePermissions();
     const canEditVehicleType = hasPermission('vehicletypes.edit');
     const canDeleteVehicleType = hasPermission('vehicletypes.destroy');
@@ -142,6 +131,27 @@ export default function VehicleTypesIndex({ vehicleTypes, metrics, filters, perP
     const [isDeleting, setIsDeleting] = React.useState(false);
     const [deleteError, setDeleteError] = React.useState<string | null>(null);
 
+    const breadcrumbs = React.useMemo<BreadcrumbItem[]>(
+        () => [
+            {
+                title: t('vehicleTypes.breadcrumb'),
+                href: '/vehicletypes',
+            },
+        ],
+        [t],
+    );
+
+    const columnDefinitions = React.useMemo<ColumnDefinition[]>(
+        () => [
+            { id: 'name', label: t('vehicleTypes.columns.name'), sortKey: 'name' },
+            { id: 'description', label: t('vehicleTypes.columns.description') },
+            { id: 'trucks_count', label: t('vehicleTypes.columns.totalTrucks'), sortKey: 'trucks_count' },
+            { id: 'active_trucks_count', label: t('vehicleTypes.columns.activeTrucks'), sortKey: 'active_trucks_count' },
+            { id: 'created_at', label: t('vehicleTypes.columns.created'), sortKey: 'created_at' },
+        ],
+        [t],
+    );
+
     const isDataReady = Array.isArray(vehicleTypes?.data);
     const { isLoading: isTableLoading } = useListingLoading({
         storageKey: SKELETON_FLAG_KEY,
@@ -165,6 +175,7 @@ export default function VehicleTypesIndex({ vehicleTypes, metrics, filters, perP
     const perPageCountRaw = vehicleTypes?.per_page ?? Number(perPage);
     const perPageCount = Number.isFinite(perPageCountRaw) && perPageCountRaw > 0 ? Number(perPageCountRaw) : vehicleTypeData.length || 1;
     const rowOffset = (currentPage - 1) * perPageCount;
+    const notAvailableLabel = t('vehicleTypes.fallbacks.notAvailable');
 
     const handleNavigate = React.useCallback(
         (overrides: NavigateOverrides = {}) => {
@@ -249,14 +260,14 @@ export default function VehicleTypesIndex({ vehicleTypes, metrics, filters, perP
                 setIsDeleting(false);
                 setDeleteError(null);
                 toast({
-                    title: 'Vehicle type removed',
-                    description: 'The vehicle type was deleted successfully.',
+                    title: t('vehicleTypes.delete.successTitle'),
+                    description: t('vehicleTypes.delete.successDescription', { name: selectedVehicleType?.name ?? '' }),
                 });
             },
             onError: (errors) => {
                 setIsDeleting(false);
 
-                const fallback = 'Failed to delete vehicle type. Please review the requirements and try again.';
+                const fallback = t('vehicleTypes.delete.failedDescription');
                 if (errors && typeof errors === 'object') {
                     const messages = Object.values(errors)
                         .flatMap((value) => (Array.isArray(value) ? value : [value]))
@@ -266,7 +277,7 @@ export default function VehicleTypesIndex({ vehicleTypes, metrics, filters, perP
                     setDeleteError(messages || fallback);
 
                     toast({
-                        title: '❌ Delete Failed',
+                        title: t('vehicleTypes.delete.failedTitle'),
                         description: messages || fallback,
                         variant: 'destructive',
                     });
@@ -274,7 +285,7 @@ export default function VehicleTypesIndex({ vehicleTypes, metrics, filters, perP
                     setDeleteError(fallback);
 
                     toast({
-                        title: '❌ Delete Failed',
+                        title: t('vehicleTypes.delete.failedTitle'),
                         description: fallback,
                         variant: 'destructive',
                     });
@@ -289,7 +300,7 @@ export default function VehicleTypesIndex({ vehicleTypes, metrics, filters, perP
                 <Button asChild>
                     <Link href="/vehicletypes/create">
                         <Plus className="mr-2 h-4 w-4" />
-                        Add Vehicle Type
+                        {t('vehicleTypes.actions.add')}
                     </Link>
                 </Button>
             )}
@@ -305,53 +316,53 @@ export default function VehicleTypesIndex({ vehicleTypes, metrics, filters, perP
     const statsDefinitions = [
         {
             id: 'vehicle-types',
-            label: 'Vehicle Types',
+            label: t('vehicleTypes.stats.total.label'),
             icon: <Settings className="h-3.5 w-3.5 text-blue-600" />,
             className: 'min-w-[220px] flex-shrink-0',
             value: isTableLoading ? <Skeleton className="h-3.5 w-20" aria-hidden="true" /> : formatNumber(totalVehicleTypesCount),
             description: isTableLoading ? (
                 <Skeleton className="h-3 w-28" aria-hidden="true" />
             ) : (
-                `${formatNumber(typesWithTrucks)} types with trucks`
+                t('vehicleTypes.stats.total.description', { count: typesWithTrucks })
             ),
             valueClassName: isTableLoading ? undefined : 'text-blue-600',
         },
         {
             id: 'total-trucks',
-            label: 'Total Trucks',
+            label: t('vehicleTypes.stats.totalTrucks.label'),
             icon: <Truck className="h-3.5 w-3.5 text-emerald-600" />,
             className: 'min-w-[220px] flex-shrink-0',
             value: isTableLoading ? <Skeleton className="h-3.5 w-20" aria-hidden="true" /> : formatNumber(totalTrucks),
             description: isTableLoading ? (
                 <Skeleton className="h-3 w-24" aria-hidden="true" />
             ) : (
-                'Across filtered types'
+                t('vehicleTypes.stats.totalTrucks.description')
             ),
             valueClassName: isTableLoading ? undefined : 'text-emerald-600',
         },
         {
             id: 'active-trucks',
-            label: 'Active Trucks',
+            label: t('vehicleTypes.stats.activeTrucks.label'),
             icon: <CheckCircle className="h-3.5 w-3.5 text-purple-600" />,
             className: 'min-w-[220px] flex-shrink-0',
             value: isTableLoading ? <Skeleton className="h-3.5 w-20" aria-hidden="true" /> : formatNumber(activeTrucks),
             description: isTableLoading ? (
                 <Skeleton className="h-3 w-24" aria-hidden="true" />
             ) : (
-                'Currently active'
+                t('vehicleTypes.stats.activeTrucks.description')
             ),
             valueClassName: isTableLoading ? undefined : 'text-purple-600',
         },
         {
             id: 'empty-types',
-            label: 'Empty Types',
+            label: t('vehicleTypes.stats.empty.label'),
             icon: <Package className="h-3.5 w-3.5 text-amber-600" />,
             className: 'min-w-[220px] flex-shrink-0',
             value: isTableLoading ? <Skeleton className="h-3.5 w-20" aria-hidden="true" /> : formatNumber(emptyTypes),
             description: isTableLoading ? (
                 <Skeleton className="h-3 w-24" aria-hidden="true" />
             ) : (
-                'No trucks assigned'
+                t('vehicleTypes.stats.empty.description')
             ),
             valueClassName: isTableLoading ? undefined : 'text-amber-600',
         },
@@ -363,23 +374,23 @@ export default function VehicleTypesIndex({ vehicleTypes, metrics, filters, perP
         () =>
             availablePerPageOptions.map((option) => ({
                 value: String(option),
-                label: `${option} / page`,
+                label: t('vehicleTypes.filters.perPageOption', { value: option }),
             })),
-        [availablePerPageOptions],
+        [availablePerPageOptions, t],
     );
 
     const tableColumns = React.useMemo(
         () => [
-            { id: 'index', label: '#', align: 'center' as const },
-            ...COLUMN_DEFINITIONS.map((column) => ({
+            { id: 'index', label: t('vehicleTypes.table.index'), align: 'center' as const },
+            ...columnDefinitions.map((column) => ({
                 id: column.id === 'description' ? 'description' : String(column.id),
                 label: column.label,
                 sortable: Boolean(column.sortKey),
                 sortKey: column.sortKey ? String(column.sortKey) : undefined,
             })),
-            { id: 'actions', label: 'Actions', align: 'center' as const },
+            { id: 'actions', label: t('vehicleTypes.table.actions'), align: 'center' as const },
         ],
-        [],
+        [columnDefinitions, t],
     );
 
     const tableRows = isTableLoading
@@ -413,25 +424,25 @@ export default function VehicleTypesIndex({ vehicleTypes, metrics, filters, perP
                   <TableRow key={vehicleType.id} className="hover:bg-muted/50">
                       <TableCell className="text-center font-medium">{rowOffset + index + 1}</TableCell>
                       <TableCell className="font-medium">{vehicleType.name}</TableCell>
-                      <TableCell className="text-muted-foreground">{vehicleType.description || '—'}</TableCell>
+                      <TableCell className="text-muted-foreground">{vehicleType.description || notAvailableLabel}</TableCell>
                       <TableCell className="font-medium">{formatNumber(vehicleType.trucks_count)}</TableCell>
                       <TableCell className="text-muted-foreground">{formatNumber(vehicleType.active_trucks_count)}</TableCell>
-                      <TableCell className="text-muted-foreground">{formatDate(vehicleType.created_at)}</TableCell>
+                      <TableCell className="text-muted-foreground">{formatDate(vehicleType.created_at, notAvailableLabel)}</TableCell>
                       <TableCell className="text-center">
                           <ListingRowActionsMenu
                               actions={[
                                   {
-                                      label: 'View',
+                                      label: t('vehicleTypes.actions.view'),
                                       icon: <Eye className="h-4 w-4" />,
                                       href: `/vehicletypes/${vehicleType.id}`,
                                   },
                                   canEditVehicleType && {
-                                      label: 'Edit',
+                                      label: t('vehicleTypes.actions.edit'),
                                       icon: <Edit className="h-4 w-4" />,
                                       href: `/vehicletypes/${vehicleType.id}/edit`,
                                   },
                                   canDeleteVehicleType && {
-                                      label: 'Delete',
+                                      label: t('vehicleTypes.actions.delete'),
                                       icon: <Trash2 className="h-4 w-4" />,
                                       danger: true,
                                       disabled: isDeleting && selectedVehicleType?.id === vehicleType.id,
@@ -445,10 +456,10 @@ export default function VehicleTypesIndex({ vehicleTypes, metrics, filters, perP
             : (
                 <TableRow>
                     <TableCell colSpan={tableColumns.length} className="py-8 text-center text-muted-foreground">
-                        No vehicle types found.
+                        {t('vehicleTypes.empty.title')}
                         {canCreateVehicleType && (
                             <Link href="/vehicletypes/create" className="ml-1 text-primary underline">
-                                Create one
+                                {t('vehicleTypes.empty.createAction')}
                             </Link>
                         )}
                     </TableCell>
@@ -509,36 +520,46 @@ export default function VehicleTypesIndex({ vehicleTypes, metrics, filters, perP
             getKey={(item) => item.vehicleType.id}
             renderTitle={(item) => (
                 <div className="flex items-center gap-2">
-                    <span className="text-xs uppercase tracking-wide text-muted-foreground">#{item.position}</span>
+                    <span className="text-xs uppercase tracking-wide text-muted-foreground">
+                        {t('vehicleTypes.mobile.position', { value: item.position })}
+                    </span>
                     <span className="text-base">{item.vehicleType.name}</span>
                     <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
                 </div>
             )}
-            renderSubtitle={(item) => `${formatNumber(item.vehicleType.trucks_count)} trucks`}
+            renderSubtitle={(item) => t('vehicleTypes.mobile.trucksCount', { value: formatNumber(item.vehicleType.trucks_count) })}
             renderContent={(item) => (
                 <div className="space-y-3 text-sm text-muted-foreground">
                     <div>
-                        <p className="font-medium text-slate-600 dark:text-slate-300">Description</p>
+                        <p className="font-medium text-slate-600 dark:text-slate-300">
+                            {t('vehicleTypes.mobile.description')}
+                        </p>
                         <p className="text-sm text-muted-foreground">
-                            {item.vehicleType.description || 'No description provided.'}
+                            {item.vehicleType.description || t('vehicleTypes.mobile.noDescription')}
                         </p>
                     </div>
                     <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Active Trucks</span>
+                        <span className="font-medium text-slate-600 dark:text-slate-300">
+                            {t('vehicleTypes.mobile.activeTrucks')}
+                        </span>
                         <span className="text-right font-semibold text-slate-900 dark:text-slate-100">
                             {formatNumber(item.vehicleType.active_trucks_count)}
                         </span>
                     </div>
                     <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Total Trucks</span>
+                        <span className="font-medium text-slate-600 dark:text-slate-300">
+                            {t('vehicleTypes.mobile.totalTrucks')}
+                        </span>
                         <span className="text-right font-semibold text-slate-900 dark:text-slate-100">
                             {formatNumber(item.vehicleType.trucks_count)}
                         </span>
                     </div>
                     <div className="flex items-center justify-between">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Created</span>
+                        <span className="font-medium text-slate-600 dark:text-slate-300">
+                            {t('vehicleTypes.mobile.created')}
+                        </span>
                         <span className="text-right font-semibold text-slate-900 dark:text-slate-100">
-                            {formatDate(item.vehicleType.created_at)}
+                            {formatDate(item.vehicleType.created_at, notAvailableLabel)}
                         </span>
                     </div>
                 </div>
@@ -548,14 +569,14 @@ export default function VehicleTypesIndex({ vehicleTypes, metrics, filters, perP
                     <Button asChild size="sm" variant="outline" className="flex-1 sm:flex-auto">
                         <Link href={`/vehicletypes/${item.vehicleType.id}`}>
                             <Eye className="mr-2 h-4 w-4" />
-                            View
+                            {t('vehicleTypes.actions.view')}
                         </Link>
                     </Button>
                     {canEditVehicleType && (
                         <Button asChild size="sm" variant="secondary" className="flex-1 sm:flex-none">
                             <Link href={`/vehicletypes/${item.vehicleType.id}/edit`}>
                                 <Edit className="mr-2 h-4 w-4" />
-                                Edit
+                                {t('vehicleTypes.actions.edit')}
                             </Link>
                         </Button>
                     )}
@@ -568,17 +589,17 @@ export default function VehicleTypesIndex({ vehicleTypes, metrics, filters, perP
                             disabled={isDeleting && selectedVehicleType?.id === item.vehicleType.id}
                         >
                             <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
+                            {t('vehicleTypes.actions.delete')}
                         </Button>
                     )}
                 </div>
             )}
             emptyState={(
                 <div className="py-8 text-center text-muted-foreground">
-                    No vehicle types found.
+                    {t('vehicleTypes.empty.title')}
                     {canCreateVehicleType && (
                         <Link href="/vehicletypes/create" className="ml-1 text-primary underline">
-                            Create one
+                            {t('vehicleTypes.empty.createAction')}
                         </Link>
                     )}
                 </div>
@@ -590,13 +611,13 @@ export default function VehicleTypesIndex({ vehicleTypes, metrics, filters, perP
         <ListingFilterBar
             search={{
                 value: searchTerm,
-                placeholder: 'Search vehicle types...',
+                placeholder: t('vehicleTypes.filters.searchPlaceholder'),
                 onChange: handleSearchChange,
                 icon: <Search className="h-4 w-4" />,
             }}
             perPage={{
                 value: perPage,
-                label: 'Rows',
+                label: t('vehicleTypes.filters.rowsLabel'),
                 onChange: handlePerPageChange,
                 options: perPageSelectOptions,
             }}
@@ -606,14 +627,14 @@ export default function VehicleTypesIndex({ vehicleTypes, metrics, filters, perP
     return (
         <>
             <ListPageLayout
-                headTitle="Vehicle Types"
-                title="Vehicle Types"
-                description={`Manage vehicle types and categories. Total: ${totalVehicleTypes}`}
+                headTitle={t('vehicleTypes.title')}
+                title={t('vehicleTypes.title')}
+                description={t('vehicleTypes.description', { count: totalVehicleTypes })}
                 breadcrumbs={breadcrumbs}
                 actions={headerActions}
                 stats={statsSection}
-                tableTitle="Vehicle Types"
-                tableDescription="Manage your fleet of vehicle types"
+                tableTitle={t('vehicleTypes.table.title')}
+                tableDescription={t('vehicleTypes.table.description')}
                 tableHeaderExtras={tableHeaderExtras}
                 pagination={
                     !isTableLoading && vehicleTypes?.links ? (
@@ -650,8 +671,8 @@ export default function VehicleTypesIndex({ vehicleTypes, metrics, filters, perP
                         setDeleteError(null);
                     }
                 }}
-                title="Delete Vehicle Type"
-                description="Are you sure you want to delete this vehicle type? This action cannot be undone."
+                title={t('vehicleTypes.delete.title')}
+                description={t('vehicleTypes.delete.description')}
                 itemName={selectedVehicleType?.name || undefined}
                 onConfirm={handleDeleteConfirm}
                 isLoading={isDeleting}

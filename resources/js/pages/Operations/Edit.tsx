@@ -17,6 +17,7 @@ import { validateOperation, type ValidationErrors } from '@/lib/validation';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
 import { AlertCircle, Calendar, CheckCircle, ClipboardList, Rocket } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface Customer {
   id: number;
@@ -116,13 +117,14 @@ type RecentSelections = {
 const RECENT_SELECTIONS_KEY = 'operations_recent_selections';
 
 export default function OperationsEdit({ operation, customers, regions, zones, woredas, places, destinationScopes, cargoTypes, cargoServiceTypes }: OperationsEditProps) {
+  const { t } = useTranslation();
   const breadcrumbs = useMemo<BreadcrumbItem[]>(
     () => [
-      { title: 'Operations', href: '/operations' },
+      { title: t('operations.breadcrumb'), href: '/operations' },
       { title: operation.operationid, href: `/operations/${operation.id}` },
-      { title: 'Edit', href: `/operations/${operation.id}/edit` },
+      { title: t('operations.form.edit.breadcrumb'), href: `/operations/${operation.id}/edit` },
     ],
-    [operation.id, operation.operationid],
+    [operation.id, operation.operationid, t],
   );
 
   const allowedScopes: OperationFormData['destination_scope'][] = ['region', 'zone', 'woreda', 'place'];
@@ -186,12 +188,12 @@ export default function OperationsEdit({ operation, customers, regions, zones, w
 
     if (errorMessages.length > 0) {
       toast({
-        title: '⚠️ Validation Error',
+        title: t('operations.form.validation.title'),
         description: errorMessages.join(', '),
         variant: 'destructive',
       });
     }
-  }, [errors]);
+  }, [errors, t]);
 
   const persistRecentSelections = useCallback((next: RecentSelections) => {
     if (typeof window === 'undefined') {
@@ -285,8 +287,8 @@ export default function OperationsEdit({ operation, customers, regions, zones, w
         clearErrors();
         setIsDirty(false);
         toast({
-          title: '✅ Operation Updated',
-          description: 'The operation has been refreshed successfully.',
+          title: t('operations.form.edit.successTitle'),
+          description: t('operations.form.edit.successDescription'),
         });
       },
     });
@@ -325,7 +327,7 @@ export default function OperationsEdit({ operation, customers, regions, zones, w
   const getFieldError = (field: keyof OperationFormData) => {
     const baseError = errors[field] || frontendErrors[field] || '';
     if (field === 'destination_id' && destinationExists && !destinationMatchesOptions) {
-      return baseError || 'Destination selection is required';
+      return baseError || t('operations.form.validation.destinationRequired');
     }
 
     return baseError;
@@ -333,9 +335,9 @@ export default function OperationsEdit({ operation, customers, regions, zones, w
 
   return (
     <FormPageLayout
-      title="Update Operation"
-      headTitle={`Edit ${operation.operationid}`}
-      description="Refresh customer engagement, routing scope, and commercial levers for this active operation."
+      title={t('operations.form.edit.title')}
+      headTitle={t('operations.form.edit.headTitle', { id: operation.operationid })}
+      description={t('operations.form.edit.description')}
       breadcrumbs={breadcrumbs}
       icon={<ClipboardList className="h-5 w-5" />}
       headerAside={isDirty && <UnsavedChangesBadge />}
@@ -344,21 +346,21 @@ export default function OperationsEdit({ operation, customers, regions, zones, w
         {hasErrors && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription>Please review the highlighted fields and correct the validation errors before saving the operation.</AlertDescription>
+            <AlertDescription>{t('operations.form.validation.resolveEdit')}</AlertDescription>
           </Alert>
         )}
 
-        <FormSection title="Operation Overview" description="Confirm the core identifiers and customer alignment for this operation." icon={<Rocket className="h-4 w-4" />}>
+        <FormSection title={t('operations.form.sections.overview.title')} description={t('operations.form.sections.overview.descriptionEdit')} icon={<Rocket className="h-4 w-4" />}>
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <FormField label="Operation ID" required error={getFieldError('operationid')}>
-              <Input id="operationid" type="text" value={data.operationid} onChange={event => handleFieldChange('operationid', event.target.value)} placeholder="e.g., OP-2025-0042" />
+            <FormField label={t('operations.form.fields.operationId.label')} required error={getFieldError('operationid')}>
+              <Input id="operationid" type="text" value={data.operationid} onChange={event => handleFieldChange('operationid', event.target.value)} placeholder={t('operations.form.fields.operationId.placeholder')} />
             </FormField>
 
             <div className="space-y-2">
-              <FormField label="Customer" required error={getFieldError('customer_id')}>
+              <FormField label={t('operations.form.fields.customer.label')} required error={getFieldError('customer_id')}>
                 <Select value={data.customer_id} onValueChange={value => handleFieldChange('customer_id', value)}>
                   <SelectTrigger className={getFieldError('customer_id') ? 'border-red-500' : ''}>
-                    <SelectValue placeholder="Select a customer" />
+                    <SelectValue placeholder={t('operations.form.fields.customer.placeholder')} />
                   </SelectTrigger>
                   <SelectContent className="max-h-72">
                     {safeCustomers.map(customer => (
@@ -371,7 +373,7 @@ export default function OperationsEdit({ operation, customers, regions, zones, w
               </FormField>
               {!getFieldError('customer_id') && recentCustomers.length > 0 && (
                 <div className="flex flex-wrap gap-2 pt-1">
-                  <p className="text-xs text-muted-foreground">Recent:</p>
+                  <p className="text-xs text-muted-foreground">{t('operations.form.fields.customer.recentLabel')}</p>
                   {recentCustomers
                     .map(customerId => safeCustomers.find(customer => customer.id.toString() === customerId))
                     .filter((customer): customer is Customer => Boolean(customer))
@@ -384,22 +386,22 @@ export default function OperationsEdit({ operation, customers, regions, zones, w
               )}
             </div>
 
-            <FormField label="Status" required error={getFieldError('status')}>
+            <FormField label={t('operations.form.fields.status.label')} required error={getFieldError('status')}>
               <Select value={data.status} onValueChange={value => handleFieldChange('status', value)}>
                 <SelectTrigger className={getFieldError('status') ? 'border-red-500' : ''}>
-                  <SelectValue placeholder="Select status" />
+                  <SelectValue placeholder={t('operations.form.fields.status.placeholder')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
+                  <SelectItem value="active">{t('operations.status.active')}</SelectItem>
+                  <SelectItem value="inactive">{t('operations.status.inactive')}</SelectItem>
                 </SelectContent>
               </Select>
             </FormField>
 
-            <FormField label="Destination Scope" required error={getFieldError('destination_scope')}>
+            <FormField label={t('operations.form.fields.destinationScope.label')} required error={getFieldError('destination_scope')}>
               <Select value={data.destination_scope} onValueChange={value => handleFieldChange('destination_scope', value)}>
                 <SelectTrigger className={getFieldError('destination_scope') ? 'border-red-500' : ''}>
-                  <SelectValue placeholder="Select scope" />
+                  <SelectValue placeholder={t('operations.form.fields.destinationScope.placeholder')} />
                 </SelectTrigger>
                 <SelectContent>
                   {destinationScopeOptions.map(scope => (
@@ -411,10 +413,17 @@ export default function OperationsEdit({ operation, customers, regions, zones, w
               </Select>
             </FormField>
 
-            <FormField label="Destination" required error={getFieldError('destination_id')} hint={selectedDestinationScopeLabel ? `Showing ${selectedDestinationScopeLabel.toLowerCase()} destinations.` : 'Select a destination scope to populate options.'}>
+            <FormField
+              label={t('operations.form.fields.destination.label')}
+              required
+              error={getFieldError('destination_id')}
+              hint={selectedDestinationScopeLabel
+                ? t('operations.form.fields.destination.scopeHint', { scope: selectedDestinationScopeLabel.toLowerCase() })
+                : t('operations.form.fields.destination.scopePlaceholder')}
+            >
               <Select value={destinationSelectValue} onValueChange={value => handleFieldChange('destination_id', value)} disabled={destinationOptions.length === 0}>
                 <SelectTrigger className={getFieldError('destination_id') ? 'border-red-500' : ''}>
-                  <SelectValue placeholder="Select destination" />
+                  <SelectValue placeholder={t('operations.form.fields.destination.placeholder')} />
                 </SelectTrigger>
                 <SelectContent className="max-h-72">
                   {destinationOptions.length > 0 ? (
@@ -425,7 +434,7 @@ export default function OperationsEdit({ operation, customers, regions, zones, w
                     ))
                   ) : (
                     <SelectItem value="__empty" disabled>
-                      No options available
+                      {t('operations.form.fields.destination.empty')}
                     </SelectItem>
                   )}
                 </SelectContent>
@@ -434,16 +443,16 @@ export default function OperationsEdit({ operation, customers, regions, zones, w
           </div>
         </FormSection>
 
-        <FormSection title="Scheduling & Cargo Profile" description="Align service type, tonnage, and reach assumptions with updated planning inputs." icon={<Calendar className="h-4 w-4" />}>
+        <FormSection title={t('operations.form.sections.schedule.title')} description={t('operations.form.sections.schedule.descriptionEdit')} icon={<Calendar className="h-4 w-4" />}>
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div className="space-y-2">
               <span className="flex items-center gap-1 text-sm font-medium text-slate-700 dark:text-slate-200">
-                Start Date <span className="text-red-500">*</span>
+                {t('operations.form.fields.startDate.label')} <span className="text-red-500">*</span>
               </span>
               <DatePicker
                 value={data.startdate || ''}
                 onChange={next => handleFieldChange('startdate', next ?? '')}
-                placeholder="Select start date"
+                placeholder={t('operations.form.fields.startDate.placeholder')}
                 className={cn('w-full justify-start text-left h-11 border-slate-300 hover:border-slate-400', getFieldError('startdate') ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500/20' : undefined)}
               />
               {getFieldError('startdate') && (
@@ -454,10 +463,10 @@ export default function OperationsEdit({ operation, customers, regions, zones, w
               )}
             </div>
 
-            <FormField label="Cargo Service Type" required error={getFieldError('cargo_service_type')}>
+            <FormField label={t('operations.form.fields.cargoServiceType.label')} required error={getFieldError('cargo_service_type')}>
               <Select value={data.cargo_service_type} onValueChange={value => handleFieldChange('cargo_service_type', value)}>
                 <SelectTrigger className={getFieldError('cargo_service_type') ? 'border-red-500' : ''}>
-                  <SelectValue placeholder="Select service type" />
+                  <SelectValue placeholder={t('operations.form.fields.cargoServiceType.placeholder')} />
                 </SelectTrigger>
                 <SelectContent>
                   {safeCargoServiceTypes.map(service => (
@@ -470,10 +479,10 @@ export default function OperationsEdit({ operation, customers, regions, zones, w
             </FormField>
 
             <div className="space-y-2">
-              <FormField label="Cargo Type" required error={getFieldError('cargo_type_id')}>
+              <FormField label={t('operations.form.fields.cargoType.label')} required error={getFieldError('cargo_type_id')}>
                 <Select value={data.cargo_type_id} onValueChange={value => handleFieldChange('cargo_type_id', value)}>
                   <SelectTrigger className={getFieldError('cargo_type_id') ? 'border-red-500' : ''}>
-                    <SelectValue placeholder="Select cargo type" />
+                    <SelectValue placeholder={t('operations.form.fields.cargoType.placeholder')} />
                   </SelectTrigger>
                   <SelectContent className="max-h-72">
                     {safeCargoTypes.map(type => (
@@ -486,7 +495,7 @@ export default function OperationsEdit({ operation, customers, regions, zones, w
               </FormField>
               {recentCargoTypes.length > 0 && (
                 <div className="flex flex-wrap items-center gap-2 pt-1">
-                  <p className="text-xs text-muted-foreground">Recent:</p>
+                  <p className="text-xs text-muted-foreground">{t('operations.form.fields.cargoType.recentLabel')}</p>
                   {recentCargoTypes
                     .map(typeId => safeCargoTypes.find(type => type.id.toString() === typeId))
                     .filter((type): type is CargoTypeOption => Boolean(type))
@@ -499,25 +508,25 @@ export default function OperationsEdit({ operation, customers, regions, zones, w
               )}
             </div>
 
-            <FormField label="Planned Volume (MT)" required error={getFieldError('volume')}>
-              <Input id="volume" type="number" step="0.01" value={data.volume} onChange={event => handleFieldChange('volume', event.target.value)} placeholder="e.g., 1200" />
+            <FormField label={t('operations.form.fields.volume.label')} required error={getFieldError('volume')}>
+              <Input id="volume" type="number" step="0.01" value={data.volume} onChange={event => handleFieldChange('volume', event.target.value)} placeholder={t('operations.form.fields.volume.placeholder')} />
             </FormField>
 
-            <FormField label="Distance (KM)" required error={getFieldError('km')}>
-              <Input id="km" type="number" step="0.01" value={data.km} onChange={event => handleFieldChange('km', event.target.value)} placeholder="e.g., 520" />
+            <FormField label={t('operations.form.fields.distance.label')} required error={getFieldError('km')}>
+              <Input id="km" type="number" step="0.01" value={data.km} onChange={event => handleFieldChange('km', event.target.value)} placeholder={t('operations.form.fields.distance.placeholder')} />
             </FormField>
           </div>
         </FormSection>
 
-        <FormSection title="Commercial Parameters" description="Tune tariff assumptions and note key decisions for the broader ops & finance teams." icon={<CheckCircle className="h-4 w-4" />}>
+        <FormSection title={t('operations.form.sections.commercial.title')} description={t('operations.form.sections.commercial.descriptionEdit')} icon={<CheckCircle className="h-4 w-4" />}>
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <FormField label="Tariff (per ton-km)" required error={getFieldError('tariff')}>
-              <Input id="tariff" type="number" step="0.01" value={data.tariff} onChange={event => handleFieldChange('tariff', event.target.value)} placeholder="e.g., 2.75" />
+            <FormField label={t('operations.form.fields.tariff.label')} required error={getFieldError('tariff')}>
+              <Input id="tariff" type="number" step="0.01" value={data.tariff} onChange={event => handleFieldChange('tariff', event.target.value)} placeholder={t('operations.form.fields.tariff.placeholder')} />
             </FormField>
 
             <div className="md:col-span-2">
-              <FormField label="Description / Notes">
-                <Textarea id="remark" value={data.remark} onChange={event => handleFieldChange('remark', event.target.value)} placeholder="Capture tariffs, service caveats, and operational reminders" className="min-h-[120px]" />
+              <FormField label={t('operations.form.fields.remark.label')}>
+                <Textarea id="remark" value={data.remark} onChange={event => handleFieldChange('remark', event.target.value)} placeholder={t('operations.form.fields.remark.placeholderEdit')} className="min-h-[120px]" />
               </FormField>
             </div>
           </div>
@@ -526,18 +535,18 @@ export default function OperationsEdit({ operation, customers, regions, zones, w
 
       <FormActionsBar>
         <Button type="button" variant="outline" asChild>
-          <Link href={`/operations/${operation.id}`}>Cancel</Link>
+          <Link href={`/operations/${operation.id}`}>{t('operations.actions.cancel')}</Link>
         </Button>
         <Button type="submit" disabled={processing || Object.keys(frontendErrors).length > 0 || !destinationMatchesOptions || !data.cargo_type_id} onClick={submit}>
           {processing ? (
             <>
               <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white" />
-              Saving...
+              {t('operations.form.edit.submitting')}
             </>
           ) : (
             <>
               <CheckCircle className="mr-2 h-4 w-4" />
-              Save Changes
+              {t('operations.form.edit.submit')}
             </>
           )}
         </Button>

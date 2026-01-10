@@ -196,7 +196,21 @@ class DriverController extends BaseResourceController
      */
     public function create(): Response
     {
-        return Inertia::render('Drivers/Create');
+        // Get users that are not linked to any driver (for selection)
+        $availableUsers = \App\Models\User::query()
+            ->whereDoesntHave('driver')
+            ->orderBy('name')
+            ->get(['id', 'name', 'email'])
+            ->map(fn (\App\Models\User $user) => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+            ])
+            ->values();
+
+        return Inertia::render('Drivers/Create', [
+            'availableUsers' => $availableUsers,
+        ]);
     }
 
     /**
@@ -238,6 +252,7 @@ class DriverController extends BaseResourceController
     public function show(Driver $driver): Response
     {
         $driver->load([
+            'user:id,name,email',
             'trucks',
             'performanceRecords',
             'safetyRecords',
@@ -381,6 +396,7 @@ class DriverController extends BaseResourceController
 
         $driverData = [
             'id' => $driver->id,
+            'user_id' => $driver->user_id,
             'driverid' => $driver->driverid,
             'name' => $driver->name,
             'sex' => strtolower((string) ($driver->getRawOriginal('sex') ?? $driver->sex ?? '')),
@@ -394,6 +410,11 @@ class DriverController extends BaseResourceController
             'status' => strtolower((string) ($driver->getRawOriginal('status') ?? $driver->status ?? '')),
             'created_at' => $driver->created_at?->toIso8601String(),
             'updated_at' => $driver->updated_at?->toIso8601String(),
+            'user' => $driver->user ? [
+                'id' => $driver->user->id,
+                'name' => $driver->user->name,
+                'email' => $driver->user->email,
+            ] : null,
             'driverTrucks' => $driver->driverTrucks
                 ->sortByDesc(static fn (DriverTruck $assignment) => $assignment->date_recived ?? $assignment->created_at)
                 ->take(15)
@@ -564,10 +585,27 @@ class DriverController extends BaseResourceController
     public function edit(Driver $driver): Response
     {
         $driver->refresh();
+        $driver->load('user:id,name,email');
+
+        // Get users that are not linked to any driver, plus the current driver's user (if any)
+        $availableUsers = \App\Models\User::query()
+            ->where(function ($query) use ($driver) {
+                $query->whereDoesntHave('driver')
+                    ->orWhere('id', $driver->user_id); // Include current user even if linked
+            })
+            ->orderBy('name')
+            ->get(['id', 'name', 'email'])
+            ->map(fn (\App\Models\User $user) => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+            ])
+            ->values();
 
         return Inertia::render('Drivers/Edit', [
             'driver' => [
                 'id' => $driver->id,
+                'user_id' => $driver->user_id,
                 'driverid' => $driver->driverid,
                 'name' => $driver->name,
                 'sex' => strtolower((string) $driver->getRawOriginal('sex') ?? ''),
@@ -579,7 +617,13 @@ class DriverController extends BaseResourceController
                 'mobile' => $driver->mobile,
                 'hireddate' => $driver->hireddate?->format('Y-m-d'),
                 'status' => $driver->status,
+                'user' => $driver->user ? [
+                    'id' => $driver->user->id,
+                    'name' => $driver->user->name,
+                    'email' => $driver->user->email,
+                ] : null,
             ],
+            'availableUsers' => $availableUsers,
         ]);
     }
 

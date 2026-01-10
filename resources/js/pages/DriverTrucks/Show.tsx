@@ -151,12 +151,12 @@ const formatCurrencyPerKm = (value?: number | null, fallbackLabel = 'N/A'): stri
   }, fallbackLabel)} / KM`;
 };
 
-const formatDays = (value?: number | null, fallbackLabel = 'N/A', pluralLabel?: (countLabel: string) => string, singleLabel = '1 day'): string => {
+const formatDays = (value?: number | null, fallbackLabel = 'N/A', pluralLabel?: (countLabel: number) => string, singleLabel = '1 day'): string => {
   if (value === null || value === undefined || Number.isNaN(Number(value))) return fallbackLabel;
   const rounded = Number(value.toFixed(1));
   if (rounded === 1) return singleLabel;
   const formatted = rounded % 1 === 0 ? `${rounded}` : rounded.toFixed(1);
-  return pluralLabel ? pluralLabel(formatted) : `${formatted} days`;
+  return pluralLabel ? pluralLabel(rounded) : `${formatted} days`;
 };
 
 const formatScore = (value?: number | null, maximumFractionDigits = 1, fallbackLabel = 'N/A'): string => {

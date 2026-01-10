@@ -75,6 +75,7 @@ type DriverSafety = {
 
 interface Driver {
   id: number;
+  user_id?: number | null;
   driverid: string;
   name: string;
   sex?: string | null;
@@ -88,6 +89,11 @@ interface Driver {
   status?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
+  user?: {
+    id: number;
+    name: string;
+    email: string;
+  } | null;
   performances?: DriverPerformance[];
   driverTrucks?: DriverAssignment[];
   safetyRecords?: DriverSafety[];
@@ -489,6 +495,25 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
                       <p className="mt-2 text-sm">{driver.housenumber || notAvailableLabel}</p>
                     </div>
                   </div>
+                  {driver.user && (
+                    <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-4 dark:border-blue-800 dark:bg-blue-900/20">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                        <p className="text-xs font-semibold uppercase text-blue-700 dark:text-blue-300">Linked User Account</p>
+                      </div>
+                      <div className="mt-3 space-y-2">
+                        <p className="text-sm font-medium">{driver.user.name}</p>
+                        <p className="text-xs text-blue-600 dark:text-blue-400">{driver.user.email}</p>
+                        <p className="text-xs text-muted-foreground">This driver can access the mobile app using this user account.</p>
+                      </div>
+                    </div>
+                  )}
+                  {!driver.user && (
+                    <div className="rounded-lg border border-slate-200 bg-slate-50/50 p-4 dark:border-slate-700 dark:bg-slate-800/20">
+                      <p className="text-xs font-semibold uppercase text-muted-foreground">User Account</p>
+                      <p className="mt-2 text-sm text-muted-foreground">No user account linked. Link a user in the edit form to enable mobile app access.</p>
+                    </div>
+                  )}
                 </div>
               </DetailSectionCard>
 
@@ -578,7 +603,7 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
             </div>
 
             <div className="space-y-4">
-              {gradeReport && (
+              {gradeReport && gradeReport.overall && (
                 <DetailSectionCard
                   icon={<Award className="h-5 w-5 text-amber-600" />}
                   title={t('drivers.show.grade.title')}
@@ -588,13 +613,19 @@ export default function DriversShow({ driver, activityLogs = [], performanceSumm
                     <div>
                       <p className="text-xs font-semibold uppercase text-amber-700">{t('drivers.show.grade.overallScore')}</p>
                       <div className="mt-1 flex items-baseline gap-3">
-                        <span className="text-3xl font-bold text-amber-800">{gradeReport.overall.score.toFixed(1)}</span>
+                        <span className="text-3xl font-bold text-amber-800">
+                          {gradeReport.overall?.score?.toFixed(1) ?? 'N/A'}
+                        </span>
                         <span className="text-sm text-muted-foreground">
-                          {t('drivers.show.grade.scoreOutOf', { score: gradeReport.overall.score.toFixed(1) })}
+                          {t('drivers.show.grade.scoreOutOf', { 
+                            score: gradeReport.overall?.score?.toFixed(1) ?? 'N/A' 
+                          })}
                         </span>
                       </div>
                     </div>
-                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-amber-500/10 text-2xl font-semibold text-amber-700">{gradeReport.overall.letter}</div>
+                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-amber-500/10 text-2xl font-semibold text-amber-700">
+                      {gradeReport.overall?.letter ?? 'N/A'}
+                    </div>
                   </div>
                 </DetailSectionCard>
               )}
