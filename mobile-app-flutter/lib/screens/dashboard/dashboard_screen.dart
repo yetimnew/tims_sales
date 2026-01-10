@@ -5,8 +5,13 @@ import '../../models/truck.dart';
 import '../../widgets/truck_assignment_card.dart';
 import '../auth/login_screen.dart';
 import '../status/status_update_screen.dart';
+import '../location/location_tracking_screen.dart';
+import '../maintenance/maintenance_alerts_screen.dart';
+import '../notifications/notifications_screen.dart';
+import '../../services/notification_service.dart';
 import 'profile_tab.dart';
 import 'performance_tab.dart';
+import 'trips_tab.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -17,7 +22,26 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   final AuthService _authService = AuthService();
+  final NotificationService _notificationService = NotificationService();
   int _currentIndex = 0;
+  int _unreadNotificationCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUnreadNotificationCount();
+  }
+
+  Future<void> _loadUnreadNotificationCount() async {
+    try {
+      final response = await _notificationService.getNotifications(limit: 1);
+      setState(() {
+        _unreadNotificationCount = response.unreadCount;
+      });
+    } catch (e) {
+      // Silently fail - notifications are not critical
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,6 +49,49 @@ class _DashboardScreenState extends State<DashboardScreen> {
       appBar: AppBar(
         title: const Text('TIMS Driver'),
         actions: [
+          // Notifications Icon with Badge
+          Stack(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.notifications),
+                onPressed: () async {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const NotificationsScreen(),
+                    ),
+                  );
+                  // Refresh unread count after returning
+                  _loadUnreadNotificationCount();
+                },
+              ),
+              if (_unreadNotificationCount > 0)
+                Positioned(
+                  right: 8,
+                  top: 8,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                    ),
+                    constraints: const BoxConstraints(
+                      minWidth: 16,
+                      minHeight: 16,
+                    ),
+                    child: Text(
+                      _unreadNotificationCount > 99 ? '99+' : _unreadNotificationCount.toString(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+            ],
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () async {
@@ -172,7 +239,7 @@ class _HomeTabState extends State<HomeTab> {
                   leading: Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.1),
+                      color: Colors.blue.withAlpha((255 * 0.1).round()),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Icon(Icons.update, color: Colors.blue),
@@ -185,6 +252,62 @@ class _HomeTabState extends State<HomeTab> {
                       context,
                       MaterialPageRoute(
                         builder: (context) => const StatusUpdateScreen(),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 12),
+              
+              // Location Tracking Button
+              Card(
+                elevation: 2,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                child: ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withAlpha((255 * 0.1).round()),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.location_on, color: Colors.green),
+                  ),
+                  title: const Text('Location Tracking'),
+                  subtitle: const Text('Send your location and track history'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const LocationTrackingScreen(),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 12),
+              
+              // Maintenance Alerts Button
+              Card(
+                elevation: 2,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                child: ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withAlpha((255 * 0.1).round()),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.build, color: Colors.orange),
+                  ),
+                  title: const Text('Maintenance Alerts'),
+                  subtitle: const Text('View scheduled and overdue maintenance'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const MaintenanceAlertsScreen(),
                       ),
                     );
                   },
@@ -206,16 +329,4 @@ class _HomeTabState extends State<HomeTab> {
     );
   }
 }
-
-class TripsTab extends StatelessWidget {
-  const TripsTab({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Trips Tab - Coming Soon'),
-    );
-  }
-}
-
 

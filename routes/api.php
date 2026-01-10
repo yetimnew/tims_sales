@@ -66,6 +66,7 @@ Route::middleware(['auth:sanctum', 'throttle:60,1'])->group(function () {
     // Notifications
     Route::get('/driver/notifications', [DriverNotificationController::class, 'index']);
     Route::post('/driver/notifications/{id}/read', [DriverNotificationController::class, 'markAsRead']);
+    Route::post('/driver/notifications/read-all', [DriverNotificationController::class, 'markAllAsRead']);
 
     // Maintenance
     Route::get('/driver/maintenance', [DriverMaintenanceController::class, 'index']);

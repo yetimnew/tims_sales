@@ -5,24 +5,24 @@ import 'api_service.dart';
 class TripService {
   final ApiService _apiService = ApiService();
 
-  Future<Map<String, dynamic>> getTrips() async {
+  Future<TripsResponse> getTrips() async {
     try {
       final response = await _apiService.get(AppConfig.tripsEndpoint);
       if (response.statusCode == 200 && response.data['success'] == true) {
-        final data = response.data['data'];
-        return {
-          'current': data['current'] != null
-              ? Trip.fromJson(data['current'])
+        final data = response.data['data'] as Map<String, dynamic>;
+        return TripsResponse(
+          current: data['current'] != null
+              ? Trip.fromJson(data['current'] as Map<String, dynamic>)
               : null,
-          'upcoming': (data['upcoming'] as List?)
-                  ?.map((item) => Trip.fromJson(item))
+          upcoming: (data['upcoming'] as List?)
+                  ?.map((item) => Trip.fromJson(item as Map<String, dynamic>))
                   .toList() ??
               [],
-        };
+        );
       }
-      return {'current': null, 'upcoming': []};
+      return TripsResponse(current: null, upcoming: []);
     } catch (e) {
-      return {'current': null, 'upcoming': []};
+      return TripsResponse(current: null, upcoming: []);
     }
   }
 
@@ -30,7 +30,8 @@ class TripService {
     try {
       final response = await _apiService.get('${AppConfig.tripsEndpoint}/$tripId');
       if (response.statusCode == 200 && response.data['success'] == true) {
-        return Trip.fromJson(response.data['data']);
+        final data = response.data['data'] as Map<String, dynamic>;
+        return Trip.fromJson(data);
       }
       return null;
     } catch (e) {
@@ -38,7 +39,7 @@ class TripService {
     }
   }
 
-  Future<bool> updateTripStatus(int tripId, String status, {String? comment}) async {
+  Future<Trip?> updateTripStatus(int tripId, String status, {String? comment}) async {
     try {
       final response = await _apiService.post(
         '${AppConfig.tripsEndpoint}/$tripId/update',
@@ -48,10 +49,24 @@ class TripService {
         },
       );
 
-      return response.statusCode == 200 && response.data['success'] == true;
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        final data = response.data['data'] as Map<String, dynamic>;
+        return Trip.fromJson(data);
+      }
+      return null;
     } catch (e) {
-      return false;
+      return null;
     }
   }
+}
+
+class TripsResponse {
+  final Trip? current;
+  final List<Trip> upcoming;
+
+  TripsResponse({
+    this.current,
+    required this.upcoming,
+  });
 }
 

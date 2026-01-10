@@ -420,7 +420,7 @@ class _ProfileTabState extends State<ProfileTab> {
                 Container(
                   width: 130,
                   height: 130,
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     shape: BoxShape.circle,
                     color: Colors.black54,
                   ),

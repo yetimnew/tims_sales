@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Driver;
 use App\Models\DriverTruck;
 use App\Models\VehicleMaintenanceRecord;
 use Illuminate\Http\JsonResponse;
@@ -11,16 +12,42 @@ use Illuminate\Http\Request;
 class DriverMaintenanceController extends Controller
 {
     /**
+     * Get the driver associated with the authenticated user
+     * Uses the User->Driver relationship (user_id in drivers table)
+     * Returns null if user is not a driver
+     */
+    private function getDriverForUser($user): ?Driver
+    {
+        // Use the User->Driver relationship via user_id
+        return $user->driver;
+    }
+
+    /**
      * Get maintenance schedules for assigned truck
      */
     public function index(Request $request): JsonResponse
     {
-        $driver = $request->user();
+        $user = $request->user();
+        $driver = $this->getDriverForUser($user);
+
+        if (!$driver) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Driver record not found. Please contact administrator to link your account to a driver record.',
+                'data' => [
+                    'upcoming' => [],
+                    'overdue' => [],
+                    'recent' => [],
+                ],
+            ], 404);
+        }
 
         // Get active truck assignment
         $activeAssignment = DriverTruck::where('driver_id', $driver->id)
             ->where('status', 'active')
-            ->whereNull('unassigned_date')
+            ->whereNull('date_detach')
+            ->where('is_attached', true)
+            ->latest('date_recived')
             ->first();
 
         if (!$activeAssignment || !$activeAssignment->truck_id) {
@@ -84,12 +111,22 @@ class DriverMaintenanceController extends Controller
      */
     public function show(Request $request, int $id): JsonResponse
     {
-        $driver = $request->user();
+        $user = $request->user();
+        $driver = $this->getDriverForUser($user);
+
+        if (!$driver) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Driver record not found.',
+            ], 404);
+        }
 
         // Verify maintenance belongs to driver's assigned truck
         $activeAssignment = DriverTruck::where('driver_id', $driver->id)
             ->where('status', 'active')
-            ->whereNull('unassigned_date')
+            ->whereNull('date_detach')
+            ->where('is_attached', true)
+            ->latest('date_recived')
             ->first();
 
         if (!$activeAssignment || !$activeAssignment->truck_id) {

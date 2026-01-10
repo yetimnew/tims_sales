@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Driver;
 use App\Models\DriverLocation;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -10,6 +11,17 @@ use Illuminate\Support\Facades\Validator;
 
 class DriverLocationController extends Controller
 {
+    /**
+     * Get the driver associated with the authenticated user
+     * Uses the User->Driver relationship (user_id in drivers table)
+     * Returns null if user is not a driver
+     */
+    private function getDriverForUser($user): ?Driver
+    {
+        // Use the User->Driver relationship via user_id
+        return $user->driver;
+    }
+
     /**
      * Store location update
      */
@@ -32,7 +44,15 @@ class DriverLocationController extends Controller
             ], 422);
         }
 
-        $driver = $request->user();
+        $user = $request->user();
+        $driver = $this->getDriverForUser($user);
+
+        if (!$driver) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Driver record not found. Please contact administrator to link your account to a driver record.',
+            ], 404);
+        }
 
         $location = DriverLocation::create([
             'driver_id' => $driver->id,
@@ -64,7 +84,16 @@ class DriverLocationController extends Controller
      */
     public function history(Request $request): JsonResponse
     {
-        $driver = $request->user();
+        $user = $request->user();
+        $driver = $this->getDriverForUser($user);
+
+        if (!$driver) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Driver record not found.',
+                'data' => [],
+            ], 404);
+        }
 
         $startDate = $request->query('start_date');
         $endDate = $request->query('end_date');

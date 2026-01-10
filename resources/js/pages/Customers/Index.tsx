@@ -17,14 +17,8 @@ import { type BreadcrumbItem } from '@/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import * as React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, Eye, Edit, Trash2, Search, Users, CheckCircle, XCircle, Briefcase, ChevronRight } from 'lucide-react';
-
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Customers',
-        href: '/customers',
-    },
-];
 
 type ColumnKey =
     | 'name'
@@ -81,78 +75,6 @@ interface CustomersIndexProps {
 
 const SKELETON_FLAG_KEY = 'customers.index.shouldShowSkeleton';
 
-const COLUMN_DEFINITIONS: Array<{
-    id: ColumnKey;
-    label: string;
-    sortKey?: string;
-    align?: 'center' | 'right';
-}> = [
-    { id: 'name', label: 'Customer', sortKey: 'name' },
-    { id: 'contact_person', label: 'Relationship Owner' },
-    { id: 'phone', label: 'Phone' },
-    { id: 'email', label: 'Email' },
-    { id: 'operations_count', label: 'Operations', sortKey: 'operations_count', align: 'center' },
-    { id: 'status', label: 'Status', sortKey: 'status', align: 'center' },
-    { id: 'created_at', label: 'Created', sortKey: 'created_at' },
-];
-
-const formatDateValue = (value?: string | null): string => {
-    if (!value) {
-        return '—';
-    }
-
-    const parsed = new Date(value);
-    if (Number.isNaN(parsed.getTime())) {
-        return '—';
-    }
-
-    return parsed.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-    });
-};
-
-const formatCount = (value?: number | null): string => {
-    if (typeof value !== 'number' || Number.isNaN(value)) {
-        return '0';
-    }
-
-    return value.toLocaleString();
-};
-
-const getStatusBadge = (status?: string | null): React.ReactNode => {
-    if (!status) {
-        return (
-            <Badge variant="outline" className="bg-muted text-muted-foreground">
-                Unknown
-            </Badge>
-        );
-    }
-
-    const normalized = status.toLowerCase();
-    if (normalized === 'active') {
-        return (
-            <Badge className="flex items-center gap-1 border-emerald-200 bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:border-emerald-900/50 dark:bg-emerald-900/30 dark:text-emerald-200">
-                <CheckCircle className="h-3 w-3" /> Active
-            </Badge>
-        );
-    }
-
-    if (normalized === 'inactive') {
-        return (
-            <Badge className="flex items-center gap-1 border-rose-200 bg-rose-100 text-rose-700 hover:bg-rose-200 dark:border-rose-900/50 dark:bg-rose-900/30 dark:text-rose-200">
-                <XCircle className="h-3 w-3" /> Inactive
-            </Badge>
-        );
-    }
-
-    return (
-        <Badge variant="outline" className="capitalize">
-            {status}
-        </Badge>
-    );
-};
 
 export default function CustomersIndex({ customers, metrics, filters, statusOptions, perPageOptions }: CustomersIndexProps) {
     const { hasPermission } = usePermissions();
@@ -763,4 +685,3 @@ export default function CustomersIndex({ customers, metrics, filters, statusOpti
         </>
     );
 }
-

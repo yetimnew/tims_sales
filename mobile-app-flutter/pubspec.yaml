@@ -24,10 +24,10 @@ dependencies:
   hive: ^2.2.3
   hive_flutter: ^1.1.0
 
-  # Location Services (mobile only - web support has compatibility issues)
-  # geolocator: ^10.1.0  # Temporarily commented - web compatibility issues. Uncomment for Android/iOS builds
-  # geocoding: ^2.1.1  # Commented out - web compatibility issues, not currently used
-  # location: ^5.0.3  # Commented out - web compatibility issues
+  # Location Services
+  geolocator: ^10.1.1  # Has web support but we disable for web builds
+  # geocoding: ^2.1.1  # Optional - for reverse geocoding (address from coordinates)
+  # location: ^5.0.3  # Alternative location package, using geolocator instead
 
   # Background Tasks
   # workmanager: ^0.5.2  # Commented out - web compatibility issues, add later when implementing background tasks

@@ -17,6 +17,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { useTranslation } from 'react-i18next';
 
 interface User {
   id: number;
@@ -159,6 +160,7 @@ interface OperationsShowProps {
 }
 
 export default function OperationsShow({ operation, activityLogs = [], performanceInsights, transportExecution }: OperationsShowProps) {
+  const { t, i18n } = useTranslation();
   const { hasPermission } = usePermissions();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -169,7 +171,15 @@ export default function OperationsShow({ operation, activityLogs = [], performan
   const [closedDate, setClosedDate] = useState(new Date().toISOString().split('T')[0]);
   const [closeComment, setCloseComment] = useState('');
   const [reopenComment, setReopenComment] = useState('');
-  const breadcrumbs = useMemo<BreadcrumbItem[]>(() => [{ title: 'Operations', href: '/operations' }, { title: operation.operationid || `Operation ${operation.id}`, href: `/operations/${operation.id}` }], [operation.id, operation.operationid]);
+  const breadcrumbs = useMemo<BreadcrumbItem[]>(
+    () => [
+      { title: t('operations.breadcrumb'), href: '/operations' },
+      { title: operation.operationid || t('operations.show.fallbackId', { id: operation.id }), href: `/operations/${operation.id}` },
+    ],
+    [operation.id, operation.operationid, t],
+  );
+  const notAvailableLabel = t('operations.fallbacks.notAvailable');
+  const unknownLabel = t('operations.fallbacks.unknown');
 
   const handleDelete = () => {
     setIsDeleting(true);
@@ -269,42 +279,57 @@ export default function OperationsShow({ operation, activityLogs = [], performan
   };
 
   const formatDate = (value?: string) => {
-    if (!value) return 'N/A';
-    return new Date(value).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    if (!value) return notAvailableLabel;
+    return new Date(value).toLocaleDateString(i18n.language, { year: 'numeric', month: 'long', day: 'numeric' });
   };
 
   const formatNumber = (value?: number | null, fractionDigits = 2) => {
-    if (value === null || value === undefined) return 'N/A';
+    if (value === null || value === undefined) return notAvailableLabel;
     const numericValue = Number(value);
-    if (!Number.isFinite(numericValue)) return 'N/A';
-    return numericValue.toLocaleString('en-US', { minimumFractionDigits: fractionDigits, maximumFractionDigits: fractionDigits });
+    if (!Number.isFinite(numericValue)) return notAvailableLabel;
+    return numericValue.toLocaleString(i18n.language, { minimumFractionDigits: fractionDigits, maximumFractionDigits: fractionDigits });
   };
 
   const capitalize = (value?: string | null) => {
-    if (!value) return 'Unknown';
+    if (!value) return unknownLabel;
     return value.charAt(0).toUpperCase() + value.slice(1);
   };
 
   const formatCurrency = (value?: number | null) => {
-    if (value === null || value === undefined) return 'N/A';
+    if (value === null || value === undefined) return notAvailableLabel;
     const numericValue = Number(value);
-    if (!Number.isFinite(numericValue)) return 'N/A';
-    return `${numericValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Birr`;
+    if (!Number.isFinite(numericValue)) return notAvailableLabel;
+    return t('operations.show.currency', { value: numericValue.toLocaleString(i18n.language, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) });
   };
 
   const formatPercent = (value?: number | null, fractionDigits = 1) => {
-    if (value === null || value === undefined) return 'N/A';
+    if (value === null || value === undefined) return notAvailableLabel;
     const numericValue = Number(value);
-    if (!Number.isFinite(numericValue)) return 'N/A';
-    return `${numericValue.toFixed(fractionDigits)}%`;
+    if (!Number.isFinite(numericValue)) return notAvailableLabel;
+    return t('operations.show.percent', { value: numericValue.toFixed(fractionDigits) });
   };
 
   const formatCurrencyPerUnit = (value?: number | null, unit?: string) => {
-    if (value === null || value === undefined) return 'N/A';
+    if (value === null || value === undefined) return notAvailableLabel;
     const numericValue = Number(value);
-    if (!Number.isFinite(numericValue)) return 'N/A';
-    const formatted = numericValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    return `${formatted} Birr${unit ? ` / ${unit}` : ''}`;
+    if (!Number.isFinite(numericValue)) return notAvailableLabel;
+    const formatted = numericValue.toLocaleString(i18n.language, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return unit
+      ? t('operations.show.currencyPerUnit', { value: formatted, unit })
+      : t('operations.show.currency', { value: formatted });
+  };
+
+  const formatWithUnit = (value: string, unit: string) => t('operations.show.valueWithUnit', { value, unit });
+
+  const getStatusLabel = (status?: string | null) => {
+    if (!status) return unknownLabel;
+    const key = status.toLowerCase();
+    return t(`operations.status.${key}`, { defaultValue: capitalize(status) });
+  };
+
+  const getExecutionModeLabel = (mode?: ExecutionMode | null) => {
+    if (!mode) return unknownLabel;
+    return t(`operations.executionModes.${mode}`, { defaultValue: capitalize(mode) });
   };
 
 

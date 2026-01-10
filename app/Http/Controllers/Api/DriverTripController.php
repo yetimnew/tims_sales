@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Driver;
 use App\Models\DriverTruck;
 use App\Models\Performance;
 use Illuminate\Http\JsonResponse;
@@ -12,16 +13,41 @@ use Illuminate\Support\Facades\Validator;
 class DriverTripController extends Controller
 {
     /**
+     * Get the driver associated with the authenticated user
+     * Uses the User->Driver relationship (user_id in drivers table)
+     * Returns null if user is not a driver
+     */
+    private function getDriverForUser($user): ?Driver
+    {
+        // Use the User->Driver relationship via user_id
+        return $user->driver;
+    }
+
+    /**
      * Get driver trips (current/upcoming)
      */
     public function index(Request $request): JsonResponse
     {
-        $driver = $request->user();
+        $user = $request->user();
+        $driver = $this->getDriverForUser($user);
+
+        if (!$driver) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Driver record not found. Please contact administrator to link your account to a driver record.',
+                'data' => [
+                    'current' => null,
+                    'upcoming' => [],
+                ],
+            ], 404);
+        }
 
         // Get active truck assignment
         $activeAssignment = DriverTruck::where('driver_id', $driver->id)
             ->where('status', 'active')
-            ->whereNull('unassigned_date')
+            ->whereNull('date_detach')
+            ->where('is_attached', true)
+            ->latest('date_recived')
             ->first();
 
         if (!$activeAssignment) {
@@ -71,12 +97,22 @@ class DriverTripController extends Controller
      */
     public function show(Request $request, int $id): JsonResponse
     {
-        $driver = $request->user();
+        $user = $request->user();
+        $driver = $this->getDriverForUser($user);
+
+        if (!$driver) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Driver record not found.',
+            ], 404);
+        }
 
         // Verify trip belongs to driver's active assignment
         $activeAssignment = DriverTruck::where('driver_id', $driver->id)
             ->where('status', 'active')
-            ->whereNull('unassigned_date')
+            ->whereNull('date_detach')
+            ->where('is_attached', true)
+            ->latest('date_recived')
             ->first();
 
         if (!$activeAssignment) {
@@ -122,12 +158,22 @@ class DriverTripController extends Controller
             ], 422);
         }
 
-        $driver = $request->user();
+        $user = $request->user();
+        $driver = $this->getDriverForUser($user);
+
+        if (!$driver) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Driver record not found.',
+            ], 404);
+        }
 
         // Verify trip belongs to driver's active assignment
         $activeAssignment = DriverTruck::where('driver_id', $driver->id)
             ->where('status', 'active')
-            ->whereNull('unassigned_date')
+            ->whereNull('date_detach')
+            ->where('is_attached', true)
+            ->latest('date_recived')
             ->first();
 
         if (!$activeAssignment) {
@@ -207,7 +253,8 @@ class DriverTripController extends Controller
                 ] : null,
                 'operation' => $trip->operation ? [
                     'id' => $trip->operation->id,
-                    'name' => $trip->operation->name,
+                    'operationid' => $trip->operation->operationid ?? null,
+                    'name' => $trip->operation->operationid ?? null, // Use operationid as name for display
                 ] : null,
             ]);
         }
